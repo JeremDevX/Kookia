@@ -27,6 +27,7 @@ Legend:
 | P0-04 | P0 | Ajustement stock drawer incoherent | P0-01 | [ ] | [x] | [x] | [P0-04](./P0-04/README.md) |
 | P0-05 | P0 | Strategie CSS incoherente | P0-01 | [ ] | [x] | [x] | [P0-05](./P0-05/README.md) |
 | P0-06 | P0 | Variables CSS manquantes | P0-05 | [ ] | [x] | [x] | [P0-06](./P0-06/README.md) |
+| P0-07 | P0 | Validation numerique permissive formulaires | P2-02 | [x] | [ ] | [ ] | [P0-07](./P0-07/README.md) |
 | P1-01 | P1 | Regle urgence predictions discutable | P0-02 | [ ] | [x] | [x] | [P1-01](./P1-01/README.md) |
 | P1-02 | P1 | Predictions passees dans actions dashboard | P0-02, P1-01 | [ ] | [x] | [x] | [P1-02](./P1-02/README.md) |
 | P1-03 | P1 | Reset selection dashboard incomplet | P0-02 | [ ] | [x] | [x] | [P1-03](./P1-03/README.md) |
@@ -40,11 +41,14 @@ Legend:
 | P1-11 | P1 | Absence de tests automatises | P0-01 | [ ] | [x] | [x] | [P1-11](./P1-11/README.md) |
 | P1-12 | P1 | Bundle principal trop lourd | P0-01 | [ ] | [x] | [x] | [P1-12](./P1-12/README.md) |
 | P1-13 | P1 | Overflow body modal non robuste | P1-05 | [ ] | [x] | [x] | [P1-13](./P1-13/README.md) |
+| P1-14 | P1 | Priorisation predictions sensible timezone client | P1-04 | [x] | [ ] | [ ] | [P1-14](./P1-14/README.md) |
+| P1-15 | P1 | Classes utilitaires orphelines restantes | P0-05 | [x] | [ ] | [ ] | [P1-15](./P1-15/README.md) |
 | P2-01 | P2 | Valeurs metier hardcodees | P0-02 | [ ] | [x] | [x] | [P2-01](./P2-01/README.md) |
 | P2-02 | P2 | Validation formulaires limitee | P0-02 | [ ] | [x] | [x] | [P2-02](./P2-02/README.md) |
 | P2-03 | P2 | Mutation style DOM en React | P0-05 | [ ] | [x] | [x] | [P2-03](./P2-03/README.md) |
 | P2-04 | P2 | Couplage type domaine vers mock | P0-02 | [ ] | [x] | [x] | [P2-04](./P2-04/README.md) |
 | P2-05 | P2 | README decale vs implementation | P0-02 | [ ] | [x] | [x] | [P2-05](./P2-05/README.md) |
+| P2-06 | P2 | Touche Escape ferme plusieurs modales | P1-05, P1-13 | [x] | [ ] | [ ] | [P2-06](./P2-06/README.md) |
 
 ## Regles de mise a jour
 - Chaque correction doit mettre a jour la fiche du probleme traite.

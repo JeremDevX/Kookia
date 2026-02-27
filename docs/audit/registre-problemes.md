@@ -74,6 +74,19 @@
 - Correctif conseillé:
   - définir explicitement ces variables ou remplacer par variables existantes.
 
+### P0-07 - Validation numérique permissive malgré le ticket P2-02
+- Symptôme: des entrées partielles invalides (`12abc`, `5abc`, `10xyz`) passent la validation (`parseInt`/`parseFloat` tolérants) et sont acceptées comme valeurs valides.
+- Impact: états métier incohérents possibles sur stocks/production, avec risque de données erronées malgré des contrôles affichés.
+- Fichiers liés:
+  - `src/utils/formValidation.ts:40`
+  - `src/utils/formValidation.ts:74`
+  - `src/utils/formValidation.ts:106`
+  - `src/utils/formValidation.ts:137`
+  - `src/utils/formValidation.test.ts:1`
+- Correctif conseillé:
+  - introduire un parsing strict (regex entière/décimale complète),
+  - ajouter tests de non-régression pour formats partiels invalides.
+
 ## P1
 ### P1-01 - Logique d'urgence discutable dans les prédictions
 - Symptôme: urgent/modéré basé sur `confidence` uniquement, pas sur l'action recommandée.
@@ -191,6 +204,31 @@
 - Correctif conseillé:
   - gestion de compteur global de modales ouvertes.
 
+### P1-14 - Priorisation prédictions encore sensible au fuseau client
+- Symptôme: la priorité (`getPredictionPriority`) et certains filtres date comparent au "today" local navigateur au lieu du jour métier restaurant.
+- Impact: selon le fuseau utilisateur, une même prédiction peut changer de statut (`today` vs `J+1`) et modifier les actions proposées.
+- Fichiers liés:
+  - `src/services/predictionService.ts:17`
+  - `src/services/predictionService.ts:41`
+  - `src/pages/Dashboard.tsx:113`
+  - `src/utils/date.ts:1`
+- Correctif conseillé:
+  - normaliser tous les calculs de jour sur le fuseau métier (restaurant),
+  - centraliser la comparaison de dates dans un utilitaire commun testé.
+
+### P1-15 - Stratégie CSS encore incomplète (classes utilitaires orphelines restantes)
+- Symptôme: de nombreuses classes utilitaires de style Tailwind restent présentes sans définition CSS projet (ex: `bg-blue-50`, `grid-cols-3`, `p-4`, `rounded-lg`, `border-b`).
+- Impact: rendu partiellement non déterministe et incohérence avec le ticket `P0-05` annoncé comme terminé.
+- Fichiers liés:
+  - `src/components/recipes/ProductionConfirmModal.tsx:75`
+  - `src/components/predictions/PredictionDetailModal.tsx:58`
+  - `src/components/analytics/CustomizeAnalyticsModal.tsx:48`
+  - `src/components/dashboard/MenuIdeasModal.tsx:19`
+  - `src/styles/index.css:158`
+- Correctif conseillé:
+  - terminer l’inventaire global des classes orphelines,
+  - remplacer par classes CSS projet ou définir explicitement les utilitaires nécessaires.
+
 ## P2
 ### P2-01 - Valeurs métiers hardcodées partout
 - Symptôme: utilisateur, météo, fournisseurs, prix, ROI, etc. en dur.
@@ -242,3 +280,14 @@
   - `src/pages/Predictions.tsx:15`
 - Correctif conseillé:
   - mettre à jour README selon état réel ou finaliser l'architecture promise.
+
+### P2-06 - Gestion `Escape` non isolée sur modales empilées
+- Symptôme: chaque modal enregistre un listener `keydown` document; sur `Escape`, plusieurs modales peuvent se fermer en cascade.
+- Impact: UX/a11y fragile sur scénarios imbriqués (ex: notifications -> générateur de commande), fermeture plus large que l’intention utilisateur.
+- Fichiers liés:
+  - `src/components/common/Modal.tsx:82`
+  - `src/components/common/Modal.tsx:110`
+  - `src/components/layout/Notifications.tsx:504`
+- Correctif conseillé:
+  - n’autoriser la fermeture `Escape` que pour la modal au sommet de pile (stack LIFO),
+  - ajouter un test de comportement pour modales imbriquées.
