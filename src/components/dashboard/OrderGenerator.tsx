@@ -9,11 +9,10 @@ import {
   Mail,
 } from "lucide-react";
 import {
-  type Prediction,
-  type Supplier,
   MOCK_SUPPLIERS,
   MOCK_PRODUCTS,
 } from "../../utils/mockData";
+import type { Prediction, Supplier } from "../../types";
 
 interface OrderItem {
   productName: string;

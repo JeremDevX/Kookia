@@ -10,7 +10,8 @@ import {
   Phone,
   ShoppingCart,
 } from "lucide-react";
-import { getStatus, type Product, MOCK_SUPPLIERS } from "../../utils/mockData";
+import { getStatus, MOCK_SUPPLIERS } from "../../utils/mockData";
+import type { Product } from "../../types";
 import { useToast } from "../../context/ToastContext";
 
 import "./ProductDetail.css";

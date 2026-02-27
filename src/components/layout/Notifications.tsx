@@ -14,8 +14,9 @@ import OrderGenerator from "../dashboard/OrderGenerator";
 import { useToast } from "../../context/ToastContext";
 import { useCart } from "../../context/useCart";
 import type { CartItem } from "../../context/cart.types";
+import type { Prediction } from "../../types";
 import { formatLocalISODate } from "../../utils/date";
-import { MOCK_PRODUCTS, type Prediction } from "../../utils/mockData";
+import { MOCK_PRODUCTS } from "../../utils/mockData";
 import "./Notifications.css";
 
 interface Notification {

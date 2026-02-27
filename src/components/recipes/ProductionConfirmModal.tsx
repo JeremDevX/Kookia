@@ -9,7 +9,7 @@ import {
   TrendingUp,
   AlertTriangle,
 } from "lucide-react";
-import type { Recipe } from "../../utils/mockData";
+import type { Recipe } from "../../types";
 import { validateProductionQuantity } from "../../utils/formValidation";
 
 interface ProductionConfirmModalProps {
