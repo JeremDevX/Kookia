@@ -3,7 +3,7 @@
 ## Traceabilite
 - Source audit: [registre-problemes.md:L65](../../registre-problemes.md#L65)
 - Process standard: [PROCESS_STANDARD.md](../PROCESS_STANDARD.md)
-- Statut: `open`
+- Statut: `done`
 - Priorite: `P0`
 - Depend de: [P0-05](../P0-05/README.md)
 
@@ -44,3 +44,28 @@ Eliminer toute variable CSS non resolue pour stabiliser le rendu et eviter les p
 ## Estimation
 - Effort: 0.25 jour.
 - Complexite: faible.
+
+## Execution
+- Objectif testable: toutes les references `var(--...)` utilisees dans les styles resolves vers un token defini dans `:root`.
+- Cause racine: les tokens `--shadow-xl` et `--font-size-md` etaient utilises dans plusieurs feuilles CSS sans definition centrale dans `src/styles/index.css`.
+
+## Fichiers modifies
+- [src/styles/index.css](../../../../src/styles/index.css)
+- [docs/audit/corrections/P0-06/README.md](./README.md)
+- [docs/audit/corrections/README.md](../README.md)
+
+## Commandes executees
+- `rg -n -- '--shadow-xl|--font-size-md' src`
+- `npm run lint`
+- `npm run build`
+
+## Resultats de validation
+- Validation technique:
+  - `npm run lint`: OK
+  - `npm run build`: OK
+- Validation fonctionnelle:
+  - Verification des feuilles cibles (`Modal`, `ProductDetail`, `Dashboard`, `Predictions`) avec tokens resolves: OK
+  - Verification de coherence references/definitions CSS (`var(--...)` vs `:root`): OK, aucun token non defini restant.
+
+## Risques residuels
+- Le nouveau `--shadow-xl` peut legerement renforcer la profondeur visuelle sur modal/drawer; risque faible et coherent avec l'echelle `--shadow-lg`.
