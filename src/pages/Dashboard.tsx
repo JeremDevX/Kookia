@@ -12,6 +12,7 @@ import { Calendar, FileText, ChefHat, ShoppingBag } from "lucide-react";
 import { usePredictions, useProducts } from "../hooks";
 import type { Prediction } from "../types";
 import { formatLocalISODate } from "../utils/date";
+import { domainBusinessConfig } from "../config/domain/businessConfig";
 import "./Dashboard.css";
 
 const parseIsoDateOnly = (isoDate: string): Date => {
@@ -106,6 +107,8 @@ const Dashboard: React.FC = () => {
     day: "numeric",
     month: "long",
   });
+  const { managerFirstName, city, weatherLabel } =
+    domainBusinessConfig.establishmentDisplay;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -152,9 +155,9 @@ const Dashboard: React.FC = () => {
     <div className="dashboard-container">
       <header className="page-header glass-header">
         <div>
-          <h1 className="page-title">Bienvenue, Camille ! 👋</h1>
+          <h1 className="page-title">Bienvenue, {managerFirstName} ! 👋</h1>
           <p className="page-subtitle flex items-center gap-sm">
-            <Calendar size={14} /> {todayDate} • Grenoble • ☀️ 18°C
+            <Calendar size={14} /> {todayDate} • {city} • {weatherLabel}
           </p>
         </div>
         <div className="header-actions">

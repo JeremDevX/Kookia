@@ -40,7 +40,7 @@ Legend:
 | P1-11 | P1 | Absence de tests automatises | P0-01 | [ ] | [x] | [x] | [P1-11](./P1-11/README.md) |
 | P1-12 | P1 | Bundle principal trop lourd | P0-01 | [ ] | [x] | [x] | [P1-12](./P1-12/README.md) |
 | P1-13 | P1 | Overflow body modal non robuste | P1-05 | [ ] | [x] | [x] | [P1-13](./P1-13/README.md) |
-| P2-01 | P2 | Valeurs metier hardcodees | P0-02 | [x] | [ ] | [ ] | [P2-01](./P2-01/README.md) |
+| P2-01 | P2 | Valeurs metier hardcodees | P0-02 | [ ] | [x] | [x] | [P2-01](./P2-01/README.md) |
 | P2-02 | P2 | Validation formulaires limitee | P0-02 | [x] | [ ] | [ ] | [P2-02](./P2-02/README.md) |
 | P2-03 | P2 | Mutation style DOM en React | P0-05 | [x] | [ ] | [ ] | [P2-03](./P2-03/README.md) |
 | P2-04 | P2 | Couplage type domaine vers mock | P0-02 | [x] | [ ] | [ ] | [P2-04](./P2-04/README.md) |

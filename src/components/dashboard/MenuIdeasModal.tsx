@@ -1,6 +1,7 @@
 import React from "react";
 import Button from "../common/Button";
 import { Sparkles, Utensils, Printer } from "lucide-react";
+import { domainBusinessConfig } from "../../config/domain/businessConfig";
 
 interface MenuIdeasModalProps {
   onValidate: () => void;
@@ -11,11 +12,7 @@ const MenuIdeasModal: React.FC<MenuIdeasModalProps> = ({
   onValidate,
   onClose,
 }) => {
-  const menu = {
-    starter: "Salade Caprese au Basilic Frais",
-    main: "Poulet Rôti aux Herbes & Pommes Grenailles",
-    dessert: "Tiramisu Maison",
-  };
+  const { menuSuggestion } = domainBusinessConfig;
 
   return (
     <div className="flex flex-col gap-lg">
@@ -25,7 +22,7 @@ const MenuIdeasModal: React.FC<MenuIdeasModalProps> = ({
           Suggestion du Chef IA
         </h3>
         <p className="text-teal-700 text-sm">
-          Optimisé pour vos stocks de Tomates (Date courte) et Poulet.
+          {menuSuggestion.stockOptimizationText}
         </p>
       </div>
 
@@ -35,7 +32,7 @@ const MenuIdeasModal: React.FC<MenuIdeasModalProps> = ({
             Entrée
           </span>
           <p className="text-lg font-serif font-medium text-gray-900">
-            {menu.starter}
+            {menuSuggestion.starter}
           </p>
         </div>
         <div>
@@ -43,7 +40,7 @@ const MenuIdeasModal: React.FC<MenuIdeasModalProps> = ({
             Plat
           </span>
           <p className="text-lg font-serif font-medium text-gray-900">
-            {menu.main}
+            {menuSuggestion.main}
           </p>
         </div>
         <div>
@@ -51,7 +48,7 @@ const MenuIdeasModal: React.FC<MenuIdeasModalProps> = ({
             Dessert
           </span>
           <p className="text-lg font-serif font-medium text-gray-900">
-            {menu.dessert}
+            {menuSuggestion.dessert}
           </p>
         </div>
       </div>
@@ -59,8 +56,10 @@ const MenuIdeasModal: React.FC<MenuIdeasModalProps> = ({
       <div className="bg-blue-50 p-3 rounded text-xs text-blue-800 flex items-start gap-2">
         <Utensils size={14} className="mt-1 flex-shrink-0" />
         <p>
-          Ce menu permet d'utiliser <strong>4.5kg de stocks</strong> qui
-          arriveraient à date critique d'ici 48h.
+          Ce menu permet d'utiliser{" "}
+          <strong>{menuSuggestion.reclaimedStockKg}kg de stocks</strong> qui
+          arriveraient à date critique d'ici {menuSuggestion.criticalWindowHours}
+          h.
         </p>
       </div>
 
