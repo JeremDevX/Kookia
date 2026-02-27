@@ -29,7 +29,7 @@ Legend:
 | P0-06 | P0 | Variables CSS manquantes | P0-05 | [ ] | [x] | [x] | [P0-06](./P0-06/README.md) |
 | P1-01 | P1 | Regle urgence predictions discutable | P0-02 | [ ] | [x] | [x] | [P1-01](./P1-01/README.md) |
 | P1-02 | P1 | Predictions passees dans actions dashboard | P0-02, P1-01 | [ ] | [x] | [x] | [P1-02](./P1-02/README.md) |
-| P1-03 | P1 | Reset selection dashboard incomplet | P0-02 | [x] | [ ] | [ ] | [P1-03](./P1-03/README.md) |
+| P1-03 | P1 | Reset selection dashboard incomplet | P0-02 | [ ] | [x] | [x] | [P1-03](./P1-03/README.md) |
 | P1-04 | P1 | Dates sensibles timezone | P0-02 | [x] | [ ] | [ ] | [P1-04](./P1-04/README.md) |
 | P1-05 | P1 | Accessibilite modale incomplete | P0-01 | [x] | [ ] | [ ] | [P1-05](./P1-05/README.md) |
 | P1-06 | P1 | Top bar non contextuelle | - | [x] | [ ] | [ ] | [P1-06](./P1-06/README.md) |

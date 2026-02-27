@@ -95,7 +95,8 @@ const Dashboard: React.FC = () => {
 
   const handleCloseOrderGenerator = () => {
     setShowOrderGenerator(false);
-    // Clear notification cart after order generation
+    // Reset both dashboard and global cart selections at the end of a cycle
+    setSelectedPredictionIds([]);
     clearCart();
   };
 

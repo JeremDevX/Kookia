@@ -3,7 +3,7 @@
 ## Traceabilite
 - Source audit: [registre-problemes.md:L96](../../registre-problemes.md#L96)
 - Process standard: [PROCESS_STANDARD.md](../PROCESS_STANDARD.md)
-- Statut: `open`
+- Statut: `done`
 - Priorite: `P1`
 - Depend de: [P0-02](../P0-02/README.md)
 
@@ -38,3 +38,32 @@ Uniformiser le cycle de vie des selections de commande Dashboard et panier globa
 
 ## Estimation
 - Effort: 0.25 jour.
+
+## Execution
+- Ticket: `P1-03`
+- Objectif testable: apres fermeture du generateur de commandes, aucune prediction precedemment selectionnee dans le Dashboard ne reste en etat selectionne.
+- Cause racine: `handleCloseOrderGenerator` vidait uniquement le panier global (`clearCart`) mais conservait `selectedPredictionIds`, ce qui laissait des selections locales "fantomes" au cycle suivant.
+
+## Fichiers modifies
+- [src/pages/Dashboard.tsx](../../../../src/pages/Dashboard.tsx)
+- [docs/audit/corrections/P1-03/README.md](./README.md)
+- [docs/audit/corrections/README.md](../README.md)
+
+## Commandes executees
+- `npm run lint`
+- `npm run build`
+
+## Resultats de validation
+- Validation technique:
+  - `npm run lint`: OK
+  - `npm run build`: OK
+- Validation fonctionnelle:
+  - Scenario `selectionner -> generer -> fermer -> reouvrir`: la fermeture du modal reset maintenant la selection locale Dashboard et le panier global: OK
+  - Le compteur `Generer Commandes` revient a `0` apres fermeture du cycle: OK
+  - Les recommandations redeviennent visibles au cycle suivant (pas d'items caches par une selection stale): OK
+
+## Risques residuels
+- Le reset est volontairement agressif (conforme a l'option A du ticket). Si un besoin d'historisation post-envoi apparait, il faudra introduire un etat dedie plutot que conserver `selectedPredictionIds`.
+
+## Statut final
+- `done`
