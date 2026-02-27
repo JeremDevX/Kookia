@@ -1,5 +1,6 @@
 import React from "react";
 import { Menu } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import Notifications from "./Notifications";
 import "../../styles/index.css";
 import "./TopNav.css";
@@ -9,6 +10,19 @@ interface TopNavProps {
 }
 
 const TopNav: React.FC<TopNavProps> = ({ onMenuClick }) => {
+  const { pathname } = useLocation();
+
+  const pageLabels: Record<string, string> = {
+    "/": "Dashboard",
+    "/stocks": "Stocks",
+    "/predictions": "Predictions",
+    "/recipes": "Recipes",
+    "/settings": "Settings",
+    "/analytics": "Analytics",
+  };
+
+  const currentPage = pageLabels[pathname] ?? "Dashboard";
+
   return (
     <header className="top-nav">
       <div className="top-nav-left">
@@ -20,7 +34,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick }) => {
           <Menu size={24} />
         </button>
         <div className="breadcrumbs">
-          <span className="current-page">Dashboard</span>
+          <span className="current-page">{currentPage}</span>
         </div>
       </div>
 
