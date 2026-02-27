@@ -12,6 +12,7 @@ import type {
   AnalyticsData as _AnalyticsData,
   DashboardActivity as _DashboardActivity,
 } from "../types";
+import { formatLocalISODate } from "./date";
 
 // Re-export types for backward compatibility
 export type ProductStatus = _ProductStatus;
@@ -246,7 +247,7 @@ export const MOCK_PRODUCTS: Product[] = [
 const getDate = (daysOffset: number) => {
   const date = new Date();
   date.setDate(date.getDate() + daysOffset);
-  return date.toISOString().split("T")[0]; // YYYY-MM-DD
+  return formatLocalISODate(date);
 };
 
 const getDateTime = (daysOffset: number, hours: number) => {

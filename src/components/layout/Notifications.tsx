@@ -14,6 +14,7 @@ import OrderGenerator from "../dashboard/OrderGenerator";
 import { useToast } from "../../context/ToastContext";
 import { useCart } from "../../context/useCart";
 import type { CartItem } from "../../context/cart.types";
+import { formatLocalISODate } from "../../utils/date";
 import { MOCK_PRODUCTS, type Prediction } from "../../utils/mockData";
 
 interface Notification {
@@ -198,7 +199,7 @@ const Notifications: React.FC = () => {
       id: item.id,
       productId: item.productId,
       productName: item.productName,
-      predictedDate: new Date().toISOString().split("T")[0],
+      predictedDate: formatLocalISODate(new Date()),
       predictedConsumption: item.quantity,
       confidence: 0.95,
       recommendation: {

@@ -11,6 +11,7 @@ import { useCart } from "../context/useCart";
 import { Calendar, FileText, ChefHat, ShoppingBag } from "lucide-react";
 import { usePredictions, useProducts } from "../hooks";
 import type { Prediction } from "../types";
+import { formatLocalISODate } from "../utils/date";
 import "./Dashboard.css";
 
 const parseIsoDateOnly = (isoDate: string): Date => {
@@ -133,7 +134,7 @@ const Dashboard: React.FC = () => {
       id: item.id,
       productId: item.productId,
       productName: item.productName,
-      predictedDate: new Date().toISOString().split("T")[0],
+      predictedDate: formatLocalISODate(new Date()),
       predictedConsumption: item.quantity,
       confidence: 0.95,
       recommendation: {
