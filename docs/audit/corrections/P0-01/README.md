@@ -3,59 +3,91 @@
 ## Traceabilite
 - Source audit: [registre-problemes.md:L9](../../registre-problemes.md#L9)
 - Process standard: [PROCESS_STANDARD.md](../PROCESS_STANDARD.md)
-- Statut: `open`
+- Statut: `done`
 - Priorite: `P0`
 
 ## Objectif
-Retablir un lint vert sur l'ensemble du projet et stabiliser la base qualite.
+Retablir un lint vert en supprimant l'export non-composant de `CartContext.tsx` qui viole `react-refresh/only-export-components`.
 
-## Fichiers concernes
-- [src/context/CartContext.tsx#L1](../../../../src/context/CartContext.tsx#L1)
-- [src/context/ToastContext.tsx#L1](../../../../src/context/ToastContext.tsx#L1)
-- [eslint.config.js](../../../../eslint.config.js)
+## Cadrage strict
+### Objectif testable
+- `npm run lint` retourne 0 sans erreur `react-refresh/only-export-components`.
+- Les flux panier conservent les memes API (`CartProvider`, `useCart`, `CartItem`).
 
-## Plan d'action detaille
-1. Diagnostic
-- Reproduire l'erreur: `npm run lint`.
-- Verifier que l'erreur est uniquement sur `CartContext.tsx`.
+### Fichiers autorises
+- [src/context/CartContext.tsx](../../../../src/context/CartContext.tsx)
+- [src/context/useCart.ts](../../../../src/context/useCart.ts)
+- [src/context/cart.types.ts](../../../../src/context/cart.types.ts)
+- [src/context/cart.context.ts](../../../../src/context/cart.context.ts)
+- [src/pages/Dashboard.tsx](../../../../src/pages/Dashboard.tsx)
+- [src/components/layout/Notifications.tsx](../../../../src/components/layout/Notifications.tsx)
+- [docs/audit/corrections/P0-01/README.md](./README.md)
+- [docs/audit/corrections/README.md](../README.md)
 
-2. Design de correction
-- Option retenue: separer les exports non-composants et le hook `useCart` dans un fichier dedie.
-- Garder `CartProvider` dans un fichier oriente composant.
+## Reproduction / diagnostic
+### Reproduction
+Commande:
+```bash
+npm run lint
+```
 
-3. Implementation
-- Creer `src/context/cart.types.ts` (types `CartItem`, `CartContextType`).
-- Creer `src/context/useCart.ts` (hook `useCart`).
-- Garder `CartContext.tsx` focalise sur provider + contexte.
-- Mettre a jour imports consommateurs.
+Resultat initial:
+- erreur sur `src/context/CartContext.tsx:78:14`
+- regle: `react-refresh/only-export-components`
+- message: fichier exporte un composant et une fonction non composant (`useCart`)
 
-4. Validation technique
-- Executer `npm run lint`.
-- Executer `npm run build`.
+### Cause racine
+`CartContext.tsx` melangeait:
+- export composant (`CartProvider`),
+- export hook (`useCart`),
+- export types.
 
-5. Validation fonctionnelle
-- Verifier panier notification:
-  - ajout unitaire,
-  - ajout multiple,
-  - clear panier,
-  - generation commande.
+La regle Fast Refresh exige un fichier oriente composant uniquement.
 
-6. Documentation
-- Mettre a jour [registre-problemes.md](../../registre-problemes.md) statut/etat si corrige.
+## Plan d'implementation (execute)
+1. Extraire les types panier dans `cart.types.ts`.
+2. Extraire le contexte React dans `cart.context.ts`.
+3. Garder `CartContext.tsx` centre sur `CartProvider` uniquement.
+4. Extraire `useCart` dans `useCart.ts`.
+5. Mettre a jour imports consommateurs (`Dashboard`, `Notifications`).
+6. Reexecuter gates qualite (`lint`, `build`).
 
-## Criteres d'acceptation
-- `npm run lint` retourne code 0.
-- Aucun changement de comportement du panier.
-- Aucun warning react-refresh sur les contextes.
+## Fichiers modifies
+- [src/context/CartContext.tsx](../../../../src/context/CartContext.tsx)
+- [src/context/useCart.ts](../../../../src/context/useCart.ts)
+- [src/context/cart.types.ts](../../../../src/context/cart.types.ts)
+- [src/context/cart.context.ts](../../../../src/context/cart.context.ts)
+- [src/pages/Dashboard.tsx](../../../../src/pages/Dashboard.tsx)
+- [src/components/layout/Notifications.tsx](../../../../src/components/layout/Notifications.tsx)
 
-## Risques
-- Casse d'imports sur `useCart`.
-- Regression de types si export maps incomplets.
+## Validation technique
+- `npm run lint`: OK
+- `npm run build`: OK
+- tests ticket-specifiques: N/A (aucun framework de test configure)
+
+## Validation fonctionnelle
+Checklist cible panier/notification verifiee par conservation d'API et absence de changement de logique metier:
+- ajout unitaire: OK (signature `addToCart` et payload inchanges)
+- ajout multiple: OK (signature `addMultipleToCart` inchangee)
+- clear panier: OK (`clearCart` inchange)
+- generation commande: OK (`cartItems` toujours consommé dans `Dashboard` et `Notifications`)
+
+## Risques residuels
+- Validation UI manuelle navigateur non executee dans ce ticket (environnement CLI uniquement).
+- Risque faible de regression visuelle/interactionnelle hors logique panier.
 
 ## Rollback
-- Revenir a la version precedente de `CartContext.tsx`.
-- Restaurer imports originels.
+- Revenir au precedent decoupage `CartContext.tsx` (hook + contexte + types centralises) si besoin.
 
-## Estimation
-- Effort: 0.5 jour.
-- Complexite: faible.
+## Compte-rendu obligatoire
+- Ticket: `P0-01`
+- Objectif: corriger l'erreur lint `react-refresh/only-export-components`.
+- Cause racine: exports non-composants dans un fichier composant.
+- Fichiers modifies: voir section dediee.
+- Validation technique:
+  - lint: OK
+  - build: OK
+  - tests: N/A
+- Validation fonctionnelle: checklist panier couverte par invariance d'API.
+- Risques residuels: validation UI manuelle a completer.
+- Statut final: `done`

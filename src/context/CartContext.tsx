@@ -1,27 +1,8 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import type { ReactNode } from "react";
+import type { CartItem } from "./cart.types";
+import { CartContext } from "./cart.context";
 
-// Cart item from notifications (simplified prediction-like structure)
-export interface CartItem {
-  id: string;
-  productId: string;
-  productName: string;
-  quantity: number;
-  unit: string;
-  source: "notification" | "dashboard" | "stocks";
-}
-
-interface CartContextType {
-  cartItems: CartItem[];
-  addToCart: (item: CartItem) => void;
-  addMultipleToCart: (items: CartItem[]) => void;
-  removeFromCart: (id: string) => void;
-  clearCart: () => void;
-  isInCart: (id: string) => boolean;
-  cartCount: number;
-}
-
-const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({
   children,
@@ -73,12 +54,4 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       {children}
     </CartContext.Provider>
   );
-};
-
-export const useCart = () => {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error("useCart must be used within a CartProvider");
-  }
-  return context;
 };

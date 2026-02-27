@@ -21,7 +21,7 @@ Legend:
 
 | ID | Priorite | Titre | Dependances | A faire | Fait | Teste | Plan detaille |
 |---|---|---|---|---|---|---|---|
-| P0-01 | P0 | Lint en echec | - | [x] | [ ] | [ ] | [P0-01](./P0-01/README.md) |
+| P0-01 | P0 | Lint en echec | - | [ ] | [x] | [x] | [P0-01](./P0-01/README.md) |
 | P0-02 | P0 | Architecture data non branchee | P0-01 | [x] | [ ] | [ ] | [P0-02](./P0-02/README.md) |
 | P0-03 | P0 | Bug state quantite production | P0-01 | [x] | [ ] | [ ] | [P0-03](./P0-03/README.md) |
 | P0-04 | P0 | Ajustement stock drawer incoherent | P0-01 | [x] | [ ] | [ ] | [P0-04](./P0-04/README.md) |

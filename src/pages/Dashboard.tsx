@@ -7,7 +7,7 @@ import DashboardKPIs from "../components/dashboard/DashboardKPIs";
 import RecommendationsSection from "../components/dashboard/RecommendationsSection";
 import OrderGenerator from "../components/dashboard/OrderGenerator";
 import { useToast } from "../context/ToastContext";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/useCart";
 import { Calendar, FileText, ChefHat, ShoppingBag } from "lucide-react";
 import { MOCK_PREDICTIONS, MOCK_PRODUCTS } from "../utils/mockData";
 import type { Prediction } from "../utils/mockData";

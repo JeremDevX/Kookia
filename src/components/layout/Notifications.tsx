@@ -12,7 +12,8 @@ import {
 import Modal from "../common/Modal";
 import OrderGenerator from "../dashboard/OrderGenerator";
 import { useToast } from "../../context/ToastContext";
-import { useCart, type CartItem } from "../../context/CartContext";
+import { useCart } from "../../context/useCart";
+import type { CartItem } from "../../context/cart.types";
 import { MOCK_PRODUCTS, type Prediction } from "../../utils/mockData";
 
 interface Notification {
