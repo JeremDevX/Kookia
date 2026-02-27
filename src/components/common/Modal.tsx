@@ -10,6 +10,29 @@ interface ModalProps {
   width?: "sm" | "md" | "lg" | "xl";
 }
 
+let openModalCount = 0;
+let previousBodyOverflow: string | null = null;
+
+const lockBodyScroll = () => {
+  if (openModalCount === 0) {
+    previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+  }
+
+  openModalCount += 1;
+};
+
+const unlockBodyScroll = () => {
+  if (openModalCount > 0) {
+    openModalCount -= 1;
+  }
+
+  if (openModalCount === 0) {
+    document.body.style.overflow = previousBodyOverflow ?? "";
+    previousBodyOverflow = null;
+  }
+};
+
 const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -85,12 +108,12 @@ const Modal: React.FC<ModalProps> = ({
     };
 
     document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
+    lockBodyScroll();
     requestAnimationFrame(focusInitialElement);
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "unset";
+      unlockBodyScroll();
       previouslyFocusedElementRef.current?.focus();
     };
   }, [isOpen, onClose]);
