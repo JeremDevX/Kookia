@@ -4,6 +4,10 @@ import Button from "../common/Button";
 import Input from "../common/Input";
 import { ChefHat, Clock, Users } from "lucide-react";
 import type { ProductionRecord } from "../../types/callbacks";
+import {
+  validateRecordProductionForm,
+  type RecordProductionFormErrors,
+} from "../../utils/formValidation";
 
 interface RecordProductionModalProps {
   isOpen: boolean;
@@ -22,21 +26,31 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
     prepTime: "",
     notes: "",
   });
+  const [errors, setErrors] = useState<RecordProductionFormErrors>({});
 
   const handleSubmit = () => {
-    if (formData.recipeName && formData.portions) {
-      onRecord({
-        ...formData,
-        date: new Date().toISOString(),
-      });
-      setFormData({
-        recipeName: "",
-        portions: "",
-        prepTime: "",
-        notes: "",
-      });
-      onClose();
+    const validation = validateRecordProductionForm(formData);
+    setErrors(validation.errors);
+
+    if (!validation.isValid) {
+      return;
     }
+
+    onRecord({
+      recipeName: formData.recipeName.trim(),
+      portions: formData.portions.trim(),
+      prepTime: formData.prepTime.trim(),
+      notes: formData.notes.trim(),
+      date: new Date().toISOString(),
+    });
+    setFormData({
+      recipeName: "",
+      portions: "",
+      prepTime: "",
+      notes: "",
+    });
+    setErrors({});
+    onClose();
   };
 
   return (
@@ -55,6 +69,7 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
             placeholder="Ex: Tarte aux tomates"
             icon={<ChefHat size={16} />}
             value={formData.recipeName}
+            error={errors.recipeName}
             onChange={(e) =>
               setFormData({ ...formData, recipeName: e.target.value })
             }
@@ -71,6 +86,7 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
               placeholder="0"
               icon={<Users size={16} />}
               value={formData.portions}
+              error={errors.portions}
               onChange={(e) =>
                 setFormData({ ...formData, portions: e.target.value })
               }
@@ -86,6 +102,7 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
               placeholder="30"
               icon={<Clock size={16} />}
               value={formData.prepTime}
+              error={errors.prepTime}
               onChange={(e) =>
                 setFormData({ ...formData, prepTime: e.target.value })
               }
@@ -106,6 +123,9 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
               setFormData({ ...formData, notes: e.target.value })
             }
           />
+          {errors.notes && (
+            <span className="text-sm text-red-600 mt-1 block">{errors.notes}</span>
+          )}
         </div>
 
         <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
@@ -120,7 +140,7 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!formData.recipeName || !formData.portions}
+            disabled={!validateRecordProductionForm(formData).isValid}
           >
             Enregistrer
           </Button>

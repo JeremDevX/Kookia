@@ -5,6 +5,10 @@ import Input from "../common/Input";
 import { Package, DollarSign, AlertCircle } from "lucide-react";
 import type { NewProduct } from "../../types/callbacks";
 import type { Unit } from "../../types";
+import {
+  validateAddProductForm,
+  type AddProductFormErrors,
+} from "../../utils/formValidation";
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -25,29 +29,36 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     minThreshold: "",
     pricePerUnit: "",
   });
+  const [errors, setErrors] = useState<AddProductFormErrors>({});
 
   const handleSubmit = () => {
-    if (formData.name && formData.currentStock && formData.pricePerUnit) {
-      onAdd({
-        id: `p${Date.now()}`,
-        name: formData.name,
-        category: formData.category,
-        currentStock: Number(formData.currentStock),
-        unit: formData.unit,
-        minThreshold: Number(formData.minThreshold) || 10,
-        supplierId: "sup1",
-        pricePerUnit: Number(formData.pricePerUnit),
-      });
-      setFormData({
-        name: "",
-        category: "Légumes",
-        currentStock: "",
-        unit: "kg",
-        minThreshold: "",
-        pricePerUnit: "",
-      });
-      onClose();
+    const validation = validateAddProductForm(formData);
+    setErrors(validation.errors);
+
+    if (!validation.isValid) {
+      return;
     }
+
+    onAdd({
+      id: `p${Date.now()}`,
+      name: formData.name.trim(),
+      category: formData.category,
+      currentStock: Number(formData.currentStock),
+      unit: formData.unit,
+      minThreshold: Number.parseInt(formData.minThreshold, 10) || 10,
+      supplierId: "sup1",
+      pricePerUnit: Number(formData.pricePerUnit),
+    });
+    setFormData({
+      name: "",
+      category: "Légumes",
+      currentStock: "",
+      unit: "kg",
+      minThreshold: "",
+      pricePerUnit: "",
+    });
+    setErrors({});
+    onClose();
   };
 
   return (
@@ -65,6 +76,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           <Input
             placeholder="Ex: Tomates cerises"
             value={formData.name}
+            error={errors.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
         </div>
@@ -115,6 +127,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
               placeholder="0"
               icon={<Package size={16} />}
               value={formData.currentStock}
+              error={errors.currentStock}
               onChange={(e) =>
                 setFormData({ ...formData, currentStock: e.target.value })
               }
@@ -130,6 +143,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
               placeholder="10"
               icon={<AlertCircle size={16} />}
               value={formData.minThreshold}
+              error={errors.minThreshold}
               onChange={(e) =>
                 setFormData({ ...formData, minThreshold: e.target.value })
               }
@@ -147,6 +161,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
             placeholder="0.00"
             icon={<DollarSign size={16} />}
             value={formData.pricePerUnit}
+            error={errors.pricePerUnit}
             onChange={(e) =>
               setFormData({ ...formData, pricePerUnit: e.target.value })
             }
@@ -165,9 +180,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={
-              !formData.name || !formData.currentStock || !formData.pricePerUnit
-            }
+            disabled={!validateAddProductForm(formData).isValid}
           >
             Ajouter le produit
           </Button>

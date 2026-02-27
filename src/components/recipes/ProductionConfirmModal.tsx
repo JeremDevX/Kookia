@@ -10,6 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import type { Recipe } from "../../utils/mockData";
+import { validateProductionQuantity } from "../../utils/formValidation";
 
 interface ProductionConfirmModalProps {
   isOpen: boolean;
@@ -28,13 +29,12 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
 }) => {
   const safeMaxYield = Math.max(1, maxYield);
   const [quantity, setQuantity] = useState(safeMaxYield.toString());
+  const [quantityError, setQuantityError] = useState<string | undefined>();
 
   if (!recipe) return null;
 
-  const parsedQuantity = Number(quantity);
-  const clampedQuantity = Number.isNaN(parsedQuantity)
-    ? safeMaxYield
-    : Math.min(Math.max(parsedQuantity, 1), safeMaxYield);
+  const quantityValidation = validateProductionQuantity(quantity, safeMaxYield);
+  const clampedQuantity = quantityValidation.normalizedQuantity;
 
   const costPerPortion =
     recipe.ingredients.reduce((sum) => sum + 2.5, 0) /
@@ -43,6 +43,11 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   const estimatedRevenue = totalCost * 4; // 300% margin
 
   const handleConfirm = () => {
+    if (!quantityValidation.isValid) {
+      setQuantityError(quantityValidation.error);
+      return;
+    }
+
     onConfirm(clampedQuantity);
     onClose();
   };
@@ -77,7 +82,10 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
               min="1"
               max={safeMaxYield}
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+              onChange={(e) => {
+                setQuantity(e.target.value);
+                setQuantityError(undefined);
+              }}
               className="flex-1 px-4 py-2 text-2xl font-bold border-2 border-blue-300 rounded-md text-center"
             />
             <div className="text-sm text-blue-700">
@@ -85,6 +93,9 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
               <div className="font-bold text-lg">{safeMaxYield} portions</div>
             </div>
           </div>
+          {quantityError && (
+            <span className="text-sm text-red-600 mt-2 block">{quantityError}</span>
+          )}
         </div>
 
         {/* Economics */}
@@ -161,7 +172,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!quantity || clampedQuantity < 1 || clampedQuantity > safeMaxYield}
+            disabled={!quantityValidation.isValid}
           >
             Lancer la production
           </Button>
