@@ -34,7 +34,7 @@ Legend:
 | P1-05 | P1 | Accessibilite modale incomplete | P0-01 | [ ] | [x] | [x] | [P1-05](./P1-05/README.md) |
 | P1-06 | P1 | Top bar non contextuelle | - | [ ] | [x] | [x] | [P1-06](./P1-06/README.md) |
 | P1-07 | P1 | Lien support non fonctionnel | - | [ ] | [x] | [x] | [P1-07](./P1-07/README.md) |
-| P1-08 | P1 | Parametrage analytics non persistant | P0-02 | [x] | [ ] | [ ] | [P1-08](./P1-08/README.md) |
+| P1-08 | P1 | Parametrage analytics non persistant | P0-02 | [ ] | [x] | [x] | [P1-08](./P1-08/README.md) |
 | P1-09 | P1 | Styles injectes dans Input | P0-05 | [x] | [ ] | [ ] | [P1-09](./P1-09/README.md) |
 | P1-10 | P1 | Code mort / non utilise | P0-02 | [x] | [ ] | [ ] | [P1-10](./P1-10/README.md) |
 | P1-11 | P1 | Absence de tests automatises | P0-01 | [x] | [ ] | [ ] | [P1-11](./P1-11/README.md) |

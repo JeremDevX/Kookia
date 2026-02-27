@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Button from "../components/common/Button";
 import ExportReportModal from "../components/analytics/ExportReportModal";
 import CustomizeAnalyticsModal from "../components/analytics/CustomizeAnalyticsModal";
@@ -10,6 +10,11 @@ import ROISimulator from "../components/analytics/ROISimulator";
 import { useToast } from "../context/ToastContext";
 import { useAnalytics } from "../hooks";
 import type { AnalyticsSettings } from "../types/callbacks";
+import {
+  DEFAULT_ANALYTICS_SETTINGS,
+  getAnalyticsPreferences,
+  saveAnalyticsPreferences,
+} from "../services";
 import "./Analytics.css";
 
 const Analytics: React.FC = () => {
@@ -17,6 +22,18 @@ const Analytics: React.FC = () => {
   const { data } = useAnalytics();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
+  const [analyticsSettings, setAnalyticsSettings] = useState<AnalyticsSettings>(
+    DEFAULT_ANALYTICS_SETTINGS
+  );
+
+  useEffect(() => {
+    const loadAnalyticsPreferences = async () => {
+      const settings = await getAnalyticsPreferences();
+      setAnalyticsSettings(settings);
+    };
+
+    void loadAnalyticsPreferences();
+  }, []);
 
   const handleExport = (format: string, period: string) => {
     addToast(
@@ -26,16 +43,25 @@ const Analytics: React.FC = () => {
     );
   };
 
-  const handleSaveSettings = (settings: AnalyticsSettings) => {
-    // In a real app, we would save the settings here using a service
-    // For now, we just acknowledge the user action
-    console.log("Settings saved:", settings);
-
-    addToast(
-      "success",
-      "Paramètres enregistrés",
-      "Vos préférences d'affichage ont été mises à jour."
-    );
+  const handleSaveSettings = async (settings: AnalyticsSettings) => {
+    try {
+      await saveAnalyticsPreferences(settings);
+      setAnalyticsSettings(settings);
+      addToast(
+        "success",
+        "Parametres enregistres",
+        "Vos preferences d'affichage ont ete mises a jour."
+      );
+    } catch (error) {
+      addToast(
+        "info",
+        "Echec de sauvegarde",
+        error instanceof Error
+          ? error.message
+          : "Une erreur est survenue pendant la sauvegarde."
+      );
+      throw error;
+    }
   };
 
   // Stable value for display (simulated prediction count)
@@ -111,6 +137,7 @@ const Analytics: React.FC = () => {
       <CustomizeAnalyticsModal
         isOpen={isCustomizeModalOpen}
         onClose={() => setIsCustomizeModalOpen(false)}
+        initialSettings={analyticsSettings}
         onSave={handleSaveSettings}
       />
     </div>

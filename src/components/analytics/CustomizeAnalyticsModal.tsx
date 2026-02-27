@@ -7,25 +7,33 @@ import type { AnalyticsSettings } from "../../types/callbacks";
 interface CustomizeAnalyticsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (settings: AnalyticsSettings) => void;
+  initialSettings: AnalyticsSettings;
+  onSave: (settings: AnalyticsSettings) => Promise<void>;
 }
 
 const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
   isOpen,
   onClose,
+  initialSettings,
   onSave,
 }) => {
-  const [settings, setSettings] = useState({
-    wasteTarget: "50",
-    showTrends: true,
-    showAI: true,
-    showROI: true,
-    alertThreshold: "80",
-  });
+  const [settings, setSettings] = useState<AnalyticsSettings>(initialSettings);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    onSave(settings);
-    onClose();
+  React.useEffect(() => {
+    if (isOpen) {
+      setSettings(initialSettings);
+    }
+  }, [isOpen, initialSettings]);
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await onSave(settings);
+      onClose();
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -157,10 +165,12 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
         </div>
 
         <div className="flex justify-end gap-3 mt-4">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Annuler
           </Button>
-          <Button onClick={handleSave}>Enregistrer les paramètres</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            Enregistrer les paramètres
+          </Button>
         </div>
       </div>
     </Modal>
