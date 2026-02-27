@@ -7,16 +7,18 @@ import ProductDetail from "../components/stocks/ProductDetail";
 import AddProductModal from "../components/stocks/AddProductModal";
 import FiltersModal from "../components/stocks/FiltersModal";
 import { Search, Filter, Plus, ShoppingCart } from "lucide-react";
-import { MOCK_PRODUCTS, getStatus, type Product } from "../utils/mockData";
+import { useProductsWithMutations } from "../hooks";
 import { useToast } from "../context/ToastContext";
+import type { Product } from "../types";
 import type { StockFilters } from "../types/callbacks";
 import "./Stocks.css";
 
 const Stocks: React.FC = () => {
   const { addToast } = useToast();
+  const { products, updateStock, addProduct, getStatus } =
+    useProductsWithMutations();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [products, setProducts] = useState(MOCK_PRODUCTS);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
@@ -66,17 +68,11 @@ const Stocks: React.FC = () => {
     amount: number
   ) => {
     e.stopPropagation();
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, currentStock: Math.max(0, p.currentStock + amount) }
-          : p
-      )
-    );
+    updateStock(id, amount);
   };
 
   const handleAddProduct = (newProduct: Product) => {
-    setProducts((prev) => [...prev, newProduct]);
+    addProduct(newProduct);
     addToast(
       "success",
       "Produit ajouté",

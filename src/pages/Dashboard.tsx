@@ -9,8 +9,8 @@ import OrderGenerator from "../components/dashboard/OrderGenerator";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
 import { Calendar, FileText, ChefHat, ShoppingBag } from "lucide-react";
-import { MOCK_PREDICTIONS, MOCK_PRODUCTS } from "../utils/mockData";
-import type { Prediction } from "../utils/mockData";
+import { usePredictions, useProducts } from "../hooks";
+import type { Prediction } from "../types";
 import "./Dashboard.css";
 
 const Dashboard: React.FC = () => {
@@ -23,6 +23,8 @@ const Dashboard: React.FC = () => {
 
   const { addToast } = useToast();
   const { cartItems, clearCart } = useCart();
+  const { predictions } = usePredictions();
+  const { products } = useProducts();
 
   const handleScanInvoice = () => {
     setIsInvoiceModalOpen(true);
@@ -94,18 +96,18 @@ const Dashboard: React.FC = () => {
     month: "long",
   });
 
-  const visiblePredictions = MOCK_PREDICTIONS.filter(
+  const visiblePredictions = predictions.filter(
     (pred) => !selectedPredictionIds.includes(pred.id)
   );
 
   // For OrderGenerator - combine dashboard selections with notification cart items
-  const selectedPredictions = MOCK_PREDICTIONS.filter((pred) =>
+  const selectedPredictions = predictions.filter((pred) =>
     selectedPredictionIds.includes(pred.id)
   );
 
   // Convert cart items to Prediction-like objects for OrderGenerator
   const cartPredictions: Prediction[] = cartItems.map((item) => {
-    const product = MOCK_PRODUCTS.find((p) => p.id === item.productId);
+    const product = products.find((p) => p.id === item.productId);
     return {
       id: item.id,
       productId: item.productId,

@@ -12,12 +12,14 @@ import {
   Calendar,
   CheckCircle,
 } from "lucide-react";
-import { MOCK_PREDICTIONS, type Prediction } from "../utils/mockData";
+import { usePredictions } from "../hooks";
 import { useToast } from "../context/ToastContext";
+import type { Prediction } from "../types";
 import "./Predictions.css";
 
 const Predictions: React.FC = () => {
   const { addToast } = useToast();
+  const { predictions } = usePredictions();
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [selectedPrediction, setSelectedPrediction] =
     useState<Prediction | null>(null);
@@ -53,10 +55,8 @@ const Predictions: React.FC = () => {
     }
   };
 
-  const urgentPredictions = MOCK_PREDICTIONS.filter((p) => p.confidence > 0.9);
-  const moderatePredictions = MOCK_PREDICTIONS.filter(
-    (p) => p.confidence <= 0.9
-  );
+  const urgentPredictions = predictions.filter((p) => p.confidence > 0.9);
+  const moderatePredictions = predictions.filter((p) => p.confidence <= 0.9);
 
   return (
     <div className="predictions-container">
@@ -241,7 +241,7 @@ const Predictions: React.FC = () => {
           </section>
         </div>
       ) : (
-        <CalendarView predictions={MOCK_PREDICTIONS} />
+        <CalendarView predictions={predictions} />
       )}
 
       <PredictionDetailModal

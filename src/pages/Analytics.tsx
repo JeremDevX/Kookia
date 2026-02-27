@@ -6,14 +6,15 @@ import WasteChart from "../components/analytics/charts/WasteChart";
 import AITrendChart from "../components/analytics/charts/AITrendChart";
 import SavingsChart from "../components/analytics/charts/SavingsChart";
 import { Download } from "lucide-react";
-import { MOCK_ANALYTICS } from "../utils/mockData";
 import ROISimulator from "../components/analytics/ROISimulator";
 import { useToast } from "../context/ToastContext";
+import { useAnalytics } from "../hooks";
 import type { AnalyticsSettings } from "../types/callbacks";
 import "./Analytics.css";
 
 const Analytics: React.FC = () => {
   const { addToast } = useToast();
+  const { data } = useAnalytics();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
 
@@ -40,13 +41,21 @@ const Analytics: React.FC = () => {
   // Stable value for display (simulated prediction count)
   const predictionCount = 1247;
 
-  const {
-    wasteStats,
-    aiReliability,
-    wasteEvolution,
-    savingsEvolution,
-    criticalProducts,
-  } = MOCK_ANALYTICS;
+  if (!data) {
+    return (
+      <div className="analytics-container">
+        <header className="page-header glass-header">
+          <div>
+            <h1 className="page-title">Analytics & Gaspillage</h1>
+            <p className="page-subtitle">Chargement des donnees analytics...</p>
+          </div>
+        </header>
+      </div>
+    );
+  }
+
+  const { wasteStats, aiReliability, wasteEvolution, savingsEvolution, criticalProducts } =
+    data;
 
   return (
     <div className="analytics-container">

@@ -5,21 +5,20 @@ import Badge from "../components/common/Badge";
 import RecordProductionModal from "../components/recipes/RecordProductionModal";
 import ProductionConfirmModal from "../components/recipes/ProductionConfirmModal";
 import { Clock, ChefHat, CheckCircle, Leaf, AlertTriangle } from "lucide-react";
-import { MOCK_RECIPES, type Recipe } from "../utils/mockData";
 import { format, parseISO, isSameWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "../context/ToastContext";
+import { useRecipes } from "../hooks";
+import type { Recipe } from "../types";
 import type { ProductionRecord } from "../types/callbacks";
 import {
-  getProductNameForRecipe as getProductName,
-  getProductUnitForRecipe as getProductUnit,
-  calculateMaxYield,
   calculateIngredientCost,
 } from "../services/recipeService";
 import "./Recipes.css";
 
 const Recipes: React.FC = () => {
   const { addToast } = useToast();
+  const { recipes, getMaxYield, getProductName, getProductUnit } = useRecipes();
   const [activeTab, setActiveTab] = useState<"history" | "anti-waste">(
     "history"
   );
@@ -55,16 +54,16 @@ const Recipes: React.FC = () => {
   };
 
   // 1. Filter: Recipes made this week
-  const historyRecipes = MOCK_RECIPES.filter(
+  const historyRecipes = recipes.filter(
     (r) =>
       r.lastMade &&
       isSameWeek(parseISO(r.lastMade), new Date(), { weekStartsOn: 1 })
   );
 
   // 2. Logic: Calculate feasible quantity based on stock (using service)
-  const antiWasteRecipes = MOCK_RECIPES.map((recipe) => ({
+  const antiWasteRecipes = recipes.map((recipe) => ({
     ...recipe,
-    maxYield: calculateMaxYield(recipe),
+    maxYield: getMaxYield(recipe),
   }))
     .filter((r) => r.maxYield > 0) // Only show possible recipes
     .sort((a, b) => b.maxYield - a.maxYield); // Sort by quantity possible
