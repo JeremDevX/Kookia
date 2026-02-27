@@ -1,0 +1,118 @@
+.export-report-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.export-info-card {
+  padding: var(--spacing-md);
+  background: rgba(33, 128, 131, 0.08);
+  border: 1px solid rgba(33, 128, 131, 0.25);
+  border-radius: var(--radius-lg);
+}
+
+.export-info-content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.export-info-icon {
+  color: var(--color-teal);
+  margin-top: 2px;
+}
+
+.export-info-title {
+  margin: 0 0 4px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-info);
+}
+
+.export-info-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+.export-section-label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-sm);
+}
+
+.export-format-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.export-format-option {
+  padding: 12px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  transition: all var(--transition-fast);
+  color: var(--color-text-primary);
+}
+
+.export-format-option:hover {
+  border-color: #ced3d8;
+}
+
+.export-format-option.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.export-format-emoji {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.export-format-label {
+  font-size: var(--font-size-xs);
+}
+
+.export-period-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.export-period-select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.export-content-card {
+  padding: var(--spacing-sm) 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.export-content-list {
+  margin: var(--spacing-sm) 0 0;
+  padding-left: 16px;
+  display: grid;
+  gap: 2px;
+  font-size: var(--font-size-xs);
+}
+
+.export-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}

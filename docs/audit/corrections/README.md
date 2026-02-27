@@ -25,7 +25,7 @@ Legend:
 | P0-02 | P0 | Architecture data non branchee | P0-01 | [ ] | [x] | [x] | [P0-02](./P0-02/README.md) |
 | P0-03 | P0 | Bug state quantite production | P0-01 | [ ] | [x] | [x] | [P0-03](./P0-03/README.md) |
 | P0-04 | P0 | Ajustement stock drawer incoherent | P0-01 | [ ] | [x] | [x] | [P0-04](./P0-04/README.md) |
-| P0-05 | P0 | Strategie CSS incoherente | P0-01 | [x] | [ ] | [ ] | [P0-05](./P0-05/README.md) |
+| P0-05 | P0 | Strategie CSS incoherente | P0-01 | [ ] | [x] | [x] | [P0-05](./P0-05/README.md) |
 | P0-06 | P0 | Variables CSS manquantes | P0-05 | [x] | [ ] | [ ] | [P0-06](./P0-06/README.md) |
 | P1-01 | P1 | Regle urgence predictions discutable | P0-02 | [x] | [ ] | [ ] | [P1-01](./P1-01/README.md) |
 | P1-02 | P1 | Predictions passees dans actions dashboard | P0-02, P1-01 | [x] | [ ] | [ ] | [P1-02](./P1-02/README.md) |

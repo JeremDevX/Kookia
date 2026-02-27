@@ -164,7 +164,7 @@ const Stocks: React.FC = () => {
         </div>
       </Card>
 
-      <div className="stocks-table-card rounded-lg overflow-hidden border border-[var(--color-border)] shadow-sm">
+      <div className="stocks-table-card">
         <table className="stocks-table">
           <thead>
             <tr>
@@ -193,7 +193,7 @@ const Stocks: React.FC = () => {
                     <span className="stock-value">{product.currentStock}</span>{" "}
                     <span className="unit">{product.unit}</span>
                   </td>
-                  <td className="font-mono text-sm">
+                  <td className="stock-price-cell">
                     {(product.currentStock * product.pricePerUnit).toFixed(2)}€
                   </td>
                   <td>

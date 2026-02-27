@@ -140,6 +140,11 @@
   margin-left: 2px;
 }
 
+.stock-price-cell {
+  font-family: "SF Mono", "Monaco", monospace;
+  font-size: var(--font-size-sm);
+}
+
 /* Actions */
 .actions-cell {
   display: flex;

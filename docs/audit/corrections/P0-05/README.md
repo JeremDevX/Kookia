@@ -3,7 +3,7 @@
 ## Traceabilite
 - Source audit: [registre-problemes.md:L53](../../registre-problemes.md#L53)
 - Process standard: [PROCESS_STANDARD.md](../PROCESS_STANDARD.md)
-- Statut: `open`
+- Statut: `done`
 - Priorite: `P0`
 - Depend de: [P0-01](../P0-01/README.md)
 
@@ -47,3 +47,46 @@ Unifier le systeme de styles pour supprimer les classes non appliquees et fiabil
 ## Estimation
 - Effort: 1 a 2 jours.
 - Complexite: moyenne.
+
+## Execution
+- Ticket: `P0-05`
+- Objectif: remplacer les classes utilitaires non supportees par des classes CSS projet explicites sur les fichiers cibles de l'audit.
+- Cause racine: des classes de style type Tailwind etaient utilisees dans le JSX alors que Tailwind n'est pas installe/configure dans le projet.
+
+### Fichiers modifies
+- [src/pages/Stocks.tsx](../../../../src/pages/Stocks.tsx)
+- [src/pages/Stocks.css](../../../../src/pages/Stocks.css)
+- [src/components/dashboard/InvoiceModal.tsx](../../../../src/components/dashboard/InvoiceModal.tsx)
+- [src/components/dashboard/InvoiceModal.css](../../../../src/components/dashboard/InvoiceModal.css)
+- [src/components/analytics/ExportReportModal.tsx](../../../../src/components/analytics/ExportReportModal.tsx)
+- [src/components/analytics/ExportReportModal.css](../../../../src/components/analytics/ExportReportModal.css)
+
+### Commandes executees
+- `rg --line-number 'className="|className=\{`' src/pages/Stocks.tsx src/components/dashboard/InvoiceModal.tsx src/components/analytics/ExportReportModal.tsx`
+- `npm run lint`
+- `npm run build`
+
+### Validation technique
+- lint: `OK`
+- build: `OK`
+- tests: `N/A` (aucune suite de test specifique au ticket)
+
+### Validation fonctionnelle
+- Checklist classes cibles:
+  - `Stocks.tsx`: suppression des classes utilitaires orphelines (`rounded-lg`, `overflow-hidden`, `border-[...]`, `font-mono text-sm`) -> `OK`
+  - `InvoiceModal.tsx`: migration complete vers classes CSS dediees (`invoice-*`) -> `OK`
+  - `ExportReportModal.tsx`: migration complete vers classes CSS dediees (`export-*`) -> `OK`
+- Cohesion responsive:
+  - styles explicitement geres dans les CSS dedies et tokens projet utilises -> `OK`
+
+### Risques residuels
+- Un leger drift visuel reste possible sans verification manuelle navigateur desktop/mobile sur chaque modal.
+
+### Rollback
+- Revenir aux versions precedentes de:
+  - `src/pages/Stocks.tsx` + `src/pages/Stocks.css`
+  - `src/components/dashboard/InvoiceModal.tsx` + `src/components/dashboard/InvoiceModal.css`
+  - `src/components/analytics/ExportReportModal.tsx` + `src/components/analytics/ExportReportModal.css`
+
+### Statut final
+- `done`

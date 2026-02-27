@@ -1,6 +1,7 @@
 import React from "react";
 import Button from "../common/Button";
 import { Check, FileText, AlertCircle } from "lucide-react";
+import "./InvoiceModal.css";
 
 interface InvoiceModalProps {
   onValidate: () => void;
@@ -26,42 +27,44 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ onValidate, onClose }) => {
   ];
 
   return (
-    <div className="flex flex-col gap-lg">
-      <div className="bg-gray-50 p-4 rounded-md border border-dashed border-gray-300 flex items-center gap-4">
-        <div className="bg-white p-3 rounded-full shadow-sm">
+    <div className="invoice-modal">
+      <div className="invoice-summary">
+        <div className="invoice-summary-icon">
           <FileText className="text-primary" size={24} />
         </div>
         <div>
-          <h4 className="font-semibold text-gray-900">
+          <h4 className="invoice-summary-title">
             Facture #Rungis-2024-12-09
           </h4>
-          <p className="text-sm text-gray-500">Détectée aujourd'hui à 08:30</p>
+          <p className="invoice-summary-subtitle">
+            Détectée aujourd'hui à 08:30
+          </p>
         </div>
       </div>
 
-      <div className="scanned-list border rounded-lg overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 text-gray-500 font-medium border-b">
+      <div className="scanned-list">
+        <table className="invoice-table">
+          <thead>
             <tr>
-              <th className="p-3">Produit Détecté</th>
-              <th className="p-3">Quantité</th>
-              <th className="p-3">Prix</th>
-              <th className="p-3">Statut</th>
+              <th>Produit Détecté</th>
+              <th>Quantité</th>
+              <th>Prix</th>
+              <th>Statut</th>
             </tr>
           </thead>
           <tbody>
             {scannedItems.map((item, idx) => (
-              <tr key={idx} className="border-b last:border-0 hover:bg-gray-50">
-                <td className="p-3 font-medium text-gray-800">{item.name}</td>
-                <td className="p-3">{item.qty}</td>
-                <td className="p-3 font-mono">{item.price}</td>
-                <td className="p-3">
+              <tr key={idx}>
+                <td className="invoice-product-name">{item.name}</td>
+                <td>{item.qty}</td>
+                <td className="invoice-price">{item.price}</td>
+                <td>
                   {item.status === "ok" ? (
-                    <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded text-xs font-semibold">
+                    <span className="invoice-status invoice-status-ok">
                       <Check size={12} /> Confirmé
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-orange-700 bg-orange-50 px-2 py-1 rounded text-xs font-semibold">
+                    <span className="invoice-status invoice-status-warning">
                       <AlertCircle size={12} /> Prix Élevé
                     </span>
                   )}
@@ -72,7 +75,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ onValidate, onClose }) => {
         </table>
       </div>
 
-      <div className="flex justify-end gap-sm mt-2">
+      <div className="invoice-actions">
         <Button variant="outline" onClick={onClose}>
           Annuler
         </Button>

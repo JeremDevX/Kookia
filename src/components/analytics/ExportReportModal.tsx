@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Modal from "../common/Modal";
 import Button from "../common/Button";
 import { Download, FileText, Calendar } from "lucide-react";
+import "./ExportReportModal.css";
 
 interface ExportReportModalProps {
   isOpen: boolean;
@@ -29,15 +30,15 @@ const ExportReportModal: React.FC<ExportReportModalProps> = ({
       title="Exporter le rapport AGEC"
       width="md"
     >
-      <div className="flex flex-col gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <div className="flex items-start gap-3">
-            <FileText className="text-blue-600 mt-1" size={20} />
+      <div className="export-report-modal">
+        <div className="export-info-card">
+          <div className="export-info-content">
+            <FileText className="export-info-icon" size={20} />
             <div>
-              <h4 className="font-semibold text-blue-900 mb-1">
+              <h4 className="export-info-title">
                 Rapport AGEC 2025
               </h4>
-              <p className="text-sm text-blue-800">
+              <p className="export-info-text">
                 Conformité avec la loi anti-gaspillage pour une économie
                 circulaire. Ce rapport inclut toutes les métriques requises par
                 la réglementation.
@@ -47,52 +48,44 @@ const ExportReportModal: React.FC<ExportReportModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Format d'export
-          </label>
-          <div className="grid grid-cols-3 gap-3">
+          <label className="export-section-label">Format d'export</label>
+          <div className="export-format-grid">
             <button
-              className={`p-3 border-2 rounded-lg text-center transition-all ${
-                format === "pdf"
-                  ? "border-primary bg-primary-light text-primary font-semibold"
-                  : "border-gray-200 hover:border-gray-300"
+              className={`export-format-option ${
+                format === "pdf" ? "active" : ""
               }`}
               onClick={() => setFormat("pdf")}
             >
-              <div className="text-lg mb-1">📄</div>
-              <div className="text-xs">PDF</div>
+              <div className="export-format-emoji">📄</div>
+              <div className="export-format-label">PDF</div>
             </button>
             <button
-              className={`p-3 border-2 rounded-lg text-center transition-all ${
-                format === "excel"
-                  ? "border-primary bg-primary-light text-primary font-semibold"
-                  : "border-gray-200 hover:border-gray-300"
+              className={`export-format-option ${
+                format === "excel" ? "active" : ""
               }`}
               onClick={() => setFormat("excel")}
             >
-              <div className="text-lg mb-1">📊</div>
-              <div className="text-xs">Excel</div>
+              <div className="export-format-emoji">📊</div>
+              <div className="export-format-label">Excel</div>
             </button>
             <button
-              className={`p-3 border-2 rounded-lg text-center transition-all ${
-                format === "csv"
-                  ? "border-primary bg-primary-light text-primary font-semibold"
-                  : "border-gray-200 hover:border-gray-300"
+              className={`export-format-option ${
+                format === "csv" ? "active" : ""
               }`}
               onClick={() => setFormat("csv")}
             >
-              <div className="text-lg mb-1">📋</div>
-              <div className="text-xs">CSV</div>
+              <div className="export-format-emoji">📋</div>
+              <div className="export-format-label">CSV</div>
             </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Période</label>
-          <div className="flex items-center gap-2">
+          <label className="export-section-label">Période</label>
+          <div className="export-period-row">
             <Calendar size={16} className="text-secondary" />
             <select
-              className="flex-1 px-3 py-2 border rounded-md"
+              className="export-period-select"
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
             >
@@ -105,9 +98,9 @@ const ExportReportModal: React.FC<ExportReportModalProps> = ({
           </div>
         </div>
 
-        <div className="bg-gray-50 p-3 rounded-md text-sm text-gray-600">
+        <div className="export-content-card">
           <strong>Contenu du rapport:</strong>
-          <ul className="mt-2 space-y-1 text-xs">
+          <ul className="export-content-list">
             <li>✓ Gaspillage alimentaire (kg et g/couvert)</li>
             <li>✓ Évolution mensuelle et tendances</li>
             <li>✓ Performance IA et prédictions</li>
@@ -116,7 +109,7 @@ const ExportReportModal: React.FC<ExportReportModalProps> = ({
           </ul>
         </div>
 
-        <div className="flex justify-end gap-3 mt-4">
+        <div className="export-actions">
           <Button variant="outline" onClick={onClose}>
             Annuler
           </Button>
