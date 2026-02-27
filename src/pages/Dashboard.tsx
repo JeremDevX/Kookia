@@ -13,6 +13,15 @@ import { usePredictions, useProducts } from "../hooks";
 import type { Prediction } from "../types";
 import "./Dashboard.css";
 
+const parseIsoDateOnly = (isoDate: string): Date => {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (year && month && day) {
+    return new Date(year, month - 1, day);
+  }
+
+  return new Date(isoDate);
+};
+
 const Dashboard: React.FC = () => {
   const [showOrderGenerator, setShowOrderGenerator] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
@@ -96,12 +105,23 @@ const Dashboard: React.FC = () => {
     month: "long",
   });
 
-  const visiblePredictions = predictions.filter(
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const actionablePredictions = predictions.filter((pred) => {
+    const predictionDate = parseIsoDateOnly(pred.predictedDate);
+    predictionDate.setHours(0, 0, 0, 0);
+
+    return pred.recommendation?.action === "buy" &&
+      predictionDate.getTime() >= today.getTime();
+  });
+
+  const visiblePredictions = actionablePredictions.filter(
     (pred) => !selectedPredictionIds.includes(pred.id)
   );
 
   // For OrderGenerator - combine dashboard selections with notification cart items
-  const selectedPredictions = predictions.filter((pred) =>
+  const selectedPredictions = actionablePredictions.filter((pred) =>
     selectedPredictionIds.includes(pred.id)
   );
 
