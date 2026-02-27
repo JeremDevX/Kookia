@@ -291,6 +291,7 @@ const Recipes: React.FC = () => {
       />
 
       <ProductionConfirmModal
+        key={`${selectedRecipe?.id ?? "none"}-${selectedMaxYield}-${isProductionModalOpen ? "open" : "closed"}`}
         isOpen={isProductionModalOpen}
         onClose={() => setIsProductionModalOpen(false)}
         recipe={selectedRecipe}

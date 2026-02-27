@@ -26,18 +26,24 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   maxYield,
   onConfirm,
 }) => {
-  const [quantity, setQuantity] = useState(maxYield.toString());
+  const safeMaxYield = Math.max(1, maxYield);
+  const [quantity, setQuantity] = useState(safeMaxYield.toString());
 
   if (!recipe) return null;
+
+  const parsedQuantity = Number(quantity);
+  const clampedQuantity = Number.isNaN(parsedQuantity)
+    ? safeMaxYield
+    : Math.min(Math.max(parsedQuantity, 1), safeMaxYield);
 
   const costPerPortion =
     recipe.ingredients.reduce((sum) => sum + 2.5, 0) /
     recipe.ingredients.length;
-  const totalCost = costPerPortion * Number(quantity);
+  const totalCost = costPerPortion * clampedQuantity;
   const estimatedRevenue = totalCost * 4; // 300% margin
 
   const handleConfirm = () => {
-    onConfirm(Number(quantity));
+    onConfirm(clampedQuantity);
     onClose();
   };
 
@@ -69,14 +75,14 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
             <input
               type="number"
               min="1"
-              max={maxYield}
+              max={safeMaxYield}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               className="flex-1 px-4 py-2 text-2xl font-bold border-2 border-blue-300 rounded-md text-center"
             />
             <div className="text-sm text-blue-700">
               <div>Maximum possible:</div>
-              <div className="font-bold text-lg">{maxYield} portions</div>
+              <div className="font-bold text-lg">{safeMaxYield} portions</div>
             </div>
           </div>
         </div>
@@ -155,7 +161,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!quantity || Number(quantity) < 1}
+            disabled={!quantity || clampedQuantity < 1 || clampedQuantity > safeMaxYield}
           >
             Lancer la production
           </Button>
