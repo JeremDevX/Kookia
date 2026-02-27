@@ -16,6 +16,7 @@ import { useCart } from "../../context/useCart";
 import type { CartItem } from "../../context/cart.types";
 import { formatLocalISODate } from "../../utils/date";
 import { MOCK_PRODUCTS, type Prediction } from "../../utils/mockData";
+import "./Notifications.css";
 
 interface Notification {
   id: string;
@@ -312,6 +313,7 @@ const Notifications: React.FC = () => {
               {notifications.map((notif) => (
                 <div
                   key={notif.id}
+                  className="notification-item"
                   style={{
                     padding: "16px 18px",
                     borderRadius: "12px",
@@ -324,16 +326,6 @@ const Notifications: React.FC = () => {
                     boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
                     transition: "all 0.2s ease",
                     cursor: "pointer",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow =
-                      "0 6px 20px rgba(0, 0, 0, 0.08)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow =
-                      "0 2px 8px rgba(0, 0, 0, 0.04)";
                   }}
                 >
                   <div
@@ -436,6 +428,7 @@ const Notifications: React.FC = () => {
                                 e.stopPropagation();
                                 handleAddToCart(notif);
                               }}
+                              className="notification-action-button"
                               style={{
                                 display: "flex",
                                 alignItems: "center",
@@ -450,14 +443,6 @@ const Notifications: React.FC = () => {
                                 borderRadius: "8px",
                                 cursor: "pointer",
                                 transition: "all 0.2s ease",
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background =
-                                  "rgba(0, 199, 150, 0.08)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background =
-                                  "transparent";
                               }}
                             >
                               <ShoppingCart size={16} />
@@ -537,6 +522,7 @@ const Notifications: React.FC = () => {
           {cartCount > 0 && (
             <button
               onClick={handleGenerateOrder}
+              className="notification-generate-button"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -551,16 +537,6 @@ const Notifications: React.FC = () => {
                 cursor: "pointer",
                 boxShadow: "0 4px 12px rgba(27, 38, 59, 0.3)",
                 transition: "all 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-1px)";
-                e.currentTarget.style.boxShadow =
-                  "0 6px 16px rgba(27, 38, 59, 0.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow =
-                  "0 4px 12px rgba(27, 38, 59, 0.3)";
               }}
             >
               <ArrowRight size={16} />

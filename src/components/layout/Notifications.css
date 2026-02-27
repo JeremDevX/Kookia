@@ -1,0 +1,20 @@
+.notification-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.notification-item:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.notification-action-button:hover,
+.notification-action-button:focus-visible {
+  background: rgba(0, 199, 150, 0.08) !important;
+}
+
+.notification-generate-button:hover,
+.notification-generate-button:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(27, 38, 59, 0.4) !important;
+}
