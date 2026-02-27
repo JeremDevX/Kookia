@@ -2,7 +2,13 @@ import React, { useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import type { CartItem } from "./cart.types";
 import { CartContext } from "./cart.context";
-
+import {
+  addToCartState,
+  addMultipleToCartState,
+  removeFromCartState,
+  clearCartState,
+  isInCartState,
+} from "./cartState";
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({
   children,
@@ -10,32 +16,23 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   const addToCart = useCallback((item: CartItem) => {
-    setCartItems((prev) => {
-      // Avoid duplicates
-      if (prev.find((i) => i.id === item.id)) return prev;
-      return [...prev, item];
-    });
+    setCartItems((prev) => addToCartState(prev, item));
   }, []);
 
   const addMultipleToCart = useCallback((items: CartItem[]) => {
-    setCartItems((prev) => {
-      const newItems = items.filter(
-        (item) => !prev.find((i) => i.id === item.id)
-      );
-      return [...prev, ...newItems];
-    });
+    setCartItems((prev) => addMultipleToCartState(prev, items));
   }, []);
 
   const removeFromCart = useCallback((id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+    setCartItems((prev) => removeFromCartState(prev, id));
   }, []);
 
   const clearCart = useCallback(() => {
-    setCartItems([]);
+    setCartItems(clearCartState());
   }, []);
 
   const isInCart = useCallback(
-    (id: string) => cartItems.some((item) => item.id === id),
+    (id: string) => isInCartState(cartItems, id),
     [cartItems]
   );
 

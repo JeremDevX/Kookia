@@ -37,7 +37,7 @@ Legend:
 | P1-08 | P1 | Parametrage analytics non persistant | P0-02 | [ ] | [x] | [x] | [P1-08](./P1-08/README.md) |
 | P1-09 | P1 | Styles injectes dans Input | P0-05 | [ ] | [x] | [x] | [P1-09](./P1-09/README.md) |
 | P1-10 | P1 | Code mort / non utilise | P0-02 | [ ] | [x] | [x] | [P1-10](./P1-10/README.md) |
-| P1-11 | P1 | Absence de tests automatises | P0-01 | [x] | [ ] | [ ] | [P1-11](./P1-11/README.md) |
+| P1-11 | P1 | Absence de tests automatises | P0-01 | [ ] | [x] | [x] | [P1-11](./P1-11/README.md) |
 | P1-12 | P1 | Bundle principal trop lourd | P0-01 | [x] | [ ] | [ ] | [P1-12](./P1-12/README.md) |
 | P1-13 | P1 | Overflow body modal non robuste | P1-05 | [x] | [ ] | [ ] | [P1-13](./P1-13/README.md) |
 | P2-01 | P2 | Valeurs metier hardcodees | P0-02 | [x] | [ ] | [ ] | [P2-01](./P2-01/README.md) |
