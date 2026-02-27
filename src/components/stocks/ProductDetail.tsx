@@ -18,9 +18,14 @@ import "./ProductDetail.css";
 interface ProductDetailProps {
   product: Product | null;
   onClose: () => void;
+  onAdjustStock: (productId: string, delta: number) => void;
 }
 
-const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }) => {
+const ProductDetail: React.FC<ProductDetailProps> = ({
+  product,
+  onClose,
+  onAdjustStock,
+}) => {
   const { addToast } = useToast();
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState("");
@@ -57,18 +62,26 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose }) => {
   };
 
   const handleAdjustStock = () => {
-    if (adjustAmount && !isNaN(Number(adjustAmount))) {
+    const normalizedAmount = adjustAmount.trim();
+    const isValidInteger = /^[+-]?\d+$/.test(normalizedAmount);
+    const delta = Number.parseInt(normalizedAmount, 10);
+
+    if (isValidInteger && !Number.isNaN(delta) && delta !== 0) {
+      onAdjustStock(product.id, delta);
       addToast(
         "success",
         "Stock ajusté",
-        `${product.name}: ${adjustAmount > "0" ? "+" : ""}${adjustAmount} ${
-          product.unit
-        }`
+        `${product.name}: ${delta > 0 ? "+" : ""}${delta} ${product.unit}`
       );
       setShowAdjustModal(false);
       setAdjustAmount("");
     } else {
       setShowAdjustModal(true);
+      addToast(
+        "info",
+        "Ajustement invalide",
+        "Entrez un nombre entier signé différent de 0 (ex: +10 ou -5)."
+      );
     }
   };
 

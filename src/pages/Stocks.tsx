@@ -69,6 +69,20 @@ const Stocks: React.FC = () => {
   ) => {
     e.stopPropagation();
     updateStock(id, amount);
+    setSelectedProduct((prev) =>
+      prev && prev.id === id
+        ? { ...prev, currentStock: Math.max(0, prev.currentStock + amount) }
+        : prev
+    );
+  };
+
+  const handleDrawerAdjustStock = (productId: string, delta: number) => {
+    updateStock(productId, delta);
+    setSelectedProduct((prev) =>
+      prev && prev.id === productId
+        ? { ...prev, currentStock: Math.max(0, prev.currentStock + delta) }
+        : prev
+    );
   };
 
   const handleAddProduct = (newProduct: Product) => {
@@ -235,6 +249,7 @@ const Stocks: React.FC = () => {
       <ProductDetail
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
+        onAdjustStock={handleDrawerAdjustStock}
       />
 
       <AddProductModal
