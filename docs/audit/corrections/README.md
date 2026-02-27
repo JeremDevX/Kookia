@@ -27,7 +27,7 @@ Legend:
 | P0-04 | P0 | Ajustement stock drawer incoherent | P0-01 | [ ] | [x] | [x] | [P0-04](./P0-04/README.md) |
 | P0-05 | P0 | Strategie CSS incoherente | P0-01 | [ ] | [x] | [x] | [P0-05](./P0-05/README.md) |
 | P0-06 | P0 | Variables CSS manquantes | P0-05 | [ ] | [x] | [x] | [P0-06](./P0-06/README.md) |
-| P0-07 | P0 | Validation numerique permissive formulaires | P2-02 | [x] | [ ] | [ ] | [P0-07](./P0-07/README.md) |
+| P0-07 | P0 | Validation numerique permissive formulaires | P2-02 | [ ] | [x] | [x] | [P0-07](./P0-07/README.md) |
 | P1-01 | P1 | Regle urgence predictions discutable | P0-02 | [ ] | [x] | [x] | [P1-01](./P1-01/README.md) |
 | P1-02 | P1 | Predictions passees dans actions dashboard | P0-02, P1-01 | [ ] | [x] | [x] | [P1-02](./P1-02/README.md) |
 | P1-03 | P1 | Reset selection dashboard incomplet | P0-02 | [ ] | [x] | [x] | [P1-03](./P1-03/README.md) |

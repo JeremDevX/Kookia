@@ -39,6 +39,22 @@ describe("formValidation", () => {
       expect(result.errors.minThreshold).toBeTruthy();
       expect(result.errors.pricePerUnit).toBeTruthy();
     });
+
+    it("rejects partially numeric inputs", () => {
+      const result = validateAddProductForm({
+        name: "Tomates",
+        category: "Légumes",
+        currentStock: "12abc",
+        unit: "kg",
+        minThreshold: "5abc",
+        pricePerUnit: "10xyz",
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors.currentStock).toBeTruthy();
+      expect(result.errors.minThreshold).toBeTruthy();
+      expect(result.errors.pricePerUnit).toBeTruthy();
+    });
   });
 
   describe("validateRecordProductionForm", () => {
@@ -68,6 +84,19 @@ describe("formValidation", () => {
       expect(result.errors.prepTime).toBeTruthy();
       expect(result.errors.notes).toBeTruthy();
     });
+
+    it("rejects partially numeric values for portions and prep time", () => {
+      const result = validateRecordProductionForm({
+        recipeName: "Lasagnes",
+        portions: "12abc",
+        prepTime: "10xyz",
+        notes: "",
+      });
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors.portions).toBeTruthy();
+      expect(result.errors.prepTime).toBeTruthy();
+    });
   });
 
   describe("validateProductionQuantity", () => {
@@ -93,6 +122,14 @@ describe("formValidation", () => {
       expect(result.isValid).toBe(false);
       expect(result.normalizedQuantity).toBe(12);
       expect(result.error).toContain("entre 1 et 12");
+    });
+
+    it("rejects partially numeric quantity", () => {
+      const result = validateProductionQuantity("5abc", 12);
+
+      expect(result.isValid).toBe(false);
+      expect(result.normalizedQuantity).toBe(12);
+      expect(result.error).toBeTruthy();
     });
   });
 });

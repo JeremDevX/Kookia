@@ -39,13 +39,17 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       return;
     }
 
+    const minThreshold = formData.minThreshold.trim()
+      ? Number(formData.minThreshold.trim())
+      : 10;
+
     onAdd({
       id: `p${Date.now()}`,
       name: formData.name.trim(),
       category: formData.category,
       currentStock: Number(formData.currentStock),
       unit: formData.unit,
-      minThreshold: Number.parseInt(formData.minThreshold, 10) || 10,
+      minThreshold,
       supplierId: "sup1",
       pricePerUnit: Number(formData.pricePerUnit),
     });

@@ -33,12 +33,27 @@ const PRODUCT_CATEGORIES = new Set([
 ]);
 const PRODUCT_UNITS = new Set<Unit>(["kg", "L", "pcs", "dz"]);
 
+const STRICT_INTEGER_PATTERN = /^[-+]?\d+$/;
+const STRICT_DECIMAL_PATTERN = /^[-+]?(?:\d+(?:\.\d+)?|\.\d+)$/;
+
 function parsePositiveNumber(input: string): number {
-  return Number.parseFloat(input.trim());
+  const trimmedInput = input.trim();
+
+  if (!STRICT_DECIMAL_PATTERN.test(trimmedInput)) {
+    return Number.NaN;
+  }
+
+  return Number(trimmedInput);
 }
 
 function parseInteger(input: string): number {
-  return Number.parseInt(input.trim(), 10);
+  const trimmedInput = input.trim();
+
+  if (!STRICT_INTEGER_PATTERN.test(trimmedInput)) {
+    return Number.NaN;
+  }
+
+  return Number(trimmedInput);
 }
 
 export function validateAddProductForm(
