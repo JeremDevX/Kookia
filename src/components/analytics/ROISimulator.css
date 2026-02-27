@@ -1,0 +1,82 @@
+.roi-simulator {
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  border: 1px solid #dcfce7;
+}
+
+.roi-simulator .card-header {
+  border-bottom: 1px solid #dcfce7;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.slider-container {
+  margin-bottom: 1.5rem;
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.slider-value {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.custom-range {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.custom-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.custom-range::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.roi-result {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #dcfce7;
+  margin-top: 2rem;
+}
+
+.roi-amount {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #059669;
+  line-height: 1;
+  margin: 0.5rem 0;
+  display: block;
+}
+
+.co2-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ecfdf5;
+  color: #065f46;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

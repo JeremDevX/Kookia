@@ -1,0 +1,27 @@
+.layout-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+}
+
+.main-content-wrapper {
+  flex: 1;
+  margin-left: 260px; /* Width of sidebar */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.main-content {
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Mobile responsive - hide sidebar margin */
+@media (max-width: 768px) {
+  .main-content-wrapper {
+    margin-left: 0;
+    width: 100%;
+  }
+}

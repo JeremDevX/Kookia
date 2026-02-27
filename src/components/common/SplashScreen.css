@@ -1,0 +1,354 @@
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 1;
+  transition: opacity 0.6s ease-out;
+  overflow: hidden;
+}
+
+.splash-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  animation: contentAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes contentAppear {
+  from {
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.splash-logo {
+  width: 320px;
+  height: auto;
+}
+
+/* Letter animations - staggered appearance with slide */
+.logo-letter {
+  opacity: 0;
+  animation: letterSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.letter-k {
+  animation-delay: 0.1s;
+}
+
+.letter-o1 {
+  animation-delay: 0.2s;
+}
+
+.letter-o2 {
+  animation-delay: 0.3s;
+}
+
+.letter-k2 {
+  animation-delay: 0.4s;
+}
+
+.letter-i {
+  animation: letterAppear 0.3s ease-out 0.5s forwards;
+}
+
+@keyframes letterAppear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Letter A with special glow animation */
+.letter-a {
+  animation: letterSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s forwards,
+    pulseGlow 2.5s ease-in-out 1.5s infinite;
+}
+
+@keyframes letterSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    filter: drop-shadow(0 0 15px rgba(0, 199, 150, 0.6));
+  }
+}
+
+/* Eye animations */
+.eye-group {
+  opacity: 0;
+}
+
+.eye-left {
+  transform-origin: 31.02px 19.62px;
+  animation: eyeAppear 0.5s ease-out 0.7s forwards;
+}
+
+.eye-right {
+  transform-origin: 53.41px 19.62px;
+  animation: eyeAppear 0.5s ease-out 0.75s forwards,
+    eyeWink 0.4s ease-in-out 2.8s forwards;
+}
+
+.eye-pupil {
+  animation: pupilLook 4s ease-in-out 2.5s infinite;
+}
+
+.eye-left .eye-pupil {
+  transform-origin: 31.02px 19.62px;
+}
+
+.eye-right .eye-pupil {
+  transform-origin: 53.41px 19.62px;
+}
+
+.eye-reflex {
+  animation: reflexShine 2s ease-in-out 1.2s infinite;
+}
+
+@keyframes eyeAppear {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes eyeWink {
+  0% {
+    transform: scaleY(1);
+  }
+  30% {
+    transform: scaleY(0.05);
+  }
+  60% {
+    transform: scaleY(0.05);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes pupilLook {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(1px);
+  }
+  75% {
+    transform: translateX(-1px);
+  }
+}
+
+@keyframes reflexShine {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* i spinner - the dot spins as loader then becomes solid */
+.letter-i-spinner {
+  opacity: 0;
+  transform-origin: 92.16px 4.33px;
+  animation: spinnerAppear 0.3s ease-out 0.5s forwards,
+    spinnerRotate 0.8s linear 0.5s 3,
+    spinnerDisappear 0.3s ease-out 2.9s forwards;
+}
+
+@keyframes spinnerAppear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spinnerRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinnerDisappear {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Final dot appears after spinner */
+.letter-i-dot-final {
+  opacity: 0;
+  transform-origin: 92.16px 4.33px;
+  animation: dotFinalAppear 0.3s ease-out 2.9s forwards;
+}
+
+@keyframes dotFinalAppear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.letter-i-body {
+  opacity: 0;
+  animation: bodyGrow 0.5s ease-out 0.55s forwards;
+  transform-origin: bottom center;
+}
+
+@keyframes bodyGrow {
+  from {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* Tagline container */
+.splash-tagline-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.splash-tagline {
+  font-size: 15px;
+  color: #64748b;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: taglineFade 0.8s ease-out 1s forwards;
+}
+
+@keyframes taglineFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    letter-spacing: 0.15em;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    letter-spacing: 0.08em;
+  }
+}
+
+/* Loading dots */
+.loading-dots {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  animation: dotsAppear 0.5s ease-out 1.3s forwards;
+}
+
+@keyframes dotsAppear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  background: #00c796;
+  border-radius: 50%;
+  animation: dotJump 1.4s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotJump {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .splash-logo {
+    width: 240px;
+  }
+
+  .splash-tagline {
+    font-size: 12px;
+  }
+
+  .splash-content {
+    gap: 30px;
+  }
+}

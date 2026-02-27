@@ -1,0 +1,435 @@
+.analytics-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.col-span-2 {
+  grid-column: span 2;
+}
+
+/* Enhanced KPI Cards */
+.kpi-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.kpi-row:last-of-type {
+  border-bottom: none;
+}
+
+.kpi-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.kpi-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(
+    135deg,
+    var(--color-text-primary) 0%,
+    var(--color-primary) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.kpi-value.red {
+  background: linear-gradient(135deg, #c0152f 0%, #e63946 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.kpi-value.green {
+  background: linear-gradient(135deg, var(--color-optimal) 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Trend Pills */
+.trend-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trend-pill.positive {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #166534;
+  border: 1px solid #86efac;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+}
+
+.trend-pill.negative {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+/* Chart Wrapper */
+.chart-wrapper {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.chart-wrapper h4 {
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+/* Product Performance List */
+.product-perf-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.product-perf-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s;
+}
+
+.product-perf-item:hover {
+  transform: translateX(4px);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 199, 150, 0.15);
+}
+
+.accuracy-bar-bg {
+  width: 100px;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.accuracy-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-optimal) 0%, #10b981 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Savings Summary */
+.savings-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: var(--radius-lg);
+  border: 2px solid #86efac;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.15);
+}
+
+.big-saving {
+  font-size: 3.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--color-optimal) 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.roi-badge {
+  padding: 8px 20px;
+  background: linear-gradient(135deg, var(--color-optimal) 0%, #10b981 100%);
+  color: white;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  letter-spacing: 0.05em;
+}
+
+/* Section Title */
+.section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* Stat Cards Enhancement */
+.stat-card {
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  transition: all 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: var(--color-primary);
+}
+
+.stat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-md);
+}
+
+.stat-card-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-light) 0%,
+    rgba(0, 199, 150, 0.15) 100%
+  );
+  color: var(--color-primary-text);
+}
+
+/* Responsive Grid */
+@media (max-width: 1024px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .col-span-2 {
+    grid-column: span 1;
+  }
+}
+
+/* Progress Indicators */
+.progress-ring {
+  width: 120px;
+  height: 120px;
+  position: relative;
+}
+
+.progress-ring-circle {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+/* Metric Comparison */
+.metric-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.metric-item {
+  padding: var(--spacing-md);
+  background: white;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.metric-item-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.metric-item-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+/* ===========================================
+   RESPONSIVE STYLES
+   =========================================== */
+
+@media (max-width: 768px) {
+  .analytics-container {
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+  }
+
+  .kpi-value {
+    font-size: 2rem;
+  }
+
+  .big-saving {
+    font-size: 2.5rem;
+  }
+
+  .savings-summary {
+    padding: var(--spacing-lg);
+  }
+
+  .roi-badge {
+    padding: 6px 14px;
+    font-size: 12px;
+  }
+
+  .chart-wrapper {
+    padding: var(--spacing-sm);
+  }
+
+  .metric-comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .product-perf-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .accuracy-bar-bg {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .analytics-container {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
+
+  .kpi-value {
+    font-size: 1.75rem;
+  }
+
+  .kpi-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .trend-pill {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  .big-saving {
+    font-size: 2rem;
+  }
+
+  .savings-summary {
+    padding: var(--spacing-md);
+    border-width: 1px;
+  }
+
+  .stat-card {
+    padding: var(--spacing-md);
+  }
+
+  .stat-card-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 375px) {
+  .analytics-container {
+    padding: var(--spacing-xs);
+  }
+
+  .kpi-label {
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+
+  .kpi-value {
+    font-size: 1.5rem;
+  }
+
+  .kpi-value.red,
+  .kpi-value.green {
+    font-size: 1.5rem;
+  }
+
+  .trend-pill {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+
+  .big-saving {
+    font-size: 1.75rem;
+  }
+
+  .roi-badge {
+    padding: 5px 12px;
+    font-size: 11px;
+  }
+
+  .section-title {
+    font-size: var(--font-size-sm);
+  }
+
+  .chart-wrapper h4 {
+    font-size: 10px;
+  }
+
+  .product-perf-item {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .metric-item {
+    padding: var(--spacing-sm);
+  }
+
+  .metric-item-label {
+    font-size: 10px;
+  }
+
+  .metric-item-value {
+    font-size: 1.25rem;
+  }
+
+  .progress-ring {
+    width: 100px;
+    height: 100px;
+  }
+}

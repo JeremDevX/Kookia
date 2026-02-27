@@ -1,0 +1,325 @@
+.stocks-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+}
+
+/* Toolbar */
+.stocks-toolbar {
+  padding: var(--spacing-md);
+}
+
+.toolbar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.search-wrapper {
+  flex: 1;
+  min-width: 250px;
+  max-width: 400px;
+}
+
+.filters-wrapper {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.category-select {
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  outline: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.category-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 199, 150, 0.15);
+}
+
+/* Table Card */
+.stocks-table-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.stocks-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Table Header */
+.stocks-table th {
+  text-align: left;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: linear-gradient(
+    135deg,
+    var(--color-bg) 0%,
+    var(--color-surface-hover) 100%
+  );
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.stocks-table th:first-child {
+  padding-left: var(--spacing-xl);
+}
+
+.stocks-table th:last-child {
+  padding-right: var(--spacing-xl);
+}
+
+/* Table Rows */
+.stocks-table td {
+  padding: var(--spacing-lg) var(--spacing-lg);
+  vertical-align: middle;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color 0.2s ease;
+}
+
+.stocks-table td:first-child {
+  padding-left: var(--spacing-xl);
+}
+
+.stocks-table td:last-child {
+  padding-right: var(--spacing-xl);
+}
+
+.stocks-table tbody tr {
+  cursor: pointer;
+}
+
+.stocks-table tbody tr:hover td {
+  background-color: var(--color-surface-hover);
+}
+
+.stocks-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Product Name */
+.product-name {
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+/* Stock Value */
+.stock-value {
+  font-family: "SF Mono", "Monaco", monospace;
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.unit {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-left: 2px;
+}
+
+/* Actions */
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.stock-adjust {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.stock-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.stock-action-btn:hover {
+  transform: scale(1.05);
+}
+
+.stock-action-btn.minus:hover {
+  color: white;
+  background: var(--color-urgent);
+  border-color: var(--color-urgent);
+  box-shadow: 0 2px 6px rgba(192, 21, 47, 0.3);
+}
+
+.stock-action-btn.plus:hover {
+  color: white;
+  background: var(--color-optimal);
+  border-color: var(--color-optimal);
+  box-shadow: 0 2px 6px rgba(34, 139, 91, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stocks-container {
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+  }
+
+  .stocks-table th,
+  .stocks-table td {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .stocks-table th:first-child,
+  .stocks-table td:first-child {
+    padding-left: var(--spacing-md);
+  }
+
+  .toolbar-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-wrapper {
+    max-width: 100%;
+  }
+
+  .filters-wrapper {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .stocks-container {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
+
+  .stocks-toolbar {
+    padding: var(--spacing-sm);
+  }
+
+  .stocks-table-card {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stocks-table {
+    min-width: 500px;
+  }
+
+  .stocks-table th,
+  .stocks-table td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+  }
+
+  .product-name {
+    font-size: var(--font-size-sm);
+  }
+
+  .stock-value {
+    font-size: var(--font-size-sm);
+  }
+
+  .stock-action-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .actions-cell {
+    gap: var(--spacing-sm);
+  }
+
+  .category-select {
+    padding: 8px 10px;
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 375px) {
+  .stocks-container {
+    padding: var(--spacing-xs);
+  }
+
+  .stocks-toolbar {
+    padding: var(--spacing-xs);
+  }
+
+  .toolbar-content {
+    gap: var(--spacing-sm);
+  }
+
+  .filters-wrapper {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .category-select {
+    width: 100%;
+  }
+
+  .stocks-table {
+    min-width: 450px;
+  }
+
+  .stocks-table th,
+  .stocks-table td {
+    padding: 6px 8px;
+  }
+
+  .product-name {
+    font-size: var(--font-size-xs);
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stock-value {
+    font-size: var(--font-size-xs);
+  }
+
+  .unit {
+    font-size: 9px;
+  }
+
+  .stock-action-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+
+  .stock-adjust {
+    gap: 2px;
+  }
+}
