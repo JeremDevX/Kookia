@@ -72,7 +72,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </nav>
 
         <div className="sidebar-footer">
-          <a href="#" className="nav-item" onClick={handleNavClick}>
+          <a
+            href="mailto:support@kookia.app?subject=Support%20KookiA"
+            className="nav-item"
+            onClick={handleNavClick}
+          >
             <HelpCircle size={20} />
             <span>Support</span>
           </a>
