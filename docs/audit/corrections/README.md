@@ -44,7 +44,7 @@ Legend:
 | P2-02 | P2 | Validation formulaires limitee | P0-02 | [ ] | [x] | [x] | [P2-02](./P2-02/README.md) |
 | P2-03 | P2 | Mutation style DOM en React | P0-05 | [ ] | [x] | [x] | [P2-03](./P2-03/README.md) |
 | P2-04 | P2 | Couplage type domaine vers mock | P0-02 | [ ] | [x] | [x] | [P2-04](./P2-04/README.md) |
-| P2-05 | P2 | README decale vs implementation | P0-02 | [x] | [ ] | [ ] | [P2-05](./P2-05/README.md) |
+| P2-05 | P2 | README decale vs implementation | P0-02 | [ ] | [x] | [x] | [P2-05](./P2-05/README.md) |
 
 ## Regles de mise a jour
 - Chaque correction doit mettre a jour la fiche du probleme traite.

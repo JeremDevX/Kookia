@@ -1,337 +1,85 @@
-# FoodAI MVP - Documentation Complète
+# FoodAI MVP
 
-> Application de gestion intelligente des stocks alimentaires avec prédictions IA pour restaurants
+Application React + TypeScript de gestion de stocks, prédictions et suivi opérationnel pour restauration.
 
----
+## Etat du projet (2026-02-27)
 
-## 🚀 Démarrage Rapide
+- Statut global: MVP fonctionnel sur données mock locales.
+- Architecture runtime active: `pages -> hooks -> services -> utils/mockData`.
+- Migration API backend: non active à ce stade (pas de client API branché).
+- Référence suivi qualité/corrections: `docs/audit/corrections/*`.
+
+## Démarrage
 
 ```bash
-# Installation des dépendances
 npm install
-
-# Lancer en développement
 npm run dev
+```
 
-# Build pour production
-npm run build
+Application disponible sur `http://localhost:5173`.
 
-# Vérifier le code
+## Scripts utiles
+
+```bash
 npm run lint
+npm run build
+npm run test
 ```
 
-L'application sera disponible sur `http://localhost:5173`
+## Architecture actuelle
 
----
-
-## 📁 Structure du Projet
-
-```
+```text
 src/
-├── components/          # Composants React réutilisables
-│   ├── common/          # Button, Card, Badge, Modal, Input
-│   ├── layout/          # Layout, TopNav
-│   ├── analytics/       # Composants page Analytics
-│   ├── dashboard/       # Composants page Dashboard
-│   ├── predictions/     # Composants page Predictions
-│   ├── recipes/         # Composants page Recipes
-│   └── stocks/          # Composants page Stocks
-├── pages/               # Pages principales de l'application
-│   ├── Dashboard.tsx    # Vue d'ensemble
-│   ├── Stocks.tsx       # Gestion inventaire
-│   ├── Predictions.tsx  # Prédictions IA
-│   ├── Recipes.tsx      # Carnet de recettes
-│   └── Analytics.tsx    # Tableaux de bord analytiques
-├── types/               # ✨ Définitions TypeScript centralisées
-│   ├── index.ts         # Types principaux (Product, Prediction, etc.)
-│   └── callbacks.ts     # Types pour callbacks et formulaires
-├── services/            # ✨ Couche d'abstraction des données
-│   ├── index.ts         # Export centralisé
-│   ├── productService.ts
-│   ├── predictionService.ts
-│   ├── recipeService.ts
-│   └── analyticsService.ts
-├── hooks/               # ✨ Hooks React personnalisés
-│   ├── index.ts         # Export centralisé
-│   ├── useProducts.ts
-│   ├── usePredictions.ts
-│   ├── useRecipes.ts
-│   └── useAnalytics.ts
-├── utils/               # Utilitaires et données mock
-│   └── mockData.ts      # Données de démonstration
-├── context/             # Contextes React (Toast notifications)
-└── styles/              # CSS global
+├── pages/               # Ecrans (Dashboard, Stocks, Predictions, Recipes, Analytics, Settings)
+├── hooks/               # Orchestration UI/data (useProducts, usePredictions, ...)
+├── services/            # Logique data + règles métier (source mock actuelle)
+├── utils/mockData.ts    # Source de données de démonstration
+├── components/          # UI réutilisable et sections métier
+├── context/             # Contextes globaux (toast, panier)
+├── types/               # Types domaine TypeScript centralisés
+├── config/domain/       # Paramètres métier front
+└── styles/              # Styles globaux + tokens CSS
 ```
 
----
+Flux observé dans le code:
+- `Dashboard.tsx`, `Stocks.tsx`, `Predictions.tsx` consomment les hooks (`usePredictions`, `useProducts`, ...).
+- Les hooks appellent les services (`productService`, `predictionService`, `recipeService`, `analyticsService`).
+- Les services utilisent des données mock depuis `src/utils/mockData.ts`.
 
-## 📊 Types de Données Principaux
+## Ce qui est en place
 
-### Product (Produit)
+- Types centralisés dans `src/types`.
+- Pages branchées sur hooks/services (pas d'import `MOCK_*` direct dans les pages principales).
+- Priorisation prédictions et règles métier front dans les services.
+- Couverture de tests unitaires ciblée (services, utilitaires, état panier).
 
-```typescript
-interface Product {
-  id: string; // Identifiant unique
-  name: string; // Nom du produit
-  category: string; // Catégorie (Légumes, Fromages, etc.)
-  currentStock: number; // Stock actuel
-  unit: Unit; // Unité: "kg" | "L" | "dz" | "pcs"
-  minThreshold: number; // Seuil minimum d'alerte
-  supplierId: string; // ID du fournisseur
-  pricePerUnit: number; // Prix unitaire en €
-  lastDelivery?: string; // Date dernière livraison (ISO)
-}
+## Limites connues
+
+- Persistance serveur absente: les données ne survivent pas à un vrai cycle backend.
+- Pas de couche `src/config/api.ts` active dans ce dépôt aujourd'hui.
+- Les services simulent des latences et retournent des mocks.
+
+## Plan de migration recommandé (architecture cible)
+
+1. Ajouter un client API commun (base URL, timeout, gestion d'erreurs).
+2. Introduire des DTO/API mappers dans les services sans casser les types domaine.
+3. Basculer service par service (`products`, `predictions`, `recipes`, `analytics`) vers des appels backend réels.
+4. Conserver les hooks comme façade pour ne pas impacter les pages.
+5. Étendre les tests sur mapping, erreurs réseau et flux critiques UI.
+
+## Documentation de référence
+
+- Point d'entrée agent: [docs/AI_ENTRYPOINT.md](docs/AI_ENTRYPOINT.md)
+- Index corrections: [docs/audit/corrections/README.md](docs/audit/corrections/README.md)
+- Workflow obligatoire: [docs/audit/corrections/WORKFLOW_IMPERATIF_AGENT.md](docs/audit/corrections/WORKFLOW_IMPERATIF_AGENT.md)
+- Bonnes pratiques agent: [docs/audit/corrections/BEST_PRACTICES_AGENT.md](docs/audit/corrections/BEST_PRACTICES_AGENT.md)
+- Process standard: [docs/audit/corrections/PROCESS_STANDARD.md](docs/audit/corrections/PROCESS_STANDARD.md)
+- Registre audit source: [docs/audit/registre-problemes.md](docs/audit/registre-problemes.md)
+
+## Validation locale minimale avant PR
+
+```bash
+npm run lint
+npm run build
+npm run test
 ```
-
-### Prediction (Prédiction IA)
-
-```typescript
-interface Prediction {
-  id: string;
-  productId: string; // Lien vers Product
-  productName: string; // Nom pour affichage
-  predictedDate: string; // Date prévue (ISO)
-  predictedConsumption: number; // Consommation prévue
-  confidence: number; // Indice de confiance (0-1)
-  recommendation?: {
-    action: "buy" | "wait" | "reduce";
-    quantity: number;
-    reason: string;
-  };
-}
-```
-
-### Recipe (Recette)
-
-```typescript
-interface Recipe {
-  id: string;
-  name: string;
-  category: "Plat" | "Dessert" | "Entrée";
-  prepTime: number; // minutes
-  ingredients: {
-    productId: string;
-    quantity: number;
-  }[];
-  lastMade?: string; // Date dernière production (ISO)
-}
-```
-
-### AnalyticsData
-
-```typescript
-interface AnalyticsData {
-  wasteStats: { totalWasteKg, wastePerMealGram, ... };
-  aiReliability: { correctPredictions, monthlyTrend };
-  wasteEvolution: { name, waste, target }[];
-  savingsEvolution: { month, amount }[];
-  criticalProducts: { name, accuracy, avoidedStockout }[];
-}
-```
-
----
-
-## 🔌 Comment Ajouter des Données Réelles (API)
-
-### Étape 1 : Modifier les Services
-
-Chaque service dans `/src/services/` contient des fonctions qui retournent actuellement des données mock. Pour connecter votre API :
-
-**Exemple : productService.ts**
-
-```typescript
-// AVANT (données mock)
-export const getProducts = async (): Promise<Product[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  return MOCK_PRODUCTS;
-};
-
-// APRÈS (avec votre API)
-export const getProducts = async (): Promise<Product[]> => {
-  const response = await fetch("/api/products", {
-    headers: {
-      Authorization: `Bearer ${getToken()}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch products");
-  }
-
-  return response.json();
-};
-```
-
-### Étape 2 : Les Hooks Gèrent Automatiquement
-
-Les hooks comme `useProducts()` gèrent déjà :
-
-- ✅ État de chargement (`loading`)
-- ✅ Gestion d'erreurs (`error`)
-- ✅ Rafraîchissement (`refetch`)
-
-```typescript
-// Dans votre composant
-const { products, loading, error, refetch } = useProducts();
-
-if (loading) return <Spinner />;
-if (error) return <ErrorMessage message={error.message} />;
-
-return <ProductList products={products} />;
-```
-
-### Étape 3 : Mapping des Types
-
-Assurez-vous que votre API retourne des données compatibles avec les types définis dans `/src/types/`. Si les noms de champs diffèrent, créez une fonction de mapping :
-
-```typescript
-// Dans productService.ts
-const mapApiToProduct = (apiProduct: ApiProductResponse): Product => ({
-  id: apiProduct._id, // MongoDB _id → id
-  name: apiProduct.product_name, // snake_case → camelCase
-  currentStock: apiProduct.stock_qty,
-  // ... autres mappings
-});
-
-export const getProducts = async (): Promise<Product[]> => {
-  const response = await fetch("/api/products");
-  const data: ApiProductResponse[] = await response.json();
-  return data.map(mapApiToProduct);
-};
-```
-
----
-
-## 🔧 Fichiers de Configuration API
-
-### Créer un fichier de config (recommandé)
-
-**src/config/api.ts**
-
-```typescript
-export const API_CONFIG = {
-  baseUrl: import.meta.env.VITE_API_URL || "http://localhost:3001",
-  timeout: 10000,
-};
-
-// Helper pour les requêtes
-export const apiRequest = async <T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<T> => {
-  const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status}`);
-  }
-
-  return response.json();
-};
-```
-
-### Variables d'environnement
-
-**.env.local**
-
-```env
-VITE_API_URL=http://localhost:3001/api
-```
-
----
-
-## 📱 Pages de l'Application
-
-| Page        | Route          | Description                                          |
-| ----------- | -------------- | ---------------------------------------------------- |
-| Dashboard   | `/`            | Vue d'ensemble avec KPIs et graphiques               |
-| Stocks      | `/stocks`      | Gestion de l'inventaire, ajout/modification produits |
-| Predictions | `/predictions` | Prédictions IA de consommation et recommandations    |
-| Recipes     | `/recipes`     | Carnet de recettes et suggestions anti-gaspi         |
-| Analytics   | `/analytics`   | Tableaux de bord, évolution gaspillage, ROI          |
-
----
-
-## 🧩 Composants Réutilisables
-
-| Composant | Chemin                     | Props principales                           |
-| --------- | -------------------------- | ------------------------------------------- |
-| `Button`  | `components/common/Button` | `variant`, `size`, `icon`, `onClick`        |
-| `Card`    | `components/common/Card`   | `title`, `action`, `className`              |
-| `Badge`   | `components/common/Badge`  | `label`, `status` (optimal/moderate/urgent) |
-| `Modal`   | `components/common/Modal`  | `isOpen`, `onClose`, `title`, `width`       |
-| `Input`   | `components/common/Input`  | `icon`, `placeholder`, `value`, `onChange`  |
-
----
-
-## 🎨 Variables CSS
-
-Les couleurs et espacements sont définis dans `/src/styles/index.css` :
-
-```css
-/* Couleurs */
---color-primary: #218083; /* Teal */
---color-urgent: #c0152f; /* Rouge alerte */
---color-moderate: #a84b2f; /* Orange */
---color-optimal: #228b5b; /* Vert */
-
-/* Espacement */
---spacing-xs: 4px;
---spacing-sm: 8px;
---spacing-md: 16px;
---spacing-lg: 24px;
---spacing-xl: 32px;
-
-/* Border Radius */
---radius-sm: 6px;
---radius-md: 10px;
---radius-lg: 16px;
-```
-
----
-
-## 🔄 Workflow de Développement
-
-1. **Ajouter un nouveau type de données**
-
-   - Définir l'interface dans `types/index.ts`
-   - Créer le service dans `services/`
-   - Créer le hook dans `hooks/`
-
-2. **Ajouter une nouvelle page**
-
-   - Créer le composant dans `pages/`
-   - Ajouter la route dans `App.tsx`
-   - Créer le fichier CSS correspondant
-
-3. **Modifier les données mock**
-   - Éditer `utils/mockData.ts`
-   - Les types sont importés de `types/index.ts`
-
----
-
-## ✅ Checklist Intégration API
-
-- [ ] Créer le fichier `src/config/api.ts`
-- [ ] Ajouter les variables d'environnement
-- [ ] Modifier `productService.ts` pour appeler l'API produits
-- [ ] Modifier `predictionService.ts` pour l'API prédictions
-- [ ] Modifier `recipeService.ts` pour l'API recettes
-- [ ] Modifier `analyticsService.ts` pour l'API analytics
-- [ ] Tester chaque page avec les vraies données
-- [ ] Ajouter la gestion des erreurs réseau
-
----
-
-## 📞 Support
-
-Pour toute question sur l'intégration ou le développement :
-
-- Consulter les fichiers de types dans `/src/types/`
-- Vérifier les exemples de données dans `/src/utils/mockData.ts`
