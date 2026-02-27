@@ -1,21 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Prediction } from "../types";
+import { isOnOrAfterRestaurantToday } from "../utils/date";
 import { getPredictionPriority } from "./predictionService";
-
-const getIsoDateWithOffset = (offset: number): string => {
-  const date = new Date();
-  date.setDate(date.getDate() + offset);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
 
 const createPrediction = (overrides: Partial<Prediction>): Prediction => ({
   id: "pred-1",
   productId: "p1",
   productName: "Tomates",
-  predictedDate: getIsoDateWithOffset(1),
+  predictedDate: "2026-05-03",
   predictedConsumption: 100,
   confidence: 0.8,
   recommendation: {
@@ -27,17 +19,18 @@ const createPrediction = (overrides: Partial<Prediction>): Prediction => ({
 });
 
 describe("predictionService/getPredictionPriority", () => {
-  it("returns normal for past predictions", () => {
+  it("returns normal for previous business day around restaurant midnight", () => {
     const prediction = createPrediction({
-      predictedDate: getIsoDateWithOffset(-1),
+      predictedDate: "2026-05-02",
     });
 
-    expect(getPredictionPriority(prediction)).toBe("normal");
+    const referenceDate = new Date("2026-05-02T22:30:00.000Z");
+    expect(getPredictionPriority(prediction, referenceDate)).toBe("normal");
   });
 
   it("returns critical for near-term buy with projected shortage", () => {
     const prediction = createPrediction({
-      predictedDate: getIsoDateWithOffset(1),
+      predictedDate: "2026-05-03",
       confidence: 0.92,
       recommendation: {
         action: "buy",
@@ -46,12 +39,13 @@ describe("predictionService/getPredictionPriority", () => {
       },
     });
 
-    expect(getPredictionPriority(prediction)).toBe("critical");
+    const referenceDate = new Date("2026-05-02T10:00:00.000Z");
+    expect(getPredictionPriority(prediction, referenceDate)).toBe("critical");
   });
 
   it("returns high for medium-term reduce recommendations", () => {
     const prediction = createPrediction({
-      predictedDate: getIsoDateWithOffset(2),
+      predictedDate: "2026-05-04",
       confidence: 0.8,
       recommendation: {
         action: "reduce",
@@ -60,6 +54,36 @@ describe("predictionService/getPredictionPriority", () => {
       },
     });
 
-    expect(getPredictionPriority(prediction)).toBe("high");
+    const referenceDate = new Date("2026-05-02T10:00:00.000Z");
+    expect(getPredictionPriority(prediction, referenceDate)).toBe("high");
+  });
+
+  it("keeps same priority for the same instant represented in different client timezones", () => {
+    const prediction = createPrediction({
+      predictedDate: "2026-07-02",
+      confidence: 0.92,
+      recommendation: {
+        action: "buy",
+        quantity: 40,
+        reason: "shortage expected",
+      },
+    });
+
+    const instantFromSanFrancisco = new Date("2026-07-01T16:30:00-07:00");
+    const instantFromTokyo = new Date("2026-07-02T08:30:00+09:00");
+
+    expect(
+      getPredictionPriority(prediction, instantFromSanFrancisco)
+    ).toBe("critical");
+    expect(getPredictionPriority(prediction, instantFromTokyo)).toBe(
+      "critical"
+    );
+  });
+
+  it("aligns actionable date filtering with restaurant business day boundaries", () => {
+    const referenceDate = new Date("2026-05-02T22:30:00.000Z");
+
+    expect(isOnOrAfterRestaurantToday("2026-05-02", referenceDate)).toBe(false);
+    expect(isOnOrAfterRestaurantToday("2026-05-03", referenceDate)).toBe(true);
   });
 });

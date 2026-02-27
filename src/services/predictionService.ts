@@ -1,28 +1,10 @@
 import type { Prediction, PredictionPriority } from "../types";
+import { getBusinessDaysUntilDate } from "../utils/date";
 import { MOCK_PREDICTIONS } from "../utils/mockData";
 
 // ============================================
 // Prediction Service
 // ============================================
-
-const parsePredictionDate = (predictedDate: string): Date => {
-  const [year, month, day] = predictedDate.split("-").map(Number);
-  if (year && month && day) {
-    return new Date(year, month - 1, day);
-  }
-
-  return new Date(predictedDate);
-};
-
-const getDaysUntilPrediction = (predictedDate: string): number => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const target = parsePredictionDate(predictedDate);
-  target.setHours(0, 0, 0, 0);
-
-  return Math.floor((target.getTime() - today.getTime()) / 86400000);
-};
 
 const getProjectedStockSignal = (prediction: Prediction): number => {
   const quantity = prediction.recommendation?.quantity ?? 0;
@@ -35,10 +17,14 @@ const getProjectedStockSignal = (prediction: Prediction): number => {
 };
 
 export const getPredictionPriority = (
-  prediction: Prediction
+  prediction: Prediction,
+  referenceDate: Date = new Date()
 ): PredictionPriority => {
   const action = prediction.recommendation?.action;
-  const daysUntil = getDaysUntilPrediction(prediction.predictedDate);
+  const daysUntil = getBusinessDaysUntilDate(
+    prediction.predictedDate,
+    referenceDate
+  );
 
   // Past predictions are informational and should not drive urgent actions.
   if (daysUntil < 0) return "normal";

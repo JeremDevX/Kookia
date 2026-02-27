@@ -11,18 +11,9 @@ import { useCart } from "../context/useCart";
 import { Calendar, FileText, ChefHat, ShoppingBag } from "lucide-react";
 import { usePredictions, useProducts } from "../hooks";
 import type { Prediction } from "../types";
-import { formatLocalISODate } from "../utils/date";
+import { formatLocalISODate, isOnOrAfterRestaurantToday } from "../utils/date";
 import { domainBusinessConfig } from "../config/domain/businessConfig";
 import "./Dashboard.css";
-
-const parseIsoDateOnly = (isoDate: string): Date => {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  if (year && month && day) {
-    return new Date(year, month - 1, day);
-  }
-
-  return new Date(isoDate);
-};
 
 const Dashboard: React.FC = () => {
   const [showOrderGenerator, setShowOrderGenerator] = useState(false);
@@ -110,15 +101,9 @@ const Dashboard: React.FC = () => {
   const { managerFirstName, city, weatherLabel } =
     domainBusinessConfig.establishmentDisplay;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const actionablePredictions = predictions.filter((pred) => {
-    const predictionDate = parseIsoDateOnly(pred.predictedDate);
-    predictionDate.setHours(0, 0, 0, 0);
-
     return pred.recommendation?.action === "buy" &&
-      predictionDate.getTime() >= today.getTime();
+      isOnOrAfterRestaurantToday(pred.predictedDate);
   });
 
   const visiblePredictions = actionablePredictions.filter(
