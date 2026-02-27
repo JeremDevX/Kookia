@@ -3,7 +3,8 @@ import Modal from "../common/Modal";
 import Button from "../common/Button";
 import Badge from "../common/Badge";
 import { Package, Truck, DollarSign, Calendar, TrendingUp } from "lucide-react";
-import type { Prediction } from "../../utils/mockData";
+import { getPredictionPriority } from "../../services/predictionService";
+import type { Prediction } from "../../types";
 
 interface PredictionDetailModalProps {
   isOpen: boolean;
@@ -26,6 +27,9 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
   if (!prediction) return null;
 
   const estimatedCost = (prediction.recommendation?.quantity || 0) * 2.4;
+  const priority = getPredictionPriority(prediction);
+  const label = priority === "critical" ? "Urgent" : "Modéré";
+  const status = priority === "critical" ? "urgent" : "moderate";
 
   return (
     <Modal
@@ -45,8 +49,8 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
             </p>
           </div>
           <Badge
-            label={prediction.confidence > 0.9 ? "Urgent" : "Modéré"}
-            status={prediction.confidence > 0.9 ? "urgent" : "moderate"}
+            label={label}
+            status={status}
           />
         </div>
 

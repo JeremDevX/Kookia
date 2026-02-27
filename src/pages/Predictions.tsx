@@ -15,6 +15,7 @@ import {
 import { usePredictions } from "../hooks";
 import { useToast } from "../context/ToastContext";
 import type { Prediction } from "../types";
+import { getPredictionPriority } from "../services/predictionService";
 import "./Predictions.css";
 
 const Predictions: React.FC = () => {
@@ -55,8 +56,12 @@ const Predictions: React.FC = () => {
     }
   };
 
-  const urgentPredictions = predictions.filter((p) => p.confidence > 0.9);
-  const moderatePredictions = predictions.filter((p) => p.confidence <= 0.9);
+  const urgentPredictions = predictions.filter(
+    (p) => getPredictionPriority(p) === "critical"
+  );
+  const moderatePredictions = predictions.filter(
+    (p) => getPredictionPriority(p) !== "critical"
+  );
 
   return (
     <div className="predictions-container">
@@ -113,7 +118,7 @@ const Predictions: React.FC = () => {
                       <div className="pred-info">
                         <div className="pred-header">
                           <h3 className="product-name">{pred.productName}</h3>
-                          <Badge label="Rupture demain" status="urgent" />
+                          <Badge label="Priorité critique" status="urgent" />
                         </div>
                         <div className="pred-reason">
                           <Brain size={16} className="text-secondary" />
@@ -190,6 +195,9 @@ const Predictions: React.FC = () => {
             <div className="cards-stack">
               {moderatePredictions.map((pred) => {
                 const isOrdered = orderedPredictions.includes(pred.id);
+                const priority = getPredictionPriority(pred);
+                const badgeLabel = priority === "high" ? "Élevé" : "Normal";
+                const badgeStatus = priority === "high" ? "moderate" : "optimal";
                 return (
                   <Card
                     key={pred.id}
@@ -211,7 +219,7 @@ const Predictions: React.FC = () => {
                         </span>
                       </div>
                       <div className="pred-meta">
-                        <Badge label="Modéré" status="moderate" />
+                        <Badge label={badgeLabel} status={badgeStatus} />
                         <span className="confidence-pill">
                           {(pred.confidence * 100).toFixed(0)}% fiable
                         </span>

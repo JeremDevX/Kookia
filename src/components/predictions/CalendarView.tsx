@@ -25,6 +25,7 @@ import {
   Calendar,
 } from "lucide-react";
 import Button from "../common/Button";
+import { getPredictionPriority } from "../../services/predictionService";
 import type { Prediction } from "../../types";
 
 interface CalendarViewProps {
@@ -110,8 +111,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
 
   // Get urgency level
   const getUrgencyLevel = (pred: Prediction) => {
-    if (pred.confidence > 0.9) return "critical";
-    if (pred.confidence > 0.8) return "high";
+    const priority = getPredictionPriority(pred);
+    if (priority === "critical") return "critical";
+    if (priority === "high") return "high";
     return "normal";
   };
 
@@ -132,7 +134,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     criticalItems: predictions.filter(
       (p) =>
         weekDays.some((d) => isSameDay(parseISO(p.predictedDate), d)) &&
-        p.confidence > 0.9
+        getPredictionPriority(p) === "critical"
     ).length,
   };
 
@@ -336,7 +338,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({
                 const dayPreds = getDayPredictions(date);
                 const dayIsToday = isToday(date);
                 const dayIsPast = isDayPast(date);
-                const hasCritical = dayPreds.some((p) => p.confidence > 0.9);
+                const hasCritical = dayPreds.some(
+                  (p) => getPredictionPriority(p) === "critical"
+                );
                 const isSelected = isDaySelected(date);
 
                 return (
@@ -426,9 +430,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({
               const dayPreds = getDayPredictions(date);
               const dayIsToday = isToday(date);
               const dayIsPast = isDayPast(date);
-              const hasCritical = dayPreds.some((p) => p.confidence > 0.9);
+              const hasCritical = dayPreds.some(
+                (p) => getPredictionPriority(p) === "critical"
+              );
               const hasHigh = dayPreds.some(
-                (p) => p.confidence > 0.8 && p.confidence <= 0.9
+                (p) => getPredictionPriority(p) === "high"
               );
               const isSelected = isSameDay(date, selectedDate);
 

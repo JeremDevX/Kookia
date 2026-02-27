@@ -44,6 +44,8 @@ export interface Prediction {
   recommendation?: PredictionRecommendation;
 }
 
+export type PredictionPriority = "critical" | "high" | "normal";
+
 // Recipe
 export interface RecipeIngredient {
   productId: string;
