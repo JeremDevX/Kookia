@@ -18,7 +18,9 @@ const Stocks: React.FC = () => {
   const { products, updateStock, addProduct, getStatus } =
     useProductsWithMutations();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    null
+  );
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
@@ -27,6 +29,8 @@ const Stocks: React.FC = () => {
     supplier: "all",
     stockLevel: "all",
   });
+  const selectedProduct =
+    products.find((product) => product.id === selectedProductId) ?? null;
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name
@@ -69,20 +73,10 @@ const Stocks: React.FC = () => {
   ) => {
     e.stopPropagation();
     updateStock(id, amount);
-    setSelectedProduct((prev) =>
-      prev && prev.id === id
-        ? { ...prev, currentStock: Math.max(0, prev.currentStock + amount) }
-        : prev
-    );
   };
 
   const handleDrawerAdjustStock = (productId: string, delta: number) => {
     updateStock(productId, delta);
-    setSelectedProduct((prev) =>
-      prev && prev.id === productId
-        ? { ...prev, currentStock: Math.max(0, prev.currentStock + delta) }
-        : prev
-    );
   };
 
   const handleAddProduct = (newProduct: Product) => {
@@ -182,7 +176,7 @@ const Stocks: React.FC = () => {
               return (
                 <tr
                   key={product.id}
-                  onClick={() => setSelectedProduct(product)}
+                  onClick={() => setSelectedProductId(product.id)}
                   className="clickable-row"
                 >
                   <td>
@@ -248,7 +242,7 @@ const Stocks: React.FC = () => {
       </div>
       <ProductDetail
         product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
+        onClose={() => setSelectedProductId(null)}
         onAdjustStock={handleDrawerAdjustStock}
       />
 

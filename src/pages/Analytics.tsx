@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Button from "../components/common/Button";
 import ExportReportModal from "../components/analytics/ExportReportModal";
 import CustomizeAnalyticsModal from "../components/analytics/CustomizeAnalyticsModal";
@@ -10,30 +10,16 @@ import ROISimulator from "../components/analytics/ROISimulator";
 import { useToast } from "../context/ToastContext";
 import { useAnalytics } from "../hooks";
 import type { AnalyticsSettings } from "../types/callbacks";
-import {
-  DEFAULT_ANALYTICS_SETTINGS,
-  getAnalyticsPreferences,
-  saveAnalyticsPreferences,
-} from "../services";
+import { useAnalyticsPreferences } from "../features/analytics/useAnalyticsPreferences";
 import "./Analytics.css";
 
 const Analytics: React.FC = () => {
   const { addToast } = useToast();
   const { data } = useAnalytics();
+  const { settings: analyticsSettings, saveSettings } =
+    useAnalyticsPreferences();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
-  const [analyticsSettings, setAnalyticsSettings] = useState<AnalyticsSettings>(
-    DEFAULT_ANALYTICS_SETTINGS
-  );
-
-  useEffect(() => {
-    const loadAnalyticsPreferences = async () => {
-      const settings = await getAnalyticsPreferences();
-      setAnalyticsSettings(settings);
-    };
-
-    void loadAnalyticsPreferences();
-  }, []);
 
   const handleExport = (format: string, period: string) => {
     addToast(
@@ -45,8 +31,7 @@ const Analytics: React.FC = () => {
 
   const handleSaveSettings = async (settings: AnalyticsSettings) => {
     try {
-      await saveAnalyticsPreferences(settings);
-      setAnalyticsSettings(settings);
+      await saveSettings(settings);
       addToast(
         "success",
         "Parametres enregistres",

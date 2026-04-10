@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Button from "../common/Button";
 import {
   Send,
@@ -8,26 +8,16 @@ import {
   Package,
   Mail,
 } from "lucide-react";
+import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 import {
-  MOCK_SUPPLIERS,
-  MOCK_PRODUCTS,
-} from "../../utils/mockData";
-import type { Prediction, Supplier } from "../../types";
-
-interface OrderItem {
-  productName: string;
-  quantity: number;
-  unit: string;
-  price: number;
-}
-
-interface SupplierOrder {
-  supplier: Supplier | undefined;
-  items: OrderItem[];
-}
+  groupRecommendationsBySupplier,
+  type OrderItem,
+  type OrderRecommendation,
+  type SupplierOrder,
+} from "../../features/orders/orderRecommendations";
 
 interface OrderGeneratorProps {
-  recommendations: Prediction[];
+  recommendations: OrderRecommendation[];
   onClose: () => void;
 }
 
@@ -38,31 +28,13 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
   const [step, setStep] = useState<"preview" | "sending" | "success">(
     "preview"
   );
-
-  // Group recommendations by supplier
-  const ordersBySupplier = recommendations.reduce<
-    Record<string, SupplierOrder>
-  >((acc, pred) => {
-    if (pred.recommendation?.action !== "buy") return acc;
-
-    const product = MOCK_PRODUCTS.find((p) => p.id === pred.productId);
-    if (!product) return acc;
-
-    const supplierId = product.supplierId;
-    if (!acc[supplierId]) {
-      acc[supplierId] = {
-        supplier: MOCK_SUPPLIERS.find((s) => s.id === supplierId),
-        items: [],
-      };
-    }
-    acc[supplierId].items.push({
-      productName: product.name,
-      quantity: pred.recommendation.quantity,
-      unit: product.unit,
-      price: product.pricePerUnit * pred.recommendation.quantity,
-    });
-    return acc;
-  }, {});
+  const { products, suppliers, loading } = useInventoryCatalog();
+  const ordersBySupplier = useMemo(
+    () => groupRecommendationsBySupplier(recommendations, products, suppliers),
+    [recommendations, products, suppliers]
+  );
+  const supplierOrders = Object.values(ordersBySupplier);
+  const itemCount = supplierOrders.reduce((sum, order) => sum + order.items.length, 0);
 
   const handleSend = () => {
     setStep("sending");
@@ -121,7 +93,7 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
             lineHeight: 1.6,
           }}
         >
-          <strong>{Object.keys(ordersBySupplier).length}</strong> email(s) ont
+          <strong>{supplierOrders.length}</strong> email(s) ont
           été envoyés à vos fournisseurs.
           <br />
           Vous recevrez les confirmations d'ici peu.
@@ -171,16 +143,12 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
                 color: "var(--color-text-primary)",
               }}
             >
-              {Object.keys(ordersBySupplier).length} fournisseur(s)
+              {supplierOrders.length} fournisseur(s)
             </div>
             <div
               style={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
             >
-              {Object.values(ordersBySupplier).reduce(
-                (sum, o) => sum + o.items.length,
-                0
-              )}{" "}
-              article(s) à commander
+              {itemCount} article(s) à commander
             </div>
           </div>
         </div>
@@ -212,7 +180,17 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
           background: "var(--color-bg, #f3f4f6)",
         }}
       >
-        {Object.keys(ordersBySupplier).length === 0 ? (
+        {loading ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "48px 24px",
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            <p style={{ fontSize: "15px" }}>Chargement du catalogue...</p>
+          </div>
+        ) : supplierOrders.length === 0 ? (
           <div
             style={{
               textAlign: "center",
@@ -229,7 +207,7 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
             </p>
           </div>
         ) : (
-          Object.values(ordersBySupplier).map((order: SupplierOrder, idx) => (
+          supplierOrders.map((order: SupplierOrder, idx) => (
             <div
               key={idx}
               style={{
@@ -394,7 +372,7 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
         <Button
           onClick={handleSend}
           disabled={
-            Object.keys(ordersBySupplier).length === 0 || step === "sending"
+            supplierOrders.length === 0 || step === "sending" || loading
           }
           icon={step === "sending" ? undefined : <Send size={18} />}
           size="lg"

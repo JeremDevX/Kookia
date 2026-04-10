@@ -1,5 +1,5 @@
 import type { AnalyticsData, DashboardActivity } from "../types";
-import { MOCK_ANALYTICS, MOCK_DASHBOARD_ACTIVITY } from "../utils/mockData";
+import { MOCK_ANALYTICS, MOCK_DASHBOARD_ACTIVITY } from "../data/mock/analytics";
 
 // ============================================
 // Analytics Service

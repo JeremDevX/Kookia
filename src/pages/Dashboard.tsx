@@ -10,9 +10,12 @@ import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
 import { Calendar, FileText, ChefHat, ShoppingBag } from "lucide-react";
 import { usePredictions, useProducts } from "../hooks";
-import type { Prediction } from "../types";
-import { formatLocalISODate, isOnOrAfterRestaurantToday } from "../utils/date";
+import { isOnOrAfterRestaurantToday } from "../utils/date";
 import { domainBusinessConfig } from "../config/domain/businessConfig";
+import {
+  createOrderRecommendationsFromCartItems,
+  createOrderRecommendationsFromPredictions,
+} from "../features/orders/orderRecommendations";
 import "./Dashboard.css";
 
 const Dashboard: React.FC = () => {
@@ -114,27 +117,10 @@ const Dashboard: React.FC = () => {
   const selectedPredictions = actionablePredictions.filter((pred) =>
     selectedPredictionIds.includes(pred.id)
   );
-
-  // Convert cart items to Prediction-like objects for OrderGenerator
-  const cartPredictions: Prediction[] = cartItems.map((item) => {
-    const product = products.find((p) => p.id === item.productId);
-    return {
-      id: item.id,
-      productId: item.productId,
-      productName: item.productName,
-      predictedDate: formatLocalISODate(new Date()),
-      predictedConsumption: item.quantity,
-      confidence: 0.95,
-      recommendation: {
-        action: "buy" as const,
-        quantity: item.quantity,
-        reason: `Depuis notifications - ${product?.category || "Stock"}`,
-      },
-    };
-  });
-
-  // Merge both sources
-  const allRecommendations = [...selectedPredictions, ...cartPredictions];
+  const allRecommendations = [
+    ...createOrderRecommendationsFromPredictions(selectedPredictions),
+    ...createOrderRecommendationsFromCartItems(cartItems, products),
+  ];
 
   return (
     <div className="dashboard-container">

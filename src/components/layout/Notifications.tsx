@@ -13,10 +13,8 @@ import Modal from "../common/Modal";
 import OrderGenerator from "../dashboard/OrderGenerator";
 import { useToast } from "../../context/ToastContext";
 import { useCart } from "../../context/useCart";
-import type { CartItem } from "../../context/cart.types";
-import type { Prediction } from "../../types";
-import { formatLocalISODate } from "../../utils/date";
-import { MOCK_PRODUCTS } from "../../utils/mockData";
+import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
+import { createOrderRecommendationsFromCartItems } from "../../features/orders/orderRecommendations";
 import "./Notifications.css";
 
 interface Notification {
@@ -102,6 +100,7 @@ const iconBadgeStyles = {
 
 const Notifications: React.FC = () => {
   const { addToast } = useToast();
+  const { products } = useInventoryCatalog();
   const {
     addToCart: addToGlobalCart,
     addMultipleToCart,
@@ -119,9 +118,13 @@ const Notifications: React.FC = () => {
   const actionableNotifications = notifications.filter(
     (n) => n.actionable && !addedToCart.includes(n.id)
   );
+  const cartRecommendations = createOrderRecommendationsFromCartItems(
+    cartItems,
+    products
+  );
 
   const markAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
+    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })));
   };
 
   // Add single item to cart
@@ -193,24 +196,6 @@ const Notifications: React.FC = () => {
       `${actionableNotifications.length} article(s) ajouté(s). Cliquez sur "Générer la commande" pour continuer.`
     );
   };
-
-  // Convert cart items to Prediction format for OrderGenerator
-  const cartPredictions: Prediction[] = cartItems.map((item: CartItem) => {
-    const product = MOCK_PRODUCTS.find((p) => p.id === item.productId);
-    return {
-      id: item.id,
-      productId: item.productId,
-      productName: item.productName,
-      predictedDate: formatLocalISODate(new Date()),
-      predictedConsumption: item.quantity,
-      confidence: 0.95,
-      recommendation: {
-        action: "buy" as const,
-        quantity: item.quantity,
-        reason: `Depuis notifications - ${product?.category || "Stock"}`,
-      },
-    };
-  });
 
   // Open OrderGenerator modal directly
   const handleGenerateOrder = () => {
@@ -555,7 +540,7 @@ const Notifications: React.FC = () => {
         width="lg"
       >
         <OrderGenerator
-          recommendations={cartPredictions}
+          recommendations={cartRecommendations}
           onClose={handleCloseOrderModal}
         />
       </Modal>

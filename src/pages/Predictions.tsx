@@ -15,32 +15,49 @@ import {
 import { usePredictions } from "../hooks";
 import { useToast } from "../context/ToastContext";
 import type { Prediction } from "../types";
-import { getPredictionPriority } from "../services/predictionService";
+import { getPredictionPriority } from "../domain/predictions/prediction.policies";
+import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import "./Predictions.css";
 
 const Predictions: React.FC = () => {
   const { addToast } = useToast();
   const { predictions } = usePredictions();
+  const { findProductById, findSupplierByProductId } = useInventoryCatalog();
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [selectedPrediction, setSelectedPrediction] =
     useState<Prediction | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [orderedPredictions, setOrderedPredictions] = useState<string[]>([]);
 
+  const getSupplierName = (productId: string) =>
+    findSupplierByProductId(productId)?.name || "le fournisseur";
+
+  const getProductUnitPrice = (productId: string) =>
+    findProductById(productId)?.pricePerUnit ?? 0;
+
+  const getProductUnit = (productId: string) =>
+    findProductById(productId)?.unit ?? "u";
+
+  const getCurrentStock = (productId: string) =>
+    findProductById(productId)?.currentStock ?? 0;
+
   const handleAutoOrder = (pred: Prediction) => {
+    const supplierName = getSupplierName(pred.productId);
+    const unit = getProductUnit(pred.productId);
     setOrderedPredictions((prev) => [...prev, pred.id]);
     addToast(
       "success",
       "Commande créée",
-      `${pred.recommendation?.quantity}u de ${pred.productName} commandées chez Franck Légumes.`
+      `${pred.recommendation?.quantity} ${unit} de ${pred.productName} commandés chez ${supplierName}.`
     );
   };
 
   const handleEmailSupplier = (pred: Prediction) => {
+    const supplierName = getSupplierName(pred.productId);
     addToast(
       "success",
       "Email envoyé",
-      `Demande de devis envoyée à Franck Légumes pour ${pred.productName}.`
+      `Demande de devis envoyée à ${supplierName} pour ${pred.productName}.`
     );
   };
 
@@ -101,6 +118,9 @@ const Predictions: React.FC = () => {
             <div className="cards-stack">
               {urgentPredictions.map((pred) => {
                 const isOrdered = orderedPredictions.includes(pred.id);
+                const unitPrice = getProductUnitPrice(pred.productId);
+                const supplierName = getSupplierName(pred.productId);
+                const unit = getProductUnit(pred.productId);
                 return (
                   <Card
                     key={pred.id}
@@ -135,7 +155,7 @@ const Predictions: React.FC = () => {
                           <div className="stat">
                             <span className="label">Conso. Moyenne</span>
                             <span className="value">
-                              {pred.predictedConsumption} kg/j
+                              {pred.predictedConsumption} {unit}/j
                             </span>
                           </div>
                         </div>
@@ -150,13 +170,13 @@ const Predictions: React.FC = () => {
                             <span className="text-sm font-medium text-primary">
                               (~
                               {(
-                                (pred.recommendation?.quantity || 0) * 2.4
+                                (pred.recommendation?.quantity || 0) * unitPrice
                               ).toFixed(2)}
                               €)
                             </span>
                           </div>
                           <span className="rec-sub">
-                            Fournisseur: Franck Légumes (2.40€/u)
+                            Fournisseur: {supplierName} ({unitPrice.toFixed(2)}€/{unit})
                           </span>
                         </div>
                         <div className="action-buttons">
@@ -257,6 +277,26 @@ const Predictions: React.FC = () => {
         onClose={() => setIsDetailModalOpen(false)}
         prediction={selectedPrediction}
         onOrder={handleOrderFromModal}
+        supplierName={
+          selectedPrediction
+            ? getSupplierName(selectedPrediction.productId)
+            : undefined
+        }
+        unitPrice={
+          selectedPrediction
+            ? getProductUnitPrice(selectedPrediction.productId)
+            : undefined
+        }
+        currentStock={
+          selectedPrediction
+            ? getCurrentStock(selectedPrediction.productId)
+            : undefined
+        }
+        productUnit={
+          selectedPrediction
+            ? getProductUnit(selectedPrediction.productId)
+            : undefined
+        }
       />
     </div>
   );

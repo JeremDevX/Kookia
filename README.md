@@ -2,12 +2,12 @@
 
 Application React + TypeScript de gestion de stocks, prédictions et suivi opérationnel pour restauration.
 
-## Etat du projet (2026-02-27)
+## Etat du projet (2026-04-10)
 
 - Statut global: MVP fonctionnel sur données mock locales.
-- Architecture runtime active: `pages -> hooks -> services -> utils/mockData`.
+- Architecture runtime active: `app -> pages/components -> hooks/features -> services/domain -> data/mock`.
 - Migration API backend: non active à ce stade (pas de client API branché).
-- Référence suivi qualité/corrections: `docs/audit/corrections/*`.
+- Revue architecture locale: `ARCHITECTURE_REVIEW.md`.
 
 ## Démarrage
 
@@ -30,27 +30,33 @@ npm run test
 
 ```text
 src/
-├── pages/               # Ecrans (Dashboard, Stocks, Predictions, Recipes, Analytics, Settings)
-├── hooks/               # Orchestration UI/data (useProducts, usePredictions, ...)
-├── services/            # Logique data + règles métier (source mock actuelle)
-├── utils/mockData.ts    # Source de données de démonstration
-├── components/          # UI réutilisable et sections métier
-├── context/             # Contextes globaux (toast, panier)
-├── types/               # Types domaine TypeScript centralisés
+├── app/                 # Providers et router applicatif
+├── components/          # UI existante et sections métier legacy en cours de convergence
+├── context/             # Contextes globaux UI (toast, panier)
+├── data/mock/           # Source mock consommée par les services
+├── domain/              # Types métier et policies pures
+├── features/            # Hooks et helpers d'orchestration par feature
+├── hooks/               # Façades UI/data existantes
+├── pages/               # Entrées d'écran
+├── services/            # Accès données + façade applicative
+├── shared/              # Types et primitives UI transverses
+├── types/               # Barrel de compatibilité sur les types du domaine/shared
 ├── config/domain/       # Paramètres métier front
 └── styles/              # Styles globaux + tokens CSS
 ```
 
 Flux observé dans le code:
-- `Dashboard.tsx`, `Stocks.tsx`, `Predictions.tsx` consomment les hooks (`usePredictions`, `useProducts`, ...).
-- Les hooks appellent les services (`productService`, `predictionService`, `recipeService`, `analyticsService`).
-- Les services utilisent des données mock depuis `src/utils/mockData.ts`.
+- Les pages consomment les hooks et helpers de feature.
+- Les hooks appellent les services.
+- Les services s'appuient sur le domaine pur et les données mock dédiées sous `src/data/mock`.
+- Le dossier `src/components` reste partiellement horizontal et doit continuer à converger feature par feature.
 
 ## Ce qui est en place
 
-- Types centralisés dans `src/types`.
-- Pages branchées sur hooks/services (pas d'import `MOCK_*` direct dans les pages principales).
-- Priorisation prédictions et règles métier front dans les services.
+- Domaine isolé sous `src/domain`.
+- Types exposés via le barrel `src/types`.
+- Pages et composants UI débarrassés des imports directs vers `utils/mockData` et `services`.
+- Priorisation prédictions et règles métier front centralisées hors JSX.
 - Couverture de tests unitaires ciblée (services, utilitaires, état panier).
 
 ## Limites connues
@@ -58,6 +64,7 @@ Flux observé dans le code:
 - Persistance serveur absente: les données ne survivent pas à un vrai cycle backend.
 - Pas de couche `src/config/api.ts` active dans ce dépôt aujourd'hui.
 - Les services simulent des latences et retournent des mocks.
+- Une partie du rendu reste encore portée par des composants volumineux dans `src/components`.
 
 ## Plan de migration recommandé (architecture cible)
 
@@ -69,12 +76,8 @@ Flux observé dans le code:
 
 ## Documentation de référence
 
-- Point d'entrée agent: [docs/AI_ENTRYPOINT.md](docs/AI_ENTRYPOINT.md)
-- Index corrections: [docs/audit/corrections/README.md](docs/audit/corrections/README.md)
-- Workflow obligatoire: [docs/audit/corrections/WORKFLOW_IMPERATIF_AGENT.md](docs/audit/corrections/WORKFLOW_IMPERATIF_AGENT.md)
-- Bonnes pratiques agent: [docs/audit/corrections/BEST_PRACTICES_AGENT.md](docs/audit/corrections/BEST_PRACTICES_AGENT.md)
-- Process standard: [docs/audit/corrections/PROCESS_STANDARD.md](docs/audit/corrections/PROCESS_STANDARD.md)
-- Registre audit source: [docs/audit/registre-problemes.md](docs/audit/registre-problemes.md)
+- Workflow agent: `AGENTS.md`
+- Revue architecture et plan de correction: `ARCHITECTURE_REVIEW.md`
 
 ## Validation locale minimale avant PR
 

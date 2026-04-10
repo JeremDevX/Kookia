@@ -11,14 +11,17 @@ import { useToast } from "../context/ToastContext";
 import { useRecipes } from "../hooks";
 import type { Recipe } from "../types";
 import type { ProductionRecord } from "../types/callbacks";
-import {
-  calculateIngredientCost,
-} from "../services/recipeService";
 import "./Recipes.css";
 
 const Recipes: React.FC = () => {
   const { addToast } = useToast();
-  const { recipes, getMaxYield, getProductName, getProductUnit } = useRecipes();
+  const {
+    recipes,
+    getMaxYield,
+    getIngredientCost,
+    getProductName,
+    getProductUnit,
+  } = useRecipes();
   const [activeTab, setActiveTab] = useState<"history" | "anti-waste">(
     "history"
   );
@@ -134,7 +137,7 @@ const Recipes: React.FC = () => {
                     <div className="cost-col">
                       <span className="cost-label">Coût Matière</span>
                       <span className="cost-value">
-                        {calculateIngredientCost(recipe.ingredients).toFixed(2)}
+                        {getIngredientCost(recipe.ingredients).toFixed(2)}
                         €
                       </span>
                     </div>
@@ -142,9 +145,7 @@ const Recipes: React.FC = () => {
                       <span className="cost-label">Marge Est. (75%)</span>
                       <span className="cost-value margin">
                         +
-                        {(
-                          calculateIngredientCost(recipe.ingredients) * 3
-                        ).toFixed(2)}
+                        {(getIngredientCost(recipe.ingredients) * 3).toFixed(2)}
                         €
                       </span>
                     </div>
@@ -238,7 +239,7 @@ const Recipes: React.FC = () => {
                     <div className="cost-col">
                       <span className="cost-label">Coût Matière</span>
                       <span className="cost-value">
-                        {calculateIngredientCost(recipe.ingredients).toFixed(2)}
+                        {getIngredientCost(recipe.ingredients).toFixed(2)}
                         €
                       </span>
                     </div>
@@ -246,9 +247,7 @@ const Recipes: React.FC = () => {
                       <span className="cost-label">Marge Est. (75%)</span>
                       <span className="cost-value margin">
                         +
-                        {(
-                          calculateIngredientCost(recipe.ingredients) * 3
-                        ).toFixed(2)}
+                        {(getIngredientCost(recipe.ingredients) * 3).toFixed(2)}
                         €
                       </span>
                     </div>

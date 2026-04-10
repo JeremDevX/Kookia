@@ -1,5 +1,10 @@
 import type { Recipe } from "../types";
-import { MOCK_RECIPES, MOCK_PRODUCTS } from "../utils/mockData";
+import { MOCK_PRODUCTS } from "../data/mock/inventory";
+import { MOCK_RECIPES } from "../data/mock/recipes";
+import {
+  calculateIngredientCostFromInventory,
+  calculateMaxYieldFromInventory,
+} from "../domain/recipes/recipe.policies";
 
 // ============================================
 // Recipe Service
@@ -51,15 +56,7 @@ export const getRecentRecipes = async (): Promise<Recipe[]> => {
  * Calculate max yield for a recipe based on current stock
  */
 export const calculateMaxYield = (recipe: Recipe): number => {
-  if (recipe.ingredients.length === 0) return 0;
-
-  const yields = recipe.ingredients.map((ing) => {
-    const product = MOCK_PRODUCTS.find((p) => p.id === ing.productId);
-    if (!product || ing.quantity === 0) return 0;
-    return Math.floor(product.currentStock / ing.quantity);
-  });
-
-  return Math.min(...yields);
+  return calculateMaxYieldFromInventory(recipe, MOCK_PRODUCTS);
 };
 
 /**
@@ -84,8 +81,5 @@ export const getProductUnitForRecipe = (productId: string): string => {
 export const calculateIngredientCost = (
   ingredients: { productId: string; quantity: number }[]
 ): number => {
-  return ingredients.reduce((sum, ing) => {
-    const product = MOCK_PRODUCTS.find((p) => p.id === ing.productId);
-    return sum + (product ? product.pricePerUnit * ing.quantity : 0);
-  }, 0);
+  return calculateIngredientCostFromInventory(ingredients, MOCK_PRODUCTS);
 };

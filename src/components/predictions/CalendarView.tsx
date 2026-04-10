@@ -25,7 +25,7 @@ import {
   Calendar,
 } from "lucide-react";
 import Button from "../common/Button";
-import { getPredictionPriority } from "../../services/predictionService";
+import { getPredictionPriority } from "../../domain/predictions/prediction.policies";
 import type { Prediction } from "../../types";
 
 interface CalendarViewProps {

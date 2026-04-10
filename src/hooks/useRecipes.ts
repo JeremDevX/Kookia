@@ -3,6 +3,7 @@ import type { Recipe } from "../types";
 import {
   getRecipes,
   calculateMaxYield,
+  calculateIngredientCost,
   getProductNameForRecipe,
   getProductUnitForRecipe,
 } from "../services/recipeService";
@@ -13,6 +14,9 @@ interface UseRecipesReturn {
   error: Error | null;
   refetch: () => Promise<void>;
   getMaxYield: (recipe: Recipe) => number;
+  getIngredientCost: (
+    ingredients: { productId: string; quantity: number }[]
+  ) => number;
   getProductName: (productId: string) => string;
   getProductUnit: (productId: string) => string;
 }
@@ -50,6 +54,7 @@ export const useRecipes = (): UseRecipesReturn => {
     error,
     refetch: fetchRecipes,
     getMaxYield: calculateMaxYield,
+    getIngredientCost: calculateIngredientCost,
     getProductName: getProductNameForRecipe,
     getProductUnit: getProductUnitForRecipe,
   };

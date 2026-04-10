@@ -10,9 +10,13 @@ import {
   Phone,
   ShoppingCart,
 } from "lucide-react";
-import { getStatus, MOCK_SUPPLIERS } from "../../utils/mockData";
 import type { Product } from "../../types";
 import { useToast } from "../../context/ToastContext";
+import {
+  getProductStatus,
+  getProductStatusLabel,
+} from "../../domain/inventory/product.policies";
+import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 
 import "./ProductDetail.css";
 
@@ -28,13 +32,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   onAdjustStock,
 }) => {
   const { addToast } = useToast();
+  const { findSupplierByProductId } = useInventoryCatalog();
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState("");
 
   if (!product) return null;
 
-  const status = getStatus(product);
-  const supplier = MOCK_SUPPLIERS.find((s) => s.id === product.supplierId);
+  const status = getProductStatus(product);
+  const supplier = findSupplierByProductId(product.id);
 
   const handleContactSupplier = () => {
     addToast(
@@ -109,7 +114,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                     ? "Rupture Imminente"
                     : status === "moderate"
                     ? "Stock Faible"
-                    : "Stock Optimal"
+                    : getProductStatusLabel(status)
                 }
                 status={status}
               />

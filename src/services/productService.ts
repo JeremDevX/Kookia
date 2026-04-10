@@ -1,6 +1,7 @@
-import type { Product, ProductStatus } from "../types";
-import { MOCK_PRODUCTS, MOCK_SUPPLIERS } from "../utils/mockData";
+import type { Product } from "../types";
 import type { Supplier } from "../types";
+import { MOCK_PRODUCTS, MOCK_SUPPLIERS } from "../data/mock/inventory";
+export { getProductStatus } from "../domain/inventory/product.policies";
 
 // ============================================
 // Product Service
@@ -32,15 +33,6 @@ export const getProductsByCategory = async (
 ): Promise<Product[]> => {
   await new Promise((resolve) => setTimeout(resolve, 50));
   return MOCK_PRODUCTS.filter((p) => p.category === category);
-};
-
-/**
- * Get product status based on stock levels
- */
-export const getProductStatus = (product: Product): ProductStatus => {
-  if (product.currentStock <= product.minThreshold * 0.7) return "urgent";
-  if (product.currentStock <= product.minThreshold) return "moderate";
-  return "optimal";
 };
 
 /**

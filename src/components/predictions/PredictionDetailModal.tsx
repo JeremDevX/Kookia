@@ -3,7 +3,7 @@ import Modal from "../common/Modal";
 import Button from "../common/Button";
 import Badge from "../common/Badge";
 import { Package, Truck, DollarSign, Calendar, TrendingUp } from "lucide-react";
-import { getPredictionPriority } from "../../services/predictionService";
+import { getPredictionPriority } from "../../domain/predictions/prediction.policies";
 import type { Prediction } from "../../types";
 
 interface PredictionDetailModalProps {
@@ -11,6 +11,10 @@ interface PredictionDetailModalProps {
   onClose: () => void;
   prediction: Prediction | null;
   onOrder: () => void;
+  supplierName?: string;
+  unitPrice?: number;
+  currentStock?: number;
+  productUnit?: string;
 }
 
 const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
@@ -18,18 +22,31 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
   onClose,
   prediction,
   onOrder,
+  supplierName = "le fournisseur",
+  unitPrice = 0,
+  currentStock = 0,
+  productUnit = "u",
 }) => {
   // Stable mock values for display purposes
   // (In production, these would come from real data)
   const historyDays = 75;
-  const currentStock = 4;
 
   if (!prediction) return null;
 
-  const estimatedCost = (prediction.recommendation?.quantity || 0) * 2.4;
+  const estimatedCost = (prediction.recommendation?.quantity || 0) * unitPrice;
   const priority = getPredictionPriority(prediction);
-  const label = priority === "critical" ? "Urgent" : "Modéré";
-  const status = priority === "critical" ? "urgent" : "moderate";
+  const label =
+    priority === "critical"
+      ? "Urgent"
+      : priority === "high"
+      ? "Élevé"
+      : "Normal";
+  const status =
+    priority === "critical"
+      ? "urgent"
+      : priority === "high"
+      ? "moderate"
+      : "optimal";
 
   return (
     <Modal
@@ -81,7 +98,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
               </span>
             </div>
             <p className="text-2xl font-bold">
-              {prediction.predictedConsumption} kg
+              {prediction.predictedConsumption} {productUnit}
             </p>
             <p className="text-xs text-secondary mt-1">par jour (moyenne)</p>
           </div>
@@ -93,7 +110,9 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
                 Stock actuel
               </span>
             </div>
-            <p className="text-2xl font-bold text-urgent">{currentStock} kg</p>
+            <p className="text-2xl font-bold text-urgent">
+              {currentStock} {productUnit}
+            </p>
             <p className="text-xs text-secondary mt-1">Rupture prévue demain</p>
           </div>
 
@@ -108,7 +127,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
               {estimatedCost.toFixed(2)} €
             </p>
             <p className="text-xs text-secondary mt-1">
-              pour {prediction.recommendation?.quantity}u
+              pour {prediction.recommendation?.quantity} {productUnit}
             </p>
           </div>
         </div>
@@ -122,13 +141,12 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
                 Recommandation
               </h4>
               <p className="text-sm text-green-800 mb-3">
-                Commander{" "}
-                <strong>{prediction.recommendation?.quantity} unités</strong>{" "}
-                auprès de <strong>Franck Légumes</strong>
+                Commander <strong>{prediction.recommendation?.quantity}</strong>{" "}
+                <strong>{productUnit}</strong> auprès de <strong>{supplierName}</strong>
               </p>
               <div className="flex items-center gap-4 text-xs text-green-700">
                 <span>📦 Livraison: 24h</span>
-                <span>💰 Prix unitaire: 2.40€</span>
+                <span>💰 Prix unitaire: {unitPrice.toFixed(2)}€</span>
                 <span>✅ Fournisseur vérifié</span>
               </div>
             </div>
