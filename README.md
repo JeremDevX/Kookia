@@ -1,13 +1,12 @@
-# FoodAI MVP
+# Kookia
 
 Application React + TypeScript de gestion de stocks, prédictions et suivi opérationnel pour restauration.
 
-## Etat du projet (2026-04-10)
+## État du projet (2026-09-11)
 
 - Statut global: MVP fonctionnel sur données mock locales.
 - Architecture runtime active: `app -> pages/components -> hooks/features -> services/domain -> data/mock`.
-- Migration API backend: non active à ce stade (pas de client API branché).
-- Revue architecture locale: `ARCHITECTURE_REVIEW.md`.
+- La migration API/backend est une orientation future, pas une capacité runtime.
 
 ## Démarrage
 
@@ -76,8 +75,8 @@ Flux observé dans le code:
 
 ## Documentation de référence
 
-- Workflow agent: `AGENTS.md`
-- Revue architecture et plan de correction: `ARCHITECTURE_REVIEW.md`
+- Workflow agent : [AGENTS.md](AGENTS.md)
+- Méthode Codex, sources et validation du cadrage : [Développement agentique](docs/agentic-development.md)
 
 ## Validation locale minimale avant PR
 
