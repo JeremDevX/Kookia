@@ -12,6 +12,7 @@ import { useToast } from "../context/ToastContext";
 import type { Product } from "../types";
 import type { StockFilters } from "../types/callbacks";
 import "./Stocks.css";
+import "../styles/Workspace.css";
 
 const Stocks: React.FC = () => {
   const { addToast } = useToast();
@@ -103,11 +104,12 @@ const Stocks: React.FC = () => {
   };
 
   return (
-    <div className="stocks-container">
-      <header className="page-header glass-header">
+    <div className="stocks-container workspace-page">
+      <header className="workspace-header">
         <div>
-          <h1 className="page-title">Gestion des Stocks</h1>
-          <p className="page-subtitle">Inventaire en temps réel et alertes</p>
+          <p className="workspace-eyebrow">VOTRE RÉSERVE, SOUS CONTRÔLE</p>
+          <h1>Les bons produits. Au bon moment.</h1>
+          <p className="workspace-subtitle">Consultez vos stocks, repérez les besoins et ajustez les quantités.</p>
         </div>
         <Button
           icon={<Plus size={18} />}
@@ -117,10 +119,14 @@ const Stocks: React.FC = () => {
         </Button>
       </header>
 
+      <div className="workspace-summary"><div><span>Votre inventaire</span><strong>{products.length} produits</strong></div><p>Un stock à jour, c’est le premier ingrédient d’une cuisine bien préparée.</p></div>
+
       <Card className="stocks-toolbar">
         <div className="toolbar-content">
           <div className="search-wrapper">
             <Input
+              id="stock-search"
+              label="Rechercher dans les stocks"
               placeholder="Rechercher un produit..."
               icon={<Search size={18} />}
               value={searchTerm}
@@ -128,7 +134,9 @@ const Stocks: React.FC = () => {
             />
           </div>
           <div className="filters-wrapper">
+            <label className="workspace-filter-label" htmlFor="stock-category">Catégorie
             <select
+              id="stock-category"
               className="category-select"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -141,6 +149,7 @@ const Stocks: React.FC = () => {
               <option value="Epicerie">Epicerie</option>
               <option value="Charcuterie">Charcuterie</option>
             </select>
+            </label>
             <Button
               variant="outline"
               icon={<Filter size={18} />}
@@ -148,17 +157,12 @@ const Stocks: React.FC = () => {
             >
               Filtres
             </Button>
-            <Button
-              icon={<Plus size={18} />}
-              onClick={() => setIsAddModalOpen(true)}
-            >
-              Nouveau Produit
-            </Button>
           </div>
         </div>
       </Card>
 
-      <div className="stocks-table-card">
+      <div className="workspace-section-heading"><h2>Les produits</h2><span role="status">{filteredProducts.length} résultat{filteredProducts.length > 1 ? "s" : ""}</span></div>
+      <div className="stocks-table-card" role="region" aria-label="Inventaire des produits" tabIndex={0}>
         <table className="stocks-table">
           <thead>
             <tr>
@@ -180,7 +184,7 @@ const Stocks: React.FC = () => {
                   className="clickable-row"
                 >
                   <td>
-                    <span className="product-name">{product.name}</span>
+                    <button className="product-name stock-product-link" onClick={() => setSelectedProductId(product.id)}>{product.name}</button>
                   </td>
                   <td className="text-secondary">{product.category}</td>
                   <td>
@@ -221,12 +225,14 @@ const Stocks: React.FC = () => {
                       <div className="stock-adjust">
                         <button
                           className="stock-action-btn minus"
+                          aria-label={`Retirer une unité de ${product.name}`}
                           onClick={(e) => handleAdjustStock(e, product.id, -1)}
                         >
                           -
                         </button>
                         <button
                           className="stock-action-btn plus"
+                          aria-label={`Ajouter une unité de ${product.name}`}
                           onClick={(e) => handleAdjustStock(e, product.id, 1)}
                         >
                           +
@@ -237,6 +243,7 @@ const Stocks: React.FC = () => {
                 </tr>
               );
             })}
+            {filteredProducts.length === 0 && <tr><td colSpan={6}><div className="workspace-empty">Aucun produit ne correspond à votre recherche. Essayez d’autres filtres.</div></td></tr>}
           </tbody>
         </table>
       </div>

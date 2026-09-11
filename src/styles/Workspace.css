@@ -1,0 +1,119 @@
+/* Shared visual language for the three operational workspaces. */
+.workspace-page:is(.stocks-container, .predictions-container, .recipes-container) {
+  --color-primary: #264c39;
+  --color-primary-hover: #193d2b;
+  --color-primary-text: #30553c;
+  --color-text-primary: #2b4133;
+  --color-text-secondary: #63715f;
+  --color-border: #e0e6d9;
+  --color-bg: #f7f8f3;
+  --color-surface-hover: #f4f7ef;
+  background: #f7f8f3;
+  min-height: 100%;
+  padding: 36px clamp(20px, 3vw, 48px) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.workspace-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.workspace-eyebrow { font-size: 9px; letter-spacing: .15em; color: #6b7c60; font-weight: 600; margin-bottom: 12px; }
+.workspace-header h1 { font-size: clamp(25px, 2.5vw, 34px); font-weight: 600; letter-spacing: -.045em; line-height: 1.25; }
+.workspace-subtitle { margin-top: 12px; font-size: 12px; color: #66745f; max-width: 600px; line-height: 1.8; }
+.workspace-header > .btn { flex-shrink: 0; }
+.workspace-page .btn { min-height: 40px; font-size: 12px; border-radius: 9px; box-shadow: none; }
+.workspace-page .btn-primary { background: #264c39; color: #fffef5; }
+.workspace-page .btn-primary:hover { background: #193d2b; }
+.workspace-page .btn-secondary { background: #f0f4e9; color: #46613e; }
+.workspace-page .btn-outline { background: #fff; border-color: #dce4d2; color: #48623f; }
+.workspace-page :is(button, a, input, select, [tabindex]):focus-visible { outline: 3px solid #a97824; outline-offset: 3px; }
+.workspace-summary { display: flex; align-items: center; gap: 36px; padding: 24px 28px; border: 1px solid #dce5d1; background: #eef3e6; border-radius: 16px; }
+.workspace-summary > div { min-width: 180px; }
+.workspace-summary span { display: block; font-size: 10px; color: #627457; margin-bottom: 6px; }
+.workspace-summary strong { display: block; font-size: 25px; font-weight: 500; letter-spacing: -.03em; color: #365435; }
+.workspace-summary p { border-left: 1px solid #d2ddc6; padding-left: 28px; font-size: 12px; line-height: 1.8; color: #5c7051; max-width: 570px; }
+.workspace-section-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.workspace-section-heading h2 { font-size: 17px; font-weight: 600; }
+.workspace-section-heading > span { font-size: 11px; color: #6b795f; }
+.workspace-page .view-toggles { display: flex; gap: 5px; background: #eaf0e2; border: 1px solid #dce5d0; border-radius: 11px; padding: 4px; flex-shrink: 0; }
+.workspace-page .view-toggles .btn { border: 0; background: transparent; color: #5f7253; }
+.workspace-page .view-toggles .btn[aria-pressed="true"] { background: white; color: #2d5135; box-shadow: 0 1px 4px #263e1510; }
+.workspace-page .card { border: 1px solid #e0e6d9; border-radius: 15px; box-shadow: none; padding: 24px; }
+.workspace-page .card:hover { transform: none; box-shadow: none; }
+.workspace-page .badge { font-size: 10px; font-weight: 500; border-radius: 6px; letter-spacing: 0; text-transform: none; }
+.workspace-empty { padding: 32px 24px; font-size: 13px; color: #65775b; line-height: 1.8; text-align: center; }
+.workspace-page .stocks-toolbar { padding: 20px 24px; }
+.workspace-page .stocks-toolbar .card-content { padding: 0; }
+.workspace-page .toolbar-content { align-items: flex-end; }
+.workspace-page .search-wrapper { min-width: 0; flex: 1 1 250px; max-width: 460px; }
+.workspace-page .filters-wrapper { align-items: flex-end; gap: 12px; }
+.workspace-filter-label { display: flex; flex-direction: column; gap: 8px; font-size: 11px; color: #607153; }
+.workspace-page .input-label { font-size: 11px; color: #607153; }
+.workspace-page .category-select { min-height: 42px; }
+.workspace-page .stocks-table-card { overflow: auto; border-color: #e0e6d9; box-shadow: none; border-radius: 14px; }
+.workspace-page .stocks-table { min-width: 720px; }
+.workspace-page .stocks-table th { padding: 15px 22px; background: #eef3e8; color: #647658; border-bottom: 1px solid #dfe6d7; font-size: 10px; font-weight: 500; }
+.workspace-page .stocks-table td { padding: 22px; font-size: 12px; }
+.workspace-page .stocks-table .product-name { font-size: 13px; text-align: left; white-space: normal; max-width: none; }
+.workspace-page .stock-product-link:hover { text-decoration: underline; color: #264c39; }
+.workspace-page .stock-value, .workspace-page .stock-price-cell { font-family: inherit; font-variant-numeric: tabular-nums; }
+.workspace-page .stock-action-btn { width: 36px; height: 36px; border-radius: 8px; }
+.workspace-page .predictions-grid { gap: 30px; }
+.workspace-page .section-header { border: 0; margin-bottom: 16px; padding: 0; }
+.workspace-page .section-title { font-size: 17px; font-weight: 600; }
+.workspace-page .urgent-border { border-left: 3px solid #b96945; }
+.workspace-page .pred-main { grid-template-columns: minmax(0, 1fr) minmax(280px, .65fr); gap: 28px; }
+.workspace-page .prediction-card .card-content { padding: 0; }
+.workspace-page .pred-header { flex-wrap: wrap; gap: 12px; margin-bottom: 15px; }
+.workspace-page .prediction-card .product-name { font-size: 18px; }
+.workspace-page .pred-reason { font-size: 12px; line-height: 1.9; align-items: flex-start; }
+.workspace-page .pred-reason svg { flex-shrink: 0; margin-top: 4px; }
+.workspace-page .pred-stats { background: #f6f8f2; padding: 16px; border-radius: 10px; gap: 32px; }
+.workspace-page .stat .label { font-size: 10px; text-transform: none; font-weight: 400; letter-spacing: 0; }
+.workspace-page .stat .value { font-size: 17px; }
+.workspace-page .recommendation-box { background: #eef3e6; border: 1px solid #dce5cf; box-shadow: none; padding: 18px; }
+.workspace-page .rec-label { font-size: 9px; color: #5d7550; }
+.workspace-page .rec-value { font-size: 17px; font-weight: 500; }
+.workspace-page .rec-sub { font-size: 10px; line-height: 1.8; }
+.workspace-page .action-buttons { flex-wrap: wrap; }
+.workspace-page .pred-compact { grid-template-columns: minmax(0, 1fr) auto auto; gap: 20px; }
+.workspace-page .pred-meta { flex-wrap: wrap; gap: 8px; }
+.workspace-page .confidence-pill { font-size: 10px; background: #f4f7ee; border-radius: 6px; border-color: #e0e6d7; }
+.workspace-page .ordered-badge, .workspace-page .produced-badge { position: static; align-self: flex-start; width: fit-content; margin-bottom: 16px; box-shadow: none; border-radius: 6px; }
+.workspace-page .prediction-card.ordered, .workspace-page .recipe-card.produced { opacity: 1; background: #f8faf4; }
+.workspace-page .calendar-header { background: white; border-color: #dfe6d6; box-shadow: none; }
+.workspace-page .recipes-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 20px; }
+.workspace-page .recipe-card { border-top: 3px solid #9cad80; }
+.workspace-page .recipe-header { gap: 12px; margin-bottom: 0; }
+.workspace-page .recipe-title { font-size: 18px; line-height: 1.5; }
+.workspace-page .recipe-meta { flex-wrap: wrap; font-size: 11px; margin-bottom: 4px; }
+.workspace-page .ingredient-item, .workspace-page .ingredient-row { padding: 9px 0; font-size: 11px; gap: 12px; border-bottom: 1px solid #e6ecdf; }
+.workspace-page .ingredients-box { background: #f5f8ee; padding: 18px; border: 1px solid #e2e9d7; }
+.workspace-page .cost-row { gap: 16px; padding-block: 16px; border-color: #dce6d0; }
+.workspace-page .cost-label { font-size: 10px; }
+.workspace-page .cost-value { font-size: 19px; font-weight: 500; margin-top: 5px; }
+.workspace-page .stock-match-badge { background: #e8f0dc; color: #466539; padding: 10px; font-size: 11px; }
+.workspace-page .empty-week { background: white; border: 1px dashed #d3dec6; padding: 48px 24px; }
+@media (max-width: 1100px) {
+  .workspace-header { flex-direction: column; align-items: flex-start; }
+  .workspace-page .pred-compact { grid-template-columns: 1fr auto; }
+  .workspace-page .compact-actions { grid-column: 1 / -1; }
+  .workspace-page .pred-main { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .workspace-page:is(.stocks-container, .predictions-container, .recipes-container) { padding: 24px 16px 32px; gap: 20px; }
+  .workspace-summary { padding: 20px; flex-direction: column; align-items: flex-start; gap: 14px; }
+  .workspace-summary p { padding: 0; border: 0; font-size: 11px; }
+  .workspace-page .card { padding: 20px; }
+  .workspace-page .toolbar-content { align-items: stretch; }
+  .workspace-page .search-wrapper { flex: auto; }
+  .workspace-page .filters-wrapper { flex-direction: row; align-items: flex-end; }
+  .workspace-filter-label { flex: 1; min-width: 0; }
+  .workspace-page .category-select { width: 100%; }
+  .workspace-page .pred-compact { grid-template-columns: 1fr; }
+  .workspace-page .compact-actions { flex-wrap: wrap; }
+  .workspace-page .recipe-header { flex-direction: column; }
+  .workspace-page .view-toggles { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace-page *, .workspace-page *::before, .workspace-page *::after { animation: none !important; transition: none !important; }
+}

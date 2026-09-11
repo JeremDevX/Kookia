@@ -18,6 +18,7 @@ import type { Prediction } from "../types";
 import { getPredictionPriority } from "../domain/predictions/prediction.policies";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import "./Predictions.css";
+import "../styles/Workspace.css";
 
 const Predictions: React.FC = () => {
   const { addToast } = useToast();
@@ -81,14 +82,16 @@ const Predictions: React.FC = () => {
   );
 
   return (
-    <div className="predictions-container">
-      <header className="page-header glass-header">
+    <div className="predictions-container workspace-page">
+      <header className="workspace-header">
         <div>
-          <h1 className="page-title">Prédictions & Achats</h1>
-          <p className="page-subtitle">Recommandations basées sur l'IA</p>
+          <p className="workspace-eyebrow">UNE LONGUEUR D’AVANCE</p>
+          <h1>Anticipez les prochains services.</h1>
+          <p className="workspace-subtitle">Des prévisions pour éclairer vos achats. Votre expertise pour décider.</p>
         </div>
         <div className="view-toggles">
           <Button
+            aria-pressed={viewMode === "list"}
             variant={viewMode === "list" ? "primary" : "secondary"}
             onClick={() => setViewMode("list")}
             size="sm"
@@ -96,6 +99,7 @@ const Predictions: React.FC = () => {
             Liste Priorités
           </Button>
           <Button
+            aria-pressed={viewMode === "calendar"}
             variant={viewMode === "calendar" ? "primary" : "secondary"}
             onClick={() => setViewMode("calendar")}
             size="sm"
@@ -106,16 +110,19 @@ const Predictions: React.FC = () => {
         </div>
       </header>
 
+      <div className="workspace-summary"><div><span>À examiner en priorité</span><strong>{urgentPredictions.length} suggestion{urgentPredictions.length > 1 ? "s" : ""}</strong></div><p>Les prévisions sont des estimations. Vérifiez les quantités et les besoins avant de confirmer.</p></div>
+
       {viewMode === "list" ? (
         <div className="predictions-grid">
           {/* Urgent Section */}
           <section>
             <div className="section-header urgent">
               <h2 className="section-title text-urgent">
-                🔴 Urgent (Commander Aujourd'hui)
+                À traiter en priorité
               </h2>
             </div>
             <div className="cards-stack">
+              {urgentPredictions.length === 0 && <div className="workspace-empty">Aucune suggestion critique pour le moment.</div>}
               {urgentPredictions.map((pred) => {
                 const isOrdered = orderedPredictions.includes(pred.id);
                 const unitPrice = getProductUnitPrice(pred.productId);
@@ -150,7 +157,7 @@ const Predictions: React.FC = () => {
                         <div className="pred-stats">
                           <div className="stat">
                             <span className="label">Stock Prévu</span>
-                            <span className="value text-urgent">Critical</span>
+                            <span className="value text-urgent">Critique</span>
                           </div>
                           <div className="stat">
                             <span className="label">Conso. Moyenne</span>
@@ -165,7 +172,7 @@ const Predictions: React.FC = () => {
                           <span className="rec-label">Recommandation</span>
                           <div className="flex items-baseline gap-2">
                             <span className="rec-value">
-                              Commander {pred.recommendation?.quantity} unités
+                              Commander {pred.recommendation?.quantity} {unit}
                             </span>
                             <span className="text-sm font-medium text-primary">
                               (~
@@ -209,7 +216,7 @@ const Predictions: React.FC = () => {
           <section>
             <div className="section-header">
               <h2 className="section-title text-moderate">
-                🟡 Modéré (D'ici 2-3 jours)
+                Les autres suggestions
               </h2>
             </div>
             <div className="cards-stack">
@@ -241,7 +248,7 @@ const Predictions: React.FC = () => {
                       <div className="pred-meta">
                         <Badge label={badgeLabel} status={badgeStatus} />
                         <span className="confidence-pill">
-                          {(pred.confidence * 100).toFixed(0)}% fiable
+                          Confiance : {(pred.confidence * 100).toFixed(0)} %
                         </span>
                       </div>
                       <div className="compact-actions">

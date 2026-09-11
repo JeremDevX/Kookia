@@ -12,6 +12,7 @@ import { useRecipes } from "../hooks";
 import type { Recipe } from "../types";
 import type { ProductionRecord } from "../types/callbacks";
 import "./Recipes.css";
+import "../styles/Workspace.css";
 
 const Recipes: React.FC = () => {
   const { addToast } = useToast();
@@ -72,16 +73,23 @@ const Recipes: React.FC = () => {
     .sort((a, b) => b.maxYield - a.maxYield); // Sort by quantity possible
 
   return (
-    <div className="recipes-container">
-      <header className="page-header glass-header">
+    <div className="recipes-container workspace-page">
+      <header className="workspace-header">
         <div>
-          <h1 className="page-title">Carnet de Recettes</h1>
-          <p className="page-subtitle">
-            Gérez votre production et réduisez le gaspillage
+          <p className="workspace-eyebrow">LE SAVOIR-FAIRE AU QUOTIDIEN</p>
+          <h1>De bons produits. De belles idées.</h1>
+          <p className="workspace-subtitle">
+            Retrouvez vos recettes et donnez le meilleur de vos stocks.
           </p>
         </div>
-        <div className="flex gap-sm">
+        <Button icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Enregistrer une production</Button>
+      </header>
+
+      <div className="workspace-summary"><div><span>Votre carnet de cuisine</span><strong>{recipes.length} recettes</strong></div><p>Inspirez-vous des produits disponibles. Ajustez les portions, puis confirmez votre production.</p></div>
+      <div className="workspace-section-heading"><h2>À cuisiner, à partager</h2>
+        <div className="view-toggles">
           <Button
+            aria-pressed={activeTab === "history"}
             variant={activeTab === "history" ? "primary" : "outline"}
             onClick={() => setActiveTab("history")}
             size="sm"
@@ -89,15 +97,16 @@ const Recipes: React.FC = () => {
             Semaine en cours
           </Button>
           <Button
+            aria-pressed={activeTab === "anti-waste"}
             variant={activeTab === "anti-waste" ? "primary" : "outline"}
             onClick={() => setActiveTab("anti-waste")}
             size="sm"
             icon={<Leaf size={16} />}
           >
-            Suggestions Anti-Gaspi
+            Avec mes stocks
           </Button>
         </div>
-      </header>
+      </div>
 
       {/* TAB 1: HISTORY */}
       {activeTab === "history" && (
