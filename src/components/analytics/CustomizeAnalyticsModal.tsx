@@ -51,10 +51,10 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
             <h4 className="font-semibold">Objectifs de gaspillage</h4>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="customizeanalyticsmodal-1" className="block text-sm font-medium mb-2">
               Cible de gaspillage par couvert (grammes)
             </label>
-            <input
+            <input id="customizeanalyticsmodal-1"
               type="number"
               className="w-full px-3 py-2 border rounded-md"
               value={settings.wasteTarget}
@@ -75,7 +75,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
             <h4 className="font-semibold">Sections visibles</h4>
           </div>
           <div className="space-y-3">
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label htmlFor="customizeanalyticsmodal-2" className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={settings.showTrends}
@@ -140,7 +140,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
             <label className="block text-sm font-medium mb-2">
               Seuil d'alerte de précision IA (%)
             </label>
-            <input
+            <input id="customizeanalyticsmodal-2"
               type="number"
               min="0"
               max="100"

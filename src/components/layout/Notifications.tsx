@@ -17,86 +17,7 @@ import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalo
 import { createOrderRecommendationsFromCartItems } from "../../features/orders/orderRecommendations";
 import "./Notifications.css";
 
-interface Notification {
-  id: string;
-  type: "warning" | "alert" | "info";
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  // Fields for quick cart feature
-  actionable?: boolean;
-  productId?: string;
-  productName?: string;
-  suggestedQuantity?: number;
-  unit?: string;
-  currentStock?: number;
-  estimatedRunout?: string;
-}
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "n1",
-    type: "alert",
-    title: "Alerte Météo",
-    message:
-      "Orages violents prévus demain soir. Impact terrasse estimé : -30%. Réduisez les commandes de produits frais.",
-    time: "Il y a 10 min",
-    read: false,
-    actionable: false,
-  },
-  {
-    id: "n2",
-    type: "warning",
-    title: "🚨 Stock Critique - Mozzarella",
-    message:
-      "Stock actuel : 2 kg | Épuisement prévu dans 2 services (~18h). Consommation moyenne : 4 kg/jour.",
-    time: "Il y a 1h",
-    read: false,
-    actionable: true,
-    productId: "p2",
-    productName: "Mozzarella di Bufala",
-    suggestedQuantity: 8,
-    unit: "kg",
-    currentStock: 2,
-    estimatedRunout: "2 services",
-  },
-  {
-    id: "n3",
-    type: "warning",
-    title: "⚠️ Stock Critique - Tomates",
-    message:
-      "Stock actuel : 5 kg | Épuisement prévu demain matin. Consommation moyenne : 6 kg/jour.",
-    time: "Il y a 2h",
-    read: false,
-    actionable: true,
-    productId: "p1",
-    productName: "Tomates San Marzano",
-    suggestedQuantity: 15,
-    unit: "kg",
-    currentStock: 5,
-    estimatedRunout: "demain matin",
-  },
-];
-
-// Styles pour les badges d'icônes professionnels - Couleurs DA
-const iconBadgeStyles = {
-  alert: {
-    // Teal pour météo/alertes
-    background: "linear-gradient(135deg, #218083 0%, #1a6668 100%)",
-    boxShadow: "0 4px 12px rgba(33, 128, 131, 0.35)",
-  },
-  warning: {
-    // Urgent (rouge) pour warnings
-    background: "linear-gradient(135deg, #c0152f 0%, #a01228 100%)",
-    boxShadow: "0 4px 12px rgba(192, 21, 47, 0.35)",
-  },
-  info: {
-    // Primary (vert) pour infos
-    background: "linear-gradient(135deg, #00c796 0%, #00b386 100%)",
-    boxShadow: "0 4px 12px rgba(0, 199, 150, 0.35)",
-  },
-};
+import { MOCK_NOTIFICATIONS, iconBadgeStyles, type Notification } from "./notificationPresentation";
 
 const Notifications: React.FC = () => {
   const { addToast } = useToast();
@@ -255,11 +176,13 @@ const Notifications: React.FC = () => {
     <>
       <button
         onClick={handleOpen}
-        className="relative p-2 rounded-full hover:bg-gray-100 transition-colors"
+        className="icon-btn"
+        aria-label={`Notifications, ${unreadCount} non lues`}
+        aria-haspopup="dialog"
       >
         <Bell size={20} className="text-secondary" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+          <span className="notification-dot" aria-hidden="true"></span>
         )}
       </button>
 
@@ -309,7 +232,7 @@ const Notifications: React.FC = () => {
                     border: !notif.read
                       ? "1px solid rgba(0, 199, 150, 0.2)"
                       : "1px solid var(--color-border, #e5e7eb)",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+                    boxShadow: "none",
                     transition: "all 0.2s ease",
                     cursor: "pointer",
                   }}
@@ -473,7 +396,7 @@ const Notifications: React.FC = () => {
               background:
                 isProcessing || actionableNotifications.length === 0
                   ? "#d1d5db"
-                  : "linear-gradient(135deg, #00c796 0%, #00b386 100%)",
+                  : "var(--color-primary)",
               border: "none",
               padding: "10px 20px",
               borderRadius: "var(--radius-md, 10px)",
@@ -516,12 +439,12 @@ const Notifications: React.FC = () => {
                 fontSize: "13px",
                 fontWeight: 600,
                 color: "white",
-                background: "linear-gradient(135deg, #1b263b 0%, #0f172a 100%)",
+                background: "var(--color-primary)",
                 border: "none",
                 padding: "10px 20px",
                 borderRadius: "var(--radius-md, 10px)",
                 cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(27, 38, 59, 0.3)",
+                boxShadow: "none",
                 transition: "all 0.2s ease",
               }}
             >

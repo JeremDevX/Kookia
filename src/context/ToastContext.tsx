@@ -67,7 +67,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({
       {children}
       <div className="toast-container">
         {toasts.map((toast) => (
-          <div key={toast.id} className={`toast ${toast.type}`}>
+          <div key={toast.id} className={`toast ${toast.type}`} role="status">
             <div className="toast-icon">
               {toast.type === "success" ? (
                 <CheckCircle size={20} />
@@ -81,6 +81,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({
             </div>
             <button
               className="toast-close"
+              aria-label="Fermer la notification"
               onClick={() => removeToast(toast.id)}
             >
               <X size={16} />

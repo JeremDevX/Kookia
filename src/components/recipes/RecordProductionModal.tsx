@@ -62,10 +62,10 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
     >
       <div className="flex flex-col gap-4">
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label htmlFor="recordproductionmodal-1" className="block text-sm font-medium mb-2">
             Nom de la recette *
           </label>
-          <Input
+          <Input id="recordproductionmodal-1"
             placeholder="Ex: Tarte aux tomates"
             icon={<ChefHat size={16} />}
             value={formData.recipeName}
@@ -78,10 +78,10 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="recordproductionmodal-2" className="block text-sm font-medium mb-2">
               Nombre de portions *
             </label>
-            <Input
+            <Input id="recordproductionmodal-2"
               type="number"
               placeholder="0"
               icon={<Users size={16} />}
@@ -94,10 +94,10 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="recordproductionmodal-3" className="block text-sm font-medium mb-2">
               Temps de préparation (min)
             </label>
-            <Input
+            <Input id="recordproductionmodal-3"
               type="number"
               placeholder="30"
               icon={<Clock size={16} />}
@@ -111,10 +111,10 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label htmlFor="recordproductionmodal-4" className="block text-sm font-medium mb-2">
             Notes (optionnel)
           </label>
-          <textarea
+          <textarea id="recordproductionmodal-4"
             className="w-full px-3 py-2 border rounded-md resize-none"
             rows={3}
             placeholder="Remarques sur la production..."

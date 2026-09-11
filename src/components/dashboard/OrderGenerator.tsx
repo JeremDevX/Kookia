@@ -65,12 +65,12 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
             height: "80px",
             margin: "0 auto 24px",
             background:
-              "linear-gradient(135deg, var(--color-primary, #00c796) 0%, #00b386 100%)",
+              "var(--color-primary)",
             borderRadius: "20px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 12px 32px rgba(0, 199, 150, 0.3)",
+            boxShadow: "none",
           }}
         >
           <CheckCircle size={40} color="white" strokeWidth={2.5} />
@@ -112,7 +112,7 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
         style={{
           padding: "16px 24px",
           background:
-            "linear-gradient(135deg, rgba(0, 199, 150, 0.08) 0%, rgba(0, 179, 134, 0.04) 100%)",
+            "#f1f5e9",
           borderBottom: "1px solid rgba(0, 199, 150, 0.15)",
           display: "flex",
           justifyContent: "space-between",
@@ -125,12 +125,12 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
               width: "40px",
               height: "40px",
               background:
-                "linear-gradient(135deg, var(--color-primary, #00c796) 0%, #00b386 100%)",
+                "var(--color-primary)",
               borderRadius: "10px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(0, 199, 150, 0.3)",
+              boxShadow: "none",
             }}
           >
             <Package size={20} color="white" />
@@ -155,13 +155,13 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
         <div
           style={{
             background:
-              "linear-gradient(135deg, var(--color-primary, #00c796) 0%, #00b386 100%)",
+              "var(--color-primary)",
             color: "white",
             padding: "10px 20px",
             borderRadius: "10px",
             fontWeight: 700,
             fontSize: "18px",
-            boxShadow: "0 4px 12px rgba(0, 199, 150, 0.3)",
+            boxShadow: "none",
           }}
         >
           {grandTotal.toFixed(2)} €
@@ -214,7 +214,7 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
                 background: "white",
                 borderRadius: "14px",
                 padding: "20px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04)",
+                boxShadow: "none",
                 border: "1px solid var(--color-border, #e5e7eb)",
                 transition: "all 0.2s ease",
               }}
@@ -238,12 +238,12 @@ const OrderGenerator: React.FC<OrderGeneratorProps> = ({
                       width: "44px",
                       height: "44px",
                       background:
-                        "linear-gradient(135deg, #1b263b 0%, #0f172a 100%)",
+                        "#36543d",
                       borderRadius: "10px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      boxShadow: "0 4px 12px rgba(27, 38, 59, 0.2)",
+                      boxShadow: "none",
                     }}
                   >
                     <Truck size={22} color="white" />

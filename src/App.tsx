@@ -2,6 +2,7 @@ import { useState } from "react";
 import SplashScreen from "./components/common/SplashScreen";
 import AppProviders from "./app/providers/AppProviders";
 import AppRouter from "./app/router/AppRouter";
+import "./styles/Brand.css";
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);

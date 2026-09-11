@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef } from "react";
+import React, { useEffect, useEffectEvent, useId, useRef } from "react";
 import { X } from "lucide-react";
 import "./Modal.css";
 
@@ -43,6 +43,7 @@ const Modal: React.FC<ModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
+  const closeFromKeyboard = useEffectEvent(() => onClose());
 
   useEffect(() => {
     if (!isOpen) return;
@@ -81,7 +82,7 @@ const Modal: React.FC<ModalProps> = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        closeFromKeyboard();
         return;
       }
 
@@ -109,14 +110,15 @@ const Modal: React.FC<ModalProps> = ({
 
     document.addEventListener("keydown", handleKeyDown);
     lockBodyScroll();
-    requestAnimationFrame(focusInitialElement);
+    const focusFrame = requestAnimationFrame(focusInitialElement);
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      cancelAnimationFrame(focusFrame);
       unlockBodyScroll();
       previouslyFocusedElementRef.current?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

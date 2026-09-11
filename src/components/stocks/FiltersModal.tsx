@@ -40,10 +40,10 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Filtres avancés" width="md">
       <div className="flex flex-col gap-4">
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label htmlFor="filtersmodal-1" className="block text-sm font-medium mb-2">
             État du stock
           </label>
-          <select
+          <select id="filtersmodal-1"
             className="w-full px-3 py-2 border rounded-md"
             value={filters.status}
             onChange={(e) =>
@@ -61,8 +61,8 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Fournisseur</label>
-          <select
+          <label htmlFor="filtersmodal-2" className="block text-sm font-medium mb-2">Fournisseur</label>
+          <select id="filtersmodal-2"
             className="w-full px-3 py-2 border rounded-md"
             value={filters.supplier}
             onChange={(e) =>
@@ -79,10 +79,10 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label htmlFor="filtersmodal-3" className="block text-sm font-medium mb-2">
             Niveau de stock
           </label>
-          <select
+          <select id="filtersmodal-3"
             className="w-full px-3 py-2 border rounded-md"
             value={filters.stockLevel}
             onChange={(e) =>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useEffectEvent, useRef } from "react";
 import Button from "../common/Button";
 import Badge from "../common/Badge";
 import {
@@ -35,6 +35,25 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const { findSupplierByProductId } = useInventoryCatalog();
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState("");
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const closeFromKeyboard = useEffectEvent(() => onClose());
+  const productId = product?.id;
+  useEffect(() => {
+    if (!productId) return;
+    const previous = document.activeElement;
+    const drawer = drawerRef.current;
+    drawer?.querySelector<HTMLButtonElement>(".close-btn")?.focus();
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeFromKeyboard();
+      if (event.key !== "Tab" || !drawer) return;
+      const items = Array.from(drawer.querySelectorAll<HTMLElement>('button:not(:disabled), input, a[href]'));
+      const first = items[0]; const last = items.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => { document.removeEventListener("keydown", handleKey); if (previous instanceof HTMLElement) previous.focus(); };
+  }, [productId]);
 
   if (!product) return null;
 
@@ -94,13 +113,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   return (
     <>
       <div className="drawer-backdrop" onClick={onClose} />
-      <div className="product-drawer">
+      <div className="product-drawer" ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="product-drawer-title">
         <header className="drawer-header">
           <div>
             <span className="drawer-subtitle">Détails du produit</span>
-            <h2 className="drawer-title">{product.name}</h2>
+            <h2 className="drawer-title" id="product-drawer-title">{product.name}</h2>
           </div>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" onClick={onClose} aria-label="Fermer les détails du produit">
             <X size={24} />
           </button>
         </header>
@@ -211,10 +230,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           {showAdjustModal && (
             <section className="drawer-section">
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <label className="block text-sm font-medium mb-2">
+                <label htmlFor="stock-adjustment" className="block text-sm font-medium mb-2">
                   Ajustement de stock (utilisez + ou - pour indiquer)
                 </label>
                 <input
+                  id="stock-adjustment"
                   type="text"
                   className="w-full px-3 py-2 border rounded-md"
                   placeholder="ex: +10 ou -5"

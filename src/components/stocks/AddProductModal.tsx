@@ -74,10 +74,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     >
       <div className="flex flex-col gap-4">
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label htmlFor="addproductmodal-1" className="block text-sm font-medium mb-2">
             Nom du produit *
           </label>
-          <Input
+          <Input id="addproductmodal-1"
             placeholder="Ex: Tomates cerises"
             value={formData.name}
             error={errors.name}
@@ -87,8 +87,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Catégorie</label>
-            <select
+            <label htmlFor="addproductmodal-2" className="block text-sm font-medium mb-2">Catégorie</label>
+            <select id="addproductmodal-2"
               className="w-full px-3 py-2 border rounded-md"
               value={formData.category}
               onChange={(e) =>
@@ -105,8 +105,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Unité</label>
-            <select
+            <label htmlFor="addproductmodal-3" className="block text-sm font-medium mb-2">Unité</label>
+            <select id="addproductmodal-3"
               className="w-full px-3 py-2 border rounded-md"
               value={formData.unit}
               onChange={(e) =>
@@ -123,10 +123,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="addproductmodal-4" className="block text-sm font-medium mb-2">
               Stock initial *
             </label>
-            <Input
+            <Input id="addproductmodal-4"
               type="number"
               placeholder="0"
               icon={<Package size={16} />}
@@ -139,10 +139,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="addproductmodal-5" className="block text-sm font-medium mb-2">
               Seuil minimum
             </label>
-            <Input
+            <Input id="addproductmodal-5"
               type="number"
               placeholder="10"
               icon={<AlertCircle size={16} />}
@@ -156,10 +156,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label htmlFor="addproductmodal-6" className="block text-sm font-medium mb-2">
             Prix unitaire (€) *
           </label>
-          <Input
+          <Input id="addproductmodal-6"
             type="number"
             step="0.01"
             placeholder="0.00"
