@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ToastProvider } from "../../context/ToastContext";
 import { CartProvider } from "../../context/CartContext";
+import { AuthProvider } from "../../features/auth/context/AuthContext";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -8,7 +9,7 @@ interface AppProvidersProps {
 
 const AppProviders = ({ children }: AppProvidersProps) => (
   <ToastProvider>
-    <CartProvider>{children}</CartProvider>
+    <AuthProvider><CartProvider>{children}</CartProvider></AuthProvider>
   </ToastProvider>
 );
 

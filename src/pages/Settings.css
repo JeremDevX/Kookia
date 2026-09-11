@@ -253,3 +253,13 @@
     font-size: var(--font-size-sm);
   }
 }
+.account-settings { display: grid; gap: 24px; }
+.account-settings .form-grid { align-items: end; }
+.account-help { display: flex; gap: 8px; align-items: center; color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.danger-zone { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.danger-zone p { color: var(--color-text-secondary); margin-top: 6px; }
+.account-modal-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px; background: rgba(27, 38, 59, .48); }
+.account-modal { width: min(100%, 460px); padding: 28px; background: var(--color-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); }
+.account-modal p { margin: 12px 0 20px; color: var(--color-text-secondary); }
+.account-modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+@media (max-width: 640px) { .danger-zone { align-items: flex-start; flex-direction: column; } .account-modal-actions { flex-direction: column-reverse; } }

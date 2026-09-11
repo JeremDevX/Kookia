@@ -1,9 +1,10 @@
 import React from "react";
 import { Menu } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import Notifications from "./Notifications";
 import "../../styles/index.css";
 import "./TopNav.css";
+import { useAuth } from "../../features/auth/context/AuthContext";
 
 interface TopNavProps {
   onMenuClick: () => void;
@@ -11,6 +12,7 @@ interface TopNavProps {
 
 const TopNav: React.FC<TopNavProps> = ({ onMenuClick }) => {
   const { pathname } = useLocation();
+  const { user } = useAuth();
 
   const pageLabels: Record<string, string> = {
     "/": "Dashboard",
@@ -40,10 +42,10 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick }) => {
 
       <div className="top-nav-actions">
         <Notifications />
-        <div className="user-profile">
-          <div className="avatar">CM</div>
-          <span className="username">Camille MM</span>
-        </div>
+        <Link to="/settings" className="user-profile" aria-label="Ouvrir mon compte">
+          <div className="avatar">{user?.displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "K"}</div>
+          <span className="username">{user?.displayName || "Mon compte"}</span>
+        </Link>
       </div>
     </header>
   );

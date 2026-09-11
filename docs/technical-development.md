@@ -12,7 +12,7 @@ fonctionnalité déjà disponible**.
 | Application web | React 19, TypeScript, Vite ; données locales mockées | Conserver les hooks comme façade UI pendant une migration progressive |
 | Qualité | ESLint, TypeScript, Vitest et CI GitHub Actions ; scripts `lint`, `build`, `test` | CI exécutable sans manipulation ; smoke test sur URL dédiée avant recette |
 | Hébergement | Configuration frontend Vercel (`vercel.json`) | Préproduction puis recette avant lancement commercial |
-| Backend et persistance | Absents | Node.js/Express avec TypeScript, PostgreSQL et Prisma |
+| Backend et persistance | API Express/TypeScript active pour utilisateurs et sessions ; données métier encore mockées | Étendre progressivement les frontières métier vers PostgreSQL/Prisma |
 | Intégrations | Absentes ; les écrans d'intégration sont des mocks | Adaptateur POS, import Ticket Z, service OCR externe avec fallback |
 | Prévision | Règles et données de démonstration locales | Historique de ventes, météo locale et calendrier événementiel ; moteur IA hors périmètre full-stack initial |
 
@@ -41,15 +41,15 @@ Les contrats initiaux prévus sont : `Restaurant`, `Product`, `StockItem`,
 payloads de fournisseurs lorsque leurs formes divergent.
 
 ```text
-UI React → hooks/features → services → API Express → domaine → PostgreSQL
+UI React → hooks/features → client API → API Express → domaine → PostgreSQL
                                   ↘ adaptateurs POS / OCR / météo / calendrier
 ```
 
-Cette cible ne justifie pas d'ajouter aujourd'hui un serveur, un client HTTP ou
-des abstractions de transport au frontend mocké. Lorsqu'une migration est
-autorisée, basculer une frontière à la fois, maintenir le contrat des hooks si
-possible, valider les payloads à l'entrée et mapper les données externes avant
-le domaine.
+L'authentification locale constitue la première frontière active : elle couvre
+uniquement `User` et `Session`. Les données métier restent mockées. Pour toute
+migration suivante, basculer une frontière à la fois, maintenir le contrat des
+hooks si possible, valider les payloads à l'entrée et mapper les données
+externes avant le domaine.
 
 ## Backlog et séquence de référence
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 // Styles are imported in Sidebar.css
 import "./Sidebar.css";
+import { useAuth } from "../../features/auth/context/AuthContext";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: Package, label: "Stocks", path: "/stocks" },
@@ -80,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <HelpCircle size={20} />
             <span>Support</span>
           </a>
-          <button className="nav-item logout-btn">
+          <button className="nav-item logout-btn" onClick={() => { void logout().finally(() => navigate("/login", { replace: true })); }}>
             <LogOut size={20} />
             <span>Déconnexion</span>
           </button>

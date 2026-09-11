@@ -5,18 +5,38 @@ au suivi opérationnel pour la restauration.
 
 ## État du projet (2026-09-11)
 
-- Statut global: MVP fonctionnel sur données mock locales.
-- Architecture runtime active: `app -> pages/components -> hooks/features -> services/domain -> data/mock`.
-- La migration API/backend est planifiée, pas disponible dans le runtime.
+- Statut global: MVP fonctionnel sur données mock locales avec authentification locale.
+- Les données métier restent mockées ; les utilisateurs et sessions sont persistés dans PostgreSQL local.
 
 ## Démarrage
 
 ```bash
 npm install
+npx prisma generate
+cp .env.example .env
+npm run db:up
+npm run db:migrate
 npm run dev
 ```
 
-Application disponible sur `http://localhost:5173`.
+Puis ouvrir `http://localhost:5173/register`. Le frontend est servi sur le port
+5173 et proxifie `/api` vers l'API Express sur le port 3001.
+
+## Authentification locale
+
+L'authentification est une première verticale backend locale : Express et
+Prisma utilisent PostgreSQL démarré par Docker Compose. Les mots de passe sont
+hachés avec Argon2id. Les sessions sont opaques, aléatoires et envoyées dans
+un cookie `HttpOnly` ; seul leur hash SHA-256 est enregistré en base. Aucun
+service cloud, OAuth, service email ou fournisseur d'authentification externe
+n'est requis.
+
+Routes principales : `POST /api/auth/register`, `POST /api/auth/login`,
+`POST /api/auth/logout`, `GET /api/auth/me`, puis les routes de compte sous
+`/api/account`. Les migrations Prisma créent uniquement `User` et `Session`.
+
+Les pages stocks, recettes, prédictions et analytics ne sont pas encore
+rattachées à l'utilisateur connecté.
 
 ## Scripts utiles
 
@@ -24,6 +44,7 @@ Application disponible sur `http://localhost:5173`.
 npm run lint
 npm run build
 npm run test
+npm run test:integration # PostgreSQL local démarré requis
 ```
 
 ## Architecture actuelle
@@ -62,7 +83,8 @@ Flux observé dans le code:
 ## Limites connues
 
 - Persistance serveur absente: les données ne survivent pas à un vrai cycle backend.
-- Pas de couche `src/config/api.ts` active dans ce dépôt aujourd'hui.
+- Le client API dans `src/config/api.ts` est actif pour l'authentification ; les
+  services métier continuent d'utiliser les mocks.
 - Les services simulent des latences et retournent des mocks.
 - Une partie du rendu reste encore portée par des composants volumineux dans `src/components`.
 

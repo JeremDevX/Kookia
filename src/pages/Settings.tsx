@@ -3,7 +3,8 @@ import Card from "../components/common/Card";
 import Input from "../components/common/Input";
 import Button from "../components/common/Button";
 import IntegrationModal from "../components/settings/IntegrationModal";
-import { Store, Package, Users, Plug, Save } from "lucide-react";
+import { Store, Package, Users, Plug, Save, UserRound } from "lucide-react";
+import AccountSettings from "../features/account/AccountSettings";
 import "./Settings.css";
 
 interface Integration {
@@ -36,7 +37,7 @@ const INTEGRATIONS: Integration[] = [
 
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
-    "restaurant" | "products" | "suppliers" | "integrations"
+    "restaurant" | "products" | "suppliers" | "integrations" | "account"
   >("restaurant");
   const [selectedIntegration, setSelectedIntegration] =
     useState<Integration | null>(null);
@@ -52,6 +53,7 @@ const Settings: React.FC = () => {
     { id: "products", label: "Produits", icon: Package },
     { id: "suppliers", label: "Fournisseurs", icon: Users },
     { id: "integrations", label: "Intégrations", icon: Plug },
+    { id: "account", label: "Compte", icon: UserRound },
   ] as const;
 
   return (
@@ -160,6 +162,7 @@ const Settings: React.FC = () => {
               ))}
             </Card>
           )}
+          {activeTab === "account" && <AccountSettings />}
         </div>
       </div>
 
