@@ -207,10 +207,10 @@ const Notifications: React.FC = () => {
               }}
             >
               <Bell size={48} style={{ margin: "0 auto 16px", opacity: 0.3 }} />
-              <p style={{ fontSize: "14px", fontWeight: 500 }}>
+              <p style={{ fontSize: "1rem", fontWeight: 500 }}>
                 Aucune notification
               </p>
-              <p style={{ fontSize: "12px", marginTop: "4px", opacity: 0.7 }}>
+              <p style={{ fontSize: "0.875rem", marginTop: "4px", opacity: 0.7 }}>
                 Vous êtes à jour !
               </p>
             </div>
@@ -255,7 +255,7 @@ const Notifications: React.FC = () => {
                       >
                         <h4
                           style={{
-                            fontSize: "14px",
+                            fontSize: "1rem",
                             fontWeight: 600,
                             color: "var(--color-text-primary, #1b263b)",
                             margin: 0,
@@ -266,7 +266,7 @@ const Notifications: React.FC = () => {
                         </h4>
                         <span
                           style={{
-                            fontSize: "10px",
+                            fontSize: "0.75rem",
                             color: "#9ca3af",
                             background: "#f3f4f6",
                             padding: "4px 8px",
@@ -281,7 +281,7 @@ const Notifications: React.FC = () => {
                       </div>
                       <p
                         style={{
-                          fontSize: "13px",
+                          fontSize: "0.9375rem",
                           color: "var(--color-text-secondary, #475569)",
                           margin: 0,
                           lineHeight: 1.6,
@@ -299,7 +299,7 @@ const Notifications: React.FC = () => {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: "8px",
-                                fontSize: "13px",
+                                fontSize: "0.9375rem",
                                 color: "var(--color-optimal, #228b5b)",
                                 fontWeight: 600,
                                 background: "rgba(34, 139, 91, 0.08)",
@@ -316,7 +316,7 @@ const Notifications: React.FC = () => {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: "8px",
-                                fontSize: "13px",
+                                fontSize: "0.9375rem",
                                 color: "var(--color-primary, #00c796)",
                                 fontWeight: 600,
                                 background: "rgba(0, 199, 150, 0.08)",
@@ -341,7 +341,7 @@ const Notifications: React.FC = () => {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: "10px",
-                                fontSize: "13px",
+                                fontSize: "0.9375rem",
                                 fontWeight: 600,
                                 color: "var(--color-primary, #00c796)",
                                 background: "transparent",
@@ -389,7 +389,7 @@ const Notifications: React.FC = () => {
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              fontSize: "13px",
+              fontSize: "0.9375rem",
               fontWeight: 600,
               color: "white",
               background:
@@ -435,7 +435,7 @@ const Notifications: React.FC = () => {
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                fontSize: "13px",
+                fontSize: "0.9375rem",
                 fontWeight: 600,
                 color: "white",
                 background: "var(--color-primary)",

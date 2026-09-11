@@ -52,9 +52,9 @@ const SavingsChart: React.FC<SavingsChartProps> = ({
               dataKey="month"
               axisLine={false}
               tickLine={false}
-              fontSize={10}
+              fontSize={12}
             />
-            <YAxis axisLine={false} tickLine={false} fontSize={10} />
+            <YAxis axisLine={false} tickLine={false} fontSize={12} />
             <Tooltip
               contentStyle={{
                 background: "white",

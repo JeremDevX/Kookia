@@ -168,7 +168,7 @@
   cursor: pointer;
   color: var(--color-text-secondary);
   border-radius: var(--radius-md);
-  font-size: 16px;
+  font-size: 1.125rem;
   font-weight: 600;
   transition: all 0.2s ease;
 }
@@ -258,7 +258,7 @@
   .stock-action-btn {
     width: 28px;
     height: 28px;
-    font-size: 14px;
+    font-size: 1rem;
   }
 
   .actions-cell {
@@ -315,13 +315,13 @@
   }
 
   .unit {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
 
   .stock-action-btn {
     width: 24px;
     height: 24px;
-    font-size: 12px;
+    font-size: 0.875rem;
   }
 
   .stock-adjust {

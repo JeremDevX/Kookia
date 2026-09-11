@@ -51,13 +51,13 @@ const AITrendChart: React.FC<AITrendChartProps> = ({
             />
             <XAxis
               dataKey="name"
-              fontSize={10}
+              fontSize={12}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               domain={[70, 100]}
-              fontSize={10}
+              fontSize={12}
               axisLine={false}
               tickLine={false}
             />

@@ -65,7 +65,7 @@
   color: white;
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 0.875rem;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -113,7 +113,7 @@
   flex-direction: column;
 }
 .stat .label {
-  font-size: 11px;
+  font-size: 0.8125rem;
   text-transform: uppercase;
   color: var(--color-text-secondary);
   margin-bottom: 4px;
@@ -140,7 +140,7 @@
 }
 .rec-label {
   display: block;
-  font-size: 11px;
+  font-size: 0.8125rem;
   text-transform: uppercase;
   color: var(--color-primary-text);
   font-weight: 700;
@@ -197,7 +197,7 @@
 }
 
 .confidence-pill {
-  font-size: 12px;
+  font-size: 0.875rem;
   background-color: var(--color-bg);
   padding: 6px 12px;
   border-radius: var(--radius-full);
@@ -330,7 +330,7 @@
 }
 
 .day-name-full {
-  font-size: 11px;
+  font-size: 0.8125rem;
   text-transform: uppercase;
   color: var(--color-text-secondary);
   font-weight: 600;
@@ -338,7 +338,7 @@
 }
 
 .day-number-large {
-  font-size: 28px;
+  font-size: 2rem;
   font-weight: 800;
   color: var(--color-text-primary);
   line-height: 1;
@@ -352,7 +352,7 @@
 .today-badge {
   background: linear-gradient(135deg, var(--color-primary) 0%, #00e0a6 100%);
   color: white;
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 700;
   padding: 4px 10px;
   border-radius: var(--radius-full);
@@ -461,7 +461,7 @@
 }
 
 .pred-item-qty .unit {
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--color-text-secondary);
   margin-left: 2px;
@@ -474,7 +474,7 @@
 }
 
 .pred-item-reason {
-  font-size: 10px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   max-width: 70%;
   white-space: nowrap;
@@ -483,7 +483,7 @@
 }
 
 .pred-item-confidence {
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-secondary);
   background: var(--color-surface);
@@ -503,7 +503,7 @@
   margin-top: var(--spacing-xs);
   padding-top: var(--spacing-xs);
   border-top: 1px dashed var(--color-border-light);
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-urgent);
   text-transform: uppercase;
@@ -675,7 +675,7 @@
   }
 
   .ordered-badge {
-    font-size: 10px;
+    font-size: 0.75rem;
     padding: 3px 8px;
     top: 8px;
     right: 8px;
@@ -742,7 +742,7 @@
 }
 
 .featured-day-number {
-  font-size: 64px;
+  font-size: 4.5625rem;
   font-weight: 800;
   line-height: 1;
   margin: 4px 0;
@@ -854,7 +854,7 @@
 }
 
 .pred-reason {
-  font-size: 11px;
+  font-size: 0.8125rem;
   color: var(--color-text-secondary);
 }
 
@@ -865,7 +865,7 @@
 }
 
 .pred-qty {
-  font-size: 18px;
+  font-size: 1.3125rem;
   font-weight: 700;
   color: var(--color-text-primary);
 }
@@ -878,7 +878,7 @@
 }
 
 .pred-badge {
-  font-size: 9px;
+  font-size: 0.75rem;
   font-weight: 600;
   padding: 4px 8px;
   border-radius: var(--radius-full);
@@ -1028,7 +1028,7 @@
   justify-content: center;
   flex: 1;
   color: var(--color-text-muted);
-  font-size: 24px;
+  font-size: 1.6875rem;
   opacity: 0.3;
 }
 
@@ -1041,7 +1041,7 @@
 .mini-pred {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 0.8125rem;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
   background: var(--color-bg);
@@ -1070,14 +1070,14 @@
 }
 
 .mini-more {
-  font-size: 10px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   text-align: center;
   padding-top: 4px;
 }
 
 .mini-day-footer {
-  font-size: 10px;
+  font-size: 0.75rem;
   color: var(--color-text-secondary);
   text-align: right;
   font-weight: 600;
@@ -1100,7 +1100,7 @@
   }
 
   .featured-day-number {
-    font-size: 48px;
+    font-size: 3.4375rem;
   }
 }
 
@@ -1160,7 +1160,7 @@
   margin-left: auto;
   background: var(--color-primary);
   color: white;
-  font-size: 9px;
+  font-size: 0.75rem;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: var(--radius-full);
@@ -1341,7 +1341,7 @@
 
 .month-day-header {
   text-align: center;
-  font-size: 11px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--color-text-secondary);
   text-transform: uppercase;
@@ -1408,7 +1408,7 @@
 }
 
 .month-day-number {
-  font-size: 14px;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--color-text-primary);
   margin-bottom: 4px;
@@ -1429,7 +1429,7 @@
 }
 
 .month-count {
-  font-size: 11px;
+  font-size: 0.8125rem;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: var(--radius-full);
@@ -1468,7 +1468,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 0.875rem;
   color: var(--color-text-secondary);
 }
 
@@ -1525,11 +1525,11 @@
   }
 
   .pred-qty {
-    font-size: 16px;
+    font-size: 1.125rem;
   }
 
   .featured-day-number {
-    font-size: 48px;
+    font-size: 3.4375rem;
   }
 
   .month-grid {
@@ -1542,11 +1542,11 @@
   }
 
   .month-day-number {
-    font-size: 12px;
+    font-size: 0.875rem;
   }
 
   .month-count {
-    font-size: 9px;
+    font-size: 0.75rem;
     padding: 1px 4px;
   }
 
@@ -1556,7 +1556,7 @@
   }
 
   .month-legend-item {
-    font-size: 10px;
+    font-size: 0.75rem;
     gap: 4px;
   }
 
@@ -1605,7 +1605,7 @@
   }
 
   .featured-day-number {
-    font-size: 40px;
+    font-size: 2.875rem;
   }
 
   .featured-month {
@@ -1627,7 +1627,7 @@
   }
 
   .pred-name {
-    font-size: 10px;
+    font-size: 0.75rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1638,15 +1638,15 @@
   }
 
   .pred-qty {
-    font-size: 14px;
+    font-size: 1rem;
   }
 
   .pred-qty .unit {
-    font-size: 10px;
+    font-size: 0.75rem;
   }
 
   .pred-badge {
-    font-size: 8px;
+    font-size: 0.75rem;
     padding: 2px 6px;
   }
 
@@ -1680,7 +1680,7 @@
   }
 
   .mini-pred {
-    font-size: 10px;
+    font-size: 0.75rem;
     padding: 3px 6px;
   }
 
@@ -1694,7 +1694,7 @@
   }
 
   .month-day-header {
-    font-size: 9px;
+    font-size: 0.75rem;
     padding: 6px 0;
   }
 
@@ -1709,7 +1709,7 @@
   }
 
   .month-day-number {
-    font-size: 11px;
+    font-size: 0.8125rem;
     margin-bottom: 2px;
   }
 
@@ -1718,7 +1718,7 @@
   }
 
   .month-count {
-    font-size: 8px;
+    font-size: 0.75rem;
     padding: 1px 3px;
   }
 
@@ -1729,7 +1729,7 @@
   }
 
   .month-legend-item {
-    font-size: 9px;
+    font-size: 0.75rem;
   }
 
   .month-legend-dot {

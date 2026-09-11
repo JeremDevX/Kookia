@@ -50,11 +50,11 @@ const WasteChart: React.FC<WasteChartProps> = ({ stats, evolution, showTrends, t
           <BarChart data={evolution}>
             <XAxis
               dataKey="name"
-              fontSize={10}
+              fontSize={12}
               axisLine={false}
               tickLine={false}
             />
-            <YAxis fontSize={10} axisLine={false} tickLine={false} />
+            <YAxis fontSize={12} axisLine={false} tickLine={false} />
             <Tooltip
               cursor={{ fill: "transparent" }}
               contentStyle={{
