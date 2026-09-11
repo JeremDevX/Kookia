@@ -20,3 +20,9 @@ For UI changes, a build alone is insufficient: inspect the changed path and its
 interactive states in a browser when available. For documentation-only changes,
 verify links, commands, and `git diff --check` instead of running application
 tests without a reason.
+
+For the planned preproduction work, prioritize the trust-critical paths: stock
+status, incomplete data, recommendation modification and validation, decision
+traceability, OCR correction, and unavailable POS fallback. The Jalon 2 target
+of 70% coverage applies to critical services from the recommendation sprint
+onward; it is a future acceptance target, not evidence of current coverage.

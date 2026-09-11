@@ -10,6 +10,11 @@ future plan. Update the nearest useful document once; avoid duplicating an
 architecture or workflow across files. Keep commands copy-pasteable and verify
 local links and referenced files.
 
+For Kookia technical framing, update
+[`docs/technical-development.md`](../../../docs/technical-development.md) as the
+canonical current-versus-target reference, then keep README and agent guidance
+as concise entry points. Do not promote a Jalon 2 target to runtime behavior.
+
 For agent guidance, use `AGENTS.md` only for durable repository-wide constraints,
 a Skill for a reusable specialized workflow, a reference for occasional detail,
 and a subagent only for an actually delegated execution context. Do not imply

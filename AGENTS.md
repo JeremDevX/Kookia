@@ -12,6 +12,13 @@ This is a React/TypeScript frontend. Its active runtime flow is:
 server-side authorization layer is active. Inspect the code before introducing a
 new boundary or assuming the planned API migration exists.
 
+The Jalon 2 technical trajectory is planned, not active: Node.js/Express with
+TypeScript, PostgreSQL/Prisma, POS ingestion and Ticket Z/OCR. Introduce those
+boundaries only when a task explicitly scopes the migration. The chef must keep
+an explicit review/validation step for a recommendation; a future backend must
+record that decision. The technical reference is
+[`docs/technical-development.md`](docs/technical-development.md).
+
 ## Invariants
 
 - Keep business decisions out of rendering when they belong in a domain policy,

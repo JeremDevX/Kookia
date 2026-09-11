@@ -18,3 +18,9 @@ mock services.
 For a staged API migration, switch one service boundary at a time, keep the
 existing UI-facing hook contract unless a change is necessary, and test mapping,
 failure behavior, and authorization-sensitive paths.
+
+The planned stack is Express/TypeScript with PostgreSQL and Prisma, but it is
+not installed in this repository. When that work begins, model the explicit
+review of a recommendation and its immutable decision record; never let a POS
+or OCR import silently create a validated order. Keep POS and OCR providers
+behind adapters, with a demonstrable fallback when a provider is unavailable.

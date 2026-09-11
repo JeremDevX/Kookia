@@ -27,6 +27,15 @@ Sources officielles : [AGENTS.md et précédence](https://learn.chatgpt.com/docs
 [Skills](https://learn.chatgpt.com/docs/build-skills) et
 [sous-agents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
+## Cadrage technique produit
+
+Les contraintes issues du Jalon 2 sont consolidées dans
+[Technique et développement](technical-development.md). Cette référence sépare
+l'état observé du dépôt de la cible de préproduction ; les Skills concernés
+réemploient seulement les contraintes qui modifient leur décision (validation
+chef, données OCR/POS, contrats et traçabilité), sans faire croire qu'un backend
+est déjà présent.
+
 ## Vérifications réalisées
 
 - Inspection de `AGENTS.md`, des 13 guides historiques, README, `package.json`,

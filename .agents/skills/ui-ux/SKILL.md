@@ -20,5 +20,10 @@ Confirm consequential or destructive product actions, while keeping normal
 local-agent edits autonomous. Do not encode essential meaning only with color or
 transient feedback.
 
+For purchase recommendations, make the chef's review, optional modification,
+and explicit validation primary and distinguish them from a generated suggestion.
+For OCR correction or unavailable POS data, provide a clear manual path rather
+than presenting imported values as certain.
+
 Inspect the affected screen in a browser when available. Include a narrow visual
 or responsive check appropriate to the changed interaction.

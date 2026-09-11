@@ -1,12 +1,13 @@
 # Kookia
 
-Application React + TypeScript de gestion de stocks, prédictions et suivi opérationnel pour restauration.
+Application React + TypeScript d'aide aux achats, aux stocks, aux prédictions et
+au suivi opérationnel pour la restauration.
 
 ## État du projet (2026-09-11)
 
 - Statut global: MVP fonctionnel sur données mock locales.
 - Architecture runtime active: `app -> pages/components -> hooks/features -> services/domain -> data/mock`.
-- La migration API/backend est une orientation future, pas une capacité runtime.
+- La migration API/backend est planifiée, pas disponible dans le runtime.
 
 ## Démarrage
 
@@ -65,18 +66,18 @@ Flux observé dans le code:
 - Les services simulent des latences et retournent des mocks.
 - Une partie du rendu reste encore portée par des composants volumineux dans `src/components`.
 
-## Plan de migration recommandé (architecture cible)
+## Trajectoire technique
 
-1. Ajouter un client API commun (base URL, timeout, gestion d'erreurs).
-2. Introduire des DTO/API mappers dans les services sans casser les types domaine.
-3. Basculer service par service (`products`, `predictions`, `recipes`, `analytics`) vers des appels backend réels.
-4. Conserver les hooks comme façade pour ne pas impacter les pages.
-5. Étendre les tests sur mapping, erreurs réseau et flux critiques UI.
+Le cadrage Jalon 2, les choix déjà actifs, les limites et la cible de
+préproduction sont regroupés dans le
+[référentiel technique et développement](docs/technical-development.md). Ce
+document distingue explicitement ce qui existe de ce qui reste à construire.
 
 ## Documentation de référence
 
 - Workflow agent : [AGENTS.md](AGENTS.md)
 - Méthode Codex, sources et validation du cadrage : [Développement agentique](docs/agentic-development.md)
+- Référence technique : [Technique et développement](docs/technical-development.md)
 
 ## Validation locale minimale avant PR
 
