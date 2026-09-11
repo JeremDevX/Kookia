@@ -70,7 +70,7 @@ Les fixtures de tests restent possibles, mais aucun fallback mock dans le runtim
 - [x] 5. Brancher prévisions, panier, décisions et commandes ; revue explicite, quantités validées, journal et statut d’envoi honnête.
 - [x] 6. Brancher notifications, factures/réceptions et menus ; empêcher une double réception, préserver correction/validation humaine.
 - [x] 7. Brancher restaurant, analytics, KPI, préférences et hypothèses ; corriger intégrations et exports fictifs.
-- [ ] 8. Retirer les imports mocks du runtime, actualiser documentation technique/setup, audit de parité et tests finaux.
+- [x] 8. Retirer les imports mocks du runtime, actualiser documentation technique/setup, audit de parité et tests finaux.
 
 Faire un commit par lot cohérent, avec vérifications dans le message ou le suivi
 ci-dessous. Pas de commit de secrets, fichiers .env ou dumps contenant des comptes.
@@ -290,3 +290,10 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   avant/après deux seeds non destructifs et la suppression du seul compte d’audit.
   Le contrôle automatique a refusé cette relance faute d’autorisation explicite ;
   aucune tentative de contournement n’a été faite.
+
+- Clôture : autorisation explicite reçue. Deux exécutions de `npm run db:seed`
+  ont conservé exactement les douze ensembles métier, empreintes SHA-256
+  identiques avant/après chaque passage. Compte temporaire supprimé dans une
+  transaction après sauvegarde locale des seules données de test (sans secrets).
+  Sessions du compte supprimées ; autres comptes et espaces inchangés, comparaison
+  avant/après vérifiée. Tous les lots sont terminés ; voir le bilan d’audit.

@@ -58,7 +58,7 @@ les comptes existants sans écrasement ; les nouveaux espaces sont initialisés 
 premier accès. Les dates des prévisions de démonstration sont figées. Aucun calcul
 IA, connecteur POS/OCR ou envoi fournisseur réel n’est impliqué par la persistance.
 Le [plan de migration](plans/database-migration.md) contient la cartographie et les
-preuves de validation, ainsi que les vérifications encore ouvertes.
+preuves de validation et les limites explicites de cette migration.
 
 ## Backlog et séquence de référence
 

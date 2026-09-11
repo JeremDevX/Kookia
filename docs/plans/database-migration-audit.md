@@ -59,7 +59,14 @@ Aucune impression physique ni communication fournisseur n’a été lancée.
 
 Lint, builds frontend/API, 29 tests unitaires et 14 scénarios PostgreSQL passent.
 Le scénario production vérifie également le refus répété sans effet stock/date.
-Les lots 2 à 7 du plan sont validés ; la clôture du lot 8 attend l’autorisation
-pour une relance finale du seed et le nettoyage du compte temporaire d’audit.
-Les seeds précédents et le test de bootstrap prouvent déjà l’idempotence ;
-la relance supplémentaire vise une comparaison de toutes les tables métier.
+Tous les lots du plan sont terminés. Après autorisation explicite de l’utilisateur,
+deux exécutions finales de `npm run db:seed` ont conservé exactement les douze
+ensembles métier : restaurant, fournisseurs, produits, recettes, ingrédients,
+prévisions, documents, mouvements, productions, commandes, lignes et décisions.
+Les empreintes SHA-256 avant/après chaque passage sont identiques.
+
+Le compte temporaire a été supprimé par son identifiant et son email exacts, avec
+sauvegarde de ses seules données de test dans `/tmp/kookia-browser-audit-backup.json`
+(sans mot de passe ni jeton). La transaction a vérifié la suppression de son espace
+et de ses sessions, ainsi que la conservation exacte des autres comptes et données.
+Aucun fichier de test, export, sauvegarde, identifiant ou secret n’est ajouté au dépôt.
