@@ -1,0 +1,101 @@
+.account-settings {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+.account-settings .card {
+  min-width: 0;
+}
+
+.account-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 22px;
+}
+
+.account-form .input-wrapper {
+  min-width: 0;
+  width: 100%;
+}
+
+.account-help,
+.account-field-full,
+.account-form > .btn {
+  grid-column: 1 / -1;
+}
+
+.account-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.account-help svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.account-form > .btn {
+  justify-self: end;
+}
+
+.account-form .input-field[readonly] {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-hover);
+}
+
+.danger-zone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.danger-zone > div {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.danger-zone p {
+  margin-top: 6px;
+  color: var(--color-text-secondary);
+}
+
+.danger-zone > .btn {
+  flex-shrink: 0;
+}
+
+.account-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+@media (max-width: 600px) {
+  .account-form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .account-form > .btn,
+  .danger-zone > .btn {
+    width: 100%;
+    white-space: normal;
+  }
+
+  .danger-zone > div {
+    flex-basis: 100%;
+  }
+
+  .account-modal-actions {
+    flex-direction: column-reverse;
+  }
+}
