@@ -8,7 +8,8 @@ import RecommendationsSection from "../components/dashboard/RecommendationsSecti
 import OrderGenerator from "../components/dashboard/OrderGenerator";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
-import { Calendar, FileText, ChefHat, ShoppingBag } from "lucide-react";
+import { Calendar, FileText, ChefHat, ShoppingBag, ArrowUpRight, Leaf, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { usePredictions, useProducts } from "../hooks";
 import { isOnOrAfterRestaurantToday } from "../utils/date";
 import { domainBusinessConfig } from "../config/domain/businessConfig";
@@ -28,7 +29,7 @@ const Dashboard: React.FC = () => {
 
   const { addToast } = useToast();
   const { cartItems, clearCart } = useCart();
-  const { predictions } = usePredictions();
+  const { predictions, loading, error, refetch } = usePredictions();
   const { products } = useProducts();
 
   const handleScanInvoice = () => {
@@ -101,7 +102,7 @@ const Dashboard: React.FC = () => {
     day: "numeric",
     month: "long",
   });
-  const { managerFirstName, city, weatherLabel } =
+  const { managerFirstName, city } =
     domainBusinessConfig.establishmentDisplay;
 
   const actionablePredictions = predictions.filter((pred) => {
@@ -124,55 +125,55 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard-container">
-      <header className="page-header glass-header">
+      <header className="dashboard-header">
         <div>
-          <h1 className="page-title">Bienvenue, {managerFirstName} ! 👋</h1>
-          <p className="page-subtitle flex items-center gap-sm">
-            <Calendar size={14} /> {todayDate} • {city} • {weatherLabel}
-          </p>
+          <p className="dashboard-eyebrow">VOTRE CUISINE, EN UN COUP D’ŒIL</p>
+          <h1>Bonjour, {managerFirstName}.</h1>
+          <p className="dashboard-intro">Une vision claire pour une journée bien préparée.</p>
         </div>
-        <div className="header-actions">
-          {/* Quick Actions Toolbar */}
-          <div className="flex gap-sm">
-            <Button
-              variant="outline"
-              size="sm"
-              icon={<FileText size={14} />}
-              onClick={handleScanInvoice}
-            >
-              Facture
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              icon={<ChefHat size={14} />}
-              onClick={handleMenuGen}
-            >
-              Menu
-            </Button>
-            <Button
-              variant={totalCartCount > 0 ? "primary" : "outline"}
-              size="sm"
-              icon={<ShoppingBag size={14} />}
-              onClick={handleGenerateOrders}
-              className="generate-btn"
-            >
-              Générer Commandes ({totalCartCount})
-            </Button>
-          </div>
+        <div className="dashboard-date">
+          <Calendar size={18} aria-hidden="true" />
+          <div><span>{todayDate}</span><small>{city}</small></div>
         </div>
       </header>
 
-      {/* KPI Section extracted */}
+      <section className="dashboard-brief" aria-labelledby="brief-title">
+        <div className="brief-copy">
+          <span className="brief-label"><Leaf size={15} aria-hidden="true" /> Le point du jour</span>
+          <h2 id="brief-title">Moins d’imprévus.<br />Plus de sérénité en cuisine.</h2>
+          <p>Anticipez vos besoins, ajustez vos achats et gardez la main sur chaque décision.</p>
+          <a href="#dashboard-recommendations" className="brief-link">Voir les suggestions <ArrowRight size={17} aria-hidden="true" /></a>
+        </div>
+        <div className="brief-order">
+          <span className="brief-order-icon"><ShoppingBag size={23} aria-hidden="true" /></span>
+          <h3>Votre prochaine commande</h3>
+          <p aria-live="polite">{totalCartCount > 0 ? `${totalCartCount} article${totalCartCount > 1 ? "s" : ""} dans votre sélection` : "Ajoutez des suggestions à votre sélection."}</p>
+          <Button onClick={handleGenerateOrders} icon={<ArrowRight size={16} />} disabled={totalCartCount === 0}>Revoir ma commande{totalCartCount > 0 ? ` (${totalCartCount})` : ""}</Button>
+          <small>Vous vérifiez et validez avant tout envoi.</small>
+        </div>
+      </section>
+
+      <div className="dashboard-section-heading"><h2>Les chiffres à retenir</h2><span>Données de démonstration</span></div>
       <DashboardKPIs />
 
       <div className="dashboard-main-grid">
-        {/* Full Width Recommendations */}
+        <div id="dashboard-recommendations">
+        {loading ? <div className="dashboard-state" role="status">Chargement des suggestions…</div> : error ? <div className="dashboard-state" role="alert"><p>Les suggestions ne sont pas disponibles pour le moment.</p><Button variant="outline" onClick={() => void refetch()}>Réessayer</Button></div> :
         <RecommendationsSection
           predictions={visiblePredictions}
           selectedIds={selectedPredictionIds}
           onTogglePrediction={handleTogglePrediction}
-        />
+        />}
+        </div>
+        <aside className="dashboard-tools" aria-labelledby="tools-title">
+          <p className="dashboard-eyebrow">AU QUOTIDIEN</p>
+          <h2 id="tools-title">Un coup de main ?</h2>
+          <p>Vos outils, à portée de main.</p>
+          <button className="dashboard-tool" onClick={handleScanInvoice}><FileText size={21} aria-hidden="true" /><span><strong>Scanner une facture</strong><small>Préparer l’entrée en stock</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
+          <button className="dashboard-tool" onClick={handleMenuGen}><ChefHat size={21} aria-hidden="true" /><span><strong>Imaginer le menu</strong><small>Valoriser les produits disponibles</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
+          <Link className="dashboard-tool" to="/stocks"><ShoppingBag size={21} aria-hidden="true" /><span><strong>Consulter les stocks</strong><small>Faire le point sur vos produits</small></span><ArrowUpRight size={17} aria-hidden="true" /></Link>
+          <div className="dashboard-note"><Leaf size={20} aria-hidden="true" /><p><strong>Chaque produit compte.</strong><br />Un regard sur vos stocks aujourd’hui, moins de pertes demain.</p></div>
+        </aside>
       </div>
 
       {/* Modals */}

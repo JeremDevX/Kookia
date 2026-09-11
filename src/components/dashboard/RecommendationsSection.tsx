@@ -11,6 +11,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import type { Prediction } from "../../types";
+import "./RecommendationsSection.css";
 
 interface RecommendationsSectionProps {
   predictions: Prediction[];
@@ -27,16 +28,16 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [sortMode, setSortMode] = useState<
-    "original" | "urgentFirst" | "urgentLast"
+    "original" | "name" | "date"
   >("original");
 
   // Sort predictions based on sort mode
   const sortedPredictions = useMemo(() => {
     if (sortMode === "original") return predictions;
     return [...predictions].sort((a, b) => {
-      const aUrgent = a.recommendation?.action === "buy" ? 1 : 0;
-      const bUrgent = b.recommendation?.action === "buy" ? 1 : 0;
-      return sortMode === "urgentFirst" ? bUrgent - aUrgent : aUrgent - bUrgent;
+      return sortMode === "name"
+        ? a.productName.localeCompare(b.productName, "fr")
+        : a.predictedDate.localeCompare(b.predictedDate);
     });
   }, [predictions, sortMode]);
 
@@ -75,11 +76,10 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
     <div className="recommendations-section">
       <div className="section-header">
         <div className="section-header-left">
-          <h3 className="section-title">Actions Prioritaires</h3>
+          <h2 className="section-title">Achats suggérés</h2>
           {urgentCount > 0 && (
             <span className="urgent-count-badge">
-              <AlertTriangle size={14} />
-              {urgentCount} urgent{urgentCount > 1 ? "s" : ""}
+              {urgentCount} à revoir
             </span>
           )}
         </div>
@@ -87,17 +87,18 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
           <div className="sort-select-wrapper">
             <ArrowUpDown size={16} />
             <select
+              aria-label="Trier les suggestions"
               className="sort-select"
               value={sortMode}
               onChange={(e) =>
                 setSortMode(
-                  e.target.value as "original" | "urgentFirst" | "urgentLast"
+                  e.target.value as "original" | "name" | "date"
                 )
               }
             >
-              <option value="original">Original</option>
-              <option value="urgentFirst">Plus important d'abord</option>
-              <option value="urgentLast">Moins important d'abord</option>
+              <option value="original">Ordre par défaut</option>
+              <option value="date">Échéance la plus proche</option>
+              <option value="name">Produit : A à Z</option>
             </select>
           </div>
           {totalPages > 1 && (
@@ -111,6 +112,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
         </div>
       </div>
 
+      <p className="recommendations-description">Des propositions à vérifier selon vos besoins. Ajoutez les produits, puis ajustez votre commande.</p>
       <div className="recommendations-list grid-layout">
         {paginatedPredictions.length > 0 ? (
           paginatedPredictions.map((pred) => {
@@ -137,7 +139,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
                       {isUrgent ? (
                         <>
                           <AlertTriangle size={14} />
-                          <span>Urgent</span>
+                          <span>Achat suggéré</span>
                         </>
                       ) : (
                         <>
@@ -148,7 +150,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
                     </div>
 
                     <div className="rec-header mb-3">
-                      <h4 className="rec-product-name">{pred.productName}</h4>
+                      <h3 className="rec-product-name">{pred.productName}</h3>
                     </div>
 
                     <p className="rec-reason mb-4">
@@ -173,10 +175,11 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
 
                   <div className="rec-action">
                     <span className="rec-order-info">
-                      {isUrgent ? "Stock critique" : "Optimisation stock"}
+                      À valider par vous
                     </span>
                     <Button
                       size="sm"
+                      aria-label={`${isSelected ? "Retirer" : "Ajouter"} ${pred.productName} ${isSelected ? "de la" : "à la"} commande`}
                       variant={isSelected ? "primary" : "outline"}
                       className={isSelected ? "bg-optimal border-optimal" : ""}
                       onClick={() =>
@@ -198,8 +201,10 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
             );
           })
         ) : (
-          <div className="col-span-3 p-8 text-center text-secondary border border-dashed border-gray-300 rounded-lg">
-            <p>Aucune action prioritaire en attente. Bon travail ! 🎉</p>
+          <div className="recommendations-empty" role="status">
+            <Check size={24} aria-hidden="true" />
+            <p>Aucun achat suggéré en attente.</p>
+            <p>Retrouvez vos articles sélectionnés dans votre commande.</p>
           </div>
         )}
       </div>
@@ -225,7 +230,8 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
                 }`}
                 onClick={() => setCurrentPage(i)}
                 aria-label={`Page ${i + 1}`}
-              />
+                aria-current={i === currentPage ? "page" : undefined}
+              >{i + 1}</button>
             ))}
           </div>
 
