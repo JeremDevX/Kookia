@@ -131,4 +131,31 @@ describe("persistent catalog HTTP", () => {
     expect(unchanged.body).toEqual(initial.body);
   });
 
+  it("persists concurrent cart additions and removes only validated selections atomically", async () => {
+    const agent = await account();
+    const other = await account();
+    const catalog = await agent.get("/api/workspace/catalog").expect(200);
+    const items = catalog.body.products.slice(0, 2).map((product: { id: string; unit: string }, index: number) => ({
+      id: `cart-${index}`, productId: product.id, productName: "Untrusted name", quantity: 2, unit: product.unit, source: "stocks",
+    }));
+    const additions = await Promise.all(items.map((item: object) => agent.post("/api/workspace/cart").send({ action: "add", items: [item] })));
+    expect(additions.every((response) => response.status === 200)).toBe(true);
+    await agent.post("/api/workspace/cart").send({ action: "add", items: [items[0]] }).expect(200);
+    const cart = await agent.get("/api/workspace/cart").expect(200);
+    expect(cart.body).toHaveLength(2);
+    expect(cart.body.find((item: { id: string }) => item.id === items[0].id).productName).toBe(catalog.body.products[0].name);
+    const isolated = await other.get("/api/workspace/cart").expect(200);
+    expect(isolated.body).toEqual([]);
+    await agent.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{ productId: items[0].productId, cartId: items[1].id, quantity: 2 }] }).expect(409);
+    const operation = { operationId: randomUUID(), lines: [{ productId: items[0].productId, cartId: items[0].id, quantity: 3 }] };
+    await agent.post("/api/workspace/orders").send(operation).expect(201);
+    await agent.post("/api/workspace/orders").send(operation).expect(201);
+    const remaining = await agent.get("/api/workspace/cart").expect(200);
+    expect(remaining.body).toHaveLength(1);
+    expect(remaining.body[0].id).toBe(items[1].id);
+    await agent.post("/api/workspace/cart").send({ action: "remove", ids: [items[1].id] }).expect(200);
+    const empty = await agent.get("/api/workspace/cart").expect(200);
+    expect(empty.body).toEqual([]);
+  });
+
 });

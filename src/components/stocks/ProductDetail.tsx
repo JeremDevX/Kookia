@@ -78,10 +78,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     if (supplier?.phone) window.location.href = `tel:${supplier.phone.replace(/[^+0-9]/g, "")}`;
   };
 
-  const handleOrderFromSupplier = () => {
-    addToCart({ id: `product-${product.id}`, productId: product.id, productName: product.name,
+  const handleOrderFromSupplier = async () => {
+    const saved = await addToCart({ id: `product-${product.id}`, productId: product.id, productName: product.name,
       source: "stocks", quantity: Math.max(1, product.minThreshold - product.currentStock), unit: product.unit });
-    addToast("info", "Ajouté au panier", "Vérifiez et validez la commande depuis le tableau de bord.");
+    if (saved) addToast("info", "Ajouté au panier", "Vérifiez et validez la commande depuis le tableau de bord.");
   };
 
   const handleReportLoss = () => {

@@ -1,0 +1,41 @@
+[
+  {
+    "id": "n1",
+    "type": "alert",
+    "title": "Alerte Météo",
+    "message": "Orages violents prévus demain soir. Impact terrasse estimé : -30%. Réduisez les commandes de produits frais.",
+    "read": false,
+    "actionable": false,
+    "createdAt": "2026-09-11T08:50:00.000Z"
+  },
+  {
+    "id": "n2",
+    "type": "warning",
+    "title": "🚨 Stock Critique - Mozzarella",
+    "message": "Stock actuel : 2 kg | Épuisement prévu dans 2 services (~18h). Consommation moyenne : 4 kg/jour.",
+    "read": false,
+    "actionable": true,
+    "productId": "p2",
+    "productName": "Mozzarella di Bufala",
+    "suggestedQuantity": 8,
+    "unit": "kg",
+    "currentStock": 2,
+    "estimatedRunout": "2 services",
+    "createdAt": "2026-09-11T07:00:00.000Z"
+  },
+  {
+    "id": "n3",
+    "type": "warning",
+    "title": "⚠️ Stock Critique - Tomates",
+    "message": "Stock actuel : 5 kg | Épuisement prévu demain matin. Consommation moyenne : 6 kg/jour.",
+    "read": false,
+    "actionable": true,
+    "productId": "p1",
+    "productName": "Tomates San Marzano",
+    "suggestedQuantity": 15,
+    "unit": "kg",
+    "currentStock": 5,
+    "estimatedRunout": "demain matin",
+    "createdAt": "2026-09-11T06:00:00.000Z"
+  }
+]

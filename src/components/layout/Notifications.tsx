@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Bell,
   AlertTriangle,
@@ -17,7 +17,8 @@ import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalo
 import { createOrderRecommendationsFromCartItems } from "../../features/orders/orderRecommendations";
 import "./Notifications.css";
 
-import { MOCK_NOTIFICATIONS, iconBadgeStyles, type Notification } from "./notificationPresentation";
+import { getNotifications, markNotificationsRead } from "../../services/notificationService";
+import { iconBadgeStyles, type Notification } from "./notificationPresentation";
 
 const Notifications: React.FC = () => {
   const { addToast } = useToast();
@@ -27,14 +28,19 @@ const Notifications: React.FC = () => {
     addMultipleToCart,
     cartCount,
     cartItems,
-    clearCart,
+    refreshCart,
   } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
-  const [addedToCart, setAddedToCart] = useState<string[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const addedToCart = cartItems.map((item) => item.id);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    getNotifications().then((data) => { if (active) setNotifications(data); }, () => { if (active) addToast("info", "Notifications indisponibles", "Réessayez en rechargeant la page."); });
+    return () => { active = false; };
+  }, [addToast]);
   const unreadCount = notifications.filter((n) => !n.read).length;
   const actionableNotifications = notifications.filter(
     (n) => n.actionable && !addedToCart.includes(n.id)
@@ -44,18 +50,18 @@ const Notifications: React.FC = () => {
     products
   );
 
-  const markAsRead = () => {
-    setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })));
+  const markAsRead = async () => {
+    try { setNotifications(await markNotificationsRead(notifications.map((item) => item.id))); }
+    catch (error) { addToast("info", "Lecture non enregistrée", error instanceof Error ? error.message : "Réessayez."); }
   };
 
   // Add single item to cart
-  const handleAddToCart = (notif: Notification) => {
+  const handleAddToCart = async (notif: Notification) => {
     if (!notif.productName || !notif.productId) return;
 
-    setAddedToCart((prev) => [...prev, notif.id]);
 
     // Add to global cart context
-    addToGlobalCart({
+    const saved = await addToGlobalCart({
       id: notif.id,
       productId: notif.productId,
       productName: notif.productName,
@@ -64,7 +70,7 @@ const Notifications: React.FC = () => {
       source: "notification",
     });
 
-    addToast(
+    if (saved) addToast(
       "success",
       "Ajouté au panier",
       `${notif.productName} (${notif.suggestedQuantity} ${notif.unit}) ajouté à la commande.`
@@ -85,18 +91,12 @@ const Notifications: React.FC = () => {
     setIsProcessing(true);
     const itemsToAdd: typeof actionableNotifications = [];
 
-    // Process each notification with a delay for visual feedback
     for (const notif of actionableNotifications) {
-      setProcessingId(notif.id);
-      await new Promise((resolve) => setTimeout(resolve, 600)); // 600ms per item
-      setAddedToCart((prev) => [...prev, notif.id]);
-      if (notif.productId && notif.productName) {
-        itemsToAdd.push(notif);
-      }
+      if (notif.productId && notif.productName) itemsToAdd.push(notif);
     }
 
     // Add all to global cart
-    addMultipleToCart(
+    const saved = await addMultipleToCart(
       itemsToAdd.map((n) => ({
         id: n.id,
         productId: n.productId!,
@@ -111,7 +111,7 @@ const Notifications: React.FC = () => {
     setIsProcessing(false);
 
     // Summary toast
-    addToast(
+    if (saved) addToast(
       "success",
       "Commande prête !",
       `${actionableNotifications.length} article(s) ajouté(s). Cliquez sur "Générer la commande" pour continuer.`
@@ -462,7 +462,7 @@ const Notifications: React.FC = () => {
         width="lg"
       >
         <OrderGenerator
-          onValidated={() => { clearCart(); setAddedToCart([]); }}
+          onValidated={() => { void refreshCart(); }}
           recommendations={cartRecommendations}
           onClose={handleCloseOrderModal}
         />

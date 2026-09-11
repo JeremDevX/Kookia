@@ -28,7 +28,8 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
     try {
       const saved = await validateOrder(operationId, recommendations.map((item, index) => ({
         productId: item.productId, quantity: Number(quantities[index]),
-        ...(item.source === "prediction" ? { predictionId: item.id } : {}),
+        ...(item.source === "prediction" ? { predictionId: item.id } : item.predictionId ? { predictionId: item.predictionId } : {}),
+        ...(item.cartId ? { cartId: item.cartId } : {}),
       })));
       setOrder(saved);
       onValidated?.();

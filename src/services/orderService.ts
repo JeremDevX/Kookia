@@ -1,5 +1,5 @@
 import { apiRequest } from "../config/api";
-export interface OrderLineInput { productId: string; quantity: number; predictionId?: string; }
+export interface OrderLineInput { productId: string; quantity: number; predictionId?: string; cartId?: string; }
 export interface PurchaseOrder {
   id: string; status: string; createdAt: string;
   lines: { productId: string; productName: string; supplierName: string; quantity: number; unit: string; pricePerUnit: number }[];

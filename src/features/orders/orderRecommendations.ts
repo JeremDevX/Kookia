@@ -8,6 +8,7 @@ export type OrderRecommendationSource =
   | "stocks";
 
 export interface CartOrderItemInput {
+  predictionId?: string;
   id: string;
   productId: string;
   productName: string;
@@ -16,6 +17,8 @@ export interface CartOrderItemInput {
 }
 
 export interface OrderRecommendation {
+  cartId?: string;
+  predictionId?: string;
   id: string;
   productId: string;
   productName: string;
@@ -59,6 +62,8 @@ export const createOrderRecommendationsFromCartItems = (
 
     return {
       id: item.id,
+      cartId: item.id,
+      predictionId: item.predictionId,
       productId: item.productId,
       productName: item.productName,
       quantity: item.quantity,

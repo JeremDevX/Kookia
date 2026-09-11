@@ -16,7 +16,6 @@ import { isOnOrAfterRestaurantToday } from "../utils/date";
 import { domainBusinessConfig } from "../config/domain/businessConfig";
 import {
   createOrderRecommendationsFromCartItems,
-  createOrderRecommendationsFromPredictions,
 } from "../features/orders/orderRecommendations";
 import "./Dashboard.css";
 
@@ -24,12 +23,11 @@ const Dashboard: React.FC = () => {
   const [showOrderGenerator, setShowOrderGenerator] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
-  const [selectedPredictionIds, setSelectedPredictionIds] = useState<string[]>(
-    []
-  );
+
 
   const { addToast } = useToast();
-  const { cartItems, clearCart } = useCart();
+  const { cartItems, addToCart, removeFromCart, refreshCart, loading: cartLoading } = useCart();
+  const selectedPredictionIds = cartItems.flatMap((item) => item.predictionId ? [item.predictionId] : []);
   const { predictions, loading, error, refetch } = usePredictions();
   const { products } = useProducts();
 
@@ -59,25 +57,18 @@ const Dashboard: React.FC = () => {
     setIsMenuModalOpen(false);
   };
 
-  const handleTogglePrediction = (id: string, productName: string) => {
-    const isCurrentlySelected = selectedPredictionIds.includes(id);
-
-    if (isCurrentlySelected) {
-      // Remove from selection
-      setSelectedPredictionIds((prev) => prev.filter((pId) => pId !== id));
-    } else {
-      // Add to selection
-      setSelectedPredictionIds((prev) => [...prev, id]);
-      addToast(
-        "success",
-        "Ajouté à la commande",
-        `${productName} ajouté au panier.`
-      );
-    }
+  const handleTogglePrediction = async (id: string, productName: string) => {
+    const selected = cartItems.find((item) => item.predictionId === id);
+    if (selected) { await removeFromCart(selected.id); return; }
+    const prediction = predictions.find((item) => item.id === id);
+    const product = products.find((item) => item.id === prediction?.productId);
+    if (!prediction?.recommendation || !product) return;
+    const saved = await addToCart({ id: `prediction-${id}`, predictionId: id, productId: product.id,
+      productName, quantity: prediction.recommendation.quantity, unit: product.unit, source: "dashboard" });
+    if (saved) addToast("success", "Ajouté au panier", `${productName} ajouté à votre sélection.`);
   };
 
-  // Total count includes both dashboard selections and notification cart items
-  const totalCartCount = selectedPredictionIds.length + cartItems.length;
+  const totalCartCount = cartItems.length;
 
   const handleGenerateOrders = () => {
     if (totalCartCount > 0) {
@@ -113,14 +104,7 @@ const Dashboard: React.FC = () => {
     (pred) => !selectedPredictionIds.includes(pred.id)
   );
 
-  // For OrderGenerator - combine dashboard selections with notification cart items
-  const selectedPredictions = actionablePredictions.filter((pred) =>
-    selectedPredictionIds.includes(pred.id)
-  );
-  const allRecommendations = [
-    ...createOrderRecommendationsFromPredictions(selectedPredictions),
-    ...createOrderRecommendationsFromCartItems(cartItems, products),
-  ];
+  const allRecommendations = createOrderRecommendationsFromCartItems(cartItems, products);
 
   return (
     <div className="dashboard-container">
@@ -147,7 +131,7 @@ const Dashboard: React.FC = () => {
           <span className="brief-order-icon"><ShoppingBag size={23} aria-hidden="true" /></span>
           <h3>Votre prochaine commande</h3>
           <p aria-live="polite">{totalCartCount > 0 ? `${totalCartCount} article${totalCartCount > 1 ? "s" : ""} dans votre sélection` : "Ajoutez des suggestions à votre sélection."}</p>
-          <Button onClick={handleGenerateOrders} icon={<ArrowRight size={16} />} disabled={totalCartCount === 0}>Revoir ma commande{totalCartCount > 0 ? ` (${totalCartCount})` : ""}</Button>
+          <Button onClick={handleGenerateOrders} icon={<ArrowRight size={16} />} disabled={cartLoading || totalCartCount === 0}>Revoir ma commande{totalCartCount > 0 ? ` (${totalCartCount})` : ""}</Button>
           <small>Vous vérifiez et validez avant tout envoi.</small>
         </div>
       </section>
@@ -186,7 +170,7 @@ const Dashboard: React.FC = () => {
       >
         <OrderGenerator
           recommendations={allRecommendations}
-          onValidated={() => { setSelectedPredictionIds([]); clearCart(); }}
+          onValidated={() => { void refreshCart(); }}
           onClose={handleCloseOrderGenerator}
         />
       </Modal>

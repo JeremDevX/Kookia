@@ -7,6 +7,7 @@ export const orderRoutes = Router();
 const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const orderSchema = z.object({ operationId: z.uuid(), lines: z.array(z.object({
   productId: z.string().min(1).max(100), quantity: z.number().finite().positive().max(1000000).multipleOf(0.001),
+  cartId: z.string().min(1).max(100).optional(),
   predictionId: z.string().min(1).max(100).optional(),
 }).strict()).min(1).max(100) }).strict();
 orderRoutes.get("/orders", async (_req, res, next) => {

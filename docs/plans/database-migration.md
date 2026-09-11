@@ -151,3 +151,13 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   Tests PostgreSQL : répétition concurrente sans doublon, conflit de quantités,
   références invalides, journal initial et absence d’effet stock passent.
   Le panier demeure local : son raccordement reste la prochaine étape du lot 5.
+- Panier désormais persistant, y compris les sélections de prévisions du
+  dashboard. Ajouts concurrents sérialisés serveur, noms/unités issus du catalogue,
+  état frontend recréé lors d’un changement de compte. Validation de commande et
+  retrait des seuls articles concernés dans une transaction ; panier périmé refusé.
+  Tests HTTP d’ajouts concurrents, relecture, isolation, répétition et conservation
+  des articles non commandés passent.
+- Notifications initiales déplacées dans le seed serveur, dates fixes et état
+  lu/non lu persistés. Relecture, idempotence, parité initiale et isolation testées.
+  Le panier n’annonce un ajout réussi qu’après la réponse serveur ; suppression
+  de la temporisation simulée des ajouts multiples. Vérification navigateur à faire.
