@@ -18,6 +18,7 @@ interface ProductionConfirmModalProps {
   recipe: Recipe | null;
   maxYield: number;
   costPerPortion: number;
+  getProductName: (productId: string) => string;
   onConfirm: (quantity: number, operationId: string) => Promise<void>;
 }
 
@@ -27,6 +28,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   recipe,
   maxYield,
   costPerPortion,
+  getProductName,
   onConfirm,
 }) => {
   const [saving, setSaving] = useState(false);
@@ -41,7 +43,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   const clampedQuantity = quantityValidation.normalizedQuantity;
 
   const totalCost = costPerPortion * clampedQuantity;
-  const estimatedRevenue = totalCost * 4; // 300% margin
+  const estimatedRevenue = totalCost * 4;
 
   const handleConfirm = async () => {
     if (saving) return;
@@ -77,11 +79,14 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
 
         {/* Quantity Selector */}
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <label className="block text-sm font-semibold text-blue-900 mb-2">
+          <label htmlFor="production-quantity" className="block text-sm font-semibold text-blue-900 mb-2">
             Nombre de portions à produire
           </label>
           <div className="flex items-center gap-4">
             <input
+              id="production-quantity"
+              aria-invalid={Boolean(quantityError)}
+              aria-describedby={quantityError ? "production-quantity-error" : undefined}
               type="number"
               min="1"
               max={safeMaxYield}
@@ -98,7 +103,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
             </div>
           </div>
           {quantityError && (
-            <span className="text-sm text-red-600 mt-2 block">{quantityError}</span>
+            <span id="production-quantity-error" role="alert" className="text-sm text-red-600 mt-2 block">{quantityError}</span>
           )}
         </div>
 
@@ -121,26 +126,26 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
             <div className="flex items-center gap-2 mb-2">
               <DollarSign size={16} className="text-secondary" />
               <span className="text-xs font-semibold text-secondary uppercase">
-                CA estimé
+                CA hypothétique
               </span>
             </div>
             <p className="text-2xl font-bold text-primary">
               {estimatedRevenue.toFixed(2)} €
             </p>
-            <p className="text-xs text-secondary mt-1">Prix moyen 15€</p>
+            <p className="text-xs text-secondary mt-1">Hypothèse : coût matière × 4</p>
           </div>
 
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp size={16} className="text-optimal" />
               <span className="text-xs font-semibold text-optimal uppercase">
-                Marge brute
+                Marge matière hypothétique
               </span>
             </div>
             <p className="text-2xl font-bold text-optimal">
               +{(estimatedRevenue - totalCost).toFixed(2)} €
             </p>
-            <p className="text-xs text-optimal mt-1">~300%</p>
+            <p className="text-xs text-optimal mt-1">Hors autres charges</p>
           </div>
         </div>
 
@@ -151,9 +156,9 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
             <h4 className="font-semibold">Ingrédients disponibles</h4>
           </div>
           <div className="space-y-2">
-            {recipe.ingredients.map((ing, i) => (
-              <div key={i} className="flex justify-between text-sm">
-                <span>{ing.productId}</span>
+            {recipe.ingredients.map((ing) => (
+              <div key={ing.productId} className="flex justify-between text-sm">
+                <span>{getProductName(ing.productId)}</span>
                 <span className="text-optimal font-medium">✓ En stock</span>
               </div>
             ))}

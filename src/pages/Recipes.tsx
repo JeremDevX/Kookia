@@ -333,6 +333,7 @@ const Recipes: React.FC = () => {
         recipe={selectedRecipe}
         maxYield={selectedMaxYield}
         costPerPortion={selectedRecipe ? getIngredientCost(selectedRecipe.ingredients) : 0}
+        getProductName={getProductName}
         onConfirm={handleConfirmProduction}
       />
     </div>

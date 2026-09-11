@@ -223,3 +223,12 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   toast découvert et raccordé au panier. Champs natifs des nouvelles revues
   harmonisés avec la classe input-field existante. Les autres parcours navigateur
   restent à vérifier ; compte temporaire conservé pour poursuivre cet audit.
+
+- Audit production navigateur : lancement de 2 Panna Cotta, déduction de 0,4 L de
+  crème (15→14,6 L), journal et date de production relus après navigation.
+  Confirmation corrigée : noms issus du catalogue au lieu des identifiants,
+  suppression du prix fixe 15 € et du taux de marge trompeur ; revenu annoncé
+  comme hypothèse coût matière × 4, marge hors autres charges. Champ quantité
+  associé à son libellé et erreur accessible. Lint, build et 29 tests passent.
+  Inspection du rendu corrigé et audit réception/préférences/exports encore ouverts :
+  contrôle navigateur interrompu lorsque l’utilisateur a repris Arc.
