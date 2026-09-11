@@ -29,7 +29,7 @@ const Dashboard: React.FC = () => {
   const { cartItems, addToCart, removeFromCart, refreshCart, loading: cartLoading } = useCart();
   const selectedPredictionIds = cartItems.flatMap((item) => item.predictionId ? [item.predictionId] : []);
   const { predictions, loading, error, refetch } = usePredictions();
-  const { products } = useProducts();
+  const { products, refetch: refreshProducts } = useProducts();
 
   const handleScanInvoice = () => {
     setIsInvoiceModalOpen(true);
@@ -39,9 +39,9 @@ const Dashboard: React.FC = () => {
     addToast(
       "success",
       "Facture Intégrée",
-      "Les stocks de Tomates et Mozzarella ont été mis à jour."
+      "Les quantités validées ont été ajoutées au stock."
     );
-    setIsInvoiceModalOpen(false);
+    void refreshProducts();
   };
 
   const handleMenuGen = () => {
@@ -152,7 +152,7 @@ const Dashboard: React.FC = () => {
           <p className="dashboard-eyebrow">AU QUOTIDIEN</p>
           <h2 id="tools-title">Un coup de main ?</h2>
           <p>Vos outils, à portée de main.</p>
-          <button className="dashboard-tool" onClick={handleScanInvoice}><FileText size={21} aria-hidden="true" /><span><strong>Scanner une facture</strong><small>Préparer l’entrée en stock</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
+          <button className="dashboard-tool" onClick={handleScanInvoice}><FileText size={21} aria-hidden="true" /><span><strong>Saisir une facture</strong><small>Préparer l’entrée en stock</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
           <button className="dashboard-tool" onClick={handleMenuGen}><ChefHat size={21} aria-hidden="true" /><span><strong>Imaginer le menu</strong><small>Valoriser les produits disponibles</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
           <Link className="dashboard-tool" to="/stocks"><ShoppingBag size={21} aria-hidden="true" /><span><strong>Consulter les stocks</strong><small>Faire le point sur vos produits</small></span><ArrowUpRight size={17} aria-hidden="true" /></Link>
           <div className="dashboard-note"><Leaf size={20} aria-hidden="true" /><p><strong>Chaque produit compte.</strong><br />Un regard sur vos stocks aujourd’hui, moins de pertes demain.</p></div>
@@ -178,7 +178,7 @@ const Dashboard: React.FC = () => {
       <Modal
         isOpen={isInvoiceModalOpen}
         onClose={() => setIsInvoiceModalOpen(false)}
-        title="Scanner une Facture"
+        title="Factures et réceptions"
         width="lg"
       >
         <InvoiceModal

@@ -161,3 +161,11 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   lu/non lu persistés. Relecture, idempotence, parité initiale et isolation testées.
   Le panier n’annonce un ajout réussi qu’après la réponse serveur ; suppression
   de la temporisation simulée des ajouts multiples. Vérification navigateur à faire.
+- Factures/réceptions raccordées : facture initiale conservée (date 2024 explicite),
+  création manuelle, correction des produits/quantités/prix et sauvegarde brouillon.
+  Réception humaine atomique avec mouvements et date de livraison ; facture
+  réceptionnée immuable. Aucun OCR ni scan fictif annoncé.
+  Tests PostgreSQL passés : parité des quantités initiales, relecture brouillon,
+  correction et conflit de révision, isolation, double réception concurrente sans
+  double crédit, historique et rollback complet si une ligne est invalide.
+  Builds frontend/API et lint passent ; validation navigateur reste à effectuer.
