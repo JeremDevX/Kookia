@@ -24,14 +24,6 @@ const Analytics: React.FC = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
 
-  const handleExport = (format: string, period: string) => {
-    addToast(
-      "success",
-      "Rapport généré",
-      `Rapport AGEC ${period} exporté en ${format.toUpperCase()}. Téléchargement en cours...`
-    );
-  };
-
   const handleSaveSettings = async (settings: AnalyticsSettings) => {
     try {
       await saveSettings(settings);
@@ -134,7 +126,6 @@ const Analytics: React.FC = () => {
       <ExportReportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
-        onExport={handleExport}
       />
 
       <CustomizeAnalyticsModal

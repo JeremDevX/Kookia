@@ -194,3 +194,12 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   Suppression de la promesse de simulation par IA, libellés accessibles ajoutés
   aux curseurs. Test HTTP de parité exacte et relecture stable passé ; builds et
   lint passent. Les exports et l’audit transversal restent à terminer.
+- Exports réels depuis un rapport API isolé : CSV, classeur XML Excel et PDF via
+  impression navigateur (libellés explicites). Période personnalisable, bornes UTC
+  inclusives, filtrage des opérations et prévisions. Analytics héritées sans dates
+  exportées comme instantané de migration du 11/09/2026, jamais recalculées à tort
+  sur la période demandée. Assurance de conformité AGEC supprimée.
+  Tests : bornes/absence de données hors intervalle, isolation, valeur de
+  l’instantané, échappement CSV/XML et neutralisation de formules passent.
+  33 tests unitaires, lint et builds passent ; téléchargement/ouverture Excel et
+  impression restent à contrôler dans l’audit navigateur.
