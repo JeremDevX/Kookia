@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import Card from "../common/Card";
 import { Calculator, TreeDeciduous, TrendingUp } from "lucide-react";
-import { domainBusinessConfig } from "../../config/domain/businessConfig";
+import type { RoiSimulatorAssumptionsConfig } from "../../config/domain/businessConfig";
 import "./ROISimulator.css";
 
-const ROISimulator: React.FC = () => {
-  const { roiSimulator } = domainBusinessConfig;
+const ROISimulator: React.FC<{ roiSimulator: RoiSimulatorAssumptionsConfig }> = ({ roiSimulator }) => {
   const [wasteReduction, setWasteReduction] = useState(
     roiSimulator.defaultWasteReductionPercent
   );
@@ -32,7 +31,7 @@ const ROISimulator: React.FC = () => {
           <Calculator size={24} /> Simulateur de Rentabilité
         </h3>
         <p className="text-sm text-secondary mt-1">
-          Estimez vos gains annuels potentiels avec notre IA.
+          Explorez un scénario indicatif à partir d’hypothèses de démonstration, sans prédiction IA.
         </p>
       </div>
 
@@ -43,6 +42,7 @@ const ROISimulator: React.FC = () => {
         </div>
         <input
           type="range"
+          aria-label="Objectif de réduction du gaspillage"
           min={roiSimulator.wasteReductionRange.min}
           max={roiSimulator.wasteReductionRange.max}
           value={wasteReduction}
@@ -58,6 +58,7 @@ const ROISimulator: React.FC = () => {
         </div>
         <input
           type="range"
+          aria-label="Couverts par jour"
           min={roiSimulator.dailyCoversRange.min}
           max={roiSimulator.dailyCoversRange.max}
           step={roiSimulator.dailyCoversRange.step}

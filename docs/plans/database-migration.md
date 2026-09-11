@@ -187,3 +187,10 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   Test PostgreSQL passé : parité, édition, conflit, double validation, isolation
   et absence de production implicite. Builds et lint passent ; impression et
   parcours navigateur restent à vérifier dans l’audit final.
+- Indicateurs dashboard, compteur historique de prédictions et hypothèses du
+  simulateur déplacés dans le seed `insights`, lus depuis PostgreSQL. Périodes KPI
+  figées avec dates explicites (plus de « hier » perpétuel). Les curseurs sont des
+  scénarios locaux temporaires ; les hypothèses initiales sont persistantes.
+  Suppression de la promesse de simulation par IA, libellés accessibles ajoutés
+  aux curseurs. Test HTTP de parité exacte et relecture stable passé ; builds et
+  lint passent. Les exports et l’audit transversal restent à terminer.

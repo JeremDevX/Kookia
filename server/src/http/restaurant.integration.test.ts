@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
+import insights from "../infrastructure/database/seed/insights.json" with { type: "json" };
 import { app } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 const ids: string[] = [];
@@ -13,6 +14,11 @@ async function account() {
 it("persists restaurant and suppliers with validated input and account isolation", async () => {
   const agent = await account(); const other = await account();
   await request(app).get("/api/workspace/restaurant").expect(401);
+  const initialInsights = await agent.get("/api/workspace/insights").expect(200);
+  expect(initialInsights.body).toEqual(insights);
+  const repeatedInsights = await agent.get("/api/workspace/insights").expect(200);
+  expect(repeatedInsights.body).toEqual(initialInsights.body);
+  await request(app).get("/api/workspace/insights").expect(401);
   const initial = await agent.get("/api/workspace/restaurant").expect(200);
   expect(initial.body.ownerId).toBeUndefined();
   const changed = { ...initial.body, name: "Restaurant Test", city: "Lyon", dailyCovers: 200 };

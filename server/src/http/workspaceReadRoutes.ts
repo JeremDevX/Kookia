@@ -1,3 +1,4 @@
+import insights from "../infrastructure/database/seed/insights.json" with { type: "json" };
 import { Router, type Response } from "express";
 import { prisma } from "../infrastructure/database/prisma.js";
 
@@ -22,3 +23,12 @@ for (const kind of ["analytics", "activity"] as const) {
     } catch (error) { next(error); }
   });
 }
+
+workspaceReadRoutes.get("/insights", async (_req, res, next) => {
+  try {
+    const id = restaurantId(res);
+    const document = await prisma.workspaceDocument.upsert({ where: { restaurantId_kind: { restaurantId: id, kind: "insights" } },
+      create: { restaurantId: id, kind: "insights", data: insights }, update: {} });
+    res.json(document.data);
+  } catch (error) { next(error); }
+});

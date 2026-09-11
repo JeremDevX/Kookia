@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "../components/common/Button";
 import ExportReportModal from "../components/analytics/ExportReportModal";
 import CustomizeAnalyticsModal from "../components/analytics/CustomizeAnalyticsModal";
@@ -6,6 +6,7 @@ import WasteChart from "../components/analytics/charts/WasteChart";
 import AITrendChart from "../components/analytics/charts/AITrendChart";
 import SavingsChart from "../components/analytics/charts/SavingsChart";
 import { Download } from "lucide-react";
+import { getInsights, type Insights } from "../services/insightsService";
 import ROISimulator from "../components/analytics/ROISimulator";
 import { useToast } from "../context/ToastContext";
 import { useAnalytics } from "../hooks";
@@ -51,8 +52,14 @@ const Analytics: React.FC = () => {
     }
   };
 
-  // Stable value for display (simulated prediction count)
-  const predictionCount = 1247;
+  const [insights, setInsights] = useState<Insights | null>(null);
+  const [insightsError, setInsightsError] = useState("");
+  useEffect(() => {
+    let active = true;
+    getInsights().then((data) => { if (active) setInsights(data); }, () => { if (active) setInsightsError("Hypothèses et indicateurs indisponibles."); });
+    return () => { active = false; };
+  }, []);
+  const predictionCount = insights?.predictionCount ?? 0;
 
   if (error) return <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>;
 
@@ -74,6 +81,7 @@ const Analytics: React.FC = () => {
 
   return (
     <div className="analytics-container workspace-page">
+      {insightsError && <p role="alert">{insightsError}</p>}
       {preferencesError && <p role="alert">{preferencesError}</p>}
       <header className="workspace-header">
         <div>
@@ -119,7 +127,7 @@ const Analytics: React.FC = () => {
 
         {/* ROI Simulator - Full width */}
         <div className="col-span-2">
-          <ROISimulator />
+          {insights ? <ROISimulator roiSimulator={insights.roi} /> : !insightsError && <p role="status">Chargement des hypothèses…</p>}
         </div>
       </div>
 

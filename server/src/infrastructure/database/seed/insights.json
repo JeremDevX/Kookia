@@ -1,0 +1,57 @@
+{
+  "roi": {
+    "defaultWasteReductionPercent": 30,
+    "defaultDailyCovers": 350,
+    "averageTicketEur": 25,
+    "wastePerCoverKg": 0.18,
+    "foodCostPerKgEur": 6,
+    "co2PerKgFood": 2.5,
+    "openDaysPerYear": 300,
+    "wasteReductionRange": {
+      "min": 5,
+      "max": 80
+    },
+    "dailyCoversRange": {
+      "min": 50,
+      "max": 1000,
+      "step": 10
+    }
+  },
+  "predictionCount": 1247,
+  "indicators": [
+    {
+      "id": "covers",
+      "label": "Couverts servis",
+      "value": "347",
+      "unit": "",
+      "period": "10/09/2026 · capacité de 400",
+      "detail": "+12 % vs N−1"
+    },
+    {
+      "id": "revenue",
+      "label": "Chiffre d’affaires",
+      "value": "4 892",
+      "unit": "€",
+      "period": "Septembre 2026",
+      "detail": "Activité du restaurant"
+    },
+    {
+      "id": "forecast",
+      "label": "Couverts prévus",
+      "value": "420",
+      "unit": "",
+      "period": "12/09/2026 · estimation",
+      "detail": "Prévision à confirmer"
+    },
+    {
+      "id": "waste",
+      "label": "Gaspillage estimé",
+      "value": "−2,3",
+      "unit": "%",
+      "period": "Semaine du 07/09/2026",
+      "detail": "Évolution estimée"
+    }
+  ],
+  "source": "demo",
+  "asOf": "2026-09-11"
+}
