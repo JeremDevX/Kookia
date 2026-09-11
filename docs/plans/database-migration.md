@@ -105,3 +105,10 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
 - Cartographie initiale : inspection des services, hooks, fixtures, modèles Prisma,
   composants métiers et handlers de confirmation. Auth déjà en base confirmée.
 - Implémentation et validation des lots suivants : à renseigner au fil des commits.
+- Socle relationnel ajouté et migrations additives appliquées sur PostgreSQL local.
+  Seed catalogue/analytics figé au 11 septembre 2026 (dates non recalculées).
+  Test PostgreSQL passé : volumes et ingrédients conservés, initialisations
+  concurrentes, non-écrasement d’un stock modifié, isolation de deux comptes,
+  suppression complète des comptes temporaires. Contraintes croisées différées
+  pour permettre la suppression de compte existante. Documents annexes du seed
+  et raccordement runtime restent à faire : le lot 2 reste volontairement ouvert.

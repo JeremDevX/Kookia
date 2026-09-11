@@ -17,6 +17,7 @@ model User {
   updatedAt      DateTime  @updatedAt
   lastLoginAt    DateTime?
   sessions       Session[]
+  restaurant     Restaurant?
 }
 
 model Session {
@@ -30,4 +31,180 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+
+model Restaurant {
+  id           String   @id @default(uuid())
+  ownerId      String   @unique
+  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name         String
+  type         String
+  address      String
+  city         String
+  phone        String
+  email        String
+  dailyCovers  Int
+  seededAt     DateTime @default(now())
+  suppliers    Supplier[]
+  products     Product[]
+  recipes      Recipe[]
+  predictions  Prediction[]
+  movements    StockMovement[]
+  productions  Production[]
+  orders       PurchaseOrder[]
+  decisions    RecommendationDecision[]
+  documents    WorkspaceDocument[]
+}
+
+model Supplier {
+  id           String
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  phone        String
+  products     Product[]
+  @@id([restaurantId, id])
+}
+
+model Product {
+  id           String
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name         String
+  category     String
+  currentStock Decimal @db.Decimal(14, 3)
+  unit         String
+  minThreshold Decimal @db.Decimal(14, 3)
+  supplierId   String
+  supplier     Supplier @relation(fields: [restaurantId, supplierId], references: [restaurantId, id], onDelete: NoAction)
+  pricePerUnit Decimal @db.Decimal(14, 4)
+  lastDelivery DateTime? @db.Date
+  ingredients  RecipeIngredient[]
+  movements    StockMovement[]
+  predictions  Prediction[]
+  @@id([restaurantId, id])
+}
+
+model Recipe {
+  id           String
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name         String
+  category     String
+  prepTime     Int
+  lastMade     DateTime? @db.Date
+  ingredients  RecipeIngredient[]
+  productions  Production[]
+  @@id([restaurantId, id])
+}
+
+model RecipeIngredient {
+  restaurantId String
+  recipeId     String
+  productId    String
+  quantity     Decimal @db.Decimal(14, 3)
+  recipe       Recipe @relation(fields: [restaurantId, recipeId], references: [restaurantId, id], onDelete: Cascade)
+  product      Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
+  @@id([restaurantId, recipeId, productId])
+}
+
+model StockMovement {
+  id           String @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
+  delta        Decimal @db.Decimal(14, 3)
+  reason       String
+  operationId  String
+  actorId      String
+  createdAt    DateTime @default(now())
+  @@unique([restaurantId, operationId, productId])
+  @@index([restaurantId, productId, createdAt])
+}
+
+model Production {
+  id           String @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  recipeId     String?
+  recipe       Recipe? @relation(fields: [restaurantId, recipeId], references: [restaurantId, id], onDelete: NoAction)
+  recipeName   String
+  portions     Int
+  prepTime     Int
+  notes        String
+  date         DateTime @db.Date
+  kind         String
+  actorId      String
+  operationId  String
+  createdAt    DateTime @default(now())
+  @@unique([restaurantId, operationId])
+}
+
+model Prediction {
+  id                   String
+  restaurantId         String
+  restaurant           Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  productId            String
+  product              Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
+  predictedDate        DateTime @db.Date
+  predictedConsumption Decimal @db.Decimal(14, 3)
+  confidence           Float
+  action               String?
+  quantity             Decimal? @db.Decimal(14, 3)
+  reason               String?
+  source               String @default("demo")
+  @@id([restaurantId, id])
+}
+
+model PurchaseOrder {
+  id           String @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  actorId      String
+  operationId  String
+  status       String @default("validated")
+  createdAt    DateTime @default(now())
+  lines        PurchaseOrderLine[]
+  @@unique([restaurantId, operationId])
+}
+
+model PurchaseOrderLine {
+  id           String @id @default(uuid())
+  orderId      String
+  order        PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  productName  String
+  supplierId   String
+  supplierName String
+  quantity     Decimal @db.Decimal(14, 3)
+  unit         String
+  pricePerUnit Decimal @db.Decimal(14, 4)
+}
+
+model RecommendationDecision {
+  id           String @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  actorId      String
+  predictionId String?
+  operationId  String
+  decision     String
+  snapshot     Json
+  createdAt    DateTime @default(now())
+  @@index([restaurantId, createdAt])
+}
+
+// Validated snapshots: analytics, preferences, notifications, invoices, menus,
+// cart and simulator assumptions. Operational stock/order data stays relational.
+model WorkspaceDocument {
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  kind         String
+  data         Json
+  revision     Int @default(0)
+  updatedAt    DateTime @updatedAt
+  @@id([restaurantId, kind])
 }
