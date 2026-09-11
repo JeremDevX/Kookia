@@ -5,6 +5,7 @@
 }
 
 .main-content-wrapper {
+  min-width: 0;
   flex: 1;
   margin-left: 260px; /* Width of sidebar */
   display: flex;
