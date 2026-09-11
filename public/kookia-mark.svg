@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <title>KookiA</title>
+  <rect width="48" height="48" rx="15" fill="#264c39"/>
+  <path d="M16 13v23M17 25l15 11" fill="none" stroke="#e4edcb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 25c0-10 6-14 16-14 0 9-5 15-16 14Z" fill="#e4edcb"/>
+  <path d="m19 25 9-8" fill="none" stroke="#264c39" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

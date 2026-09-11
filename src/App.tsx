@@ -10,7 +10,7 @@ function App() {
     <AppProviders>
       <>
         {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
-        <AppRouter />
+        <div inert={showSplash}><AppRouter /></div>
       </>
     </AppProviders>
   );
