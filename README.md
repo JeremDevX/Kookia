@@ -100,6 +100,7 @@ document distingue explicitement ce qui existe de ce qui reste à construire.
 - Workflow agent : [AGENTS.md](AGENTS.md)
 - Méthode Codex, sources et validation du cadrage : [Développement agentique](docs/agentic-development.md)
 - Référence technique : [Technique et développement](docs/technical-development.md)
+- Setup authentification locale : [Guide de setup rapide](docs/setup-auth.md)
 
 ## Validation locale minimale avant PR
 
