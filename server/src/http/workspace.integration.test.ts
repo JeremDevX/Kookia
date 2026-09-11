@@ -87,8 +87,17 @@ describe("persistent catalog HTTP", () => {
     await agent.post("/api/workspace/productions").send(manual).expect(201);
     const noDeduction = await agent.get("/api/workspace/catalog").expect(200);
     expect(noDeduction.body).toEqual(after.body);
+    const recipesBeforeRefusal = await agent.get("/api/workspace/recipes").expect(200);
+    const refusal = { ...input, operationId: randomUUID(), portions: 3, date: "2026-09-12", kind: "refusal" };
+    await agent.post("/api/workspace/productions").send(refusal).expect(201);
+    await agent.post("/api/workspace/productions").send(refusal).expect(201);
+    const afterRefusal = await agent.get("/api/workspace/catalog").expect(200);
+    expect(afterRefusal.body).toEqual(after.body);
+    const recipesAfterRefusal = await agent.get("/api/workspace/recipes").expect(200);
+    expect(recipesAfterRefusal.body).toEqual(recipesBeforeRefusal.body);
     const history = await agent.get("/api/workspace/productions").expect(200);
-    expect(history.body).toHaveLength(2);
+    expect(history.body).toHaveLength(3);
+    expect(history.body.filter((item: { kind: string }) => item.kind === "refusal")).toHaveLength(1);
   });
 
   it("serves persisted predictions/analytics and preserves server preferences during legacy initialization", async () => {

@@ -64,8 +64,8 @@ npm run test:integration
 ```
 
 Les tests d’intégration nécessitent PostgreSQL local et créent des comptes dédiés.
-Les tests métier nettoient uniquement leurs comptes temporaires. Le test historique
-d’auth utilise des emails de test fixes : réserver la base locale aux essais.
+Tous utilisent des adresses uniques et nettoient uniquement les identifiants des
+comptes temporaires qu’ils ont créés.
 
 ## Documentation
 

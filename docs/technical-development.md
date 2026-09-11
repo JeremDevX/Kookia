@@ -82,7 +82,9 @@ Les contrôles actuels sont :
 ```bash
 npm run lint
 npm run build
+npm run build:api
 npm run test
+npm run test:integration
 ```
 
 Pour la cible préproduction, compléter progressivement avec des tests unitaires

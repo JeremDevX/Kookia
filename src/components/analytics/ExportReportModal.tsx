@@ -24,11 +24,24 @@ export default function ExportReportModal({ isOpen, onClose }: ExportReportModal
         printWindow.document.title = "Rapport opérationnel KookiA";
         const heading = printWindow.document.createElement("h1"); heading.textContent = "Rapport opérationnel KookiA";
         printWindow.document.body.append(heading);
+        const cells = reportCells(report);
+        for (const row of cells.slice(0, 3)) {
+          const paragraph = printWindow.document.createElement("p");
+          paragraph.textContent = row.join(" ");
+          paragraph.style.cssText = "font:12px sans-serif";
+          printWindow.document.body.append(paragraph);
+        }
         const table = printWindow.document.createElement("table");
-        table.style.cssText = "border-collapse:collapse;font:11px sans-serif;width:100%";
-        for (const row of reportCells(report)) {
-          const tr = table.insertRow();
-          for (const value of row) { const td = tr.insertCell(); td.textContent = String(value); td.style.cssText = "border:1px solid #ccc;padding:5px;overflow-wrap:anywhere"; }
+        table.style.cssText = "border-collapse:collapse;font:11px sans-serif;width:100%;table-layout:fixed";
+        const header = table.createTHead().insertRow();
+        for (const label of cells[3]) {
+          const th = printWindow.document.createElement("th"); th.textContent = String(label);
+          th.style.cssText = "border:1px solid #ccc;padding:5px;text-align:left;background:#f0f3ec"; header.append(th);
+        }
+        const body = table.createTBody();
+        for (const row of cells.slice(4)) {
+          const tr = body.insertRow(); tr.style.breakInside = "avoid";
+          for (const value of row) { const td = tr.insertCell(); td.textContent = String(value); td.style.cssText = "border:1px solid #ccc;padding:5px;overflow-wrap:anywhere;vertical-align:top"; }
         }
         printWindow.document.body.append(table); printWindow.document.close(); printWindow.focus(); printWindow.print();
         setNotice("Choisissez Enregistrer en PDF dans la fenêtre d’impression.");

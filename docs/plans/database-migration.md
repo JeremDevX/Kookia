@@ -5,6 +5,8 @@
 Conserver les parcours et les données de démonstration existants, mais rendre les
 lectures et mutations métier persistantes, isolées par espace et vérifiables.
 Ce document pilote l’implémentation ; les cases ne sont cochées qu’après validation.
+Le [bilan d’audit](database-migration-audit.md) rassemble les preuves actuelles ;
+le suivi ci-dessous conserve aussi les états intermédiaires historiques.
 
 État observé : Express, Prisma et PostgreSQL existent déjà pour `User` et `Session`.
 Les services métier utilisent encore des tableaux locaux. Les descriptions de
@@ -62,12 +64,12 @@ Les fixtures de tests restent possibles, mais aucun fallback mock dans le runtim
 ## Plan d’implémentation et commits
 
 - [x] 1. Inspecter le runtime et consigner cette cartographie et les incohérences.
-- [ ] 2. Ajouter modèle métier, migration additive et seed idempotent ; vérifier sur PostgreSQL local sans toucher aux comptes existants.
-- [ ] 3. Brancher catalogue, création produit, ajustements et historique de stock ; tester isolation et concurrence.
-- [ ] 4. Brancher recettes, productions et refus ; transaction de déduction, absence de double consommation et relecture après actualisation.
-- [ ] 5. Brancher prévisions, panier, décisions et commandes ; revue explicite, quantités validées, journal et statut d’envoi honnête.
-- [ ] 6. Brancher notifications, factures/réceptions et menus ; empêcher une double réception, préserver correction/validation humaine.
-- [ ] 7. Brancher restaurant, analytics, KPI, préférences et hypothèses ; corriger intégrations et exports fictifs.
+- [x] 2. Ajouter modèle métier, migration additive et seed idempotent ; vérifier sur PostgreSQL local sans écraser les données des comptes existants.
+- [x] 3. Brancher catalogue, création produit, ajustements et historique de stock ; tester isolation et concurrence.
+- [x] 4. Brancher recettes, productions et refus ; transaction de déduction, absence de double consommation et relecture après actualisation.
+- [x] 5. Brancher prévisions, panier, décisions et commandes ; revue explicite, quantités validées, journal et statut d’envoi honnête.
+- [x] 6. Brancher notifications, factures/réceptions et menus ; empêcher une double réception, préserver correction/validation humaine.
+- [x] 7. Brancher restaurant, analytics, KPI, préférences et hypothèses ; corriger intégrations et exports fictifs.
 - [ ] 8. Retirer les imports mocks du runtime, actualiser documentation technique/setup, audit de parité et tests finaux.
 
 Faire un commit par lot cohérent, avec vérifications dans le message ou le suivi
@@ -274,3 +276,17 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   Test HTTP des noms/unités et test de reconnexion passent ; lint/build API passent.
   Sélection Excel/PDF interrompue par changement de fenêtre navigateur ; leur
   téléchargement/aperçu et le contrôle d’impression du menu restent ouverts.
+
+- Contrôles de fin : XML téléchargé et parsé, PDF de quatre pages généré/enregistré,
+  mise en page corrigée (période séparée et titres répétés). Menu corrigé puis
+  validé dans Chrome, aperçu d’une page contrôlé, sans impression physique.
+- Faux effet restant des préférences corrigé : cible et visibilité des sections
+  réellement appliquées. 42 g et trois sections masquées conservés après
+  rechargement ; fenêtre étroite et navigation Tab/Escape vérifiées.
+- Quatre migrations à jour, 29 tests unitaires et 14 scénarios PostgreSQL passent.
+  Refus répétés testés sans double journalisation ni impact stock/date de production.
+  README et commandes de validation technique actualisés.
+- Clôture encore ouverte : autorisation demandée pour une nouvelle comparaison
+  avant/après deux seeds non destructifs et la suppression du seul compte d’audit.
+  Le contrôle automatique a refusé cette relance faute d’autorisation explicite ;
+  aucune tentative de contournement n’a été faite.

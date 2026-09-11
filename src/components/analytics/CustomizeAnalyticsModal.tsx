@@ -61,7 +61,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
             </label>
             <input id="customizeanalyticsmodal-1"
               type="number"
-              className="w-full px-3 py-2 border rounded-md"
+              className="input-field"
               value={settings.wasteTarget}
               onChange={(e) =>
                 setSettings({ ...settings, wasteTarget: e.target.value })
@@ -150,7 +150,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
               type="number"
               min="0"
               max="100"
-              className="w-full px-3 py-2 border rounded-md"
+              className="input-field"
               value={settings.alertThreshold}
               onChange={(e) =>
                 setSettings({ ...settings, alertThreshold: e.target.value })

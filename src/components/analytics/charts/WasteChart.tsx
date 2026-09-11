@@ -13,9 +13,11 @@ import type { AnalyticsData } from "../../../types";
 interface WasteChartProps {
   stats: AnalyticsData["wasteStats"];
   evolution: AnalyticsData["wasteEvolution"];
+  showTrends: boolean;
+  targetGrams: string | null;
 }
 
-const WasteChart: React.FC<WasteChartProps> = ({ stats, evolution }) => {
+const WasteChart: React.FC<WasteChartProps> = ({ stats, evolution, showTrends, targetGrams }) => {
   return (
     <Card title="📉 Gaspillage Alimentaire" className="stat-card">
       <div className="metric-comparison">
@@ -36,13 +38,13 @@ const WasteChart: React.FC<WasteChartProps> = ({ stats, evolution }) => {
           <div className="text-xs text-secondary mt-2">
             Cible:{" "}
             <strong className="text-optimal">
-              {stats.targetWastePerMealGram}g
+              {targetGrams === null ? "—" : `${targetGrams}g`}
             </strong>
           </div>
         </div>
       </div>
 
-      <div className="chart-wrapper">
+      {showTrends && <div className="chart-wrapper">
         <h4>Évolution Hebdomadaire</h4>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={evolution}>
@@ -83,7 +85,7 @@ const WasteChart: React.FC<WasteChartProps> = ({ stats, evolution }) => {
             </defs>
           </BarChart>
         </ResponsiveContainer>
-      </div>
+      </div>}
     </Card>
   );
 };

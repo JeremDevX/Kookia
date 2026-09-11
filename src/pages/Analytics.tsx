@@ -105,22 +105,22 @@ const Analytics: React.FC = () => {
 
       <div className="analytics-grid">
         {/* Waste Stats */}
-        <WasteChart stats={wasteStats} evolution={wasteEvolution} />
+        <WasteChart stats={wasteStats} evolution={wasteEvolution} showTrends={analyticsSettings.showTrends} targetGrams={preferencesLoading || preferencesError ? null : analyticsSettings.wasteTarget} />
 
         {/* AI Performance */}
-        <AITrendChart
+        {analyticsSettings.showAI && <AITrendChart
           reliability={aiReliability}
           criticalProducts={criticalProducts}
           predictionCount={predictionCount}
-        />
+        />}
 
         {/* Total Usage (Chart) */}
-        <SavingsChart evolution={savingsEvolution} />
+        {analyticsSettings.showROI && <SavingsChart evolution={savingsEvolution} />}
 
         {/* ROI Simulator - Full width */}
-        <div className="col-span-2">
+        {analyticsSettings.showROI && <div className="col-span-2">
           {insights ? <ROISimulator roiSimulator={insights.roi} /> : !insightsError && <p role="status">Chargement des hypothèses…</p>}
-        </div>
+        </div>}
       </div>
 
       <ExportReportModal
