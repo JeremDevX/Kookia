@@ -68,7 +68,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
               }
             />
             <p className="text-xs text-secondary mt-1">
-              Recommandé: 30-50g selon la loi AGEC
+              Objectif interne à adapter à votre activité, sans valeur réglementaire.
             </p>
           </div>
         </div>
@@ -80,8 +80,9 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
             <h4 className="font-semibold">Sections visibles</h4>
           </div>
           <div className="space-y-3">
-            <label htmlFor="customizeanalyticsmodal-2" className="flex items-center gap-3 cursor-pointer">
+            <label htmlFor="analytics-show-trends" className="flex items-center gap-3 cursor-pointer">
               <input
+                id="analytics-show-trends"
                 type="checkbox"
                 checked={settings.showTrends}
                 onChange={(e) =>
@@ -142,7 +143,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
             <h4 className="font-semibold">Alertes</h4>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label htmlFor="customizeanalyticsmodal-2" className="block text-sm font-medium mb-2">
               Seuil d'alerte de précision IA (%)
             </label>
             <input id="customizeanalyticsmodal-2"
@@ -156,7 +157,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
               }
             />
             <p className="text-xs text-secondary mt-1">
-              Recevoir une alerte si la précision descend sous ce seuil
+              Seuil conservé dans vos préférences. Aucune alerte automatique n’est actuellement générée.
             </p>
           </div>
         </div>

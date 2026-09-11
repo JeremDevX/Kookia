@@ -250,3 +250,17 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   Lint et build API passent. Recherche runtime : plus de tableaux/imports mocks ;
   localStorage uniquement pour la reprise des anciennes préférences, temporisations
   limitées au splash, toasts et libération des URLs de téléchargement.
+
+- Audit navigateur poursuivi sur le compte temporaire : confirmation de production
+  corrigée relue (noms catalogue, calcul hypothétique explicite, champ nommé) ;
+  quantité nulle bloque la validation et annulation sans consommation.
+- Préférences : objectif 50→42 g enregistré puis rechargement et réouverture,
+  42 conservé. Libellés checkbox/seuil corrigés et vérifiés dans l’arbre accessible.
+  Ancienne recommandation AGEC non étayée supprimée ; seuil annoncé comme
+  préférence conservée, sans promettre un moteur d’alerte inexistant.
+- Facture : brouillon Tomates 2 kg relu après navigation, total 171,80 €.
+  Réception autorisée explicitement par l’utilisateur sur le seul compte de test
+  après refus du contrôle automatique. Succès horodaté, champs verrouillés et
+  absence de seconde validation vérifiés. Stocks relus : Tomates 15 kg (+2),
+  Mozzarella 13 kg (+5), Basilic 13 unités (+3), Huile 45 L (+10).
+  Aucun effet sur le compte utilisateur initial.
