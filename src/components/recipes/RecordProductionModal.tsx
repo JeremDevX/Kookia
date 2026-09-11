@@ -12,7 +12,7 @@ import {
 interface RecordProductionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onRecord: (data: ProductionRecord) => void;
+  onRecord: (data: ProductionRecord, operationId: string) => Promise<void>;
 }
 
 const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
@@ -20,6 +20,9 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
   onClose,
   onRecord,
 }) => {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [formData, setFormData] = useState({
     recipeName: "",
     portions: "",
@@ -28,7 +31,8 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
   });
   const [errors, setErrors] = useState<RecordProductionFormErrors>({});
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (saving) return;
     const validation = validateRecordProductionForm(formData);
     setErrors(validation.errors);
 
@@ -36,13 +40,16 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
       return;
     }
 
-    onRecord({
+    setSaving(true);
+    setSaveError("");
+    try {
+    await onRecord({
       recipeName: formData.recipeName.trim(),
       portions: formData.portions.trim(),
       prepTime: formData.prepTime.trim(),
       notes: formData.notes.trim(),
       date: new Date().toISOString(),
-    });
+    }, operationId);
     setFormData({
       recipeName: "",
       portions: "",
@@ -50,7 +57,9 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
       notes: "",
     });
     setErrors({});
+    setOperationId(crypto.randomUUID());
     onClose();
+    } catch (error) { setSaveError(error instanceof Error ? error.message : "Enregistrement impossible."); } finally { setSaving(false); }
   };
 
   return (
@@ -61,6 +70,8 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
       width="md"
     >
       <div className="flex flex-col gap-4">
+        <p>Cette déclaration conserve votre production. Sans recette liée, aucun ingrédient ne sera déduit du stock.</p>
+        {saveError && <p role="alert">{saveError}</p>}
         <div>
           <label htmlFor="recordproductionmodal-1" className="block text-sm font-medium mb-2">
             Nom de la recette *
@@ -140,7 +151,7 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!validateRecordProductionForm(formData).isValid}
+            disabled={saving || !validateRecordProductionForm(formData).isValid}
           >
             Enregistrer
           </Button>

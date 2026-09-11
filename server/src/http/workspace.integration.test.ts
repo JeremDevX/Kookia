@@ -51,4 +51,32 @@ describe("persistent catalog HTTP", () => {
       unit: "kg", minThreshold: 2, pricePerUnit: 1, supplierId: randomUUID(),
     }).expect(400);
   });
+  it("deducts recipe ingredients atomically, records history and rejects repeat/conflicting production", async () => {
+    const agent = await account();
+    const recipes = await agent.get("/api/workspace/recipes").expect(200);
+    const recipe = recipes.body[0];
+    const before = await agent.get("/api/workspace/catalog").expect(200);
+    const input = { operationId: randomUUID(), recipeId: recipe.id, recipeName: recipe.name,
+      portions: 1, prepTime: recipe.prepTime, notes: "", date: "2026-09-11", kind: "production" };
+    const saved = await agent.post("/api/workspace/productions").send(input).expect(201);
+    const duplicate = await agent.post("/api/workspace/productions").send(input).expect(201);
+    expect(duplicate.body.id).toBe(saved.body.id);
+    await agent.post("/api/workspace/productions").send({ ...input, portions: 2 }).expect(409);
+    const after = await agent.get("/api/workspace/catalog").expect(200);
+    for (const ingredient of recipe.ingredients) {
+      const initial = before.body.products.find((product: { id: string }) => product.id === ingredient.productId);
+      const changed = after.body.products.find((product: { id: string }) => product.id === ingredient.productId);
+      expect(changed.currentStock).toBeCloseTo(initial.currentStock - ingredient.quantity, 3);
+    }
+    await agent.post("/api/workspace/productions").send({ ...input, operationId: randomUUID(), portions: 10000 }).expect(409);
+    const failed = await agent.get("/api/workspace/catalog").expect(200);
+    expect(failed.body).toEqual(after.body);
+    const manual = { ...input, recipeId: undefined, operationId: randomUUID(), recipeName: "Production libre", kind: "record" };
+    await agent.post("/api/workspace/productions").send(manual).expect(201);
+    const noDeduction = await agent.get("/api/workspace/catalog").expect(200);
+    expect(noDeduction.body).toEqual(after.body);
+    const history = await agent.get("/api/workspace/productions").expect(200);
+    expect(history.body).toHaveLength(2);
+  });
+
 });

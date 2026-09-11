@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Recipe } from "../types";
+import { MOCK_PRODUCTS } from "../data/mock/inventory";
 import { calculateIngredientCost, calculateMaxYield } from "./recipeService";
 
 describe("recipeService", () => {
@@ -12,7 +13,7 @@ describe("recipeService", () => {
       ingredients: [],
     };
 
-    expect(calculateMaxYield(recipe)).toBe(0);
+    expect(calculateMaxYield(recipe, MOCK_PRODUCTS)).toBe(0);
   });
 
   it("calculates max yield based on limiting ingredient", () => {
@@ -27,7 +28,7 @@ describe("recipeService", () => {
       ],
     };
 
-    expect(calculateMaxYield(recipe)).toBe(4);
+    expect(calculateMaxYield(recipe, MOCK_PRODUCTS)).toBe(4);
   });
 
   it("calculates ingredient cost from known products only", () => {
@@ -35,7 +36,7 @@ describe("recipeService", () => {
       { productId: "p1", quantity: 2 },
       { productId: "p2", quantity: 1 },
       { productId: "unknown", quantity: 5 },
-    ]);
+    ], MOCK_PRODUCTS);
 
     expect(total).toBeCloseTo(13.3, 5);
   });

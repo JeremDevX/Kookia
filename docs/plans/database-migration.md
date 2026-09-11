@@ -123,3 +123,12 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   Vérification navigateur encore à faire. Recettes/prévisions restent mockées
   à cette étape ; leur raccordement est le prochain lot pour rétablir la cohérence
   des calculs avec le stock désormais persistant.
+- Recettes désormais lues en base ; rendement et coût utilisent le catalogue
+  chargé (suppression du prix fictif de 2,50 €/portion dans la confirmation).
+  Productions, déclarations libres et refus persistés et affichés dans un journal.
+  Déduction transactionnelle des ingrédients seulement pour une recette liée
+  explicitement lancée ; déclaration libre sans déduction inventée.
+  Tests PostgreSQL : relecture, idempotence, conflit, quantités d’ingrédients,
+  rollback sans modification partielle et déclaration sans déduction passent.
+  Les vérifications navigateur et la parité historique des données initiales
+  restent à auditer ; les cases des lots demeurent ouvertes jusque-là.

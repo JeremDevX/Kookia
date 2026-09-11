@@ -4,6 +4,7 @@ import { sessionCookieName } from "../config/env.js";
 import { getUserBySessionToken } from "../application/auth/authService.js";
 import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { adjustStock, createProduct, getCatalog, WorkspaceError } from "../application/workspace/catalogService.js";
+import { getRecipes, recordProduction } from "../application/workspace/recipeService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
 interface WorkspaceContext { restaurantId: string; actorId: string; }
@@ -52,6 +53,25 @@ workspaceRoutes.get("/products/:id/movements", async (req, res, next) => {
   try {
     const data = await prisma.stockMovement.findMany({ where: { restaurantId: context(res).restaurantId, productId: String(req.params.id) }, orderBy: { createdAt: "desc" } });
     res.json(data.map(({ id, delta, reason, createdAt }) => ({ id, delta: Number(delta), reason, createdAt })));
+  } catch (error) { next(error); }
+});
+workspaceRoutes.get("/recipes", async (_req, res, next) => {
+  try { res.json(await getRecipes(context(res).restaurantId)); } catch (error) { next(error); }
+});
+const productionSchema = z.object({
+  operationId: z.uuid(), recipeId: z.string().min(1).max(100).optional(),
+  recipeName: z.string().trim().min(1).max(120), portions: z.number().int().min(1).max(10000),
+  prepTime: z.number().int().min(0).max(10080), notes: z.string().max(4000),
+  date: z.iso.date(), kind: z.enum(["production", "record", "refusal"]),
+}).strict();
+workspaceRoutes.get("/productions", async (_req, res, next) => {
+  try { res.json(await prisma.production.findMany({ where: { restaurantId: context(res).restaurantId }, orderBy: { date: "desc" } })); } catch (error) { next(error); }
+});
+workspaceRoutes.post("/productions", async (req, res, next) => {
+  try {
+    const input = productionSchema.parse(req.body);
+    const { restaurantId, actorId } = context(res);
+    res.status(201).json(await recordProduction(restaurantId, actorId, input));
   } catch (error) { next(error); }
 });
 workspaceRoutes.use((error: unknown, _req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {

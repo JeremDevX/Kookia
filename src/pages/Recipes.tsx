@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
@@ -10,6 +10,8 @@ import { fr } from "date-fns/locale";
 import { useToast } from "../context/ToastContext";
 import { useRecipes } from "../hooks";
 import type { Recipe } from "../types";
+import { getProductions, recordProduction, type Production } from "../services/recipeService";
+import { formatLocalISODate } from "../utils/date";
 import type { ProductionRecord } from "../types/callbacks";
 import "./Recipes.css";
 import "../styles/Workspace.css";
@@ -17,7 +19,7 @@ import "../styles/Workspace.css";
 const Recipes: React.FC = () => {
   const { addToast } = useToast();
   const {
-    recipes,
+    recipes, loading, error, refetch,
     getMaxYield,
     getIngredientCost,
     getProductName,
@@ -30,9 +32,21 @@ const Recipes: React.FC = () => {
   const [isProductionModalOpen, setIsProductionModalOpen] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [selectedMaxYield, setSelectedMaxYield] = useState(0);
-  const [producedRecipes, setProducedRecipes] = useState<string[]>([]);
+  const [productions, setProductions] = useState<Production[]>([]);
+  const [productionError, setProductionError] = useState("");
+  useEffect(() => {
+    let active = true;
+    getProductions().then((data) => { if (active) setProductions(data); }, () => { if (active) setProductionError("Historique de production indisponible."); });
+    return () => { active = false; };
+  }, []);
+  const producedRecipes = productions.filter((item) => item.kind === "production" && item.date.slice(0, 10) === formatLocalISODate(new Date())).map((item) => item.recipeId);
 
-  const handleRecordProduction = (data: ProductionRecord) => {
+
+  const handleRecordProduction = async (data: ProductionRecord, operationId: string) => {
+    const saved = await recordProduction({ operationId, recipeName: data.recipeName,
+      portions: Number(data.portions), prepTime: Number(data.prepTime || 0), notes: data.notes,
+      date: formatLocalISODate(new Date(data.date)), kind: "record" });
+    setProductions((prev) => [saved, ...prev]);
     addToast(
       "success",
       "Production enregistrée",
@@ -46,9 +60,13 @@ const Recipes: React.FC = () => {
     setIsProductionModalOpen(true);
   };
 
-  const handleConfirmProduction = (quantity: number) => {
+  const handleConfirmProduction = async (quantity: number, operationId: string) => {
     if (selectedRecipe) {
-      setProducedRecipes((prev) => [...prev, selectedRecipe.id]);
+      const saved = await recordProduction({ operationId, recipeId: selectedRecipe.id,
+        recipeName: selectedRecipe.name, portions: quantity, prepTime: selectedRecipe.prepTime,
+        notes: "", date: formatLocalISODate(new Date()), kind: "production" });
+      setProductions((prev) => [saved, ...prev]);
+      await refetch();
       addToast(
         "success",
         "Production lancée",
@@ -74,6 +92,9 @@ const Recipes: React.FC = () => {
 
   return (
     <div className="recipes-container workspace-page">
+      {loading && <p role="status">Chargement des recettes…</p>}
+      {error && <p role="alert">{error.message}</p>}
+      {productionError && <p role="alert">{productionError}</p>}
       <header className="workspace-header">
         <div>
           <p className="workspace-eyebrow">LE SAVOIR-FAIRE AU QUOTIDIEN</p>
@@ -166,16 +187,18 @@ const Recipes: React.FC = () => {
                     variant="outline"
                     className="btn-danger-outline w-full"
                     icon={<AlertTriangle size={14} />}
-                    onClick={() => {
+                    onClick={async () => {
                       const qty = window.prompt(
                         `Combien de "${recipe.name}" refusés par manque de stock ?`
                       );
-                      if (qty && parseInt(qty) > 0) {
-                        addToast(
-                          "success",
-                          "Demande enregistrée",
-                          `L'IA ajustera les prévisions pour ${recipe.name} (+${qty} demandes).`
-                        );
+                      if (qty && Number.isInteger(Number(qty)) && Number(qty) > 0) {
+                        try {
+                          const saved = await recordProduction({ operationId: crypto.randomUUID(), recipeId: recipe.id,
+                            recipeName: recipe.name, portions: Number(qty), prepTime: 0, notes: "",
+                            date: formatLocalISODate(new Date()), kind: "refusal" });
+                          setProductions((prev) => [saved, ...prev]);
+                          addToast("success", "Demande enregistrée", `${qty} demandes refusées enregistrées pour ${recipe.name}.`);
+                        } catch (error) { addToast("info", "Enregistrement impossible", error instanceof Error ? error.message : "Réessayez."); }
                       }
                     }}
                   >
@@ -292,6 +315,11 @@ const Recipes: React.FC = () => {
         </div>
       )}
 
+      {activeTab === "history" && productions.length > 0 && <section aria-label="Journal de production">
+        <h2>Journal de production</h2>
+        {productions.map((item) => <Card key={item.id}><strong>{item.recipeName}</strong><p>{item.portions} portions · {new Date(item.date).toLocaleDateString("fr-FR")} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Production déclarée — sans déduction de stock" : "Production réalisée — stock déduit"}</p>{item.notes && <p>{item.notes}</p>}</Card>)}
+      </section>}
+
       <RecordProductionModal
         isOpen={isRecordModalOpen}
         onClose={() => setIsRecordModalOpen(false)}
@@ -304,6 +332,7 @@ const Recipes: React.FC = () => {
         onClose={() => setIsProductionModalOpen(false)}
         recipe={selectedRecipe}
         maxYield={selectedMaxYield}
+        costPerPortion={selectedRecipe ? getIngredientCost(selectedRecipe.ingredients) : 0}
         onConfirm={handleConfirmProduction}
       />
     </div>

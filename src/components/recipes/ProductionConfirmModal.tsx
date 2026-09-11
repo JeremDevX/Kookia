@@ -17,7 +17,8 @@ interface ProductionConfirmModalProps {
   onClose: () => void;
   recipe: Recipe | null;
   maxYield: number;
-  onConfirm: (quantity: number) => void;
+  costPerPortion: number;
+  onConfirm: (quantity: number, operationId: string) => Promise<void>;
 }
 
 const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
@@ -25,8 +26,11 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   onClose,
   recipe,
   maxYield,
+  costPerPortion,
   onConfirm,
 }) => {
+  const [saving, setSaving] = useState(false);
+  const [operationId] = useState(() => crypto.randomUUID());
   const safeMaxYield = Math.max(1, maxYield);
   const [quantity, setQuantity] = useState(safeMaxYield.toString());
   const [quantityError, setQuantityError] = useState<string | undefined>();
@@ -36,20 +40,20 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   const quantityValidation = validateProductionQuantity(quantity, safeMaxYield);
   const clampedQuantity = quantityValidation.normalizedQuantity;
 
-  const costPerPortion =
-    recipe.ingredients.reduce((sum) => sum + 2.5, 0) /
-    recipe.ingredients.length;
   const totalCost = costPerPortion * clampedQuantity;
   const estimatedRevenue = totalCost * 4; // 300% margin
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (saving) return;
     if (!quantityValidation.isValid) {
       setQuantityError(quantityValidation.error);
       return;
     }
 
-    onConfirm(clampedQuantity);
-    onClose();
+    setSaving(true);
+    try { await onConfirm(clampedQuantity, operationId); onClose(); }
+    catch (error) { setQuantityError(error instanceof Error ? error.message : "Production non enregistrée."); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -172,7 +176,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!quantityValidation.isValid}
+            disabled={saving || !quantityValidation.isValid}
           >
             Lancer la production
           </Button>
