@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ChefHat } from "lucide-react";
 import "./SplashScreen.css";
 
 interface SplashScreenProps {
@@ -10,8 +11,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const fadeTimer = window.setTimeout(() => setFadeOut(true), reducedMotion ? 100 : 1100);
-    const completeTimer = window.setTimeout(onComplete, reducedMotion ? 150 : 1450);
+    const fadeTimer = window.setTimeout(() => setFadeOut(true), reducedMotion ? 100 : 2200);
+    const completeTimer = window.setTimeout(onComplete, reducedMotion ? 150 : 2600);
     return () => {
       window.clearTimeout(fadeTimer);
       window.clearTimeout(completeTimer);
@@ -21,6 +22,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
   return (
     <div className={`splash-screen ${fadeOut ? "fade-out" : ""}`} role="status" aria-label="Ouverture de KookiA">
       <div className="splash-content">
+        <div className="splash-emblem" aria-hidden="true"><ChefHat strokeWidth={1.4} /></div>
         <span className="splash-eyebrow">LE BON SENS EN CUISINE</span>
         <img className="splash-logo" src="/logo_kookia.svg" alt="KookiA" width="190" height="48" />
         <p className="splash-tagline">Moins de gaspillage.<br /><span>Plus de sérénité.</span></p>
