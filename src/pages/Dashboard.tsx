@@ -5,6 +5,7 @@ import InvoiceModal from "../components/dashboard/InvoiceModal";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import DashboardKPIs from "../components/dashboard/DashboardKPIs";
 import RecommendationsSection from "../components/dashboard/RecommendationsSection";
+import OrderHistory from "../components/dashboard/OrderHistory";
 import OrderGenerator from "../components/dashboard/OrderGenerator";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
@@ -92,9 +93,7 @@ const Dashboard: React.FC = () => {
 
   const handleCloseOrderGenerator = () => {
     setShowOrderGenerator(false);
-    // Reset both dashboard and global cart selections at the end of a cycle
-    setSelectedPredictionIds([]);
-    clearCart();
+
   };
 
   const todayDate = new Date().toLocaleDateString("fr-FR", {
@@ -176,6 +175,8 @@ const Dashboard: React.FC = () => {
         </aside>
       </div>
 
+      <OrderHistory key={showOrderGenerator ? "review" : "closed"} />
+
       {/* Modals */}
       <Modal
         isOpen={showOrderGenerator}
@@ -185,6 +186,7 @@ const Dashboard: React.FC = () => {
       >
         <OrderGenerator
           recommendations={allRecommendations}
+          onValidated={() => { setSelectedPredictionIds([]); clearCart(); }}
           onClose={handleCloseOrderGenerator}
         />
       </Modal>

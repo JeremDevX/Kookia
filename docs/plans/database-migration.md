@@ -142,3 +142,12 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   Builds frontend/API, lint, 31 tests unitaires et 3 scénarios HTTP métier passent.
   Restent KPI et hypothèses annexes, commandes/panier/décisions, notifications,
   réception/menu, paramètres/intégrations/exports, audit et contrôle navigateur.
+- Commandes et lignes désormais persistées avec prix/fournisseur figés côté
+  serveur, validation humaine et journal immuable de la suggestion initiale et
+  de la quantité revue. Revue de quantités disponible depuis les prévisions,
+  le dashboard et les notifications. Historique relisible sur le dashboard.
+  Suppression des annonces d’emails envoyés ; statut « à transmettre » explicite.
+  Fermer/annuler la revue ne vide plus la sélection ; validation seulement.
+  Tests PostgreSQL : répétition concurrente sans doublon, conflit de quantités,
+  références invalides, journal initial et absence d’effet stock passent.
+  Le panier demeure local : son raccordement reste la prochaine étape du lot 5.

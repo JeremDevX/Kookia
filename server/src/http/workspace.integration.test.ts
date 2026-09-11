@@ -108,4 +108,27 @@ describe("persistent catalog HTTP", () => {
     expect(updated.body.wasteTarget).toBe("42");
   });
 
+  it("validates reviewed orders once and journals original suggestions without changing stock", async () => {
+    const agent = await account();
+    const initial = await agent.get("/api/workspace/catalog").expect(200);
+    const predictions = await agent.get("/api/workspace/predictions").expect(200);
+    const prediction = predictions.body.find((item: { recommendation?: { action: string } }) => item.recommendation?.action === "buy");
+    const input = { operationId: randomUUID(), lines: [{ productId: prediction.productId, predictionId: prediction.id, quantity: 3 }] };
+    const [one, two] = await Promise.all([agent.post("/api/workspace/orders").send(input), agent.post("/api/workspace/orders").send(input)]);
+    expect(one.status).toBe(201);
+    expect(two.status).toBe(201);
+    expect(one.body.id).toBe(two.body.id);
+    expect(one.body.status).toBe("validated");
+    await agent.post("/api/workspace/orders").send({ ...input, lines: [{ ...input.lines[0], quantity: 4 }] }).expect(409);
+    await agent.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{ productId: "missing", quantity: 3 }] }).expect(400);
+    const history = await agent.get("/api/workspace/orders").expect(200);
+    expect(history.body).toHaveLength(1);
+    const decisions = await agent.get("/api/workspace/decisions").expect(200);
+    expect(decisions.body).toHaveLength(1);
+    expect(decisions.body[0].snapshot.input).toEqual(input.lines);
+    expect(decisions.body[0].snapshot.suggestions[0].quantity).toBe(prediction.recommendation.quantity);
+    const unchanged = await agent.get("/api/workspace/catalog").expect(200);
+    expect(unchanged.body).toEqual(initial.body);
+  });
+
 });

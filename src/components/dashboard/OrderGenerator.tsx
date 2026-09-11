@@ -1,391 +1,67 @@
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import Button from "../common/Button";
-import {
-  Send,
-  CheckCircle,
-  AlertCircle,
-  Truck,
-  Package,
-  Mail,
-} from "lucide-react";
+import { CheckCircle, Package } from "lucide-react";
 import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
-import {
-  groupRecommendationsBySupplier,
-  type OrderItem,
-  type OrderRecommendation,
-  type SupplierOrder,
-} from "../../features/orders/orderRecommendations";
+import type { OrderRecommendation } from "../../features/orders/orderRecommendations";
+import { validateOrder, type PurchaseOrder } from "../../services/orderService";
 
 interface OrderGeneratorProps {
   recommendations: OrderRecommendation[];
   onClose: () => void;
+  onValidated?: () => void;
 }
 
-const OrderGenerator: React.FC<OrderGeneratorProps> = ({
-  recommendations,
-  onClose,
-}) => {
-  const [step, setStep] = useState<"preview" | "sending" | "success">(
-    "preview"
-  );
-  const { products, suppliers, loading } = useInventoryCatalog();
-  const ordersBySupplier = useMemo(
-    () => groupRecommendationsBySupplier(recommendations, products, suppliers),
-    [recommendations, products, suppliers]
-  );
-  const supplierOrders = Object.values(ordersBySupplier);
-  const itemCount = supplierOrders.reduce((sum, order) => sum + order.items.length, 0);
+export default function OrderGenerator({ recommendations, onClose, onValidated }: OrderGeneratorProps) {
+  const { products, suppliers, loading, error } = useInventoryCatalog();
+  const [quantities, setQuantities] = useState(() => recommendations.map((item) => String(item.quantity)));
+  const [operationId] = useState(() => crypto.randomUUID());
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [order, setOrder] = useState<PurchaseOrder | null>(null);
+  const valid = recommendations.length > 0 && quantities.every((value) => value.trim() && Number.isFinite(Number(value)) && Number(value) > 0);
+  const total = recommendations.reduce((sum, item, index) => sum + (products.find((product) => product.id === item.productId)?.pricePerUnit ?? 0) * (Number(quantities[index]) || 0), 0);
 
-  const handleSend = () => {
-    setStep("sending");
-    setTimeout(() => {
-      setStep("success");
-    }, 2000);
+  const handleValidate = async () => {
+    if (saving || !valid) return;
+    setSaving(true);
+    setSaveError("");
+    try {
+      const saved = await validateOrder(operationId, recommendations.map((item, index) => ({
+        productId: item.productId, quantity: Number(quantities[index]),
+        ...(item.source === "prediction" ? { predictionId: item.id } : {}),
+      })));
+      setOrder(saved);
+      onValidated?.();
+    } catch (error) { setSaveError(error instanceof Error ? error.message : "Commande non enregistrée."); }
+    finally { setSaving(false); }
   };
 
-  // Calculate grand total
-  const grandTotal = Object.values(ordersBySupplier).reduce(
-    (total, order) =>
-      total + order.items.reduce((sum, item) => sum + item.price, 0),
-    0
-  );
+  if (order) return <div className="flex flex-col gap-lg" role="status">
+    <CheckCircle size={40} aria-hidden="true" />
+    <h3>Commande enregistrée</h3>
+    <p>Votre validation et les quantités ont été enregistrées. Aucun email n’a été envoyé : cette commande reste à transmettre à vos fournisseurs.</p>
+    <p>Référence : {order.id}</p>
+    <Button onClick={onClose}>Fermer</Button>
+  </div>;
 
-  if (step === "success") {
-    return (
-      <div
-        style={{
-          textAlign: "center",
-          padding: "48px 32px",
-          animation: "fadeIn 0.4s ease-out",
-        }}
-      >
-        <div
-          style={{
-            width: "80px",
-            height: "80px",
-            margin: "0 auto 24px",
-            background:
-              "var(--color-primary)",
-            borderRadius: "20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "none",
-          }}
-        >
-          <CheckCircle size={40} color="white" strokeWidth={2.5} />
-        </div>
-        <h3
-          style={{
-            fontSize: "24px",
-            fontWeight: 700,
-            marginBottom: "12px",
-            color: "var(--color-text-primary, #1b263b)",
-          }}
-        >
-          Commandes Envoyées ! 🎉
-        </h3>
-        <p
-          style={{
-            fontSize: "15px",
-            color: "var(--color-text-secondary, #475569)",
-            marginBottom: "32px",
-            lineHeight: 1.6,
-          }}
-        >
-          <strong>{supplierOrders.length}</strong> email(s) ont
-          été envoyés à vos fournisseurs.
-          <br />
-          Vous recevrez les confirmations d'ici peu.
-        </p>
-        <Button onClick={onClose} size="lg" style={{ width: "100%" }}>
-          Retour au Dashboard
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Header Summary */}
-      <div
-        style={{
-          padding: "16px 24px",
-          background:
-            "#f1f5e9",
-          borderBottom: "1px solid rgba(0, 199, 150, 0.15)",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              background:
-                "var(--color-primary)",
-              borderRadius: "10px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "none",
-            }}
-          >
-            <Package size={20} color="white" />
-          </div>
-          <div>
-            <div
-              style={{
-                fontWeight: 600,
-                fontSize: "15px",
-                color: "var(--color-text-primary)",
-              }}
-            >
-              {supplierOrders.length} fournisseur(s)
-            </div>
-            <div
-              style={{ fontSize: "13px", color: "var(--color-text-secondary)" }}
-            >
-              {itemCount} article(s) à commander
-            </div>
-          </div>
-        </div>
-        <div
-          style={{
-            background:
-              "var(--color-primary)",
-            color: "white",
-            padding: "10px 20px",
-            borderRadius: "10px",
-            fontWeight: 700,
-            fontSize: "18px",
-            boxShadow: "none",
-          }}
-        >
-          {grandTotal.toFixed(2)} €
-        </div>
-      </div>
-
-      {/* List */}
-      <div
-        style={{
-          padding: "20px",
-          overflowY: "auto",
-          maxHeight: "50vh",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          background: "var(--color-bg, #f3f4f6)",
-        }}
-      >
-        {loading ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "48px 24px",
-              color: "var(--color-text-secondary)",
-            }}
-          >
-            <p style={{ fontSize: "15px" }}>Chargement du catalogue...</p>
-          </div>
-        ) : supplierOrders.length === 0 ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "48px 24px",
-              color: "var(--color-text-secondary)",
-            }}
-          >
-            <AlertCircle
-              size={48}
-              style={{ margin: "0 auto 16px", opacity: 0.4 }}
-            />
-            <p style={{ fontSize: "15px" }}>
-              Aucune commande nécessaire pour le moment.
-            </p>
-          </div>
-        ) : (
-          supplierOrders.map((order: SupplierOrder, idx) => (
-            <div
-              key={idx}
-              style={{
-                background: "white",
-                borderRadius: "14px",
-                padding: "20px",
-                boxShadow: "none",
-                border: "1px solid var(--color-border, #e5e7eb)",
-                transition: "all 0.2s ease",
-              }}
-            >
-              {/* Supplier Header */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: "16px",
-                  paddingBottom: "12px",
-                  borderBottom: "1px dashed var(--color-border, #e5e7eb)",
-                }}
-              >
-                <div
-                  style={{ display: "flex", gap: "12px", alignItems: "center" }}
-                >
-                  <div
-                    style={{
-                      width: "44px",
-                      height: "44px",
-                      background:
-                        "#36543d",
-                      borderRadius: "10px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: "none",
-                    }}
-                  >
-                    <Truck size={22} color="white" />
-                  </div>
-                  <div>
-                    <h4
-                      style={{
-                        fontWeight: 600,
-                        fontSize: "16px",
-                        color: "var(--color-text-primary)",
-                        margin: 0,
-                      }}
-                    >
-                      {order.supplier?.name || "Fournisseur Inconnu"}
-                    </h4>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        fontSize: "13px",
-                        color: "var(--color-text-secondary)",
-                        marginTop: "4px",
-                      }}
-                    >
-                      <Mail size={12} />
-                      {order.supplier?.email}
-                    </div>
-                  </div>
-                </div>
-                <span
-                  style={{
-                    background: "rgba(27, 38, 59, 0.08)",
-                    color: "var(--color-text-primary)",
-                    padding: "6px 12px",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                  }}
-                >
-                  {order.items.length} article
-                  {order.items.length > 1 ? "s" : ""}
-                </span>
-              </div>
-
-              {/* Items */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "10px",
-                }}
-              >
-                {order.items.map((item: OrderItem, i: number) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "10px 14px",
-                      background: "var(--color-bg, #f3f4f6)",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                    }}
-                  >
-                    <span style={{ color: "var(--color-text-primary)" }}>
-                      <strong>{item.quantity}</strong> {item.unit} ×{" "}
-                      {item.productName}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "monospace",
-                        fontWeight: 600,
-                        color: "var(--color-text-primary)",
-                      }}
-                    >
-                      {item.price.toFixed(2)} €
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Supplier Total */}
-              <div
-                style={{
-                  marginTop: "16px",
-                  paddingTop: "12px",
-                  borderTop: "1px solid var(--color-border, #e5e7eb)",
-                  display: "flex",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "18px",
-                    fontWeight: 700,
-                    color: "var(--color-primary, #00c796)",
-                  }}
-                >
-                  Total:{" "}
-                  {order.items.reduce((sum, i) => sum + i.price, 0).toFixed(2)}{" "}
-                  €
-                </span>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Footer */}
-      <div
-        style={{
-          padding: "20px 24px",
-          borderTop: "1px solid var(--color-border, #e5e7eb)",
-          background: "white",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: "16px",
-        }}
-      >
-        <Button variant="outline" onClick={onClose}>
-          Annuler
-        </Button>
-        <Button
-          onClick={handleSend}
-          disabled={
-            supplierOrders.length === 0 || step === "sending" || loading
-          }
-          icon={step === "sending" ? undefined : <Send size={18} />}
-          size="lg"
-          style={{
-            padding: "12px 28px",
-            fontSize: "15px",
-          }}
-        >
-          {step === "sending" ? "Envoi en cours..." : "Valider et Envoyer"}
-        </Button>
-      </div>
+  return <div className="flex flex-col gap-lg">
+    <h3><Package size={20} aria-hidden="true" /> Revoir les quantités</h3>
+    <p>Ajustez les suggestions puis validez. L’enregistrement ne déclenche aucun envoi externe et ne modifie pas le stock.</p>
+    {loading && <p role="status">Chargement du catalogue…</p>}
+    {(error || saveError) && <p role="alert">{saveError || error?.message}</p>}
+    {recommendations.map((item, index) => {
+      const product = products.find((candidate) => candidate.id === item.productId);
+      const supplier = suppliers.find((candidate) => candidate.id === product?.supplierId);
+      return <div key={`${item.id}-${index}`} className="flex flex-col gap-sm">
+        <label htmlFor={`order-quantity-${index}`}>{product?.name ?? item.productName} · {supplier?.name ?? "Fournisseur indisponible"}</label>
+        <input id={`order-quantity-${index}`} type="number" min="0.001" step="0.001" disabled={saving} value={quantities[index]} onChange={(event) => setQuantities((prev) => prev.map((value, i) => i === index ? event.target.value : value))} />
+        <small>{product?.unit} · {((product?.pricePerUnit ?? 0) * (Number(quantities[index]) || 0)).toFixed(2)} €</small>
+      </div>;
+    })}
+    <strong>Total estimé : {total.toFixed(2)} €</strong>
+    <div className="flex gap-sm">
+      <Button variant="outline" onClick={onClose} disabled={saving}>Annuler</Button>
+      <Button onClick={handleValidate} disabled={saving || loading || !!error || !valid}>{saving ? "Enregistrement…" : "Valider la commande"}</Button>
     </div>
-  );
-};
-
-export default OrderGenerator;
+  </div>;
+}

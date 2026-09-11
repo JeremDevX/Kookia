@@ -126,8 +126,7 @@ const Notifications: React.FC = () => {
 
   const handleCloseOrderModal = () => {
     setIsOrderModalOpen(false);
-    clearCart();
-    setAddedToCart([]);
+
   };
 
   const handleOpen = () => {
@@ -463,6 +462,7 @@ const Notifications: React.FC = () => {
         width="lg"
       >
         <OrderGenerator
+          onValidated={() => { clearCart(); setAddedToCart([]); }}
           recommendations={cartRecommendations}
           onClose={handleCloseOrderModal}
         />

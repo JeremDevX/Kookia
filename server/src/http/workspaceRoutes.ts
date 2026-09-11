@@ -1,3 +1,4 @@
+import { orderRoutes } from "./orderRoutes.js";
 import { preferencesRoutes } from "./preferencesRoutes.js";
 import { workspaceReadRoutes } from "./workspaceReadRoutes.js";
 import { Router, type Response } from "express";
@@ -24,6 +25,7 @@ workspaceRoutes.use(async (req, res, next) => {
 
 workspaceRoutes.use(workspaceReadRoutes);
 workspaceRoutes.use(preferencesRoutes);
+workspaceRoutes.use(orderRoutes);
 
 const quantity = z.number().finite().min(0).max(1_000_000).multipleOf(0.001);
 const newProductSchema = z.object({

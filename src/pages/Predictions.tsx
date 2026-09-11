@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import Modal from "../components/common/Modal";
+import OrderGenerator from "../components/dashboard/OrderGenerator";
+import { createOrderRecommendationsFromPredictions } from "../features/orders/orderRecommendations";
 import Card from "../components/common/Card";
 import Badge from "../components/common/Badge";
 import Button from "../components/common/Button";
@@ -10,7 +13,6 @@ import {
   ArrowRight,
   Brain,
   Calendar,
-  CheckCircle,
 } from "lucide-react";
 import { usePredictions } from "../hooks";
 import { useToast } from "../context/ToastContext";
@@ -28,7 +30,7 @@ const Predictions: React.FC = () => {
   const [selectedPrediction, setSelectedPrediction] =
     useState<Prediction | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [orderedPredictions, setOrderedPredictions] = useState<string[]>([]);
+  const [reviewPrediction, setReviewPrediction] = useState<Prediction | null>(null);
 
   const getSupplierName = (productId: string) =>
     findSupplierByProductId(productId)?.name || "le fournisseur";
@@ -42,24 +44,12 @@ const Predictions: React.FC = () => {
   const getCurrentStock = (productId: string) =>
     findProductById(productId)?.currentStock ?? 0;
 
-  const handleAutoOrder = (pred: Prediction) => {
-    const supplierName = getSupplierName(pred.productId);
-    const unit = getProductUnit(pred.productId);
-    setOrderedPredictions((prev) => [...prev, pred.id]);
-    addToast(
-      "success",
-      "Commande créée",
-      `${pred.recommendation?.quantity} ${unit} de ${pred.productName} commandés chez ${supplierName}.`
-    );
-  };
+  const handleAutoOrder = (pred: Prediction) => setReviewPrediction(pred);
 
   const handleEmailSupplier = (pred: Prediction) => {
-    const supplierName = getSupplierName(pred.productId);
-    addToast(
-      "success",
-      "Email envoyé",
-      `Demande de devis envoyée à ${supplierName} pour ${pred.productName}.`
-    );
+    const supplier = findSupplierByProductId(pred.productId);
+    if (!supplier?.email) { addToast("info", "Contact indisponible", "Aucune adresse email renseignée."); return; }
+    window.location.href = `mailto:${encodeURIComponent(supplier.email)}?subject=${encodeURIComponent(`Demande de devis — ${pred.productName}`)}`;
   };
 
   const handleShowDetails = (pred: Prediction) => {
@@ -124,23 +114,14 @@ const Predictions: React.FC = () => {
             <div className="cards-stack">
               {urgentPredictions.length === 0 && <div className="workspace-empty">Aucune suggestion critique pour le moment.</div>}
               {urgentPredictions.map((pred) => {
-                const isOrdered = orderedPredictions.includes(pred.id);
                 const unitPrice = getProductUnitPrice(pred.productId);
                 const supplierName = getSupplierName(pred.productId);
                 const unit = getProductUnit(pred.productId);
                 return (
                   <Card
                     key={pred.id}
-                    className={`prediction-card urgent-border ${
-                      isOrdered ? "ordered" : ""
-                    }`}
+                    className="prediction-card urgent-border"
                   >
-                    {isOrdered && (
-                      <div className="ordered-badge">
-                        <CheckCircle size={16} />
-                        <span>Commandé</span>
-                      </div>
-                    )}
                     <div className="pred-main">
                       <div className="pred-info">
                         <div className="pred-header">
@@ -191,9 +172,9 @@ const Predictions: React.FC = () => {
                             className="w-full"
                             icon={<ShoppingCart size={16} />}
                             onClick={() => handleAutoOrder(pred)}
-                            disabled={isOrdered}
+                            disabled={pred.recommendation?.action !== "buy"}
                           >
-                            {isOrdered ? "Commandé ✓" : "Commander Auto"}
+                            Revoir la commande
                           </Button>
                           <Button
                             variant="secondary"
@@ -221,21 +202,14 @@ const Predictions: React.FC = () => {
             </div>
             <div className="cards-stack">
               {moderatePredictions.map((pred) => {
-                const isOrdered = orderedPredictions.includes(pred.id);
                 const priority = getPredictionPriority(pred);
                 const badgeLabel = priority === "high" ? "Élevé" : "Normal";
                 const badgeStatus = priority === "high" ? "moderate" : "optimal";
                 return (
                   <Card
                     key={pred.id}
-                    className={`prediction-card ${isOrdered ? "ordered" : ""}`}
+                    className="prediction-card"
                   >
-                    {isOrdered && (
-                      <div className="ordered-badge">
-                        <CheckCircle size={16} />
-                        <span>Commandé</span>
-                      </div>
-                    )}
                     <div className="pred-compact">
                       <div className="pred-info-compact">
                         <h3 className="product-name text-lg">
@@ -263,9 +237,9 @@ const Predictions: React.FC = () => {
                           size="sm"
                           icon={<ArrowRight size={14} />}
                           onClick={() => handleAutoOrder(pred)}
-                          disabled={isOrdered}
+                          disabled={pred.recommendation?.action !== "buy"}
                         >
-                          {isOrdered ? "Commandé ✓" : "Commander"}
+                          Revoir la commande
                         </Button>
                       </div>
                     </div>
@@ -279,6 +253,9 @@ const Predictions: React.FC = () => {
         <CalendarView predictions={predictions} onPredictionClick={handleShowDetails} />
       )}
 
+      <Modal isOpen={reviewPrediction !== null} onClose={() => setReviewPrediction(null)} title="Revoir la commande" width="lg">
+        <OrderGenerator recommendations={reviewPrediction ? createOrderRecommendationsFromPredictions([reviewPrediction]) : []} onClose={() => setReviewPrediction(null)} />
+      </Modal>
       <PredictionDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
