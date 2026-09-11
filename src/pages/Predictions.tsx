@@ -276,7 +276,7 @@ const Predictions: React.FC = () => {
           </section>
         </div>
       ) : (
-        <CalendarView predictions={predictions} />
+        <CalendarView predictions={predictions} onPredictionClick={handleShowDetails} />
       )}
 
       <PredictionDetailModal

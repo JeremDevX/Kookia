@@ -1,0 +1,60 @@
+.planning-calendar { border: 1px solid #dfe6d7; border-radius: 18px; background: #fff; overflow: hidden; }
+.planning-toolbar { padding: 24px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.planning-eyebrow { font-size: 9px; letter-spacing: .14em; color: #6a7b60; margin-bottom: 8px; }
+.planning-toolbar h2 { font-size: 20px; font-weight: 500; text-transform: capitalize; }
+.planning-controls, .planning-navigation, .planning-modes { display: flex; align-items: center; gap: 5px; }
+.planning-controls { gap: 16px; flex-wrap: wrap; }
+.planning-calendar button { font: inherit; color: #46603d; }
+.planning-navigation button, .planning-modes button { min-height: 36px; padding: 8px 12px; font-size: 11px; border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+.planning-modes { background: #eff3e8; padding: 4px; border-radius: 10px; }
+.planning-modes button[aria-pressed="true"] { background: #fff; color: #274e35; box-shadow: 0 1px 4px #25431a15; }
+.planning-navigation button { border: 1px solid #e1e7d8; }
+.planning-navigation button:hover { background: #eff3e8; }
+.planning-summary { padding: 14px 24px; background: #f6f8f1; border-block: 1px solid #e5eadf; display: flex; justify-content: space-between; gap: 16px; font-size: 11px; color: #5e7352; }
+.planning-summary label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.planning-summary input { accent-color: #264c39; width: 16px; height: 16px; }
+.planning-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; }
+.planning-board { padding: 20px; min-width: 0; }
+.planning-weekdays, .planning-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.planning-weekdays { margin-bottom: 10px; text-align: center; font-size: 10px; color: #75816b; }
+.planning-calendar .planning-day { min-width: 0; min-height: 110px; padding: 9px 7px; border: 1px solid #e8edde; border-radius: 9px; text-align: left; display: flex; flex-direction: column; gap: 6px; background: #fff; }
+.planning-calendar .planning-days.week .planning-day { min-height: 205px; }
+.planning-calendar .planning-day:hover { background: #f5f8ef; border-color: #a4b790; }
+.planning-calendar .planning-day.selected { background: #edf3e4; border: 2px solid #547148; padding: 8px 6px; }
+.planning-day.outside { background: #f7f8f5; color: #77836d; }
+.planning-day-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; }
+.planning-day-top svg { color: #a95836; flex-shrink: 0; }
+.planning-day[aria-current="date"] .planning-day-top > span { background: #264c39; color: white; border-radius: 50%; width: 25px; height: 25px; display: grid; place-items: center; }
+.planning-today { font-size: 8px; color: #506b43; }
+.planning-previews { display: flex; flex-direction: column; gap: 4px; }
+.planning-preview { font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 4px; border-radius: 4px; background: #eff3e9; color: #5b7450; }
+.planning-preview.critical { background: #f8eae2; color: #99502e; }
+.planning-preview.high { background: #f7f1dc; color: #816729; }
+.planning-count { margin-top: auto; font-size: 9px; color: #6a7b5e; }
+.planning-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 20px; font-size: 10px; color: #657459; }
+.planning-legend span { display: flex; align-items: center; gap: 6px; }
+.planning-legend span::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: #91a978; }
+.planning-legend span:first-child::before { background: #b9704c; }
+.planning-legend span:nth-child(2)::before { background: #c4a64f; }
+.planning-help { font-size: 10px; color: #6c7b61; margin-top: 12px; line-height: 1.7; }
+.planning-detail { padding: 22px; border-left: 1px solid #e3e9d9; background: #fafbf7; min-width: 0; }
+.planning-detail-heading { display: flex; gap: 12px; align-items: center; color: #547045; }
+.planning-detail-heading p { font-size: 8px; letter-spacing: .12em; margin-bottom: 6px; }
+.planning-detail-heading h3 { font-size: 16px; text-transform: capitalize; font-weight: 500; }
+.planning-detail-count { font-size: 11px; color: #748067; margin: 16px 0; }
+.planning-agenda { display: flex; flex-direction: column; gap: 12px; }
+.planning-item { border: 1px solid #e0e7d7; border-radius: 11px; padding: 15px; background: white; }
+.planning-item-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 9px; color: #6c7b62; }
+.planning-priority { padding: 4px 6px; border-radius: 4px; background: #eff4e6; }
+.planning-priority.critical { color: #99502e; background: #f8eae2; }
+.planning-priority.high { color: #816729; background: #f7f1dc; }
+.planning-item h4 { font-size: 15px; margin-top: 12px; }
+.planning-item > p { font-size: 11px; line-height: 1.8; color: #67775d; margin: 8px 0 12px; }
+.planning-item button { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; border-top: 1px solid #e5ebdd; padding-top: 12px; font-size: 10px; min-height: 36px; }
+.planning-item button:hover { color: #193d2b; text-decoration: underline; }
+.planning-empty { border: 1px dashed #d6dfcb; border-radius: 12px; padding: 28px 18px; text-align: center; color: #6e815d; }
+.planning-empty h4 { font-size: 14px; margin: 14px 0 10px; }
+.planning-empty p, .planning-disclaimer { font-size: 10px; line-height: 1.8; color: #708063; }
+.planning-disclaimer { margin-top: 20px; }
+@media (max-width: 1200px) { .planning-layout { grid-template-columns: 1fr; } .planning-detail { border-left: 0; border-top: 1px solid #e3e9d9; } .planning-agenda { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); } .planning-toolbar { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 600px) { .planning-toolbar, .planning-board, .planning-detail { padding: 16px; } .planning-summary { padding: 14px 16px; flex-direction: column; } .planning-controls { gap: 10px; } .planning-calendar .planning-day, .planning-calendar .planning-days.week .planning-day { min-height: 70px; padding: 6px 3px; } .planning-calendar .planning-day.selected { padding: 5px 2px; } .planning-previews, .planning-today { display: none; } .planning-count { font-size: 8px; } .planning-day-top { font-size: 11px; } .planning-days { gap: 3px; } .planning-day-top svg { width: 9px; } .planning-agenda { grid-template-columns: 1fr; } }
