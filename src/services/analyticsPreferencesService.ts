@@ -1,3 +1,4 @@
+import { apiRequest } from "../config/api";
 import type { AnalyticsSettings } from "../types/callbacks";
 
 const ANALYTICS_PREFERENCES_STORAGE_KEY = "foodai:analytics-preferences";
@@ -29,36 +30,21 @@ const isValidAnalyticsSettings = (
 };
 
 export const getAnalyticsPreferences = async (): Promise<AnalyticsSettings> => {
+  const existing = await apiRequest<AnalyticsSettings | null>("/workspace/preferences");
+  if (existing) return existing;
+  let initial = DEFAULT_ANALYTICS_SETTINGS;
   try {
-    const storedSettings = localStorage.getItem(
-      ANALYTICS_PREFERENCES_STORAGE_KEY
-    );
-
-    if (!storedSettings) {
-      return DEFAULT_ANALYTICS_SETTINGS;
-    }
-
-    const parsed = JSON.parse(storedSettings);
-
-    return isValidAnalyticsSettings(parsed)
-      ? parsed
-      : DEFAULT_ANALYTICS_SETTINGS;
-  } catch {
-    return DEFAULT_ANALYTICS_SETTINGS;
-  }
+    const raw = localStorage.getItem(ANALYTICS_PREFERENCES_STORAGE_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : null;
+    if (isValidAnalyticsSettings(parsed) && /^\d+(\.\d+)?$/.test(parsed.wasteTarget) && Number(parsed.wasteTarget) <= 10000 && /^\d+(\.\d+)?$/.test(parsed.alertThreshold) && Number(parsed.alertThreshold) <= 100) initial = parsed;
+  } catch { /* Local storage unavailable or invalid: initialize server defaults. */ }
+  const saved = await apiRequest<AnalyticsSettings>("/workspace/preferences", {
+    method: "POST", body: JSON.stringify({ settings: initial, initializeOnly: true }),
+  });
+  try { localStorage.removeItem(ANALYTICS_PREFERENCES_STORAGE_KEY); } catch { /* Server copy is durable; browser cleanup is best effort. */ }
+  return saved;
 };
 
-export const saveAnalyticsPreferences = async (
-  settings: AnalyticsSettings
-): Promise<void> => {
-  try {
-    localStorage.setItem(
-      ANALYTICS_PREFERENCES_STORAGE_KEY,
-      JSON.stringify(settings)
-    );
-  } catch {
-    throw new Error(
-      "Impossible d'enregistrer vos preferences analytics. Veuillez reessayer."
-    );
-  }
+export const saveAnalyticsPreferences = async (settings: AnalyticsSettings): Promise<void> => {
+  await apiRequest("/workspace/preferences", { method: "POST", body: JSON.stringify({ settings }) });
 };

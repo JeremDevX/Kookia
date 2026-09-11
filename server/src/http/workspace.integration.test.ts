@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
+import catalog from "../infrastructure/database/seed/catalog.json" with { type: "json" };
 import { app } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
@@ -77,6 +78,34 @@ describe("persistent catalog HTTP", () => {
     expect(noDeduction.body).toEqual(after.body);
     const history = await agent.get("/api/workspace/productions").expect(200);
     expect(history.body).toHaveLength(2);
+  });
+
+  it("serves persisted predictions/analytics and preserves server preferences during legacy initialization", async () => {
+    const agent = await account();
+    const other = await account();
+    const predictions = await agent.get("/api/workspace/predictions").expect(200);
+    expect(predictions.body).toHaveLength(catalog.predictions.length);
+    for (const expected of catalog.predictions) {
+      expect(predictions.body.find((item: { id: string }) => item.id === expected.id)).toEqual(expected);
+    }
+    const analytics = await agent.get("/api/workspace/analytics").expect(200);
+    expect(analytics.body).toEqual(catalog.analytics);
+    const activity = await agent.get("/api/workspace/activity").expect(200);
+    expect(activity.body).toEqual(catalog.activity);
+    await request(app).get("/api/workspace/analytics").expect(401);
+    const empty = await agent.get("/api/workspace/preferences").expect(200);
+    expect(empty.body).toBeNull();
+    const settings = { wasteTarget: "65", alertThreshold: "70", showTrends: false, showAI: true, showROI: false };
+    await agent.post("/api/workspace/preferences").send({ settings, initializeOnly: true }).expect(200);
+    await agent.post("/api/workspace/preferences").send({ settings: { ...settings, wasteTarget: "999" }, initializeOnly: true }).expect(200);
+    const saved = await agent.get("/api/workspace/preferences").expect(200);
+    expect(saved.body).toEqual(settings);
+    const isolated = await other.get("/api/workspace/preferences").expect(200);
+    expect(isolated.body).toBeNull();
+    await agent.post("/api/workspace/preferences").send({ settings: { ...settings, alertThreshold: "101" } }).expect(400);
+    await agent.post("/api/workspace/preferences").send({ settings: { ...settings, wasteTarget: "42" } }).expect(200);
+    const updated = await agent.get("/api/workspace/preferences").expect(200);
+    expect(updated.body.wasteTarget).toBe("42");
   });
 
 });

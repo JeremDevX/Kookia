@@ -18,6 +18,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
   onSave,
 }) => {
   const [settings, setSettings] = useState<AnalyticsSettings>(initialSettings);
+  const [saveError, setSaveError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   React.useEffect(() => {
@@ -29,8 +30,11 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
   const handleSave = async () => {
     try {
       setIsSaving(true);
+      setSaveError("");
       await onSave(settings);
       onClose();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Enregistrement impossible.");
     } finally {
       setIsSaving(false);
     }
@@ -44,6 +48,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
       width="md"
     >
       <div className="flex flex-col gap-4">
+        {saveError && <p role="alert">{saveError}</p>}
         {/* Waste Target */}
         <div className="bg-white p-4 rounded-lg border">
           <div className="flex items-center gap-2 mb-3">

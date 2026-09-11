@@ -132,3 +132,13 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   rollback sans modification partielle et déclaration sans déduction passent.
   Les vérifications navigateur et la parité historique des données initiales
   restent à auditer ; les cases des lots demeurent ouvertes jusque-là.
+- Prévisions, analytics et activité sont désormais servis depuis PostgreSQL.
+  Test HTTP de parité exacte avec chaque prévision et les instantanés initiaux
+  passé ; aucun import mock dans ces services frontend.
+- Préférences analytics en base avec reprise des valeurs locales valides au
+  premier accès seulement, sans écraser des préférences serveur existantes.
+  Validation serveur des valeurs, séparation des comptes et relecture testées.
+  Échecs de lecture/sauvegarde visibles ; la modale reste ouverte sur échec.
+  Builds frontend/API, lint, 31 tests unitaires et 3 scénarios HTTP métier passent.
+  Restent KPI et hypothèses annexes, commandes/panier/décisions, notifications,
+  réception/menu, paramètres/intégrations/exports, audit et contrôle navigateur.

@@ -17,8 +17,8 @@ import "./InsightsSettings.css";
 
 const Analytics: React.FC = () => {
   const { addToast } = useToast();
-  const { data } = useAnalytics();
-  const { settings: analyticsSettings, saveSettings } =
+  const { data, error, refetch } = useAnalytics();
+  const { settings: analyticsSettings, saveSettings, error: preferencesError, loading: preferencesLoading } =
     useAnalyticsPreferences();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
@@ -54,6 +54,8 @@ const Analytics: React.FC = () => {
   // Stable value for display (simulated prediction count)
   const predictionCount = 1247;
 
+  if (error) return <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>;
+
   if (!data) {
     return (
       <div className="analytics-container workspace-page" role="status">
@@ -72,6 +74,7 @@ const Analytics: React.FC = () => {
 
   return (
     <div className="analytics-container workspace-page">
+      {preferencesError && <p role="alert">{preferencesError}</p>}
       <header className="workspace-header">
         <div>
           <p className="workspace-eyebrow">COMPRENDRE POUR MIEUX AGIR</p>
@@ -83,6 +86,7 @@ const Analytics: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={() => setIsCustomizeModalOpen(true)}
+            disabled={preferencesLoading}
           >
             Personnaliser
           </Button>
