@@ -7,6 +7,8 @@ import { changeEmail, changePassword, deleteAccount, getUserBySessionToken, logi
 import { changeEmailSchema, changePasswordSchema, deleteAccountSchema, loginSchema, profileSchema, registerSchema } from "./schemas.js";
 import { rateLimit } from "./rateLimit.js";
 
+import { workspaceRoutes } from "./workspaceRoutes.js";
+
 export const app = express();
 app.disable("x-powered-by");
 app.use(express.json({ limit: "16kb", type: "application/json" }));
@@ -47,6 +49,8 @@ app.patch("/api/account/profile", async (req, res, next) => { try { const body =
 app.post("/api/account/change-email", async (req, res, next) => { try { const body = parseBody(changeEmailSchema, req, res); if (!body) return; const user = await requireUser(req); res.json(publicUserResponse(await changeEmail(user.id, body.newEmail, body.currentPassword))); } catch (error) { next(error); } });
 app.post("/api/account/change-password", rateLimit(8, 60_000), async (req, res, next) => { try { const body = parseBody(changePasswordSchema, req, res); if (!body) return; const user = await requireUser(req); const result = await changePassword(user.id, body.currentPassword, body.newPassword, req.cookies[sessionCookieName]); setSessionCookie(res, result.token, result.expiresAt); res.status(204).send(); } catch (error) { next(error); } });
 app.delete("/api/account", async (req, res, next) => { try { const body = parseBody(deleteAccountSchema, req, res); if (!body) return; const user = await requireUser(req); await deleteAccount(user.id, body.currentPassword); clearSessionCookie(res); res.status(204).send(); } catch (error) { next(error); } });
+
+app.use("/api/workspace", workspaceRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Ressource introuvable." } }));
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {

@@ -18,12 +18,14 @@ import {
 } from "../../domain/inventory/product.policies";
 import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 
+import { getStockMovements, type StockMovement } from "../../services/productService";
+import { useCart } from "../../context/useCart";
 import "./ProductDetail.css";
 
 interface ProductDetailProps {
   product: Product | null;
   onClose: () => void;
-  onAdjustStock: (productId: string, delta: number) => void;
+  onAdjustStock: (productId: string, delta: number, reason?: "adjustment" | "loss") => Promise<void>;
 }
 
 const ProductDetail: React.FC<ProductDetailProps> = ({
@@ -32,6 +34,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   onAdjustStock,
 }) => {
   const { addToast } = useToast();
+  const { addToCart } = useCart();
+  const [movements, setMovements] = useState<StockMovement[]>([]);
+  const [historyError, setHistoryError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [adjustReason, setAdjustReason] = useState<"adjustment" | "loss">("adjustment");
   const { findSupplierByProductId } = useInventoryCatalog();
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState("");
@@ -55,59 +62,52 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     return () => { document.removeEventListener("keydown", handleKey); if (previous instanceof HTMLElement) previous.focus(); };
   }, [productId]);
 
+  useEffect(() => {
+    if (!productId) return;
+    let active = true;
+    getStockMovements(productId).then((data) => { if (active) { setMovements(data); setHistoryError(""); } }, () => { if (active) setHistoryError("Historique indisponible."); });
+    return () => { active = false; };
+  }, [productId, product?.currentStock]);
+
   if (!product) return null;
 
   const status = getProductStatus(product);
   const supplier = findSupplierByProductId(product.id);
 
   const handleContactSupplier = () => {
-    addToast(
-      "success",
-      "Appel en cours",
-      `Connexion avec ${supplier?.name || "le fournisseur"}...`
-    );
+    if (supplier?.phone) window.location.href = `tel:${supplier.phone.replace(/[^+0-9]/g, "")}`;
   };
 
   const handleOrderFromSupplier = () => {
-    addToast(
-      "success",
-      "Commande créée",
-      `Commande de ${product.name} envoyée à ${
-        supplier?.name || "le fournisseur"
-      }.`
-    );
+    addToCart({ id: `product-${product.id}`, productId: product.id, productName: product.name,
+      source: "stocks", quantity: Math.max(1, product.minThreshold - product.currentStock), unit: product.unit });
+    addToast("info", "Ajouté au panier", "Vérifiez et validez la commande depuis le tableau de bord.");
   };
 
   const handleReportLoss = () => {
-    addToast(
-      "info",
-      "Perte signalée",
-      `Incident enregistré pour ${product.name}. L'IA ajustera les prévisions.`
-    );
+    setAdjustReason("loss");
+    setAdjustAmount("");
+    setShowAdjustModal(true);
   };
 
-  const handleAdjustStock = () => {
-    const normalizedAmount = adjustAmount.trim();
-    const isValidInteger = /^[+-]?\d+$/.test(normalizedAmount);
-    const delta = Number.parseInt(normalizedAmount, 10);
-
-    if (isValidInteger && !Number.isNaN(delta) && delta !== 0) {
-      onAdjustStock(product.id, delta);
-      addToast(
-        "success",
-        "Stock ajusté",
-        `${product.name}: ${delta > 0 ? "+" : ""}${delta} ${product.unit}`
-      );
+  const handleAdjustStock = async () => {
+    if (saving) return;
+    if (!showAdjustModal) { setAdjustReason("adjustment"); setShowAdjustModal(true); return; }
+    const amount = Number(adjustAmount.trim().replace(",", "."));
+    const delta = adjustReason === "loss" ? -Math.abs(amount) : amount;
+    if (!Number.isFinite(delta) || delta === 0) {
+      addToast("info", "Ajustement invalide", "Entrez une quantité non nulle (ex. +10 ou -2,5).");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onAdjustStock(product.id, delta, adjustReason);
+      addToast("success", "Stock ajusté", `${product.name}: ${delta > 0 ? "+" : ""}${delta} ${product.unit}`);
       setShowAdjustModal(false);
       setAdjustAmount("");
-    } else {
-      setShowAdjustModal(true);
-      addToast(
-        "info",
-        "Ajustement invalide",
-        "Entrez un nombre entier signé différent de 0 (ex: +10 ou -5)."
-      );
-    }
+    } catch (error) {
+      addToast("info", "Stock non modifié", error instanceof Error ? error.message : "Réessayez.");
+    } finally { setSaving(false); }
   };
 
   return (
@@ -212,18 +212,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               <History size={18} /> Historique
             </h3>
             <div className="history-list">
-              <div className="history-item">
-                <span className="date">07 Dec</span>
-                <span className="action">-2.5 kg (Service Midi)</span>
-              </div>
-              <div className="history-item">
-                <span className="date">06 Dec</span>
-                <span className="action">+10 kg (Livraison)</span>
-              </div>
-              <div className="history-item">
-                <span className="date">05 Dec</span>
-                <span className="action">-3.2 kg (Service Soir)</span>
-              </div>
+              {historyError ? <p role="alert">{historyError}</p> : movements.length === 0 ? <p>Aucun mouvement enregistré.</p> : movements.map((movement) => (
+                <div className="history-item" key={movement.id}>
+                  <span className="date">{new Date(movement.createdAt).toLocaleDateString("fr-FR")}</span>
+                  <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {product.unit} ({movement.reason === "loss" ? "Perte" : movement.reason === "initial" ? "Stock initial" : "Ajustement"})</span>
+                </div>
+              ))}
             </div>
           </section>
 
@@ -231,7 +225,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             <section className="drawer-section">
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <label htmlFor="stock-adjustment" className="block text-sm font-medium mb-2">
-                  Ajustement de stock (utilisez + ou - pour indiquer)
+                  {adjustReason === "loss" ? "Quantité perdue" : "Ajustement de stock (quantité signée)"}
                 </label>
                 <input
                   id="stock-adjustment"
@@ -251,11 +245,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <Button
             variant="danger"
             icon={<AlertTriangle size={16} />}
-            onClick={handleReportLoss}
+            onClick={handleReportLoss} disabled={saving}
           >
             Signaler Perte
           </Button>
-          <Button variant="secondary" onClick={handleAdjustStock}>
+          <Button variant="secondary" onClick={handleAdjustStock} disabled={saving}>
             {showAdjustModal ? "Confirmer" : "Ajuster Stock"}
           </Button>
         </footer>

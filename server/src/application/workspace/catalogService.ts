@@ -1,0 +1,57 @@
+import { Prisma } from "@prisma/client";
+import { prisma } from "../../infrastructure/database/prisma.js";
+
+export class WorkspaceError extends Error {
+  constructor(public readonly status: number, public readonly code: string, message: string) { super(message); }
+}
+
+export const productDto = (product: Awaited<ReturnType<typeof prisma.product.findMany>>[number]) => ({
+  id: product.id, name: product.name, category: product.category, unit: product.unit,
+  currentStock: Number(product.currentStock), minThreshold: Number(product.minThreshold),
+  supplierId: product.supplierId, pricePerUnit: Number(product.pricePerUnit),
+  ...(product.lastDelivery ? { lastDelivery: product.lastDelivery.toISOString().slice(0, 10) } : {}),
+});
+
+export async function getCatalog(restaurantId: string) {
+  const [products, suppliers] = await prisma.$transaction([
+    prisma.product.findMany({ where: { restaurantId }, orderBy: { id: "asc" } }),
+    prisma.supplier.findMany({ where: { restaurantId }, orderBy: { id: "asc" } }),
+  ]);
+  return { products: products.map(productDto), suppliers: suppliers.map(({ id, name, email, phone }) => ({ id, name, email, phone })) };
+}
+
+interface NewProductInput {
+  name: string; category: string; currentStock: number; unit: string;
+  minThreshold: number; supplierId: string; pricePerUnit: number;
+}
+
+export async function createProduct(restaurantId: string, actorId: string, data: NewProductInput, operationId: string) {
+  return prisma.$transaction(async (tx) => {
+    const prior = await tx.stockMovement.findFirst({ where: { restaurantId, operationId } });
+    if (prior) return productDto(await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: prior.productId } } }));
+    const supplier = await tx.supplier.findUnique({ where: { restaurantId_id: { restaurantId, id: data.supplierId } } });
+    if (!supplier) throw new WorkspaceError(400, "INVALID_SUPPLIER", "Fournisseur introuvable dans votre espace.");
+    const product = await tx.product.create({ data: { ...data, id: operationId, restaurantId } });
+    await tx.stockMovement.create({ data: { restaurantId, productId: product.id, actorId, operationId, delta: data.currentStock, reason: "initial" } });
+    return productDto(product);
+  });
+}
+
+export async function adjustStock(restaurantId: string, actorId: string, productId: string, delta: number, operationId: string, reason: string) {
+  return prisma.$transaction(async (tx) => {
+    // Serialize mutations of the same product; the idempotency lookup occurs after the lock.
+    const locked = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`SELECT id FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${productId} FOR UPDATE`);
+    if (!locked.length) throw new WorkspaceError(404, "NOT_FOUND", "Produit introuvable.");
+    const prior = await tx.stockMovement.findUnique({ where: { restaurantId_operationId_productId: { restaurantId, operationId, productId } } });
+    if (!prior) {
+      const updated = await tx.product.updateMany({ where: {
+        restaurantId, id: productId, ...(delta < 0 ? { currentStock: { gte: -delta } } : {}),
+      }, data: { currentStock: { increment: delta } } });
+      if (!updated.count) throw new WorkspaceError(409, "INSUFFICIENT_STOCK", "Le stock disponible est insuffisant.");
+      await tx.stockMovement.create({ data: { restaurantId, productId, delta, reason, operationId, actorId } });
+    } else if (!prior.delta.equals(delta) || prior.reason !== reason) {
+      throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération a déjà été utilisée avec d’autres valeurs.");
+    }
+    return productDto(await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: productId } } }));
+  });
+}

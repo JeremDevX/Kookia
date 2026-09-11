@@ -16,7 +16,7 @@ import "../styles/Workspace.css";
 
 const Stocks: React.FC = () => {
   const { addToast } = useToast();
-  const { products, updateStock, addProduct, getStatus } =
+  const { products, updateStock, addProduct, getStatus, loading, error, refetch } =
     useProductsWithMutations();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
@@ -67,21 +67,21 @@ const Stocks: React.FC = () => {
     );
   });
 
-  const handleAdjustStock = (
+  const handleAdjustStock = async (
     e: React.MouseEvent,
     id: string,
     amount: number
   ) => {
     e.stopPropagation();
-    updateStock(id, amount);
+    try { await updateStock(id, amount); } catch (error) { addToast("info", "Stock non modifié", error instanceof Error ? error.message : "Réessayez."); }
   };
 
-  const handleDrawerAdjustStock = (productId: string, delta: number) => {
-    updateStock(productId, delta);
+  const handleDrawerAdjustStock = async (productId: string, delta: number, reason?: "adjustment" | "loss") => {
+    await updateStock(productId, delta, reason);
   };
 
-  const handleAddProduct = (newProduct: Product) => {
-    addProduct(newProduct);
+  const handleAddProduct = async (newProduct: Product) => {
+    await addProduct(newProduct);
     addToast(
       "success",
       "Produit ajouté",
@@ -105,6 +105,8 @@ const Stocks: React.FC = () => {
 
   return (
     <div className="stocks-container workspace-page">
+      {loading && <p role="status">Chargement du stock…</p>}
+      {error && <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>}
       <header className="workspace-header">
         <div>
           <p className="workspace-eyebrow">VOTRE RÉSERVE, SOUS CONTRÔLE</p>

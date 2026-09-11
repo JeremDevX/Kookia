@@ -1,63 +1,19 @@
-import type { Product } from "../types";
-import type { Supplier } from "../types";
-import { MOCK_PRODUCTS, MOCK_SUPPLIERS } from "../data/mock/inventory";
+import type { Product, Supplier } from "../types";
+import { apiRequest } from "../config/api";
 export { getProductStatus } from "../domain/inventory/product.policies";
 
-// ============================================
-// Product Service
-// ============================================
-
-/**
- * Get all products
- * Currently returns mock data - will be replaced with API call
- */
-export const getProducts = async (): Promise<Product[]> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  return MOCK_PRODUCTS;
+export const getCatalog = () => apiRequest<{ products: Product[]; suppliers: Supplier[] }>("/workspace/catalog");
+export const getProducts = async (): Promise<Product[]> => (await getCatalog()).products;
+export const getSuppliers = async (): Promise<Supplier[]> => (await getCatalog()).suppliers;
+export const getProductById = async (id: string) => (await getProducts()).find((product) => product.id === id) ?? null;
+export const getProductsByCategory = async (category: string) => (await getProducts()).filter((product) => product.category === category);
+export const getProductCategories = async () => Array.from(new Set((await getProducts()).map((product) => product.category))).sort();
+export const getSupplierForProduct = async (product: Product) => (await getSuppliers()).find((supplier) => supplier.id === product.supplierId) ?? null;
+export const createProduct = (product: Product) => {
+  const { id, ...data } = product;
+  return apiRequest<Product>("/workspace/products", { method: "POST", body: JSON.stringify({ ...data, operationId: id }) });
 };
-
-/**
- * Get a product by ID
- */
-export const getProductById = async (id: string): Promise<Product | null> => {
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  return MOCK_PRODUCTS.find((p) => p.id === id) || null;
-};
-
-/**
- * Get products by category
- */
-export const getProductsByCategory = async (
-  category: string
-): Promise<Product[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  return MOCK_PRODUCTS.filter((p) => p.category === category);
-};
-
-/**
- * Get all unique product categories
- */
-export const getProductCategories = async (): Promise<string[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  const categories = new Set(MOCK_PRODUCTS.map((p) => p.category));
-  return Array.from(categories).sort();
-};
-
-/**
- * Get supplier for a product
- */
-export const getSupplierForProduct = async (
-  product: Product
-): Promise<Supplier | null> => {
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  return MOCK_SUPPLIERS.find((s) => s.id === product.supplierId) || null;
-};
-
-/**
- * Get all suppliers
- */
-export const getSuppliers = async (): Promise<Supplier[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  return MOCK_SUPPLIERS;
-};
+export const adjustProductStock = (id: string, delta: number, reason: "adjustment" | "loss" = "adjustment") =>
+  apiRequest<Product>(`/workspace/products/${encodeURIComponent(id)}/stock`, { method: "POST", body: JSON.stringify({ delta, reason, operationId: crypto.randomUUID() }) });
+export interface StockMovement { id: string; delta: number; reason: string; createdAt: string; }
+export const getStockMovements = (id: string) => apiRequest<StockMovement[]>(`/workspace/products/${encodeURIComponent(id)}/movements`);

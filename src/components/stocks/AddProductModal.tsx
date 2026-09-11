@@ -4,6 +4,7 @@ import Button from "../common/Button";
 import Input from "../common/Input";
 import { Package, DollarSign, AlertCircle } from "lucide-react";
 import type { NewProduct } from "../../types/callbacks";
+import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 import type { Unit } from "../../types";
 import {
   validateAddProductForm,
@@ -13,7 +14,7 @@ import {
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (product: NewProduct) => void;
+  onAdd: (product: NewProduct) => Promise<void>;
 }
 
 const AddProductModal: React.FC<AddProductModalProps> = ({
@@ -21,6 +22,11 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   onClose,
   onAdd,
 }) => {
+  const { suppliers } = useInventoryCatalog();
+  const [supplierId, setSupplierId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [formData, setFormData] = useState({
     name: "",
     category: "Légumes",
@@ -31,7 +37,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   });
   const [errors, setErrors] = useState<AddProductFormErrors>({});
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (saving) return;
     const validation = validateAddProductForm(formData);
     setErrors(validation.errors);
 
@@ -43,14 +50,17 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       ? Number(formData.minThreshold.trim())
       : 10;
 
-    onAdd({
-      id: `p${Date.now()}`,
+    setSaving(true);
+    setSaveError("");
+    try {
+    await onAdd({
+      id: operationId,
       name: formData.name.trim(),
       category: formData.category,
       currentStock: Number(formData.currentStock),
       unit: formData.unit,
       minThreshold,
-      supplierId: "sup1",
+      supplierId: supplierId || suppliers[0]?.id || "",
       pricePerUnit: Number(formData.pricePerUnit),
     });
     setFormData({
@@ -62,7 +72,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       pricePerUnit: "",
     });
     setErrors({});
+    setOperationId(crypto.randomUUID());
     onClose();
+    } catch (error) { setSaveError(error instanceof Error ? error.message : "Enregistrement impossible."); } finally { setSaving(false); }
   };
 
   return (
@@ -73,6 +85,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       width="md"
     >
       <div className="flex flex-col gap-4">
+        {saveError && <p role="alert">{saveError}</p>}
+        <div><label htmlFor="product-supplier">Fournisseur</label><select id="product-supplier" value={supplierId || suppliers[0]?.id || ""} onChange={(event) => setSupplierId(event.target.value)}>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></div>
         <div>
           <label htmlFor="addproductmodal-1" className="block text-sm font-medium mb-2">
             Nom du produit *
@@ -174,8 +188,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
 
         <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
           <strong>Note:</strong> Le produit sera automatiquement ajouté à votre
-          inventaire et l'IA commencera à analyser les tendances de
-          consommation.
+          inventaire après confirmation de l’enregistrement.
         </div>
 
         <div className="flex justify-end gap-3 mt-4">
@@ -183,8 +196,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
             Annuler
           </Button>
           <Button
-            onClick={handleSubmit}
-            disabled={!validateAddProductForm(formData).isValid}
+            onClick={handleSubmit} disabled={saving || suppliers.length === 0 || !validateAddProductForm(formData).isValid}
           >
             Ajouter le produit
           </Button>

@@ -16,7 +16,7 @@ Aucune migration métier n’est encore appliquée à cette étape.
 | Domaine | Sources / consommateurs actuels | Cible et changements nécessaires |
 | --- | --- | --- |
 | Fournisseurs | `src/utils/mockData.ts`, réexport `src/data/mock/inventory.ts`, `productService`, catalogue, commandes, détail stock | Fournisseurs rattachés à un restaurant, API de lecture et gestion ; conserver les liens produits |
-| Produits / stocks | Même fichier ; `useProductsWithMutations`, `Stocks`, `AddProductModal`, `ProductDetail` | Produits typés, quantités/prix décimaux, mouvements horodatés ; création et ajustement serveur atomiques, contrôle du fournisseur et absence de stock négatif |
+| Produits / stocks | Historique fictif également dans `ProductDetail` ; même fichier ; `useProductsWithMutations`, `Stocks`, `AddProductModal`, `ProductDetail` | Produits typés, quantités/prix décimaux, mouvements horodatés ; création et ajustement serveur atomiques, contrôle du fournisseur et absence de stock négatif |
 | Recettes / ingrédients | `mockData.ts`, `data/mock/recipes.ts`, `recipeService`, `useRecipes` | Recettes et ingrédients liés aux produits ; supprimer les calculs synchrones adossés au mock, calculer sur le catalogue chargé |
 | Productions / refus | `Recipes`, `RecordProductionModal`, `ProductionConfirmModal` | Historique de production et demandes refusées persistants ; consommation des ingrédients transactionnelle à confirmation ; pas de succès sans écriture |
 | Prévisions / recommandations | `mockData.ts`, `data/mock/predictions.ts`, `predictionService`, hooks, calendrier et détail | Prévisions datées, confiance et suggestion conservées ; données initiales explicitement démonstratives, pas de moteur IA fictif |
@@ -112,3 +112,14 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   suppression complète des comptes temporaires. Contraintes croisées différées
   pour permettre la suppression de compte existante. Documents annexes du seed
   et raccordement runtime restent à faire : le lot 2 reste volontairement ouvert.
+
+- Catalogue frontend raccordé à `/api/workspace/catalog`. Ajout de produit avec
+  sélection fournisseur ; ajustement décimal et perte enregistrés après réponse
+  serveur ; historique réel. Appel fournisseur remplacé par un lien téléphone,
+  commande directe remplacée par une sélection à revoir (panier encore local).
+  Tests HTTP PostgreSQL passés : accès anonyme, fournisseur invalide, isolation,
+  relecture, répétition de requête et deux débits concurrents (un seul accepté).
+  Lint, builds frontend/API, 31 tests unitaires et diff check passent.
+  Vérification navigateur encore à faire. Recettes/prévisions restent mockées
+  à cette étape ; leur raccordement est le prochain lot pour rétablir la cohérence
+  des calculs avec le stock désormais persistant.
