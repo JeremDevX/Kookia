@@ -8,6 +8,7 @@ import AddProductModal from "../components/stocks/AddProductModal";
 import FiltersModal from "../components/stocks/FiltersModal";
 import { Search, Filter, Plus, ShoppingCart } from "lucide-react";
 import { useProductsWithMutations } from "../hooks";
+import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
 import type { Product } from "../types";
 import type { StockFilters } from "../types/callbacks";
@@ -16,6 +17,7 @@ import "../styles/Workspace.css";
 
 const Stocks: React.FC = () => {
   const { addToast } = useToast();
+  const { addToCart, loading: cartLoading } = useCart();
   const { products, updateStock, addProduct, getStatus, loading, error, refetch } =
     useProductsWithMutations();
   const [searchTerm, setSearchTerm] = useState("");
@@ -214,13 +216,13 @@ const Stocks: React.FC = () => {
                         size="sm"
                         variant="outline"
                         icon={<ShoppingCart size={14} />}
-                        onClick={() =>
-                          addToast(
-                            "success",
-                            "Ajouté au panier",
-                            `${product.name} ajouté à la commande Rungis.`
-                          )
-                        }
+                        disabled={cartLoading}
+                        onClick={async () => {
+                          const saved = await addToCart({ id: `product-${product.id}`, productId: product.id,
+                            productName: product.name, quantity: Math.max(1, product.minThreshold - product.currentStock),
+                            unit: product.unit, source: "stocks" });
+                          if (saved) addToast("success", "Ajouté au panier", `${product.name} ajouté à votre sélection à revoir.`);
+                        }}
                       >
                         Commander
                       </Button>

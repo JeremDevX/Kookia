@@ -55,7 +55,7 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
       const supplier = suppliers.find((candidate) => candidate.id === product?.supplierId);
       return <div key={`${item.id}-${index}`} className="flex flex-col gap-sm">
         <label htmlFor={`order-quantity-${index}`}>{product?.name ?? item.productName} · {supplier?.name ?? "Fournisseur indisponible"}</label>
-        <input id={`order-quantity-${index}`} type="number" min="0.001" step="0.001" disabled={saving} value={quantities[index]} onChange={(event) => setQuantities((prev) => prev.map((value, i) => i === index ? event.target.value : value))} />
+        <input className="input-field" id={`order-quantity-${index}`} type="number" min="0.001" step="0.001" disabled={saving} value={quantities[index]} onChange={(event) => setQuantities((prev) => prev.map((value, i) => i === index ? event.target.value : value))} />
         <small>{product?.unit} · {((product?.pricePerUnit ?? 0) * (Number(quantities[index]) || 0)).toFixed(2)} €</small>
       </div>;
     })}

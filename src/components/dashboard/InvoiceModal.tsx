@@ -46,7 +46,7 @@ export default function InvoiceModal({ onValidate, onClose }: InvoiceModalProps)
     {notice && <p role="status">{notice}</p>}
     {loading ? <p role="status">Chargement des factures…</p> : <>
       <label htmlFor="invoice-history">Factures enregistrées</label>
-      <select id="invoice-history" disabled={saving} value={invoice && invoices.some((item) => item.id === invoice.id) ? invoice.id : ""} onChange={(event) => { setInvoice(invoices.find((item) => item.id === event.target.value) ?? null); setError(""); setNotice(""); }}>
+      <select className="input-field" id="invoice-history" disabled={saving} value={invoice && invoices.some((item) => item.id === invoice.id) ? invoice.id : ""} onChange={(event) => { setInvoice(invoices.find((item) => item.id === event.target.value) ?? null); setError(""); setNotice(""); }}>
         <option value="" disabled>Nouveau brouillon</option>
         {invoices.map((item) => <option key={item.id} value={item.id}>{item.reference} · {item.status === "received" ? "Réceptionnée" : "Brouillon"}</option>)}
       </select>
@@ -55,19 +55,19 @@ export default function InvoiceModal({ onValidate, onClose }: InvoiceModalProps)
         {invoice.source === "demo" && <p>Facture de démonstration datée du 9 décembre 2024. Aucun document n’a été scanné.</p>}
         {received && <p role="status">Déjà réceptionnée le {invoice.receivedAt ? new Date(invoice.receivedAt).toLocaleString("fr-FR") : "—"}. Le stock ne sera pas crédité une seconde fois.</p>}
         <label htmlFor="invoice-reference">Référence</label>
-        <input id="invoice-reference" value={invoice.reference} disabled={disabled || received} onChange={(event) => setInvoice({ ...invoice, reference: event.target.value })} />
+        <input className="input-field" id="invoice-reference" value={invoice.reference} disabled={disabled || received} onChange={(event) => setInvoice({ ...invoice, reference: event.target.value })} />
         <label htmlFor="invoice-date">Date de facture</label>
-        <input id="invoice-date" type="date" value={invoice.date} disabled={disabled || received} onChange={(event) => setInvoice({ ...invoice, date: event.target.value })} />
+        <input className="input-field" id="invoice-date" type="date" value={invoice.date} disabled={disabled || received} onChange={(event) => setInvoice({ ...invoice, date: event.target.value })} />
         {invoice.lines.map((line, index) => <fieldset key={index} disabled={disabled || received} className="flex flex-col gap-sm">
           <legend>Ligne {index + 1}</legend>
           <label htmlFor={`invoice-product-${index}`}>Produit</label>
-          <select id={`invoice-product-${index}`} value={line.productId} onChange={(event) => updateLine(index, { productId: event.target.value })}>
+          <select className="input-field" id={`invoice-product-${index}`} value={line.productId} onChange={(event) => updateLine(index, { productId: event.target.value })}>
             {products.map((product) => <option key={product.id} value={product.id}>{product.name} ({product.unit})</option>)}
           </select>
           <label htmlFor={`invoice-quantity-${index}`}>Quantité ({products.find((product) => product.id === line.productId)?.unit})</label>
-          <input id={`invoice-quantity-${index}`} type="number" min="0.001" step="0.001" value={line.quantity} onChange={(event) => updateLine(index, { quantity: Number(event.target.value) })} />
+          <input className="input-field" id={`invoice-quantity-${index}`} type="number" min="0.001" step="0.001" value={line.quantity} onChange={(event) => updateLine(index, { quantity: Number(event.target.value) })} />
           <label htmlFor={`invoice-price-${index}`}>Prix unitaire (€)</label>
-          <input id={`invoice-price-${index}`} type="number" min="0" step="0.0001" value={line.unitPrice} onChange={(event) => updateLine(index, { unitPrice: Number(event.target.value) })} />
+          <input className="input-field" id={`invoice-price-${index}`} type="number" min="0" step="0.0001" value={line.unitPrice} onChange={(event) => updateLine(index, { unitPrice: Number(event.target.value) })} />
           <Button variant="outline" onClick={() => setInvoice({ ...invoice, lines: invoice.lines.filter((_, i) => i !== index) })}>Retirer cette ligne</Button>
         </fieldset>)}
         {!received && <Button variant="outline" disabled={disabled || products.length === 0} onClick={() => setInvoice({ ...invoice, lines: [...invoice.lines, { productId: products[0].id, quantity: 1, unitPrice: products[0].pricePerUnit }] })}>Ajouter une ligne</Button>}

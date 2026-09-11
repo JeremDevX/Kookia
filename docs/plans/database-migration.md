@@ -214,3 +214,12 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
 - Contrôles complets passés : lint, build frontend, build API, 29 tests unitaires,
   13 scénarios PostgreSQL (8 fichiers), diff check. Vérification des parcours
   navigateur encore ouverte ; la migration n’est pas déclarée terminée.
+- Vérification native Arc démarrée, compte temporaire isolé en fenêtre privée.
+  Dashboard rendu avec données persistées. Stock Tomates 12→13 puis rechargement :
+  13 conservé ; détail affiche mouvement +1. Fermeture au clavier Escape vérifiée.
+  Ajout panier depuis détail, revue quantité 7→3, validation et historique de
+  commande « à transmettre » vérifiés. Compte utilisateur initial non modifié.
+- Audit UI : ancien bouton Commander du tableau des stocks encore limité à un
+  toast découvert et raccordé au panier. Champs natifs des nouvelles revues
+  harmonisés avec la classe input-field existante. Les autres parcours navigateur
+  restent à vérifier ; compte temporaire conservé pour poursuivre cet audit.
