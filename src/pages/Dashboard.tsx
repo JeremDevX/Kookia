@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "../components/common/Button";
 import Modal from "../components/common/Modal";
 import InvoiceModal from "../components/dashboard/InvoiceModal";
@@ -13,7 +13,8 @@ import { Calendar, FileText, ChefHat, ShoppingBag, ArrowUpRight, Leaf, ArrowRigh
 import { Link } from "react-router-dom";
 import { usePredictions, useProducts } from "../hooks";
 import { isOnOrAfterRestaurantToday } from "../utils/date";
-import { domainBusinessConfig } from "../config/domain/businessConfig";
+import { getRestaurant, type Restaurant } from "../services/restaurantService";
+import { useAuth } from "../features/auth/context/AuthContext";
 import {
   createOrderRecommendationsFromCartItems,
 } from "../features/orders/orderRecommendations";
@@ -92,8 +93,15 @@ const Dashboard: React.FC = () => {
     day: "numeric",
     month: "long",
   });
-  const { managerFirstName, city } =
-    domainBusinessConfig.establishmentDisplay;
+  const { user } = useAuth();
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  useEffect(() => {
+    let active = true;
+    getRestaurant().then((data) => { if (active) setRestaurant(data); }, () => { if (active) addToast("info", "Restaurant indisponible", "Les informations de votre établissement n’ont pas pu être chargées."); });
+    return () => { active = false; };
+  }, [addToast]);
+  const managerFirstName = user?.displayName ?? "";
+  const city = restaurant?.city ?? "";
 
   const actionablePredictions = predictions.filter((pred) => {
     return pred.recommendation?.action === "buy" &&

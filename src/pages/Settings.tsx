@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Card from "../components/common/Card";
-import Input from "../components/common/Input";
+import RestaurantSettings from "../components/settings/RestaurantSettings";
+import SupplierSettings from "../components/settings/SupplierSettings";
 import Button from "../components/common/Button";
 import IntegrationModal from "../components/settings/IntegrationModal";
 import { Store, Package, Users, Plug, UserRound } from "lucide-react";
@@ -91,36 +92,7 @@ const Settings: React.FC = () => {
 
         {/* Content Area */}
         <div className="settings-content" id="settings-panel">
-          {activeTab === "restaurant" && (
-            <Card title="Votre restaurant">
-              <p className="settings-section-intro">Informations de démonstration. Leur enregistrement n’est pas encore disponible.</p>
-              <div className="form-grid">
-                <Input
-                  label="Nom du restaurant"
-                  id="restaurant-name"
-                  defaultValue="La Pizzeria de Camille"
-                />
-                <div className="grid-2">
-                  <Input id="restaurant-type" label="Type d’établissement" defaultValue="Pizzeria / Crêperie" />
-                  <Input id="restaurant-covers" label="Couverts moyens par jour" defaultValue="350" />
-                </div>
-                <Input
-                  label="Adresse"
-                  id="restaurant-address"
-                  defaultValue="12 Rue de Grenoble, 38000 Grenoble"
-                />
-                <div className="grid-2">
-                  <Input id="restaurant-phone" label="Téléphone" type="tel" defaultValue="+33 1 23 45 67 89" />
-                  <Input
-                    label="Email de contact"
-                    id="restaurant-email"
-                    type="email"
-                    defaultValue="contact@lapizzeria.fr"
-                  />
-                </div>
-              </div>
-            </Card>
-          )}
+          {activeTab === "restaurant" && <RestaurantSettings />}
 
           {activeTab === "products" && (
             <Card title="Gestion des Produits">
@@ -133,19 +105,11 @@ const Settings: React.FC = () => {
             </Card>
           )}
 
-          {activeTab === "suppliers" && (
-            <Card title="Fournisseurs">
-              <div className="empty-state">
-                <Users size={48} color="var(--color-border)" />
-                <h3>Vos partenaires au quotidien.</h3>
-                <p>La gestion des fournisseurs sera disponible dans cet espace.</p>
-              </div>
-            </Card>
-          )}
+          {activeTab === "suppliers" && <SupplierSettings />}
 
           {activeTab === "integrations" && (
             <Card title="Vos outils connectés">
-              <p className="settings-section-intro">Découvrez les connexions proposées. Ces configurations sont des démonstrations.</p>
+              <p className="settings-section-intro">Ces connecteurs ne sont pas encore disponibles. Aucune donnée n’est synchronisée avec une caisse.</p>
               {INTEGRATIONS.map((integration) => (
                 <div key={integration.id} className="integration-item">
                   <div className="int-info">
@@ -161,7 +125,7 @@ const Settings: React.FC = () => {
                     </div>
                     <div>
                       <h4>{integration.name}</h4>
-                      <span className="integration-demo">Démonstration</span>
+                      <span className="integration-demo">Non disponible</span>
                     </div>
                   </div>
                   <Button
@@ -169,7 +133,7 @@ const Settings: React.FC = () => {
                     size="sm"
                     onClick={() => handleOpenIntegrationModal(integration)}
                   >
-                    Gérer
+                    Détails
                   </Button>
                 </div>
               ))}

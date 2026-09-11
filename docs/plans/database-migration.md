@@ -169,3 +169,12 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   correction et conflit de révision, isolation, double réception concurrente sans
   double crédit, historique et rollback complet si une ligne est invalide.
   Builds frontend/API et lint passent ; validation navigateur reste à effectuer.
+- Paramètres restaurant persistants et formulaire fonctionnel ; dashboard alimenté
+  par la ville enregistrée et le nom du compte authentifié, plus de Camille fixe.
+  Gestion fournisseurs ajoutée (création/modification), utilisée par le catalogue.
+  Tests PostgreSQL de relecture, validation, isolation, fournisseur créé associé
+  à un nouveau produit passent. Builds et lint passés.
+- Intégrations : suppression des fausses clés API, compteurs et connexions actives.
+  Les fournisseurs proposés restent un catalogue UI statique ; aucun connecteur
+  implémenté, donc aucun état de connexion réel à migrer. Statut indisponible
+  explicite, parcours manuel conservé. Ancienne météo fictive inutilisée supprimée.

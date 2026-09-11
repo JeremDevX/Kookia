@@ -1,0 +1,35 @@
+import { randomUUID } from "node:crypto";
+import request from "supertest";
+import { afterAll, expect, it } from "vitest";
+import { app } from "./app.js";
+import { prisma } from "../infrastructure/database/prisma.js";
+const ids: string[] = [];
+afterAll(async () => { await prisma.user.deleteMany({ where: { id: { in: ids } } }); await prisma.$disconnect(); });
+async function account() {
+  const agent = request.agent(app);
+  const result = await agent.post("/api/auth/register").send({ displayName: "Settings test", email: `settings-${randomUUID()}@example.com`, password: "settings test password" }).expect(201);
+  ids.push(result.body.user.id); return agent;
+}
+it("persists restaurant and suppliers with validated input and account isolation", async () => {
+  const agent = await account(); const other = await account();
+  await request(app).get("/api/workspace/restaurant").expect(401);
+  const initial = await agent.get("/api/workspace/restaurant").expect(200);
+  expect(initial.body.ownerId).toBeUndefined();
+  const changed = { ...initial.body, name: "Restaurant Test", city: "Lyon", dailyCovers: 200 };
+  await agent.patch("/api/workspace/restaurant").send(changed).expect(200);
+  const read = await agent.get("/api/workspace/restaurant").expect(200);
+  expect(read.body).toEqual(changed);
+  const isolated = await other.get("/api/workspace/restaurant").expect(200);
+  expect(isolated.body.city).toBe("Grenoble");
+  await agent.patch("/api/workspace/restaurant").send({ ...changed, dailyCovers: -1 }).expect(400);
+  await agent.patch("/api/workspace/restaurant").send({ ...changed, ownerId: randomUUID() }).expect(400);
+  const supplier = { id: randomUUID(), name: "Supplier Test", email: "supplier@example.com", phone: "0123456789" };
+  await agent.post("/api/workspace/suppliers").send(supplier).expect(201);
+  const { id, ...details } = supplier;
+  await agent.patch(`/api/workspace/suppliers/${id}`).send({ ...details, name: "Updated Supplier" }).expect(200);
+  await other.patch(`/api/workspace/suppliers/${id}`).send(details).expect(404);
+  const catalog = await agent.get("/api/workspace/catalog").expect(200);
+  expect(catalog.body.suppliers.find((item: { id: string }) => item.id === id).name).toBe("Updated Supplier");
+  const product = await agent.post("/api/workspace/products").send({ operationId: randomUUID(), name: "New product", category: "Test", currentStock: 1, minThreshold: 1, unit: "kg", pricePerUnit: 2, supplierId: id }).expect(201);
+  expect(product.body.supplierId).toBe(id);
+});

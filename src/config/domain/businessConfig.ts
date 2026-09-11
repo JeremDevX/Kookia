@@ -1,9 +1,3 @@
-export interface EstablishmentDisplayConfig {
-  managerFirstName: string;
-  city: string;
-  weatherLabel: string;
-}
-
 export interface MenuSuggestionConfig {
   starter: string;
   main: string;
@@ -33,17 +27,11 @@ export interface RoiSimulatorAssumptionsConfig {
 }
 
 export interface DomainBusinessConfig {
-  establishmentDisplay: EstablishmentDisplayConfig;
   menuSuggestion: MenuSuggestionConfig;
   roiSimulator: RoiSimulatorAssumptionsConfig;
 }
 
 export const domainBusinessConfig: DomainBusinessConfig = {
-  establishmentDisplay: {
-    managerFirstName: "Camille",
-    city: "Grenoble",
-    weatherLabel: "☀️ 18°C",
-  },
   menuSuggestion: {
     starter: "Salade Caprese au Basilic Frais",
     main: "Poulet Rôti aux Herbes & Pommes Grenailles",
