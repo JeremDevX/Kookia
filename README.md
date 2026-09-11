@@ -1,111 +1,76 @@
 # Kookia
 
-Application React + TypeScript d'aide aux achats, aux stocks, aux prédictions et
-au suivi opérationnel pour la restauration.
+Application React/TypeScript de suivi des achats, stocks, recettes et recommandations
+pour la restauration, avec API Express et PostgreSQL/Prisma.
 
-## État du projet (2026-09-11)
-
-- Statut global: MVP fonctionnel sur données mock locales avec authentification locale.
-- Les données métier restent mockées ; les utilisateurs et sessions sont persistés dans PostgreSQL local.
-
-## Démarrage
+## Démarrage local
 
 ```bash
 npm install
-npx prisma generate
 cp .env.example .env
 npm run db:up
+npm run db:generate
 npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
-Puis ouvrir `http://localhost:5173/register`. Le frontend est servi sur le port
-5173 et proxifie `/api` vers l'API Express sur le port 3001.
+Ouvrir `http://localhost:5173/register`. Vite proxifie `/api` vers Express sur
+le port 3001. Le seed reprend les comptes existants ; un nouveau compte reçoit
+son espace au premier accès métier. La reprise est idempotente et ne remplace pas
+les données déjà modifiées. Ne pas utiliser `prisma migrate reset` sur une base
+contenant des données à conserver.
 
-## Authentification locale
+## Fonctionnement actuel
 
-L'authentification est une première verticale backend locale : Express et
-Prisma utilisent PostgreSQL démarré par Docker Compose. Les mots de passe sont
-hachés avec Argon2id. Les sessions sont opaques, aléatoires et envoyées dans
-un cookie `HttpOnly` ; seul leur hash SHA-256 est enregistré en base. Aucun
-service cloud, OAuth, service email ou fournisseur d'authentification externe
-n'est requis.
+Les données métier sont persistées dans un espace isolé par compte : restaurant,
+fournisseurs, produits, mouvements, recettes, productions/refus, prévisions,
+commandes, décisions, panier, notifications, factures, menus et analytics.
+Les données initiales de démonstration restent **des exemples**, même en base.
 
-Routes principales : `POST /api/auth/register`, `POST /api/auth/login`,
-`POST /api/auth/logout`, `GET /api/auth/me`, puis les routes de compte sous
-`/api/account`. Les migrations Prisma créent uniquement `User` et `Session`.
+- Stocks : créations, ajustements et pertes historisés.
+- Productions : déduction atomique des ingrédients d’une recette liée ; une
+  déclaration libre conserve l’historique sans inventer d’ingrédients.
+- Commandes : quantités revues, validation tracée, statut « à transmettre ».
+- Factures : saisie manuelle et réception atomique, sans double crédit de stock.
+- Menus : modification, validation et impression séparées.
+- Rapports : CSV, XML Excel et PDF via impression ; opérations filtrées par dates
+  UTC. Les anciens graphiques sans dates sont un instantané de démonstration.
 
-Les pages stocks, recettes, prédictions et analytics ne sont pas encore
-rattachées à l'utilisateur connecté.
+Aucun POS, OCR, service météo, moteur IA ou envoi fournisseur externe n’est
+connecté. Les exports ne constituent pas une attestation de conformité.
 
-## Scripts utiles
-
-```bash
-npm run lint
-npm run build
-npm run test
-npm run test:integration # PostgreSQL local démarré requis
-```
-
-## Architecture actuelle
+## Architecture
 
 ```text
-src/
-├── app/                 # Providers et router applicatif
-├── components/          # UI existante et sections métier legacy en cours de convergence
-├── context/             # Contextes globaux UI (toast, panier)
-├── data/mock/           # Source mock consommée par les services
-├── domain/              # Types métier et policies pures
-├── features/            # Hooks et helpers d'orchestration par feature
-├── hooks/               # Façades UI/data existantes
-├── pages/               # Entrées d'écran
-├── services/            # Accès données + façade applicative
-├── shared/              # Types et primitives UI transverses
-├── types/               # Barrel de compatibilité sur les types du domaine/shared
-├── config/domain/       # Paramètres métier front
-└── styles/              # Styles globaux + tokens CSS
+React → pages/components → hooks/features → services HTTP → API Express
+                                                        → PostgreSQL/Prisma
 ```
 
-Flux observé dans le code:
-- Les pages consomment les hooks et helpers de feature.
-- Les hooks appellent les services.
-- Les services s'appuient sur le domaine pur et les données mock dédiées sous `src/data/mock`.
-- Le dossier `src/components` reste partiellement horizontal et doit continuer à converger feature par feature.
+Les règles frontend pures résident dans `src/domain`. Les mutations critiques,
+la validation des entrées et l’isolation sont appliquées côté serveur. Les données
+de seed sont sous `server/src/infrastructure/database/seed` ; aucun mock métier
+n’est utilisé comme fallback du frontend. Les sessions utilisent des cookies
+HttpOnly et des jetons opaques ; mots de passe Argon2id, jetons hashés en base.
 
-## Ce qui est en place
-
-- Domaine isolé sous `src/domain`.
-- Types exposés via le barrel `src/types`.
-- Pages et composants UI débarrassés des imports directs vers `utils/mockData` et `services`.
-- Priorisation prédictions et règles métier front centralisées hors JSX.
-- Couverture de tests unitaires ciblée (services, utilitaires, état panier).
-
-## Limites connues
-
-- Persistance serveur absente: les données ne survivent pas à un vrai cycle backend.
-- Le client API dans `src/config/api.ts` est actif pour l'authentification ; les
-  services métier continuent d'utiliser les mocks.
-- Les services simulent des latences et retournent des mocks.
-- Une partie du rendu reste encore portée par des composants volumineux dans `src/components`.
-
-## Trajectoire technique
-
-Le cadrage Jalon 2, les choix déjà actifs, les limites et la cible de
-préproduction sont regroupés dans le
-[référentiel technique et développement](docs/technical-development.md). Ce
-document distingue explicitement ce qui existe de ce qui reste à construire.
-
-## Documentation de référence
-
-- Workflow agent : [AGENTS.md](AGENTS.md)
-- Méthode Codex, sources et validation du cadrage : [Développement agentique](docs/agentic-development.md)
-- Référence technique : [Technique et développement](docs/technical-development.md)
-- Setup authentification locale : [Guide de setup rapide](docs/setup-auth.md)
-
-## Validation locale minimale avant PR
+## Vérifications
 
 ```bash
 npm run lint
 npm run build
-npm run test
+npm run build:api
+npm test
+npm run test:integration
 ```
+
+Les tests d’intégration nécessitent PostgreSQL local et créent des comptes dédiés.
+Les tests métier nettoient uniquement leurs comptes temporaires. Le test historique
+d’auth utilise des emails de test fixes : réserver la base locale aux essais.
+
+## Documentation
+
+- [Cartographie et suivi de migration](docs/plans/database-migration.md)
+- [Référence technique actuelle et cible](docs/technical-development.md)
+- [Setup authentification](docs/setup-auth.md)
+- [Guidance du dépôt](AGENTS.md)
+- [Développement agentique](docs/agentic-development.md)

@@ -27,10 +27,6 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
   currentStock = 0,
   productUnit = "u",
 }) => {
-  // Stable mock values for display purposes
-  // (In production, these would come from real data)
-  const historyDays = 75;
-
   if (!prediction) return null;
 
   const estimatedCost = (prediction.recommendation?.quantity || 0) * unitPrice;
@@ -81,8 +77,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
                 {prediction.recommendation?.reason}
               </p>
               <p className="text-xs text-blue-600 mt-2">
-                Fiabilité: {(prediction.confidence * 100).toFixed(0)}% basée sur{" "}
-                {historyDays} jours d'historique
+                Confiance de démonstration : {(prediction.confidence * 100).toFixed(0)} %. Aucun historique de ventes connecté.
               </p>
             </div>
           </div>

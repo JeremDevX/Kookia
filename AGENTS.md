@@ -6,18 +6,19 @@ Kookia helps restaurant teams reduce waste through understandable operational
 recommendations. Prefer low-friction flows, traceability, and meaningful human
 control over opaque automation.
 
-This is a React/TypeScript frontend. Its active runtime flow is:
-`app` → `pages`/`components` → `hooks`/`features` → `services`/`domain` →
-`data/mock`. Services currently use local mock data; no backend, HTTP client, or
-server-side authorization layer is active. Inspect the code before introducing a
-new boundary or assuming the planned API migration exists.
+The active runtime is React/TypeScript → hooks/features → HTTP services →
+Express/TypeScript → PostgreSQL/Prisma. Account sessions and per-owner restaurant
+workspaces are persisted; authorization and critical mutations are server-side.
+Demo data is seeded idempotently, never a frontend fallback. Inspect the current
+code before introducing or replacing boundaries.
 
-The Jalon 2 technical trajectory is planned, not active: Node.js/Express with
-TypeScript, PostgreSQL/Prisma, POS ingestion and Ticket Z/OCR. Introduce those
-boundaries only when a task explicitly scopes the migration. The chef must keep
-an explicit review/validation step for a recommendation; a future backend must
-record that decision. The technical reference is
-[`docs/technical-development.md`](docs/technical-development.md).
+POS ingestion, Ticket Z/OCR, live weather and an AI prediction engine remain
+planned, not active. The chef must retain explicit review and validation;
+commands and menus have persistent decision records. No provider email is sent
+by order validation. The technical reference is
+[`docs/technical-development.md`](docs/technical-development.md); migration scope
+and verification evidence live in
+[`docs/plans/database-migration.md`](docs/plans/database-migration.md).
 
 ## Invariants
 

@@ -203,3 +203,14 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   l’instantané, échappement CSV/XML et neutralisation de formules passent.
   33 tests unitaires, lint et builds passent ; téléchargement/ouverture Excel et
   impression restent à contrôler dans l’audit navigateur.
+- Audit de nettoyage : ancien `utils/mockData` et réexports supprimés ; tests de
+  calcul utilisent des fixtures locales minimales. Ancien reducer de panier devenu
+  mort et ses tests miroir supprimés (couverture fonctionnelle remplacée par tests
+  PostgreSQL d’ajout, dédoublonnage et suppression). Faux historique de 75 jours
+  dans le détail de prévision corrigé : confiance de démonstration explicite.
+- `npm run db:seed` ajouté et exécuté deux fois sur le compte local existant :
+  reprise sans écrasement, documents annexes initialisés uniquement si absents.
+  README, référence technique et AGENTS actualisés avec les frontières réelles.
+- Contrôles complets passés : lint, build frontend, build API, 29 tests unitaires,
+  13 scénarios PostgreSQL (8 fichiers), diff check. Vérification des parcours
+  navigateur encore ouverte ; la migration n’est pas déclarée terminée.

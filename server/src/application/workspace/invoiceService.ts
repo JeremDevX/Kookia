@@ -11,13 +11,13 @@ export const invoiceDraftSchema = z.object({ reference: z.string().trim().min(1)
 }).strict();
 const invoiceSchema = invoiceDraftSchema.extend({ id: z.string(), status: z.enum(["draft", "received"]),
   source: z.enum(["demo", "manual"]), receivedAt: z.iso.datetime().optional(), receivedBy: z.string().optional() });
-const initial = { id: "demo", reference: "Rungis-2024-12-09", date: "2024-12-09", status: "draft" as const, source: "demo" as const,
+export const initialInvoice = { id: "demo", reference: "Rungis-2024-12-09", date: "2024-12-09", status: "draft" as const, source: "demo" as const,
   lines: [{ productId: "p1", quantity: 12, unitPrice: 2.4 }, { productId: "p2", quantity: 5, unitPrice: 8.5 },
     { productId: "p15", quantity: 3, unitPrice: 1.5 }, { productId: "p4", quantity: 10, unitPrice: 12 }] };
 
 export async function getInvoices(restaurantId: string) {
   await prisma.workspaceDocument.upsert({ where: { restaurantId_kind: { restaurantId, kind: "invoice:demo" } },
-    create: { restaurantId, kind: "invoice:demo", data: initial }, update: {} });
+    create: { restaurantId, kind: "invoice:demo", data: initialInvoice }, update: {} });
   const documents = await prisma.workspaceDocument.findMany({ where: { restaurantId, kind: { startsWith: "invoice:" } }, orderBy: { updatedAt: "desc" } });
   return documents.map((document) => ({ ...invoiceSchema.parse(document.data), revision: document.revision }));
 }

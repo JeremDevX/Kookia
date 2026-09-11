@@ -9,12 +9,12 @@ fonctionnalité déjà disponible**.
 
 | Sujet | État actuel vérifié | Cible Jalon 2 / préproduction |
 | --- | --- | --- |
-| Application web | React 19, TypeScript, Vite ; données locales mockées | Conserver les hooks comme façade UI pendant une migration progressive |
+| Application web | React 19, TypeScript, Vite ; données métier persistées via API | Conserver les hooks comme façade UI pendant une migration progressive |
 | Qualité | ESLint, TypeScript, Vitest et CI GitHub Actions ; scripts `lint`, `build`, `test` | CI exécutable sans manipulation ; smoke test sur URL dédiée avant recette |
 | Hébergement | Configuration frontend Vercel (`vercel.json`) | Préproduction puis recette avant lancement commercial |
-| Backend et persistance | API Express/TypeScript active pour utilisateurs et sessions ; données métier encore mockées | Étendre progressivement les frontières métier vers PostgreSQL/Prisma |
-| Intégrations | Absentes ; les écrans d'intégration sont des mocks | Adaptateur POS, import Ticket Z, service OCR externe avec fallback |
-| Prévision | Règles et données de démonstration locales | Historique de ventes, météo locale et calendrier événementiel ; moteur IA hors périmètre full-stack initial |
+| Backend et persistance | API Express/TypeScript et PostgreSQL/Prisma actifs pour comptes et espaces métier isolés | Étendre progressivement les frontières métier vers PostgreSQL/Prisma |
+| Intégrations | POS/OCR absents ; disponibilité réelle explicitée, saisie manuelle des factures | Adaptateur POS, import Ticket Z, service OCR externe avec fallback |
+| Prévision | Règles déterministes et prévisions de démonstration persistées | Historique de ventes, météo locale et calendrier événementiel ; moteur IA hors périmètre full-stack initial |
 
 Les versions et dépendances actives font foi dans [`package.json`](../package.json).
 
@@ -22,7 +22,7 @@ Les versions et dépendances actives font foi dans [`package.json`](../package.j
 
 - KOOK.IA **suggère** : le chef relit, peut modifier et valide explicitement une
   recommandation. L'automatisation opaque de commande est hors périmètre.
-- La future persistance doit journaliser de bout en bout la décision du chef ;
+- La persistance journalise la validation des commandes et menus par le chef ;
   une importation POS ou OCR ne vaut jamais validation.
 - Les recommandations doivent rendre lisibles les données et incertitudes qui
   influencent matériellement une décision.
@@ -45,11 +45,20 @@ UI React → hooks/features → client API → API Express → domaine → Postg
                                   ↘ adaptateurs POS / OCR / météo / calendrier
 ```
 
-L'authentification locale constitue la première frontière active : elle couvre
-uniquement `User` et `Session`. Les données métier restent mockées. Pour toute
-migration suivante, basculer une frontière à la fois, maintenir le contrat des
-hooks si possible, valider les payloads à l'entrée et mapper les données
-externes avant le domaine.
+La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
+`Product`, `Recipe`, `RecipeIngredient`, `StockMovement`, `Production`,
+`Prediction`, `PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
+et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics,
+préférences, panier, notifications, factures et menus), validés aux frontières.
+Les mutations critiques sont transactionnelles. Les liens internes sont différés
+pour permettre la suppression en cascade d’un compte sans casser ses références.
+
+Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` initialise
+les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au
+premier accès. Les dates des prévisions de démonstration sont figées. Aucun calcul
+IA, connecteur POS/OCR ou envoi fournisseur réel n’est impliqué par la persistance.
+Le [plan de migration](plans/database-migration.md) contient la cartographie et les
+preuves de validation, ainsi que les vérifications encore ouvertes.
 
 ## Backlog et séquence de référence
 

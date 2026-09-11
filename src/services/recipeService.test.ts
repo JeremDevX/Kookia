@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { Recipe } from "../types";
-import { MOCK_PRODUCTS } from "../data/mock/inventory";
+import type { Product, Recipe } from "../types";
+
 import { calculateIngredientCost, calculateMaxYield } from "./recipeService";
+
+const products: Product[] = [
+  { id: "p1", name: "Tomates", category: "Légumes", currentStock: 12, unit: "kg", minThreshold: 20, supplierId: "supplier", pricePerUnit: 2.4 },
+  { id: "p2", name: "Mozzarella", category: "Fromages", currentStock: 8, unit: "kg", minThreshold: 10, supplierId: "supplier", pricePerUnit: 8.5 },
+];
 
 describe("recipeService", () => {
   it("returns 0 max yield when recipe has no ingredient", () => {
@@ -13,7 +18,7 @@ describe("recipeService", () => {
       ingredients: [],
     };
 
-    expect(calculateMaxYield(recipe, MOCK_PRODUCTS)).toBe(0);
+    expect(calculateMaxYield(recipe, products)).toBe(0);
   });
 
   it("calculates max yield based on limiting ingredient", () => {
@@ -28,7 +33,7 @@ describe("recipeService", () => {
       ],
     };
 
-    expect(calculateMaxYield(recipe, MOCK_PRODUCTS)).toBe(4);
+    expect(calculateMaxYield(recipe, products)).toBe(4);
   });
 
   it("calculates ingredient cost from known products only", () => {
@@ -36,7 +41,7 @@ describe("recipeService", () => {
       { productId: "p1", quantity: 2 },
       { productId: "p2", quantity: 1 },
       { productId: "unknown", quantity: 5 },
-    ], MOCK_PRODUCTS);
+    ], products);
 
     expect(total).toBeCloseTo(13.3, 5);
   });
