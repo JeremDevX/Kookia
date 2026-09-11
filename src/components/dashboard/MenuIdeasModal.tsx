@@ -1,78 +1,53 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import Button from "../common/Button";
-import { Sparkles, Utensils, Printer } from "lucide-react";
-import { domainBusinessConfig } from "../../config/domain/businessConfig";
-
-interface MenuIdeasModalProps {
-  onValidate: () => void;
-  onClose: () => void;
+import Input from "../common/Input";
+import { getMenu, saveMenu, type MenuSuggestion } from "../../services/menuService";
+interface MenuIdeasModalProps { onValidate: () => void; onClose: () => void; }
+export default function MenuIdeasModal({ onValidate, onClose }: MenuIdeasModalProps) {
+  const [menu, setMenu] = useState<MenuSuggestion | null>(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    let active = true;
+    getMenu().then((data) => { if (active) setMenu(data); }, (error: unknown) => { if (active) setError(error instanceof Error ? error.message : "Menu indisponible."); });
+    return () => { active = false; };
+  }, []);
+  const persist = async (validate: boolean) => {
+    if (!menu || saving) return;
+    setSaving(true); setError(""); setNotice("");
+    try { setMenu(await saveMenu(menu, validate)); setDirty(false); setNotice(validate ? "Menu validé et décision enregistrée." : "Brouillon enregistré."); if (validate) onValidate(); }
+    catch (error) { setError(error instanceof Error ? error.message : "Enregistrement impossible."); }
+    finally { setSaving(false); }
+  };
+  const print = () => {
+    if (!menu) return;
+    const page = window.open("", "_blank");
+    if (!page) { setError("Autorisez l’ouverture de la fenêtre d’impression puis réessayez."); return; }
+    page.document.title = "Menu";
+    const heading = page.document.createElement("h1"); heading.textContent = "Menu"; page.document.body.append(heading);
+    for (const [label, value] of [["Entrée", menu.starter], ["Plat", menu.main], ["Dessert", menu.dessert]]) {
+      const title = page.document.createElement("h2"); title.textContent = label;
+      const text = page.document.createElement("p"); text.textContent = value; page.document.body.append(title, text);
+    }
+    page.document.close(); page.focus(); page.print();
+  };
+  return <div className="flex flex-col gap-lg">
+    {error && <p role="alert">{error}</p>}
+    {notice && <p role="status">{notice}</p>}
+    {!menu ? !error && <p role="status">Chargement du menu…</p> : <>
+      <h3>Suggestion de menu à revoir</h3>
+      <p>Exemple de démonstration : les estimations de valorisation ne sont pas recalculées à partir du stock actuel.</p>
+      <details><summary>Hypothèses de la suggestion initiale</summary><p>{menu.stockOptimizationText} Estimation initiale : {menu.reclaimedStockKg} kg sur {menu.criticalWindowHours} h, non vérifiée.</p></details>
+      {([['starter', 'Entrée'], ['main', 'Plat'], ['dessert', 'Dessert']] as const).map(([field, label]) => <Input key={field} id={`menu-${field}`} label={label} value={menu[field]} disabled={saving} onChange={(event) => { setMenu({ ...menu, [field]: event.target.value }); setDirty(true); }} />)}
+      <p>{menu.status === "validated" && !dirty ? `Validé le ${new Date(menu.validatedAt!).toLocaleString("fr-FR")}` : "Brouillon à valider"}. Aucune production n’est lancée par cette action.</p>
+      <div className="flex gap-sm">
+        <Button variant="outline" onClick={() => void persist(false)} disabled={saving}>Enregistrer le brouillon</Button>
+        <Button onClick={() => void persist(true)} disabled={saving}>{saving ? "Enregistrement…" : "Valider le menu"}</Button>
+        <Button variant="outline" onClick={print} disabled={dirty || menu.status !== "validated" || saving}>Imprimer</Button>
+      </div>
+    </>}
+    <Button variant="outline" onClick={onClose} disabled={saving}>Fermer</Button>
+  </div>;
 }
-
-const MenuIdeasModal: React.FC<MenuIdeasModalProps> = ({
-  onValidate,
-  onClose,
-}) => {
-  const { menuSuggestion } = domainBusinessConfig;
-
-  return (
-    <div className="flex flex-col gap-lg">
-      <div className="bg-gradient-to-r from-teal-50 to-orange-50 p-6 rounded-lg text-center border border-teal-100">
-        <Sparkles className="mx-auto text-moderate mb-2" size={32} />
-        <h3 className="text-xl font-bold text-teal-900 mb-1">
-          Suggestion du Chef IA
-        </h3>
-        <p className="text-teal-700 text-sm">
-          {menuSuggestion.stockOptimizationText}
-        </p>
-      </div>
-
-      <div className="menu-preview flex flex-col gap-4 border-l-4 border-moderate pl-6 py-2 my-2">
-        <div>
-          <span className="text-xs uppercase tracking-wider text-gray-500 font-bold">
-            Entrée
-          </span>
-          <p className="text-lg font-serif font-medium text-gray-900">
-            {menuSuggestion.starter}
-          </p>
-        </div>
-        <div>
-          <span className="text-xs uppercase tracking-wider text-gray-500 font-bold">
-            Plat
-          </span>
-          <p className="text-lg font-serif font-medium text-gray-900">
-            {menuSuggestion.main}
-          </p>
-        </div>
-        <div>
-          <span className="text-xs uppercase tracking-wider text-gray-500 font-bold">
-            Dessert
-          </span>
-          <p className="text-lg font-serif font-medium text-gray-900">
-            {menuSuggestion.dessert}
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-blue-50 p-3 rounded text-xs text-blue-800 flex items-start gap-2">
-        <Utensils size={14} className="mt-1 flex-shrink-0" />
-        <p>
-          Ce menu permet d'utiliser{" "}
-          <strong>{menuSuggestion.reclaimedStockKg}kg de stocks</strong> qui
-          arriveraient à date critique d'ici {menuSuggestion.criticalWindowHours}
-          h.
-        </p>
-      </div>
-
-      <div className="flex justify-end gap-sm mt-4">
-        <Button variant="outline" onClick={onClose}>
-          Modifier
-        </Button>
-        <Button onClick={onValidate} icon={<Printer size={16} />}>
-          Valider et Imprimer
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-export default MenuIdeasModal;

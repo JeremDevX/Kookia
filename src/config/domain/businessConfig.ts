@@ -1,12 +1,3 @@
-export interface MenuSuggestionConfig {
-  starter: string;
-  main: string;
-  dessert: string;
-  stockOptimizationText: string;
-  reclaimedStockKg: number;
-  criticalWindowHours: number;
-}
-
 export interface RoiSimulatorAssumptionsConfig {
   defaultWasteReductionPercent: number;
   defaultDailyCovers: number;
@@ -27,20 +18,10 @@ export interface RoiSimulatorAssumptionsConfig {
 }
 
 export interface DomainBusinessConfig {
-  menuSuggestion: MenuSuggestionConfig;
   roiSimulator: RoiSimulatorAssumptionsConfig;
 }
 
 export const domainBusinessConfig: DomainBusinessConfig = {
-  menuSuggestion: {
-    starter: "Salade Caprese au Basilic Frais",
-    main: "Poulet Rôti aux Herbes & Pommes Grenailles",
-    dessert: "Tiramisu Maison",
-    stockOptimizationText:
-      "Optimisé pour vos stocks de Tomates (Date courte) et Poulet.",
-    reclaimedStockKg: 4.5,
-    criticalWindowHours: 48,
-  },
   roiSimulator: {
     defaultWasteReductionPercent: 30,
     defaultDailyCovers: 350,

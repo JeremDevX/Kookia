@@ -1,0 +1,10 @@
+{
+  "starter": "Salade Caprese au Basilic Frais",
+  "main": "Poulet Rôti aux Herbes & Pommes Grenailles",
+  "dessert": "Tiramisu Maison",
+  "stockOptimizationText": "Optimisé pour vos stocks de Tomates (Date courte) et Poulet.",
+  "reclaimedStockKg": 4.5,
+  "criticalWindowHours": 48,
+  "source": "demo",
+  "status": "draft"
+}

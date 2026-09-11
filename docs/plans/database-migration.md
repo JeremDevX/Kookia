@@ -178,3 +178,12 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   Les fournisseurs proposés restent un catalogue UI statique ; aucun connecteur
   implémenté, donc aucun état de connexion réel à migrer. Statut indisponible
   explicite, parcours manuel conservé. Ancienne météo fictive inutilisée supprimée.
+- Menu initial déplacé au seed serveur, édition entrée/plat/dessert et brouillon
+  persistants. Validation tracée avec suggestion et choix revu, révision contrôlée
+  et répétition sans doublon. Impression séparée dans une fenêtre imprimable avec
+  contenu textuel échappé par DOM. Aucun lancement de production ni impression
+  accomplie annoncé lors de la validation. Estimations de valorisation explicitement
+  démonstratives et non recalculées sur le stock actuel.
+  Test PostgreSQL passé : parité, édition, conflit, double validation, isolation
+  et absence de production implicite. Builds et lint passent ; impression et
+  parcours navigateur restent à vérifier dans l’audit final.

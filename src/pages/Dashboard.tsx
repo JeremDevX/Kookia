@@ -52,10 +52,10 @@ const Dashboard: React.FC = () => {
   const handleValidateMenu = () => {
     addToast(
       "success",
-      "Menu Validé & Imprimé",
-      "La production a été planifiée pour demain."
+      "Menu validé",
+      "Votre choix a été enregistré. Vous pouvez maintenant imprimer le menu."
     );
-    setIsMenuModalOpen(false);
+
   };
 
   const handleTogglePrediction = async (id: string, productName: string) => {

@@ -1,3 +1,4 @@
+import { menuRoutes } from "./menuRoutes.js";
 import { restaurantRoutes } from "./restaurantRoutes.js";
 import { invoiceRoutes } from "./invoiceRoutes.js";
 import { notificationRoutes } from "./notificationRoutes.js";
@@ -34,6 +35,7 @@ workspaceRoutes.use(cartRoutes);
 workspaceRoutes.use(notificationRoutes);
 workspaceRoutes.use(invoiceRoutes);
 workspaceRoutes.use(restaurantRoutes);
+workspaceRoutes.use(menuRoutes);
 
 const quantity = z.number().finite().min(0).max(1_000_000).multipleOf(0.001);
 const newProductSchema = z.object({
