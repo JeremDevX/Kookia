@@ -26,6 +26,11 @@ describe("persistent catalog HTTP", () => {
     const first = await account();
     const second = await account();
     const initial = await first.get("/api/workspace/catalog").expect(200);
+    expect(initial.body.products).toHaveLength(catalog.products.length);
+    for (const expected of catalog.products) {
+      expect(initial.body.products.find((item: { id: string }) => item.id === expected.id)).toEqual(expected);
+    }
+    expect(initial.body.suppliers).toEqual(catalog.suppliers);
     const product = initial.body.products[0];
     const created = await first.post("/api/workspace/products").send({
       operationId: randomUUID(), name: "Test product", category: "Légumes", currentStock: 10,
@@ -55,6 +60,12 @@ describe("persistent catalog HTTP", () => {
   it("deducts recipe ingredients atomically, records history and rejects repeat/conflicting production", async () => {
     const agent = await account();
     const recipes = await agent.get("/api/workspace/recipes").expect(200);
+    expect(recipes.body).toHaveLength(catalog.recipes.length);
+    for (const expected of catalog.recipes) {
+      const actual = recipes.body.find((item: { id: string }) => item.id === expected.id);
+      expect(actual).toEqual({ ...expected, ...(expected.lastMade ? { lastMade: new Date(expected.lastMade.slice(0, 10)).toISOString() } : {}), ingredients: expect.arrayContaining(expected.ingredients) });
+      expect(actual.ingredients).toHaveLength(expected.ingredients.length);
+    }
     const recipe = recipes.body[0];
     const before = await agent.get("/api/workspace/catalog").expect(200);
     const input = { operationId: randomUUID(), recipeId: recipe.id, recipeName: recipe.name,

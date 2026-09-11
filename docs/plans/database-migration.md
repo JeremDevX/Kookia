@@ -232,3 +232,21 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   associé à son libellé et erreur accessible. Lint, build et 29 tests passent.
   Inspection du rendu corrigé et audit réception/préférences/exports encore ouverts :
   contrôle navigateur interrompu lorsque l’utilisateur a repris Arc.
+
+- Audit transversal serveur renforcé : nouveau test `reconnect.integration.test.ts`
+  effectuant des mutations puis déconnexion/reconnexion avec une nouvelle session.
+  Les 17 lectures (catalogue, recettes, prévisions, analytics, activité, insights,
+  préférences, notifications, panier, commandes, décisions, factures, menu,
+  restaurant, productions, mouvements, rapport) conservent leurs données.
+  Seule la date de génération du rapport change normalement à chaque export.
+- Parité HTTP vérifiée champ par champ pour tous les produits, fournisseurs et
+  recettes/ingrédients du seed, en complément des prévisions/analytics et documents
+  annexes déjà couverts. `lastMade` est une date métier PostgreSQL : le jour initial
+  est conservé, pas l’heure fictive du seed ; l’interface affiche ce jour.
+- Nettoyage des tests d’authentification sécurisé : adresses uniques par exécution
+  et suppression par identifiants réellement créés, sans suppression préalable
+  d’un compte à adresse fixe. Les 13 scénarios existants et le nouveau scénario de
+  reconnexion passent (relances ciblées après correction des assertions de dates).
+  Lint et build API passent. Recherche runtime : plus de tableaux/imports mocks ;
+  localStorage uniquement pour la reprise des anciennes préférences, temporisations
+  limitées au splash, toasts et libération des URLs de téléchargement.
