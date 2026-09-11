@@ -1,5 +1,5 @@
 /* Shared visual language for the three operational workspaces. */
-.workspace-page:is(.stocks-container, .predictions-container, .recipes-container) {
+.workspace-page:is(.stocks-container, .predictions-container, .recipes-container, .analytics-container, .settings-container) {
   --color-primary: #264c39;
   --color-primary-hover: #193d2b;
   --color-primary-text: #30553c;
@@ -100,7 +100,7 @@
   .workspace-page .pred-main { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
-  .workspace-page:is(.stocks-container, .predictions-container, .recipes-container) { padding: 24px 16px 32px; gap: 20px; }
+  .workspace-page:is(.stocks-container, .predictions-container, .recipes-container, .analytics-container, .settings-container) { padding: 24px 16px 32px; gap: 20px; }
   .workspace-summary { padding: 20px; flex-direction: column; align-items: flex-start; gap: 14px; }
   .workspace-summary p { padding: 0; border: 0; font-size: 11px; }
   .workspace-page .card { padding: 20px; }

@@ -12,6 +12,8 @@ import { useAnalytics } from "../hooks";
 import type { AnalyticsSettings } from "../types/callbacks";
 import { useAnalyticsPreferences } from "../features/analytics/useAnalyticsPreferences";
 import "./Analytics.css";
+import "../styles/Workspace.css";
+import "./InsightsSettings.css";
 
 const Analytics: React.FC = () => {
   const { addToast } = useToast();
@@ -54,10 +56,10 @@ const Analytics: React.FC = () => {
 
   if (!data) {
     return (
-      <div className="analytics-container">
+      <div className="analytics-container workspace-page" role="status">
         <header className="page-header glass-header">
           <div>
-            <h1 className="page-title">Analytics & Gaspillage</h1>
+            <h1 className="page-title">Analyses</h1>
             <p className="page-subtitle">Chargement des donnees analytics...</p>
           </div>
         </header>
@@ -69,11 +71,12 @@ const Analytics: React.FC = () => {
     data;
 
   return (
-    <div className="analytics-container">
-      <header className="page-header glass-header">
+    <div className="analytics-container workspace-page">
+      <header className="workspace-header">
         <div>
-          <h1 className="page-title">Analytics & Gaspillage</h1>
-          <p className="page-subtitle">Suivi des performances et du ROI</p>
+          <p className="workspace-eyebrow">COMPRENDRE POUR MIEUX AGIR</p>
+          <h1>Vos progrès, en perspective.</h1>
+          <p className="workspace-subtitle">Suivez les pertes, explorez les tendances et mesurez vos pistes d’amélioration.</p>
         </div>
         <div className="flex gap-sm">
           <Button
@@ -88,10 +91,13 @@ const Analytics: React.FC = () => {
             icon={<Download size={16} />}
             onClick={() => setIsExportModalOpen(true)}
           >
-            Rapport AGEC 2025
+            Exporter un rapport
           </Button>
         </div>
       </header>
+
+      <div className="workspace-summary"><div><span>Votre tableau de suivi</span><strong>Chaque progrès compte.</strong></div><p>Données de démonstration · Les tendances et les simulations illustrent le fonctionnement de votre espace.</p></div>
+      <div className="workspace-section-heading"><h2>Les indicateurs à suivre</h2><span>Gaspillage · Prévisions · Économies</span></div>
 
       <div className="analytics-grid">
         {/* Waste Stats */}

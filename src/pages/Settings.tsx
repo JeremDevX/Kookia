@@ -3,9 +3,12 @@ import Card from "../components/common/Card";
 import Input from "../components/common/Input";
 import Button from "../components/common/Button";
 import IntegrationModal from "../components/settings/IntegrationModal";
-import { Store, Package, Users, Plug, Save, UserRound } from "lucide-react";
+import { Store, Package, Users, Plug, UserRound } from "lucide-react";
+import { Link } from "react-router-dom";
 import AccountSettings from "../features/account/AccountSettings";
 import "./Settings.css";
+import "../styles/Workspace.css";
+import "./InsightsSettings.css";
 
 interface Integration {
   id: string;
@@ -57,26 +60,29 @@ const Settings: React.FC = () => {
   ] as const;
 
   return (
-    <div className="settings-container">
-      <header className="page-header glass-header">
+    <div className="settings-container workspace-page">
+      <header className="workspace-header">
         <div>
-          <h1 className="page-title">Paramètres</h1>
-          <p className="page-subtitle">Gérez vos configuration</p>
+          <p className="workspace-eyebrow">UN ESPACE À VOTRE IMAGE</p>
+          <h1>Les détails qui font la différence.</h1>
+          <p className="workspace-subtitle">Retrouvez les informations de votre restaurant, vos connexions et les réglages de votre compte.</p>
         </div>
-        <Button icon={<Save size={18} />}>Enregistrer</Button>
       </header>
 
       <div className="settings-layout">
         {/* Sidebar Navigation for Settings */}
         <Card className="settings-nav-card">
-          <nav className="settings-nav">
+          <p className="settings-nav-label">VOS PRÉFÉRENCES</p>
+          <nav className="settings-nav" aria-label="Rubriques des paramètres">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                aria-pressed={activeTab === tab.id}
+                aria-controls="settings-panel"
                 className={`nav-tab ${activeTab === tab.id ? "active" : ""}`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                <tab.icon size={18} />
+                <tab.icon size={18} aria-hidden="true" />
                 <span>{tab.label}</span>
               </button>
             ))}
@@ -84,26 +90,31 @@ const Settings: React.FC = () => {
         </Card>
 
         {/* Content Area */}
-        <div className="settings-content">
+        <div className="settings-content" id="settings-panel">
           {activeTab === "restaurant" && (
-            <Card title="Informations Restaurant">
+            <Card title="Votre restaurant">
+              <p className="settings-section-intro">Informations de démonstration. Leur enregistrement n’est pas encore disponible.</p>
               <div className="form-grid">
                 <Input
                   label="Nom du restaurant"
+                  id="restaurant-name"
                   defaultValue="La Pizzeria de Camille"
                 />
                 <div className="grid-2">
-                  <Input label="Type" defaultValue="Pizzeria / Crêperie" />
-                  <Input label="Couverts moyen / jour" defaultValue="350" />
+                  <Input id="restaurant-type" label="Type d’établissement" defaultValue="Pizzeria / Crêperie" />
+                  <Input id="restaurant-covers" label="Couverts moyens par jour" defaultValue="350" />
                 </div>
                 <Input
                   label="Adresse"
+                  id="restaurant-address"
                   defaultValue="12 Rue de Grenoble, 38000 Grenoble"
                 />
                 <div className="grid-2">
-                  <Input label="Téléphone" defaultValue="+33 1 23 45 67 89" />
+                  <Input id="restaurant-phone" label="Téléphone" type="tel" defaultValue="+33 1 23 45 67 89" />
                   <Input
                     label="Email de contact"
+                    id="restaurant-email"
+                    type="email"
                     defaultValue="contact@lapizzeria.fr"
                   />
                 </div>
@@ -115,8 +126,9 @@ const Settings: React.FC = () => {
             <Card title="Gestion des Produits">
               <div className="empty-state">
                 <Package size={48} color="var(--color-border)" />
-                <p>Liste des produits (Mock)</p>
-                <Button size="sm">Ajouter un produit</Button>
+                <h3>Votre catalogue, au même endroit.</h3>
+                <p>Consultez et ajoutez vos produits depuis l’inventaire.</p>
+                <Link to="/stocks" className="btn btn-primary">Ouvrir les stocks</Link>
               </div>
             </Card>
           )}
@@ -125,14 +137,15 @@ const Settings: React.FC = () => {
             <Card title="Fournisseurs">
               <div className="empty-state">
                 <Users size={48} color="var(--color-border)" />
-                <p>Gestion fournisseurs (Mock)</p>
-                <Button size="sm">Ajouter un fournisseur</Button>
+                <h3>Vos partenaires au quotidien.</h3>
+                <p>La gestion des fournisseurs sera disponible dans cet espace.</p>
               </div>
             </Card>
           )}
 
           {activeTab === "integrations" && (
-            <Card title="Intégrations Externes">
+            <Card title="Vos outils connectés">
+              <p className="settings-section-intro">Découvrez les connexions proposées. Ces configurations sont des démonstrations.</p>
               {INTEGRATIONS.map((integration) => (
                 <div key={integration.id} className="integration-item">
                   <div className="int-info">
@@ -148,7 +161,7 @@ const Settings: React.FC = () => {
                     </div>
                     <div>
                       <h4>{integration.name}</h4>
-                      <span className="status connected">Connecté</span>
+                      <span className="integration-demo">Démonstration</span>
                     </div>
                   </div>
                   <Button
