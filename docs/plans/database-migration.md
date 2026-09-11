@@ -264,3 +264,13 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
   absence de seconde validation vérifiés. Stocks relus : Tomates 15 kg (+2),
   Mozzarella 13 kg (+5), Basilic 13 unités (+3), Huile 45 L (+10).
   Aucun effet sur le compte utilisateur initial.
+
+- Export navigateur CSV téléchargé puis relu avec un parseur CSV : 80 lignes
+  métier, période 01→11/09/2026 et mentions de provenance conservées. Présence
+  vérifiée de la production (−0,4 L) et des quatre mouvements de réception.
+  Le fichier téléchargé reste un artefact de test hors dépôt.
+- Lecture du CSV : libellés des prévisions et mouvements améliorés côté rapport
+  avec nom et unité issus du produit lié en base, au lieu d’identifiants seuls.
+  Test HTTP des noms/unités et test de reconnexion passent ; lint/build API passent.
+  Sélection Excel/PDF interrompue par changement de fenêtre navigateur ; leur
+  téléchargement/aperçu et le contrôle d’impression du menu restent ouverts.
