@@ -1,76 +1,77 @@
 .drawer-backdrop {
-  position: var(--css-fixed);
-  top: var(--size-0);
-  left: var(--size-0);
-  width: var(--size-100vw);
-  height: var(--size-100vh);
-  background-color: var(--palette-rgba-0-0-0-0-4);
-  z-index: var(--layer-50);
-  backdrop-filter: var(--drawer-backdrop-backdrop-filter);
-  animation: var(--modal-overlay-animation);
+  position: fixed;
+  top: var(--number-0);
+  left: var(--number-0);
+  width: var(--unit-100vw);
+  height: var(--unit-100vh);
+  background-color: rgba(var(--rgb-palette-neutral-2), var(--number-0_4));
+  z-index: var(--number-50);
+  backdrop-filter: blur(var(--size-2));
+  animation: fadeIn var(--unit-0_25s) ease-out;
 }
 
 .product-drawer {
-  position: var(--css-fixed);
-  top: var(--size-0);
-  right: var(--size-0);
-  width: var(--size-100percent);
-  max-width: var(--size-450px);
-  height: var(--size-100vh);
+  position: fixed;
+  top: var(--number-0);
+  right: var(--number-0);
+  width: var(--unit-100percent);
+  max-width: var(--size-450);
+  height: var(--unit-100vh);
   background-color: var(--color-surface);
-  z-index: var(--layer-51);
-  box-shadow: var(--shadow-xl);
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
-  animation: var(--product-drawer-animation);
+  z-index: var(--number-51);
+  box-shadow: var(--number-0) var(--size-20) var(--spacing-lg) var(--size-negative-6) rgba(var(--rgb-color-info), var(--number-0_1)),
+    var(--number-0) var(--size-10) var(--size-10) var(--size-negative-6) rgba(var(--rgb-color-info), var(--number-0_05));
+  display: flex;
+  flex-direction: column;
+  animation: slideIn var(--unit-0_25s) cubic-bezier(var(--number-0_16), var(--number-1), var(--number-0_3), var(--number-1));
 }
 
 @keyframes slideIn {
   from {
-    transform: var(--from-transform-5);
+    transform: translateX(var(--unit-100percent));
   }
   to {
-    transform: var(--to-transform-6);
+    transform: translateX(var(--number-0));
   }
 }
 
 @keyframes fadeIn {
   from {
-    opacity: var(--opacity-0);
+    opacity: var(--number-0);
   }
   to {
-    opacity: var(--opacity-1);
+    opacity: var(--number-1);
   }
 }
 
 .drawer-header {
   padding: var(--spacing-xl);
-  border-bottom: var(--border-bottom-1px) var(--css-solid) var(--color-border);
-  display: var(--css-flex);
-  justify-content: var(--css-space-between);
-  align-items: var(--css-flex-start);
+  border-bottom: var(--size-1) solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .drawer-subtitle {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  text-transform: var(--css-uppercase);
-  letter-spacing: var(--letter-spacing-0-5px);
+  text-transform: uppercase;
+  letter-spacing: var(--size-0_5);
 }
 
 .drawer-title {
-  margin: var(--drawer-title-margin);
+  margin: var(--spacing-xs) var(--number-0) var(--number-0) var(--number-0);
   font-size: var(--font-size-2xl);
 }
 
 .close-btn {
-  background: var(--css-none);
-  border: var(--css-none);
-  cursor: var(--css-pointer);
+  background: none;
+  border: none;
+  cursor: pointer;
   color: var(--color-text-secondary);
   padding: var(--spacing-xs);
   border-radius: var(--radius-full);
-  transition: var(--close-btn-transition);
+  transition: background-color var(--unit-0_25s);
 }
 .close-btn:hover {
   background-color: var(--color-bg);
@@ -78,35 +79,35 @@
 }
 
 .drawer-content {
-  flex: var(--flex-1);
-  overflow-y: var(--css-auto);
+  flex: var(--number-1);
+  overflow-y: auto;
   padding: var(--spacing-xl);
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-2xl);
 }
 
 .drawer-section {
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-md);
 }
 
 .section-heading {
-  display: var(--css-flex);
-  align-items: var(--css-center);
+  display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   color: var(--color-text-primary);
-  margin: var(--spacing-0);
-  border-bottom: var(--border-bottom-1px) var(--css-solid) var(--color-border);
+  margin: var(--number-0);
+  border-bottom: var(--size-1) solid var(--color-border);
   padding-bottom: var(--spacing-sm);
 }
 
 .status-banner {
-  display: var(--css-flex);
-  justify-content: var(--css-space-between);
-  align-items: var(--css-center);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   background-color: var(--color-bg);
   padding: var(--spacing-lg);
   border-radius: var(--radius-md);
@@ -118,20 +119,20 @@
   color: var(--color-text-primary);
 }
 .stock-big .unit {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   color: var(--color-text-secondary);
   font-weight: var(--font-weight-regular);
 }
 
 .info-grid {
-  display: var(--css-grid);
-  grid-template-columns: var(--dashboard-container-rec-details-grid-template-columns);
+  display: grid;
+  grid-template-columns: var(--unit-1fr) var(--unit-1fr);
   gap: var(--spacing-md);
 }
 
 .info-item {
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-xs);
 }
 .info-item .label {
@@ -144,29 +145,29 @@
 }
 
 .supplier-card {
-  border: var(--border-1px) var(--css-solid) var(--color-border);
+  border: var(--size-1) solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
-  display: var(--css-flex);
-  justify-content: var(--css-space-between);
-  align-items: var(--css-center);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 .supplier-name {
   font-weight: var(--font-weight-semibold);
 }
 .supplier-actions {
-  display: var(--css-flex);
+  display: flex;
   gap: var(--spacing-sm);
 }
 
 .history-list {
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-sm);
 }
 .history-item {
-  display: var(--css-flex);
-  justify-content: var(--css-space-between);
+  display: flex;
+  justify-content: space-between;
   padding: var(--spacing-sm);
   background-color: var(--color-bg);
   border-radius: var(--radius-sm);
@@ -178,47 +179,47 @@
 
 .drawer-footer {
   padding: var(--spacing-lg);
-  border-top: var(--border-top-1px) var(--css-solid) var(--color-border);
+  border-top: var(--size-1) solid var(--color-border);
   background-color: var(--color-surface);
-  display: var(--css-flex);
-  justify-content: var(--css-space-between);
+  display: flex;
+  justify-content: space-between;
 }
 
 /* Lost Sales Section */
 .lost-sales-section {
-  background-color: var(--palette-fff1f2); /* Light red/rose background */
-  padding: var(--spacing-1rem);
-  border-radius: var(--radius-8px);
-  border: var(--lost-sales-section-border);
+  background-color: var(--color-surface); /* Light red/rose background */
+  padding: var(--unit-1rem);
+  border-radius: var(--radius-compact);
+  border: var(--size-1) solid var(--palette-rose-2);
 }
 
 .lost-sales-section .section-heading {
-  color: var(--palette-be123c); /* Darker red */
-  border-bottom-color: var(--palette-fecdd3);
+  color: var(--palette-rose-10); /* Darker red */
+  border-bottom-color: var(--palette-rose-2);
 }
 
 .lost-sales-form .description {
   font-size: var(--font-size-sm);
-  color: var(--palette-881337);
-  margin-bottom: var(--spacing-0-75rem);
-  line-height: var(--line-height-1-4);
+  color: var(--palette-rose-11);
+  margin-bottom: var(--unit-0_75rem);
+  line-height: var(--number-1_4);
 }
 
 .lost-sales-form .action-row {
-  display: var(--css-flex);
+  display: flex;
   gap: var(--spacing-sm);
 }
 
 .lost-sales-input {
-  width: var(--size-80px);
-  padding: var(--lost-sales-input-padding);
-  border: var(--lost-sales-input-border);
+  width: var(--size-80);
+  padding: var(--size-6) var(--size-12);
+  border: var(--size-1) solid var(--palette-rose-5);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-sm);
 }
 
 .lost-sales-input:focus {
-  outline: var(--css-none);
-  border-color: var(--palette-e11d48);
-  box-shadow: var(--lost-sales-input-focus-box-shadow);
+  outline: none;
+  border-color: var(--palette-rose-8);
+  box-shadow: var(--number-0) var(--number-0) var(--number-0) var(--size-2) rgba(var(--rgb-palette-rose-8), var(--number-0_2));
 }

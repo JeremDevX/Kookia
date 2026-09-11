@@ -39,6 +39,10 @@ export function auditCss(files) {
   }
 
   const dependencies = new Map([...definitions.keys()].map((name) => [name, new Set()]));
+  const keyframes = new Set();
+  for (const root of roots.values()) {
+    root.walkAtRules(/^(?:-webkit-)?keyframes$/, (rule) => keyframes.add(rule.params));
+  }
   for (const [file, root] of roots) {
     root.walkDecls((decl) => {
       const custom = decl.prop.startsWith("--");
@@ -48,7 +52,7 @@ export function auditCss(files) {
       } else if (custom && !definitions.has(decl.prop)) {
         report(file, decl, `Variable sans définition globale : ${decl.prop}`);
       }
-      const { references, literals, errors } = inspectValue(decl.value);
+      const { references, literals, errors, hasNativeValue } = inspectValue(decl.value, { property: decl.prop, keyframes });
       for (const error of errors) report(file, decl, error);
       if (globalDefinition && cssWideKeywords.has(decl.value.trim().toLowerCase())) {
         report(file, decl, "Un mot-clé CSS global doit rester sur la déclaration, pas dans une variable.");
@@ -59,7 +63,7 @@ export function auditCss(files) {
       }
       if (!globalDefinition && literals.length) {
         report(file, decl, `${decl.prop} : valeur(s) en dur ${[...new Set(literals)].join(", ")}`);
-      } else if (!globalDefinition && !references.size && !cssWideKeywords.has(decl.value.trim().toLowerCase())) {
+      } else if (!globalDefinition && !references.size && !hasNativeValue && !cssWideKeywords.has(decl.value.trim().toLowerCase())) {
         report(file, decl, `${decl.prop} : utiliser une valeur globale avec var().`);
       }
     });

@@ -1,47 +1,47 @@
 .account-settings {
-  display: var(--css-grid);
+  display: grid;
   gap: var(--spacing-lg);
-  min-width: var(--size-0);
+  min-width: var(--number-0);
 }
 
 .account-settings .card {
-  min-width: var(--size-0);
+  min-width: var(--number-0);
 }
 
 .account-form {
-  display: var(--css-grid);
-  grid-template-columns: var(--dashboard-container-recommendations-list-grid-template-columns);
-  align-items: var(--css-start);
-  gap: var(--spacing-22px);
+  display: grid;
+  grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr)));
+  align-items: start;
+  gap: var(--spacing-lg);
 }
 
 .account-form .input-wrapper {
-  min-width: var(--size-0);
-  width: var(--size-100percent);
+  min-width: var(--number-0);
+  width: var(--unit-100percent);
 }
 
 .account-help,
 .account-field-full,
 .account-form > .btn {
-  grid-column: var(--dashboard-container-recommendations-empty-grid-column);
+  grid-column: var(--number-1) / var(--number-negative-1);
 }
 
 .account-help {
-  display: var(--css-flex);
-  align-items: var(--css-flex-start);
+  display: flex;
+  align-items: flex-start;
   gap: var(--spacing-sm);
-  margin: var(--spacing-0);
+  margin: var(--number-0);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
 .account-help svg {
-  flex-shrink: var(--flex-shrink-0);
-  margin-top: var(--spacing-3px);
+  flex-shrink: var(--number-0);
+  margin-top: var(--spacing-xs);
 }
 
 .account-form > .btn {
-  justify-self: var(--css-end);
+  justify-self: end;
 }
 
 .account-form .input-field[readonly] {
@@ -50,52 +50,52 @@
 }
 
 .danger-zone {
-  display: var(--css-flex);
-  flex-wrap: var(--css-wrap);
-  align-items: var(--css-center);
-  justify-content: var(--css-space-between);
-  gap: var(--spacing-20px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-20);
 }
 
 .danger-zone > div {
-  flex: var(--danger-zone-div-flex);
-  min-width: var(--size-0);
+  flex: var(--number-1) var(--number-1) var(--size-260);
+  min-width: var(--number-0);
 }
 
 .danger-zone p {
-  margin-top: var(--spacing-6px);
+  margin-top: var(--size-6);
   color: var(--color-text-secondary);
 }
 
 .danger-zone > .btn {
-  flex-shrink: var(--flex-shrink-0);
+  flex-shrink: var(--number-0);
 }
 
 .account-modal-actions {
-  display: var(--css-flex);
-  flex-wrap: var(--css-wrap);
-  justify-content: var(--css-flex-end);
-  gap: var(--spacing-12px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--size-12);
   margin-top: var(--spacing-lg);
 }
 
 @media (--media-compact) {
   .account-form {
-    grid-template-columns: var(--account-form-grid-template-columns);
-    gap: var(--spacing-18px);
+    grid-template-columns: minmax(var(--number-0), var(--unit-1fr));
+    gap: var(--size-20);
   }
 
   .account-form > .btn,
   .danger-zone > .btn {
-    width: var(--size-100percent);
-    white-space: var(--css-normal);
+    width: var(--unit-100percent);
+    white-space: normal;
   }
 
   .danger-zone > div {
-    flex-basis: var(--size-100percent);
+    flex-basis: var(--unit-100percent);
   }
 
   .account-modal-actions {
-    flex-direction: var(--css-column-reverse);
+    flex-direction: column-reverse;
   }
 }

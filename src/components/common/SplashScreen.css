@@ -1,96 +1,96 @@
 .splash-screen {
-  position: var(--css-fixed);
-  inset: var(--size-0);
-  display: var(--css-grid);
-  place-items: var(--css-center);
-  z-index: var(--layer-9999);
-  padding: var(--splash-screen-padding);
-  background: var(--splash-screen-background);
-  opacity: var(--opacity-1);
-  transition: var(--splash-screen-transition);
-  overflow: var(--css-hidden);
+  position: fixed;
+  inset: var(--number-0);
+  display: grid;
+  place-items: center;
+  z-index: var(--number-9999);
+  padding: var(--spacing-xl) var(--spacing-lg) var(--size-80);
+  background: radial-gradient(ellipse at var(--unit-50percent) var(--unit-42percent), var(--color-bg) var(--unit-0percent), var(--color-teal-light) var(--unit-48percent), var(--color-surface-active) var(--unit-100percent));
+  opacity: var(--number-1);
+  transition: opacity var(--unit-0_4s) ease;
+  overflow: hidden;
 }
 
 .splash-screen::before,
 .splash-screen::after {
-  content: var(--splash-screen-before-content);
-  position: var(--css-absolute);
-  width: var(--splash-screen-before-width);
-  aspect-ratio: var(--aspect-ratio-1);
-  border: var(--splash-screen-before-border);
-  border-radius: var(--radius-50percent);
-  pointer-events: var(--css-none);
+  content: var(--content-empty);
+  position: absolute;
+  width: min(var(--unit-115vw), var(--size-700));
+  aspect-ratio: var(--number-1);
+  border: var(--size-1) solid rgba(var(--rgb-palette-sage-10), var(--number-0_1));
+  border-radius: var(--unit-50percent);
+  pointer-events: none;
 }
 
 .splash-screen::before {
-  box-shadow: var(--splash-screen-before-box-shadow);
-  animation: var(--splash-screen-before-animation);
+  box-shadow: var(--number-0) var(--number-0) var(--number-0) var(--spacing-2xl) rgba(var(--rgb-palette-sage-10), var(--number-0_02)), var(--number-0) var(--number-0) var(--number-0) var(--size-96) rgba(var(--rgb-palette-sage-10), var(--number-0_02));
+  animation: splash-breathe var(--unit-3s) ease-in-out infinite alternate;
 }
 
-.splash-screen::after { width: var(--splash-screen-after-width); border-style: var(--css-dashed); opacity: var(--opacity-6); }
-.splash-screen.fade-out { opacity: var(--opacity-0); pointer-events: var(--css-none); }
+.splash-screen::after { width: min(var(--unit-90vw), var(--size-540)); border-style: dashed; opacity: var(--number-0_6); }
+.splash-screen.fade-out { opacity: var(--number-0); pointer-events: none; }
 
 .splash-content {
-  position: var(--css-relative);
-  z-index: var(--layer-1);
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
-  align-items: var(--css-center);
-  text-align: var(--css-center);
-  animation: var(--splash-content-animation);
+  position: relative;
+  z-index: var(--number-1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: splash-appear var(--unit-0_7s) ease both;
 }
 
 .splash-emblem {
-  position: var(--css-relative);
-  display: var(--css-grid);
-  place-items: var(--css-center);
-  width: var(--size-76px);
-  height: var(--size-76px);
-  margin-bottom: var(--spacing-26px);
-  border: var(--splash-emblem-border);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--size-76);
+  height: var(--size-76);
+  margin-bottom: var(--size-28);
+  border: var(--size-1) solid var(--color-surface);
   border-radius: var(--radius-xl);
-  background: var(--splash-emblem-background);
-  color: var(--palette-49663c);
-  box-shadow: var(--splash-emblem-box-shadow);
+  background: linear-gradient(var(--unit-145deg), var(--color-surface), var(--color-surface-active));
+  color: var(--palette-sage-11);
+  box-shadow: var(--number-0) var(--size-12) var(--spacing-xl) rgba(var(--rgb-color-primary), var(--number-0_05)), inset var(--number-0) var(--number-0) var(--number-0) var(--size-6) rgba(var(--rgb-color-surface), var(--number-0_4));
 }
 
 .splash-emblem::after {
-  content: var(--splash-screen-before-content);
-  position: var(--css-absolute);
-  inset: var(--size-negative-9px);
-  border: var(--splash-emblem-after-border);
-  border-top-color: var(--palette-668154);
-  border-radius: var(--radius-50percent);
-  animation: var(--splash-emblem-after-animation);
+  content: var(--content-empty);
+  position: absolute;
+  inset: var(--size-negative-10);
+  border: var(--size-1) solid rgba(var(--rgb-palette-sage-10), var(--number-0_15));
+  border-top-color: var(--palette-sage-10);
+  border-radius: var(--unit-50percent);
+  animation: splash-orbit var(--unit-4s) linear infinite;
 }
 
-.splash-emblem svg { width: var(--size-34px); height: var(--size-34px); }
-.splash-eyebrow { color: var(--palette-69795d); font-size: var(--font-size-0-75rem); font-weight: var(--font-weight-semibold); letter-spacing: var(--letter-spacing-24em); margin-bottom: var(--spacing-lg); }
-.splash-logo { width: var(--splash-logo-width); max-width: var(--size-100percent); height: var(--css-auto); filter: var(--splash-logo-filter); }
-.splash-tagline { margin-top: var(--spacing-lg); color: var(--palette-38513d); font-size: var(--splash-tagline-font-size); font-weight: var(--font-weight-medium); letter-spacing: var(--letter-spacing-negative-035em); line-height: var(--line-height-1-5); }
-.splash-tagline span { color: var(--palette-728064); font-weight: var(--font-weight-regular); }
-.splash-loading { width: var(--size-144px); height: var(--size-4px); border-radius: var(--radius-8px); background: var(--palette-dce4cf); margin-top: var(--spacing-30px); overflow: var(--css-hidden); }
-.splash-loading span { display: var(--css-block); width: var(--size-45percent); height: var(--size-100percent); background: var(--splash-loading-span-background); border-radius: inherit; animation: var(--splash-loading-span-animation); }
-.splash-caption { margin-top: var(--spacing-14px); font-size: var(--font-size-xs); letter-spacing: var(--letter-spacing-025em); color: var(--palette-637256); }
-.splash-footer { position: var(--css-absolute); bottom: var(--splash-footer-bottom); padding: var(--splash-footer-padding); color: var(--palette-69795d); text-align: var(--css-center); font-size: var(--font-size-xs); }
+.splash-emblem svg { width: var(--size-36); height: var(--size-36); }
+.splash-eyebrow { color: var(--color-text-muted); font-size: var(--font-size-caption); font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-0_25); margin-bottom: var(--spacing-lg); }
+.splash-logo { width: clamp(var(--size-220), var(--unit-36vw), var(--size-320)); max-width: var(--unit-100percent); height: auto; filter: drop-shadow(var(--number-0) var(--spacing-xs) var(--size-12) rgba(var(--rgb-color-primary), var(--number-0_02))); }
+.splash-tagline { margin-top: var(--spacing-lg); color: var(--color-primary); font-size: clamp(var(--font-size-xl), var(--unit-3vw), var(--font-size-2xl)); font-weight: var(--font-weight-medium); letter-spacing: var(--tracking-negative-0_04); line-height: var(--number-1_5); }
+.splash-tagline span { color: var(--color-text-muted); font-weight: var(--font-weight-regular); }
+.splash-loading { width: var(--size-144); height: var(--spacing-xs); border-radius: var(--radius-compact); background: var(--color-border); margin-top: var(--spacing-xl); overflow: hidden; }
+.splash-loading span { display: block; width: var(--unit-45percent); height: var(--unit-100percent); background: linear-gradient(var(--unit-90deg), var(--palette-sage-7), var(--palette-sage-11), var(--palette-sage-7)); border-radius: inherit; animation: splash-loading var(--unit-1_6s) ease-in-out infinite; }
+.splash-caption { margin-top: var(--spacing-md); font-size: var(--font-size-xs); letter-spacing: var(--tracking-0_02); color: var(--color-text-muted); }
+.splash-footer { position: absolute; bottom: max(var(--size-28), env(safe-area-inset-bottom)); padding: var(--number-0) var(--size-20); color: var(--color-text-muted); text-align: center; font-size: var(--font-size-xs); }
 
-@keyframes splash-appear { from { opacity: var(--opacity-0); transform: var(--from-transform-2); } to { opacity: var(--opacity-1); transform: var(--to-transform-2); } }
-@keyframes splash-loading { from { transform: var(--from-transform-3); } to { transform: var(--to-transform-3); } }
-@keyframes splash-orbit { to { transform: var(--to-transform-4); } }
-@keyframes splash-breathe { from { transform: var(--from-transform-4); opacity: var(--opacity-5); } to { transform: var(--to-transform-5); opacity: var(--opacity-1); } }
+@keyframes splash-appear { from { opacity: var(--number-0); transform: translateY(var(--size-12)); } to { opacity: var(--number-1); transform: translateY(var(--number-0)); } }
+@keyframes splash-loading { from { transform: translateX(var(--unit-negative-105percent)); } to { transform: translateX(var(--unit-325percent)); } }
+@keyframes splash-orbit { to { transform: rotate(var(--unit-360deg)); } }
+@keyframes splash-breathe { from { transform: scale(var(--number-0_96)); opacity: var(--number-0_5); } to { transform: scale(var(--number-1_04)); opacity: var(--number-1); } }
 
 @media (--media-reduced-motion) {
-  .splash-screen { transition: var(--css-none); }
-  .splash-content, .splash-loading span, .splash-emblem::after, .splash-screen::before { animation: var(--css-none); }
-  .splash-loading span { width: var(--size-100percent); }
+  .splash-screen { transition: none; }
+  .splash-content, .splash-loading span, .splash-emblem::after, .splash-screen::before { animation: none; }
+  .splash-loading span { width: var(--unit-100percent); }
 }
 
 @media (--media-short-viewport) {
-  .splash-screen { padding-block: var(--splash-screen-padding-block); }
-  .splash-emblem { width: var(--size-52px); height: var(--size-52px); margin-bottom: var(--spacing-20px); border-radius: var(--radius-18px); }
-  .splash-emblem svg { width: var(--size-28px); height: var(--size-28px); }
+  .splash-screen { padding-block: var(--spacing-md) var(--spacing-2xl); }
+  .splash-emblem { width: var(--size-52); height: var(--size-52); margin-bottom: var(--size-20); border-radius: var(--radius-panel); }
+  .splash-emblem svg { width: var(--size-28); height: var(--size-28); }
   .splash-eyebrow { margin-bottom: var(--spacing-md); }
-  .splash-logo { width: var(--size-220px); }
+  .splash-logo { width: var(--size-220); }
   .splash-tagline, .splash-loading { margin-top: var(--spacing-md); }
-  .splash-footer { bottom: var(--size-12px); }
+  .splash-footer { bottom: var(--size-12); }
 }

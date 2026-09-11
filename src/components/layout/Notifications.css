@@ -1,20 +1,20 @@
 .notification-item:hover {
-  transform: var(--notification-item-hover-transform);
-  box-shadow: var(--notification-item-hover-box-shadow) !important;
+  transform: translateY(var(--size-negative-2));
+  box-shadow: var(--number-0) var(--size-6) var(--size-20) rgba(var(--rgb-palette-neutral-2), var(--number-0_1)) !important;
 }
 
 .notification-item:focus-visible {
-  transform: var(--notification-item-hover-transform);
-  box-shadow: var(--notification-item-hover-box-shadow) !important;
+  transform: translateY(var(--size-negative-2));
+  box-shadow: var(--number-0) var(--size-6) var(--size-20) rgba(var(--rgb-palette-neutral-2), var(--number-0_1)) !important;
 }
 
 .notification-action-button:hover,
 .notification-action-button:focus-visible {
-  background: var(--palette-rgba-0-199-150-0-08) !important;
+  background: rgba(var(--rgb-palette-teal-1), var(--number-0_1)) !important;
 }
 
 .notification-generate-button:hover,
 .notification-generate-button:focus-visible {
-  transform: var(--notification-generate-button-hover-transform);
-  box-shadow: var(--notification-generate-button-hover-box-shadow) !important;
+  transform: translateY(var(--size-negative-1));
+  box-shadow: var(--number-0) var(--size-6) var(--spacing-md) rgba(var(--rgb-color-info), var(--number-0_4)) !important;
 }

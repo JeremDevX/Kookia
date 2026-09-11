@@ -28,7 +28,7 @@ async function main() {
     console.error(`\n${issues.length} problème(s) CSS. Définir/réutiliser les variables de src/styles/index.css.`);
     process.exitCode = 1;
   } else {
-    console.log(`CSS OK — ${files.size} fichiers contrôlés, valeurs et médias centralisés dans src/styles/index.css.`);
+    console.log(`CSS OK — ${files.size} fichiers contrôlés, valeurs visuelles et médias centralisés dans src/styles/index.css.`);
   }
 }
 

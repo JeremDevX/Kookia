@@ -80,19 +80,30 @@ de 15 à 20 points par sprint de deux semaines, hors moteur IA.
 ### Valeurs CSS centralisées
 
 [`src/styles/index.css`](../src/styles/index.css) est le catalogue unique des
-valeurs CSS : couleurs, typographie (base `1rem`, soit 16 px par défaut),
-dimensions, espacements, dispositions, transitions et compositions. Les alias
-de thème du Dashboard et des workspaces restent dans ce fichier, avec leur
-sélecteur d'origine pour préserver leur portée. Les règles globales sont
+valeurs visuelles : palette partagée, typographie (base `1rem`, soit 16 px par
+défaut), dimensions, espacements, rayons et durées. Les variantes de thème encore
+nécessaires au Dashboard restent dans ce fichier, avec leur sélecteur d'origine.
+Les anciennes redéfinitions identiques des workspaces ont été supprimées.
+Les règles globales sont
 réparties dans `Base.css`, `Utilities.css`, `Components.css` et `CommonPage.css`,
 importés par le catalogue ; les règles des composants restent près du composant.
 
-Avant d'ajouter une valeur, réutiliser une variable existante du bon rôle
-(typographie, espacement, rayon, etc.). Sinon, la définir dans un bloc `:root`
-de `index.css`, puis utiliser `var(--nom)` dans la déclaration. Les compositions
-de variables et fonctions CSS sont autorisées, mais leurs paramètres constants
-doivent également venir du catalogue. Ne pas redéfinir de variable dans une
-feuille locale, ni ajouter de fallback littéral dans `var()`.
+Avant d'ajouter une valeur, réutiliser l'échelle existante, notamment pour les
+teintes voisines, les tailles de texte, les espacements et les rayons. Éviter les
+tokens propres à un seul sélecteur : composer les variables communes dans les
+feuilles locales, par exemple `border: var(--size-1) solid var(--color-border)`.
+Les canaux `--rgb-*` servent aux transparences via `rgba()` sans multiplier les
+couleurs pour chaque opacité. Ajouter une variable dans `:root` de `index.css`
+uniquement si les réglages existants ne conviennent pas. Ne pas redéfinir de
+variable dans une feuille locale, ni ajouter de fallback visuel littéral dans
+`var()`.
+
+Les mots-clés structurels restent en CSS natif : `display: flex`, `width: auto`,
+`border-style: solid`, etc. Le contrôleur les autorise via une liste explicite
+dans [`scripts/css-keywords.mjs`](../scripts/css-keywords.mjs), ainsi que les
+noms d'animations déclarées dans les propriétés d'animation. Les couleurs nommées
+(`red`, `white`…), dimensions, nombres et chaînes restent contrôlés : une valeur
+arbitraire n'est pas acceptée simplement parce que c'est un identifiant CSS.
 
 Les conditions responsive et de mouvement réduit sont des `@custom-media`
 définis dans `index.css`. Utiliser par exemple `@media (--media-mobile)` dans
@@ -119,7 +130,7 @@ artefacts générés (`dist`, `coverage`) et dossiers d'outillage (`.git`, `.age
 valeurs en dur, variables inconnues/locales, cycles, doublons globaux, médias
 non centralisés et syntaxes non prises en charge. Il vérifie aussi les règles
 ordinaires placées dans `index.css` : seuls les tokens globaux peuvent contenir
-des valeurs littérales. Ce contrôle porte sur les feuilles CSS, pas sur les
+des valeurs visuelles littérales. Ce contrôle porte sur les feuilles CSS, pas sur les
 styles inline TSX ou les attributs SVG.
 
 Le contrôle est intégré à `npm run lint`, donc à la CI existante ; ses tests

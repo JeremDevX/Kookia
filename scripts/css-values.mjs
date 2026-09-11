@@ -1,4 +1,5 @@
 import valueParser from "postcss-value-parser";
+import { cssKeywords } from "./css-keywords.mjs";
 
 // CSS-wide keywords act on the declaration itself; putting them in a custom
 // property changes their meaning (e.g. --x: inherit does not store "inherit").
@@ -6,12 +7,13 @@ export const cssWideKeywords = new Set([
   "inherit", "initial", "unset", "revert", "revert-layer",
 ]);
 
-export function inspectValue(value) {
+export function inspectValue(value, { property = "", keyframes = new Set() } = {}) {
   const references = new Set();
   const literals = [];
   const errors = [];
+  let hasNativeValue = false;
   if (cssWideKeywords.has(value.trim().toLowerCase())) {
-    return { references, literals, errors };
+    return { references, literals, errors, hasNativeValue };
   }
 
   function visit(nodes) {
@@ -33,8 +35,13 @@ export function inspectValue(value) {
           errors.push("syntaxe var() invalide");
         }
         visit(fallback);
-      } else if (node.type === "word" && !["+", "-", "*"].includes(node.value)) {
-        literals.push(node.value);
+      } else if (node.type === "word" && !["+", "-", "*", "/"].includes(node.value)) {
+        if (cssKeywords.has(node.value) ||
+          (["animation", "animation-name"].includes(property) && keyframes.has(node.value))) {
+          hasNativeValue = true;
+        } else {
+          literals.push(node.value);
+        }
       } else if (node.type === "string") {
         literals.push(valueParser.stringify(node));
       }
@@ -42,5 +49,5 @@ export function inspectValue(value) {
   }
 
   visit(valueParser(value).nodes);
-  return { references, literals, errors };
+  return { references, literals, errors, hasNativeValue };
 }

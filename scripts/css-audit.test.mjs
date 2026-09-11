@@ -20,7 +20,7 @@ test("accepts global tokens, compositions, CSS-wide keywords and media aliases",
   assert.deepEqual(audit(`
     /* 123px in a comment is not a declaration. */
     .card { padding: var(--space); border: var(--space) var(--solid) var(--ink);
-      width: calc(var(--space) + var(--space)); font: inherit; }
+      width: calc((var(--space) + var(--space)) / var(--space)); font: inherit; }
     @media (--compact) { .card { padding: var(--zero); } }
     @keyframes reveal { 50% { opacity: var(--zero); } }
   `), []);
@@ -32,11 +32,11 @@ test("accepts scoped aliases only inside the global catalogue", () => {
 });
 
 for (const value of [
-  "16px", "0", "-1.2rem", "1e2px", "50%", "#fff", "red", "flex",
+  "16px", "0", "-1.2rem", "1e2px", "50%", "#fff", "red", "white",
   '"content"', "rgba(0, 0, 0, .5)", "calc(var(--space) + 2px)",
   "var(--space, 12px)", "var(--space, var(--ink, red))",
   "var(--space) /* gap */ 2px", "linear-gradient(var(--ink), blue)",
-  'url("/asset.svg")', "env(safe-area-inset-bottom)",
+  'url("/asset.svg")', "env(safe-area-inset-bottom, 12px)",
 ]) {
   test(`reports literal value ${value}`, () => {
     const issues = audit(`.card { padding: ${value}; }`);
@@ -46,6 +46,17 @@ for (const value of [
     assert.equal(issues[0].column, 9);
   });
 }
+
+test("allows native structure, but not arbitrary identifiers or undefined animations", () => {
+  assert.deepEqual(audit(`
+    .card { display: flex; position: relative; width: auto; border-style: solid;
+      grid-template-columns: repeat(auto-fit, minmax(var(--space), var(--space)));
+      padding: env(safe-area-inset-bottom); animation: reveal var(--zero) ease; }
+    @keyframes reveal { from { opacity: var(--zero); } }
+  `), []);
+  assert.match(audit(".card { animation: missing var(--zero); }")[0].message, /en dur/);
+  assert.match(audit(".card { color: reveal; } @keyframes reveal {}")[0].message, /en dur/);
+});
 
 test("checks definitions, fallbacks and unknown references, including globals", () => {
   assert.match(audit(".card { --local: var(--space); }")[0].message, /Déplacer/);

@@ -1,8 +1,8 @@
 /* Reset & Base */
 * {
-  box-sizing: var(--css-border-box);
-  margin: var(--spacing-0);
-  padding: var(--spacing-0);
+  box-sizing: border-box;
+  margin: var(--number-0);
+  padding: var(--number-0);
 }
 
 body {
@@ -10,9 +10,9 @@ body {
   font-family: var(--font-family);
   background-color: var(--color-bg);
   color: var(--color-text-primary);
-  line-height: var(--line-height-1-5);
-  -webkit-font-smoothing: var(--css-antialiased);
-  -moz-osx-font-smoothing: var(--css-grayscale);
+  line-height: var(--number-1_5);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Typography */
@@ -24,8 +24,8 @@ h5,
 h6 {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-negative-0-02em);
-  line-height: var(--line-height-1-2);
+  letter-spacing: var(--tracking-negative-0_02);
+  line-height: var(--number-1_2);
 }
 
 h1 {
@@ -38,13 +38,13 @@ h3 {
   font-size: var(--font-size-xl);
 }
 h4 {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
 }
 
 a {
   color: var(--color-primary);
-  text-decoration: var(--css-none);
-  transition: var(--css-color) var(--transition-fast);
+  text-decoration: none;
+  transition: color var(--unit-0_15s) ease;
 }
 
 a:hover {
@@ -52,8 +52,8 @@ a:hover {
 }
 
 button {
-  cursor: var(--css-pointer);
+  cursor: pointer;
   font-family: inherit;
-  border: var(--css-none);
-  background: var(--css-none);
+  border: none;
+  background: none;
 }

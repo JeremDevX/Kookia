@@ -31,58 +31,58 @@
 
 /* Text shadow for improved readability on light backgrounds */
 .text-shadow-subtle {
-  text-shadow: var(--text-shadow-subtle-text-shadow);
+  text-shadow: var(--number-0) var(--size-1) var(--size-2) rgba(var(--rgb-color-info), var(--number-0_1));
 }
 
 .text-shadow-card {
-  text-shadow: var(--text-shadow-card-text-shadow);
+  text-shadow: var(--number-0) var(--size-1) var(--size-1) rgba(var(--rgb-color-info), var(--number-0_05));
 }
 
 .bg-primary {
   background-color: var(--color-primary);
-  color: var(--css-white);
+  color: var(--color-surface);
 }
 .bg-urgent {
   background-color: var(--color-urgent);
-  color: var(--css-white);
+  color: var(--color-surface);
 }
 .bg-moderate {
   background-color: var(--color-moderate);
-  color: var(--css-white);
+  color: var(--color-surface);
 }
 .bg-optimal {
   background-color: var(--color-optimal);
-  color: var(--css-white);
+  color: var(--color-surface);
 }
 
 /* Flexbox */
 .flex {
-  display: var(--css-flex);
+  display: flex;
 }
 .flex-col {
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
+  display: flex;
+  flex-direction: column;
 }
 .flex-wrap {
-  flex-wrap: var(--css-wrap);
+  flex-wrap: wrap;
 }
 .items-center {
-  align-items: var(--css-center);
+  align-items: center;
 }
 .items-start {
-  align-items: var(--css-flex-start);
+  align-items: flex-start;
 }
 .justify-between {
-  justify-content: var(--css-space-between);
+  justify-content: space-between;
 }
 .justify-center {
-  justify-content: var(--css-center);
+  justify-content: center;
 }
 .justify-end {
-  justify-content: var(--css-flex-end);
+  justify-content: flex-end;
 }
 .flex-1 {
-  flex: var(--flex-1);
+  flex: var(--number-1);
 }
 
 .gap-xs {
@@ -110,7 +110,7 @@
 }
 
 .m-0 {
-  margin: var(--spacing-0);
+  margin: var(--number-0);
 }
 .mt-sm {
   margin-top: var(--spacing-sm);
@@ -124,15 +124,15 @@
 
 /* Sizing */
 .w-full {
-  width: var(--size-100percent);
+  width: var(--unit-100percent);
 }
 .h-full {
-  height: var(--size-100percent);
+  height: var(--unit-100percent);
 }
 
 /* Layout Containers */
 .container {
-  max-width: var(--size-1200px);
-  margin: var(--container-margin);
-  padding: var(--spacing-0) var(--spacing-md);
+  max-width: var(--size-1200);
+  margin: var(--number-0) auto;
+  padding: var(--number-0) var(--spacing-md);
 }

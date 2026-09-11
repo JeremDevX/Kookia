@@ -1,67 +1,68 @@
 .modal-overlay {
-  position: var(--css-fixed);
-  top: var(--size-0);
-  left: var(--size-0);
-  right: var(--size-0);
-  bottom: var(--size-0);
-  background-color: var(--palette-rgba-0-0-0-0-5);
-  backdrop-filter: var(--modal-overlay-backdrop-filter);
-  display: var(--css-flex);
-  align-items: var(--css-center);
-  justify-content: var(--css-center);
-  z-index: var(--layer-50);
-  animation: var(--modal-overlay-animation);
+  position: fixed;
+  top: var(--number-0);
+  left: var(--number-0);
+  right: var(--number-0);
+  bottom: var(--number-0);
+  background-color: rgba(var(--rgb-palette-neutral-2), var(--number-0_5));
+  backdrop-filter: blur(var(--spacing-xs));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--number-50);
+  animation: fadeIn var(--unit-0_25s) ease-out;
 }
 
 .modal-container {
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
-  max-height: var(--size-90vh);
-  border: var(--border-1px) var(--css-solid) var(--color-border);
+  box-shadow: var(--number-0) var(--size-20) var(--spacing-lg) var(--size-negative-6) rgba(var(--rgb-color-info), var(--number-0_1)),
+    var(--number-0) var(--size-10) var(--size-10) var(--size-negative-6) rgba(var(--rgb-color-info), var(--number-0_05));
+  display: flex;
+  flex-direction: column;
+  max-height: var(--unit-90vh);
+  border: var(--size-1) solid var(--color-border);
 }
 
 .modal-sm {
-  width: var(--size-420px);
+  width: var(--size-420);
 }
 .modal-md {
-  width: var(--size-600px);
+  width: var(--size-600);
 }
 .modal-lg {
-  width: var(--size-800px);
+  width: var(--size-800);
 }
 .modal-xl {
-  width: var(--size-1000px);
+  width: var(--size-1000);
 }
 
 .modal-header {
-  display: var(--css-flex);
-  justify-content: var(--css-space-between);
-  align-items: var(--css-center);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: var(--spacing-lg);
-  border-bottom: var(--border-bottom-1px) var(--css-solid) var(--color-border);
+  border-bottom: var(--size-1) solid var(--color-border);
 }
 
 .modal-title {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  margin: var(--spacing-0);
+  margin: var(--number-0);
 }
 
 .modal-close-btn {
-  background: var(--css-none);
-  border: var(--css-none);
+  background: none;
+  border: none;
   color: var(--color-text-secondary);
-  cursor: var(--css-pointer);
+  cursor: pointer;
   padding: var(--spacing-xs);
   border-radius: var(--radius-sm);
-  transition: var(--modal-close-btn-transition);
-  display: var(--css-flex);
-  align-items: var(--css-center);
-  justify-content: var(--css-center);
+  transition: all var(--unit-0_25s);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-close-btn:hover {
@@ -70,36 +71,36 @@
 }
 
 .modal-close-btn:focus-visible {
-  outline: var(--outline-2px) var(--css-solid) var(--color-primary);
-  outline-offset: var(--outline-offset-2px);
+  outline: var(--size-2) solid var(--color-primary);
+  outline-offset: var(--size-2);
 }
 
 .modal-content {
   padding: var(--spacing-lg);
-  overflow-y: var(--css-auto);
+  overflow-y: auto;
 }
 
 @keyframes fadeIn {
   from {
-    opacity: var(--opacity-0);
+    opacity: var(--number-0);
   }
   to {
-    opacity: var(--opacity-1);
+    opacity: var(--number-1);
   }
 }
 
 .animate-scale-in {
-  animation: var(--animate-scale-in-animation);
+  animation: scaleIn var(--unit-0_25s) ease-out;
 }
 
 @keyframes scaleIn {
   from {
-    transform: var(--from-transform);
-    opacity: var(--opacity-0);
+    transform: scale(var(--number-0_96));
+    opacity: var(--number-0);
   }
   to {
-    transform: var(--to-transform);
-    opacity: var(--opacity-1);
+    transform: scale(var(--number-1));
+    opacity: var(--number-1);
   }
 }
 
@@ -110,17 +111,17 @@
 @media (--media-mobile) {
   .modal-overlay {
     padding: var(--spacing-md);
-    align-items: var(--css-flex-end);
+    align-items: flex-end;
   }
 
   .modal-sm,
   .modal-md,
   .modal-lg,
   .modal-xl {
-    width: var(--size-100percent);
-    max-width: var(--size-100percent);
-    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-0) var(--radius-0);
-    max-height: var(--size-85vh);
+    width: var(--unit-100percent);
+    max-width: var(--unit-100percent);
+    border-radius: var(--radius-lg) var(--radius-lg) var(--number-0) var(--number-0);
+    max-height: var(--unit-85vh);
   }
 
   .modal-header {

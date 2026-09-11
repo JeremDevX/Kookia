@@ -1,16 +1,16 @@
 .settings-container {
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-xl);
   padding: var(--spacing-xl);
   padding-top: var(--spacing-lg);
 }
 
 .settings-layout {
-  display: var(--css-grid);
-  grid-template-columns: var(--settings-layout-grid-template-columns);
+  display: grid;
+  grid-template-columns: var(--size-240) var(--unit-1fr);
   gap: var(--spacing-xl);
-  align-items: var(--css-start);
+  align-items: start;
 }
 
 .settings-nav-card {
@@ -18,25 +18,25 @@
 }
 
 .settings-nav {
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
-  gap: var(--spacing-2px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2);
 }
 
 .nav-tab {
-  display: var(--css-flex);
-  align-items: var(--css-center);
+  display: flex;
+  align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
-  width: var(--size-100percent);
-  border: var(--css-none);
-  background: var(--css-none);
-  text-align: var(--css-left);
+  width: var(--unit-100percent);
+  border: none;
+  background: none;
+  text-align: left;
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
   border-radius: var(--radius-sm);
-  cursor: var(--css-pointer);
-  transition: var(--modal-close-btn-transition);
+  cursor: pointer;
+  transition: all var(--unit-0_25s);
 }
 .nav-tab:hover {
   background-color: var(--color-surface-hover);
@@ -49,75 +49,75 @@
 }
 
 .form-grid {
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-lg);
 }
 .grid-2 {
-  display: var(--css-grid);
-  grid-template-columns: var(--dashboard-container-rec-details-grid-template-columns);
+  display: grid;
+  grid-template-columns: var(--unit-1fr) var(--unit-1fr);
   gap: var(--spacing-md);
 }
 
 .empty-state {
-  display: var(--css-flex);
-  flex-direction: var(--css-column);
-  align-items: var(--css-center);
-  justify-content: var(--css-center);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: var(--spacing-2xl);
   gap: var(--spacing-md);
   color: var(--color-text-secondary);
 }
 
 .integration-item {
-  display: var(--css-flex);
-  justify-content: var(--css-space-between);
-  align-items: var(--css-center);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: var(--spacing-md);
-  border: var(--border-1px) var(--css-solid) var(--color-border);
+  border: var(--size-1) solid var(--color-border);
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-sm);
 }
 .int-info {
-  display: var(--css-flex);
-  align-items: var(--css-center);
+  display: flex;
+  align-items: center;
   gap: var(--spacing-md);
 }
 .int-icon {
-  width: var(--size-40px);
-  height: var(--size-40px);
+  width: var(--size-40);
+  height: var(--size-40);
   background-color: var(--color-bg);
   border-radius: var(--radius-md);
-  display: var(--css-flex);
-  align-items: var(--css-center);
-  justify-content: var(--css-center);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-0-75rem);
+  font-size: var(--font-size-caption);
   color: var(--color-text-secondary);
-  border: var(--border-1px) var(--css-solid) var(--color-border);
+  border: var(--size-1) solid var(--color-border);
 }
 
 .int-info h4 {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  margin: var(--spacing-0);
+  margin: var(--number-0);
   color: var(--color-text-primary);
 }
 
 .status.connected {
   color: var(--color-optimal);
   font-size: var(--font-size-sm);
-  display: var(--css-flex);
-  align-items: var(--css-center);
+  display: flex;
+  align-items: center;
   gap: var(--spacing-xs);
 }
 .status.connected::before {
-  content: var(--splash-screen-before-content);
-  display: var(--css-block);
-  width: var(--size-6px);
-  height: var(--size-6px);
+  content: var(--content-empty);
+  display: block;
+  width: var(--size-6);
+  height: var(--size-6);
   background-color: var(--color-optimal);
-  border-radius: var(--radius-50percent);
+  border-radius: var(--unit-50percent);
 }
 
 /* ===========================================
@@ -131,7 +131,7 @@
   }
 
   .settings-layout {
-    grid-template-columns: var(--css-1fr);
+    grid-template-columns: var(--unit-1fr);
     gap: var(--spacing-md);
   }
 
@@ -140,39 +140,39 @@
   }
 
   .settings-nav {
-    flex-direction: var(--css-row);
-    flex-wrap: var(--css-wrap);
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: var(--spacing-xs);
   }
 
   .nav-tab {
-    flex: var(--flex-1);
-    min-width: var(--css-fit-content);
+    flex: var(--number-1);
+    min-width: fit-content;
     padding: var(--spacing-sm);
-    justify-content: var(--css-center);
+    justify-content: center;
     font-size: var(--font-size-sm);
   }
 
   .nav-tab span {
-    display: var(--css-none);
+    display: none;
   }
 
   .nav-tab svg {
-    margin: var(--spacing-0);
+    margin: var(--number-0);
   }
 
   .grid-2 {
-    grid-template-columns: var(--css-1fr);
+    grid-template-columns: var(--unit-1fr);
   }
 
   .integration-item {
-    flex-direction: var(--css-column);
-    align-items: var(--css-flex-start);
+    flex-direction: column;
+    align-items: flex-start;
     gap: var(--spacing-sm);
   }
 
   .integration-item .btn {
-    width: var(--size-100percent);
+    width: var(--unit-100percent);
   }
 }
 
@@ -199,9 +199,9 @@
   }
 
   .int-icon {
-    width: var(--size-32px);
-    height: var(--size-32px);
-    font-size: var(--font-size-0-75rem);
+    width: var(--spacing-xl);
+    height: var(--spacing-xl);
+    font-size: var(--font-size-caption);
   }
 
   .int-info h4 {
@@ -215,11 +215,11 @@
   }
 
   .settings-nav {
-    gap: var(--spacing-2px);
+    gap: var(--size-2);
   }
 
   .nav-tab {
-    padding: var(--view-toggle-btn-padding);
+    padding: var(--size-6) var(--spacing-sm);
     border-radius: var(--radius-sm);
   }
 
@@ -233,19 +233,19 @@
   }
 
   .int-icon {
-    width: var(--size-28px);
-    height: var(--size-28px);
-    font-size: var(--font-size-0-75rem);
+    width: var(--size-28);
+    height: var(--size-28);
+    font-size: var(--font-size-caption);
     border-radius: var(--radius-sm);
   }
 
   .status.connected {
-    font-size: var(--font-size-0-75rem);
+    font-size: var(--font-size-caption);
   }
 
   .status.connected::before {
-    width: var(--size-5px);
-    height: var(--size-5px);
+    width: var(--size-6);
+    height: var(--size-6);
   }
 
   .empty-state {
