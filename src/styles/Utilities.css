@@ -1,0 +1,138 @@
+/* Utility Classes */
+
+/* Colors */
+.text-primary {
+  color: var(--color-primary);
+}
+.text-primary-accessible {
+  color: var(--color-primary-text); /* Darker green for text accessibility */
+}
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+.text-urgent {
+  color: var(--color-urgent);
+}
+.text-urgent-accessible {
+  color: var(--color-urgent-text); /* Darker red for accessibility */
+}
+.text-moderate {
+  color: var(--color-moderate);
+}
+.text-moderate-accessible {
+  color: var(--color-moderate-text); /* Darker orange for accessibility */
+}
+.text-optimal {
+  color: var(--color-optimal);
+}
+.text-optimal-accessible {
+  color: var(--color-optimal-text); /* Darker green for accessibility */
+}
+
+/* Text shadow for improved readability on light backgrounds */
+.text-shadow-subtle {
+  text-shadow: var(--text-shadow-subtle-text-shadow);
+}
+
+.text-shadow-card {
+  text-shadow: var(--text-shadow-card-text-shadow);
+}
+
+.bg-primary {
+  background-color: var(--color-primary);
+  color: var(--css-white);
+}
+.bg-urgent {
+  background-color: var(--color-urgent);
+  color: var(--css-white);
+}
+.bg-moderate {
+  background-color: var(--color-moderate);
+  color: var(--css-white);
+}
+.bg-optimal {
+  background-color: var(--color-optimal);
+  color: var(--css-white);
+}
+
+/* Flexbox */
+.flex {
+  display: var(--css-flex);
+}
+.flex-col {
+  display: var(--css-flex);
+  flex-direction: var(--css-column);
+}
+.flex-wrap {
+  flex-wrap: var(--css-wrap);
+}
+.items-center {
+  align-items: var(--css-center);
+}
+.items-start {
+  align-items: var(--css-flex-start);
+}
+.justify-between {
+  justify-content: var(--css-space-between);
+}
+.justify-center {
+  justify-content: var(--css-center);
+}
+.justify-end {
+  justify-content: var(--css-flex-end);
+}
+.flex-1 {
+  flex: var(--flex-1);
+}
+
+.gap-xs {
+  gap: var(--spacing-xs);
+}
+.gap-sm {
+  gap: var(--spacing-sm);
+}
+.gap-md {
+  gap: var(--spacing-md);
+}
+.gap-lg {
+  gap: var(--spacing-lg);
+}
+
+/* Spacing */
+.p-sm {
+  padding: var(--spacing-sm);
+}
+.p-md {
+  padding: var(--spacing-md);
+}
+.p-lg {
+  padding: var(--spacing-lg);
+}
+
+.m-0 {
+  margin: var(--spacing-0);
+}
+.mt-sm {
+  margin-top: var(--spacing-sm);
+}
+.mt-md {
+  margin-top: var(--spacing-md);
+}
+.mb-md {
+  margin-bottom: var(--spacing-md);
+}
+
+/* Sizing */
+.w-full {
+  width: var(--size-100percent);
+}
+.h-full {
+  height: var(--size-100percent);
+}
+
+/* Layout Containers */
+.container {
+  max-width: var(--size-1200px);
+  margin: var(--container-margin);
+  padding: var(--spacing-0) var(--spacing-md);
+}

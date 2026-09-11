@@ -1,82 +1,82 @@
 .roi-simulator {
-  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
-  border: 1px solid #dcfce7;
+  background: var(--roi-simulator-background);
+  border: var(--roi-simulator-border);
 }
 
 .roi-simulator .card-header {
-  border-bottom: 1px solid #dcfce7;
-  padding-bottom: 1rem;
-  margin-bottom: 1.5rem;
+  border-bottom: var(--roi-simulator-card-header-border-bottom);
+  padding-bottom: var(--spacing-1rem);
+  margin-bottom: var(--spacing-1-5rem);
 }
 
 .slider-container {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-1-5rem);
 }
 
 .slider-label {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+  display: var(--css-flex);
+  justify-content: var(--css-space-between);
+  margin-bottom: var(--spacing-0-5rem);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
 
 .slider-value {
   color: var(--color-primary);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .custom-range {
-  width: 100%;
-  height: 6px;
-  background: #e2e8f0;
-  border-radius: 4px;
-  outline: none;
-  -webkit-appearance: none;
+  width: var(--size-100percent);
+  height: var(--size-6px);
+  background: var(--palette-e2e8f0);
+  border-radius: var(--radius-4px);
+  outline: var(--css-none);
+  -webkit-appearance: var(--css-none);
 }
 
 .custom-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  -webkit-appearance: var(--css-none);
+  width: var(--size-18px);
+  height: var(--size-18px);
   background: var(--color-primary);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform 0.1s;
+  border-radius: var(--radius-50percent);
+  cursor: var(--css-pointer);
+  transition: var(--custom-range-webkit-slider-thumb-transition);
 }
 
 .custom-range::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
+  transform: var(--custom-range-webkit-slider-thumb-hover-transform);
 }
 
 .roi-result {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 1.5rem;
-  text-align: center;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border: 1px solid #dcfce7;
-  margin-top: 2rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-8px);
+  padding: var(--spacing-1-5rem);
+  text-align: var(--css-center);
+  box-shadow: var(--roi-result-box-shadow);
+  border: var(--roi-simulator-border);
+  margin-top: var(--spacing-2rem);
 }
 
 .roi-amount {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #059669;
-  line-height: 1;
-  margin: 0.5rem 0;
-  display: block;
+  font-size: var(--font-size-2-5rem);
+  font-weight: var(--font-weight-800);
+  color: var(--palette-059669);
+  line-height: var(--line-height-1);
+  margin: var(--roi-amount-margin);
+  display: var(--css-block);
 }
 
 .co2-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #ecfdf5;
-  color: #065f46;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  display: var(--css-inline-flex);
+  align-items: var(--css-center);
+  gap: var(--spacing-xs);
+  background: var(--palette-ecfdf5);
+  color: var(--palette-065f46);
+  padding: var(--co2-tag-padding);
+  border-radius: var(--radius-999px);
+  font-size: var(--font-size-0-75rem);
+  font-weight: var(--font-weight-semibold);
 }

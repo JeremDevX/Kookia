@@ -1,65 +1,65 @@
 .export-report-modal {
-  display: flex;
-  flex-direction: column;
+  display: var(--css-flex);
+  flex-direction: var(--css-column);
   gap: var(--spacing-md);
 }
 
 .export-info-card {
   padding: var(--spacing-md);
-  background: rgba(33, 128, 131, 0.08);
-  border: 1px solid rgba(33, 128, 131, 0.25);
+  background: var(--palette-rgba-33-128-131-0-08);
+  border: var(--export-info-card-border);
   border-radius: var(--radius-lg);
 }
 
 .export-info-content {
-  display: flex;
-  align-items: flex-start;
+  display: var(--css-flex);
+  align-items: var(--css-flex-start);
   gap: var(--spacing-sm);
 }
 
 .export-info-icon {
   color: var(--color-teal);
-  margin-top: 2px;
+  margin-top: var(--spacing-2px);
 }
 
 .export-info-title {
-  margin: 0 0 4px;
+  margin: var(--export-info-title-margin);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-info);
 }
 
 .export-info-text {
-  margin: 0;
+  margin: var(--spacing-0);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  line-height: 1.45;
+  line-height: var(--line-height-1-45);
 }
 
 .export-section-label {
-  display: block;
+  display: var(--css-block);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   margin-bottom: var(--spacing-sm);
 }
 
 .export-format-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: var(--css-grid);
+  grid-template-columns: var(--export-format-grid-grid-template-columns);
   gap: var(--spacing-sm);
 }
 
 .export-format-option {
-  padding: 12px;
-  border: 2px solid var(--color-border);
+  padding: var(--spacing-12px);
+  border: var(--border-2px) var(--css-solid) var(--color-border);
   border-radius: var(--radius-lg);
-  text-align: center;
-  transition: all var(--transition-fast);
+  text-align: var(--css-center);
+  transition: var(--css-all) var(--transition-fast);
   color: var(--color-text-primary);
 }
 
 .export-format-option:hover {
-  border-color: #ced3d8;
+  border-color: var(--palette-ced3d8);
 }
 
 .export-format-option.active {
@@ -70,8 +70,8 @@
 }
 
 .export-format-emoji {
-  font-size: 1.4375rem;
-  margin-bottom: 4px;
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-xs);
 }
 
 .export-format-label {
@@ -79,15 +79,15 @@
 }
 
 .export-period-row {
-  display: flex;
-  align-items: center;
+  display: var(--css-flex);
+  align-items: var(--css-center);
   gap: var(--spacing-sm);
 }
 
 .export-period-select {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
+  flex: var(--flex-1);
+  padding: var(--export-period-select-padding);
+  border: var(--border-1px) var(--css-solid) var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text-primary);
@@ -95,7 +95,7 @@
 }
 
 .export-content-card {
-  padding: var(--spacing-sm) 12px;
+  padding: var(--spacing-sm) var(--spacing-12px);
   background: var(--color-bg);
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
@@ -103,16 +103,16 @@
 }
 
 .export-content-list {
-  margin: var(--spacing-sm) 0 0;
-  padding-left: 16px;
-  display: grid;
-  gap: 2px;
+  margin: var(--spacing-sm) var(--spacing-0) var(--spacing-0);
+  padding-left: var(--spacing-md);
+  display: var(--css-grid);
+  gap: var(--spacing-2px);
   font-size: var(--font-size-xs);
 }
 
 .export-actions {
-  display: flex;
-  justify-content: flex-end;
+  display: var(--css-flex);
+  justify-content: var(--css-flex-end);
   gap: var(--spacing-sm);
   margin-top: var(--spacing-sm);
 }

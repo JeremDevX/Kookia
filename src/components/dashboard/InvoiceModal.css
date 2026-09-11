@@ -1,25 +1,25 @@
 .invoice-modal {
-  display: flex;
-  flex-direction: column;
+  display: var(--css-flex);
+  flex-direction: var(--css-column);
   gap: var(--spacing-lg);
 }
 
 .invoice-summary {
-  display: flex;
-  align-items: center;
+  display: var(--css-flex);
+  align-items: var(--css-center);
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   background: var(--color-bg);
-  border: 1px dashed var(--color-border);
+  border: var(--border-1px) var(--css-dashed) var(--color-border);
   border-radius: var(--radius-md);
 }
 
 .invoice-summary-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
+  display: var(--css-inline-flex);
+  align-items: var(--css-center);
+  justify-content: var(--css-center);
+  width: var(--size-48px);
+  height: var(--size-48px);
   border-radius: var(--radius-full);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
@@ -29,7 +29,7 @@
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  margin: 0;
+  margin: var(--spacing-0);
 }
 
 .invoice-summary-subtitle {
@@ -39,15 +39,15 @@
 }
 
 .scanned-list {
-  border: 1px solid var(--color-border);
+  border: var(--border-1px) var(--css-solid) var(--color-border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: var(--css-hidden);
 }
 
 .invoice-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
+  width: var(--size-100percent);
+  border-collapse: var(--css-collapse);
+  text-align: var(--css-left);
   font-size: var(--font-size-sm);
 }
 
@@ -55,20 +55,20 @@
   background: var(--color-bg);
   color: var(--color-text-muted);
   font-weight: var(--font-weight-medium);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-bottom-1px) var(--css-solid) var(--color-border);
 }
 
 .invoice-table th,
 .invoice-table td {
-  padding: 12px;
+  padding: var(--spacing-12px);
 }
 
 .invoice-table tbody tr {
-  border-bottom: 1px solid var(--color-border-light);
+  border-bottom: var(--border-bottom-1px) var(--css-solid) var(--color-border-light);
 }
 
 .invoice-table tbody tr:last-child {
-  border-bottom: none;
+  border-bottom: var(--css-none);
 }
 
 .invoice-table tbody tr:hover {
@@ -80,32 +80,32 @@
 }
 
 .invoice-price {
-  font-family: "SF Mono", "Monaco", monospace;
+  font-family: var(--invoice-price-font-family);
 }
 
 .invoice-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  display: var(--css-inline-flex);
+  align-items: var(--css-center);
+  gap: var(--spacing-xs);
+  padding: var(--invoice-status-padding);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
 }
 
 .invoice-status-ok {
-  background: rgba(34, 139, 91, 0.1);
+  background: var(--palette-rgba-34-139-91-0-1);
   color: var(--color-optimal-text);
 }
 
 .invoice-status-warning {
-  background: rgba(168, 75, 47, 0.12);
+  background: var(--palette-rgba-168-75-47-0-12);
   color: var(--color-moderate-text);
 }
 
 .invoice-actions {
-  display: flex;
-  justify-content: flex-end;
+  display: var(--css-flex);
+  justify-content: var(--css-flex-end);
   gap: var(--spacing-sm);
   margin-top: var(--spacing-xs);
 }

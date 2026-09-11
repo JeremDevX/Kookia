@@ -77,6 +77,56 @@ de 15 à 20 points par sprint de deux semaines, hors moteur IA.
 
 ## Validation attendue
 
+### Valeurs CSS centralisées
+
+[`src/styles/index.css`](../src/styles/index.css) est le catalogue unique des
+valeurs CSS : couleurs, typographie (base `1rem`, soit 16 px par défaut),
+dimensions, espacements, dispositions, transitions et compositions. Les alias
+de thème du Dashboard et des workspaces restent dans ce fichier, avec leur
+sélecteur d'origine pour préserver leur portée. Les règles globales sont
+réparties dans `Base.css`, `Utilities.css`, `Components.css` et `CommonPage.css`,
+importés par le catalogue ; les règles des composants restent près du composant.
+
+Avant d'ajouter une valeur, réutiliser une variable existante du bon rôle
+(typographie, espacement, rayon, etc.). Sinon, la définir dans un bloc `:root`
+de `index.css`, puis utiliser `var(--nom)` dans la déclaration. Les compositions
+de variables et fonctions CSS sont autorisées, mais leurs paramètres constants
+doivent également venir du catalogue. Ne pas redéfinir de variable dans une
+feuille locale, ni ajouter de fallback littéral dans `var()`.
+
+Les conditions responsive et de mouvement réduit sont des `@custom-media`
+définis dans `index.css`. Utiliser par exemple `@media (--media-mobile)` dans
+les feuilles locales. Le plugin de [`postcss.config.mjs`](../postcss.config.mjs)
+remplace chaque alias par sa condition lors du développement et du build,
+sans déplacer les règles. Il prend en charge un alias unique par `@media`,
+sans alias imbriqué ; les modifications du catalogue sont suivies par Vite.
+Les variables CSS natives ne fonctionnent pas dans les conditions `@media`.
+
+Exceptions de syntaxe, pas de valeurs de design : les mots-clés CSS globaux
+`inherit`, `initial`, `unset`, `revert`, `revert-layer` restent sur la déclaration
+(les stocker dans une variable changerait leur sens). Les sélecteurs, noms et
+étapes de `@keyframes`, chemins `@import` et noms de fonctions restent natifs.
+
+```bash
+npm run check:css
+npm run test:css
+```
+
+[`scripts/check-css.mjs`](../scripts/check-css.mjs) parcourt tous les fichiers
+`.css` du dépôt, y compris dans les nouveaux dossiers, hors dépendances,
+artefacts générés (`dist`, `coverage`) et dossiers d'outillage (`.git`, `.agents`,
+`.codex`). Il signale **fichier:ligne:colonne** et sort avec le code 1 pour les
+valeurs en dur, variables inconnues/locales, cycles, doublons globaux, médias
+non centralisés et syntaxes non prises en charge. Il vérifie aussi les règles
+ordinaires placées dans `index.css` : seuls les tokens globaux peuvent contenir
+des valeurs littérales. Ce contrôle porte sur les feuilles CSS, pas sur les
+styles inline TSX ou les attributs SVG.
+
+Le contrôle est intégré à `npm run lint`, donc à la CI existante ; ses tests
+de régression sont intégrés à `npm test`.
+
+### Contrôles applicatifs
+
 Les contrôles actuels sont :
 
 ```bash

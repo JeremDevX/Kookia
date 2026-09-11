@@ -1,67 +1,67 @@
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  animation: fadeIn 0.2s ease-out;
+  position: var(--css-fixed);
+  top: var(--size-0);
+  left: var(--size-0);
+  right: var(--size-0);
+  bottom: var(--size-0);
+  background-color: var(--palette-rgba-0-0-0-0-5);
+  backdrop-filter: var(--modal-overlay-backdrop-filter);
+  display: var(--css-flex);
+  align-items: var(--css-center);
+  justify-content: var(--css-center);
+  z-index: var(--layer-50);
+  animation: var(--modal-overlay-animation);
 }
 
 .modal-container {
   background-color: var(--color-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  border: 1px solid var(--color-border);
+  display: var(--css-flex);
+  flex-direction: var(--css-column);
+  max-height: var(--size-90vh);
+  border: var(--border-1px) var(--css-solid) var(--color-border);
 }
 
 .modal-sm {
-  width: 420px;
+  width: var(--size-420px);
 }
 .modal-md {
-  width: 600px;
+  width: var(--size-600px);
 }
 .modal-lg {
-  width: 800px;
+  width: var(--size-800px);
 }
 .modal-xl {
-  width: 1000px;
+  width: var(--size-1000px);
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: var(--css-flex);
+  justify-content: var(--css-space-between);
+  align-items: var(--css-center);
   padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-bottom-1px) var(--css-solid) var(--color-border);
 }
 
 .modal-title {
   font-size: var(--font-size-lg);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
-  margin: 0;
+  margin: var(--spacing-0);
 }
 
 .modal-close-btn {
-  background: none;
-  border: none;
+  background: var(--css-none);
+  border: var(--css-none);
   color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: 4px;
+  cursor: var(--css-pointer);
+  padding: var(--spacing-xs);
   border-radius: var(--radius-sm);
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  transition: var(--modal-close-btn-transition);
+  display: var(--css-flex);
+  align-items: var(--css-center);
+  justify-content: var(--css-center);
 }
 
 .modal-close-btn:hover {
@@ -70,36 +70,36 @@
 }
 
 .modal-close-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--outline-2px) var(--css-solid) var(--color-primary);
+  outline-offset: var(--outline-offset-2px);
 }
 
 .modal-content {
   padding: var(--spacing-lg);
-  overflow-y: auto;
+  overflow-y: var(--css-auto);
 }
 
 @keyframes fadeIn {
   from {
-    opacity: 0;
+    opacity: var(--opacity-0);
   }
   to {
-    opacity: 1;
+    opacity: var(--opacity-1);
   }
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.2s ease-out;
+  animation: var(--animate-scale-in-animation);
 }
 
 @keyframes scaleIn {
   from {
-    transform: scale(0.95);
-    opacity: 0;
+    transform: var(--from-transform);
+    opacity: var(--opacity-0);
   }
   to {
-    transform: scale(1);
-    opacity: 1;
+    transform: var(--to-transform);
+    opacity: var(--opacity-1);
   }
 }
 
@@ -107,20 +107,20 @@
    RESPONSIVE STYLES
    =========================================== */
 
-@media (max-width: 768px) {
+@media (--media-mobile) {
   .modal-overlay {
     padding: var(--spacing-md);
-    align-items: flex-end;
+    align-items: var(--css-flex-end);
   }
 
   .modal-sm,
   .modal-md,
   .modal-lg,
   .modal-xl {
-    width: 100%;
-    max-width: 100%;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    max-height: 85vh;
+    width: var(--size-100percent);
+    max-width: var(--size-100percent);
+    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-0) var(--radius-0);
+    max-height: var(--size-85vh);
   }
 
   .modal-header {
@@ -132,7 +132,7 @@
   }
 }
 
-@media (max-width: 375px) {
+@media (--media-phone-small) {
   .modal-overlay {
     padding: var(--spacing-sm);
   }

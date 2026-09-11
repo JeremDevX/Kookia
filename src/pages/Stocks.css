@@ -1,6 +1,6 @@
 .stocks-container {
-  display: flex;
-  flex-direction: column;
+  display: var(--css-flex);
+  flex-direction: var(--css-column);
   gap: var(--spacing-lg);
   padding: var(--spacing-xl);
   padding-top: var(--spacing-lg);
@@ -12,72 +12,72 @@
 }
 
 .toolbar-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  display: var(--css-flex);
+  justify-content: var(--css-space-between);
+  align-items: var(--css-center);
+  flex-wrap: var(--css-wrap);
   gap: var(--spacing-md);
 }
 
 .search-wrapper {
-  flex: 1;
-  min-width: 250px;
-  max-width: 400px;
+  flex: var(--flex-1);
+  min-width: var(--size-250px);
+  max-width: var(--size-400px);
 }
 
 .filters-wrapper {
-  display: flex;
+  display: var(--css-flex);
   gap: var(--spacing-md);
-  flex-wrap: wrap;
+  flex-wrap: var(--css-wrap);
 }
 
 .category-select {
-  padding: 10px 14px;
-  border: 1px solid var(--color-border);
+  padding: var(--category-select-padding);
+  border: var(--border-1px) var(--css-solid) var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-surface);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
-  outline: none;
-  transition: all 0.2s ease;
-  cursor: pointer;
+  outline: var(--css-none);
+  transition: var(--calendar-day-card-transition);
+  cursor: var(--css-pointer);
 }
 
 .category-select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0, 199, 150, 0.15);
+  box-shadow: var(--calendar-day-card-today-box-shadow);
 }
 
 /* Table Card */
 .stocks-table-card {
   background: var(--color-surface);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
+  border: var(--border-1px) var(--css-solid) var(--color-border);
   box-shadow: var(--shadow-card);
-  overflow: hidden;
+  overflow: var(--css-hidden);
 }
 
 .stocks-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  width: var(--size-100percent);
+  border-collapse: var(--css-separate);
+  border-spacing: var(--border-spacing-0);
 }
 
 /* Table Header */
 .stocks-table th {
-  text-align: left;
+  text-align: var(--css-left);
   padding: var(--spacing-md) var(--spacing-lg);
   background: linear-gradient(
-    135deg,
-    var(--color-bg) 0%,
-    var(--color-surface-hover) 100%
+    var(--motion-135deg),
+    var(--color-bg) var(--background-0percent),
+    var(--color-surface-hover) var(--background-100percent)
   );
   color: var(--color-text-secondary);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  border-bottom: 2px solid var(--color-border);
+  text-transform: var(--css-uppercase);
+  letter-spacing: var(--letter-spacing-0-08em);
+  border-bottom: var(--border-bottom-2px) var(--css-solid) var(--color-border);
 }
 
 .stocks-table th:first-child {
@@ -91,12 +91,12 @@
 /* Table Rows */
 .stocks-table td {
   padding: var(--spacing-lg) var(--spacing-lg);
-  vertical-align: middle;
+  vertical-align: var(--css-middle);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border-light);
-  transition: background-color 0.2s ease;
+  border-bottom: var(--border-bottom-1px) var(--css-solid) var(--color-border-light);
+  transition: var(--stocks-table-td-transition);
 }
 
 .stocks-table td:first-child {
@@ -108,7 +108,7 @@
 }
 
 .stocks-table tbody tr {
-  cursor: pointer;
+  cursor: var(--css-pointer);
 }
 
 .stocks-table tbody tr:hover td {
@@ -116,20 +116,20 @@
 }
 
 .stocks-table tbody tr:last-child td {
-  border-bottom: none;
+  border-bottom: var(--css-none);
 }
 
 /* Product Name */
 .product-name {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-base);
   color: var(--color-text-primary);
 }
 
 /* Stock Value */
 .stock-value {
-  font-family: "SF Mono", "Monaco", monospace;
-  font-weight: 600;
+  font-family: var(--invoice-price-font-family);
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-base);
   color: var(--color-text-primary);
 }
@@ -137,62 +137,62 @@
 .unit {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  margin-left: 2px;
+  margin-left: var(--spacing-2px);
 }
 
 .stock-price-cell {
-  font-family: "SF Mono", "Monaco", monospace;
+  font-family: var(--invoice-price-font-family);
   font-size: var(--font-size-sm);
 }
 
 /* Actions */
 .actions-cell {
-  display: flex;
-  align-items: center;
+  display: var(--css-flex);
+  align-items: var(--css-center);
   gap: var(--spacing-md);
 }
 
 .stock-adjust {
-  display: flex;
+  display: var(--css-flex);
   gap: var(--spacing-xs);
 }
 
 .stock-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
+  display: var(--css-flex);
+  align-items: var(--css-center);
+  justify-content: var(--css-center);
+  width: var(--size-32px);
+  height: var(--size-32px);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
+  border: var(--border-1px) var(--css-solid) var(--color-border);
+  cursor: var(--css-pointer);
   color: var(--color-text-secondary);
   border-radius: var(--radius-md);
-  font-size: 1.125rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  transition: var(--calendar-day-card-transition);
 }
 
 .stock-action-btn:hover {
-  transform: scale(1.05);
+  transform: var(--month-cell-not-empty-hover-transform);
 }
 
 .stock-action-btn.minus:hover {
-  color: white;
+  color: var(--css-white);
   background: var(--color-urgent);
   border-color: var(--color-urgent);
-  box-shadow: 0 2px 6px rgba(192, 21, 47, 0.3);
+  box-shadow: var(--stock-action-btn-minus-hover-box-shadow);
 }
 
 .stock-action-btn.plus:hover {
-  color: white;
+  color: var(--css-white);
   background: var(--color-optimal);
   border-color: var(--color-optimal);
-  box-shadow: 0 2px 6px rgba(34, 139, 91, 0.3);
+  box-shadow: var(--stock-action-btn-plus-hover-box-shadow);
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (--media-mobile) {
   .stocks-container {
     padding: var(--spacing-md);
     gap: var(--spacing-md);
@@ -209,20 +209,20 @@
   }
 
   .toolbar-content {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: var(--css-column);
+    align-items: var(--css-stretch);
   }
 
   .search-wrapper {
-    max-width: 100%;
+    max-width: var(--size-100percent);
   }
 
   .filters-wrapper {
-    justify-content: space-between;
+    justify-content: var(--css-space-between);
   }
 }
 
-@media (max-width: 480px) {
+@media (--media-phone) {
   .stocks-container {
     padding: var(--spacing-sm);
     gap: var(--spacing-sm);
@@ -233,12 +233,12 @@
   }
 
   .stocks-table-card {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: var(--css-auto);
+    -webkit-overflow-scrolling: var(--css-touch);
   }
 
   .stocks-table {
-    min-width: 500px;
+    min-width: var(--size-500px);
   }
 
   .stocks-table th,
@@ -256,9 +256,9 @@
   }
 
   .stock-action-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 1rem;
+    width: var(--size-28px);
+    height: var(--size-28px);
+    font-size: var(--font-size-base);
   }
 
   .actions-cell {
@@ -266,12 +266,12 @@
   }
 
   .category-select {
-    padding: 8px 10px;
+    padding: var(--category-select-padding-2);
     font-size: var(--font-size-xs);
   }
 }
 
-@media (max-width: 375px) {
+@media (--media-phone-small) {
   .stocks-container {
     padding: var(--spacing-xs);
   }
@@ -285,29 +285,29 @@
   }
 
   .filters-wrapper {
-    flex-direction: column;
+    flex-direction: var(--css-column);
     gap: var(--spacing-sm);
   }
 
   .category-select {
-    width: 100%;
+    width: var(--size-100percent);
   }
 
   .stocks-table {
-    min-width: 450px;
+    min-width: var(--size-450px);
   }
 
   .stocks-table th,
   .stocks-table td {
-    padding: 6px 8px;
+    padding: var(--view-toggle-btn-padding);
   }
 
   .product-name {
     font-size: var(--font-size-xs);
-    max-width: 100px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: var(--size-100px);
+    white-space: var(--css-nowrap);
+    overflow: var(--css-hidden);
+    text-overflow: var(--css-ellipsis);
   }
 
   .stock-value {
@@ -315,16 +315,16 @@
   }
 
   .unit {
-    font-size: 0.75rem;
+    font-size: var(--font-size-0-75rem);
   }
 
   .stock-action-btn {
-    width: 24px;
-    height: 24px;
-    font-size: 0.875rem;
+    width: var(--size-24px);
+    height: var(--size-24px);
+    font-size: var(--font-size-sm);
   }
 
   .stock-adjust {
-    gap: 2px;
+    gap: var(--spacing-2px);
   }
 }
