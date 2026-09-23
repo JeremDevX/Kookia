@@ -1,6 +1,7 @@
 import Button from "../common/Button";
+import Badge from "../common/Badge";
 import type { Product, Supplier } from "../../types";
-import { getSuggestedOrderQuantity } from "../../domain/inventory/product.policies";
+import { getProductStatus, getProductStatusLabel, getSuggestedOrderQuantity } from "../../domain/inventory/product.policies";
 
 interface StockReviewProps {
   products: Product[];
@@ -15,8 +16,9 @@ export default function StockReview({ products, suppliers, selecting, onInspect,
 
   return <div className="stock-review-list">{products.map((product) => {
     const supplier = suppliers.find((item) => item.id === product.supplierId);
-    return <article className="stock-review-item" key={product.id}>
-      <div><h3>{product.name}</h3><p>{product.currentStock} {product.unit} en stock · seuil : {product.minThreshold} {product.unit}</p>
+    const status = getProductStatus(product);
+    return <article className={`stock-review-item stock-review-${status}`} key={product.id}>
+      <div><div className="stock-review-heading"><h3>{product.name}</h3><Badge label={getProductStatusLabel(status)} status={status} /></div><p>{product.currentStock} {product.unit} en stock · seuil : {product.minThreshold} {product.unit}</p>
         <p>Quantité initiale à revoir : {getSuggestedOrderQuantity(product)} {product.unit} (basée sur le seuil, pas sur les ventes).</p>
         <small>Source : inventaire · Fournisseur : {supplier?.name ?? "non renseigné"}</small></div>
       <div className="stock-review-actions"><Button size="sm" variant="outline" onClick={() => onInspect(product.id)}>Voir la fiche</Button>

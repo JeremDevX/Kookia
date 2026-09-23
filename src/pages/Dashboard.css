@@ -18,6 +18,7 @@
 .today-grid { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
 .today-card { display: flex; flex-direction: column; gap: var(--spacing-sm); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--spacing-lg); }
 .today-card h2 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); }
+.today-card .badge { align-self: flex-start; }
 .today-card small { color: var(--color-text-muted); font-size: var(--font-size-caption); }
 .today-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-md); margin-top: auto; padding-top: var(--spacing-sm); }
 .today-card-actions :is(a, button) { color: var(--color-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-decoration: underline; text-underline-offset: var(--size-3); }

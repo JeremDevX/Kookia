@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Calendar } from "lucide-react";
 import Button from "../components/common/Button";
+import Badge from "../components/common/Badge";
 import Modal from "../components/common/Modal";
 import InvoiceModal from "../components/dashboard/InvoiceModal";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
@@ -29,6 +30,7 @@ export default function Dashboard() {
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const stockToReview = products.filter((product) => getProductStatus(product) !== "optimal");
+  const criticalStockCount = stockToReview.filter((product) => getProductStatus(product) === "urgent").length;
   const hasExampleItem = cartItems.some((item) => !!item.predictionId);
   const isFirstRun = latestService === null;
   const showSalesStartActions = isFirstRun && !cartLoading && cartItems.length === 0 && !salesError;
@@ -98,6 +100,7 @@ export default function Dashboard() {
       <section className="today-card" aria-labelledby="today-stock-title"><h2 id="today-stock-title">Stocks</h2>
         {productsLoading ? <p role="status">Chargement du stock…</p> : productsError ? <div role="alert"><p>Stock indisponible.</p><Button variant="outline" onClick={() => void refreshProducts()}>Réessayer</Button></div> :
           <p>{stockToReview.length === 0 ? "Aucun produit au seuil bas dans l'inventaire enregistré." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier dans l'inventaire enregistré.`}</p>}
+        {!productsLoading && !productsError && criticalStockCount > 0 && <Badge label={`${criticalStockCount} critique${criticalStockCount > 1 ? "s" : ""} selon le seuil`} status="urgent" />}
         <small>Les produits initiaux sont des exemples à confirmer.</small>
         <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><button type="button" onClick={() => setInvoiceOpen(true)}>Saisir une facture</button></div>
       </section>

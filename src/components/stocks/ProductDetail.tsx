@@ -14,6 +14,7 @@ import type { Product, Supplier } from "../../types";
 import { useToast } from "../../context/ToastContext";
 import {
   getProductStatus,
+  getProductStatusLabel,
   getSuggestedOrderQuantity,
 } from "../../domain/inventory/product.policies";
 
@@ -134,18 +135,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         <div className="drawer-content">
           <section className="drawer-section">
             <div className="status-banner">
-              <Badge
-                label={
-                  status === "optimal" ? "Au-dessus du seuil enregistré" : status === "moderate" ? "Au seuil ou en dessous" : "Sous le seuil enregistré"
-                }
-                status="neutral"
-              />
+              <Badge label={getProductStatusLabel(status)} status={status} />
               <span className="stock-big">
                 {product.currentStock}{" "}
                 <span className="unit">{product.unit}</span>
               </span>
             </div>
-            <small className="drawer-source">Source : inventaire enregistré. Le catalogue initial est à confirmer.</small>
+            <small className="drawer-source">Niveau calculé selon le seuil enregistré. Le catalogue initial est à confirmer.</small>
           </section>
 
           <section className="drawer-section">

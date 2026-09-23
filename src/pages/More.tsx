@@ -7,6 +7,7 @@ const destinations = [
   { title: "Bilan", detail: "Retrouvez vos ventes enregistrées et les rapports disponibles.", to: "/analytics" },
   { title: "Restaurant", detail: "Mettez à jour les informations de votre établissement.", to: "/settings" },
   { title: "Fournisseurs", detail: "Retrouvez les coordonnées utilisées pour vos achats.", to: "/settings?section=suppliers" },
+  { title: "Connexions", detail: "Consultez l'état des connexions caisse et facturation envisagées.", to: "/settings?section=connections" },
   { title: "Mon compte", detail: "Gérez votre profil et votre accès.", to: "/settings?section=account" },
   { title: "Scénarios d'exemple", detail: "Explorez la démonstration, sans la confondre avec vos données.", to: "/predictions" },
 ];

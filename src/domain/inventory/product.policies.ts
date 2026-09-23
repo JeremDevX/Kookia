@@ -27,7 +27,7 @@ export const getProductStatusLabel = (status: ProductStatus): string => {
     case "urgent":
       return "Critique";
     case "moderate":
-      return "Moyen";
+      return "À surveiller";
     case "optimal":
       return "Bon";
     default:

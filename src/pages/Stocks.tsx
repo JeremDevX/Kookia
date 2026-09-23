@@ -15,7 +15,7 @@ import { useToast } from "../context/ToastContext";
 import type { Product } from "../types";
 import type { StockFilters } from "../types/callbacks";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
-import { getSuggestedOrderQuantity } from "../domain/inventory/product.policies";
+import { getProductStatusLabel, getSuggestedOrderQuantity } from "../domain/inventory/product.policies";
 import "./Stocks.css";
 import "../styles/Workspace.css";
 
@@ -42,7 +42,8 @@ const Stocks: React.FC = () => {
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? null;
   const categories = Array.from(new Set(products.map((product) => product.category))).sort((a, b) => a.localeCompare(b, "fr"));
-  const productsToReview = products.filter((product) => getStatus(product) !== "optimal");
+  const productsToReview = products.filter((product) => getStatus(product) !== "optimal")
+    .sort((a, b) => getStatus(a) === getStatus(b) ? 0 : getStatus(a) === "urgent" ? -1 : 1);
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name
@@ -202,16 +203,7 @@ const Stocks: React.FC = () => {
                     {(product.currentStock * product.pricePerUnit).toFixed(2)}€
                   </td>
                   <td>
-                    <Badge
-                      label={
-                        status === "optimal"
-                          ? "Au-dessus du seuil"
-                          : status === "moderate"
-                          ? "Au seuil ou en dessous"
-                          : "Sous le seuil enregistré"
-                      }
-                      status="neutral"
-                    />
+                    <Badge label={getProductStatusLabel(status)} status={status} />
                   </td>
                   <td>
                     <div className="actions-cell">

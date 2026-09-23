@@ -78,6 +78,7 @@
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-sm);
 }
+.connection-list { list-style: none; padding: var(--number-0); margin: var(--spacing-md) var(--number-0); }
 .int-info {
   display: flex;
   align-items: center;

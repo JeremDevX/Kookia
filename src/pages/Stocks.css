@@ -151,6 +151,9 @@
 .stocks-source { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_8); }
 .stock-review-list { display: grid; gap: var(--spacing-sm); margin-top: var(--spacing-md); }
 .stock-review-item { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-lg); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
+.stock-review-urgent { border-left: var(--size-3) solid var(--color-urgent); }
+.stock-review-moderate { border-left: var(--size-3) solid var(--color-moderate); }
+.stock-review-heading { display: flex; align-items: center; flex-wrap: wrap; gap: var(--spacing-sm); }
 .stock-review-item h3 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); }
 .stock-review-item p { margin-top: var(--spacing-xs); font-size: var(--font-size-sm); }
 .stock-review-item small { display: block; margin-top: var(--spacing-xs); color: var(--color-text-muted); }
