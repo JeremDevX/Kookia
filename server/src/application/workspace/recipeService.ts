@@ -21,7 +21,9 @@ export async function recordProduction(restaurantId: string, actorId: string, in
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
     const prior = await tx.production.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId: input.operationId } } });
     if (prior) {
-      if (prior.recipeId !== (input.recipeId ?? null) || prior.portions !== input.portions || prior.kind !== input.kind) {
+      if (prior.recipeId !== (input.recipeId ?? null) || prior.portions !== input.portions || prior.kind !== input.kind ||
+        prior.date.toISOString().slice(0, 10) !== input.date || prior.prepTime !== input.prepTime || prior.notes !== input.notes ||
+        (!prior.recipeId && prior.recipeName !== input.recipeName)) {
         throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette validation a déjà été utilisée.");
       }
       return prior;
@@ -31,7 +33,9 @@ export async function recordProduction(restaurantId: string, actorId: string, in
     }) : null;
     if (input.recipeId && !recipe) throw new WorkspaceError(404, "NOT_FOUND", "Recette introuvable.");
     if (input.kind === "production") {
-      if (!recipe || !recipe.ingredients.length) throw new WorkspaceError(400, "INVALID_RECIPE", "Une recette avec ingrédients est nécessaire.");
+      if (!recipe || !recipe.ingredients.length || recipe.ingredients.some((ingredient) => !ingredient.quantity.greaterThan(0))) {
+        throw new WorkspaceError(400, "INVALID_RECIPE", "Une recette avec des quantités d’ingrédients positives est nécessaire.");
+      }
       for (const ingredient of [...recipe.ingredients].sort((a, b) => a.productId.localeCompare(b.productId))) {
         const amount = ingredient.quantity.mul(input.portions);
         const updated = await tx.product.updateMany({

@@ -152,7 +152,10 @@ export function validateProductionQuantity(
   quantity: string,
   maxYield: number
 ): { isValid: boolean; normalizedQuantity: number; error?: string } {
-  const safeMaxYield = Math.max(1, Math.floor(maxYield));
+  const safeMaxYield = Math.max(0, Math.floor(maxYield));
+  if (safeMaxYield === 0) {
+    return { isValid: false, normalizedQuantity: 0, error: "Stock insuffisant pour produire une portion." };
+  }
   const parsedQuantity = parseInteger(quantity);
 
   if (!quantity.trim()) {

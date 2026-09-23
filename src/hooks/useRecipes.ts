@@ -16,7 +16,7 @@ interface UseRecipesReturn {
   getMaxYield: (recipe: Recipe) => number;
   getIngredientCost: (
     ingredients: { productId: string; quantity: number }[]
-  ) => number;
+  ) => number | null;
   getProductName: (productId: string) => string;
   getProductUnit: (productId: string) => string;
 }

@@ -82,7 +82,11 @@ const productionSchema = z.object({
   recipeName: z.string().trim().min(1).max(120), portions: z.number().int().min(1).max(10000),
   prepTime: z.number().int().min(0).max(10080), notes: z.string().max(4000),
   date: z.iso.date(), kind: z.enum(["production", "record", "refusal"]),
-}).strict();
+}).strict()
+  .refine((data) => data.kind === "record" || data.recipeId !== undefined)
+  .refine((data) => data.date <= new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date()));
 workspaceRoutes.get("/productions", async (_req, res, next) => {
   try { res.json(await prisma.production.findMany({ where: { restaurantId: context(res).restaurantId }, orderBy: { date: "desc" } })); } catch (error) { next(error); }
 });

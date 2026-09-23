@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 import RecordProductionModal from "../components/recipes/RecordProductionModal";
 import ProductionConfirmModal from "../components/recipes/ProductionConfirmModal";
+import ReportRefusalModal from "../components/recipes/ReportRefusalModal";
 import { Clock, ChefHat, CheckCircle, Leaf, AlertTriangle } from "lucide-react";
 import { format, parseISO, isSameWeek } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -13,6 +14,7 @@ import type { Recipe } from "../types";
 import { getProductions, recordProduction, type Production } from "../services/recipeService";
 import { formatLocalISODate } from "../utils/date";
 import type { ProductionRecord } from "../types/callbacks";
+import { ApiError } from "../config/api";
 import "./Recipes.css";
 import "../styles/Workspace.css";
 
@@ -31,15 +33,24 @@ const Recipes: React.FC = () => {
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isProductionModalOpen, setIsProductionModalOpen] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [selectedMaxYield, setSelectedMaxYield] = useState(0);
+  const [refusalRecipe, setRefusalRecipe] = useState<Recipe | null>(null);
   const [productions, setProductions] = useState<Production[]>([]);
   const [productionError, setProductionError] = useState("");
+  const refreshProductions = useCallback(async () => {
+    try { setProductions(await getProductions()); setProductionError(""); }
+    catch { setProductionError("Historique de production indisponible."); }
+  }, []);
   useEffect(() => {
     let active = true;
-    getProductions().then((data) => { if (active) setProductions(data); }, () => { if (active) setProductionError("Historique de production indisponible."); });
+    getProductions().then((data) => { if (active) { setProductions(data); setProductionError(""); } },
+      () => { if (active) setProductionError("Historique de production indisponible."); });
     return () => { active = false; };
   }, []);
   const producedRecipes = productions.filter((item) => item.kind === "production" && item.date.slice(0, 10) === formatLocalISODate(new Date())).map((item) => item.recipeId);
+  const formatIngredientCost = (recipe: Recipe) => {
+    const cost = getIngredientCost(recipe.ingredients);
+    return cost === null ? "Indisponible" : `${cost.toFixed(2)} €`;
+  };
 
 
   const handleRecordProduction = async (data: ProductionRecord, operationId: string) => {
@@ -47,6 +58,7 @@ const Recipes: React.FC = () => {
       portions: Number(data.portions), prepTime: Number(data.prepTime || 0), notes: data.notes,
       date: formatLocalISODate(new Date(data.date)), kind: "record" });
     setProductions((prev) => [saved, ...prev]);
+    void refreshProductions();
     addToast(
       "success",
       "Production enregistrée",
@@ -54,24 +66,25 @@ const Recipes: React.FC = () => {
     );
   };
 
-  const handleStartProduction = (recipe: Recipe, maxYield: number) => {
+  const handleStartProduction = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
-    setSelectedMaxYield(maxYield);
     setIsProductionModalOpen(true);
   };
 
   const handleConfirmProduction = async (quantity: number, operationId: string) => {
     if (selectedRecipe) {
-      const saved = await recordProduction({ operationId, recipeId: selectedRecipe.id,
-        recipeName: selectedRecipe.name, portions: quantity, prepTime: selectedRecipe.prepTime,
-        notes: "", date: formatLocalISODate(new Date()), kind: "production" });
-      setProductions((prev) => [saved, ...prev]);
-      await refetch();
-      addToast(
-        "success",
-        "Production lancée",
-        `${quantity} portions de ${selectedRecipe.name} en cours. Ingrédients déduits du stock.`
-      );
+      try {
+        const saved = await recordProduction({ operationId, recipeId: selectedRecipe.id,
+          recipeName: selectedRecipe.name, portions: quantity, prepTime: selectedRecipe.prepTime,
+          notes: "", date: formatLocalISODate(new Date()), kind: "production" });
+        setProductions((prev) => [saved, ...prev]);
+        void refreshProductions();
+        await refetch();
+        addToast("success", "Production enregistrée", `${quantity} portions de ${selectedRecipe.name} enregistrées. Ingrédients déduits du stock.`);
+      } catch (cause) {
+        if (cause instanceof ApiError && cause.details.code === "INSUFFICIENT_STOCK") await refetch();
+        throw cause;
+      }
     }
   };
 
@@ -79,22 +92,32 @@ const Recipes: React.FC = () => {
   const historyRecipes = recipes.filter(
     (r) =>
       r.lastMade &&
-      isSameWeek(parseISO(r.lastMade), new Date(), { weekStartsOn: 1 })
+      isSameWeek(parseISO(r.lastMade.slice(0, 10)), parseISO(formatLocalISODate(new Date())), { weekStartsOn: 1 })
   );
 
   // 2. Logic: Calculate feasible quantity based on stock (using service)
-  const antiWasteRecipes = recipes.map((recipe) => ({
+  const recipesWithYield = (loading || error ? [] : recipes).map((recipe) => ({
     ...recipe,
     maxYield: getMaxYield(recipe),
-  }))
-    .filter((r) => r.maxYield > 0) // Only show possible recipes
-    .sort((a, b) => b.maxYield - a.maxYield); // Sort by quantity possible
+  }));
+  const antiWasteRecipes = recipesWithYield.filter((recipe) => recipe.maxYield > 0);
+  const unavailableRecipes = recipesWithYield.filter((recipe) => recipe.maxYield === 0 && recipe.ingredients.length > 0);
+  const incompleteRecipes = recipesWithYield.filter((recipe) => recipe.ingredients.length === 0);
+
+  const handleReportRefusal = async (recipe: Recipe, portions: number, operationId: string) => {
+    const saved = await recordProduction({ operationId, recipeId: recipe.id,
+      recipeName: recipe.name, portions, prepTime: 0, notes: "",
+      date: formatLocalISODate(new Date()), kind: "refusal" });
+    setProductions((prev) => [saved, ...prev]);
+    void refreshProductions();
+    addToast("success", "Demandes refusées enregistrées", `${portions} demande${portions > 1 ? "s" : ""} pour ${recipe.name}.`);
+  };
 
   return (
     <div className="recipes-container workspace-page">
       {loading && <p role="status">Chargement des recettes…</p>}
-      {error && <p role="alert">{error.message}</p>}
-      {productionError && <p role="alert">{productionError}</p>}
+      {error && <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>}
+      {productionError && <div role="alert"><p>{productionError}</p><Button onClick={() => void refreshProductions()}>Réessayer</Button></div>}
       <header className="workspace-header">
         <div>
           <p className="workspace-eyebrow">LE SAVOIR-FAIRE AU QUOTIDIEN</p>
@@ -145,7 +168,7 @@ const Recipes: React.FC = () => {
                   </span>
                   <span className="recipe-meta-item">
                     <ChefHat size={14} /> Cuisiné le{" "}
-                    {format(parseISO(recipe.lastMade!), "EEEE d", {
+                    {format(parseISO(recipe.lastMade!.slice(0, 10)), "EEEE d", {
                       locale: fr,
                     })}
                   </span>
@@ -165,18 +188,9 @@ const Recipes: React.FC = () => {
                   {/* Economics Section */}
                   <div className="cost-row mt-3">
                     <div className="cost-col">
-                      <span className="cost-label">Coût Matière</span>
+                      <span className="cost-label">Coût matière par portion</span>
                       <span className="cost-value">
-                        {getIngredientCost(recipe.ingredients).toFixed(2)}
-                        €
-                      </span>
-                    </div>
-                    <div className="cost-col items-end">
-                      <span className="cost-label">Marge Est. (75%)</span>
-                      <span className="cost-value margin">
-                        +
-                        {(getIngredientCost(recipe.ingredients) * 3).toFixed(2)}
-                        €
+                        {formatIngredientCost(recipe)}
                       </span>
                     </div>
                   </div>
@@ -187,33 +201,20 @@ const Recipes: React.FC = () => {
                     variant="outline"
                     className="btn-danger-outline w-full"
                     icon={<AlertTriangle size={14} />}
-                    onClick={async () => {
-                      const qty = window.prompt(
-                        `Combien de "${recipe.name}" refusés par manque de stock ?`
-                      );
-                      if (qty && Number.isInteger(Number(qty)) && Number(qty) > 0) {
-                        try {
-                          const saved = await recordProduction({ operationId: crypto.randomUUID(), recipeId: recipe.id,
-                            recipeName: recipe.name, portions: Number(qty), prepTime: 0, notes: "",
-                            date: formatLocalISODate(new Date()), kind: "refusal" });
-                          setProductions((prev) => [saved, ...prev]);
-                          addToast("success", "Demande enregistrée", `${qty} demandes refusées enregistrées pour ${recipe.name}.`);
-                        } catch (error) { addToast("info", "Enregistrement impossible", error instanceof Error ? error.message : "Réessayez."); }
-                      }
-                    }}
+                    onClick={() => setRefusalRecipe(recipe)}
                   >
                     Signaler Refus
                   </Button>
                 </div>
               </Card>
             ))
-          ) : (
+          ) : !loading && !error && (
             <div className="empty-week col-span-full">
               <ChefHat
                 size={48}
                 className="mx-auto mb-4 text-secondary opacity-50"
               />
-              <p>Aucune recette enregistrée cette semaine.</p>
+              <p>Aucune recette du catalogue produite cette semaine.</p>
               <Button
                 variant="outline"
                 className="mt-4"
@@ -241,11 +242,10 @@ const Recipes: React.FC = () => {
                 {isProduced && (
                   <div className="produced-badge">
                     <CheckCircle size={16} />
-                    <span>Produit</span>
+                    <span>Produit aujourd’hui</span>
                   </div>
                 )}
-                {/* Special styling for recommended items */}
-                <div className="recipe-header">
+                  <div className="recipe-header">
                   <span className="recipe-title text-optimal">
                     {recipe.name}
                   </span>
@@ -256,7 +256,7 @@ const Recipes: React.FC = () => {
                     <Clock size={14} /> {recipe.prepTime} min
                   </span>
                   <span className="recipe-meta-item text-optimal font-medium">
-                    100% Stock dispo
+                    Ingrédients disponibles pour au moins une portion
                   </span>
                 </div>
 
@@ -269,18 +269,9 @@ const Recipes: React.FC = () => {
                   {/* Economics Section */}
                   <div className="cost-row">
                     <div className="cost-col">
-                      <span className="cost-label">Coût Matière</span>
+                      <span className="cost-label">Coût matière par portion</span>
                       <span className="cost-value">
-                        {getIngredientCost(recipe.ingredients).toFixed(2)}
-                        €
-                      </span>
-                    </div>
-                    <div className="cost-col items-end">
-                      <span className="cost-label">Marge Est. (75%)</span>
-                      <span className="cost-value margin">
-                        +
-                        {(getIngredientCost(recipe.ingredients) * 3).toFixed(2)}
-                        €
+                        {formatIngredientCost(recipe)}
                       </span>
                     </div>
                   </div>
@@ -288,7 +279,7 @@ const Recipes: React.FC = () => {
                   {recipe.ingredients.map((ing, i) => (
                     <div key={i} className="ingredient-row">
                       <span>{getProductName(ing.productId)}</span>
-                      <span className="font-medium text-optimal">Stock OK</span>
+                      <span className="font-medium text-optimal">{ing.quantity} {getProductUnit(ing.productId)} / portion</span>
                     </div>
                   ))}
                 </div>
@@ -297,27 +288,35 @@ const Recipes: React.FC = () => {
                     size="sm"
                     className="w-full"
                     onClick={() =>
-                      handleStartProduction(recipe, recipe.maxYield)
+                      handleStartProduction(recipe)
                     }
-                    disabled={isProduced}
                   >
-                    {isProduced ? "Produit ✓" : "Lancer Production"}
+                    {isProduced ? "Produire à nouveau" : "Préparer la production"}
                   </Button>
                 </div>
               </Card>
             );
           })}
-          {antiWasteRecipes.length === 0 && (
+          {antiWasteRecipes.length === 0 && !loading && !error && (
             <div className="empty-week col-span-full">
-              <p>Pas assez de stock pour des recettes complètes sans achat.</p>
+              <p>{recipes.length === 0 ? "Aucune recette disponible." : unavailableRecipes.length > 0 ? "Pas assez de stock pour préparer une portion des recettes renseignées." : "Aucune recette avec des ingrédients renseignés."}</p>
             </div>
           )}
+          {unavailableRecipes.length > 0 && <section className="col-span-full" aria-label="Recettes non réalisables avec le stock actuel">
+            <h3>Recettes non réalisables avec le stock actuel</h3>
+            <p>Un ingrédient manque ou son stock est insuffisant pour une portion. Vous pouvez signaler les demandes refusées.</p>
+            <div className="recipes-grid">{unavailableRecipes.map((recipe) => <Card key={recipe.id} className="recipe-card">
+              <strong>{recipe.name}</strong>
+              <Button size="sm" variant="outline" onClick={() => setRefusalRecipe(recipe)}>Signaler un refus</Button>
+            </Card>)}</div>
+          </section>}
+          {incompleteRecipes.length > 0 && <p className="col-span-full" role="status">{incompleteRecipes.length} recette{incompleteRecipes.length > 1 ? "s" : ""} sans ingrédients renseignés ne peuvent pas être produites.</p>}
         </div>
       )}
 
       {activeTab === "history" && productions.length > 0 && <section aria-label="Journal de production">
         <h2>Journal de production</h2>
-        {productions.map((item) => <Card key={item.id}><strong>{item.recipeName}</strong><p>{item.portions} portions · {new Date(item.date).toLocaleDateString("fr-FR")} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Production déclarée — sans déduction de stock" : "Production réalisée — stock déduit"}</p>{item.notes && <p>{item.notes}</p>}</Card>)}
+        {productions.map((item) => <Card key={item.id}><strong>{item.recipeName}</strong><p>{item.portions} portions · {format(parseISO(item.date.slice(0, 10)), "dd/MM/yyyy")} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Production déclarée — sans déduction de stock" : "Production réalisée — stock déduit"}</p>{item.notes && <p>{item.notes}</p>}</Card>)}
       </section>}
 
       <RecordProductionModal
@@ -327,15 +326,17 @@ const Recipes: React.FC = () => {
       />
 
       <ProductionConfirmModal
-        key={`${selectedRecipe?.id ?? "none"}-${selectedMaxYield}-${isProductionModalOpen ? "open" : "closed"}`}
+        key={`${selectedRecipe?.id ?? "none"}-${isProductionModalOpen ? "open" : "closed"}`}
         isOpen={isProductionModalOpen}
         onClose={() => setIsProductionModalOpen(false)}
         recipe={selectedRecipe}
-        maxYield={selectedMaxYield}
-        costPerPortion={selectedRecipe ? getIngredientCost(selectedRecipe.ingredients) : 0}
+        maxYield={selectedRecipe ? getMaxYield(selectedRecipe) : 0}
+        costPerPortion={selectedRecipe ? getIngredientCost(selectedRecipe.ingredients) : null}
         getProductName={getProductName}
+        getProductUnit={getProductUnit}
         onConfirm={handleConfirmProduction}
       />
+      {refusalRecipe && <ReportRefusalModal recipe={refusalRecipe} onClose={() => setRefusalRecipe(null)} onConfirm={handleReportRefusal} />}
     </div>
   );
 };

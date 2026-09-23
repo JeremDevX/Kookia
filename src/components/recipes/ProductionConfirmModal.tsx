@@ -5,8 +5,6 @@ import Badge from "../common/Badge";
 import {
   CheckCircle,
   Package,
-  DollarSign,
-  TrendingUp,
   AlertTriangle,
 } from "lucide-react";
 import type { Recipe } from "../../types";
@@ -17,8 +15,9 @@ interface ProductionConfirmModalProps {
   onClose: () => void;
   recipe: Recipe | null;
   maxYield: number;
-  costPerPortion: number;
+  costPerPortion: number | null;
   getProductName: (productId: string) => string;
+  getProductUnit: (productId: string) => string;
   onConfirm: (quantity: number, operationId: string) => Promise<void>;
 }
 
@@ -29,21 +28,22 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   maxYield,
   costPerPortion,
   getProductName,
+  getProductUnit,
   onConfirm,
 }) => {
   const [saving, setSaving] = useState(false);
   const [operationId] = useState(() => crypto.randomUUID());
-  const safeMaxYield = Math.max(1, maxYield);
-  const [quantity, setQuantity] = useState(safeMaxYield.toString());
+  const safeMaxYield = Math.min(10_000, Math.max(0, maxYield));
+  const [quantity, setQuantity] = useState("1");
   const [quantityError, setQuantityError] = useState<string | undefined>();
 
   if (!recipe) return null;
 
   const quantityValidation = validateProductionQuantity(quantity, safeMaxYield);
   const clampedQuantity = quantityValidation.normalizedQuantity;
+  const visibleQuantityError = quantityError ?? (quantity && !quantityValidation.isValid ? quantityValidation.error : undefined);
 
-  const totalCost = costPerPortion * clampedQuantity;
-  const estimatedRevenue = totalCost * 4;
+  const totalCost = costPerPortion === null ? null : costPerPortion * clampedQuantity;
 
   const handleConfirm = async () => {
     if (saving) return;
@@ -61,7 +61,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => { if (!saving) onClose(); }}
       title="Confirmer la production"
       width="lg"
     >
@@ -74,7 +74,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
               Catégorie: {recipe.category}
             </p>
           </div>
-          <Badge label="Stock disponible" status="optimal" />
+          <Badge label={safeMaxYield > 0 ? "Stock disponible" : "Stock insuffisant"} status={safeMaxYield > 0 ? "optimal" : "urgent"} />
         </div>
 
         {/* Quantity Selector */}
@@ -85,8 +85,8 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
           <div className="flex items-center gap-4">
             <input
               id="production-quantity"
-              aria-invalid={Boolean(quantityError)}
-              aria-describedby={quantityError ? "production-quantity-error" : undefined}
+              aria-invalid={Boolean(visibleQuantityError)}
+              aria-describedby={visibleQuantityError ? "production-quantity-error" : undefined}
               type="number"
               min="1"
               max={safeMaxYield}
@@ -102,13 +102,13 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
               <div className="font-bold text-lg">{safeMaxYield} portions</div>
             </div>
           </div>
-          {quantityError && (
-            <span id="production-quantity-error" role="alert" className="text-sm text-red-600 mt-2 block">{quantityError}</span>
+          {visibleQuantityError && (
+            <span id="production-quantity-error" role="alert" className="text-sm text-red-600 mt-2 block">{visibleQuantityError}</span>
           )}
         </div>
 
         {/* Economics */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <Package size={16} className="text-secondary" />
@@ -116,36 +116,10 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
                 Coût matière
               </span>
             </div>
-            <p className="text-2xl font-bold">{totalCost.toFixed(2)} €</p>
+            <p className="text-2xl font-bold">{totalCost === null ? "Indisponible" : `${totalCost.toFixed(2)} €`}</p>
             <p className="text-xs text-secondary mt-1">
-              {costPerPortion.toFixed(2)}€ / portion
+              {costPerPortion === null ? "Prix d’un ingrédient indisponible" : `${costPerPortion.toFixed(2)} € / portion, aux prix catalogue`}
             </p>
-          </div>
-
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign size={16} className="text-secondary" />
-              <span className="text-xs font-semibold text-secondary uppercase">
-                CA hypothétique
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-primary">
-              {estimatedRevenue.toFixed(2)} €
-            </p>
-            <p className="text-xs text-secondary mt-1">Hypothèse : coût matière × 4</p>
-          </div>
-
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp size={16} className="text-optimal" />
-              <span className="text-xs font-semibold text-optimal uppercase">
-                Marge matière hypothétique
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-optimal">
-              +{(estimatedRevenue - totalCost).toFixed(2)} €
-            </p>
-            <p className="text-xs text-optimal mt-1">Hors autres charges</p>
           </div>
         </div>
 
@@ -153,16 +127,17 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
         <div className="bg-white p-4 rounded-lg border">
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle size={18} className="text-optimal" />
-            <h4 className="font-semibold">Ingrédients disponibles</h4>
+            <h4 className="font-semibold">Ingrédients de la recette</h4>
           </div>
           <div className="space-y-2">
             {recipe.ingredients.map((ing) => (
               <div key={ing.productId} className="flex justify-between text-sm">
                 <span>{getProductName(ing.productId)}</span>
-                <span className="text-optimal font-medium">✓ En stock</span>
+                <span>{ing.quantity} {getProductUnit(ing.productId)} par portion</span>
               </div>
             ))}
           </div>
+          <p className="text-xs text-secondary">Le stock sera revérifié par le serveur lors de la confirmation.</p>
         </div>
 
         {/* Warning */}
@@ -176,14 +151,14 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
 
         {/* Actions */}
         <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Annuler
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={saving || !quantityValidation.isValid}
           >
-            Lancer la production
+            Confirmer la production
           </Button>
         </div>
       </div>

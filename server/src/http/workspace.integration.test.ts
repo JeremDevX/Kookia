@@ -77,6 +77,8 @@ describe("persistent catalog HTTP", () => {
     const duplicate = await agent.post("/api/workspace/productions").send(input).expect(201);
     expect(duplicate.body.id).toBe(saved.body.id);
     await agent.post("/api/workspace/productions").send({ ...input, portions: 2 }).expect(409);
+    await agent.post("/api/workspace/productions").send({ ...input, notes: "Autre note" }).expect(409);
+    await agent.post("/api/workspace/productions").send({ ...input, operationId: randomUUID(), date: "2999-01-01" }).expect(400);
     const after = await agent.get("/api/workspace/catalog").expect(200);
     for (const ingredient of recipe.ingredients) {
       const initial = before.body.products.find((product: { id: string }) => product.id === ingredient.productId);
@@ -88,6 +90,7 @@ describe("persistent catalog HTTP", () => {
     expect(failed.body).toEqual(after.body);
     const manual = { ...input, recipeId: undefined, operationId: randomUUID(), recipeName: "Production libre", kind: "record" };
     await agent.post("/api/workspace/productions").send(manual).expect(201);
+    await agent.post("/api/workspace/productions").send({ ...manual, operationId: randomUUID(), kind: "refusal" }).expect(400);
     const noDeduction = await agent.get("/api/workspace/catalog").expect(200);
     expect(noDeduction.body).toEqual(after.body);
     const recipesBeforeRefusal = await agent.get("/api/workspace/recipes").expect(200);

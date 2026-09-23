@@ -133,6 +133,12 @@ describe("formValidation", () => {
       expect(result.error).toContain("entre 1 et 12");
     });
 
+    it("rejects production when no portion remains feasible", () => {
+      const result = validateProductionQuantity("1", 0);
+      expect(result.isValid).toBe(false);
+      expect(result.normalizedQuantity).toBe(0);
+    });
+
     it("rejects partially numeric quantity", () => {
       const result = validateProductionQuantity("5abc", 12);
 

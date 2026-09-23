@@ -36,13 +36,22 @@ describe("recipeService", () => {
     expect(calculateMaxYield(recipe, products)).toBe(4);
   });
 
-  it("calculates ingredient cost from known products only", () => {
+  it("matches persisted three-decimal stock arithmetic at a portion boundary", () => {
+    const recipe: Recipe = { id: "r-decimal", name: "Test", category: "Plat", prepTime: 5,
+      ingredients: [{ productId: "p1", quantity: 0.1 }] };
+    expect(calculateMaxYield(recipe, [{ ...products[0], currentStock: 0.3 }])).toBe(3);
+  });
+
+  it("calculates ingredient cost when all prices are known", () => {
     const total = calculateIngredientCost([
       { productId: "p1", quantity: 2 },
       { productId: "p2", quantity: 1 },
-      { productId: "unknown", quantity: 5 },
     ], products);
 
     expect(total).toBeCloseTo(13.3, 5);
+  });
+
+  it("does not present a partial cost as the complete recipe cost", () => {
+    expect(calculateIngredientCost([{ productId: "p1", quantity: 2 }, { productId: "unknown", quantity: 5 }], products)).toBeNull();
   });
 });

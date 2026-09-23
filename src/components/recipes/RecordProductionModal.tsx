@@ -65,7 +65,7 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => { if (!saving) onClose(); }}
       title="Enregistrer une production"
       width="md"
     >
@@ -92,8 +92,11 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
             <label htmlFor="recordproductionmodal-2" className="block text-sm font-medium mb-2">
               Nombre de portions *
             </label>
-            <Input id="recordproductionmodal-2"
+          <Input id="recordproductionmodal-2"
               type="number"
+              min="1"
+              max="10000"
+              step="1"
               placeholder="0"
               icon={<Users size={16} />}
               value={formData.portions}
@@ -108,8 +111,11 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
             <label htmlFor="recordproductionmodal-3" className="block text-sm font-medium mb-2">
               Temps de préparation (min)
             </label>
-            <Input id="recordproductionmodal-3"
+          <Input id="recordproductionmodal-3"
               type="number"
+              min="0"
+              max="1440"
+              step="1"
               placeholder="30"
               icon={<Clock size={16} />}
               value={formData.prepTime}
@@ -130,28 +136,29 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
             rows={3}
             placeholder="Remarques sur la production..."
             value={formData.notes}
+            aria-invalid={Boolean(errors.notes)}
+            aria-describedby={errors.notes ? "record-notes-error" : undefined}
             onChange={(e) =>
               setFormData({ ...formData, notes: e.target.value })
             }
           />
           {errors.notes && (
-            <span className="text-sm text-red-600 mt-1 block">{errors.notes}</span>
+            <span id="record-notes-error" className="text-sm text-red-600 mt-1 block">{errors.notes}</span>
           )}
         </div>
 
         <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
-          <strong>Info:</strong> Cette production sera enregistrée dans votre
-          historique et l'IA utilisera ces données pour améliorer les
-          prévisions.
+          <strong>Info :</strong> Cette production sera enregistrée dans votre
+          journal. Elle ne modifie pas le stock et n’alimente pas de moteur de prévision connecté.
         </div>
 
         <div className="flex justify-end gap-3 mt-4">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Annuler
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={saving || !validateRecordProductionForm(formData).isValid}
+            disabled={saving}
           >
             Enregistrer
           </Button>
