@@ -33,7 +33,7 @@ const decimal = (value: string) => {
 
 function quantity(value: string): { amount: number; unit: SourceLine["unit"] } | null {
   const normalized = value.trim().replace(/\s+/g, " ");
-  const match = normalized.match(/^(\d+(?:[,.]\d{1,3})?)(?:\s*(KG|KGS|kg|g|L|l|litres?|PCE|PCS|BTE|BRQ|CRT|SHT|unités?|pièces?|bouteilles?|sacs?|bidons?))?$/i);
+  const match = normalized.match(/^(\d+(?:[,.]\d{1,3})?)(?:\s*(KG|KGS|kg|g|L|l|litres?|PCE|PCS|BTE|BRQ|CRT|SHT|unités?(?: de vente)?|pièces?|bouteilles?|boîtes?|plateaux?|sachets?|bacs?|lots?|bottes?|sacs?|bidons?))?(?:\s*\(\d+ pièces?\)|\s+indiqu[eé]s?|\s+à\s+\d+(?:[,.]\d+)?\s*€|,\s*volume non indiqu[eé])?$/i);
   if (!match) return null;
   const amount = Number(match[1].replace(",", "."));
   if (!(amount > 0 && amount <= 1_000_000)) return null;

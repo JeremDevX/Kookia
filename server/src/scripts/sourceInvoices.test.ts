@@ -25,6 +25,15 @@ describe("source invoice extraction", () => {
     ]);
   });
 
+  it("accepts explicit package quantities without treating a package size as a receipt", () => {
+    const invoice = parseSourceInvoice("factures/packages.md", `${metadata}| Produit | Quantité | Montant TTC |\n| --- | ---: | ---: |\n| Œufs, boîte de 12 | 1 boîte | 2,04 € |\n| Farine, sachet 400 g | 4 sachets | 8,00 € |\n| Cuisse de canard | 14,635 kg (20 pièces) | 76,10 € |\n| Coca-Cola, carton de 24 | carton de 24 | 12,00 € |\n`);
+    expect(invoice.stockLines).toEqual([
+      { name: "Œufs, boîte de 12", quantity: 1, unit: "pcs", unitPrice: 2.04 },
+      { name: "Farine, sachet 400 g", quantity: 4, unit: "pcs", unitPrice: 2 },
+      { name: "Cuisse de canard", quantity: 14.635, unit: "kg", unitPrice: 5.1999 },
+    ]);
+  });
+
   it("covers every prepared source sheet with a distinct identifier", () => {
     const invoices = readSourceInvoices();
     expect(invoices).toHaveLength(431);

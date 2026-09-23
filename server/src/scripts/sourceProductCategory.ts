@@ -5,14 +5,16 @@ export function sourceProductCategory(name: string, supplier: string): string {
   const origin = normalized(supplier);
   const has = (pattern: RegExp) => pattern.test(product);
 
+  if (has(/ampoules? led|plats? 1\/2 gastro/)) return "Matériel et équipement";
   if (has(/friskies|croquettes? pour (?:chien|chat)/)) return "Alimentation animale";
   if (has(/detergent|degraiss|desinfect|lave.vaisselle|\bvselle\b|\bpaic\b|lavet|frange|gants?|nitril|rasoir|dentifrice|papier toil|\bpap toil\b|essuie|nettoyant|liquide vaisselle/)) return "Hygiène et entretien";
   if (has(/^barquette|^bqt|couverc|couvero|^couv |gobelet|fourch|cuillere|assiette|^bot [0-9]|^kit couvert|^pique bambou|^bte |^bol soupe|sac kraft|emballage|^pot |^coupe dessert|^agit bois|^salad rd|boite repas/)
     || origin.includes("gie de salaise")) return "Emballages et service";
   if (has(/charbon|allume.feu|buchettes/) || origin.includes("comptoir plus")) return "Combustibles";
+  if (has(/glace|sorbet|\bc\.or\b|\bg cor\b/)) return "Glaces et sorbets";
 
   if (origin.includes("cave saint-desirat") || origin.includes("vins gary")
-    || has(/\bvin\b|\bigp\b|\baop\b.*(?:rouge|rose|blanc|saint.joseph|pouilly|bordeaux)|\bbib\b|cotes du rhone|viognier|syrah|chinian/)) return "Vins";
+    || has(/\bvin\b|\bvd[p]?\b|\bigp\b|\baop\b.*(?:rouge|rose|blanc|saint.joseph|pouilly|bordeaux)|\bbib\b|cotes du rhone|viognier|syrah|chinian/)) return "Vins";
   if (origin.includes("brasserie du loup blanc") || has(/biere|\bfut\b|dunkelweizen|chananass|triple 33 cl/)) return "Bières";
   if (has(/coca|limonade|soda|monster|^jus |^sirop|eau min|^eau |^cafe|espresso|lavazza|^the |vodka|pastis|rhum|whisky|picon|campari/)) return "Boissons";
 
@@ -21,7 +23,7 @@ export function sourceProductCategory(name: string, supplier: string): string {
   if (has(/boeuf|porc|veau|poulet|dinde|canard|lapin|pintade|porcelet|agneau|entrecote|bavette|paleron|rumst|onglet|magret|foie gras|coquelet|hampe|viande|roti|saute |travers |jarret|coq |kebab|faux.filet|tend(?:e|re) de tranche|\bcoeur tt\b|basse cote|rond de gite|dessous de palette|\bos canon\b|\bpoire pad\b|tartare a l.indienne|noix de joue|cote d.agneau/)
     || origin.includes("boucherie robin")) return "Viandes";
 
-  if (has(/mozzarella|emmental|parmesan|parmigiano|raclette|reblochon|brie|camembert|roquefort|morbier|cheddar|comte|chevre|burrata|saint.marcellin|fromage|buche chevre/)
+  if (has(/mozzarella|emmental|parmesan|parmigiano|raclette|reblochon|brie|camembert|roquefort|morbier|cheddar|comte|beaufort|cantal|chevre|burrata|saint.marcellin|fromage|buche chevre/)
     || origin.includes("fromager de salaise")) return "Fromages";
   if (!has(/farine/) && has(/beurre|creme (?!marron|de marron)|mascarpone|yaourt|\blait\b|oeuf|faisselle|brousse/)) return "Frais";
 
@@ -31,7 +33,7 @@ export function sourceProductCategory(name: string, supplier: string): string {
   if (has(/pepites? framboise/)) return "Pâtisserie";
   if (has(/fraise|framboise|\bmure|kiwi|pomelo|citron|pommes? (?!de terre)|poires? (?!pad)|peche|abricot|orange|ananas|mangue/)) return "Fruits";
 
-  if (has(/gaufre|chocolat|guanaja|dulcey|jivara|canele|patisserie|dessert|gateau|biscuit|pepites? framboise|meringue|feuille de brick|pate feuilletee/)
+  if (has(/gaufre|chocolat|guanaja|dulcey|jivara|canele|patisserie|dessert|gateau|biscuit|muffin|cookie|cr.glacee|pepites? framboise|meringue|feuille de brick|pate feuilletee/)
     || origin.includes("valrhona")) return "Pâtisserie";
   if (has(/baguette|\bpain\b|croissant|brioche/) || origin.includes("boulangerie morandat")) return "Boulangerie";
 

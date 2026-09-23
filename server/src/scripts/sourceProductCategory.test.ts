@@ -16,6 +16,12 @@ describe("source invoice product categories", () => {
     ["Ricola orange-menthe", "Carrefour", "Épicerie"],
     ["Pépites framboise", "Valrhona", "Pâtisserie"],
     ["Poire PAD France, sous vide", "RPDA / Relais d’Or", "Viandes"],
+    ["Beaufort AOP", "Lidl", "Fromages"],
+    ["VDP Gamay 2019", "Caveau de Saint-Désirat", "Vins"],
+    ["Malti'Mix 2, muffins et cookies bio", "Maltivor", "Pâtisserie"],
+    ["C.or 2,4l cassis sorbet", "RPDA / Relais d’Or", "Glaces et sorbets"],
+    ["C.or 5L vanille de Madagascar", "RPDA / Relais d’Or", "Glaces et sorbets"],
+    ["Ampoules LED standard 10 W", "Intermarché", "Matériel et équipement"],
     ["Produit non identifié, libellé masqué", "Promocash", "À identifier"],
   ])("categorizes %s", (name, supplier, expected) => {
     expect(sourceProductCategory(name, supplier)).toBe(expected);
