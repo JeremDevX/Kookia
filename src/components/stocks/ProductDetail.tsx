@@ -221,7 +221,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               {historyError ? <p role="alert">{historyError}</p> : movements.length === 0 ? <p>Aucun mouvement enregistré.</p> : movements.map((movement) => (
                 <div className="history-item" key={movement.id}>
                   <span className="date">{new Date(movement.createdAt).toLocaleDateString("fr-FR")}</span>
-                  <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {product.unit} ({movement.reason === "loss" ? "Perte" : movement.reason === "initial" ? "Stock initial" : movement.reason === "receipt" ? "Réception" : movement.reason === "invoice_import_demo" ? "Entrée de facture simulée" : movement.reason === "simulated_consumption" ? "Sortie simulée" : movement.reason === "production" ? "Production" : "Ajustement"})</span>
+                  <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {product.unit} ({movement.reason === "loss" ? "Perte" : movement.reason === "initial" ? "Stock initial" : movement.reason === "receipt" ? "Réception" : movement.reason === "invoice_import_demo" ? "Entrée de facture simulée" : movement.reason === "simulated_consumption" ? "Sortie simulée" : movement.reason === "simulated_unit_rounding" ? "Correction d’unité simulée" : movement.reason === "production" ? "Production" : "Ajustement"})</span>
                 </div>
               ))}
             </div>

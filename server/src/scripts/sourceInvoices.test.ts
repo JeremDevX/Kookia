@@ -17,6 +17,14 @@ describe("source invoice extraction", () => {
     expect(invoice.stockLines).toEqual([]);
   });
 
+  it("extracts explicit bullet calculations and derives unit price from a line amount", () => {
+    const invoice = parseSourceInvoice("factures/456.md", `${metadata}- Merguez : 2,880 kg × 8,50 €/kg = 24,48 €\n\n| Vin | Quantité | Montant HT après remise |\n| --- | ---: | ---: |\n| AOP Saint-Joseph, BIB | 2 | 20,00 € |\n`);
+    expect(invoice.stockLines).toEqual([
+      { name: "AOP Saint-Joseph, BIB", quantity: 2, unit: "pcs", unitPrice: 10 },
+      { name: "Merguez", quantity: 2.88, unit: "kg", unitPrice: 8.5 },
+    ]);
+  });
+
   it("covers every prepared source sheet with a distinct identifier", () => {
     const invoices = readSourceInvoices();
     expect(invoices).toHaveLength(431);

@@ -51,25 +51,39 @@ function stockLines(content: string): SourceLine[] {
   for (const line of lines) {
     if (!line.startsWith("|")) { columns = []; continue; }
     const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
-    if (cells.some((cell) => /quantit[eé]|qt[eé]/i.test(cell)) && cells.some((cell) => /prix.*(?:unitaire|net)|prix ht/i.test(cell))) {
+    if (cells.some((cell) => /quantit[eé]|qt[eé]/i.test(cell)) && cells.some((cell) => /prix.*(?:unitaire|net)|prix ht|montant|total|^ttc$/i.test(cell))) {
       columns = cells;
       continue;
     }
     if (!columns.length || cells.length !== columns.length || cells.every((cell) => /^:?-+:?$/.test(cell))) continue;
-    const nameIndex = columns.findIndex((column) => /d[eé]signation|produit|article|denr[eé]e|libell[eé]|vin/i.test(column));
+    const nameIndex = columns.findIndex((column) => !/code|r[eé]f[eé]rence/i.test(column) && /d[eé]signation|produit|article|denr[eé]e|libell[eé]|^vin/i.test(column));
     const quantityIndex = columns.findIndex((column) => /quantit[eé]|qt[eé]/i.test(column));
     const priceIndex = columns.findIndex((column) => /prix.*(?:unitaire|net)|prix ht/i.test(column));
-    if (nameIndex < 0 || quantityIndex < 0 || priceIndex < 0) continue;
+    if (nameIndex < 0 || quantityIndex < 0) continue;
     const name = cells[nameIndex];
     const parsedQuantity = quantity(cells[quantityIndex]);
-    const unitPrice = decimal(cells[priceIndex]);
+    const amountIndex = columns.findIndex((column) => /montant ht|total ht/i.test(column));
+    const fallbackAmountIndex = columns.findIndex((column) => /montant ttc|total ttc|^ttc$/i.test(column));
+    const amountHT = amountIndex >= 0 ? decimal(cells[amountIndex]) : null;
+    const amountTTC = fallbackAmountIndex >= 0 ? decimal(cells[fallbackAmountIndex]) : null;
+    const lineAmount = amountHT ?? amountTTC;
+    const statedPrice = priceIndex >= 0 ? decimal(cells[priceIndex]) : null;
+    const unitPrice = statedPrice ?? (parsedQuantity && lineAmount !== null ? Math.round(lineAmount / parsedQuantity.amount * 10000) / 10000 : null);
     if (!name || !parsedQuantity || unitPrice === null || unitPrice < 0 || unitPrice > 1_000_000) continue;
-    const amountIndex = columns.findIndex((column) => /montant ht/i.test(column));
-    const amount = amountIndex >= 0 ? decimal(cells[amountIndex]) : null;
-    if (amount !== null && Math.abs(parsedQuantity.amount * unitPrice - amount) > 0.03) continue;
+    const comparableAmount = priceIndex >= 0 && /TTC/i.test(columns[priceIndex]) ? amountTTC : amountHT;
+    if (statedPrice !== null && comparableAmount !== null && Math.abs(parsedQuantity.amount * unitPrice - comparableAmount) > 0.03) continue;
     const codeIndex = columns.findIndex((column) => /code|r[eé]f[eé]rence/i.test(column));
     result.push({ name: name.slice(0, 120), quantity: parsedQuantity.amount, unit: parsedQuantity.unit,
       unitPrice, ...(codeIndex >= 0 && cells[codeIndex] !== "—" ? { code: cells[codeIndex] } : {}) });
+  }
+  for (const line of lines) {
+    const match = line.match(/^- (.+?) : (\d+(?:[,.]\d{1,3})?)\s*(kg|g|L|unités?|pièces?)?\s*×\s*(\d+(?:[,.]\d{1,4})?)\s*€(?:\/(?:kg|L))?(?:\s*HT)?\s*=\s*(\d+(?:[,.]\d{1,2})?)\s*€/i);
+    if (!match) continue;
+    const parsedQuantity = quantity(`${match[2]} ${match[3] ?? ""}`);
+    const unitPrice = decimal(match[4]);
+    const amount = decimal(match[5]);
+    if (!parsedQuantity || unitPrice === null || amount === null || Math.abs(parsedQuantity.amount * unitPrice - amount) > 0.03) continue;
+    result.push({ name: match[1].slice(0, 120), quantity: parsedQuantity.amount, unit: parsedQuantity.unit, unitPrice });
   }
   return result;
 }

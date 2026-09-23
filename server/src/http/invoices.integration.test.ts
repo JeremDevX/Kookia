@@ -42,3 +42,24 @@ it("persists corrected drafts, isolates accounts and receives invoices exactly o
   const reread = await agent.get("/api/workspace/invoices").expect(200);
   expect(reread.body.find((item: { id: string }) => item.id === id).status).toBe("received");
 });
+
+it("lists source invoices only within the authenticated restaurant", async () => {
+  const owner = await account();
+  const other = await account();
+  await owner.get("/api/workspace/catalog").expect(200);
+  const userId = (await owner.get("/api/auth/me").expect(200)).body.user.id as string;
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { restaurant: true } });
+  const id = "abcdef0123456789abcdef01";
+  await prisma.workspaceDocument.create({ data: { restaurantId: user.restaurant!.id, kind: `source-invoice:${id}`,
+    data: { id, title: "Pièce de test", date: "2026-09-23", originalDate: "2021-12-30",
+      supplier: "Fournisseur de test", type: "invoice", status: "À vérifier", content: "Transcription de test", stockLines: [] } } });
+
+  await request(app).get("/api/workspace/source-invoices").expect(401);
+  const list = await owner.get("/api/workspace/source-invoices").expect(200);
+  expect(list.body).toEqual([expect.objectContaining({ id, title: "Pièce de test", stockLineCount: 0 })]);
+  expect(list.body[0]).not.toHaveProperty("content");
+  expect((await owner.get(`/api/workspace/source-invoices/${id}`).expect(200)).body.content).toBe("Transcription de test");
+  expect((await other.get("/api/workspace/source-invoices").expect(200)).body).toEqual([]);
+  await other.get(`/api/workspace/source-invoices/${id}`).expect(404);
+  await owner.get("/api/workspace/source-invoices/invalid-id").expect(400);
+});
