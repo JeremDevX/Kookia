@@ -11,6 +11,7 @@ import { workspaceRoutes } from "./workspaceRoutes.js";
 
 export const app = express();
 app.disable("x-powered-by");
+app.use("/api/workspace/sales/imports", express.json({ limit: "512kb", type: "application/json" }));
 app.use(express.json({ limit: "16kb", type: "application/json" }));
 app.use(cookieParser());
 app.use((req, res, next) => {
