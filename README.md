@@ -75,6 +75,7 @@ connexion accidentelle à la base de développement.
 - [Index de la documentation](docs/README.md) et [guide restaurateur](docs/guide-restaurateur.md)
 - [Parcours produit cible](docs/product-parcours.md) et [règles d'interface](docs/design-system.md)
 - [Écarts vérifiés](docs/ecarts-techniques.md), [roadmap](docs/plans/roadmap-produit.md) et [plan d'exécution](docs/plans/plan-execution.md)
+- [Prompt de développement long `/goal`](docs/plans/goal-kookia-prompt.md) et [référentiel de la chaîne restaurateur](docs/plans/goal-kookia-reference.md)
 - [Sources de données](docs/integrations.md) et [plan du moteur de prévision](docs/plans/forecast-engine.md)
 - [Cartographie et suivi de migration](docs/plans/database-migration.md)
 - [Référence technique actuelle et cible](docs/technical-development.md)

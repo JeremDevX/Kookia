@@ -11,6 +11,7 @@ pour les capacités disponibles.
 | Concevoir un parcours rapide et lisible | [Parcours produit cible](product-parcours.md) |
 | Savoir ce qui existe et ce qui manque | [Référence technique](technical-development.md) et [écarts vérifiés](ecarts-techniques.md) |
 | Construire dans le bon ordre | [Roadmap produit](plans/roadmap-produit.md) et [plan d'exécution vérifiable](plans/plan-execution.md) |
+| Lancer un développement long centré restaurateur | [Prompt `/goal` prêt à coller](plans/goal-kookia-prompt.md), [référentiel complet](plans/goal-kookia-reference.md) et [journal de reprise](plans/goal-kookia-progress.md) |
 | Brancher caisse, OCR, position, météo et événements | [Contrats et flux de données](integrations.md) |
 | Préparer puis évaluer les prévisions | [Plan du moteur de prévision](plans/forecast-engine.md) |
 | Documenter les écrans et le langage visuel | [Règles d'interface](design-system.md) |

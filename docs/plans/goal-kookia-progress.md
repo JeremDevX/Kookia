@@ -1,0 +1,56 @@
+# Journal de reprise du Goal Kookia
+
+**État initial :** prompt et référentiel préparés ; le Goal de développement
+n'a **pas** été lancé dans ce travail documentaire. Ce fichier n'est pas une
+preuve que les fonctionnalités cibles sont livrées. Au démarrage, relever date,
+branche, `git status`, migrations et tests disponibles sans effacer les
+modifications déjà présentes.
+
+## Prochaine action démontrable
+
+Vérifier l'état du code et de la base de test, puis traiter Q1/Q1b du
+[plan d'exécution](plan-execution.md) si le garde-fou n'existe toujours pas.
+Ensuite, prioriser C1 : relier les fiches fournisseurs **déjà importées** à la
+revue et à la réception, avant tout nouveau connecteur OCR.
+
+## Registre des incréments
+
+Pour chaque ID du [plan](plan-execution.md), inscrire **deux axes** : preuve
+locale (`à auditer`, `en cours`, `prouvé localement`, `préparé sur fixtures`) et
+activation externe (`non applicable`, `non activé`, `activé/évalué sur données
+autorisées`, `bloqué externe`). Ne pas remplacer une preuve par une case cochée.
+Ajouter les tranches UX transverses en les rattachant au parcours qu'elles
+servent. L'agent intégrateur principal édite ce journal ; les sous-agents lui
+transmettent leurs preuves sans écrire ici simultanément.
+
+| ID / parcours | Preuve locale | Activation externe | Preuve (tests, rendu, données, fichier) | Limite / suite |
+| --- | --- | --- | --- | --- |
+| Q1/Q1b — test et scénario isolés | À auditer | Non applicable | — | Ne pas lancer l'intégration sur Camille. |
+| C1 — pièce fournisseur actionnable | À auditer | Non applicable | — | Archive existante ≠ nouvelle réception. |
+| C2 — chronologie continue | À auditer | Non applicable | — | Simulation existante, scénario UX à prouver. |
+| C3 — chaîne métier complète | À auditer | Non applicable | — | Aucune preuve de bout en bout encore consignée ici. |
+| UI/KPI/mobile/clavier | À auditer | Non applicable | — | Rendu initial, critique, itération. |
+| R0/R1 — local/préproduction | À auditer | Non activé | — | Backend hébergé non défini dans l'état documentaire. |
+
+## Journal de preuves (ajouter une ligne par incrément vérifié)
+
+| Date | ID | Commit local | État avant → après | Commande/test ou scénario UI exécuté | Résultat et limite | Prochaine action |
+| --- | --- | --- | --- | --- | --- | --- |
+
+## Portes externes
+
+| Sujet | Ce qui est possible sans accès | Preuve requise pour « activé » | État |
+| --- | --- | --- | --- |
+| POS | Port, fixtures, mapping, repli manuel | Contrat/droits et tests fournisseur/pilote | À confirmer |
+| OCR de nouveaux documents | Revue des transcriptions existantes, flux candidat | Prestataire, sécurité, conservation, consentement et évaluation | À confirmer |
+| Météo/événements | Contrat et comparaison sur fixtures | Position confirmée, accès et gain évalué | À confirmer |
+| Précision/gain réel | Calculs/backtests reproductibles | Historique pilote qualifié et mesure comparée | À confirmer |
+| Envoi/EDI, conformité | Fiche à transmettre, export opérationnel | Destinataire/accord ou obligations vérifiées | À confirmer |
+| Préproduction/publication | Environnement isolé, smoke tests jetables | API/DB/backup/cookies/accès vérifiés, approbation de publication | À confirmer |
+
+## Critique indépendante et dette restante
+
+Noter ici les retours des sous-agents/relecteurs : constat, gravité, preuve,
+responsable, correction et nouveau test. Une remarque importante non résolue
+empêche de marquer le parcours concerné comme terminé. Les tickets externes
+restent distincts des défauts locaux corrigeables.
