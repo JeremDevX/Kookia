@@ -37,7 +37,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 
 | Date | ID | Commit local | État avant → après | Commande/test ou scénario UI exécuté | Résultat et limite | Prochaine action |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2026-09-24 | Q1 | À consigner dans le commit de suivi | Runner direct sans garde → URL locale `kookia_test` obligatoire ; CI configurée sur PostgreSQL éphémère | `node --test scripts/integrationDatabaseGuard.test.mjs` (2/2) ; `npm run test:integration` avec `.env` développement (refus avant démarrage) ; PostgreSQL jetable sans volume : migrations 6/6 et intégration 13 fichiers/21 tests ; `npm run lint`, `npm run build`, `npm run build:api`, `npm test` | Réussite locale. Intégration n'a utilisé que le port aléatoire du conteneur temporaire, supprimé après usage. Action GitHub non exécutée ; cela ne prouve pas un run distant. | Q1b : amorcer et restaurer un tenant/DB de scénario jetable, sans toucher Camille. |
+| 2026-09-24 | Q1 | `361add3` | Runner direct sans garde → URL locale `kookia_test` obligatoire ; CI configurée sur PostgreSQL éphémère | `node --test scripts/integrationDatabaseGuard.test.mjs` (2/2) ; `npm run test:integration` avec `.env` développement (refus avant démarrage) ; PostgreSQL jetable sans volume : migrations 6/6 et intégration 13 fichiers/21 tests ; `npm run lint`, `npm run build`, `npm run build:api`, `npm test` | Réussite locale. Intégration n'a utilisé que le port aléatoire du conteneur temporaire, supprimé après usage. Action GitHub non exécutée ; cela ne prouve pas un run distant. | Q1b : amorcer et restaurer un tenant/DB de scénario jetable, sans toucher Camille. |
 
 ## Portes externes
 
