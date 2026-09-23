@@ -10,6 +10,7 @@ const Dashboard = lazy(() => import("../../pages/Dashboard"));
 const Stocks = lazy(() => import("../../pages/Stocks"));
 const Predictions = lazy(() => import("../../pages/Predictions"));
 const Recipes = lazy(() => import("../../pages/Recipes"));
+const Orders = lazy(() => import("../../pages/Orders"));
 const Settings = lazy(() => import("../../pages/Settings"));
 const Analytics = lazy(() => import("../../pages/Analytics"));
 
@@ -23,6 +24,7 @@ const AppRouter = () => (
           <Route path="stocks" element={<Stocks />} />
           <Route path="predictions" element={<Predictions />} />
           <Route path="recipes" element={<Recipes />} />
+          <Route path="orders" element={<Orders />} />
           <Route path="settings" element={<Settings />} />
           <Route path="analytics" element={<Analytics />} />
         </Route></Route>

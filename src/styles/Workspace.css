@@ -1,5 +1,5 @@
 /* Shared visual language for the three operational workspaces. */
-.workspace-page:is(.stocks-container, .predictions-container, .recipes-container, .analytics-container, .settings-container) {
+.workspace-page:is(.stocks-container, .predictions-container, .recipes-container, .orders-container, .analytics-container, .settings-container) {
   background: var(--color-bg);
   min-height: var(--unit-100percent);
   padding: var(--size-36) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)) var(--spacing-2xl);
@@ -92,7 +92,7 @@
   .workspace-page .pred-main { grid-template-columns: var(--unit-1fr); }
 }
 @media (--media-compact) {
-  .workspace-page:is(.stocks-container, .predictions-container, .recipes-container, .analytics-container, .settings-container) { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); gap: var(--size-20); }
+  .workspace-page:is(.stocks-container, .predictions-container, .recipes-container, .orders-container, .analytics-container, .settings-container) { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); gap: var(--size-20); }
   .workspace-summary { padding: var(--size-20); flex-direction: column; align-items: flex-start; gap: var(--spacing-md); }
   .workspace-summary p { padding: var(--number-0); border: var(--number-0); font-size: var(--font-size-xs); }
   .workspace-page .card { padding: var(--size-20); }

@@ -5,14 +5,13 @@ import InvoiceModal from "../components/dashboard/InvoiceModal";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import DashboardKPIs from "../components/dashboard/DashboardKPIs";
 import RecommendationsSection from "../components/dashboard/RecommendationsSection";
-import OrderHistory from "../components/dashboard/OrderHistory";
 import OrderGenerator from "../components/dashboard/OrderGenerator";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
 import { Calendar, FileText, ChefHat, ShoppingBag, ArrowUpRight, Leaf, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePredictions, useProducts } from "../hooks";
-import { isOnOrAfterRestaurantToday } from "../utils/date";
+import { isActionablePurchasePrediction } from "../domain/predictions/prediction.policies";
 import { getRestaurant, type Restaurant } from "../services/restaurantService";
 import { useAuth } from "../features/auth/context/AuthContext";
 import {
@@ -30,7 +29,7 @@ const Dashboard: React.FC = () => {
   const { cartItems, addToCart, removeFromCart, refreshCart, loading: cartLoading } = useCart();
   const selectedPredictionIds = cartItems.flatMap((item) => item.predictionId ? [item.predictionId] : []);
   const { predictions, loading, error, refetch } = usePredictions();
-  const { products, refetch: refreshProducts } = useProducts();
+  const { products, loading: productsLoading, error: productsError, refetch: refreshProducts } = useProducts();
 
   const handleScanInvoice = () => {
     setIsInvoiceModalOpen(true);
@@ -78,7 +77,7 @@ const Dashboard: React.FC = () => {
       addToast(
         "info",
         "Sélectionnez des articles",
-        "Veuillez valider au moins une action."
+        "Ajoutez d’abord un article à votre sélection."
       );
     }
   };
@@ -89,6 +88,7 @@ const Dashboard: React.FC = () => {
   };
 
   const todayDate = new Date().toLocaleDateString("fr-FR", {
+    timeZone: "Europe/Paris",
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -104,8 +104,7 @@ const Dashboard: React.FC = () => {
   const city = restaurant?.city ?? "";
 
   const actionablePredictions = predictions.filter((pred) => {
-    return pred.recommendation?.action === "buy" &&
-      isOnOrAfterRestaurantToday(pred.predictedDate);
+    return isActionablePurchasePrediction(pred);
   });
 
   const visiblePredictions = actionablePredictions.filter(
@@ -135,23 +134,25 @@ const Dashboard: React.FC = () => {
           <p>Anticipez vos besoins, ajustez vos achats et gardez la main sur chaque décision.</p>
           <a href="#dashboard-recommendations" className="brief-link">Voir les suggestions <ArrowRight size={17} aria-hidden="true" /></a>
         </div>
-        <div className="brief-order">
+        <div className="brief-order" id="dashboard-order">
           <span className="brief-order-icon"><ShoppingBag size={23} aria-hidden="true" /></span>
           <h3>Votre prochaine commande</h3>
-          <p aria-live="polite">{totalCartCount > 0 ? `${totalCartCount} article${totalCartCount > 1 ? "s" : ""} dans votre sélection` : "Ajoutez des suggestions à votre sélection."}</p>
-          <Button onClick={handleGenerateOrders} icon={<ArrowRight size={16} />} disabled={cartLoading || totalCartCount === 0}>Revoir ma commande{totalCartCount > 0 ? ` (${totalCartCount})` : ""}</Button>
-          <small>Vous vérifiez et validez avant tout envoi.</small>
+          <p aria-live="polite">{cartLoading ? "Chargement de votre sélection…" : totalCartCount > 0 ? `${totalCartCount} article${totalCartCount > 1 ? "s" : ""} dans votre sélection` : "Ajoutez des suggestions à votre sélection."}</p>
+          <Button onClick={handleGenerateOrders} icon={<ArrowRight size={16} />} disabled={cartLoading || productsLoading || !!productsError || totalCartCount === 0}>Revoir ma commande{totalCartCount > 0 ? ` (${totalCartCount})` : ""}</Button>
+          <small>La validation enregistre votre décision ; aucun envoi automatique.</small>
         </div>
       </section>
 
-      <div className="dashboard-section-heading"><h2>Les chiffres à retenir</h2><span>Données de démonstration</span></div>
-      <DashboardKPIs />
+      <div className="dashboard-section-heading"><h2>Votre situation actuelle</h2><span>Données de votre espace, initialisées avec des exemples</span></div>
+      <DashboardKPIs products={products} predictions={predictions} selectedCount={cartLoading ? null : totalCartCount}
+        productsReady={!productsLoading && !productsError} predictionsReady={!loading && !error} />
 
       <div className="dashboard-main-grid">
         <div id="dashboard-recommendations">
-        {loading ? <div className="dashboard-state" role="status">Chargement des suggestions…</div> : error ? <div className="dashboard-state" role="alert"><p>Les suggestions ne sont pas disponibles pour le moment.</p><Button variant="outline" onClick={() => void refetch()}>Réessayer</Button></div> :
+        {loading || productsLoading ? <div className="dashboard-state" role="status">Chargement des suggestions…</div> : error || productsError ? <div className="dashboard-state" role="alert"><p>Les suggestions ou le catalogue ne sont pas disponibles pour le moment.</p><Button variant="outline" onClick={() => { void refetch(); void refreshProducts(); }}>Réessayer</Button></div> :
         <RecommendationsSection
           predictions={visiblePredictions}
+          products={products}
           selectedIds={selectedPredictionIds}
           onTogglePrediction={handleTogglePrediction}
         />}
@@ -166,8 +167,6 @@ const Dashboard: React.FC = () => {
           <div className="dashboard-note"><Leaf size={20} aria-hidden="true" /><p><strong>Chaque produit compte.</strong><br />Un regard sur vos stocks aujourd’hui, moins de pertes demain.</p></div>
         </aside>
       </div>
-
-      <OrderHistory key={showOrderGenerator ? "review" : "closed"} />
 
       {/* Modals */}
       <Modal

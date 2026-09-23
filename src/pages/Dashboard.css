@@ -22,7 +22,7 @@
 .brief-copy p { max-width: var(--size-410); font-size: var(--font-size-sm); color: var(--color-border); line-height: var(--number-1_8); }
 .brief-link { display: inline-flex; align-items: center; gap: var(--size-12); color: var(--palette-sage-3); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); margin-top: var(--spacing-lg); }
 .brief-link:hover { color: var(--color-surface); text-decoration: underline; }
-.brief-order { border-left: var(--size-1) solid var(--color-teal); padding-left: var(--spacing-xl); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
+.brief-order { border-left: var(--size-1) solid var(--color-teal); padding-left: var(--spacing-xl); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; scroll-margin-top: var(--spacing-lg); }
 .brief-order-icon { color: var(--palette-sage-3); margin-bottom: var(--size-12); }
 .brief-order h3 { color: var(--color-bg); font-size: var(--font-size-md); font-weight: var(--font-weight-medium); }
 .brief-order p { color: var(--color-border); font-size: var(--font-size-sm); margin: var(--size-10) var(--number-0) var(--size-20); }
@@ -33,7 +33,7 @@
 .dashboard-section-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--size-12); margin-top: var(--spacing-sm); margin-bottom: var(--size-negative-8); }
 .dashboard-section-heading h2 { font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); }
 .dashboard-section-heading > span { font-size: var(--font-size-caption); color: var(--color-text-secondary); border: var(--size-1) solid var(--color-border); padding: var(--spacing-xs) var(--size-10); border-radius: var(--radius-sm); }
-.dashboard-container .kpi-grid { display: grid; grid-template-columns: repeat(var(--number-4), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
+.dashboard-container .kpi-grid { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
 .dashboard-kpi { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--size-20) var(--size-20) var(--number-0); }
 .kpi-heading { display: flex; justify-content: space-between; align-items: center; gap: var(--spacing-sm); font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-secondary); }
 .kpi-symbol { width: var(--spacing-xl); height: var(--spacing-xl); border-radius: var(--radius-md); display: grid; place-items: center; flex-shrink: var(--number-0); }
@@ -43,7 +43,8 @@
 .kpi-number { font-size: clamp(var(--font-size-display-sm), var(--unit-2_6vw), var(--font-size-display-md)); font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-negative-0_05); line-height: var(--number-1_3); margin-top: var(--size-12); font-variant-numeric: tabular-nums; }
 .kpi-number span { font-size: var(--font-size-xl); margin-left: var(--size-6); color: var(--color-text-secondary); }
 .kpi-period { font-size: var(--font-size-xs); color: var(--color-text-secondary); margin: var(--spacing-xs) var(--number-0) var(--spacing-md); }
-.kpi-footer { padding: var(--size-12) var(--number-0); font-size: var(--font-size-caption); color: var(--color-teal); border-top: var(--size-1) solid var(--color-border-light); }
+.kpi-footer { display: block; padding: var(--size-12) var(--number-0); font-size: var(--font-size-caption); color: var(--color-teal); border-top: var(--size-1) solid var(--color-border-light); }
+.kpi-footer:hover { text-decoration: underline; }
 .dashboard-main-grid { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)) var(--size-280); gap: var(--spacing-lg); align-items: start; margin-top: var(--size-12); }
 #dashboard-recommendations { min-width: var(--number-0); scroll-margin-top: var(--spacing-lg); }
 .dashboard-tools { border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--spacing-lg) var(--size-20); background: var(--color-surface); }

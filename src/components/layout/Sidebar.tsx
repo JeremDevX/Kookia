@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
+  ShoppingBag,
   Brain,
   BarChart3,
   Settings,
@@ -55,6 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { icon: Package, label: "Stocks", path: "/stocks" },
     { icon: Brain, label: "Prédictions", path: "/predictions" },
     { icon: BookOpen, label: "Recettes", path: "/recipes" },
+    { icon: ShoppingBag, label: "Commandes", path: "/orders" },
     { icon: BarChart3, label: "Analyses", path: "/analytics" },
     { icon: Settings, label: "Paramètres", path: "/settings" },
   ];

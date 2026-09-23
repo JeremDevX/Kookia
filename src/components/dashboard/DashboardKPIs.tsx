@@ -1,29 +1,31 @@
-import { Users, Euro, TrendingUp, Leaf } from "lucide-react";
+import { AlertTriangle, Package, ShoppingCart } from "lucide-react";
+import { Link } from "react-router-dom";
+import type { Product, Prediction } from "../../types";
+import { getProductStatus } from "../../domain/inventory/product.policies";
+import { isActionablePurchasePrediction } from "../../domain/predictions/prediction.policies";
 
-import { useEffect, useState } from "react";
-import { getInsights, type Insights } from "../../services/insightsService";
-const presentation = { covers: { icon: Users, tone: "sage" }, revenue: { icon: Euro, tone: "sand" }, forecast: { icon: TrendingUp, tone: "blue" }, waste: { icon: Leaf, tone: "sage" } };
-export default function DashboardKPIs() {
-  const [data, setData] = useState<Insights | null>(null);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    let active = true;
-    getInsights().then((data) => { if (active) setData(data); }, () => { if (active) setError("Indicateurs indisponibles."); });
-    return () => { active = false; };
-  }, []);
-  if (error) return <p role="alert">{error}</p>;
-  if (!data) return <p role="status">Chargement des indicateurs…</p>;
-  const indicators = data.indicators.map((item) => ({ ...item, ...presentation[item.id] }));
-  return (
-    <div className="kpi-grid">
-      {indicators.map(({ label, value, unit, period, detail, icon: Icon, tone }) => (
-        <article className="dashboard-kpi" key={label}>
-          <div className="kpi-heading"><span>{label}</span><span className={`kpi-symbol ${tone}`}><Icon size={19} aria-hidden="true" /></span></div>
-          <p className="kpi-number">{value}<span>{unit}</span></p>
-          <p className="kpi-period">{period}</p>
-          <div className="kpi-footer">{detail}</div>
-        </article>
-      ))}
-    </div>
-  );
+interface Props {
+  products: Product[];
+  predictions: Prediction[];
+  selectedCount: number | null;
+  productsReady: boolean;
+  predictionsReady: boolean;
+}
+
+export default function DashboardKPIs({ products, predictions, selectedCount, productsReady, predictionsReady }: Props) {
+  const stockToReview = products.filter((product) => getProductStatus(product) !== "optimal").length;
+  const buySuggestions = predictions.filter((prediction) => isActionablePurchasePrediction(prediction)).length;
+  const items = [
+    { label: "Stocks à surveiller", value: productsReady ? stockToReview : "—", detail: "Produits au seuil ou en dessous", to: "/stocks", icon: AlertTriangle, tone: "sand" },
+    { label: "Achats suggérés", value: predictionsReady ? buySuggestions : "—", detail: "Suggestions pour aujourd’hui ou après", to: "/predictions", icon: Package, tone: "blue" },
+    { label: "Articles sélectionnés", value: selectedCount ?? "—", detail: "À revoir avant validation", to: "#dashboard-order", icon: ShoppingCart, tone: "sage" },
+  ];
+  return <div className="kpi-grid">
+    {items.map(({ label, value, detail, to, icon: Icon, tone }) => <article className="dashboard-kpi" key={label}>
+      <div className="kpi-heading"><span>{label}</span><span className={`kpi-symbol ${tone}`}><Icon size={19} aria-hidden="true" /></span></div>
+      <p className="kpi-number">{value}</p>
+      <p className="kpi-period">{detail}</p>
+      <Link className="kpi-footer" to={to}>Voir {label.toLowerCase()}</Link>
+    </article>)}
+  </div>;
 }

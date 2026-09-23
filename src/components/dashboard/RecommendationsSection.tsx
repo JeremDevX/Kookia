@@ -10,11 +10,13 @@ import {
   TrendingUp,
   ArrowUpDown,
 } from "lucide-react";
-import type { Prediction } from "../../types";
+import type { Prediction, Product } from "../../types";
+import { isActionablePurchasePrediction } from "../../domain/predictions/prediction.policies";
 import "./RecommendationsSection.css";
 
 interface RecommendationsSectionProps {
   predictions: Prediction[];
+  products: Product[];
   selectedIds: string[];
   onTogglePrediction: (id: string, productName: string) => void;
 }
@@ -23,6 +25,7 @@ const ITEMS_PER_PAGE = 6;
 
 const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
   predictions,
+  products,
   selectedIds,
   onTogglePrediction,
 }) => {
@@ -49,7 +52,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
 
   // Count urgent items
   const urgentCount = predictions.filter(
-    (p) => p.recommendation?.action === "buy"
+    (p) => isActionablePurchasePrediction(p)
   ).length;
 
   // Reset to first page when sorting changes
@@ -112,10 +115,11 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
         </div>
       </div>
 
-      <p className="recommendations-description">Des propositions à vérifier selon vos besoins. Ajoutez les produits, puis ajustez votre commande.</p>
+      <p className="recommendations-description">Scénarios de démonstration, sans ventes ni météo connectées. Vérifiez vos besoins et les quantités avant de valider une commande.</p>
       <div className="recommendations-list grid-layout">
         {paginatedPredictions.length > 0 ? (
           paginatedPredictions.map((pred) => {
+            const product = products.find((item) => item.id === pred.productId);
             const isSelected = selectedIds.includes(pred.id);
             const isUrgent = pred.recommendation?.action === "buy";
 
@@ -161,13 +165,13 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
                       <div className="rec-detail-item">
                         <span className="label">Prévision</span>
                         <span className="value">
-                          {pred.predictedConsumption} kg
+                          {pred.predictedConsumption} {product?.unit ?? "unité inconnue"}
                         </span>
                       </div>
                       <div className="rec-detail-item">
                         <span className="label">Recommandé</span>
                         <span className="value">
-                          {pred.recommendation?.quantity} kg
+                          {pred.recommendation?.quantity} {product?.unit ?? "unité inconnue"}
                         </span>
                       </div>
                     </div>
@@ -175,13 +179,14 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
 
                   <div className="rec-action">
                     <span className="rec-order-info">
-                      À valider par vous
+                      {product ? "À valider par vous" : "Produit indisponible dans le catalogue"}
                     </span>
                     <Button
                       size="sm"
                       aria-label={`${isSelected ? "Retirer" : "Ajouter"} ${pred.productName} ${isSelected ? "de la" : "à la"} commande`}
                       variant={isSelected ? "primary" : "outline"}
                       className={isSelected ? "bg-optimal border-optimal" : ""}
+                      disabled={!product && !isSelected}
                       onClick={() =>
                         onTogglePrediction(pred.id, pred.productName)
                       }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Button from "../common/Button";
 import { CheckCircle, Package } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 import type { OrderRecommendation } from "../../features/orders/orderRecommendations";
 import { validateOrder, type PurchaseOrder } from "../../services/orderService";
@@ -47,6 +48,7 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
     <h3>Commande enregistrée</h3>
     <p>Votre validation et les quantités ont été enregistrées. Aucun email n’a été envoyé : cette commande reste à transmettre à vos fournisseurs.</p>
     <p>Référence : {order.id}</p>
+    <Link to="/orders" onClick={onClose}>Voir les commandes validées</Link>
     <Button onClick={onClose}>Fermer</Button>
   </div>;
 
