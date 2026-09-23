@@ -154,7 +154,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
           <Button variant="outline" onClick={onClose}>
             Fermer
           </Button>
-          <Button onClick={onOrder} disabled={!canOrder}>Préparer une commande</Button>
+          <Button onClick={onOrder} disabled={!canOrder}>Ajouter à la commande</Button>
         </div>
       </div>
     </Modal>

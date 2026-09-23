@@ -1,6 +1,4 @@
 import type { Product, Supplier } from "../../types";
-import type { Prediction } from "../../types";
-import { isActionablePurchasePrediction } from "../../domain/predictions/prediction.policies";
 
 export type OrderRecommendationSource =
   | "prediction"
@@ -14,7 +12,7 @@ export interface CartOrderItemInput {
   productId: string;
   productName: string;
   quantity: number;
-  source: Exclude<OrderRecommendationSource, "prediction">;
+  source: OrderRecommendationSource;
 }
 
 export interface OrderRecommendation {
@@ -40,21 +38,6 @@ export interface SupplierOrder {
   items: OrderItem[];
 }
 
-export const createOrderRecommendationsFromPredictions = (
-  predictions: Prediction[],
-  referenceDate: Date = new Date()
-): OrderRecommendation[] =>
-  predictions
-    .filter((prediction) => isActionablePurchasePrediction(prediction, referenceDate))
-    .map((prediction) => ({
-      id: prediction.id,
-      productId: prediction.productId,
-      productName: prediction.productName,
-      quantity: prediction.recommendation?.quantity ?? 0,
-      reason: prediction.recommendation?.reason ?? "Réapprovisionnement",
-      source: "prediction",
-    }));
-
 export const createOrderRecommendationsFromCartItems = (
   cartItems: CartOrderItemInput[],
   products: Product[]
@@ -69,7 +52,7 @@ export const createOrderRecommendationsFromCartItems = (
       productId: item.productId,
       productName: item.productName,
       quantity: item.quantity,
-      reason: `Depuis ${item.source} - ${product?.category ?? "Stock"}`,
+      reason: item.predictionId ? "Scénario d'exemple" : `Depuis ${item.source} - ${product?.category ?? "Stock"}`,
       source: item.source,
     };
   });

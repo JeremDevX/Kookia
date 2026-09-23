@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import Modal from "../components/common/Modal";
-import OrderGenerator from "../components/dashboard/OrderGenerator";
-import { createOrderRecommendationsFromPredictions } from "../features/orders/orderRecommendations";
+import { useNavigate } from "react-router-dom";
 import Card from "../components/common/Card";
 import Badge from "../components/common/Badge";
 import Button from "../components/common/Button";
@@ -9,12 +7,12 @@ import PredictionDetailModal from "../components/predictions/PredictionDetailMod
 import CalendarView from "../components/predictions/CalendarView";
 import {
   ShoppingCart,
-  Mail,
   ArrowRight,
   Calendar,
 } from "lucide-react";
 import { usePredictions } from "../hooks";
 import { useToast } from "../context/ToastContext";
+import { useCart } from "../context/useCart";
 import type { Prediction } from "../types";
 import { getPredictionPriority, isActionablePurchasePrediction } from "../domain/predictions/prediction.policies";
 import { isOnOrAfterRestaurantToday } from "../utils/date";
@@ -24,13 +22,14 @@ import "../styles/Workspace.css";
 
 const Predictions: React.FC = () => {
   const { addToast } = useToast();
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
   const { predictions, loading, error, refetch } = usePredictions();
   const { findProductById, findSupplierByProductId } = useInventoryCatalog();
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [selectedPrediction, setSelectedPrediction] =
     useState<Prediction | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [reviewPrediction, setReviewPrediction] = useState<Prediction | null>(null);
 
   const getSupplierName = (productId: string) =>
     findSupplierByProductId(productId)?.name;
@@ -44,14 +43,18 @@ const Predictions: React.FC = () => {
   const getCurrentStock = (productId: string) =>
     findProductById(productId)?.currentStock;
 
-  const handleAutoOrder = (pred: Prediction) => {
-    if (isActionablePurchasePrediction(pred)) setReviewPrediction(pred);
-  };
-
-  const handleEmailSupplier = (pred: Prediction) => {
-    const supplier = findSupplierByProductId(pred.productId);
-    if (!supplier?.email) { addToast("info", "Contact indisponible", "Aucune adresse email renseignée."); return; }
-    window.location.href = `mailto:${encodeURIComponent(supplier.email)}?subject=${encodeURIComponent(`Demande de devis — ${pred.productName}`)}`;
+  const handleSelectExample = async (pred: Prediction) => {
+    const product = findProductById(pred.productId);
+    if (!isActionablePurchasePrediction(pred) || !product || !pred.recommendation) return;
+    const saved = await addToCart({
+      id: `prediction-${pred.id}`, predictionId: pred.id, productId: product.id,
+      productName: product.name, quantity: pred.recommendation.quantity,
+      unit: product.unit, source: "prediction",
+    });
+    if (saved) {
+      addToast("success", "Article sélectionné", "Vérifiez la quantité avant de valider.");
+      navigate("/orders#selection");
+    }
   };
 
   const handleShowDetails = (pred: Prediction) => {
@@ -61,7 +64,7 @@ const Predictions: React.FC = () => {
 
   const handleOrderFromModal = () => {
     if (selectedPrediction) {
-      handleAutoOrder(selectedPrediction);
+      void handleSelectExample(selectedPrediction);
       setIsDetailModalOpen(false);
     }
   };
@@ -179,18 +182,10 @@ const Predictions: React.FC = () => {
                           <Button
                             className="w-full"
                             icon={<ShoppingCart size={16} />}
-                            onClick={() => handleAutoOrder(pred)}
+                            onClick={() => void handleSelectExample(pred)}
                             disabled={!isActionablePurchasePrediction(pred)}
                           >
-                            Préparer une commande
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            className="w-full"
-                            icon={<Mail size={16} />}
-                            onClick={() => handleEmailSupplier(pred)}
-                          >
-                            Contacter le fournisseur
+                            Ajouter à la commande
                           </Button>
                         </div>
                       </div>
@@ -241,10 +236,10 @@ const Predictions: React.FC = () => {
                         <Button
                           size="sm"
                           icon={<ArrowRight size={14} />}
-                          onClick={() => handleAutoOrder(pred)}
+                          onClick={() => void handleSelectExample(pred)}
                           disabled={!isActionablePurchasePrediction(pred)}
                         >
-                          Préparer une commande
+                          Ajouter à la commande
                         </Button>
                       </div>
                     </div>
@@ -259,9 +254,6 @@ const Predictions: React.FC = () => {
         <CalendarView predictions={predictions} onPredictionClick={handleShowDetails} />
       )}
 
-      <Modal isOpen={reviewPrediction !== null} onClose={() => setReviewPrediction(null)} title="Préparer une commande" width="lg">
-        <OrderGenerator recommendations={reviewPrediction ? createOrderRecommendationsFromPredictions([reviewPrediction]) : []} onClose={() => setReviewPrediction(null)} />
-      </Modal>
       <PredictionDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}

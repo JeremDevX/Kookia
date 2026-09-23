@@ -3,7 +3,6 @@ import type { Prediction } from "../types";
 import { isOnOrAfterRestaurantToday } from "../utils/date";
 import { getPredictionPriority } from "./predictionService";
 import { isActionablePurchasePrediction } from "../domain/predictions/prediction.policies";
-import { createOrderRecommendationsFromPredictions } from "../features/orders/orderRecommendations";
 
 const createPrediction = (overrides: Partial<Prediction>): Prediction => ({
   id: "pred-1",
@@ -73,7 +72,7 @@ describe("predictionService/getPredictionPriority", () => {
     const past = createPrediction({ predictedDate: "2026-05-01" });
     const current = createPrediction({ id: "pred-2", predictedDate: "2026-05-03" });
     expect(isActionablePurchasePrediction(past, referenceDate)).toBe(false);
-    expect(createOrderRecommendationsFromPredictions([past, current], referenceDate).map((item) => item.id)).toEqual(["pred-2"]);
+    expect(isActionablePurchasePrediction(current, referenceDate)).toBe(true);
   });
 
   it("keeps same priority for the same instant represented in different client timezones", () => {

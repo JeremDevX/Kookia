@@ -5,27 +5,23 @@ import InvoiceModal from "../components/dashboard/InvoiceModal";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import DashboardKPIs from "../components/dashboard/DashboardKPIs";
 import RecommendationsSection from "../components/dashboard/RecommendationsSection";
-import OrderGenerator from "../components/dashboard/OrderGenerator";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
 import { Calendar, FileText, ChefHat, ShoppingBag, ArrowUpRight, Leaf, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { usePredictions, useProducts } from "../hooks";
 import { isActionablePurchasePrediction } from "../domain/predictions/prediction.policies";
 import { getRestaurant, type Restaurant } from "../services/restaurantService";
-import {
-  createOrderRecommendationsFromCartItems,
-} from "../features/orders/orderRecommendations";
 import "./Dashboard.css";
 
 const Dashboard: React.FC = () => {
-  const [showOrderGenerator, setShowOrderGenerator] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const navigate = useNavigate();
 
 
   const { addToast } = useToast();
-  const { cartItems, addToCart, removeFromCart, refreshCart, loading: cartLoading } = useCart();
+  const { cartItems, addToCart, removeFromCart, loading: cartLoading } = useCart();
   const selectedPredictionIds = cartItems.flatMap((item) => item.predictionId ? [item.predictionId] : []);
   const { predictions, loading, error, refetch } = usePredictions();
   const { products, loading: productsLoading, error: productsError, refetch: refreshProducts } = useProducts();
@@ -70,20 +66,7 @@ const Dashboard: React.FC = () => {
   const totalCartCount = cartItems.length;
 
   const handleGenerateOrders = () => {
-    if (totalCartCount > 0) {
-      setShowOrderGenerator(true);
-    } else {
-      addToast(
-        "info",
-        "Sélectionnez des articles",
-        "Ajoutez d’abord un article à votre sélection."
-      );
-    }
-  };
-
-  const handleCloseOrderGenerator = () => {
-    setShowOrderGenerator(false);
-
+    navigate("/orders#selection");
   };
 
   const todayDate = new Date().toLocaleDateString("fr-FR", {
@@ -108,8 +91,6 @@ const Dashboard: React.FC = () => {
     (pred) => !selectedPredictionIds.includes(pred.id)
   );
 
-  const allRecommendations = createOrderRecommendationsFromCartItems(cartItems, products);
-
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
@@ -133,7 +114,7 @@ const Dashboard: React.FC = () => {
           <span className="brief-order-icon"><ShoppingBag size={23} aria-hidden="true" /></span>
           <h3>Commande en préparation</h3>
           <p aria-live="polite">{cartLoading ? "Chargement de votre sélection…" : totalCartCount > 0 ? `${totalCartCount} article${totalCartCount > 1 ? "s" : ""} dans votre sélection` : "Ajoutez des suggestions à votre sélection."}</p>
-          <Button onClick={handleGenerateOrders} icon={<ArrowRight size={16} />} disabled={cartLoading || productsLoading || !!productsError || totalCartCount === 0}>Revoir ma commande{totalCartCount > 0 ? ` (${totalCartCount})` : ""}</Button>
+          <Button onClick={handleGenerateOrders} icon={<ArrowRight size={16} />} disabled={cartLoading || totalCartCount === 0}>Revoir les quantités{totalCartCount > 0 ? ` (${totalCartCount})` : ""}</Button>
           <small>La validation enregistre votre décision ; aucun envoi automatique.</small>
         </div>
       </section>
@@ -161,19 +142,6 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Modals */}
-      <Modal
-        isOpen={showOrderGenerator}
-        onClose={handleCloseOrderGenerator}
-        title="Valider une commande"
-        width="lg"
-      >
-        <OrderGenerator
-          recommendations={allRecommendations}
-          onValidated={() => { void refreshCart(); }}
-          onClose={handleCloseOrderGenerator}
-        />
-      </Modal>
-
       <Modal
         isOpen={isInvoiceModalOpen}
         onClose={() => setIsInvoiceModalOpen(false)}

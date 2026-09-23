@@ -5,7 +5,7 @@ export interface CartItem {
   quantity: number;
   unit: string;
   predictionId?: string;
-  source: "notification" | "dashboard" | "stocks";
+  source: "notification" | "dashboard" | "stocks" | "prediction";
 }
 
 export interface CartContextType {

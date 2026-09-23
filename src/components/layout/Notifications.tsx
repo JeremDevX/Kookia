@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bell,
   AlertTriangle,
@@ -10,11 +11,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Modal from "../common/Modal";
-import OrderGenerator from "../dashboard/OrderGenerator";
 import { useToast } from "../../context/ToastContext";
 import { useCart } from "../../context/useCart";
-import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
-import { createOrderRecommendationsFromCartItems } from "../../features/orders/orderRecommendations";
 import "./Notifications.css";
 
 import { getNotifications, markNotificationsRead } from "../../services/notificationService";
@@ -22,16 +20,14 @@ import { iconBadgeStyles, type Notification } from "./notificationPresentation";
 
 const Notifications: React.FC = () => {
   const { addToast } = useToast();
-  const { products } = useInventoryCatalog();
+  const navigate = useNavigate();
   const {
     addToCart: addToGlobalCart,
     addMultipleToCart,
     cartCount,
     cartItems,
-    refreshCart,
   } = useCart();
   const [isOpen, setIsOpen] = useState(false);
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const addedToCart = cartItems.map((item) => item.id);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -44,10 +40,6 @@ const Notifications: React.FC = () => {
   const unreadCount = notifications.filter((n) => !n.read).length;
   const actionableNotifications = notifications.filter(
     (n) => n.actionable && !addedToCart.includes(n.id)
-  );
-  const cartRecommendations = createOrderRecommendationsFromCartItems(
-    cartItems,
-    products
   );
 
   const markAsRead = async () => {
@@ -118,15 +110,9 @@ const Notifications: React.FC = () => {
     );
   };
 
-  // Open OrderGenerator modal directly
   const handleGenerateOrder = () => {
     setIsOpen(false);
-    setIsOrderModalOpen(true);
-  };
-
-  const handleCloseOrderModal = () => {
-    setIsOrderModalOpen(false);
-
+    navigate("/orders#selection");
   };
 
   const handleOpen = () => {
@@ -452,19 +438,6 @@ const Notifications: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Order Generator Modal */}
-      <Modal
-        isOpen={isOrderModalOpen}
-        onClose={handleCloseOrderModal}
-        title="Valider une commande"
-        width="lg"
-      >
-        <OrderGenerator
-          onValidated={() => { void refreshCart(); }}
-          recommendations={cartRecommendations}
-          onClose={handleCloseOrderModal}
-        />
-      </Modal>
     </>
   );
 };

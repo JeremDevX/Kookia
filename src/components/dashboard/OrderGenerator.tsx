@@ -34,7 +34,7 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
     try {
       const saved = await validateOrder(operationId, recommendations.map((item, index) => ({
         productId: item.productId, quantity: Number(quantities[index]),
-        ...(item.source === "prediction" ? { predictionId: item.id } : item.predictionId ? { predictionId: item.predictionId } : {}),
+        ...(item.predictionId ? { predictionId: item.predictionId } : {}),
         ...(item.cartId ? { cartId: item.cartId } : {}),
       })));
       setOrder(saved);
@@ -48,13 +48,14 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
     <h3>Commande enregistrée</h3>
     <p>À transmettre au fournisseur : aucun email n’a été envoyé et le stock n’a pas changé.</p>
     <p>Référence : {order.id}</p>
-    <Link to="/orders" onClick={onClose}>Voir les commandes validées</Link>
+    <Link to="/orders#to-transmit" onClick={onClose}>Voir la commande à transmettre</Link>
     <Button onClick={onClose}>Fermer</Button>
   </div>;
 
   return <div className="flex flex-col gap-lg">
     <h3><Package size={20} aria-hidden="true" /> Quantités à commander</h3>
     <p>Vérifiez les quantités et le fournisseur. La validation n’envoie rien et ne modifie pas le stock.</p>
+    {recommendations.some((item) => item.predictionId) && <p role="status">Certaines quantités proviennent de scénarios d'exemple, sans vos ventes ni météo.</p>}
     {recommendations.length === 0 && <p role="alert">Aucun article à commander.</p>}
     {quantities.some((value) => value.trim() && !isValidOrderQuantity(value)) && <p role="alert">Chaque quantité doit être comprise entre 0,001 et 1 000 000, avec au plus 3 décimales.</p>}
     {loading && <p role="status">Chargement du catalogue…</p>}

@@ -7,7 +7,7 @@ import { isCurrentPrediction } from "./predictionPolicy.js";
 export const cartItemSchema = z.object({
   id: z.string().min(1).max(100), productId: z.string().min(1).max(100),
   productName: z.string().max(120), quantity: z.number().finite().positive().max(1000000).multipleOf(0.001),
-  unit: z.string().max(10), source: z.enum(["notification", "dashboard", "stocks"]),
+  unit: z.string().max(10), source: z.enum(["notification", "dashboard", "stocks", "prediction"]),
   predictionId: z.string().min(1).max(100).optional(),
 }).strict();
 export const cartSchema = z.array(cartItemSchema).max(100);
