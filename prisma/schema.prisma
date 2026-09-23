@@ -55,6 +55,9 @@ model Restaurant {
   orders       PurchaseOrder[]
   decisions    RecommendationDecision[]
   documents    WorkspaceDocument[]
+  sales        DailySale[]
+  saleItems    SaleItem[]
+  saleImports  SaleImport[]
 }
 
 model Supplier {
@@ -157,6 +160,56 @@ model Prediction {
   reason               String?
   source               String @default("demo")
   @@id([restaurantId, id])
+}
+
+model SaleItem {
+  id             String @id @default(uuid())
+  restaurantId   String
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name           String
+  normalizedName String
+  sales          DailySale[]
+
+  @@unique([restaurantId, normalizedName])
+  @@unique([restaurantId, id])
+}
+
+model DailySale {
+  id           String   @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  saleItemId   String
+  saleItem     SaleItem @relation(fields: [restaurantId, saleItemId], references: [restaurantId, id], onDelete: NoAction)
+  serviceDate  DateTime @db.Date
+  quantity     Int
+  source       String   @default("manual")
+  operationId  String
+  importId     String?
+  importRecord SaleImport? @relation(fields: [importId], references: [id], onDelete: NoAction)
+  importLine   Int?
+  createdBy    String
+  updatedBy    String
+  revision     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([restaurantId, serviceDate, saleItemId])
+  @@unique([restaurantId, operationId])
+  @@index([restaurantId, serviceDate])
+}
+
+model SaleImport {
+  id            String   @id @default(uuid())
+  restaurantId  String
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  fileHash      String
+  acceptedCount Int
+  rejectedCount Int
+  createdBy     String
+  createdAt     DateTime @default(now())
+  sales         DailySale[]
+
+  @@unique([restaurantId, fileHash])
 }
 
 model PurchaseOrder {
