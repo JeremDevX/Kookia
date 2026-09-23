@@ -6,6 +6,7 @@ import {
   ShoppingBag,
   Brain,
   BarChart3,
+  ClipboardList,
   Settings,
   HelpCircle,
   LogOut,
@@ -57,6 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { icon: Brain, label: "Prévisions", path: "/predictions" },
     { icon: BookOpen, label: "Recettes", path: "/recipes" },
     { icon: ShoppingBag, label: "Commandes", path: "/orders" },
+    { icon: ClipboardList, label: "Ventes", path: "/sales" },
     { icon: BarChart3, label: "Analyses", path: "/analytics" },
     { icon: Settings, label: "Paramètres", path: "/settings" },
   ];

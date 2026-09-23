@@ -13,6 +13,7 @@ const Recipes = lazy(() => import("../../pages/Recipes"));
 const Orders = lazy(() => import("../../pages/Orders"));
 const Settings = lazy(() => import("../../pages/Settings"));
 const Analytics = lazy(() => import("../../pages/Analytics"));
+const Sales = lazy(() => import("../../pages/Sales"));
 
 const AppRouter = () => (
   <Router>
@@ -27,6 +28,7 @@ const AppRouter = () => (
           <Route path="orders" element={<Orders />} />
           <Route path="settings" element={<Settings />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="sales" element={<Sales />} />
         </Route></Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

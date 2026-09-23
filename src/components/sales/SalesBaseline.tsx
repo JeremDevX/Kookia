@@ -1,0 +1,45 @@
+import { useEffect, useState } from "react";
+import Button from "../common/Button";
+import { getSalesBaseline, type SalesBaseline as Baseline } from "../../services/salesService";
+
+const PAGE_SIZE = 50;
+
+export default function SalesBaseline() {
+  const [baseline, setBaseline] = useState<Baseline | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  useEffect(() => {
+    let active = true;
+    void getSalesBaseline().then((result) => {
+      if (active) setBaseline(result);
+    }).catch((cause: unknown) => {
+      if (active) setError(cause instanceof Error ? cause.message : "Réessayez.");
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  return <section className="sales-panel" aria-labelledby="sales-baseline-title">
+    <h2 id="sales-baseline-title">Baseline de ventes expérimentale</h2>
+    <p>Cette estimation utilise uniquement les ventes enregistrées du restaurant, manuelles ou CSV. Elle ne tient compte ni de la météo, ni des événements, ni du stock. Elle ne commande rien et n’est pas le moteur IA de prévision.</p>
+    {loading ? <p role="status">Évaluation de la baseline…</p> : error ?
+      <p role="alert">Baseline indisponible : {error}</p> : baseline && <>
+        <p>Historique étudié : du {baseline.historyFrom} au {baseline.asOfDate}, sur des journées terminées. Estimation pour le {baseline.forecastDate}. Méthode : moyenne arrondie des {baseline.lookbackDays} derniers jours de ventes de chaque article.</p>
+        {baseline.status === "no_data" ? <p>Historique insuffisant : aucune vente enregistrée dans cette fenêtre. Aucune estimation affichée.</p> :
+          baseline.status === "insufficient_history" ? <p>Historique insuffisant : chaque article doit avoir des ventes enregistrées sur {baseline.requiredConsecutiveDays} jours calendaires consécutifs, sans jour manquant. Aucune estimation affichée ; une absence de saisie n’est pas assimilée à zéro vente.</p> : <>
+            <p><strong>Résultats expérimentaux, non validés sur un jeu de données terrain indépendant.</strong> {baseline.items.length} article(s) sur {baseline.observedItemCount} disposent de l’historique requis ; {baseline.observedItemCount - baseline.items.length} article(s) observé(s) ne sont pas estimés faute de {baseline.requiredConsecutiveDays} jours consécutifs. Chaque ligne a été évaluée sur les {baseline.evaluationDays} derniers jours enregistrés, sans utiliser la vente du jour à prédire. L’erreur absolue moyenne (EAM) est exprimée en unités ; le pourcentage d’erreur absolue pondérée (WAPE) résume les erreurs sur ces mêmes jours. Ces mesures rétrospectives ne sont pas un score de confiance ni une garantie de fiabilité.</p>
+            <div className="sales-table-wrap" role="region" aria-label="Baseline expérimentale par article" tabIndex={0}><table className="sales-table"><thead><tr>
+              <th>Article vendu</th><th>Estimation pour le {baseline.forecastDate}</th><th>EAM sur {baseline.evaluationDays} jours</th><th>WAPE sur {baseline.evaluationDays} jours</th>
+            </tr></thead><tbody>{baseline.items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((item) => <tr key={item.saleItemId}>
+              <td>{item.saleItemName}</td><td>{item.forecastQuantity} unités</td><td>{item.backtest.meanAbsoluteError} unités</td>
+              <td>{item.backtest.weightedAbsolutePercentageError === null ? "Non calculable" : `${item.backtest.weightedAbsolutePercentageError} %`}</td>
+            </tr>)}</tbody></table></div>
+            {baseline.items.length > PAGE_SIZE && <div className="sales-actions">
+              <Button type="button" variant="outline" disabled={page === 0} onClick={() => setPage((current) => current - 1)}>Articles précédents</Button>
+              <span role="status">Articles {page * PAGE_SIZE + 1} à {Math.min((page + 1) * PAGE_SIZE, baseline.items.length)} sur {baseline.items.length}</span>
+              <Button type="button" variant="outline" disabled={(page + 1) * PAGE_SIZE >= baseline.items.length} onClick={() => setPage((current) => current + 1)}>Articles suivants</Button>
+            </div>}
+          </>}
+      </>}
+  </section>;
+}

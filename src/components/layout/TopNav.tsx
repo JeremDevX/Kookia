@@ -23,6 +23,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen }) => {
     "/settings": "Paramètres",
     "/analytics": "Analyses",
     "/orders": "Commandes",
+    "/sales": "Ventes",
   };
 
   const currentPage = pageLabels[pathname] ?? "Vue d’ensemble";

@@ -1,0 +1,11 @@
+.sales-page { display: grid; gap: var(--spacing-lg); }
+.sales-panel { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--spacing-lg); }
+.sales-form, .sales-filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--spacing-md); }
+.sales-form label, .sales-filters label { display: grid; gap: var(--spacing-sm); min-width: min(var(--unit-100percent), var(--size-180)); }
+.sales-form input, .sales-form select, .sales-filters input { width: var(--unit-100percent); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
+.sales-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.sales-file-label, .sales-mapping-label { display: grid; gap: var(--spacing-sm); }
+.sales-mapping-label select { max-width: var(--size-180); }
+.sales-table-wrap { overflow-x: auto; }
+.sales-table { width: var(--unit-100percent); border-collapse: collapse; }
+.sales-table th, .sales-table td { text-align: left; padding: var(--spacing-sm); border-bottom: var(--size-1) solid var(--color-border); }
