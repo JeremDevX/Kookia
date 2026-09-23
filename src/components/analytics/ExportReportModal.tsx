@@ -4,11 +4,11 @@ import Button from "../common/Button";
 import { getReport, reportCells, reportCsv, reportExcelXml } from "../../services/reportService";
 import { formatLocalISODate } from "../../utils/date";
 import "./ExportReportModal.css";
-interface ExportReportModalProps { isOpen: boolean; onClose: () => void; }
-export default function ExportReportModal({ isOpen, onClose }: ExportReportModalProps) {
+interface ExportReportModalProps { isOpen: boolean; onClose: () => void; initialFrom?: string; initialTo?: string; }
+export default function ExportReportModal({ isOpen, onClose, initialFrom, initialTo }: ExportReportModalProps) {
   const [format, setFormat] = useState("csv");
-  const [from, setFrom] = useState(() => `${formatLocalISODate(new Date()).slice(0, 7)}-01`);
-  const [to, setTo] = useState(() => formatLocalISODate(new Date()));
+  const [from, setFrom] = useState(() => initialFrom ?? `${formatLocalISODate(new Date()).slice(0, 7)}-01`);
+  const [to, setTo] = useState(() => initialTo ?? formatLocalISODate(new Date()));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -55,15 +55,15 @@ export default function ExportReportModal({ isOpen, onClose }: ExportReportModal
     } catch (error) { printWindow?.close(); setError(error instanceof Error ? error.message : "Export impossible."); }
     finally { setLoading(false); }
   };
-  return <Modal isOpen={isOpen} onClose={onClose} title="Exporter les données" width="md">
+  return <Modal isOpen={isOpen} onClose={onClose} title="Exporter le bilan" width="md">
     <div className="export-report-modal flex flex-col gap-lg">
-      <p>Opérations filtrées par date UTC. L’instantané d’exemple du 11/09/2026 n’est inclus que si la période couvre cette date.</p>
+      <p>Le rapport contient vos ventes et opérations enregistrées sur la période. Il exclut les scénarios de démonstration. Les ventes suivent leur date de service ; les autres opérations, leur date UTC.</p>
       <label htmlFor="report-format">Format</label>
       <select className="input-field" id="report-format" value={format} disabled={loading} onChange={(event) => setFormat(event.target.value)}>
-        <option value="csv">CSV</option><option value="excel">Excel — classeur XML</option><option value="pdf">PDF — via impression</option>
+        <option value="csv">Tableur CSV</option><option value="excel">Tableur compatible Excel</option><option value="pdf">Imprimer ou enregistrer en PDF</option>
       </select>
-      <label htmlFor="report-from">Date de début (UTC)</label><input className="input-field" id="report-from" type="date" value={from} disabled={loading} onChange={(event) => setFrom(event.target.value)} />
-      <label htmlFor="report-to">Date de fin incluse (UTC)</label><input className="input-field" id="report-to" type="date" value={to} disabled={loading} onChange={(event) => setTo(event.target.value)} />
+      <label htmlFor="report-from">Date de début</label><input className="input-field" id="report-from" type="date" value={from} disabled={loading} onChange={(event) => setFrom(event.target.value)} />
+      <label htmlFor="report-to">Date de fin incluse</label><input className="input-field" id="report-to" type="date" value={to} disabled={loading} onChange={(event) => setTo(event.target.value)} />
       {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
       <div className="export-actions"><Button variant="outline" onClick={onClose} disabled={loading}>Fermer</Button><Button onClick={exportReport} disabled={loading || !from || !to || from > to}>{loading ? "Préparation…" : format === "pdf" ? "Préparer le PDF" : "Télécharger"}</Button></div>
     </div>

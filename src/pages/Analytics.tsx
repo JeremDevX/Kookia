@@ -1,139 +1,36 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import Button from "../components/common/Button";
 import ExportReportModal from "../components/analytics/ExportReportModal";
-import CustomizeAnalyticsModal from "../components/analytics/CustomizeAnalyticsModal";
-import WasteChart from "../components/analytics/charts/WasteChart";
-import AITrendChart from "../components/analytics/charts/AITrendChart";
-import SavingsChart from "../components/analytics/charts/SavingsChart";
-import { Download } from "lucide-react";
-import { getInsights, type Insights } from "../services/insightsService";
-import ROISimulator from "../components/analytics/ROISimulator";
-import { useToast } from "../context/ToastContext";
-import { useAnalytics } from "../hooks";
-import type { AnalyticsSettings } from "../types/callbacks";
-import { useAnalyticsPreferences } from "../features/analytics/useAnalyticsPreferences";
+import SalesMetrics from "../components/sales/SalesMetrics";
+import { formatLocalISODate } from "../utils/date";
+import DemoAnalytics from "./DemoAnalytics";
 import "./Analytics.css";
+import "./Sales.css";
 import "../styles/Workspace.css";
-import "./InsightsSettings.css";
 
-const Analytics: React.FC = () => {
-  const { addToast } = useToast();
-  const { data, error, refetch } = useAnalytics();
-  const { settings: analyticsSettings, saveSettings, error: preferencesError, loading: preferencesLoading } =
-    useAnalyticsPreferences();
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
+const today = () => formatLocalISODate(new Date());
+const monthAgo = () => new Date(Date.parse(today()) - 29 * 86_400_000).toISOString().slice(0, 10);
 
-  const handleSaveSettings = async (settings: AnalyticsSettings) => {
-    try {
-      await saveSettings(settings);
-      addToast(
-        "success",
-        "Affichage enregistré",
-        "Les réglages des analyses ont été mis à jour."
-      );
-    } catch (error) {
-      addToast(
-        "info",
-        "Enregistrement impossible",
-        error instanceof Error
-          ? error.message
-          : "Réessayez."
-      );
-      throw error;
-    }
-  };
+export default function Analytics() {
+  const [from, setFrom] = useState(monthAgo);
+  const [to, setTo] = useState(today);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
+  const validRange = !!from && !!to && from <= to;
 
-  const [insights, setInsights] = useState<Insights | null>(null);
-  const [insightsError, setInsightsError] = useState("");
-  useEffect(() => {
-    let active = true;
-    getInsights().then((data) => { if (active) setInsights(data); }, () => { if (active) setInsightsError("Hypothèses et indicateurs indisponibles."); });
-    return () => { active = false; };
-  }, []);
-  const predictionCount = insights?.predictionCount ?? 0;
-
-  if (error) return <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>;
-
-  if (!data) {
-    return (
-      <div className="analytics-container workspace-page" role="status">
-        <header className="page-header glass-header">
-          <div>
-            <h1 className="page-title">Analyses</h1>
-            <p className="page-subtitle">Chargement des analyses…</p>
-          </div>
-        </header>
-      </div>
-    );
-  }
-
-  const { wasteStats, aiReliability, wasteEvolution, savingsEvolution, criticalProducts } =
-    data;
-
-  return (
-    <div className="analytics-container workspace-page">
-      {insightsError && <p role="alert">{insightsError}</p>}
-      {preferencesError && <p role="alert">{preferencesError}</p>}
-      <header className="workspace-header">
-        <div>
-          <h1>Analyses</h1>
-        </div>
-        <div className="flex gap-sm">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCustomizeModalOpen(true)}
-            disabled={preferencesLoading}
-          >
-            Régler l’affichage
-          </Button>
-          <Button
-            size="sm"
-            icon={<Download size={16} />}
-            onClick={() => setIsExportModalOpen(true)}
-          >
-            Exporter les données
-          </Button>
-        </div>
-      </header>
-
-      <div className="workspace-summary"><div><span>Source</span><strong>Données d’exemple</strong></div><p>Chiffres figés au 11/09/2026, non recalculés à partir de votre activité.</p></div>
-      <div className="workspace-section-heading"><h2>Indicateurs</h2></div>
-
-      <div className="analytics-grid">
-        {/* Waste Stats */}
-        <WasteChart stats={wasteStats} evolution={wasteEvolution} showTrends={analyticsSettings.showTrends} targetGrams={preferencesLoading || preferencesError ? null : analyticsSettings.wasteTarget} />
-
-        {/* AI Performance */}
-        {analyticsSettings.showAI && <AITrendChart
-          reliability={aiReliability}
-          criticalProducts={criticalProducts}
-          predictionCount={predictionCount}
-        />}
-
-        {/* Total Usage (Chart) */}
-        {analyticsSettings.showROI && <SavingsChart evolution={savingsEvolution} />}
-
-        {/* ROI Simulator - Full width */}
-        {analyticsSettings.showROI && <div className="col-span-2">
-          {insights ? <ROISimulator roiSimulator={insights.roi} /> : !insightsError && <p role="status">Chargement des hypothèses…</p>}
-        </div>}
-      </div>
-
-      <ExportReportModal
-        isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
-      />
-
-      <CustomizeAnalyticsModal
-        isOpen={isCustomizeModalOpen}
-        onClose={() => setIsCustomizeModalOpen(false)}
-        initialSettings={analyticsSettings}
-        onSave={handleSaveSettings}
-      />
-    </div>
-  );
-};
-
-export default Analytics;
+  return <div className="analytics-container workspace-page">
+    <header className="workspace-header"><div><h1>Bilan</h1><p className="workspace-subtitle">Vos ventes enregistrées et un rapport de vos opérations, séparés des exemples.</p></div>
+      <Button onClick={() => setExportOpen(true)} disabled={!validRange}>Exporter un rapport</Button>
+    </header>
+    <div className="bilan-period"><label>Du <input type="date" value={from} max={to || today()} onChange={(event) => setFrom(event.target.value)} /></label>
+      <label>Au <input type="date" value={to} min={from} max={today()} onChange={(event) => setTo(event.target.value)} /></label></div>
+    {!validRange ? <p role="alert">Choisissez une période valide pour consulter le bilan.</p> :
+      <SalesMetrics key={`${from}:${to}`} from={from} to={to} />}
+    <p className="bilan-next"><Link to="/sales">Ajouter ou corriger des ventes</Link> · <Link to="/stocks">Vérifier les stocks</Link></p>
+    <details className="bilan-demo" onToggle={(event) => setShowDemo(event.currentTarget.open)}><summary>Voir les graphiques de démonstration</summary>
+      {showDemo && <DemoAnalytics />}
+    </details>
+    <ExportReportModal key={`${from}:${to}`} isOpen={exportOpen} onClose={() => setExportOpen(false)} initialFrom={from} initialTo={to} />
+  </div>;
+}

@@ -6,6 +6,17 @@
   padding-top: var(--spacing-lg);
 }
 
+.bilan-period { display: flex; flex-wrap: wrap; gap: var(--spacing-md); }
+.bilan-period label { display: flex; align-items: center; gap: var(--spacing-sm); font-size: var(--font-size-sm); }
+.bilan-period input { min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.bilan-next { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.bilan-next a { color: var(--color-primary); text-underline-offset: var(--size-3); }
+.bilan-demo { padding: var(--spacing-lg); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.bilan-demo summary { cursor: pointer; font-weight: var(--font-weight-medium); }
+.bilan-demo-content { display: flex; flex-direction: column; gap: var(--spacing-lg); padding-top: var(--spacing-lg); }
+.bilan-demo-content > p { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.analytics-container :is(a, button, summary, input):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
+
 .analytics-grid {
   display: grid;
   grid-template-columns: repeat(var(--number-2), var(--unit-1fr));

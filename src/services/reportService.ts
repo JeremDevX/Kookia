@@ -4,7 +4,7 @@ export const getReport = (from: string, to: string) => apiRequest<Report>(`/work
 export const reportCells = (report: Report): (string | number)[][] => [
   ["Rapport opérationnel KookiA — ne constitue pas une attestation de conformité"],
   ["Du", report.from, "au", report.to, "Fuseau", report.timezone],
-  ["Les instantanés de démonstration ne sont pas des mesures calculées sur la période sélectionnée."],
+  ["Ventes par date de service ; autres opérations datées en UTC. Les scénarios de démonstration sont exclus."],
   ["Section", "Date", "Indicateur", "Valeur", "Source"],
   ...report.rows.map((row) => [row.section, row.date, row.metric, row.value, row.source]),
 ];

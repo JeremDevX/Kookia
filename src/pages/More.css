@@ -1,0 +1,9 @@
+.more-grid { display: grid; grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
+.more-card { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
+.more-card h2 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); }
+.more-card p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_8); }
+.more-card a { margin-top: auto; padding-top: var(--spacing-sm); color: var(--color-primary); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
+.more-help { margin-top: var(--spacing-lg); }
+.more-help a { color: var(--color-primary); }
+.more-page a:focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
+@media (--media-compact) { .more-grid { grid-template-columns: var(--unit-1fr); } }

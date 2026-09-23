@@ -1,5 +1,5 @@
-.sales-page { display: grid; gap: var(--spacing-lg); }
-.sales-panel { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--spacing-lg); }
+.sales-page { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-lg); min-width: var(--number-0); padding: var(--size-36) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)) var(--spacing-2xl); }
+.sales-panel { min-width: var(--number-0); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--spacing-lg); }
 .sales-form, .sales-filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--spacing-md); }
 .sales-form label, .sales-filters label { display: grid; gap: var(--spacing-sm); min-width: min(var(--unit-100percent), var(--size-180)); }
 .sales-form input, .sales-form select, .sales-filters input { width: var(--unit-100percent); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
@@ -17,3 +17,8 @@
 .sales-disclosure { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
 .sales-disclosure summary { padding: var(--spacing-lg); cursor: pointer; font-weight: var(--font-weight-medium); }
 .sales-disclosure .sales-panel { border: var(--number-0); border-top: var(--size-1) solid var(--color-border); border-radius: var(--number-0); }
+.sales-metrics { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.sales-metrics h3 { margin-top: var(--spacing-sm); font-size: var(--font-size-md); }
+.sales-metrics p { line-height: var(--number-1_8); }
+.sales-metrics-total strong { font-size: var(--font-size-xl); }
+@media (--media-compact) { .sales-page { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); } }

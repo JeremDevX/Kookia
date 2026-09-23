@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import Button from "../common/Button";
+import { Link } from "react-router-dom";
 import { getSalesMetrics, type SalesMetrics as Metrics } from "../../services/salesService";
 
 interface Props { from: string; to: string }
 const PAGE_SIZE = 50;
+const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
 
 export default function SalesMetrics({ from, to }: Props) {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
@@ -21,16 +23,16 @@ export default function SalesMetrics({ from, to }: Props) {
     return () => { active = false; };
   }, [from, to]);
 
-  return <section className="sales-panel" aria-labelledby="sales-metrics-title">
+  return <section className="sales-panel sales-metrics" aria-labelledby="sales-metrics-title">
     <h2 id="sales-metrics-title">Indicateurs des ventes enregistrées</h2>
     <p>Source : saisies manuelles et imports CSV du restaurant, après corrections. Les données de démonstration, le stock et les commandes sont exclus. Une journée sans saisie n’est pas comptée comme zéro vente.</p>
     {loading ? <p role="status">Calcul des indicateurs…</p> : error ? <p role="alert">Indicateurs indisponibles : {error}</p> : metrics && <>
-      <p>Période : du {metrics.period.from} au {metrics.period.to}. {metrics.observedDays} jour(s) avec ventes enregistrées.</p>
-      {metrics.status === "no_data" ? <p>Historique insuffisant : aucune vente enregistrée sur cette période.</p> : <>
-        <p><strong>{metrics.totalQuantity} unités vendues enregistrées</strong> : {metrics.manualQuantity} en saisie manuelle et {metrics.csvQuantity} par import CSV, dont {metrics.correctedCsvQuantity} unités sur des lignes CSV corrigées.</p>
+      <p>Période : du {displayDate(metrics.period.from)} au {displayDate(metrics.period.to)} · {metrics.observedDays} jour{metrics.observedDays > 1 ? "s" : ""} avec ventes enregistrées.</p>
+      {metrics.status === "no_data" ? <p>Aucune vente enregistrée sur cette période. <Link to="/sales#sales-start">Ajouter des ventes</Link>.</p> : <>
+        <p className="sales-metrics-total"><strong>{metrics.totalQuantity} unités vendues enregistrées</strong><br />{metrics.manualQuantity} en saisie manuelle · {metrics.csvQuantity} par import CSV{metrics.correctedCsvQuantity > 0 ? `, dont ${metrics.correctedCsvQuantity} corrigées` : ""}.</p>
         {metrics.status === "insufficient_history" ?
-          <p role="status">Historique insuffisant pour comparer les périodes : au moins {metrics.minimumObservedDays} jours avec ventes enregistrées (7 minimum et au moins la moitié de la période) sont requis dans chacune. Période courante : {metrics.observedDays} ; précédente du {metrics.previousPeriod.from} au {metrics.previousPeriod.to} : {metrics.previousObservedDays}.</p> :
-          <p>Moyenne par jour avec ventes enregistrées : {metrics.averagePerObservedDay} unités, contre {metrics.previousAveragePerObservedDay} du {metrics.previousPeriod.from} au {metrics.previousPeriod.to} ({metrics.previousObservedDays} jours observés). Évolution : {metrics.changePercent !== null && metrics.changePercent > 0 ? "+" : ""}{metrics.changePercent} %.</p>}
+          <p role="status">Comparaison indisponible : {metrics.observedDays} jours saisis sur cette période et {metrics.previousObservedDays} sur la précédente. Il faut au moins {metrics.minimumObservedDays} jours avec ventes dans chacune.</p> :
+          <p>Moyenne par jour avec ventes : {metrics.averagePerObservedDay} unités, contre {metrics.previousAveragePerObservedDay} sur la période précédente ({metrics.previousObservedDays} jours observés). Évolution : {metrics.changePercent !== null && metrics.changePercent > 0 ? "+" : ""}{metrics.changePercent} %.</p>}
         <h3>Par article vendu</h3>
         <div className="sales-table-wrap" role="region" aria-label="Ventes par article" tabIndex={0}><table className="sales-table"><thead><tr><th>Article vendu</th><th>Unités enregistrées</th></tr></thead><tbody>
           {metrics.items.slice(itemPage * PAGE_SIZE, (itemPage + 1) * PAGE_SIZE).map((item) =>
@@ -44,7 +46,7 @@ export default function SalesMetrics({ from, to }: Props) {
         <h3>Par date de service et article</h3>
         <div className="sales-table-wrap" role="region" aria-label="Ventes par date et article" tabIndex={0}><table className="sales-table"><thead><tr><th>Date</th><th>Article vendu</th><th>Unités enregistrées</th></tr></thead><tbody>
           {metrics.dailyItems.slice(dayPage * PAGE_SIZE, (dayPage + 1) * PAGE_SIZE).map((row) =>
-            <tr key={`${row.serviceDate}:${row.saleItemId}`}><td>{row.serviceDate}</td><td>{row.saleItemName}</td><td>{row.quantity}</td></tr>)}
+            <tr key={`${row.serviceDate}:${row.saleItemId}`}><td>{displayDate(row.serviceDate)}</td><td>{row.saleItemName}</td><td>{row.quantity}</td></tr>)}
         </tbody></table></div>
         {metrics.dailyItems.length > PAGE_SIZE && <div className="sales-actions">
           <Button type="button" variant="outline" disabled={dayPage === 0} onClick={() => setDayPage((page) => page - 1)}>Lignes précédentes</Button>

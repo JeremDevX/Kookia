@@ -15,17 +15,18 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen }) => {
   const { user } = useAuth();
 
   const pageLabels: Record<string, string> = {
-    "/": "Vue d’ensemble",
+    "/": "Aujourd'hui",
     "/stocks": "Stocks",
-    "/predictions": "Prévisions",
+    "/predictions": "Scénarios d'exemple",
     "/recipes": "Recettes",
-    "/settings": "Paramètres",
-    "/analytics": "Analyses",
-    "/orders": "Commandes",
+    "/settings": "Réglages",
+    "/analytics": "Bilan",
+    "/orders": "Achats",
     "/sales": "Ventes",
+    "/more": "Plus",
   };
 
-  const currentPage = pageLabels[pathname] ?? "Vue d’ensemble";
+  const currentPage = pageLabels[pathname] ?? "Aujourd'hui";
 
   return (
     <header className="top-nav">
@@ -47,7 +48,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen }) => {
       </div>
 
       <div className="top-nav-actions">
-        <Link to="/settings" className="user-profile" aria-label="Ouvrir mon compte">
+        <Link to="/settings?section=account" className="user-profile" aria-label="Ouvrir mon compte">
           <div className="avatar">{user?.displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "K"}</div>
           <span className="profile-copy"><span className="username">{user?.displayName || "Mon compte"}</span></span>
           <Settings2 size={15} className="profile-settings" aria-hidden="true" />

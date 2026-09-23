@@ -19,8 +19,12 @@ it("exports database records within the selected interval and excludes another a
   const exact = await agent.get("/api/workspace/report?from=2026-09-10&to=2026-09-10").expect(200);
   expect(exact.body.rows.some((row: { metric: string }) => row.metric.includes("Exported production"))).toBe(true);
   expect(exact.body.rows.some((row: { section: string }) => row.section === "Instantané analytics")).toBe(false);
-  const snapshot = await agent.get("/api/workspace/report?from=2026-09-11&to=2026-09-11").expect(200);
-  expect(snapshot.body.rows.find((row: { metric: string }) => row.metric === "wasteStats.totalWasteKg").value).toBe(38.5);
+  const demoDate = await agent.get("/api/workspace/report?from=2026-09-11&to=2026-09-11").expect(200);
+  expect(demoDate.body.rows).toEqual([]);
+  const saleItem = await agent.post("/api/workspace/sales/items").send({ name: "Plat du jour" }).expect(201);
+  await agent.post("/api/workspace/sales").send({ operationId: randomUUID(), saleItemId: saleItem.body.id, serviceDate: "2026-09-10", quantity: 4 }).expect(201);
+  const withSales = await agent.get("/api/workspace/report?from=2026-09-10&to=2026-09-10").expect(200);
+  expect(withSales.body.rows).toContainEqual(expect.objectContaining({ section: "Ventes enregistrées", metric: "Plat du jour — unités vendues", value: 4, source: "Saisie manuelle" }));
   const catalog = await agent.get("/api/workspace/catalog").expect(200);
   const product = catalog.body.products[0];
   await agent.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: randomUUID(), delta: 1.5 }).expect(200);
@@ -29,8 +33,8 @@ it("exports database records within the selected interval and excludes another a
   expect(operational.body.rows).toContainEqual(expect.objectContaining({
     section: "Mouvements de stock", metric: `${product.name} — adjustment (${product.unit})`, value: 1.5,
   }));
-  const forecasts = await agent.get("/api/workspace/report?from=2026-09-01&to=2026-09-30").expect(200);
-  expect(forecasts.body.rows).toContainEqual(expect.objectContaining({ metric: "Tomates — consommation prévue (kg)" }));
+  const withoutDemo = await agent.get("/api/workspace/report?from=2026-09-01&to=2026-09-30").expect(200);
+  expect(withoutDemo.body.rows.some((row: { section: string }) => row.section === "Prévisions" || row.section === "Instantané analytics")).toBe(false);
   const other = request.agent(app);
   const registration = await other.post("/api/auth/register").send({ displayName: "Other report", email: `report-${randomUUID()}@example.com`, password: "report integration password" }).expect(201);
   ids.push(registration.body.user.id);

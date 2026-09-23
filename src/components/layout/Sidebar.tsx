@@ -1,16 +1,13 @@
 import React, { useEffect, useRef } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
   ShoppingBag,
-  Brain,
-  BarChart3,
   ClipboardList,
-  Settings,
   HelpCircle,
   LogOut,
-  BookOpen,
+  Ellipsis,
   X,
   Leaf,
   ArrowUpRight,
@@ -27,19 +24,22 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const inMore = ["/recipes", "/analytics", "/settings", "/predictions"].includes(pathname);
   const sidebarRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!isOpen) return;
     const previousFocus = document.activeElement;
     const sidebar = sidebarRef.current;
-    sidebar?.querySelector<HTMLButtonElement>(".sidebar-close-btn")?.focus();
+    const focusFrame = requestAnimationFrame(() => sidebar?.querySelector<HTMLButtonElement>(".sidebar-close-btn")?.focus());
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
       if (event.key !== "Tab" || !sidebar) return;
       const items = Array.from(sidebar.querySelectorAll<HTMLElement>("a[href], button")).filter((item) => item.getClientRects().length > 0);
       const first = items[0];
       const last = items.at(-1);
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      if (!sidebar.contains(document.activeElement)) { event.preventDefault(); (event.shiftKey ? last : first)?.focus(); }
+      else if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     };
     const desktop = window.matchMedia("(min-width: 769px)");
@@ -47,20 +47,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     document.addEventListener("keydown", handleKey);
     desktop.addEventListener("change", closeOnDesktop);
     return () => {
+      cancelAnimationFrame(focusFrame);
       document.removeEventListener("keydown", handleKey);
       desktop.removeEventListener("change", closeOnDesktop);
       if (previousFocus instanceof HTMLElement) previousFocus.focus();
     };
   }, [isOpen, onClose]);
   const navItems = [
-    { icon: LayoutDashboard, label: "Vue d’ensemble", path: "/" },
+    { icon: LayoutDashboard, label: "Aujourd'hui", path: "/" },
+    { icon: ShoppingBag, label: "Achats", path: "/orders" },
     { icon: Package, label: "Stocks", path: "/stocks" },
-    { icon: Brain, label: "Prévisions", path: "/predictions" },
-    { icon: BookOpen, label: "Recettes", path: "/recipes" },
-    { icon: ShoppingBag, label: "Commandes", path: "/orders" },
     { icon: ClipboardList, label: "Ventes", path: "/sales" },
-    { icon: BarChart3, label: "Analyses", path: "/analytics" },
-    { icon: Settings, label: "Paramètres", path: "/settings" },
+    { icon: Ellipsis, label: "Plus", path: "/more" },
   ];
 
   // Close sidebar on navigation (for mobile)
@@ -97,8 +95,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               key={item.path}
               to={item.path}
               onClick={handleNavClick}
+              aria-current={item.path === "/more" && inMore ? "page" : undefined}
               className={({ isActive }) =>
-                `nav-item ${isActive ? "active" : ""}`
+                `nav-item ${isActive || (item.path === "/more" && inMore) ? "active" : ""}`
               }
             >
               <item.icon size={19} aria-hidden="true" />
