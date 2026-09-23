@@ -93,7 +93,7 @@ export default function CalendarView({ predictions, onPredictionClick }: Calenda
             <div className="planning-agenda">{selectedPredictions.map((prediction) => {
               const priority = getPredictionPriority(prediction);
               return <article key={prediction.id} className="planning-item">
-                <div className="planning-item-top"><span className={`planning-priority ${priority}`}>{priorityLabels[priority]}</span><span>Confiance {Math.round(prediction.confidence * 100)} %</span></div>
+                <div className="planning-item-top"><span className={`planning-priority ${priority}`}>{priorityLabels[priority]}</span><span>Indice démo {Math.round(prediction.confidence * 100)} %</span></div>
                 <h4>{prediction.productName}</h4><p>{prediction.recommendation?.reason || "Aucune explication disponible."}</p>
                 <button onClick={() => onPredictionClick(prediction)} aria-label={`Examiner la prévision pour ${prediction.productName}`}>Examiner la prévision <ArrowUpRight size={15} aria-hidden="true" /></button>
               </article>;

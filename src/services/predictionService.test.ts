@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Prediction } from "../types";
 import { isOnOrAfterRestaurantToday } from "../utils/date";
 import { getPredictionPriority } from "./predictionService";
+import { isActionablePurchasePrediction } from "../domain/predictions/prediction.policies";
+import { createOrderRecommendationsFromPredictions } from "../features/orders/orderRecommendations";
 
 const createPrediction = (overrides: Partial<Prediction>): Prediction => ({
   id: "pred-1",
@@ -28,7 +30,7 @@ describe("predictionService/getPredictionPriority", () => {
     expect(getPredictionPriority(prediction, referenceDate)).toBe("normal");
   });
 
-  it("returns critical for near-term buy with projected shortage", () => {
+  it("returns critical for a near-term purchase to review", () => {
     const prediction = createPrediction({
       predictedDate: "2026-05-03",
       confidence: 0.92,
@@ -43,9 +45,9 @@ describe("predictionService/getPredictionPriority", () => {
     expect(getPredictionPriority(prediction, referenceDate)).toBe("critical");
   });
 
-  it("returns high for medium-term reduce recommendations", () => {
+  it("returns high for near-term reduce recommendations", () => {
     const prediction = createPrediction({
-      predictedDate: "2026-05-04",
+      predictedDate: "2026-05-03",
       confidence: 0.8,
       recommendation: {
         action: "reduce",
@@ -56,6 +58,22 @@ describe("predictionService/getPredictionPriority", () => {
 
     const referenceDate = new Date("2026-05-02T10:00:00.000Z");
     expect(getPredictionPriority(prediction, referenceDate)).toBe("high");
+  });
+
+  it("does not infer a shortage from order quantity or demonstration confidence", () => {
+    const referenceDate = new Date("2026-05-02T10:00:00.000Z");
+    const waiting = createPrediction({ predictedDate: "2026-05-03", confidence: 0.99,
+      recommendation: { action: "wait", quantity: 0, reason: "wait" } });
+    expect(getPredictionPriority(waiting, referenceDate)).toBe("normal");
+    expect(isActionablePurchasePrediction(waiting, referenceDate)).toBe(false);
+  });
+
+  it("excludes past suggestions from reviewable orders", () => {
+    const referenceDate = new Date("2026-05-02T10:00:00.000Z");
+    const past = createPrediction({ predictedDate: "2026-05-01" });
+    const current = createPrediction({ id: "pred-2", predictedDate: "2026-05-03" });
+    expect(isActionablePurchasePrediction(past, referenceDate)).toBe(false);
+    expect(createOrderRecommendationsFromPredictions([past, current], referenceDate).map((item) => item.id)).toEqual(["pred-2"]);
   });
 
   it("keeps same priority for the same instant represented in different client timezones", () => {

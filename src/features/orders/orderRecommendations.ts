@@ -1,5 +1,6 @@
 import type { Product, Supplier } from "../../types";
 import type { Prediction } from "../../types";
+import { isActionablePurchasePrediction } from "../../domain/predictions/prediction.policies";
 
 export type OrderRecommendationSource =
   | "prediction"
@@ -40,10 +41,11 @@ export interface SupplierOrder {
 }
 
 export const createOrderRecommendationsFromPredictions = (
-  predictions: Prediction[]
+  predictions: Prediction[],
+  referenceDate: Date = new Date()
 ): OrderRecommendation[] =>
   predictions
-    .filter((prediction) => prediction.recommendation?.action === "buy")
+    .filter((prediction) => isActionablePurchasePrediction(prediction, referenceDate))
     .map((prediction) => ({
       id: prediction.id,
       productId: prediction.productId,

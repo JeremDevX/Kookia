@@ -136,6 +136,12 @@ describe("persistent catalog HTTP", () => {
     const initial = await agent.get("/api/workspace/catalog").expect(200);
     const predictions = await agent.get("/api/workspace/predictions").expect(200);
     const prediction = predictions.body.find((item: { recommendation?: { action: string } }) => item.recommendation?.action === "buy");
+    await agent.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{ productId: prediction.productId, predictionId: prediction.id, quantity: 3 }] }).expect(400);
+    await agent.post("/api/workspace/cart").send({ action: "add", items: [{ id: "stale", productId: prediction.productId, productName: prediction.productName, quantity: 3, unit: "kg", source: "dashboard", predictionId: prediction.id }] }).expect(400);
+    const future = new Date();
+    future.setUTCDate(future.getUTCDate() + 7);
+    const updated = await prisma.prediction.updateMany({ where: { id: prediction.id, restaurant: { ownerId: ids.at(-1)! } }, data: { predictedDate: future } });
+    expect(updated.count).toBe(1);
     const input = { operationId: randomUUID(), lines: [{ productId: prediction.productId, predictionId: prediction.id, quantity: 3 }] };
     const [one, two] = await Promise.all([agent.post("/api/workspace/orders").send(input), agent.post("/api/workspace/orders").send(input)]);
     expect(one.status).toBe(201);

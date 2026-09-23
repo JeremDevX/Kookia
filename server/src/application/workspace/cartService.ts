@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
+import { isCurrentPrediction } from "./predictionPolicy.js";
 
 export const cartItemSchema = z.object({
   id: z.string().min(1).max(100), productId: z.string().min(1).max(100),
@@ -31,7 +32,7 @@ export async function mutateCart(restaurantId: string, mutation: z.infer<typeof 
       if (!product) throw new WorkspaceError(400, "INVALID_PRODUCT", "Produit introuvable dans votre espace.");
       if (item.predictionId) {
         const prediction = await tx.prediction.findUnique({ where: { restaurantId_id: { restaurantId, id: item.predictionId } } });
-        if (!prediction || prediction.productId !== product.id || prediction.action !== "buy") throw new WorkspaceError(400, "INVALID_PREDICTION", "Suggestion indisponible pour ce produit.");
+        if (!prediction || prediction.productId !== product.id || prediction.action !== "buy" || !prediction.quantity?.greaterThan(0) || !isCurrentPrediction(prediction.predictedDate)) throw new WorkspaceError(400, "INVALID_PREDICTION", "Suggestion d’achat absente ou passée pour ce produit.");
       }
       if (!items.some((existing) => existing.id === item.id)) items.push({ ...item, productName: product.name, unit: product.unit });
     }

@@ -3,7 +3,8 @@ import Modal from "../common/Modal";
 import Button from "../common/Button";
 import Badge from "../common/Badge";
 import { Package, Truck, DollarSign, Calendar, TrendingUp } from "lucide-react";
-import { getPredictionPriority } from "../../domain/predictions/prediction.policies";
+import { getPredictionPriority, isActionablePurchasePrediction } from "../../domain/predictions/prediction.policies";
+import { isOnOrAfterRestaurantToday } from "../../utils/date";
 import type { Prediction } from "../../types";
 
 interface PredictionDetailModalProps {
@@ -22,23 +23,25 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
   onClose,
   prediction,
   onOrder,
-  supplierName = "le fournisseur",
-  unitPrice = 0,
-  currentStock = 0,
-  productUnit = "u",
+  supplierName,
+  unitPrice,
+  currentStock,
+  productUnit,
 }) => {
   if (!prediction) return null;
 
-  const estimatedCost = (prediction.recommendation?.quantity || 0) * unitPrice;
+  const canOrder = isActionablePurchasePrediction(prediction);
+  const isHistorical = !isOnOrAfterRestaurantToday(prediction.predictedDate);
+  const estimatedCost = unitPrice === undefined || !canOrder ? null : prediction.recommendation!.quantity * unitPrice;
   const priority = getPredictionPriority(prediction);
   const label =
-    priority === "critical"
+    isHistorical ? "Historique" : priority === "critical"
       ? "Urgent"
       : priority === "high"
       ? "Élevé"
       : "Normal";
   const status =
-    priority === "critical"
+    isHistorical ? "neutral" : priority === "critical"
       ? "urgent"
       : priority === "high"
       ? "moderate"
@@ -58,7 +61,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
             <h3 className="text-2xl font-bold">{prediction.productName}</h3>
             <p className="text-sm text-secondary mt-1">
               Prédiction pour le{" "}
-              {new Date(prediction.predictedDate).toLocaleDateString("fr-FR")}
+              {new Date(`${prediction.predictedDate}T12:00:00`).toLocaleDateString("fr-FR")}
             </p>
           </div>
           <Badge
@@ -67,17 +70,17 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
           />
         </div>
 
-        {/* AI Analysis */}
+        {/* Scenario context */}
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
           <div className="flex items-start gap-3">
             <TrendingUp className="text-blue-600 mt-1" size={20} />
             <div>
-              <h4 className="font-semibold text-blue-900 mb-1">Analyse IA</h4>
+              <h4 className="font-semibold text-blue-900 mb-1">Scénario de démonstration{isHistorical ? " · date passée" : ""}</h4>
               <p className="text-sm text-blue-800">
-                {prediction.recommendation?.reason}
+                {prediction.recommendation?.reason || "Aucune explication disponible."}
               </p>
               <p className="text-xs text-blue-600 mt-2">
-                Confiance de démonstration : {(prediction.confidence * 100).toFixed(0)} %. Aucun historique de ventes connecté.
+                Indice de démonstration : {(prediction.confidence * 100).toFixed(0)} %. Il ne mesure pas une fiabilité réelle ; aucune vente ni météo connectée.
               </p>
             </div>
           </div>
@@ -93,9 +96,9 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
               </span>
             </div>
             <p className="text-2xl font-bold">
-              {prediction.predictedConsumption} {productUnit}
+              {prediction.predictedConsumption} {productUnit ?? "(unité indisponible)"}
             </p>
-            <p className="text-xs text-secondary mt-1">par jour (moyenne)</p>
+            <p className="text-xs text-secondary mt-1">Valeur du scénario, pas une moyenne mesurée</p>
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg">
@@ -106,9 +109,9 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
               </span>
             </div>
             <p className="text-2xl font-bold text-urgent">
-              {currentStock} {productUnit}
+              {currentStock === undefined ? "Indisponible" : `${currentStock} ${productUnit ?? ""}`}
             </p>
-            <p className="text-xs text-secondary mt-1">Rupture prévue demain</p>
+            <p className="text-xs text-secondary mt-1">Quantité du catalogue actuel</p>
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg">
@@ -119,30 +122,31 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
               </span>
             </div>
             <p className="text-2xl font-bold text-primary">
-              {estimatedCost.toFixed(2)} €
+              {estimatedCost === null ? "Indisponible" : `${estimatedCost.toFixed(2)} €`}
             </p>
             <p className="text-xs text-secondary mt-1">
-              pour {prediction.recommendation?.quantity} {productUnit}
+              {canOrder ? `Pour ${prediction.recommendation?.quantity} ${productUnit ?? ""}, au prix actuel` : "Pas d’achat suggéré actuellement"}
             </p>
           </div>
         </div>
 
         {/* Recommendation */}
-        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+        <div className={canOrder ? "bg-green-50 p-4 rounded-lg border border-green-200" : "bg-gray-50 p-4 rounded-lg border border-gray-200"}>
           <div className="flex items-start gap-3">
-            <Truck className="text-green-600 mt-1" size={20} />
+            {canOrder ? <Truck className="text-green-600 mt-1" size={20} /> : <TrendingUp className="text-secondary mt-1" size={20} />}
             <div className="flex-1">
               <h4 className="font-semibold text-green-900 mb-2">
                 Recommandation
               </h4>
               <p className="text-sm text-green-800 mb-3">
-                Commander <strong>{prediction.recommendation?.quantity}</strong>{" "}
-                <strong>{productUnit}</strong> auprès de <strong>{supplierName}</strong>
+                {canOrder ? <>Achat suggéré : <strong>{prediction.recommendation?.quantity} {productUnit ?? "(unité indisponible)"}</strong> auprès de <strong>{supplierName ?? "un fournisseur non renseigné"}</strong>.</> :
+                  isHistorical ? "Suggestion historique : à ne pas utiliser comme besoin actuel." :
+                  prediction.recommendation?.action === "reduce" ? "Réduction suggérée : vérifiez les besoins avant de modifier vos achats." :
+                  "Attente suggérée : aucun achat à valider depuis cette prévision."}
               </p>
               <div className="flex items-center gap-4 text-xs text-green-700">
-                <span>📦 Livraison: 24h</span>
-                <span>💰 Prix unitaire: {unitPrice.toFixed(2)}€</span>
-                <span>✅ Fournisseur vérifié</span>
+                {unitPrice !== undefined && <span>Prix catalogue : {unitPrice.toFixed(2)} €/{productUnit ?? "unité"}</span>}
+                <span>Livraison et disponibilité fournisseur non vérifiées.</span>
               </div>
             </div>
           </div>
@@ -153,7 +157,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
           <Button variant="outline" onClick={onClose}>
             Fermer
           </Button>
-          <Button onClick={onOrder}>Commander maintenant</Button>
+          <Button onClick={onOrder} disabled={!canOrder}>Revoir la commande</Button>
         </div>
       </div>
     </Modal>

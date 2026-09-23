@@ -2,6 +2,7 @@ import { cartSchema } from "./cartService.js";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
+import { isCurrentPrediction } from "./predictionPolicy.js";
 
 export interface OrderInput {
   operationId: string;
@@ -37,7 +38,7 @@ export async function validateOrder(restaurantId: string, actorId: string, input
       if (!product) throw new WorkspaceError(400, "INVALID_PRODUCT", "Un produit de la commande est introuvable.");
       if (line.predictionId) {
         const prediction = await tx.prediction.findUnique({ where: { restaurantId_id: { restaurantId, id: line.predictionId } } });
-        if (!prediction || prediction.productId !== product.id || prediction.action !== "buy") throw new WorkspaceError(400, "INVALID_PREDICTION", "La suggestion ne correspond pas au produit commandé.");
+        if (!prediction || prediction.productId !== product.id || prediction.action !== "buy" || !prediction.quantity?.greaterThan(0) || !isCurrentPrediction(prediction.predictedDate)) throw new WorkspaceError(400, "INVALID_PREDICTION", "La suggestion d’achat est absente, passée ou ne correspond pas au produit commandé.");
         suggestions.push({ id: prediction.id, productId: prediction.productId, action: prediction.action, quantity: Number(prediction.quantity), reason: prediction.reason, confidence: prediction.confidence, predictedDate: prediction.predictedDate.toISOString() });
       }
       lines.push({ productId: product.id, productName: product.name, supplierId: product.supplierId,

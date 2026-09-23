@@ -11,6 +11,11 @@ interface OrderGeneratorProps {
   onValidated?: () => void;
 }
 
+const isValidOrderQuantity = (value: string): boolean => {
+  const quantity = Number(value);
+  return /^\d+(?:\.\d{1,3})?$/.test(value.trim()) && Number.isFinite(quantity) && quantity > 0 && quantity <= 1_000_000;
+};
+
 export default function OrderGenerator({ recommendations, onClose, onValidated }: OrderGeneratorProps) {
   const { products, suppliers, loading, error } = useInventoryCatalog();
   const [quantities, setQuantities] = useState(() => recommendations.map((item) => String(item.quantity)));
@@ -18,7 +23,7 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [order, setOrder] = useState<PurchaseOrder | null>(null);
-  const valid = recommendations.length > 0 && quantities.every((value) => value.trim() && Number.isFinite(Number(value)) && Number(value) > 0);
+  const valid = recommendations.length > 0 && quantities.every(isValidOrderQuantity);
   const total = recommendations.reduce((sum, item, index) => sum + (products.find((product) => product.id === item.productId)?.pricePerUnit ?? 0) * (Number(quantities[index]) || 0), 0);
 
   const handleValidate = async () => {
@@ -48,6 +53,8 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
   return <div className="flex flex-col gap-lg">
     <h3><Package size={20} aria-hidden="true" /> Revoir les quantités</h3>
     <p>Ajustez les suggestions puis validez. L’enregistrement ne déclenche aucun envoi externe et ne modifie pas le stock.</p>
+    {recommendations.length === 0 && <p role="alert">Cette suggestion n’est plus disponible pour une commande.</p>}
+    {quantities.some((value) => value.trim() && !isValidOrderQuantity(value)) && <p role="alert">Chaque quantité doit être comprise entre 0,001 et 1 000 000, avec au plus 3 décimales.</p>}
     {loading && <p role="status">Chargement du catalogue…</p>}
     {(error || saveError) && <p role="alert">{saveError || error?.message}</p>}
     {recommendations.map((item, index) => {
