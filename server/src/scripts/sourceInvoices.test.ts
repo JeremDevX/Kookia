@@ -1,3 +1,6 @@
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseSourceInvoice, readSourceInvoices } from "./sourceInvoices.js";
 
@@ -41,9 +44,19 @@ describe("source invoice extraction", () => {
       priceBasis: "derived_from_line_amount_ht", priceTaxBasis: "HT" }]);
   });
 
-  it("covers every prepared source sheet with a distinct identifier", () => {
-    const invoices = readSourceInvoices();
-    expect(invoices).toHaveLength(431);
-    expect(new Set(invoices.map((invoice) => invoice.id)).size).toBe(431);
+  it("reads nested synthetic sheets without depending on the restaurant corpus", () => {
+    const root = mkdtempSync(join(tmpdir(), "kookia-source-invoices-"));
+    const nested = join(root, "nested");
+    mkdirSync(nested);
+    try {
+      writeFileSync(join(root, "one.md"), metadata, "utf8");
+      writeFileSync(join(nested, "two.md"), metadata.replace("facture 123", "facture 456"), "utf8");
+      const invoices = readSourceInvoices(root);
+      expect(invoices).toHaveLength(2);
+      expect(new Set(invoices.map((invoice) => invoice.id)).size).toBe(2);
+      expect(invoices.every((invoice) => invoice.supplier === "Fournisseur")).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
