@@ -2,7 +2,6 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
-import { isCurrentPrediction } from "./predictionPolicy.js";
 
 export const cartItemSchema = z.object({
   id: z.string().min(1).max(100), productId: z.string().min(1).max(100),
@@ -28,12 +27,9 @@ export async function mutateCart(restaurantId: string, mutation: z.infer<typeof 
     let items = cartSchema.parse(document?.data ?? []);
     if (mutation.action === "remove") items = items.filter((item) => !mutation.ids.includes(item.id));
     else for (const item of mutation.items) {
+      if (item.predictionId) throw new WorkspaceError(400, "DEMO_PREDICTION", "Les scénarios d'exemple ne peuvent pas préparer une commande.");
       const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: item.productId } } });
       if (!product) throw new WorkspaceError(400, "INVALID_PRODUCT", "Produit introuvable dans votre espace.");
-      if (item.predictionId) {
-        const prediction = await tx.prediction.findUnique({ where: { restaurantId_id: { restaurantId, id: item.predictionId } } });
-        if (!prediction || prediction.productId !== product.id || prediction.action !== "buy" || !prediction.quantity?.greaterThan(0) || !isCurrentPrediction(prediction.predictedDate)) throw new WorkspaceError(400, "INVALID_PREDICTION", "Suggestion d’achat absente ou passée pour ce produit.");
-      }
       if (!items.some((existing) => existing.id === item.id)) items.push({ ...item, productName: product.name, unit: product.unit });
     }
     if (items.length > 100) throw new WorkspaceError(400, "CART_FULL", "Le panier est limité à 100 articles.");

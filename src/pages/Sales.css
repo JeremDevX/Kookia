@@ -9,3 +9,11 @@
 .sales-table-wrap { overflow-x: auto; }
 .sales-table { width: var(--unit-100percent); border-collapse: collapse; }
 .sales-table th, .sales-table td { text-align: left; padding: var(--spacing-sm); border-bottom: var(--size-1) solid var(--color-border); }
+.sales-start { display: flex; flex-direction: column; gap: var(--spacing-md); scroll-margin-top: var(--spacing-lg); }
+.sales-start h2 { font-size: var(--font-size-lg); }
+.sales-start small { color: var(--color-text-muted); }
+.sales-start .sales-actions a { color: var(--color-primary); text-decoration: underline; text-underline-offset: var(--size-3); }
+.sales-page :is(summary, a, button):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
+.sales-disclosure { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
+.sales-disclosure summary { padding: var(--spacing-lg); cursor: pointer; font-weight: var(--font-weight-medium); }
+.sales-disclosure .sales-panel { border: var(--number-0); border-top: var(--size-1) solid var(--color-border); border-radius: var(--number-0); }

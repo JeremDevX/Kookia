@@ -1,29 +1,19 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Card from "../components/common/Card";
 import Badge from "../components/common/Badge";
 import Button from "../components/common/Button";
 import PredictionDetailModal from "../components/predictions/PredictionDetailModal";
 import CalendarView from "../components/predictions/CalendarView";
-import {
-  ShoppingCart,
-  ArrowRight,
-  Calendar,
-} from "lucide-react";
+import { Calendar } from "lucide-react";
 import { usePredictions } from "../hooks";
-import { useToast } from "../context/ToastContext";
-import { useCart } from "../context/useCart";
 import type { Prediction } from "../types";
-import { getPredictionPriority, isActionablePurchasePrediction } from "../domain/predictions/prediction.policies";
+import { isActionablePurchasePrediction } from "../domain/predictions/prediction.policies";
 import { isOnOrAfterRestaurantToday } from "../utils/date";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import "./Predictions.css";
 import "../styles/Workspace.css";
 
 const Predictions: React.FC = () => {
-  const { addToast } = useToast();
-  const { addToCart } = useCart();
-  const navigate = useNavigate();
   const { predictions, loading, error, refetch } = usePredictions();
   const { findProductById, findSupplierByProductId } = useInventoryCatalog();
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
@@ -43,47 +33,22 @@ const Predictions: React.FC = () => {
   const getCurrentStock = (productId: string) =>
     findProductById(productId)?.currentStock;
 
-  const handleSelectExample = async (pred: Prediction) => {
-    const product = findProductById(pred.productId);
-    if (!isActionablePurchasePrediction(pred) || !product || !pred.recommendation) return;
-    const saved = await addToCart({
-      id: `prediction-${pred.id}`, predictionId: pred.id, productId: product.id,
-      productName: product.name, quantity: pred.recommendation.quantity,
-      unit: product.unit, source: "prediction",
-    });
-    if (saved) {
-      addToast("success", "Article sélectionné", "Vérifiez la quantité avant de valider.");
-      navigate("/orders#selection");
-    }
-  };
-
   const handleShowDetails = (pred: Prediction) => {
     setSelectedPrediction(pred);
     setIsDetailModalOpen(true);
   };
 
-  const handleOrderFromModal = () => {
-    if (selectedPrediction) {
-      void handleSelectExample(selectedPrediction);
-      setIsDetailModalOpen(false);
-    }
-  };
-
   const currentPredictions = predictions.filter((pred) => isOnOrAfterRestaurantToday(pred.predictedDate));
   const historicalCount = predictions.length - currentPredictions.length;
-  const urgentPredictions = currentPredictions.filter(
-    (p) => getPredictionPriority(p) === "critical"
-  );
-  const moderatePredictions = currentPredictions.filter(
-    (p) => getPredictionPriority(p) !== "critical"
-  );
+  const purchaseExamples = currentPredictions.filter((prediction) => isActionablePurchasePrediction(prediction));
+  const otherExamples = currentPredictions.filter((prediction) => !isActionablePurchasePrediction(prediction));
 
   return (
     <div className="predictions-container workspace-page">
       <header className="workspace-header">
         <div>
-          <h1>Prévisions de consommation</h1>
-          <p className="workspace-subtitle">Scénarios d’exemple, sans données de vente ni météo.</p>
+          <h1>Scénarios d'exemple</h1>
+          <p className="workspace-subtitle">Scénarios de démonstration à consulter uniquement : ils ne proviennent ni de vos ventes ni de la météo et ne peuvent pas préparer une commande.</p>
         </div>
         <div className="view-toggles">
           <Button
@@ -110,35 +75,32 @@ const Predictions: React.FC = () => {
       {error && <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>}
       {historicalCount > 0 && <p role="status">{historicalCount} scénario{historicalCount > 1 ? "s" : ""} passé{historicalCount > 1 ? "s" : ""} dans le calendrier.</p>}
 
-      {urgentPredictions.length > 0 && <div className="workspace-summary"><div><span>Achats à vérifier rapidement</span><strong>{urgentPredictions.length} suggestion{urgentPredictions.length > 1 ? "s" : ""}</strong></div></div>}
-
       {viewMode === "list" ? (
         <div className="predictions-grid">
           {!loading && !error && currentPredictions.length === 0 && <p className="workspace-empty">Aucune prévision à venir. Consultez le calendrier pour l’historique.</p>}
           {currentPredictions.length > 0 && <>
-          {/* Urgent Section */}
           <section>
-            <div className="section-header urgent">
-              <h2 className="section-title text-urgent">
-                Achats à vérifier rapidement
+            <div className="section-header">
+              <h2 className="section-title">
+                Exemples d'achat
               </h2>
             </div>
             <div className="cards-stack">
-              {urgentPredictions.length === 0 && currentPredictions.length > 0 && <div className="workspace-empty">Aucun achat prioritaire.</div>}
-              {urgentPredictions.map((pred) => {
+              {purchaseExamples.length === 0 && currentPredictions.length > 0 && <div className="workspace-empty">Aucun exemple d'achat à venir.</div>}
+              {purchaseExamples.map((pred) => {
                 const unitPrice = getProductUnitPrice(pred.productId);
                 const supplierName = getSupplierName(pred.productId);
                 const unit = getProductUnit(pred.productId);
                 return (
                   <Card
                     key={pred.id}
-                    className="prediction-card urgent-border"
+                    className="prediction-card"
                   >
                     <div className="pred-main">
                       <div className="pred-info">
                         <div className="pred-header">
                           <h3 className="product-name">{pred.productName}</h3>
-                          <Badge label="À vérifier rapidement" status="urgent" />
+                          <Badge label="Exemple" status="neutral" />
                         </div>
                         <div className="pred-reason">
                           <Calendar size={16} className="text-secondary" />
@@ -178,16 +140,7 @@ const Predictions: React.FC = () => {
                             Fournisseur : {supplierName ?? "non renseigné"}{unitPrice !== undefined && ` (${unitPrice.toFixed(2)} €/${unit ?? "unité"})`}
                           </span>
                         </div>
-                        <div className="action-buttons">
-                          <Button
-                            className="w-full"
-                            icon={<ShoppingCart size={16} />}
-                            onClick={() => void handleSelectExample(pred)}
-                            disabled={!isActionablePurchasePrediction(pred)}
-                          >
-                            Ajouter à la commande
-                          </Button>
-                        </div>
+                        <div className="action-buttons"><Button variant="outline" onClick={() => handleShowDetails(pred)}>Voir le scénario</Button></div>
                       </div>
                     </div>
                   </Card>
@@ -200,14 +153,11 @@ const Predictions: React.FC = () => {
           <section>
             <div className="section-header">
               <h2 className="section-title text-moderate">
-                Autres scénarios
+                Autres scénarios d'exemple
               </h2>
             </div>
             <div className="cards-stack">
-              {moderatePredictions.map((pred) => {
-                const priority = getPredictionPriority(pred);
-                const badgeLabel = priority === "high" ? "Élevé" : "Normal";
-                const badgeStatus = priority === "high" ? "moderate" : "optimal";
+              {otherExamples.map((pred) => {
                 return (
                   <Card
                     key={pred.id}
@@ -223,7 +173,7 @@ const Predictions: React.FC = () => {
                         </span>
                       </div>
                       <div className="pred-meta">
-                        <Badge label={badgeLabel} status={badgeStatus} />
+                        <Badge label="Exemple" status="neutral" />
                       </div>
                       <div className="compact-actions">
                         <Button
@@ -232,14 +182,6 @@ const Predictions: React.FC = () => {
                           onClick={() => handleShowDetails(pred)}
                         >
                           Voir le scénario
-                        </Button>
-                        <Button
-                          size="sm"
-                          icon={<ArrowRight size={14} />}
-                          onClick={() => void handleSelectExample(pred)}
-                          disabled={!isActionablePurchasePrediction(pred)}
-                        >
-                          Ajouter à la commande
                         </Button>
                       </div>
                     </div>
@@ -258,7 +200,6 @@ const Predictions: React.FC = () => {
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         prediction={selectedPrediction}
-        onOrder={handleOrderFromModal}
         supplierName={
           selectedPrediction
             ? getSupplierName(selectedPrediction.productId)

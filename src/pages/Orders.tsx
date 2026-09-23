@@ -17,6 +17,7 @@ export default function Orders() {
   const [historyRevision, setHistoryRevision] = useState(0);
   const recommendations = createOrderRecommendationsFromCartItems(cartItems, products);
   const missingProduct = cartItems.some((item) => !products.some((product) => product.id === item.productId));
+  const hasExampleItem = cartItems.some((item) => !!item.predictionId);
 
   return <div className="orders-container workspace-page">
     <header className="workspace-header"><div>
@@ -30,6 +31,7 @@ export default function Orders() {
       </div>
       {catalogError && <div role="alert"><p>Catalogue indisponible : {catalogError.message}</p><Button variant="outline" onClick={() => void refetch()}>Réessayer</Button></div>}
       {missingProduct && !catalogLoading && !catalogError && <p role="alert">Un produit de votre sélection n'est plus dans le catalogue. Retirez-le avant de valider.</p>}
+      {hasExampleItem && <p role="alert">Les scénarios d'exemple ne peuvent pas être validés. Écartez-les de la sélection avant de continuer.</p>}
       {cartLoading || catalogLoading ? <p role="status">Chargement de votre commande…</p> : cartItems.length === 0 ?
         <div className="orders-empty"><p>Aucun article sélectionné.</p><Link to="/stocks">Choisir dans les stocks</Link></div> :
         <ul className="orders-selection-list">{cartItems.map((item) => <li key={item.id}>
@@ -37,15 +39,15 @@ export default function Orders() {
           <Button type="button" variant="outline" size="sm" onClick={() => void removeFromCart(item.id)} disabled={cartLoading}>Écarter</Button>
         </li>)}</ul>}
       {cartItems.length > 0 && <div className="orders-selection-actions"><p>La validation enregistre votre décision. Elle n'envoie rien au fournisseur et ne modifie pas le stock.</p>
-        <Button onClick={() => setReviewOpen(true)} disabled={cartLoading || catalogLoading || !!catalogError || missingProduct}>Revoir les quantités</Button></div>}
+        <Button onClick={() => setReviewOpen(true)} disabled={cartLoading || catalogLoading || !!catalogError || missingProduct || hasExampleItem}>Revoir les quantités</Button></div>}
     </section>
 
     <OrderHistory key={historyRevision} />
 
     <section className="orders-examples" aria-labelledby="orders-examples-title">
-      <h2 id="orders-examples-title">Autres façons de préparer un achat</h2>
+      <h2 id="orders-examples-title">Pour aller plus loin</h2>
       <p><Link to="/stocks">Vérifier les stocks</Link> pour choisir un produit réel.</p>
-      <p><Link to="/predictions">Explorer les scénarios d'exemple</Link> — ils ne proviennent pas de vos ventes.</p>
+      <p><Link to="/predictions">Explorer les scénarios d'exemple</Link> — uniquement pour comprendre les possibilités futures.</p>
     </section>
 
     <Modal isOpen={reviewOpen} onClose={() => setReviewOpen(false)} title="Revoir les quantités" width="lg">

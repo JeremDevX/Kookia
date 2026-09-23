@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { addDays, addMonths, addWeeks, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, isToday, parseISO, startOfMonth, startOfWeek, eachDayOfInterval } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, ArrowUpRight, CalendarDays, AlertTriangle } from "lucide-react";
-import { getPredictionPriority } from "../../domain/predictions/prediction.policies";
+import { ChevronLeft, ChevronRight, ArrowUpRight, CalendarDays } from "lucide-react";
 import type { Prediction } from "../../types";
 import "./CalendarView.css";
 
@@ -11,12 +10,10 @@ interface CalendarViewProps {
   onPredictionClick: (prediction: Prediction) => void;
 }
 
-const priorityLabels = { critical: "Critique", high: "Important", normal: "Normal" };
-
 export default function CalendarView({ predictions, onPredictionClick }: CalendarViewProps) {
   const [mode, setMode] = useState<"week" | "month">("week");
   const [selected, setSelected] = useState(() => new Date());
-  const [criticalOnly, setCriticalOnly] = useState(false);
+  const [purchaseOnly, setPurchaseOnly] = useState(false);
   const start = mode === "week" ? startOfWeek(selected, { weekStartsOn: 1 }) : startOfMonth(selected);
   const end = mode === "week" ? endOfWeek(selected, { weekStartsOn: 1 }) : endOfMonth(selected);
   const gridStart = startOfWeek(start, { weekStartsOn: 1 });
@@ -26,15 +23,15 @@ export default function CalendarView({ predictions, onPredictionClick }: Calenda
     const date = parseISO(prediction.predictedDate);
     return date >= start && date <= end;
   });
-  const criticalCount = periodPredictions.filter((prediction) => getPredictionPriority(prediction) === "critical").length;
-  const visible = criticalOnly ? predictions.filter((prediction) => getPredictionPriority(prediction) === "critical") : predictions;
+  const purchaseCount = periodPredictions.filter((prediction) => prediction.recommendation?.action === "buy").length;
+  const visible = purchaseOnly ? predictions.filter((prediction) => prediction.recommendation?.action === "buy") : predictions;
   const forDay = (date: Date) => visible.filter((prediction) => isSameDay(parseISO(prediction.predictedDate), date));
   const selectedPredictions = forDay(selected);
   const navigate = (direction: number) => setSelected((date) => mode === "week" ? addWeeks(date, direction) : addMonths(date, direction));
   const periodLabel = mode === "month" ? format(selected, "MMMM yyyy", { locale: fr }) : `${format(start, "d MMM", { locale: fr })} — ${format(end, "d MMM yyyy", { locale: fr })}`;
 
   return (
-    <section className="planning-calendar" aria-label="Calendrier des prévisions">
+    <section className="planning-calendar" aria-label="Calendrier des scénarios d'exemple">
       <header className="planning-toolbar">
         <div><p className="planning-eyebrow">CALENDRIER</p><h2 aria-live="polite">{periodLabel}</h2></div>
         <div className="planning-controls">
@@ -50,8 +47,8 @@ export default function CalendarView({ predictions, onPredictionClick }: Calenda
         </div>
       </header>
       <div className="planning-summary">
-        <p><strong>{periodPredictions.length}</strong> prévisions sur {mode === "week" ? "la semaine affichée" : "le mois affiché"} <span>· {criticalCount} prioritaires</span></p>
-        <label><input type="checkbox" checked={criticalOnly} onChange={(event) => setCriticalOnly(event.target.checked)} /> Achats prioritaires uniquement</label>
+        <p><strong>{periodPredictions.length}</strong> scénarios d'exemple sur {mode === "week" ? "la semaine affichée" : "le mois affiché"} <span>· {purchaseCount} achats illustrés</span></p>
+        <label><input type="checkbox" checked={purchaseOnly} onChange={(event) => setPurchaseOnly(event.target.checked)} /> Achats suggérés uniquement</label>
       </div>
       <div className="planning-layout">
         <div className="planning-board">
@@ -59,11 +56,10 @@ export default function CalendarView({ predictions, onPredictionClick }: Calenda
           <div className={`planning-days ${mode}`}>
             {dates.map((date) => {
               const items = forDay(date);
-              const critical = items.some((item) => getPredictionPriority(item) === "critical");
               return (
                 <button key={format(date, "yyyy-MM-dd")} className={`planning-day ${isSameDay(date, selected) ? "selected" : ""} ${mode === "month" && !isSameMonth(date, selected) ? "outside" : ""}`}
                   aria-pressed={isSameDay(date, selected)} aria-current={isToday(date) ? "date" : undefined}
-                  aria-label={`${format(date, "EEEE d MMMM yyyy", { locale: fr })}, ${items.length} prévisions${critical ? ", priorité critique" : ""}`}
+                  aria-label={`${format(date, "EEEE d MMMM yyyy", { locale: fr })}, ${items.length} scénarios d'exemple`}
                   onClick={() => setSelected(date)}
                   onKeyDown={(event) => {
                     const offset = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[event.key];
@@ -75,30 +71,28 @@ export default function CalendarView({ predictions, onPredictionClick }: Calenda
                     }
                   }}
                   id={`planning-${format(date, "yyyy-MM-dd")}`}>
-                  <span className="planning-day-top"><span>{format(date, "d")}</span>{critical && <AlertTriangle size={12} aria-hidden="true" />}</span>
+                  <span className="planning-day-top"><span>{format(date, "d")}</span></span>
                   {isToday(date) && <span className="planning-today">Aujourd’hui</span>}
-                  <span className="planning-previews">{items.slice(0, mode === "week" ? 3 : 2).map((item) => <span className={`planning-preview ${getPredictionPriority(item)}`} key={item.id}>{item.productName}</span>)}</span>
-                  <span className="planning-count">{items.length ? `${items.length} prév.` : "—"}</span>
+                  <span className="planning-previews">{items.slice(0, mode === "week" ? 3 : 2).map((item) => <span className="planning-preview" key={item.id}>{item.productName}</span>)}</span>
+                  <span className="planning-count">{items.length ? `${items.length} scén.` : "—"}</span>
                 </button>
               );
             })}
           </div>
-          <div className="planning-legend"><span>Critique</span><span>Important</span><span>Normal</span></div>
           <p className="planning-help">Sélectionnez un jour. Au clavier, utilisez les flèches.</p>
         </div>
-        <aside className="planning-detail" aria-label="Prévisions du jour sélectionné">
-          <div className="planning-detail-heading"><CalendarDays size={21} aria-hidden="true" /><div><p>PRÉVISIONS DU JOUR</p><h3>{format(selected, "EEEE d MMMM", { locale: fr })}</h3></div></div>
-          <p className="planning-detail-count" role="status">{selectedPredictions.length} prévision{selectedPredictions.length > 1 ? "s" : ""}{criticalOnly ? " critique(s)" : ""}</p>
-          {selectedPredictions.length === 0 ? <div className="planning-empty"><CalendarDays size={28} aria-hidden="true" /><h4>{criticalOnly ? "Aucun achat prioritaire" : "Aucune prévision"}</h4><p>{criticalOnly ? "Désactivez le filtre pour voir les autres scénarios." : "Choisissez un autre jour."}</p></div> :
+        <aside className="planning-detail" aria-label="Scénarios du jour sélectionné">
+          <div className="planning-detail-heading"><CalendarDays size={21} aria-hidden="true" /><div><p>SCÉNARIOS DU JOUR</p><h3>{format(selected, "EEEE d MMMM", { locale: fr })}</h3></div></div>
+          <p className="planning-detail-count" role="status">{selectedPredictions.length} scénario{selectedPredictions.length > 1 ? "s" : ""} d'exemple</p>
+          {selectedPredictions.length === 0 ? <div className="planning-empty"><CalendarDays size={28} aria-hidden="true" /><h4>{purchaseOnly ? "Aucun achat suggéré" : "Aucun scénario"}</h4><p>{purchaseOnly ? "Désactivez le filtre pour voir les autres scénarios." : "Choisissez un autre jour."}</p></div> :
             <div className="planning-agenda">{selectedPredictions.map((prediction) => {
-              const priority = getPredictionPriority(prediction);
               return <article key={prediction.id} className="planning-item">
-                <div className="planning-item-top"><span className={`planning-priority ${priority}`}>{priorityLabels[priority]}</span></div>
+                <div className="planning-item-top"><span className="planning-priority">Exemple</span></div>
                 <h4>{prediction.productName}</h4><p>{prediction.recommendation?.reason || "Aucune explication disponible."}</p>
                 <button onClick={() => onPredictionClick(prediction)} aria-label={`Voir le scénario pour ${prediction.productName}`}>Voir le scénario <ArrowUpRight size={15} aria-hidden="true" /></button>
               </article>;
             })}</div>}
-          <p className="planning-disclaimer">Une prévision ne valide ni commande ni livraison.</p>
+          <p className="planning-disclaimer">Ces scénarios ne reposent pas sur vos ventes et ne valident aucune commande.</p>
         </aside>
       </div>
     </section>

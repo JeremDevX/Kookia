@@ -1,172 +1,101 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Calendar } from "lucide-react";
 import Button from "../components/common/Button";
 import Modal from "../components/common/Modal";
 import InvoiceModal from "../components/dashboard/InvoiceModal";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
-import DashboardKPIs from "../components/dashboard/DashboardKPIs";
-import RecommendationsSection from "../components/dashboard/RecommendationsSection";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
-import { Calendar, FileText, ChefHat, ShoppingBag, ArrowUpRight, Leaf, ArrowRight } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { usePredictions, useProducts } from "../hooks";
-import { isActionablePurchasePrediction } from "../domain/predictions/prediction.policies";
-import { getRestaurant, type Restaurant } from "../services/restaurantService";
+import { getProductStatus } from "../domain/inventory/product.policies";
+import { useProducts } from "../hooks";
+import { getSales, type DailySale } from "../services/salesService";
+import { formatLocalISODate } from "../utils/date";
 import "./Dashboard.css";
 
-const Dashboard: React.FC = () => {
-  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
-  const navigate = useNavigate();
-
-
+export default function Dashboard() {
+  const today = formatLocalISODate(new Date());
+  const thirtyDaysAgo = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
   const { addToast } = useToast();
-  const { cartItems, addToCart, removeFromCart, loading: cartLoading } = useCart();
-  const selectedPredictionIds = cartItems.flatMap((item) => item.predictionId ? [item.predictionId] : []);
-  const { predictions, loading, error, refetch } = usePredictions();
+  const { cartItems, loading: cartLoading } = useCart();
   const { products, loading: productsLoading, error: productsError, refetch: refreshProducts } = useProducts();
+  const [sales, setSales] = useState<DailySale[] | null>(null);
+  const [salesError, setSalesError] = useState("");
+  const [salesReload, setSalesReload] = useState(0);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const stockToReview = products.filter((product) => getProductStatus(product) !== "optimal");
+  const latestSale = sales?.[0];
+  const hasExampleItem = cartItems.some((item) => !!item.predictionId);
 
-  const handleScanInvoice = () => {
-    setIsInvoiceModalOpen(true);
-  };
-
-  const handleValidateInvoice = () => {
-    addToast(
-      "success",
-      "Réception enregistrée",
-      "Stock mis à jour."
-    );
-    void refreshProducts();
-  };
-
-  const handleMenuGen = () => {
-    setIsMenuModalOpen(true);
-  };
-
-  const handleValidateMenu = () => {
-    addToast(
-      "success",
-      "Menu validé",
-      "Le menu est prêt à imprimer."
-    );
-
-  };
-
-  const handleTogglePrediction = async (id: string, productName: string) => {
-    const selected = cartItems.find((item) => item.predictionId === id);
-    if (selected) { await removeFromCart(selected.id); return; }
-    const prediction = predictions.find((item) => item.id === id);
-    const product = products.find((item) => item.id === prediction?.productId);
-    if (!prediction?.recommendation || !product) return;
-    const saved = await addToCart({ id: `prediction-${id}`, predictionId: id, productId: product.id,
-      productName, quantity: prediction.recommendation.quantity, unit: product.unit, source: "dashboard" });
-    if (saved) addToast("success", "Article sélectionné", `${productName} ajouté à la commande en préparation.`);
-  };
-
-  const totalCartCount = cartItems.length;
-
-  const handleGenerateOrders = () => {
-    navigate("/orders#selection");
-  };
-
-  const todayDate = new Date().toLocaleDateString("fr-FR", {
-    timeZone: "Europe/Paris",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   useEffect(() => {
     let active = true;
-    getRestaurant().then((data) => { if (active) setRestaurant(data); }, () => { if (active) addToast("info", "Restaurant indisponible", "Les informations de votre établissement n’ont pas pu être chargées."); });
+    getSales(thirtyDaysAgo, today).then(
+      (rows) => { if (active) { setSales(rows); setSalesError(""); } },
+      () => { if (active) setSalesError("Les ventes enregistrées ne sont pas disponibles."); },
+    );
     return () => { active = false; };
-  }, [addToast]);
-  const city = restaurant?.city ?? "";
+  }, [salesReload, thirtyDaysAgo, today]);
 
-  const actionablePredictions = predictions.filter((pred) => {
-    return isActionablePurchasePrediction(pred);
-  });
+  const focus = !cartLoading && cartItems.length > 0
+    ? hasExampleItem
+      ? { title: "Corrigez votre sélection", detail: "Un ancien scénario d'exemple doit être écarté avant la validation.", to: "/orders#selection", action: "Ouvrir la sélection" }
+      : { title: "Une commande attend votre validation", detail: `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`, to: "/orders#selection", action: "Revoir les quantités" }
+    : salesError
+      ? { title: "Vérifiez vos ventes", detail: "Leur état n'a pas pu être chargé.", to: "/sales", action: "Ouvrir les ventes" }
+      : sales === null
+        ? { title: "Retrouvez vos données", detail: "Vos ventes et vos stocks sont en cours de chargement.", to: "/sales", action: "Ouvrir les ventes" }
+        : sales.length === 0
+          ? { title: "Ajoutez des ventes récentes", detail: "Aucune vente sur les 30 derniers jours. Importez un CSV Kookia ou saisissez le dernier service.", to: "/sales#sales-start", action: "Ajouter des ventes" }
+          : productsError
+            ? { title: "Vérifiez votre stock", detail: "L'inventaire n'a pas pu être chargé.", to: "/stocks", action: "Ouvrir les stocks" }
+            : productsLoading
+              ? { title: "Retrouvez vos données", detail: "L'inventaire est en cours de chargement.", to: "/stocks", action: "Ouvrir les stocks" }
+              : stockToReview.length > 0
+                ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} au seuil ou en dessous, selon les quantités enregistrées.`, to: "/stocks", action: "Voir les stocks" }
+                : { title: "Aucune alerte de stock enregistrée", detail: "Vérifiez les ventes du dernier service ou préparez vos prochains achats.", to: "/orders", action: "Ouvrir les achats" };
 
-  const visiblePredictions = actionablePredictions.filter(
-    (pred) => !selectedPredictionIds.includes(pred.id)
-  );
+  return <div className="dashboard-container">
+    <header className="dashboard-header"><h1>Aujourd'hui</h1>
+      <span className="dashboard-date"><Calendar size={18} aria-hidden="true" />{new Date().toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long" })}</span>
+    </header>
 
-  return (
-    <div className="dashboard-container">
-      <header className="dashboard-header">
-        <div>
-          <h1>Vue d’ensemble</h1>
-        </div>
-        <div className="dashboard-date">
-          <Calendar size={18} aria-hidden="true" />
-          <div><span>{todayDate}</span><small>{city}</small></div>
-        </div>
-      </header>
+    <section className="today-focus" aria-labelledby="today-focus-title">
+      <span className="today-eyebrow">À faire</span>
+      <h2 id="today-focus-title">{focus.title}</h2>
+      <p>{focus.detail}</p>
+      <Link to={focus.to} className="btn btn-primary">{focus.action}<ArrowRight size={17} aria-hidden="true" /></Link>
+    </section>
 
-      <section className="dashboard-brief" aria-labelledby="brief-title">
-        <div className="brief-copy">
-          <span className="brief-label"><Leaf size={15} aria-hidden="true" /> Aujourd’hui</span>
-          <h2 id="brief-title">Achats à préparer</h2>
-          <p>Vérifiez les suggestions avant de valider une commande.</p>
-          <a href="#dashboard-recommendations" className="brief-link">Voir les achats suggérés <ArrowRight size={17} aria-hidden="true" /></a>
-        </div>
-        <div className="brief-order" id="dashboard-order">
-          <span className="brief-order-icon"><ShoppingBag size={23} aria-hidden="true" /></span>
-          <h3>Commande en préparation</h3>
-          <p aria-live="polite">{cartLoading ? "Chargement de votre sélection…" : totalCartCount > 0 ? `${totalCartCount} article${totalCartCount > 1 ? "s" : ""} dans votre sélection` : "Ajoutez des suggestions à votre sélection."}</p>
-          <Button onClick={handleGenerateOrders} icon={<ArrowRight size={16} />} disabled={cartLoading || totalCartCount === 0}>Revoir les quantités{totalCartCount > 0 ? ` (${totalCartCount})` : ""}</Button>
-          <small>La validation enregistre votre décision ; aucun envoi automatique.</small>
-        </div>
+    <div className="today-grid">
+      <section className="today-card" aria-labelledby="today-stock-title"><h2 id="today-stock-title">Stocks</h2>
+        {productsLoading ? <p role="status">Chargement du stock…</p> : productsError ? <div role="alert"><p>Stock indisponible.</p><Button variant="outline" onClick={() => void refreshProducts()}>Réessayer</Button></div> :
+          <p>{stockToReview.length === 0 ? "Aucun produit au seuil bas dans l'inventaire enregistré." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier dans l'inventaire enregistré.`}</p>}
+        <small>Les produits initiaux sont des exemples à confirmer.</small>
+        <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><button type="button" onClick={() => setInvoiceOpen(true)}>Saisir une facture</button></div>
       </section>
-
-      <div className="dashboard-section-heading"><h2>À suivre</h2><span>Données de votre espace · exemples au démarrage</span></div>
-      <DashboardKPIs products={products} predictions={predictions} selectedCount={cartLoading ? null : totalCartCount}
-        productsReady={!productsLoading && !productsError} predictionsReady={!loading && !error} />
-
-      <div className="dashboard-main-grid">
-        <div id="dashboard-recommendations">
-        {loading || productsLoading ? <div className="dashboard-state" role="status">Chargement des suggestions…</div> : error || productsError ? <div className="dashboard-state" role="alert"><p>Les suggestions ou le catalogue ne sont pas disponibles pour le moment.</p><Button variant="outline" onClick={() => { void refetch(); void refreshProducts(); }}>Réessayer</Button></div> :
-        <RecommendationsSection
-          predictions={visiblePredictions}
-          products={products}
-          selectedIds={selectedPredictionIds}
-          onTogglePrediction={handleTogglePrediction}
-        />}
-        </div>
-        <aside className="dashboard-tools" aria-labelledby="tools-title">
-          <h2 id="tools-title">Actions rapides</h2>
-          <button className="dashboard-tool" onClick={handleScanInvoice}><FileText size={21} aria-hidden="true" /><span><strong>Saisir une facture</strong><small>Stock mis à jour après réception</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
-          <button className="dashboard-tool" onClick={handleMenuGen}><ChefHat size={21} aria-hidden="true" /><span><strong>Préparer un menu</strong><small>Suggestion d’exemple à adapter</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
-          <Link className="dashboard-tool" to="/stocks"><ShoppingBag size={21} aria-hidden="true" /><span><strong>Ouvrir les stocks</strong></span><ArrowUpRight size={17} aria-hidden="true" /></Link>
-        </aside>
-      </div>
-
-      {/* Modals */}
-      <Modal
-        isOpen={isInvoiceModalOpen}
-        onClose={() => setIsInvoiceModalOpen(false)}
-        title="Factures et réceptions"
-        width="lg"
-      >
-        <InvoiceModal
-          onValidate={handleValidateInvoice}
-          onClose={() => setIsInvoiceModalOpen(false)}
-        />
-      </Modal>
-
-      <Modal
-        isOpen={isMenuModalOpen}
-        onClose={() => setIsMenuModalOpen(false)}
-        title="Préparer le menu"
-        width="md"
-      >
-        <MenuIdeasModal
-          onValidate={handleValidateMenu}
-          onClose={() => setIsMenuModalOpen(false)}
-        />
-      </Modal>
+      <section className="today-card" aria-labelledby="today-sales-title"><h2 id="today-sales-title">Ventes</h2>
+        {salesError ? <div role="alert"><p>{salesError}</p><Button variant="outline" onClick={() => setSalesReload((value) => value + 1)}>Réessayer</Button></div> : sales === null ? <p role="status">Chargement des ventes…</p> :
+          <p>{latestSale ? `Dernières ventes enregistrées le ${new Date(`${latestSale.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")}.` : "Aucune vente enregistrée sur les 30 derniers jours."}</p>}
+        {latestSale && <small>Source : {latestSale.source === "csv" ? "import CSV" : "saisie manuelle"}.</small>}
+        <div className="today-card-actions"><Link to="/sales#sales-start">Ajouter ou corriger des ventes</Link></div>
+      </section>
+      <section className="today-card" aria-labelledby="today-order-title"><h2 id="today-order-title">Commande en préparation</h2>
+        <p aria-live="polite">{cartLoading ? "Chargement…" : cartItems.length === 0 ? "Aucun article sélectionné." : `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`}</p>
+        <div className="today-card-actions"><Link to="/orders#selection">Ouvrir les achats</Link></div>
+      </section>
     </div>
-  );
-};
 
-export default Dashboard;
+    <details className="today-examples"><summary>Découvrir les exemples de Kookia</summary>
+      <p>Les scénarios d'achat et le menu d'exemple ne sont pas calculés à partir de vos ventes. Les ventes enregistrées servent aux indicateurs, pas encore à des suggestions d'achat.</p>
+      <div className="today-card-actions"><Link to="/predictions">Voir les scénarios</Link><button type="button" onClick={() => setMenuOpen(true)}>Voir le menu d'exemple</button></div>
+    </details>
+
+    <Modal isOpen={invoiceOpen} onClose={() => setInvoiceOpen(false)} title="Factures et réceptions" width="lg">
+      <InvoiceModal onValidate={() => { addToast("success", "Réception enregistrée", "Stock mis à jour."); void refreshProducts(); }} onClose={() => setInvoiceOpen(false)} />
+    </Modal>
+    <Modal isOpen={menuOpen} onClose={() => setMenuOpen(false)} title="Préparer le menu" width="md">
+      <MenuIdeasModal onValidate={() => addToast("success", "Menu validé", "Le menu est prêt à imprimer.")} onClose={() => setMenuOpen(false)} />
+    </Modal>
+  </div>;
+}

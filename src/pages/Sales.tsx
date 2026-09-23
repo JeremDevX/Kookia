@@ -31,6 +31,8 @@ export default function Sales() {
   const [itemStatus, setItemStatus] = useState("");
   const [loadError, setLoadError] = useState("");
   const [status, setStatus] = useState("");
+  const [showMetrics, setShowMetrics] = useState(false);
+  const [showBaseline, setShowBaseline] = useState(false);
   const productSelect = useRef<HTMLSelectElement>(null);
   const historyHeading = useRef<HTMLHeadingElement>(null);
   const editOrigin = useRef<HTMLButtonElement>(null);
@@ -107,12 +109,21 @@ export default function Sales() {
   };
 
   return <div className="workspace-page sales-page">
-    <header className="workspace-header"><div><h1>Ventes journalières</h1>
-      <p className="workspace-subtitle">Ventes d’articles du restaurant, distincts des ingrédients de stock et des exemples. Ces saisies ne modifient ni le stock ni les commandes.</p>
+    <header className="workspace-header"><div><h1>Ventes</h1>
+      <p className="workspace-subtitle">Importez un CSV ou saisissez les ventes de votre dernier service.</p>
     </div></header>
+    <section id="sales-start" className="sales-panel sales-start" aria-labelledby="sales-start-title">
+      <h2 id="sales-start-title">Vos ventes enregistrées</h2>
+      {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <p role="alert">{loadError}</p> : sales.length === 0 ?
+        <p>Aucune vente enregistrée sur la période affichée. Une journée non saisie n'est pas comptée comme zéro vente.</p> :
+        <p>Dernier service enregistré : {sales[0].serviceDate} · {sales[0].source === "csv" ? "import CSV" : "saisie manuelle"}.</p>}
+      <div className="sales-actions"><a href="#sales-import-title">Importer un CSV Kookia</a><a href="#sales-entry-title">Saisir une vente</a></div>
+      <small>Ces ventes alimentent les indicateurs, pas encore les achats suggérés.</small>
+    </section>
+    <SalesImport items={items} onImported={showImportedDate} onItemsCreated={setItems} />
     <section className="sales-panel" aria-labelledby="sale-item-title">
       <h2 id="sale-item-title">Articles vendus</h2>
-      <p>Créez un plat ou article réellement vendu avant de saisir ses ventes. Aucun article n’est ajouté depuis la démonstration.</p>
+      <p>Pour saisir une vente manuellement, créez d'abord le plat ou l'article vendu.</p>
       <form onSubmit={(event) => void addItem(event)} className="sales-form">
         <label>Nom du nouvel article<input required maxLength={120} value={itemName} onChange={(event) => setItemName(event.target.value)} /></label>
         <Button type="submit" disabled={itemSaving}>{itemSaving ? "Ajout…" : "Ajouter l’article"}</Button>
@@ -122,7 +133,7 @@ export default function Sales() {
     </section>
     <section className="sales-panel" aria-labelledby="sales-entry-title">
       <h2 id="sales-entry-title">{editing ? "Corriger une vente" : "Saisir une vente"}</h2>
-      <p>Relisez les données avant de les enregistrer. Provenance : saisie manuelle.</p>
+      <p>Provenance : saisie manuelle. Une correction se fait depuis l'historique ci-dessous.</p>
       <form onSubmit={(event) => void submit(event)} className="sales-form">
         <label>Article vendu<select ref={productSelect} required value={values.saleItemId} onChange={(event) => change({ ...values, saleItemId: event.target.value })}>
           <option value="">Choisir un article</option>
@@ -137,9 +148,6 @@ export default function Sales() {
       {error && <p role="alert">{error}</p>}
       {status && <p role="status">{status}</p>}
     </section>
-    <SalesImport items={items} onImported={showImportedDate} />
-    <SalesMetrics key={`${from}:${to}:${salesRevision}`} from={from} to={to} />
-    <SalesBaseline key={salesRevision} />
     <section className="sales-panel" aria-labelledby="sales-history-title">
       <h2 id="sales-history-title" ref={historyHeading} tabIndex={-1}>Historique enregistré</h2>
       <div className="sales-filters"><label>Du<input type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} /></label>
@@ -155,5 +163,11 @@ export default function Sales() {
           <td><Button type="button" size="sm" variant="outline" onClick={(event) => { editOrigin.current = event.currentTarget; setEditing(sale); setValues({ saleItemId: sale.saleItemId, serviceDate: sale.serviceDate, quantity: sale.quantity }); setError(""); setStatus(""); document.getElementById("sales-entry-title")?.scrollIntoView(); }}>Corriger</Button></td>
         </tr>)}</tbody></table></div>}
     </section>
+    <details className="sales-disclosure" onToggle={(event) => setShowMetrics(event.currentTarget.open)}><summary>Indicateurs des ventes</summary>
+      {showMetrics && <SalesMetrics key={`${from}:${to}:${salesRevision}`} from={from} to={to} />}
+    </details>
+    <details className="sales-disclosure" onToggle={(event) => setShowBaseline(event.currentTarget.open)}><summary>Estimation test (non utilisée pour les achats)</summary>
+      {showBaseline && <SalesBaseline key={salesRevision} />}
+    </details>
   </div>;
 }

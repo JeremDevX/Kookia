@@ -1,16 +1,19 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import Button from "../common/Button";
-import { commitSalesImport, previewSalesImport, type SaleItem, type SalesImportPreview } from "../../services/salesService";
+import { commitSalesImport, createSaleItem, getSaleItems, previewSalesImport, type SaleItem, type SalesImportPreview } from "../../services/salesService";
 
 const errorMessage = (cause: unknown) => cause instanceof Error ? cause.message : "Réessayez.";
 const statusLabel = { ready: "Prête", invalid: "Invalide", unmapped: "Sans correspondance", duplicate: "Doublon dans le fichier", existing: "Vente déjà enregistrée" };
 
-export default function SalesImport({ items, onImported }: { items: SaleItem[]; onImported: (date: string) => Promise<void> }) {
+export default function SalesImport({ items, onImported, onItemsCreated }: {
+  items: SaleItem[]; onImported: (date: string) => Promise<void>; onItemsCreated: (items: SaleItem[]) => void;
+}) {
   const [csv, setCsv] = useState("");
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<SalesImportPreview | null>(null);
   const [loading, setLoading] = useState(false);
   const [committing, setCommitting] = useState(false);
+  const [creatingItems, setCreatingItems] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
@@ -22,7 +25,8 @@ export default function SalesImport({ items, onImported }: { items: SaleItem[]; 
     try {
       const result = await previewSalesImport(content, nextMapping);
       if (sequence.current === current) setPreview(result);
-    } catch (cause) { if (sequence.current === current) setError(errorMessage(cause)); }
+      return sequence.current === current;
+    } catch (cause) { if (sequence.current === current) setError(errorMessage(cause)); return false; }
     finally { if (sequence.current === current) setLoading(false); }
   };
   const selectFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +44,7 @@ export default function SalesImport({ items, onImported }: { items: SaleItem[]; 
     } catch (cause) { if (selection === sequence.current) setError(errorMessage(cause)); }
   };
   const chooseMapping = (name: string, id: string) => {
-    if (committing) return;
+    if (committing || creatingItems) return;
     const next = { ...mapping };
     if (id) next[name] = id;
     else delete next[name];
@@ -66,14 +70,43 @@ export default function SalesImport({ items, onImported }: { items: SaleItem[]; 
     finally { setCommitting(false); }
   };
 
+  const missingNames = [...new Set(preview?.rows.filter((row) => row.status === "unmapped").map((row) => row.itemName) ?? [])];
+  const createMissingItems = async () => {
+    if (!csv || missingNames.length === 0 || creatingItems) return;
+    setCreatingItems(true); setError("");
+    try {
+      const catalog = await getSaleItems();
+      const nextMapping = { ...mapping };
+      for (const name of missingNames) {
+        let item = catalog.find((candidate) => candidate.name.toLocaleLowerCase("fr-FR") === name.toLocaleLowerCase("fr-FR"));
+        if (!item) {
+          try { item = await createSaleItem(name); catalog.push(item); }
+          catch (cause) {
+            const refreshed = await getSaleItems();
+            item = refreshed.find((candidate) => candidate.name.toLocaleLowerCase("fr-FR") === name.toLocaleLowerCase("fr-FR"));
+            if (!item) throw cause;
+          }
+        }
+        nextMapping[name] = item.id;
+      }
+      onItemsCreated(await getSaleItems());
+      setMapping(nextMapping);
+      if (await inspect(csv, nextMapping)) setStatus(`${missingNames.length} article${missingNames.length > 1 ? "s" : ""} associé${missingNames.length > 1 ? "s" : ""} au fichier. Vérifiez l'aperçu avant l'import.`);
+    } catch (cause) {
+      onItemsCreated(await getSaleItems().catch(() => items));
+      setError(errorMessage(cause));
+    } finally { setCreatingItems(false); }
+  };
+
   const pageSize = 50;
   const pageCount = preview ? Math.ceil(preview.rows.length / pageSize) : 0;
   const visibleRows = preview?.rows.slice(page * pageSize, (page + 1) * pageSize) ?? [];
 
   return <section className="sales-panel" aria-labelledby="sales-import-title">
     <h2 id="sales-import-title">Importer un CSV Kookia</h2>
-    <p>Format UTF-8, virgules, en-tête <code>service_date,item_name,quantity</code>. Date au format AAAA-MM-JJ ; quantité entière positive. Maximum 5 000 lignes et 256 Ko. Les noms d’articles sont associés au catalogue ci-dessus.</p>
-    <label className="sales-file-label">Fichier CSV<input type="file" accept=".csv,text/csv" disabled={committing} onChange={(event) => void selectFile(event)} /></label>
+    <p>Choisissez un fichier CSV Kookia. Vous pourrez associer ou créer les articles du fichier avant de confirmer l'import.</p>
+    <details><summary>Format attendu</summary><p>UTF-8, virgules, en-tête <code>service_date,item_name,quantity</code>. Date AAAA-MM-JJ, quantité entière positive. Maximum 5 000 lignes et 256 Ko.</p></details>
+    <label className="sales-file-label">Fichier CSV<input type="file" accept=".csv,text/csv" disabled={committing || creatingItems} onChange={(event) => void selectFile(event)} /></label>
     {loading && <p role="status">Analyse du fichier…</p>}
     {error && <p role="alert">{error}</p>}
     {status && <p role="status">{status}</p>}
@@ -87,7 +120,7 @@ export default function SalesImport({ items, onImported }: { items: SaleItem[]; 
           <tbody>{visibleRows.map((row) => <tr key={row.line}>
             <td>{row.line}</td><td>{row.serviceDate}</td><td>{row.itemName}</td><td>{Number.isFinite(row.quantity) ? row.quantity : "—"}</td>
             <td><label className="sales-mapping-label">Article pour la ligne {row.line}
-              <select value={mapping[row.itemName] ?? row.saleItemId ?? ""} onChange={(event) => chooseMapping(row.itemName, event.target.value)} disabled={row.status === "invalid" || committing}>
+              <select value={mapping[row.itemName] ?? row.saleItemId ?? ""} onChange={(event) => chooseMapping(row.itemName, event.target.value)} disabled={row.status === "invalid" || committing || creatingItems}>
                 <option value="">Non associé</option>
                 {items.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
               </select>
@@ -95,7 +128,10 @@ export default function SalesImport({ items, onImported }: { items: SaleItem[]; 
             <td>{statusLabel[row.status]}{row.message ? ` — ${row.message}` : ""}</td>
           </tr>)}</tbody></table>
       </div>
-      <Button type="button" disabled={!preview.readyCount || preview.alreadyImported || committing || loading} onClick={() => void commit()}>
+      {missingNames.length > 0 && <Button type="button" variant="outline" disabled={creatingItems || committing || loading} onClick={() => void createMissingItems()}>
+        {creatingItems ? "Création…" : `Créer et associer ${missingNames.length} article${missingNames.length > 1 ? "s" : ""} du fichier`}
+      </Button>}
+      <Button type="button" disabled={!preview.readyCount || preview.alreadyImported || committing || loading || creatingItems} onClick={() => void commit()}>
         {committing ? "Import en cours…" : `Confirmer l’import de ${preview.readyCount} ligne(s)`}
       </Button>
     </>}
