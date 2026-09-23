@@ -1,5 +1,9 @@
 # Migration complète des données métier vers PostgreSQL
 
+> Journal historique de migration achevée : « état initial » et cartographie
+> ci-dessous ne décrivent pas le runtime actuel. Voir
+> [la référence technique](../technical-development.md) pour l'état présent.
+
 ## Objectif et état initial — 11 septembre 2026
 
 Conserver les parcours et les données de démonstration existants, mais rendre les

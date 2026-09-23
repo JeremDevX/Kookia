@@ -38,7 +38,7 @@ Les données initiales de démonstration restent **des exemples**, même en base
   import CSV contrôlé et indicateurs par période. Une baseline expérimentale
   sur ventes enregistrées est séparée des prévisions de démonstration.
 - Rapports : CSV, XML Excel et PDF via impression ; opérations filtrées par dates
-  UTC. Les anciens graphiques sans dates sont un instantané de démonstration.
+  UTC. Les graphiques sans dates sont des instantanés de démonstration.
 
 Aucun POS, OCR, service météo, moteur IA ou envoi fournisseur externe n’est
 connecté. Les exports ne constituent pas une attestation de conformité.
@@ -63,15 +63,19 @@ npm run lint
 npm run build
 npm run build:api
 npm test
-npm run test:integration
 ```
 
-Les tests d’intégration nécessitent PostgreSQL local et créent des comptes dédiés.
-Tous utilisent des adresses uniques et nettoient uniquement les identifiants des
-comptes temporaires qu’ils ont créés.
+Les tests d’intégration nécessitent PostgreSQL local et une
+[base dédiée](docs/setup-auth.md#base-isolée-pour-les-tests-dintégration).
+Ils créent des comptes temporaires, mais le runner ne bloque pas encore une
+connexion accidentelle à la base de développement.
 
 ## Documentation
 
+- [Index de la documentation](docs/README.md) et [guide restaurateur](docs/guide-restaurateur.md)
+- [Parcours produit cible](docs/product-parcours.md) et [règles d'interface](docs/design-system.md)
+- [Écarts vérifiés](docs/ecarts-techniques.md), [roadmap](docs/plans/roadmap-produit.md) et [plan d'exécution](docs/plans/plan-execution.md)
+- [Sources de données](docs/integrations.md) et [plan du moteur de prévision](docs/plans/forecast-engine.md)
 - [Cartographie et suivi de migration](docs/plans/database-migration.md)
 - [Référence technique actuelle et cible](docs/technical-development.md)
 - [Format CSV des ventes](docs/sales-csv.md)

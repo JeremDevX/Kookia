@@ -36,7 +36,8 @@ Le health check est disponible sur <http://localhost:3001/api/health>.
 5. Ouvrir **Paramètres → Compte** et tester la modification du nom.
 6. Tester le changement d’adresse email et de mot de passe.
 7. Se déconnecter, puis se reconnecter avec le nouveau mot de passe.
-8. Tester la suppression du compte.
+8. Tester la suppression **uniquement de ce compte jetable**, jamais d'un espace
+   existant ou de l'espace Camille.
 
 ## Vérifications automatisées
 
@@ -45,10 +46,30 @@ npm run lint
 npm run build
 npm run build:api
 npm test
-npm run test:integration
 ```
 
-`npm run test:integration` nécessite PostgreSQL démarré avec Docker.
+La CI lance actuellement `lint`, `build` et `test` ; `build:api` et les tests
+d'intégration sont des contrôles locaux complémentaires.
+
+## Base isolée pour les tests d'intégration
+
+Les tests créent des comptes aléatoires puis nettoient leurs identifiants, mais
+**le runner n'interdit pas encore une connexion à la base de développement**.
+Ne pas exécuter `npm run test:integration` sur la base `kookia` contenant un
+espace à conserver. Avec le PostgreSQL Docker local, créer une base dédiée une
+seule fois (une erreur « already exists » signifie seulement qu'elle existe) :
+
+```bash
+npm run db:up
+docker compose exec -T postgres createdb -U kookia kookia_test
+DATABASE_URL=postgresql://kookia:kookia_dev@localhost:5432/kookia_test npm run db:migrate
+DATABASE_URL=postgresql://kookia:kookia_dev@localhost:5432/kookia_test npm run test:integration
+```
+
+Cette URL utilise **les identifiants de développement de `compose.yaml`**, pas
+ceux d'un restaurant. Vérifier le nom `kookia_test` avant migration et test.
+Le premier incrément du [plan d'exécution](plans/plan-execution.md) doit ajouter
+un garde-fou automatique et la CI d'intégration sur base éphémère.
 
 ## Arrêt de PostgreSQL
 

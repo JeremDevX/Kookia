@@ -3,20 +3,21 @@
 ## Objet et statut
 
 Ce document consolide les contraintes techniques et de développement du
-[Jalon 2](../jalon2.md) avec l'état observable du dépôt. Il est la référence
+[cadrage des Jalons](references/cadrage-jalons.md) avec l'état observable du dépôt. Il est la référence
 pour le cadrage technique : **une cible planifiée ne décrit pas une
 fonctionnalité déjà disponible**.
 
 | Sujet | État actuel vérifié | Cible Jalon 2 / préproduction |
 | --- | --- | --- |
-| Application web | React 19, TypeScript, Vite ; données métier persistées via API | Conserver les hooks comme façade UI pendant une migration progressive |
+| Application web | React 19, TypeScript, Vite ; données métier persistées via API | Réduire les gestes du parcours quotidien et vérifier l'usage mobile/clavier |
 | Qualité | ESLint, TypeScript, Vitest et CI GitHub Actions ; scripts `lint`, `build`, `test` | CI exécutable sans manipulation ; smoke test sur URL dédiée avant recette |
 | Hébergement | Configuration frontend Vercel (`vercel.json`) | Préproduction puis recette avant lancement commercial |
-| Backend et persistance | API Express/TypeScript et PostgreSQL/Prisma actifs pour comptes et espaces métier isolés | Étendre progressivement les frontières métier vers PostgreSQL/Prisma |
-| Intégrations | POS/OCR absents ; saisie manuelle des factures et des ventes, import CSV Kookia | Adaptateur POS, import Ticket Z, service OCR externe avec fallback |
+| Backend et persistance | API Express/TypeScript et PostgreSQL/Prisma actifs pour comptes et espaces métier isolés | Renforcer les contrats d'ingestion, la provenance et l'évaluation des calculs |
+| Intégrations | POS/OCR/météo absents ; connexions affichées de façon statique ; saisie manuelle des factures et ventes, import CSV Kookia | Contrats et adaptateurs fournisseur, ingestion contrôlée, correction et repli manuel |
 | Prévision | Prévisions de démonstration persistées ; baseline expérimentale distincte, calculée sur ventes enregistrées | Météo locale et calendrier événementiel ; moteur IA hors périmètre full-stack initial |
 
 Les versions et dépendances actives font foi dans [`package.json`](../package.json).
+La [cartographie détaillée des écarts](ecarts-techniques.md) confronte cette cible au code actuel, brique par brique.
 
 ## Invariants produit et données
 
@@ -35,14 +36,15 @@ Les versions et dépendances actives font foi dans [`package.json`](../package.j
 
 ## Modèle cible et frontières
 
-Les contrats initiaux prévus sont : `Restaurant`, `Product`, `StockItem`,
-`SalesSnapshot`, `Prediction`, `Recommendation`, `ValidationLog` et
-`ReportMetric`. Ils devront rester distincts des DTO de transport et des
-payloads de fournisseurs lorsque leurs formes divergent.
+Le modèle persistant actuel comprend notamment `Restaurant`, `Product`,
+`StockMovement`, `SaleItem`, `DailySale`, `SaleImport`, `Prediction`,
+`PurchaseOrder` et `RecommendationDecision`. Les
+[contrats proposés pour les sources externes](integrations.md), non implémentés,
+devront rester distincts de ces modèles et des payloads bruts des fournisseurs.
 
 ```text
 UI React → hooks/features → client API → API Express → domaine → PostgreSQL
-                                  ↘ adaptateurs POS / OCR / météo / calendrier
+                                  ↘ futurs ports POS / OCR / position / météo / événements
 ```
 
 La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
@@ -57,11 +59,22 @@ Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` ini
 les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au
 premier accès. Les dates des prévisions de démonstration sont figées. Aucun calcul
 IA, connecteur POS/OCR ou envoi fournisseur réel n’est impliqué par la persistance.
-Les ventes du restaurant sont saisies ou importées sans reprendre les exemples du
-seed. Les [indicateurs et la baseline expérimentale](sales.md) utilisent uniquement
-ces ventes, sans météo ni confiance calibrée ; aucune commande n'en découle.
+Les ventes du restaurant sont saisies, importées ou issues de la simulation locale
+`demo_simulation` ; elles ne sont pas les prévisions de démonstration du seed.
+Les [indicateurs et la baseline expérimentale](sales.md) lisent les `DailySale`
+enregistrées, y compris simulées lorsque présentes. Leur provenance est affichée :
+une simulation ne mesure ni la précision terrain ni un gain réel. Il n'y a ni
+météo, ni confiance calibrée, ni commande dérivée de cette baseline.
 Le [plan de migration](plans/database-migration.md) contient la cartographie et les
 preuves de validation et les limites explicites de cette migration.
+
+Le branchement d'une source externe et sa persistance restent à concevoir,
+comme décrit dans [Sources de données](integrations.md). Le
+[plan de prévision](plans/forecast-engine.md) distingue données observées,
+baseline et proposition d'achat. La route `/predictions` et les graphiques
+de démonstration sont encore visibles depuis le parcours actuel ; leur retrait
+de la navigation opérationnelle est une **cible UX**, pas une modification
+réalisée dans ce travail documentaire.
 
 ## Backlog et séquence de référence
 
@@ -70,13 +83,15 @@ preuves de validation et les limites explicites de cette migration.
 | S0 — cadrage | Backlog, conventions, README et CI ; environnement installable |
 | S1 — socle API | API Express/TypeScript, santé et tests |
 | S2 — données métier | PostgreSQL/Prisma ; restaurant, produit et stock minimum |
-| S3 — recommandations contrôlées | Prévision, modification, validation chef et journal de décision |
-| S4 — ingestion | Adaptateur POS, Ticket Z, stub OCR et fallback démontrable |
+| S3 — recommandations contrôlées | Prévision évaluée, modification, validation chef et journal de décision |
+| S4 — ingestion | Adaptateur POS, Ticket Z, OCR relu et fallback démontrable |
 | S5 — robustesse | KPI, export, accessibilité, états vides et scénarios critiques |
 | S6 — préproduction | Déploiement, smoke tests, documentation, démonstration et recette |
 
-Une story estimée au-delà de 8 points doit être découpée ; la capacité visée est
-de 15 à 20 points par sprint de deux semaines, hors moteur IA.
+Cette séquence est le cadrage historique du Jalon 2, pas un état d'avancement.
+Le [plan de réalisation actualisé](plans/roadmap-produit.md) part des capacités
+déjà livrées et pose les critères de sortie. Les estimations du Jalon 2 ne
+valent pas engagement de capacité pour la suite.
 
 ## Validation attendue
 
@@ -141,7 +156,9 @@ de régression sont intégrés à `npm test`.
 
 ### Contrôles applicatifs
 
-Les contrôles actuels sont :
+La CI exécute `lint`, `build` et `test`. Les contrôles locaux complémentaires
+`build:api` et `test:integration` existent, mais ne sont pas encore dans la CI ;
+ce dernier doit être exécuté sur une [base isolée](setup-auth.md#base-isolée-pour-les-tests-dintégration).
 
 ```bash
 npm run lint
@@ -154,7 +171,7 @@ npm run test:integration
 Pour la cible préproduction, compléter progressivement avec des tests unitaires
 des règles métier (stocks, recommandations, validation, données incomplètes),
 des tests d'intégration des erreurs/fallbacks (POS, OCR, persistance) et un
-parcours utilisateur Dashboard → Stocks → Predictions → Validation, clavier et
+parcours utilisateur Aujourd'hui → Stocks → Achats → Validation, clavier et
 états vides compris. L'objectif de 70 % concerne les services critiques à partir
 de S3 ; il ne mesure pas la couverture actuelle sans rapport généré.
 
@@ -175,6 +192,7 @@ de S3 ; il ne mesure pas la couverture actuelle sans rapport généré.
 Le cadrage produit classe la connexion native Lightspeed et l'ingestion OCR
 Ticket Z comme *Must have*, alors que le backlog de développement place
 l'adaptateur POS et les stories OCR en *Could/Should*. Cette divergence doit être
-arbitrée par l'équipe avant de figer un sprint ou un engagement externe. Il faut
-également préciser le fournisseur POS, les conditions d'accès aux données et la
-politique de conservation des images Ticket Z avant toute intégration.
+arbitrée avant un engagement externe. Il faut également préciser le fournisseur
+POS, les conditions d'accès aux données et la politique de conservation des
+images Ticket Z avant toute activation. Voir les
+[écarts vérifiés](ecarts-techniques.md) pour le reste des dépendances.

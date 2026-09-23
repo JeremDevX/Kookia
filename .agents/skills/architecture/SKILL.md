@@ -10,15 +10,15 @@ Keep rendering, state orchestration, business policies, and data access separate
 when the responsibility is real. Prefer an incremental adapter or mapper at a
 boundary over a broad rewrite.
 
-The current architecture is a mock-backed frontend. Do not introduce server
-layers, repositories, transport contracts, or shared abstractions merely to look
-future-ready. A future migration may retain hooks as a stable UI façade while
-services change behind them.
+The active runtime is React/TypeScript through hooks and HTTP services to an
+Express/TypeScript API and PostgreSQL/Prisma. Account sessions, per-owner
+restaurant workspaces, and reviewable order decisions are persisted. Inspect
+the actual boundary before introducing another abstraction. POS/OCR ingestion,
+live weather, and a prediction engine are not active.
 
-When the Jalon 2 migration is explicitly in scope, move one vertical boundary at
-a time: API health and contracts, then restaurant/product/stock persistence,
-then reviewable recommendations and their decision log, then POS/OCR ingestion.
-Do not treat this sequence as implemented in the current frontend.
+For staged work, move one vertical boundary at a time and keep the current
+consumer contracts coherent. Preserve server-side authorization and decision
+records; a new source adapter must not directly create a validated order.
 
 For a cross-cutting task, make a short plan that names affected boundaries,
 compatibility concerns, and validation. Make the smallest coherent structural

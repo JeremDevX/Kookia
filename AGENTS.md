@@ -19,6 +19,8 @@ by order validation. The technical reference is
 [`docs/technical-development.md`](docs/technical-development.md); migration scope
 and verification evidence live in
 [`docs/plans/database-migration.md`](docs/plans/database-migration.md).
+For long-running feature work, follow the dependency gates and evidence in
+[`docs/plans/plan-execution.md`](docs/plans/plan-execution.md).
 
 ## Invariants
 

@@ -1,5 +1,9 @@
 # Guidance agentique Kookia
 
+> Archive de la migration de guidance, rédigée avant la persistance métier.
+> Les états techniques et nombres de Skills ci-dessous sont historiques ;
+> pour le runtime actuel, consulter [la référence technique](technical-development.md).
+
 ## Décision
 
 Kookia utilise un `AGENTS.md` racine court pour les faits durables du dépôt et

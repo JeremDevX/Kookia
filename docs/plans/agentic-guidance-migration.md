@@ -1,5 +1,8 @@
 # Plan — migration de guidance agentique
 
+> Archive : l'affirmation « frontend sur mocks » décrit l'état initial de cette
+> migration, pas le runtime actuel. Voir [la référence technique](../technical-development.md).
+
 ## Objectif
 
 Remplacer les guides `AGENTS.<sujet>.md` pseudo-routés par un socle `AGENTS.md`

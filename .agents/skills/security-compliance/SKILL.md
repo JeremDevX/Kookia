@@ -6,8 +6,8 @@ description: Apply for auth or permissions, secrets, external input, uploads, st
 # Security and compliance review
 
 Map the affected data and trust boundary. Validate untrusted input at entry,
-enforce authorization and tenant isolation in a trusted server layer when one
-exists, and avoid logging credentials, tokens, or personal data. Client state,
+enforce authorization and tenant isolation in the existing server layer, and
+avoid logging credentials, tokens, or personal data. Client state,
 mocks, and local storage are never authorization controls.
 
 Apply least privilege and preserve existing protections. For storage or external

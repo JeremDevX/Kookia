@@ -16,7 +16,7 @@ local calculation AI, promise prediction accuracy, or invent model provenance.
 For the planned Ticket Z flow, retain the source and extraction status long
 enough to let an operator correct uncertain fields. The product framing calls
 for assisted correction below 90% OCR confidence; do not convert that target
-threshold into a claim about the current mock UI or an unverified provider.
+threshold into a claim about the current application or an unverified provider.
 Forecasts may use sales history, local weather, and event calendars only when
 their freshness and fallback behavior are explicit.
 
