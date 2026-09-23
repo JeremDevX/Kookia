@@ -1,6 +1,5 @@
 import React from "react";
 import Card from "../../common/Card";
-import { Target } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -14,33 +13,14 @@ import type { AnalyticsData } from "../../../types";
 
 interface SavingsChartProps {
   evolution: AnalyticsData["savingsEvolution"];
-  totalSavings?: string;
-  roi?: string;
 }
 
-const SavingsChart: React.FC<SavingsChartProps> = ({
-  evolution,
-  totalSavings = "4 840 €",
-  roi = "+4346%",
-}) => {
+const SavingsChart: React.FC<SavingsChartProps> = ({ evolution }) => {
   return (
     <Card className="stat-card">
-      <h3 className="section-title flex items-center gap-sm">
-        <Target size={20} className="text-optimal" /> Total Économies
-      </h3>
-      <div className="savings-summary">
-        <span className="text-secondary uppercase text-xs font-bold tracking-wider">
-          Cumulé depuis le début
-        </span>
-        <span className="big-saving">{totalSavings}</span>
-        <div className="roi-badge">ROI: {roi}</div>
-        <p className="text-xs text-secondary mt-2 text-center max-w-xs">
-          Basé sur la réduction du gaspillage et l'optimisation des stocks
-          comparé à la période N-1.
-        </p>
-      </div>
+      <h3 className="section-title">Économies simulées</h3>
       <div className="chart-wrapper mt-4">
-        <h4>Évolution des Économies</h4>
+        <h4>Exemple d’évolution mensuelle (€)</h4>
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={evolution}>
             <CartesianGrid

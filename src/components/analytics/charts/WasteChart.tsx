@@ -19,15 +19,15 @@ interface WasteChartProps {
 
 const WasteChart: React.FC<WasteChartProps> = ({ stats, evolution, showTrends, targetGrams }) => {
   return (
-    <Card title="📉 Gaspillage Alimentaire" className="stat-card">
+    <Card title="Gaspillage — exemple" className="stat-card">
       <div className="metric-comparison">
         <div className="metric-item">
-          <div className="metric-item-label">Total ce mois</div>
+          <div className="metric-item-label">Total du scénario</div>
           <div className="kpi-value red" style={{ fontSize: "2rem" }}>
             {stats.totalWasteKg} kg
           </div>
           <div className="trend-pill positive" style={{ marginTop: "8px" }}>
-            ↓ {stats.monthlyTrend}% vs mois dernier
+            {stats.monthlyTrend}% · variation simulée
           </div>
         </div>
         <div className="metric-item">
@@ -36,7 +36,7 @@ const WasteChart: React.FC<WasteChartProps> = ({ stats, evolution, showTrends, t
             {stats.wastePerMealGram}g
           </div>
           <div className="text-xs text-secondary mt-2">
-            Cible:{" "}
+            Cible configurée :{" "}
             <strong className="text-optimal">
               {targetGrams === null ? "—" : `${targetGrams}g`}
             </strong>
@@ -45,7 +45,7 @@ const WasteChart: React.FC<WasteChartProps> = ({ stats, evolution, showTrends, t
       </div>
 
       {showTrends && <div className="chart-wrapper">
-        <h4>Évolution Hebdomadaire</h4>
+        <h4>Exemple sur une semaine</h4>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={evolution}>
             <XAxis

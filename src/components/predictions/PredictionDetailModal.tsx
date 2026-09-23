@@ -51,7 +51,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Détails de la prédiction"
+      title="Scénario d’achat"
       width="lg"
     >
       <div className="flex flex-col gap-4">
@@ -60,7 +60,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
           <div>
             <h3 className="text-2xl font-bold">{prediction.productName}</h3>
             <p className="text-sm text-secondary mt-1">
-              Prédiction pour le{" "}
+              Prévision pour le{" "}
               {new Date(`${prediction.predictedDate}T12:00:00`).toLocaleDateString("fr-FR")}
             </p>
           </div>
@@ -79,9 +79,6 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
               <p className="text-sm text-blue-800">
                 {prediction.recommendation?.reason || "Aucune explication disponible."}
               </p>
-              <p className="text-xs text-blue-600 mt-2">
-                Indice de démonstration : {(prediction.confidence * 100).toFixed(0)} %. Il ne mesure pas une fiabilité réelle ; aucune vente ni météo connectée.
-              </p>
             </div>
           </div>
         </div>
@@ -98,7 +95,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
             <p className="text-2xl font-bold">
               {prediction.predictedConsumption} {productUnit ?? "(unité indisponible)"}
             </p>
-            <p className="text-xs text-secondary mt-1">Valeur du scénario, pas une moyenne mesurée</p>
+            <p className="text-xs text-secondary mt-1">Valeur d’exemple, non mesurée</p>
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg">
@@ -111,7 +108,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
             <p className="text-2xl font-bold text-urgent">
               {currentStock === undefined ? "Indisponible" : `${currentStock} ${productUnit ?? ""}`}
             </p>
-            <p className="text-xs text-secondary mt-1">Quantité du catalogue actuel</p>
+            <p className="text-xs text-secondary mt-1">Quantité enregistrée en stock</p>
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg">
@@ -125,7 +122,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
               {estimatedCost === null ? "Indisponible" : `${estimatedCost.toFixed(2)} €`}
             </p>
             <p className="text-xs text-secondary mt-1">
-              {canOrder ? `Pour ${prediction.recommendation?.quantity} ${productUnit ?? ""}, au prix actuel` : "Pas d’achat suggéré actuellement"}
+              {canOrder ? `Pour ${prediction.recommendation?.quantity} ${productUnit ?? ""}, au prix du catalogue` : "Aucun achat à préparer"}
             </p>
           </div>
         </div>
@@ -140,13 +137,13 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
               </h4>
               <p className="text-sm text-green-800 mb-3">
                 {canOrder ? <>Achat suggéré : <strong>{prediction.recommendation?.quantity} {productUnit ?? "(unité indisponible)"}</strong> auprès de <strong>{supplierName ?? "un fournisseur non renseigné"}</strong>.</> :
-                  isHistorical ? "Suggestion historique : à ne pas utiliser comme besoin actuel." :
+                  isHistorical ? "Scénario passé, non proposé à la commande." :
                   prediction.recommendation?.action === "reduce" ? "Réduction suggérée : vérifiez les besoins avant de modifier vos achats." :
                   "Attente suggérée : aucun achat à valider depuis cette prévision."}
               </p>
               <div className="flex items-center gap-4 text-xs text-green-700">
                 {unitPrice !== undefined && <span>Prix catalogue : {unitPrice.toFixed(2)} €/{productUnit ?? "unité"}</span>}
-                <span>Livraison et disponibilité fournisseur non vérifiées.</span>
+                <span>Disponibilité fournisseur non vérifiée.</span>
               </div>
             </div>
           </div>
@@ -157,7 +154,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
           <Button variant="outline" onClick={onClose}>
             Fermer
           </Button>
-          <Button onClick={onOrder} disabled={!canOrder}>Revoir la commande</Button>
+          <Button onClick={onOrder} disabled={!canOrder}>Préparer une commande</Button>
         </div>
       </div>
     </Modal>

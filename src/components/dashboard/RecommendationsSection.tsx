@@ -115,7 +115,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
         </div>
       </div>
 
-      <p className="recommendations-description">Scénarios de démonstration, sans ventes ni météo connectées. Vérifiez vos besoins et les quantités avant de valider une commande.</p>
+      <p className="recommendations-description">Scénarios d’exemple, sans ventes ni météo connectées. Vérifiez les besoins avant de commander.</p>
       <div className="recommendations-list grid-layout">
         {paginatedPredictions.length > 0 ? (
           paginatedPredictions.map((pred) => {
@@ -163,13 +163,13 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
 
                     <div className="rec-details mb-4">
                       <div className="rec-detail-item">
-                        <span className="label">Prévision</span>
+                        <span className="label">Consommation estimée</span>
                         <span className="value">
                           {pred.predictedConsumption} {product?.unit ?? "unité inconnue"}
                         </span>
                       </div>
                       <div className="rec-detail-item">
-                        <span className="label">Recommandé</span>
+                        <span className="label">Achat suggéré</span>
                         <span className="value">
                           {pred.recommendation?.quantity} {product?.unit ?? "unité inconnue"}
                         </span>
@@ -179,7 +179,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
 
                   <div className="rec-action">
                     <span className="rec-order-info">
-                      {product ? "À valider par vous" : "Produit indisponible dans le catalogue"}
+                      {product ? "À vérifier" : "Produit absent du catalogue"}
                     </span>
                     <Button
                       size="sm"
@@ -208,8 +208,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
         ) : (
           <div className="recommendations-empty" role="status">
             <Check size={24} aria-hidden="true" />
-            <p>Aucun achat suggéré en attente.</p>
-            <p>Retrouvez vos articles sélectionnés dans votre commande.</p>
+            <p>Aucun achat suggéré pour le moment.</p>
           </div>
         )}
       </div>

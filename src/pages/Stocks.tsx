@@ -91,7 +91,7 @@ const Stocks: React.FC = () => {
     addToast(
       "success",
       "Produit ajouté",
-      `${newProduct.name} a été ajouté à votre inventaire.`
+      `${newProduct.name} est dans les stocks.`
     );
   };
 
@@ -115,9 +115,7 @@ const Stocks: React.FC = () => {
       {error && <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>}
       <header className="workspace-header">
         <div>
-          <p className="workspace-eyebrow">VOTRE RÉSERVE, SOUS CONTRÔLE</p>
-          <h1>Les bons produits. Au bon moment.</h1>
-          <p className="workspace-subtitle">Consultez vos stocks, repérez les besoins et ajustez les quantités.</p>
+          <h1>Stocks</h1>
         </div>
         <Button
           icon={<Plus size={18} />}
@@ -127,15 +125,15 @@ const Stocks: React.FC = () => {
         </Button>
       </header>
 
-      <div className="workspace-summary"><div><span>Votre inventaire</span><strong>{products.length} produits</strong></div><p>Un stock à jour, c’est le premier ingrédient d’une cuisine bien préparée.</p></div>
+      <div className="workspace-summary"><div><span>Inventaire</span><strong>{products.length} produits</strong></div></div>
 
       <Card className="stocks-toolbar">
         <div className="toolbar-content">
           <div className="search-wrapper">
             <Input
               id="stock-search"
-              label="Rechercher dans les stocks"
-              placeholder="Rechercher un produit..."
+              label="Rechercher un produit"
+              placeholder="Nom du produit"
               icon={<Search size={18} />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -164,7 +162,7 @@ const Stocks: React.FC = () => {
         </div>
       </Card>
 
-      <div className="workspace-section-heading"><h2>Les produits</h2><span role="status">{filteredProducts.length} résultat{filteredProducts.length > 1 ? "s" : ""}</span></div>
+      <div className="workspace-section-heading"><h2>Produits</h2><span role="status">{filteredProducts.length} résultat{filteredProducts.length > 1 ? "s" : ""}</span></div>
       <div className="stocks-table-card" role="region" aria-label="Inventaire des produits" tabIndex={0}>
         <table className="stocks-table">
           <thead>
@@ -203,7 +201,7 @@ const Stocks: React.FC = () => {
                         status === "optimal"
                           ? "Bon"
                           : status === "moderate"
-                          ? "Moyen"
+                          ? "À surveiller"
                           : "Critique"
                       }
                       status={status}
@@ -220,22 +218,22 @@ const Stocks: React.FC = () => {
                           const saved = await addToCart({ id: `product-${product.id}`, productId: product.id,
                             productName: product.name, quantity: getSuggestedOrderQuantity(product),
                             unit: product.unit, source: "stocks" });
-                          if (saved) addToast("success", "Ajouté au panier", `${product.name} ajouté à votre sélection à revoir.`);
+                          if (saved) addToast("success", "Article sélectionné", `${product.name} ajouté à la commande en préparation.`);
                         }}
                       >
-                        Commander
+                        Ajouter à la commande
                       </Button>
                       <div className="stock-adjust">
                         <button
                           className="stock-action-btn minus"
-                          aria-label={`Retirer une unité de ${product.name}`}
+                          aria-label={`Retirer 1 ${product.unit} de ${product.name}`}
                           onClick={(e) => handleAdjustStock(e, product.id, -1)}
                         >
                           -
                         </button>
                         <button
                           className="stock-action-btn plus"
-                          aria-label={`Ajouter une unité de ${product.name}`}
+                          aria-label={`Ajouter 1 ${product.unit} de ${product.name}`}
                           onClick={(e) => handleAdjustStock(e, product.id, 1)}
                         >
                           +
@@ -246,7 +244,7 @@ const Stocks: React.FC = () => {
                 </tr>
               );
             })}
-            {filteredProducts.length === 0 && <tr><td colSpan={6}><div className="workspace-empty">Aucun produit ne correspond à votre recherche. Essayez d’autres filtres.</div></td></tr>}
+            {filteredProducts.length === 0 && <tr><td colSpan={6}><div className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</div></td></tr>}
           </tbody>
         </table>
       </div>

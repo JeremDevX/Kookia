@@ -13,7 +13,6 @@ import { Link } from "react-router-dom";
 import { usePredictions, useProducts } from "../hooks";
 import { isActionablePurchasePrediction } from "../domain/predictions/prediction.policies";
 import { getRestaurant, type Restaurant } from "../services/restaurantService";
-import { useAuth } from "../features/auth/context/AuthContext";
 import {
   createOrderRecommendationsFromCartItems,
 } from "../features/orders/orderRecommendations";
@@ -38,8 +37,8 @@ const Dashboard: React.FC = () => {
   const handleValidateInvoice = () => {
     addToast(
       "success",
-      "Facture Intégrée",
-      "Les quantités validées ont été ajoutées au stock."
+      "Réception enregistrée",
+      "Stock mis à jour."
     );
     void refreshProducts();
   };
@@ -52,7 +51,7 @@ const Dashboard: React.FC = () => {
     addToast(
       "success",
       "Menu validé",
-      "Votre choix a été enregistré. Vous pouvez maintenant imprimer le menu."
+      "Le menu est prêt à imprimer."
     );
 
   };
@@ -65,7 +64,7 @@ const Dashboard: React.FC = () => {
     if (!prediction?.recommendation || !product) return;
     const saved = await addToCart({ id: `prediction-${id}`, predictionId: id, productId: product.id,
       productName, quantity: prediction.recommendation.quantity, unit: product.unit, source: "dashboard" });
-    if (saved) addToast("success", "Ajouté au panier", `${productName} ajouté à votre sélection.`);
+    if (saved) addToast("success", "Article sélectionné", `${productName} ajouté à la commande en préparation.`);
   };
 
   const totalCartCount = cartItems.length;
@@ -93,14 +92,12 @@ const Dashboard: React.FC = () => {
     day: "numeric",
     month: "long",
   });
-  const { user } = useAuth();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   useEffect(() => {
     let active = true;
     getRestaurant().then((data) => { if (active) setRestaurant(data); }, () => { if (active) addToast("info", "Restaurant indisponible", "Les informations de votre établissement n’ont pas pu être chargées."); });
     return () => { active = false; };
   }, [addToast]);
-  const managerFirstName = user?.displayName ?? "";
   const city = restaurant?.city ?? "";
 
   const actionablePredictions = predictions.filter((pred) => {
@@ -117,9 +114,7 @@ const Dashboard: React.FC = () => {
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div>
-          <p className="dashboard-eyebrow">VOTRE CUISINE, EN UN COUP D’ŒIL</p>
-          <h1>Bonjour, {managerFirstName}.</h1>
-          <p className="dashboard-intro">Une vision claire pour une journée bien préparée.</p>
+          <h1>Vue d’ensemble</h1>
         </div>
         <div className="dashboard-date">
           <Calendar size={18} aria-hidden="true" />
@@ -129,21 +124,21 @@ const Dashboard: React.FC = () => {
 
       <section className="dashboard-brief" aria-labelledby="brief-title">
         <div className="brief-copy">
-          <span className="brief-label"><Leaf size={15} aria-hidden="true" /> Le point du jour</span>
-          <h2 id="brief-title">Moins d’imprévus.<br />Plus de sérénité en cuisine.</h2>
-          <p>Anticipez vos besoins, ajustez vos achats et gardez la main sur chaque décision.</p>
-          <a href="#dashboard-recommendations" className="brief-link">Voir les suggestions <ArrowRight size={17} aria-hidden="true" /></a>
+          <span className="brief-label"><Leaf size={15} aria-hidden="true" /> Aujourd’hui</span>
+          <h2 id="brief-title">Achats à préparer</h2>
+          <p>Vérifiez les suggestions avant de valider une commande.</p>
+          <a href="#dashboard-recommendations" className="brief-link">Voir les achats suggérés <ArrowRight size={17} aria-hidden="true" /></a>
         </div>
         <div className="brief-order" id="dashboard-order">
           <span className="brief-order-icon"><ShoppingBag size={23} aria-hidden="true" /></span>
-          <h3>Votre prochaine commande</h3>
+          <h3>Commande en préparation</h3>
           <p aria-live="polite">{cartLoading ? "Chargement de votre sélection…" : totalCartCount > 0 ? `${totalCartCount} article${totalCartCount > 1 ? "s" : ""} dans votre sélection` : "Ajoutez des suggestions à votre sélection."}</p>
           <Button onClick={handleGenerateOrders} icon={<ArrowRight size={16} />} disabled={cartLoading || productsLoading || !!productsError || totalCartCount === 0}>Revoir ma commande{totalCartCount > 0 ? ` (${totalCartCount})` : ""}</Button>
           <small>La validation enregistre votre décision ; aucun envoi automatique.</small>
         </div>
       </section>
 
-      <div className="dashboard-section-heading"><h2>Votre situation actuelle</h2><span>Données de votre espace, initialisées avec des exemples</span></div>
+      <div className="dashboard-section-heading"><h2>À suivre</h2><span>Données de votre espace · exemples au démarrage</span></div>
       <DashboardKPIs products={products} predictions={predictions} selectedCount={cartLoading ? null : totalCartCount}
         productsReady={!productsLoading && !productsError} predictionsReady={!loading && !error} />
 
@@ -158,13 +153,10 @@ const Dashboard: React.FC = () => {
         />}
         </div>
         <aside className="dashboard-tools" aria-labelledby="tools-title">
-          <p className="dashboard-eyebrow">AU QUOTIDIEN</p>
-          <h2 id="tools-title">Un coup de main ?</h2>
-          <p>Vos outils, à portée de main.</p>
-          <button className="dashboard-tool" onClick={handleScanInvoice}><FileText size={21} aria-hidden="true" /><span><strong>Saisir une facture</strong><small>Préparer l’entrée en stock</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
-          <button className="dashboard-tool" onClick={handleMenuGen}><ChefHat size={21} aria-hidden="true" /><span><strong>Imaginer le menu</strong><small>Valoriser les produits disponibles</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
-          <Link className="dashboard-tool" to="/stocks"><ShoppingBag size={21} aria-hidden="true" /><span><strong>Consulter les stocks</strong><small>Faire le point sur vos produits</small></span><ArrowUpRight size={17} aria-hidden="true" /></Link>
-          <div className="dashboard-note"><Leaf size={20} aria-hidden="true" /><p><strong>Chaque produit compte.</strong><br />Un regard sur vos stocks aujourd’hui, moins de pertes demain.</p></div>
+          <h2 id="tools-title">Actions rapides</h2>
+          <button className="dashboard-tool" onClick={handleScanInvoice}><FileText size={21} aria-hidden="true" /><span><strong>Saisir une facture</strong><small>Stock mis à jour après réception</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
+          <button className="dashboard-tool" onClick={handleMenuGen}><ChefHat size={21} aria-hidden="true" /><span><strong>Préparer un menu</strong><small>Suggestion d’exemple à adapter</small></span><ArrowUpRight size={17} aria-hidden="true" /></button>
+          <Link className="dashboard-tool" to="/stocks"><ShoppingBag size={21} aria-hidden="true" /><span><strong>Ouvrir les stocks</strong></span><ArrowUpRight size={17} aria-hidden="true" /></Link>
         </aside>
       </div>
 
@@ -172,7 +164,7 @@ const Dashboard: React.FC = () => {
       <Modal
         isOpen={showOrderGenerator}
         onClose={handleCloseOrderGenerator}
-        title="Générateur de Commandes"
+        title="Valider une commande"
         width="lg"
       >
         <OrderGenerator
@@ -197,7 +189,7 @@ const Dashboard: React.FC = () => {
       <Modal
         isOpen={isMenuModalOpen}
         onClose={() => setIsMenuModalOpen(false)}
-        title="Générateur de Menu du Jour"
+        title="Préparer le menu"
         width="md"
       >
         <MenuIdeasModal

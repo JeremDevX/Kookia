@@ -61,8 +61,8 @@ const Recipes: React.FC = () => {
     void refreshProductions();
     addToast(
       "success",
-      "Production enregistrée",
-      `${data.portions} portions de ${data.recipeName} ont été enregistrées.`
+      "Préparation ajoutée au journal",
+      `${data.portions} portions de ${data.recipeName} notées. Stock inchangé.`
     );
   };
 
@@ -120,17 +120,14 @@ const Recipes: React.FC = () => {
       {productionError && <div role="alert"><p>{productionError}</p><Button onClick={() => void refreshProductions()}>Réessayer</Button></div>}
       <header className="workspace-header">
         <div>
-          <p className="workspace-eyebrow">LE SAVOIR-FAIRE AU QUOTIDIEN</p>
-          <h1>De bons produits. De belles idées.</h1>
-          <p className="workspace-subtitle">
-            Retrouvez vos recettes et donnez le meilleur de vos stocks.
-          </p>
+          <h1>Recettes et productions</h1>
+          <p className="workspace-subtitle">Produisez une recette en déduisant les ingrédients du stock, ou notez une préparation hors catalogue.</p>
         </div>
-        <Button icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Enregistrer une production</Button>
+        <Button icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>
       </header>
 
-      <div className="workspace-summary"><div><span>Votre carnet de cuisine</span><strong>{recipes.length} recettes</strong></div><p>Inspirez-vous des produits disponibles. Ajustez les portions, puis confirmez votre production.</p></div>
-      <div className="workspace-section-heading"><h2>À cuisiner, à partager</h2>
+      <div className="workspace-summary"><div><span>Catalogue</span><strong>{recipes.length} recettes</strong></div></div>
+      <div className="workspace-section-heading"><h2>Recettes</h2>
         <div className="view-toggles">
           <Button
             aria-pressed={activeTab === "history"}
@@ -138,7 +135,7 @@ const Recipes: React.FC = () => {
             onClick={() => setActiveTab("history")}
             size="sm"
           >
-            Semaine en cours
+            Produites cette semaine
           </Button>
           <Button
             aria-pressed={activeTab === "anti-waste"}
@@ -147,7 +144,7 @@ const Recipes: React.FC = () => {
             size="sm"
             icon={<Leaf size={16} />}
           >
-            Avec mes stocks
+            Réalisables avec le stock
           </Button>
         </div>
       </div>
@@ -175,7 +172,7 @@ const Recipes: React.FC = () => {
                 </div>
                 <div className="recipe-ingredients">
                   <h4 className="text-xs font-semibold uppercase text-secondary mb-2">
-                    Ingrédients utilisés
+                    Ingrédients par portion
                   </h4>
                   {recipe.ingredients.map((ing, i) => (
                     <div key={i} className="ingredient-item">
@@ -203,7 +200,7 @@ const Recipes: React.FC = () => {
                     icon={<AlertTriangle size={14} />}
                     onClick={() => setRefusalRecipe(recipe)}
                   >
-                    Signaler Refus
+                    Signaler un refus
                   </Button>
                 </div>
               </Card>
@@ -215,13 +212,6 @@ const Recipes: React.FC = () => {
                 className="mx-auto mb-4 text-secondary opacity-50"
               />
               <p>Aucune recette du catalogue produite cette semaine.</p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => setIsRecordModalOpen(true)}
-              >
-                Enregistrer une production
-              </Button>
             </div>
           )}
         </div>
@@ -242,7 +232,7 @@ const Recipes: React.FC = () => {
                 {isProduced && (
                   <div className="produced-badge">
                     <CheckCircle size={16} />
-                    <span>Produit aujourd’hui</span>
+                    <span>Préparée aujourd’hui</span>
                   </div>
                 )}
                   <div className="recipe-header">
@@ -256,14 +246,14 @@ const Recipes: React.FC = () => {
                     <Clock size={14} /> {recipe.prepTime} min
                   </span>
                   <span className="recipe-meta-item text-optimal font-medium">
-                    Ingrédients disponibles pour au moins une portion
+                    Stock suffisant pour une portion
                   </span>
                 </div>
 
                 <div className="ingredients-box">
                   <div className="stock-match-badge w-full justify-center mb-2">
                     <CheckCircle size={16} />
-                    Vous pouvez faire {recipe.maxYield} portions
+                    Jusqu’à {recipe.maxYield} portions avec le stock actuel
                   </div>
 
                   {/* Economics Section */}
@@ -291,7 +281,7 @@ const Recipes: React.FC = () => {
                       handleStartProduction(recipe)
                     }
                   >
-                    {isProduced ? "Produire à nouveau" : "Préparer la production"}
+                    {isProduced ? "Produire à nouveau" : "Produire cette recette"}
                   </Button>
                 </div>
               </Card>
@@ -304,7 +294,7 @@ const Recipes: React.FC = () => {
           )}
           {unavailableRecipes.length > 0 && <section className="col-span-full" aria-label="Recettes non réalisables avec le stock actuel">
             <h3>Recettes non réalisables avec le stock actuel</h3>
-            <p>Un ingrédient manque ou son stock est insuffisant pour une portion. Vous pouvez signaler les demandes refusées.</p>
+            <p>Stock insuffisant pour une portion. Signalez les demandes refusées si besoin.</p>
             <div className="recipes-grid">{unavailableRecipes.map((recipe) => <Card key={recipe.id} className="recipe-card">
               <strong>{recipe.name}</strong>
               <Button size="sm" variant="outline" onClick={() => setRefusalRecipe(recipe)}>Signaler un refus</Button>
@@ -315,8 +305,8 @@ const Recipes: React.FC = () => {
       )}
 
       {activeTab === "history" && productions.length > 0 && <section aria-label="Journal de production">
-        <h2>Journal de production</h2>
-        {productions.map((item) => <Card key={item.id}><strong>{item.recipeName}</strong><p>{item.portions} portions · {format(parseISO(item.date.slice(0, 10)), "dd/MM/yyyy")} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Production déclarée — sans déduction de stock" : "Production réalisée — stock déduit"}</p>{item.notes && <p>{item.notes}</p>}</Card>)}
+        <h2>Productions enregistrées</h2>
+        {productions.map((item) => <Card key={item.id}><strong>{item.recipeName}</strong><p>{item.portions} portions · {format(parseISO(item.date.slice(0, 10)), "dd/MM/yyyy")} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé" : "Production réalisée — stock déduit"}</p>{item.notes && <p>{item.notes}</p>}</Card>)}
       </section>}
 
       <RecordProductionModal

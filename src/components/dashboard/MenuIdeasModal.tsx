@@ -37,11 +37,10 @@ export default function MenuIdeasModal({ onValidate, onClose }: MenuIdeasModalPr
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {!menu ? !error && <p role="status">Chargement du menu…</p> : <>
-      <h3>Suggestion de menu à revoir</h3>
-      <p>Exemple de démonstration : les estimations de valorisation ne sont pas recalculées à partir du stock actuel.</p>
-      <details><summary>Hypothèses de la suggestion initiale</summary><p>{menu.stockOptimizationText} Estimation initiale : {menu.reclaimedStockKg} kg sur {menu.criticalWindowHours} h, non vérifiée.</p></details>
+      <h3>Menu à adapter</h3>
+      <p>Exemple non recalculé selon votre stock. La validation n’enregistre aucune production.</p>
       {([['starter', 'Entrée'], ['main', 'Plat'], ['dessert', 'Dessert']] as const).map(([field, label]) => <Input key={field} id={`menu-${field}`} label={label} value={menu[field]} disabled={saving} onChange={(event) => { setMenu({ ...menu, [field]: event.target.value }); setDirty(true); }} />)}
-      <p>{menu.status === "validated" && !dirty ? `Validé le ${new Date(menu.validatedAt!).toLocaleString("fr-FR")}` : "Brouillon à valider"}. Aucune production n’est lancée par cette action.</p>
+      <p>{menu.status === "validated" && !dirty ? `Validé le ${new Date(menu.validatedAt!).toLocaleString("fr-FR")}` : "Brouillon non validé"}</p>
       <div className="flex gap-sm">
         <Button variant="outline" onClick={() => void persist(false)} disabled={saving}>Enregistrer le brouillon</Button>
         <Button onClick={() => void persist(true)} disabled={saving}>{saving ? "Enregistrement…" : "Valider le menu"}</Button>

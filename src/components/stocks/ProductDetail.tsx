@@ -82,7 +82,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const handleOrderFromSupplier = async () => {
     const saved = await addToCart({ id: `product-${product.id}`, productId: product.id, productName: product.name,
       source: "stocks", quantity: getSuggestedOrderQuantity(product), unit: product.unit });
-    if (saved) addToast("info", "Ajouté au panier", "Vérifiez et validez la commande depuis le tableau de bord.");
+    if (saved) addToast("success", "Article sélectionné", "Vérifiez la quantité avant de valider la commande.");
   };
 
   const handleReportLoss = () => {
@@ -122,7 +122,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
       <div className="product-drawer" ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="product-drawer-title">
         <header className="drawer-header">
           <div>
-            <span className="drawer-subtitle">Détails du produit</span>
+            <span className="drawer-subtitle">Stock et mouvements</span>
             <h2 className="drawer-title" id="product-drawer-title">{product.name}</h2>
           </div>
           <button className="close-btn" onClick={onClose} aria-label="Fermer les détails du produit">
@@ -138,7 +138,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                   status === "urgent"
                     ? "Stock critique"
                     : status === "moderate"
-                    ? "Stock Faible"
+                    ? "Stock à surveiller"
                     : getProductStatusLabel(status)
                 }
                 status={status}
@@ -152,7 +152,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
           <section className="drawer-section">
             <h3 className="section-heading">
-              <Package size={18} /> Inventaire
+              <Package size={18} /> Quantités et prix
             </h3>
             <div className="info-grid">
               <div className="info-item">
@@ -160,17 +160,17 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 <span className="value">{product.category}</span>
               </div>
               <div className="info-item">
-                <span className="label">Seuil Min.</span>
+                <span className="label">Seuil d’alerte</span>
                 <span className="value">
                   {product.minThreshold} {product.unit}
                 </span>
               </div>
               <div className="info-item">
-                <span className="label">Prix Unitaire</span>
+                <span className="label">Prix unitaire</span>
                 <span className="value">{product.pricePerUnit} €</span>
               </div>
               <div className="info-item">
-                <span className="label">Valeur Stock</span>
+                <span className="label">Valeur du stock</span>
                 <span className="value">
                   {(product.currentStock * product.pricePerUnit).toFixed(2)} €
                 </span>
@@ -207,7 +207,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                   icon={<ShoppingCart size={14} />}
                   onClick={handleOrderFromSupplier}
                 >
-                  Commander
+                  Ajouter à la commande
                 </Button>
               </div>
             </div>
@@ -215,7 +215,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
           <section className="drawer-section">
             <h3 className="section-heading">
-              <History size={18} /> Historique
+              <History size={18} /> Mouvements de stock
             </h3>
             <div className="history-list">
               {historyError ? <p role="alert">{historyError}</p> : movements.length === 0 ? <p>Aucun mouvement enregistré.</p> : movements.map((movement) => (
@@ -231,13 +231,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             <section className="drawer-section">
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <label htmlFor="stock-adjustment" className="block text-sm font-medium mb-2">
-                  {adjustReason === "loss" ? "Quantité perdue" : "Ajustement de stock (quantité signée)"}
+                  {adjustReason === "loss" ? `Quantité perdue (${product.unit})` : `Variation du stock (${product.unit})`}
                 </label>
                 <input
                   id="stock-adjustment"
                   type="text"
                   className="w-full px-3 py-2 border rounded-md"
-                  placeholder="ex: +10 ou -5"
+                  placeholder="Ex. : +10 ou -5"
                   value={adjustAmount}
                   onChange={(e) => setAdjustAmount(e.target.value)}
                   autoFocus
@@ -253,10 +253,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             icon={<AlertTriangle size={16} />}
             onClick={handleReportLoss} disabled={saving}
           >
-            Signaler Perte
+            Signaler une perte
           </Button>
           <Button variant="secondary" onClick={handleAdjustStock} disabled={saving}>
-            {showAdjustModal ? "Confirmer" : "Ajuster Stock"}
+            {showAdjustModal ? "Enregistrer l’ajustement" : "Ajuster le stock"}
           </Button>
         </footer>
       </div>

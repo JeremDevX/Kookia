@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Modal from "../common/Modal";
 import Button from "../common/Button";
-import { Settings, Target, TrendingUp, AlertCircle } from "lucide-react";
+import { Settings, Target, AlertCircle } from "lucide-react";
 import type { AnalyticsSettings } from "../../types/callbacks";
 
 interface CustomizeAnalyticsModalProps {
@@ -44,7 +44,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Personnaliser le tableau de bord"
+      title="Affichage des analyses"
       width="md"
     >
       <div className="flex flex-col gap-4">
@@ -53,11 +53,11 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
         <div className="bg-white p-4 rounded-lg border">
           <div className="flex items-center gap-2 mb-3">
             <Target size={18} className="text-primary" />
-            <h4 className="font-semibold">Objectifs de gaspillage</h4>
+            <h4 className="font-semibold">Cible interne</h4>
           </div>
           <div>
             <label htmlFor="customizeanalyticsmodal-1" className="block text-sm font-medium mb-2">
-              Cible de gaspillage par couvert (grammes)
+              Pertes visées par couvert (g)
             </label>
             <input id="customizeanalyticsmodal-1"
               type="number"
@@ -68,7 +68,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
               }
             />
             <p className="text-xs text-secondary mt-1">
-              Objectif interne à adapter à votre activité, sans valeur réglementaire.
+              Repère interne, sans valeur réglementaire.
             </p>
           </div>
         </div>
@@ -95,7 +95,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
                   Évolution du gaspillage
                 </div>
                 <div className="text-xs text-secondary">
-                  Graphique hebdomadaire
+                  Afficher le graphique hebdomadaire
                 </div>
               </div>
             </label>
@@ -110,9 +110,9 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
                 className="w-4 h-4"
               />
               <div>
-                <div className="font-medium text-sm">Performance IA</div>
+                <div className="font-medium text-sm">Prévisions d’exemple</div>
                 <div className="text-xs text-secondary">
-                  Fiabilité des prédictions
+                  Afficher le scénario de précision
                 </div>
               </div>
             </label>
@@ -127,9 +127,9 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
                 className="w-4 h-4"
               />
               <div>
-                <div className="font-medium text-sm">ROI et économies</div>
+                <div className="font-medium text-sm">Économies simulées</div>
                 <div className="text-xs text-secondary">
-                  Simulateur et graphiques
+                  Afficher le graphique et le simulateur
                 </div>
               </div>
             </label>
@@ -144,7 +144,7 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
           </div>
           <div>
             <label htmlFor="customizeanalyticsmodal-2" className="block text-sm font-medium mb-2">
-              Seuil d'alerte de précision IA (%)
+              Seuil de précision du scénario (%)
             </label>
             <input id="customizeanalyticsmodal-2"
               type="number"
@@ -157,16 +157,8 @@ const CustomizeAnalyticsModal: React.FC<CustomizeAnalyticsModalProps> = ({
               }
             />
             <p className="text-xs text-secondary mt-1">
-              Seuil conservé dans vos préférences. Aucune alerte automatique n’est actuellement générée.
+              Réglage enregistré, sans alerte automatique.
             </p>
-          </div>
-        </div>
-
-        <div className="bg-green-50 p-3 rounded-md border border-green-200 flex items-start gap-2">
-          <TrendingUp size={16} className="text-optimal mt-0.5" />
-          <div className="text-sm text-green-800">
-            <strong>Conseil:</strong> Ajustez vos objectifs progressivement pour
-            maintenir la motivation de l'équipe.
           </div>
         </div>
 

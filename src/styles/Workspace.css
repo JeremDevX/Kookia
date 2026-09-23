@@ -69,7 +69,6 @@
 .workspace-page .action-buttons { flex-wrap: wrap; }
 .workspace-page .pred-compact { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)) auto auto; gap: var(--size-20); }
 .workspace-page .pred-meta { flex-wrap: wrap; gap: var(--spacing-sm); }
-.workspace-page .confidence-pill { font-size: var(--font-size-caption); background: var(--color-surface-hover); border-radius: var(--radius-sm); border-color: var(--color-border); }
 .workspace-page .ordered-badge, .workspace-page .produced-badge { position: static; align-self: flex-start; width: fit-content; margin-bottom: var(--spacing-md); box-shadow: none; border-radius: var(--radius-sm); }
 .workspace-page .prediction-card.ordered, .workspace-page .recipe-card.produced { opacity: var(--number-1); background: var(--color-bg); }
 .workspace-page .calendar-header { background: var(--color-surface); border-color: var(--color-border); box-shadow: none; }

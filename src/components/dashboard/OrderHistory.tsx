@@ -17,12 +17,12 @@ export default function OrderHistory() {
     return () => { active = false; };
   }, [reload]);
   return <section className="orders-history" aria-labelledby="orders-history-title">
-    <div className="workspace-section-heading"><h2 id="orders-history-title">Historique des validations</h2><span>{!loading && !error && `${orders.length} commande${orders.length > 1 ? "s" : ""}`}</span></div>
+    <div className="workspace-section-heading"><h2 id="orders-history-title">Historique</h2><span>{!loading && !error && `${orders.length} commande${orders.length > 1 ? "s" : ""}`}</span></div>
     {loading ? <p role="status">Chargement des commandes…</p> : error ? <div role="alert"><p>{error}</p><Button variant="outline" onClick={() => { setLoading(true); setReload((value) => value + 1); }}>Réessayer</Button></div> : orders.length === 0 ? <p className="orders-empty">Aucune commande validée pour le moment. Les sélections non validées restent dans le panier.</p> : orders.map((order) => <details className="order-record" key={order.id}>
       <summary><span className="order-record-main"><strong>{new Date(order.createdAt).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}</strong><small>{order.lines.length} article{order.lines.length > 1 ? "s" : ""} · Validée, à transmettre</small></span><strong className="order-record-total">{money.format(orderTotal(order))}</strong></summary>
       <div className="order-record-body">
         <p>Référence : {order.id}</p>
-        <p>Montant calculé avec les prix enregistrés lors de la validation. Aucun envoi automatique au fournisseur et aucune entrée en stock.</p>
+        <p>Prix enregistrés à la validation. Aucun envoi ni mouvement de stock.</p>
         <ul>{order.lines.map((line, index) => <li key={index}><span><strong>{line.productName}</strong><small>{line.supplierName} · {line.quantity} {line.unit} × {money.format(line.pricePerUnit)}</small></span><strong>{money.format(line.quantity * line.pricePerUnit)}</strong></li>)}</ul>
       </div>
     </details>)}

@@ -81,7 +81,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Ajouter un nouveau produit"
+      title="Ajouter un produit"
       width="md"
     >
       <div className="flex flex-col gap-4">
@@ -93,7 +93,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
             Nom du produit *
           </label>
           <Input id="addproductmodal-1"
-            placeholder="Ex: Tomates cerises"
+            placeholder="Ex. : tomates cerises"
             value={formData.name}
             error={errors.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -130,8 +130,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
             >
               <option value="kg">kg</option>
               <option value="L">L</option>
-              <option value="pcs">pcs</option>
-              <option value="dz">dz</option>
+              <option value="pcs">pièces (pcs)</option>
+              <option value="dz">douzaines (dz)</option>
             </select>
           </div>
         </div>
@@ -157,7 +157,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
 
           <div>
             <label htmlFor="addproductmodal-5" className="block text-sm font-medium mb-2">
-              Seuil minimum
+              Seuil d’alerte (10 par défaut)
             </label>
             <Input id="addproductmodal-5"
               type="number"
@@ -190,11 +190,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
               setFormData({ ...formData, pricePerUnit: e.target.value })
             }
           />
-        </div>
-
-        <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
-          <strong>Note:</strong> Le produit sera automatiquement ajouté à votre
-          inventaire après confirmation de l’enregistrement.
         </div>
 
         <div className="flex justify-end gap-3 mt-4">

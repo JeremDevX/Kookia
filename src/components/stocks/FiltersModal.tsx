@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import Modal from "../common/Modal";
 import Button from "../common/Button";
-import { Filter } from "lucide-react";
 import type { StockFilters } from "../../types/callbacks";
 import type { Supplier } from "../../types";
 
@@ -38,7 +37,7 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Filtres avancés" width="md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Filtrer les produits" width="md">
       <div className="flex flex-col gap-4">
         <div>
           <label htmlFor="filtersmodal-1" className="block text-sm font-medium mb-2">
@@ -55,8 +54,8 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
             }
           >
             <option value="all">Tous les états</option>
-            <option value="optimal">Optimal</option>
-            <option value="moderate">Moyen</option>
+            <option value="optimal">Bon</option>
+            <option value="moderate">À surveiller</option>
             <option value="urgent">Critique</option>
           </select>
         </div>
@@ -96,11 +95,6 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
           </select>
         </div>
 
-        <div className="bg-gray-50 p-3 rounded-md text-sm text-gray-600">
-          <Filter size={16} className="inline mr-2" />
-          Les filtres seront appliqués après confirmation.
-        </div>
-
         <div className="flex justify-between gap-3 mt-4">
           <Button variant="outline" onClick={handleReset}>
             Réinitialiser
@@ -109,7 +103,7 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
             <Button variant="outline" onClick={onClose}>
               Annuler
             </Button>
-            <Button onClick={handleApply}>Appliquer les filtres</Button>
+            <Button onClick={handleApply}>Afficher les résultats</Button>
           </div>
         </div>
       </div>

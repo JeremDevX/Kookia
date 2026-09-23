@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Card from "../common/Card";
-import { Calculator, TreeDeciduous, TrendingUp } from "lucide-react";
+import { Calculator } from "lucide-react";
 import type { RoiSimulatorAssumptionsConfig } from "../../config/domain/businessConfig";
 import "./ROISimulator.css";
 
@@ -9,13 +9,11 @@ const ROISimulator: React.FC<{ roiSimulator: RoiSimulatorAssumptionsConfig }> = 
     roiSimulator.defaultWasteReductionPercent
   );
   const [dailyCovers, setDailyCovers] = useState(roiSimulator.defaultDailyCovers);
-  const avgTicket = roiSimulator.averageTicketEur;
 
   const totalWasteKgPerYear =
     dailyCovers * roiSimulator.wastePerCoverKg * roiSimulator.openDaysPerYear;
   const savedWasteKg = totalWasteKgPerYear * (wasteReduction / 100);
   const moneySaved = savedWasteKg * roiSimulator.foodCostPerKgEur;
-  const co2Saved = savedWasteKg * roiSimulator.co2PerKgFood;
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat("fr-FR", {
@@ -28,16 +26,16 @@ const ROISimulator: React.FC<{ roiSimulator: RoiSimulatorAssumptionsConfig }> = 
     <Card className="roi-simulator h-full">
       <div className="card-header">
         <h3 className="text-lg font-bold flex items-center gap-2 text-primary">
-          <Calculator size={24} /> Simulateur de Rentabilité
+          <Calculator size={24} /> Simuler une baisse des pertes
         </h3>
         <p className="text-sm text-secondary mt-1">
-          Explorez un scénario indicatif à partir d’hypothèses de démonstration, sans prédiction IA.
+          Simulation à partir d’hypothèses d’exemple, pas de vos ventes.
         </p>
       </div>
 
       <div className="slider-container">
         <div className="slider-label">
-          <span>Réduction Gaspillage Objectif</span>
+          <span>Baisse des pertes envisagée</span>
           <span className="slider-value">{wasteReduction}%</span>
         </div>
         <input
@@ -53,7 +51,7 @@ const ROISimulator: React.FC<{ roiSimulator: RoiSimulatorAssumptionsConfig }> = 
 
       <div className="slider-container">
         <div className="slider-label">
-          <span>Couverts / Jour</span>
+          <span>Couverts par jour</span>
           <span className="slider-value">{dailyCovers}</span>
         </div>
         <input
@@ -70,27 +68,10 @@ const ROISimulator: React.FC<{ roiSimulator: RoiSimulatorAssumptionsConfig }> = 
 
       <div className="roi-result">
         <span className="text-sm font-semibold text-secondary uppercase tracking-wider">
-          Économies Annuelles Estimées
+          Économies annuelles du scénario
         </span>
         <span className="roi-amount">{formatCurrency(moneySaved)}</span>
 
-        <div className="mt-4 flex justify-center gap-3">
-          <span className="co2-tag">
-            <TreeDeciduous size={14} />
-            {Math.round(co2Saved / 1000)}t CO2e évitées
-          </span>
-          <span className="co2-tag bg-blue-50 text-blue-800">
-            <TrendingUp size={14} />
-            Marge +
-            {(
-              (moneySaved /
-                (dailyCovers * avgTicket * roiSimulator.openDaysPerYear)) *
-              100
-            ).toFixed(1)}
-            %
-            pts
-          </span>
-        </div>
       </div>
     </Card>
   );

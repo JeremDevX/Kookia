@@ -22,7 +22,7 @@ export default function RestaurantSettings() {
     catch (error) { setError(error instanceof Error ? error.message : "Enregistrement impossible."); }
     finally { setSaving(false); }
   };
-  return <Card title="Votre restaurant">
+  return <Card title="Établissement">
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {!restaurant ? !error && <p role="status">Chargement du restaurant…</p> : <form onSubmit={submit} className="form-grid">

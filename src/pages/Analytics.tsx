@@ -29,16 +29,16 @@ const Analytics: React.FC = () => {
       await saveSettings(settings);
       addToast(
         "success",
-        "Parametres enregistres",
-        "Vos preferences d'affichage ont ete mises a jour."
+        "Affichage enregistré",
+        "Les réglages des analyses ont été mis à jour."
       );
     } catch (error) {
       addToast(
         "info",
-        "Echec de sauvegarde",
+        "Enregistrement impossible",
         error instanceof Error
           ? error.message
-          : "Une erreur est survenue pendant la sauvegarde."
+          : "Réessayez."
       );
       throw error;
     }
@@ -61,7 +61,7 @@ const Analytics: React.FC = () => {
         <header className="page-header glass-header">
           <div>
             <h1 className="page-title">Analyses</h1>
-            <p className="page-subtitle">Chargement des donnees analytics...</p>
+            <p className="page-subtitle">Chargement des analyses…</p>
           </div>
         </header>
       </div>
@@ -77,9 +77,7 @@ const Analytics: React.FC = () => {
       {preferencesError && <p role="alert">{preferencesError}</p>}
       <header className="workspace-header">
         <div>
-          <p className="workspace-eyebrow">COMPRENDRE POUR MIEUX AGIR</p>
-          <h1>Vos progrès, en perspective.</h1>
-          <p className="workspace-subtitle">Suivez les pertes, explorez les tendances et mesurez vos pistes d’amélioration.</p>
+          <h1>Analyses</h1>
         </div>
         <div className="flex gap-sm">
           <Button
@@ -88,20 +86,20 @@ const Analytics: React.FC = () => {
             onClick={() => setIsCustomizeModalOpen(true)}
             disabled={preferencesLoading}
           >
-            Personnaliser
+            Régler l’affichage
           </Button>
           <Button
             size="sm"
             icon={<Download size={16} />}
             onClick={() => setIsExportModalOpen(true)}
           >
-            Exporter un rapport
+            Exporter les données
           </Button>
         </div>
       </header>
 
-      <div className="workspace-summary"><div><span>Votre tableau de suivi</span><strong>Chaque progrès compte.</strong></div><p>Données de démonstration · Les tendances et les simulations illustrent le fonctionnement de votre espace.</p></div>
-      <div className="workspace-section-heading"><h2>Les indicateurs à suivre</h2><span>Gaspillage · Prévisions · Économies</span></div>
+      <div className="workspace-summary"><div><span>Source</span><strong>Données d’exemple</strong></div><p>Chiffres figés au 11/09/2026, non recalculés à partir de votre activité.</p></div>
+      <div className="workspace-section-heading"><h2>Indicateurs</h2></div>
 
       <div className="analytics-grid">
         {/* Waste Stats */}

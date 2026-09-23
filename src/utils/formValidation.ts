@@ -117,9 +117,9 @@ export function validateRecordProductionForm(
 
   const recipeName = values.recipeName.trim();
   if (!recipeName) {
-    errors.recipeName = "Le nom de la recette est requis.";
+    errors.recipeName = "Le nom du plat ou de la préparation est requis.";
   } else if (recipeName.length > 120) {
-    errors.recipeName = "Le nom de la recette doit contenir au maximum 120 caracteres.";
+    errors.recipeName = "Le nom du plat ou de la préparation doit contenir au maximum 120 caractères.";
   }
 
   const portions = parseInteger(values.portions);

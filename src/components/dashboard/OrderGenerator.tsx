@@ -46,16 +46,16 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
   if (order) return <div className="flex flex-col gap-lg" role="status">
     <CheckCircle size={40} aria-hidden="true" />
     <h3>Commande enregistrée</h3>
-    <p>Votre validation et les quantités ont été enregistrées. Aucun email n’a été envoyé : cette commande reste à transmettre à vos fournisseurs.</p>
+    <p>À transmettre au fournisseur : aucun email n’a été envoyé et le stock n’a pas changé.</p>
     <p>Référence : {order.id}</p>
     <Link to="/orders" onClick={onClose}>Voir les commandes validées</Link>
     <Button onClick={onClose}>Fermer</Button>
   </div>;
 
   return <div className="flex flex-col gap-lg">
-    <h3><Package size={20} aria-hidden="true" /> Revoir les quantités</h3>
-    <p>Ajustez les suggestions puis validez. L’enregistrement ne déclenche aucun envoi externe et ne modifie pas le stock.</p>
-    {recommendations.length === 0 && <p role="alert">Cette suggestion n’est plus disponible pour une commande.</p>}
+    <h3><Package size={20} aria-hidden="true" /> Quantités à commander</h3>
+    <p>Vérifiez les quantités et le fournisseur. La validation n’envoie rien et ne modifie pas le stock.</p>
+    {recommendations.length === 0 && <p role="alert">Aucun article à commander.</p>}
     {quantities.some((value) => value.trim() && !isValidOrderQuantity(value)) && <p role="alert">Chaque quantité doit être comprise entre 0,001 et 1 000 000, avec au plus 3 décimales.</p>}
     {loading && <p role="status">Chargement du catalogue…</p>}
     {(error || saveError) && <p role="alert">{saveError || error?.message}</p>}
@@ -68,7 +68,7 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
         <small>{product?.unit} · {((product?.pricePerUnit ?? 0) * (Number(quantities[index]) || 0)).toFixed(2)} €</small>
       </div>;
     })}
-    <strong>Total estimé : {total.toFixed(2)} €</strong>
+    <strong>Montant estimé : {total.toFixed(2)} €</strong>
     <div className="flex gap-sm">
       <Button variant="outline" onClick={onClose} disabled={saving}>Annuler</Button>
       <Button onClick={handleValidate} disabled={saving || loading || !!error || !valid}>{saving ? "Enregistrement…" : "Valider la commande"}</Button>

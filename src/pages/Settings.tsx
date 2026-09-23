@@ -64,16 +64,14 @@ const Settings: React.FC = () => {
     <div className="settings-container workspace-page">
       <header className="workspace-header">
         <div>
-          <p className="workspace-eyebrow">UN ESPACE À VOTRE IMAGE</p>
-          <h1>Les détails qui font la différence.</h1>
-          <p className="workspace-subtitle">Retrouvez les informations de votre restaurant, vos connexions et les réglages de votre compte.</p>
+          <h1>Paramètres</h1>
         </div>
       </header>
 
       <div className="settings-layout">
         {/* Sidebar Navigation for Settings */}
         <Card className="settings-nav-card">
-          <p className="settings-nav-label">VOS PRÉFÉRENCES</p>
+          <p className="settings-nav-label">RUBRIQUES</p>
           <nav className="settings-nav" aria-label="Rubriques des paramètres">
             {tabs.map((tab) => (
               <button
@@ -95,11 +93,10 @@ const Settings: React.FC = () => {
           {activeTab === "restaurant" && <RestaurantSettings />}
 
           {activeTab === "products" && (
-            <Card title="Gestion des Produits">
+            <Card title="Produits">
               <div className="empty-state">
                 <Package size={48} color="var(--color-border)" />
-                <h3>Votre catalogue, au même endroit.</h3>
-                <p>Consultez et ajoutez vos produits depuis l’inventaire.</p>
+                <p>Gérez vos produits depuis la page Stocks.</p>
                 <Link to="/stocks" className="btn btn-primary">Ouvrir les stocks</Link>
               </div>
             </Card>
@@ -108,8 +105,8 @@ const Settings: React.FC = () => {
           {activeTab === "suppliers" && <SupplierSettings />}
 
           {activeTab === "integrations" && (
-            <Card title="Vos outils connectés">
-              <p className="settings-section-intro">Ces connecteurs ne sont pas encore disponibles. Aucune donnée n’est synchronisée avec une caisse.</p>
+            <Card title="Connexions aux caisses">
+              <p className="settings-section-intro">Aucune caisse n’est connectée. Les intégrations ci-dessous ne sont pas disponibles.</p>
               {INTEGRATIONS.map((integration) => (
                 <div key={integration.id} className="integration-item">
                   <div className="int-info">

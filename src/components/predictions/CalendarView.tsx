@@ -36,7 +36,7 @@ export default function CalendarView({ predictions, onPredictionClick }: Calenda
   return (
     <section className="planning-calendar" aria-label="Calendrier des prévisions">
       <header className="planning-toolbar">
-        <div><p className="planning-eyebrow">VOTRE HORIZON</p><h2 aria-live="polite">{periodLabel}</h2></div>
+        <div><p className="planning-eyebrow">CALENDRIER</p><h2 aria-live="polite">{periodLabel}</h2></div>
         <div className="planning-controls">
           <div className="planning-modes" aria-label="Période affichée">
             <button aria-pressed={mode === "week"} onClick={() => setMode("week")}>Semaine</button>
@@ -50,8 +50,8 @@ export default function CalendarView({ predictions, onPredictionClick }: Calenda
         </div>
       </header>
       <div className="planning-summary">
-        <p><strong>{periodPredictions.length}</strong> prévisions sur {mode === "week" ? "la semaine" : "le mois"} <span>· {criticalCount} critiques</span></p>
-        <label><input type="checkbox" checked={criticalOnly} onChange={(event) => setCriticalOnly(event.target.checked)} /> Priorités critiques uniquement</label>
+        <p><strong>{periodPredictions.length}</strong> prévisions sur {mode === "week" ? "la semaine affichée" : "le mois affiché"} <span>· {criticalCount} prioritaires</span></p>
+        <label><input type="checkbox" checked={criticalOnly} onChange={(event) => setCriticalOnly(event.target.checked)} /> Achats prioritaires uniquement</label>
       </div>
       <div className="planning-layout">
         <div className="planning-board">
@@ -84,21 +84,21 @@ export default function CalendarView({ predictions, onPredictionClick }: Calenda
             })}
           </div>
           <div className="planning-legend"><span>Critique</span><span>Important</span><span>Normal</span></div>
-          <p className="planning-help">Sélectionnez une date pour voir les détails. Navigation au clavier avec les flèches.</p>
+          <p className="planning-help">Sélectionnez un jour. Au clavier, utilisez les flèches.</p>
         </div>
         <aside className="planning-detail" aria-label="Prévisions du jour sélectionné">
-          <div className="planning-detail-heading"><CalendarDays size={21} aria-hidden="true" /><div><p>LE DÉTAIL DU JOUR</p><h3>{format(selected, "EEEE d MMMM", { locale: fr })}</h3></div></div>
+          <div className="planning-detail-heading"><CalendarDays size={21} aria-hidden="true" /><div><p>PRÉVISIONS DU JOUR</p><h3>{format(selected, "EEEE d MMMM", { locale: fr })}</h3></div></div>
           <p className="planning-detail-count" role="status">{selectedPredictions.length} prévision{selectedPredictions.length > 1 ? "s" : ""}{criticalOnly ? " critique(s)" : ""}</p>
-          {selectedPredictions.length === 0 ? <div className="planning-empty"><CalendarDays size={28} aria-hidden="true" /><h4>{criticalOnly ? "Aucune priorité critique" : "Une journée sans prévision"}</h4><p>{criticalOnly ? "Désactivez le filtre pour consulter toutes les prévisions de cette date." : "Aucune prévision disponible pour cette date. Choisissez un autre jour dans le calendrier."}</p></div> :
+          {selectedPredictions.length === 0 ? <div className="planning-empty"><CalendarDays size={28} aria-hidden="true" /><h4>{criticalOnly ? "Aucun achat prioritaire" : "Aucune prévision"}</h4><p>{criticalOnly ? "Désactivez le filtre pour voir les autres scénarios." : "Choisissez un autre jour."}</p></div> :
             <div className="planning-agenda">{selectedPredictions.map((prediction) => {
               const priority = getPredictionPriority(prediction);
               return <article key={prediction.id} className="planning-item">
-                <div className="planning-item-top"><span className={`planning-priority ${priority}`}>{priorityLabels[priority]}</span><span>Indice démo {Math.round(prediction.confidence * 100)} %</span></div>
+                <div className="planning-item-top"><span className={`planning-priority ${priority}`}>{priorityLabels[priority]}</span></div>
                 <h4>{prediction.productName}</h4><p>{prediction.recommendation?.reason || "Aucune explication disponible."}</p>
-                <button onClick={() => onPredictionClick(prediction)} aria-label={`Examiner la prévision pour ${prediction.productName}`}>Examiner la prévision <ArrowUpRight size={15} aria-hidden="true" /></button>
+                <button onClick={() => onPredictionClick(prediction)} aria-label={`Voir le scénario pour ${prediction.productName}`}>Voir le scénario <ArrowUpRight size={15} aria-hidden="true" /></button>
               </article>;
             })}</div>}
-          <p className="planning-disclaimer">Une prévision n’est pas une commande. Une date passée ne confirme pas une livraison.</p>
+          <p className="planning-disclaimer">Une prévision ne valide ni commande ni livraison.</p>
         </aside>
       </div>
     </section>

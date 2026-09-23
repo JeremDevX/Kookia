@@ -65,14 +65,10 @@
 }
 
 .splash-emblem svg { width: var(--size-36); height: var(--size-36); }
-.splash-eyebrow { color: var(--color-text-muted); font-size: var(--font-size-caption); font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-0_25); margin-bottom: var(--spacing-lg); }
 .splash-logo { width: clamp(var(--size-220), var(--unit-36vw), var(--size-320)); max-width: var(--unit-100percent); height: auto; filter: drop-shadow(var(--number-0) var(--spacing-xs) var(--size-12) rgba(var(--rgb-color-primary), var(--number-0_02))); }
-.splash-tagline { margin-top: var(--spacing-lg); color: var(--color-primary); font-size: clamp(var(--font-size-xl), var(--unit-3vw), var(--font-size-2xl)); font-weight: var(--font-weight-medium); letter-spacing: var(--tracking-negative-0_04); line-height: var(--number-1_5); }
-.splash-tagline span { color: var(--color-text-muted); font-weight: var(--font-weight-regular); }
 .splash-loading { width: var(--size-144); height: var(--spacing-xs); border-radius: var(--radius-compact); background: var(--color-border); margin-top: var(--spacing-xl); overflow: hidden; }
 .splash-loading span { display: block; width: var(--unit-45percent); height: var(--unit-100percent); background: linear-gradient(var(--unit-90deg), var(--palette-sage-7), var(--palette-sage-11), var(--palette-sage-7)); border-radius: inherit; animation: splash-loading var(--unit-1_6s) ease-in-out infinite; }
 .splash-caption { margin-top: var(--spacing-md); font-size: var(--font-size-xs); letter-spacing: var(--tracking-0_02); color: var(--color-text-muted); }
-.splash-footer { position: absolute; bottom: max(var(--size-28), env(safe-area-inset-bottom)); padding: var(--number-0) var(--size-20); color: var(--color-text-muted); text-align: center; font-size: var(--font-size-xs); }
 
 @keyframes splash-appear { from { opacity: var(--number-0); transform: translateY(var(--size-12)); } to { opacity: var(--number-1); transform: translateY(var(--number-0)); } }
 @keyframes splash-loading { from { transform: translateX(var(--unit-negative-105percent)); } to { transform: translateX(var(--unit-325percent)); } }
@@ -89,8 +85,6 @@
   .splash-screen { padding-block: var(--spacing-md) var(--spacing-2xl); }
   .splash-emblem { width: var(--size-52); height: var(--size-52); margin-bottom: var(--size-20); border-radius: var(--radius-panel); }
   .splash-emblem svg { width: var(--size-28); height: var(--size-28); }
-  .splash-eyebrow { margin-bottom: var(--spacing-md); }
   .splash-logo { width: var(--size-220); }
-  .splash-tagline, .splash-loading { margin-top: var(--spacing-md); }
-  .splash-footer { bottom: var(--size-12); }
+  .splash-loading { margin-top: var(--spacing-md); }
 }

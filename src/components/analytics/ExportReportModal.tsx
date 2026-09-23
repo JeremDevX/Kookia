@@ -57,14 +57,13 @@ export default function ExportReportModal({ isOpen, onClose }: ExportReportModal
   };
   return <Modal isOpen={isOpen} onClose={onClose} title="Exporter les données" width="md">
     <div className="export-report-modal flex flex-col gap-lg">
-      <p>Rapport opérationnel, sans attestation de conformité. Les données de démonstration restent identifiées comme telles.</p>
-      <p>Les opérations datées sont filtrées sur la période (UTC). Les anciens graphiques sans dates sont inclus comme instantané du 11/09/2026 si cette date est sélectionnée, sans recalcul sur la période.</p>
+      <p>Opérations filtrées par date UTC. L’instantané d’exemple du 11/09/2026 n’est inclus que si la période couvre cette date.</p>
       <label htmlFor="report-format">Format</label>
       <select className="input-field" id="report-format" value={format} disabled={loading} onChange={(event) => setFormat(event.target.value)}>
         <option value="csv">CSV</option><option value="excel">Excel — classeur XML</option><option value="pdf">PDF — via impression</option>
       </select>
-      <label htmlFor="report-from">Du (UTC)</label><input className="input-field" id="report-from" type="date" value={from} disabled={loading} onChange={(event) => setFrom(event.target.value)} />
-      <label htmlFor="report-to">Au (UTC, inclus)</label><input className="input-field" id="report-to" type="date" value={to} disabled={loading} onChange={(event) => setTo(event.target.value)} />
+      <label htmlFor="report-from">Date de début (UTC)</label><input className="input-field" id="report-from" type="date" value={from} disabled={loading} onChange={(event) => setFrom(event.target.value)} />
+      <label htmlFor="report-to">Date de fin incluse (UTC)</label><input className="input-field" id="report-to" type="date" value={to} disabled={loading} onChange={(event) => setTo(event.target.value)} />
       {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
       <div className="export-actions"><Button variant="outline" onClick={onClose} disabled={loading}>Fermer</Button><Button onClick={exportReport} disabled={loading || !from || !to || from > to}>{loading ? "Préparation…" : format === "pdf" ? "Préparer le PDF" : "Télécharger"}</Button></div>
     </div>

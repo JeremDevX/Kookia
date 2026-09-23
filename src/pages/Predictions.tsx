@@ -79,9 +79,8 @@ const Predictions: React.FC = () => {
     <div className="predictions-container workspace-page">
       <header className="workspace-header">
         <div>
-          <p className="workspace-eyebrow">UNE LONGUEUR D’AVANCE</p>
-          <h1>Anticipez les prochains services.</h1>
-          <p className="workspace-subtitle">Des prévisions pour éclairer vos achats. Votre expertise pour décider.</p>
+          <h1>Prévisions de consommation</h1>
+          <p className="workspace-subtitle">Scénarios d’exemple, sans données de vente ni météo.</p>
         </div>
         <div className="view-toggles">
           <Button
@@ -90,7 +89,7 @@ const Predictions: React.FC = () => {
             onClick={() => setViewMode("list")}
             size="sm"
           >
-            Liste Priorités
+            Liste
           </Button>
           <Button
             aria-pressed={viewMode === "calendar"}
@@ -106,24 +105,23 @@ const Predictions: React.FC = () => {
 
       {loading && <p role="status">Chargement des prévisions…</p>}
       {error && <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>}
-      <p>Scénarios de démonstration, sans ventes ni météo connectées. Les indices de confiance affichés ne mesurent pas une fiabilité réelle.</p>
-      {historicalCount > 0 && <p role="status">{historicalCount} prévision{historicalCount > 1 ? "s" : ""} datée{historicalCount > 1 ? "s" : ""} : consultable{historicalCount > 1 ? "s" : ""} dans le calendrier, non proposée{historicalCount > 1 ? "s" : ""} à la commande.</p>}
+      {historicalCount > 0 && <p role="status">{historicalCount} scénario{historicalCount > 1 ? "s" : ""} passé{historicalCount > 1 ? "s" : ""} dans le calendrier.</p>}
 
-      <div className="workspace-summary"><div><span>À examiner en priorité</span><strong>{urgentPredictions.length} suggestion{urgentPredictions.length > 1 ? "s" : ""}</strong></div><p>Les prévisions sont des estimations. Vérifiez les quantités et les besoins avant de confirmer.</p></div>
+      {urgentPredictions.length > 0 && <div className="workspace-summary"><div><span>Achats à vérifier rapidement</span><strong>{urgentPredictions.length} suggestion{urgentPredictions.length > 1 ? "s" : ""}</strong></div></div>}
 
       {viewMode === "list" ? (
         <div className="predictions-grid">
-          {!loading && !error && currentPredictions.length === 0 && <p className="workspace-empty">Aucune prévision actuelle disponible. Consultez le calendrier pour l’historique ; vérifiez vos besoins à partir du stock réel.</p>}
+          {!loading && !error && currentPredictions.length === 0 && <p className="workspace-empty">Aucune prévision à venir. Consultez le calendrier pour l’historique.</p>}
           {currentPredictions.length > 0 && <>
           {/* Urgent Section */}
           <section>
             <div className="section-header urgent">
               <h2 className="section-title text-urgent">
-                À traiter en priorité
+                Achats à vérifier rapidement
               </h2>
             </div>
             <div className="cards-stack">
-              {urgentPredictions.length === 0 && currentPredictions.length > 0 && <div className="workspace-empty">Aucune suggestion critique pour le moment.</div>}
+              {urgentPredictions.length === 0 && currentPredictions.length > 0 && <div className="workspace-empty">Aucun achat prioritaire.</div>}
               {urgentPredictions.map((pred) => {
                 const unitPrice = getProductUnitPrice(pred.productId);
                 const supplierName = getSupplierName(pred.productId);
@@ -137,12 +135,12 @@ const Predictions: React.FC = () => {
                       <div className="pred-info">
                         <div className="pred-header">
                           <h3 className="product-name">{pred.productName}</h3>
-                          <Badge label="Priorité critique" status="urgent" />
+                          <Badge label="À vérifier rapidement" status="urgent" />
                         </div>
                         <div className="pred-reason">
                           <Calendar size={16} className="text-secondary" />
                           <span>
-                            {pred.recommendation?.reason || "Aucune explication disponible."} (indice de démonstration : {(pred.confidence * 100).toFixed(0)} %)
+                            {pred.recommendation?.reason || "Aucune explication disponible."}
                           </span>
                         </div>
                         <div className="pred-stats">
@@ -184,7 +182,7 @@ const Predictions: React.FC = () => {
                             onClick={() => handleAutoOrder(pred)}
                             disabled={!isActionablePurchasePrediction(pred)}
                           >
-                            Revoir la commande
+                            Préparer une commande
                           </Button>
                           <Button
                             variant="secondary"
@@ -192,7 +190,7 @@ const Predictions: React.FC = () => {
                             icon={<Mail size={16} />}
                             onClick={() => handleEmailSupplier(pred)}
                           >
-                            Email Fournisseur
+                            Contacter le fournisseur
                           </Button>
                         </div>
                       </div>
@@ -207,7 +205,7 @@ const Predictions: React.FC = () => {
           <section>
             <div className="section-header">
               <h2 className="section-title text-moderate">
-                Les autres suggestions
+                Autres scénarios
               </h2>
             </div>
             <div className="cards-stack">
@@ -231,9 +229,6 @@ const Predictions: React.FC = () => {
                       </div>
                       <div className="pred-meta">
                         <Badge label={badgeLabel} status={badgeStatus} />
-                        <span className="confidence-pill">
-                          Indice démo : {(pred.confidence * 100).toFixed(0)} %
-                        </span>
                       </div>
                       <div className="compact-actions">
                         <Button
@@ -241,7 +236,7 @@ const Predictions: React.FC = () => {
                           variant="outline"
                           onClick={() => handleShowDetails(pred)}
                         >
-                          Détails
+                          Voir le scénario
                         </Button>
                         <Button
                           size="sm"
@@ -249,7 +244,7 @@ const Predictions: React.FC = () => {
                           onClick={() => handleAutoOrder(pred)}
                           disabled={!isActionablePurchasePrediction(pred)}
                         >
-                          Revoir la commande
+                          Préparer une commande
                         </Button>
                       </div>
                     </div>
@@ -264,7 +259,7 @@ const Predictions: React.FC = () => {
         <CalendarView predictions={predictions} onPredictionClick={handleShowDetails} />
       )}
 
-      <Modal isOpen={reviewPrediction !== null} onClose={() => setReviewPrediction(null)} title="Revoir la commande" width="lg">
+      <Modal isOpen={reviewPrediction !== null} onClose={() => setReviewPrediction(null)} title="Préparer une commande" width="lg">
         <OrderGenerator recommendations={reviewPrediction ? createOrderRecommendationsFromPredictions([reviewPrediction]) : []} onClose={() => setReviewPrediction(null)} />
       </Modal>
       <PredictionDetailModal

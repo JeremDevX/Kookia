@@ -41,7 +41,7 @@ export default function InvoiceModal({ onValidate, onClose }: InvoiceModalProps)
   const received = invoice?.status === "received";
   const disabled = saving || catalogLoading || !!catalogError;
   return <div className="invoice-modal flex flex-col gap-lg">
-    <p>Saisie manuelle : aucun OCR connecté. Vérifiez les produits, quantités et prix avant la réception.</p>
+    <p>Saisie manuelle, sans lecture automatique. Vérifiez les lignes avant d’ajouter les quantités au stock.</p>
     {(error || catalogError) && <p role="alert">{error || catalogError?.message}</p>}
     {notice && <p role="status">{notice}</p>}
     {loading ? <p role="status">Chargement des factures…</p> : <>
@@ -52,7 +52,7 @@ export default function InvoiceModal({ onValidate, onClose }: InvoiceModalProps)
       </select>
       <Button variant="outline" onClick={createDraft} disabled={saving}>Nouvelle facture</Button>
       {invoice && <>
-        {invoice.source === "demo" && <p>Facture de démonstration datée du 9 décembre 2024. Aucun document n’a été scanné.</p>}
+        {invoice.source === "demo" && <p>Facture d’exemple du 09/12/2024, sans document scanné.</p>}
         {received && <p role="status">Déjà réceptionnée le {invoice.receivedAt ? new Date(invoice.receivedAt).toLocaleString("fr-FR") : "—"}. Le stock ne sera pas crédité une seconde fois.</p>}
         <label htmlFor="invoice-reference">Référence</label>
         <input className="input-field" id="invoice-reference" value={invoice.reference} disabled={disabled || received} onChange={(event) => setInvoice({ ...invoice, reference: event.target.value })} />
@@ -74,7 +74,7 @@ export default function InvoiceModal({ onValidate, onClose }: InvoiceModalProps)
         <strong>Total : {invoice.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0).toFixed(2)} €</strong>
         {!received && <div className="invoice-actions">
           <Button variant="outline" onClick={() => void persist(false)} disabled={disabled}>Enregistrer le brouillon</Button>
-          <Button onClick={() => void persist(true)} disabled={disabled}>Valider la réception et le stock</Button>
+          <Button onClick={() => void persist(true)} disabled={disabled}>Réceptionner et ajouter au stock</Button>
         </div>}
       </>}
     </>}

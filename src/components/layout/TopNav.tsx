@@ -18,14 +18,14 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen }) => {
   const pageLabels: Record<string, string> = {
     "/": "Vue d’ensemble",
     "/stocks": "Stocks",
-    "/predictions": "Prédictions",
+    "/predictions": "Prévisions",
     "/recipes": "Recettes",
     "/settings": "Paramètres",
     "/analytics": "Analyses",
     "/orders": "Commandes",
   };
 
-  const currentPage = pageLabels[pathname] ?? "Dashboard";
+  const currentPage = pageLabels[pathname] ?? "Vue d’ensemble";
 
   return (
     <header className="top-nav">
@@ -40,7 +40,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen }) => {
           <Menu size={24} />
         </button>
         <div className="breadcrumbs">
-          <span className="breadcrumb-parent">Mon restaurant</span>
+          <span className="breadcrumb-parent">Restaurant</span>
           <ChevronRight size={14} aria-hidden="true" />
           <span className="current-page">{currentPage}</span>
         </div>
@@ -50,7 +50,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen }) => {
         <Notifications />
         <Link to="/settings" className="user-profile" aria-label="Ouvrir mon compte">
           <div className="avatar">{user?.displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "K"}</div>
-          <span className="profile-copy"><span className="username">{user?.displayName || "Mon compte"}</span><small>Mon espace</small></span>
+          <span className="profile-copy"><span className="username">{user?.displayName || "Mon compte"}</span></span>
           <Settings2 size={15} className="profile-settings" aria-hidden="true" />
         </Link>
       </div>

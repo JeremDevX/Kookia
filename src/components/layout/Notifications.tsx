@@ -72,8 +72,8 @@ const Notifications: React.FC = () => {
 
     if (saved) addToast(
       "success",
-      "Ajouté au panier",
-      `${notif.productName} (${notif.suggestedQuantity} ${notif.unit}) ajouté à la commande.`
+      "Article sélectionné",
+      `${notif.productName} · ${notif.suggestedQuantity} ${notif.unit}. Quantité à vérifier avant validation.`
     );
   };
 
@@ -113,8 +113,8 @@ const Notifications: React.FC = () => {
     // Summary toast
     if (saved) addToast(
       "success",
-      "Commande prête !",
-      `${actionableNotifications.length} article(s) ajouté(s). Cliquez sur "Générer la commande" pour continuer.`
+      "Articles sélectionnés",
+      `${actionableNotifications.length} article(s) à vérifier avant validation.`
     );
   };
 
@@ -191,6 +191,7 @@ const Notifications: React.FC = () => {
         title="Notifications"
         width="md"
       >
+        <p>Exemples datés de septembre 2026 : ces alertes ne reflètent pas la météo ni le stock actuel.</p>
         <div
           style={{
             maxHeight: "65vh",
@@ -209,9 +210,6 @@ const Notifications: React.FC = () => {
               <Bell size={48} style={{ margin: "0 auto 16px", opacity: 0.3 }} />
               <p style={{ fontSize: "1rem", fontWeight: 500 }}>
                 Aucune notification
-              </p>
-              <p style={{ fontSize: "0.875rem", marginTop: "4px", opacity: 0.7 }}>
-                Vous êtes à jour !
               </p>
             </div>
           ) : (
@@ -307,8 +305,8 @@ const Notifications: React.FC = () => {
                                 borderRadius: "8px",
                               }}
                             >
-                              <Check size={16} />✓ {notif.suggestedQuantity}{" "}
-                              {notif.unit} ajoutés au panier
+                              <Check size={16} />{notif.suggestedQuantity}{" "}
+                              {notif.unit} sélectionnés
                             </div>
                           ) : processingId === notif.id ? (
                             <div
@@ -355,7 +353,7 @@ const Notifications: React.FC = () => {
                             >
                               <ShoppingCart size={16} />
                               <span>
-                                Commander {notif.suggestedQuantity} {notif.unit}
+                                Sélectionner {notif.suggestedQuantity} {notif.unit}
                               </span>
                             </button>
                           )}
@@ -421,7 +419,7 @@ const Notifications: React.FC = () => {
             ) : (
               <>
                 <ShoppingCart size={16} />
-                Commander tout ({actionableNotifications.length})
+                Tout sélectionner ({actionableNotifications.length})
               </>
             )}
           </button>
@@ -448,7 +446,7 @@ const Notifications: React.FC = () => {
               }}
             >
               <ArrowRight size={16} />
-              Générer la commande ({cartCount})
+              Vérifier la commande ({cartCount})
             </button>
           )}
         </div>
@@ -458,7 +456,7 @@ const Notifications: React.FC = () => {
       <Modal
         isOpen={isOrderModalOpen}
         onClose={handleCloseOrderModal}
-        title="Générateur de Commandes"
+        title="Valider une commande"
         width="lg"
       >
         <OrderGenerator

@@ -66,15 +66,15 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={() => { if (!saving) onClose(); }}
-      title="Enregistrer une production"
+      title="Noter une préparation hors catalogue"
       width="md"
     >
       <div className="flex flex-col gap-4">
-        <p>Cette déclaration conserve votre production. Sans recette liée, aucun ingrédient ne sera déduit du stock.</p>
+        <p>Cette préparation sera ajoutée au journal. Le stock ne sera pas modifié.</p>
         {saveError && <p role="alert">{saveError}</p>}
         <div>
           <label htmlFor="recordproductionmodal-1" className="block text-sm font-medium mb-2">
-            Nom de la recette *
+            Nom du plat ou de la préparation *
           </label>
           <Input id="recordproductionmodal-1"
             placeholder="Ex: Tarte aux tomates"
@@ -129,12 +129,12 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
 
         <div>
           <label htmlFor="recordproductionmodal-4" className="block text-sm font-medium mb-2">
-            Notes (optionnel)
+            Notes facultatives
           </label>
           <textarea id="recordproductionmodal-4"
             className="w-full px-3 py-2 border rounded-md resize-none"
             rows={3}
-            placeholder="Remarques sur la production..."
+            placeholder="Précisions utiles pour l’équipe"
             value={formData.notes}
             aria-invalid={Boolean(errors.notes)}
             aria-describedby={errors.notes ? "record-notes-error" : undefined}
@@ -147,11 +147,6 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
           )}
         </div>
 
-        <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
-          <strong>Info :</strong> Cette production sera enregistrée dans votre
-          journal. Elle ne modifie pas le stock et n’alimente pas de moteur de prévision connecté.
-        </div>
-
         <div className="flex justify-end gap-3 mt-4">
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Annuler
@@ -160,7 +155,7 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
             onClick={handleSubmit}
             disabled={saving}
           >
-            Enregistrer
+            Ajouter au journal
           </Button>
         </div>
       </div>

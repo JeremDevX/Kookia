@@ -62,7 +62,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={() => { if (!saving) onClose(); }}
-      title="Confirmer la production"
+      title="Produire une recette"
       width="lg"
     >
       <div className="flex flex-col gap-4">
@@ -71,7 +71,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
           <div>
             <h3 className="text-2xl font-bold">{recipe.name}</h3>
             <p className="text-sm text-secondary mt-1">
-              Catégorie: {recipe.category}
+              {recipe.category}
             </p>
           </div>
           <Badge label={safeMaxYield > 0 ? "Stock disponible" : "Stock insuffisant"} status={safeMaxYield > 0 ? "optimal" : "urgent"} />
@@ -80,7 +80,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
         {/* Quantity Selector */}
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
           <label htmlFor="production-quantity" className="block text-sm font-semibold text-blue-900 mb-2">
-            Nombre de portions à produire
+            Portions à produire
           </label>
           <div className="flex items-center gap-4">
             <input
@@ -98,7 +98,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
               className="flex-1 px-4 py-2 text-2xl font-bold border-2 border-blue-300 rounded-md text-center"
             />
             <div className="text-sm text-blue-700">
-              <div>Maximum possible:</div>
+              <div>Maximum avec le stock :</div>
               <div className="font-bold text-lg">{safeMaxYield} portions</div>
             </div>
           </div>
@@ -113,7 +113,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
             <div className="flex items-center gap-2 mb-2">
               <Package size={16} className="text-secondary" />
               <span className="text-xs font-semibold text-secondary uppercase">
-                Coût matière
+                Coût matière estimé
               </span>
             </div>
             <p className="text-2xl font-bold">{totalCost === null ? "Indisponible" : `${totalCost.toFixed(2)} €`}</p>
@@ -127,7 +127,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
         <div className="bg-white p-4 rounded-lg border">
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle size={18} className="text-optimal" />
-            <h4 className="font-semibold">Ingrédients de la recette</h4>
+            <h4 className="font-semibold">Ingrédients par portion</h4>
           </div>
           <div className="space-y-2">
             {recipe.ingredients.map((ing) => (
@@ -137,15 +137,13 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
               </div>
             ))}
           </div>
-          <p className="text-xs text-secondary">Le stock sera revérifié par le serveur lors de la confirmation.</p>
         </div>
 
         {/* Warning */}
         <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200 flex items-start gap-2">
           <AlertTriangle size={16} className="text-yellow-600 mt-0.5" />
           <div className="text-sm text-yellow-800">
-            <strong>Attention:</strong> Les ingrédients seront automatiquement
-            déduits de votre stock après confirmation.
+            Le stock sera revérifié, puis les ingrédients seront déduits à la validation.
           </div>
         </div>
 
@@ -158,7 +156,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
             onClick={handleConfirm}
             disabled={saving || !quantityValidation.isValid}
           >
-            Confirmer la production
+            Confirmer et déduire du stock
           </Button>
         </div>
       </div>

@@ -23,13 +23,10 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
     <div className={`splash-screen ${fadeOut ? "fade-out" : ""}`} role="status" aria-label="Ouverture de KookiA">
       <div className="splash-content">
         <div className="splash-emblem" aria-hidden="true"><ChefHat strokeWidth={1.4} /></div>
-        <span className="splash-eyebrow">LE BON SENS EN CUISINE</span>
         <img className="splash-logo" src="/logo_kookia.svg" alt="KookiA" width="190" height="48" />
-        <p className="splash-tagline">Moins de gaspillage.<br /><span>Plus de sérénité.</span></p>
         <div className="splash-loading" aria-hidden="true"><span /></div>
-        <p className="splash-caption">Ouverture de votre espace</p>
+        <p className="splash-caption">Chargement de votre espace…</p>
       </div>
-      <p className="splash-footer">Pensé pour votre cuisine. Et pour demain.</p>
     </div>
   );
 }

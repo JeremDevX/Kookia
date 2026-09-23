@@ -169,16 +169,6 @@
   gap: var(--spacing-md);
 }
 
-.confidence-pill {
-  font-size: var(--font-size-sm);
-  background-color: var(--color-bg);
-  padding: var(--size-6) var(--size-12);
-  border-radius: var(--radius-full);
-  color: var(--color-text-secondary);
-  border: var(--size-1) solid var(--color-border);
-  font-weight: var(--font-weight-medium);
-}
-
 .compact-actions {
   display: flex;
   gap: var(--spacing-sm);

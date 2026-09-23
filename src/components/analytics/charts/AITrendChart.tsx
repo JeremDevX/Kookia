@@ -24,15 +24,15 @@ const AITrendChart: React.FC<AITrendChartProps> = ({
   predictionCount,
 }) => {
   return (
-    <Card title="🤖 Performance de l'IA" className="stat-card">
+    <Card title="Prévisions — exemple" className="stat-card">
       <div className="stat-card-header">
         <div>
-          <span className="kpi-label">Précision Globale</span>
+          <span className="kpi-label">Précision simulée</span>
           <div className="kpi-value green">
             {reliability.correctPredictions}%
           </div>
           <div className="text-xs text-secondary mt-2">
-            Basé sur {predictionCount} prédictions
+            Exemple sur {predictionCount} prévisions fictives
           </div>
         </div>
         <div className="stat-card-icon">
@@ -41,7 +41,7 @@ const AITrendChart: React.FC<AITrendChartProps> = ({
       </div>
 
       <div className="chart-wrapper">
-        <h4>Évolution de la Précision (4 Semaines)</h4>
+        <h4>Exemple sur quatre semaines</h4>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={reliability.monthlyTrend}>
             <CartesianGrid
@@ -94,7 +94,7 @@ const AITrendChart: React.FC<AITrendChartProps> = ({
 
       <div className="mt-4">
         <h4 className="text-sm font-semibold mb-3 text-secondary uppercase tracking-wide">
-          Produits à Surveiller
+          Précision simulée par produit
         </h4>
         <div className="product-perf-list">
           {criticalProducts.map((prod, idx) => (

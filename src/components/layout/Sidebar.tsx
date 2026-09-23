@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navItems = [
     { icon: LayoutDashboard, label: "Vue d’ensemble", path: "/" },
     { icon: Package, label: "Stocks", path: "/stocks" },
-    { icon: Brain, label: "Prédictions", path: "/predictions" },
+    { icon: Brain, label: "Prévisions", path: "/predictions" },
     { icon: BookOpen, label: "Recettes", path: "/recipes" },
     { icon: ShoppingBag, label: "Commandes", path: "/orders" },
     { icon: BarChart3, label: "Analyses", path: "/analytics" },
@@ -87,9 +87,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="sidebar-workspace"><span className="workspace-icon"><Leaf size={19} aria-hidden="true" /></span><div><strong>Mon restaurant</strong><small>L’essentiel, au quotidien</small></div></div>
+        <div className="sidebar-workspace"><span className="workspace-icon"><Leaf size={19} aria-hidden="true" /></span><div><strong>Mon restaurant</strong></div></div>
         <nav className="sidebar-nav" aria-label="Pages du restaurant">
-          <p className="sidebar-label">ESPACE DE TRAVAIL</p>
+          <p className="sidebar-label">NAVIGATION</p>
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -106,7 +106,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="sidebar-purpose"><Leaf size={18} aria-hidden="true" /><p>Une cuisine plus sereine.<br /><strong>Moins de gaspillage.</strong></p></div>
           <a
             href="mailto:support@kookia.app?subject=Support%20KookiA"
             className="nav-item"
