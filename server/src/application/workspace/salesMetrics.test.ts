@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { calculateSalesMetrics, type MetricSale } from "./salesMetrics.js";
 
-const sale = (serviceDate: string, quantity: number, source: "manual" | "csv" = "manual"): MetricSale =>
+const sale = (serviceDate: string, quantity: number, source: "manual" | "csv" | "demo_simulation" = "manual"): MetricSale =>
   ({ serviceDate, saleItemId: "pizza", saleItemName: "Pizza", quantity, source, revision: 0 });
 
 it("uses only recorded service days and withholds evolution until both periods have enough observations", () => {
@@ -32,4 +32,12 @@ it("groups quantities by both service date and item and rejects sparse long peri
   const previous = Array.from({ length: 7 }, (_, index) => sale(`2026-08-1${index + 1}`, 1));
   expect(calculateSalesMetrics(sevenDays, previous, "2026-09-01", "2026-09-30", "2026-08-02", "2026-08-31")
     .status).toBe("insufficient_history");
+});
+
+it("keeps simulated sales separate from manual and CSV totals", () => {
+  const current = Array.from({ length: 7 }, (_, index) => sale(`2026-09-0${index + 1}`, 5, "demo_simulation"));
+  const previous = Array.from({ length: 7 }, (_, index) => sale(`2026-08-2${index + 1}`, 3));
+  expect(calculateSalesMetrics(current, previous, "2026-09-01", "2026-09-14", "2026-08-18", "2026-08-31"))
+    .toMatchObject({ provenance: "mixed", totalQuantity: 35, manualQuantity: 0, csvQuantity: 0,
+      demoSimulationQuantity: 35, status: "ready" });
 });

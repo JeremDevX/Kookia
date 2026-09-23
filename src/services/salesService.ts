@@ -2,17 +2,17 @@ import { apiRequest } from "../config/api";
 
 export interface DailySale {
   id: string; saleItemId: string; saleItemName: string; serviceDate: string;
-  quantity: number; source: "manual" | "csv"; revision: number;
+  quantity: number; source: "manual" | "csv" | "demo_simulation"; revision: number;
   createdBy: string; updatedBy: string; createdAt: string; updatedAt: string;
 }
-export interface LatestService { serviceDate: string; sources: ("manual" | "csv")[] }
+export interface LatestService { serviceDate: string; sources: ("manual" | "csv" | "demo_simulation")[] }
 export interface SaleItem { id: string; name: string }
 export interface SaleValues { saleItemId: string; serviceDate: string; quantity: number }
 export interface SalesMetrics {
   period: { from: string; to: string }; previousPeriod: { from: string; to: string };
-  provenance: "recorded_sales"; status: "no_data" | "insufficient_history" | "ready";
+  provenance: "recorded_sales" | "demo_simulation" | "mixed"; status: "no_data" | "insufficient_history" | "ready";
   minimumObservedDays: number; observedDays: number; previousObservedDays: number;
-  totalQuantity: number; manualQuantity: number; csvQuantity: number; correctedCsvQuantity: number;
+  totalQuantity: number; manualQuantity: number; csvQuantity: number; demoSimulationQuantity: number; correctedCsvQuantity: number;
   averagePerObservedDay: number | null; previousAveragePerObservedDay: number | null; changePercent: number | null;
   items: { saleItemId: string; saleItemName: string; quantity: number }[];
   dailyItems: { serviceDate: string; saleItemId: string; saleItemName: string; quantity: number }[];
@@ -31,7 +31,7 @@ export const getSalesMetrics = (from: string, to: string) => apiRequest<SalesMet
   `/workspace/sales/metrics?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
 );
 export interface SalesBaseline {
-  provenance: "recorded_sales"; model: "rolling_mean_7_v1";
+  provenance: "recorded_sales" | "demo_simulation" | "mixed"; model: "rolling_mean_7_v1";
   asOfDate: string; forecastDate: string; historyFrom: string;
   requiredConsecutiveDays: number; lookbackDays: number; evaluationDays: number;
   status: "no_data" | "insufficient_history" | "experimental";

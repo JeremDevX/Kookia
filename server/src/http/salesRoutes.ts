@@ -41,11 +41,12 @@ salesRoutes.get("/sales/metrics", async (req, res, next) => {
     const previousTo = new Date(Date.parse(from) - 86_400_000).toISOString().slice(0, 10);
     const previousFrom = new Date(Date.parse(from) - duration).toISOString().slice(0, 10);
     const rows = await prisma.dailySale.findMany({ where: { restaurantId: workspace(res).restaurantId,
-      source: { in: ["manual", "csv"] }, serviceDate: { gte: new Date(`${previousFrom}T00:00:00Z`), lte: new Date(`${to}T00:00:00Z`) } },
+      source: { in: ["manual", "csv", "demo_simulation"] }, serviceDate: { gte: new Date(`${previousFrom}T00:00:00Z`), lte: new Date(`${to}T00:00:00Z`) } },
       include: { saleItem: { select: { name: true } } } });
     const mapped = rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
       saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity,
-      source: row.source === "csv" ? "csv" as const : "manual" as const, revision: row.revision }));
+      source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : "manual" as const,
+      revision: row.revision }));
     res.json(calculateSalesMetrics(mapped.filter((row) => row.serviceDate >= from),
       mapped.filter((row) => row.serviceDate < from), from, to, previousFrom, previousTo));
   } catch (error) { next(error); }
@@ -55,10 +56,11 @@ salesRoutes.get("/sales/baseline", async (_req, res, next) => {
     const asOfDate = new Date(Date.parse(today()) - 86_400_000).toISOString().slice(0, 10);
     const historyFrom = new Date(Date.parse(asOfDate) - 27 * 86_400_000).toISOString().slice(0, 10);
     const rows = await prisma.dailySale.findMany({ where: { restaurantId: workspace(res).restaurantId,
-      source: { in: ["manual", "csv"] }, serviceDate: { gte: new Date(`${historyFrom}T00:00:00Z`),
+      source: { in: ["manual", "csv", "demo_simulation"] }, serviceDate: { gte: new Date(`${historyFrom}T00:00:00Z`),
         lte: new Date(`${asOfDate}T00:00:00Z`) } }, include: { saleItem: { select: { name: true } } } });
     res.json(evaluateSalesBaseline(rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
-      saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity })), asOfDate));
+      saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity,
+      source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : "manual" as const })), asOfDate));
   } catch (error) { next(error); }
 });
 salesRoutes.get("/sales/items", async (_req, res, next) => {

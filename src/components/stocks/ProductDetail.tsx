@@ -30,6 +30,14 @@ interface ProductDetailProps {
   suppliers: Supplier[];
 }
 
+const movementLabel = (reason: string) => ({
+  loss: "Perte", initial: "Stock initial", receipt: "Réception",
+  invoice_import_demo: "Entrée de facture simulée", simulated_consumption: "Sortie simulée",
+  simulated_unit_rounding: "Correction d’unité simulée", simulation_opening: "Stock de départ simulé",
+  simulation_restock: "Réapprovisionnement simulé", simulation_loss: "Perte simulée (hypothèse)",
+  production: "Production",
+}[reason] ?? "Ajustement");
+
 const ProductDetail: React.FC<ProductDetailProps> = ({
   product,
   onClose,
@@ -221,7 +229,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               {historyError ? <p role="alert">{historyError}</p> : movements.length === 0 ? <p>Aucun mouvement enregistré.</p> : movements.map((movement) => (
                 <div className="history-item" key={movement.id}>
                   <span className="date">{new Date(movement.createdAt).toLocaleDateString("fr-FR")}</span>
-                  <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {product.unit} ({movement.reason === "loss" ? "Perte" : movement.reason === "initial" ? "Stock initial" : movement.reason === "receipt" ? "Réception" : movement.reason === "invoice_import_demo" ? "Entrée de facture simulée" : movement.reason === "simulated_consumption" ? "Sortie simulée" : movement.reason === "simulated_unit_rounding" ? "Correction d’unité simulée" : movement.reason === "production" ? "Production" : "Ajustement"})</span>
+                  <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {product.unit} ({movementLabel(movement.reason)})</span>
                 </div>
               ))}
             </div>

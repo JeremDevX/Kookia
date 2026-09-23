@@ -44,3 +44,19 @@ it("computes recorded-sale metrics in the tenant and selected periods only", asy
   await owner.agent.get("/api/workspace/sales/metrics?from=2026-09-30&to=2026-09-01").expect(400);
   await request(app).get("/api/workspace/sales/metrics").expect(401);
 });
+
+it("includes simulation rows while keeping their provenance separate", async () => {
+  const owner = await account();
+  const item = await owner.agent.post("/api/workspace/sales/items").send({ name: "Pizza simulée" }).expect(201);
+  await prisma.dailySale.createMany({ data: Array.from({ length: 14 }, (_, index) => ({
+    restaurantId: owner.restaurantId, saleItemId: item.body.id as string,
+    serviceDate: new Date(`2026-${index < 7 ? "08" : "09"}-${String(index < 7 ? 25 + index : index - 6).padStart(2, "0")}T00:00:00Z`),
+    quantity: 5, source: index < 7 ? "manual" : "demo_simulation", operationId: randomUUID(),
+    createdBy: index < 7 ? owner.actorId : "restaurant-simulation:v1",
+    updatedBy: index < 7 ? owner.actorId : "restaurant-simulation:v1",
+  })) });
+  await owner.agent.get("/api/workspace/sales/metrics?from=2026-09-01&to=2026-09-07").expect(200).then(({ body }) => {
+    expect(body).toMatchObject({ provenance: "mixed", status: "ready", totalQuantity: 35,
+      manualQuantity: 0, csvQuantity: 0, demoSimulationQuantity: 35 });
+  });
+});

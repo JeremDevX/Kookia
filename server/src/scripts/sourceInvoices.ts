@@ -7,6 +7,10 @@ export interface SourceLine {
   quantity: number;
   unit: "kg" | "L" | "pcs";
   unitPrice: number;
+  sourceQuantityText: string;
+  sourceLineNumber: number;
+  priceBasis: "stated_unit_price" | "derived_from_line_amount_ht" | "derived_from_line_amount_ttc";
+  priceTaxBasis: "HT" | "TTC" | "unknown";
   code?: string;
 }
 
@@ -33,7 +37,7 @@ const decimal = (value: string) => {
 
 function quantity(value: string): { amount: number; unit: SourceLine["unit"] } | null {
   const normalized = value.trim().replace(/\s+/g, " ");
-  const match = normalized.match(/^(\d+(?:[,.]\d{1,3})?)(?:\s*(KG|KGS|kg|g|L|l|litres?|PCE|PCS|BTE|BRQ|CRT|SHT|unités?(?: de vente)?|pièces?|bouteilles?|boîtes?|plateaux?|sachets?|bacs?|lots?|bottes?|sacs?|bidons?))?(?:\s*\(\d+ pièces?\)|\s+indiqu[eé]s?|\s+à\s+\d+(?:[,.]\d+)?\s*€|,\s*volume non indiqu[eé])?$/i);
+  const match = normalized.match(/^(\d+(?:[,.]\d{1,3})?)(?:\s*(KG|KGS|kg|g|L|l|litres?|PCE|PCS|BTE|BRQ|CRT|SHT|unités?(?: de vente)?|pièces?|bouteilles?|boîtes?|plateaux?|sachets?|bacs?|lots?|bottes?|sacs?|bidons?|cartons?|caisses?|filets?|barquettes?|paquets?|packs?|pots?|briques?))?(?:\s+(?:de|x|×)\s*\d{1,3})?(?:\s*\(\d+ pièces?\)|\s+indiqu[eé]s?|\s+à\s+\d+(?:[,.]\d+)?\s*€|,\s*volume non indiqu[eé])?$/i);
   if (!match) return null;
   const amount = Number(match[1].replace(",", "."));
   if (!(amount > 0 && amount <= 1_000_000)) return null;
@@ -48,7 +52,7 @@ function stockLines(content: string): SourceLine[] {
   const lines = content.split("\n");
   const result: SourceLine[] = [];
   let columns: string[] = [];
-  for (const line of lines) {
+  for (const [lineIndex, line] of lines.entries()) {
     if (!line.startsWith("|")) { columns = []; continue; }
     const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
     if (cells.some((cell) => /quantit[eé]|qt[eé]/i.test(cell)) && cells.some((cell) => /prix.*(?:unitaire|net)|prix ht|montant|total|^ttc$/i.test(cell))) {
@@ -68,22 +72,32 @@ function stockLines(content: string): SourceLine[] {
     const amountTTC = fallbackAmountIndex >= 0 ? decimal(cells[fallbackAmountIndex]) : null;
     const lineAmount = amountHT ?? amountTTC;
     const statedPrice = priceIndex >= 0 ? decimal(cells[priceIndex]) : null;
-    const unitPrice = statedPrice ?? (parsedQuantity && lineAmount !== null ? Math.round(lineAmount / parsedQuantity.amount * 10000) / 10000 : null);
+    const statedPriceIsTTC = priceIndex >= 0 && /TTC/i.test(columns[priceIndex]);
+    const deriveHT = statedPriceIsTTC && amountHT !== null && parsedQuantity;
+    const unitPrice = deriveHT ? Math.round(amountHT / parsedQuantity.amount * 10000) / 10000
+      : statedPrice ?? (parsedQuantity && lineAmount !== null ? Math.round(lineAmount / parsedQuantity.amount * 10000) / 10000 : null);
     if (!name || !parsedQuantity || unitPrice === null || unitPrice < 0 || unitPrice > 1_000_000) continue;
-    const comparableAmount = priceIndex >= 0 && /TTC/i.test(columns[priceIndex]) ? amountTTC : amountHT;
+    const comparableAmount = deriveHT ? amountHT : priceIndex >= 0 && /TTC/i.test(columns[priceIndex]) ? amountTTC : amountHT;
     if (statedPrice !== null && comparableAmount !== null && Math.abs(parsedQuantity.amount * unitPrice - comparableAmount) > 0.03) continue;
     const codeIndex = columns.findIndex((column) => /code|r[eé]f[eé]rence/i.test(column));
     result.push({ name: name.slice(0, 120), quantity: parsedQuantity.amount, unit: parsedQuantity.unit,
-      unitPrice, ...(codeIndex >= 0 && cells[codeIndex] !== "—" ? { code: cells[codeIndex] } : {}) });
+      unitPrice, sourceQuantityText: cells[quantityIndex], sourceLineNumber: lineIndex + 1,
+      priceBasis: deriveHT ? "derived_from_line_amount_ht" : statedPrice !== null ? "stated_unit_price" : amountHT !== null
+        ? "derived_from_line_amount_ht" : "derived_from_line_amount_ttc",
+      priceTaxBasis: deriveHT || (!statedPriceIsTTC && amountHT !== null) ? "HT"
+        : statedPriceIsTTC || (statedPrice === null && amountTTC !== null) ? "TTC" : "unknown",
+      ...(codeIndex >= 0 && cells[codeIndex] !== "—" ? { code: cells[codeIndex] } : {}) });
   }
-  for (const line of lines) {
+  for (const [lineIndex, line] of lines.entries()) {
     const match = line.match(/^- (.+?) : (\d+(?:[,.]\d{1,3})?)\s*(kg|g|L|unités?|pièces?)?\s*×\s*(\d+(?:[,.]\d{1,4})?)\s*€(?:\/(?:kg|L))?(?:\s*HT)?\s*=\s*(\d+(?:[,.]\d{1,2})?)\s*€/i);
     if (!match) continue;
     const parsedQuantity = quantity(`${match[2]} ${match[3] ?? ""}`);
     const unitPrice = decimal(match[4]);
     const amount = decimal(match[5]);
     if (!parsedQuantity || unitPrice === null || amount === null || Math.abs(parsedQuantity.amount * unitPrice - amount) > 0.03) continue;
-    result.push({ name: match[1].slice(0, 120), quantity: parsedQuantity.amount, unit: parsedQuantity.unit, unitPrice });
+    result.push({ name: match[1].slice(0, 120), quantity: parsedQuantity.amount, unit: parsedQuantity.unit,
+      unitPrice, sourceQuantityText: `${match[2]} ${match[3] ?? ""}`.trim(), sourceLineNumber: lineIndex + 1,
+      priceBasis: "stated_unit_price", priceTaxBasis: /\bHT\b/i.test(match[0]) ? "HT" : "unknown" });
   }
   return result;
 }

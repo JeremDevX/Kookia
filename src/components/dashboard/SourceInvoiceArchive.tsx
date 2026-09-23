@@ -33,7 +33,7 @@ export default function SourceInvoiceArchive() {
 
   return <details className="source-invoice-archive">
     <summary>Pièces fournisseurs importées ({invoices.length})</summary>
-    <p>Dates décalées pour la démonstration. Les lectures OCR et les réceptions restent à vérifier sur les originaux. Les mouvements de stock importés et les sorties simulées ne sont pas des faits opérationnels validés.</p>
+    <p>Dates décalées pour la démonstration. Les lectures OCR et quantités de réception restent à vérifier sur les originaux. Les approvisionnements synthétiques, productions, ventes et pertes sont des hypothèses de démonstration, pas des faits opérationnels ni des commandes envoyées.</p>
     {loading ? <p role="status">Chargement des pièces…</p> : invoices.length === 0 ? <p>Aucune pièce fournisseur importée dans cet espace.</p> : <>
       <label htmlFor="source-invoice-search">Rechercher une pièce</label>
       <input className="input-field" id="source-invoice-search" type="search" value={query} onChange={(event) => { setQuery(event.target.value); void open(""); }} />

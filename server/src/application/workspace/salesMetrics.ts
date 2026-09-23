@@ -1,6 +1,6 @@
 export interface MetricSale {
   serviceDate: string; saleItemId: string; saleItemName: string;
-  quantity: number; source: "manual" | "csv"; revision: number;
+  quantity: number; source: "manual" | "csv" | "demo_simulation"; revision: number;
 }
 
 const MIN_OBSERVED_DAYS = 7;
@@ -11,7 +11,7 @@ export function calculateSalesMetrics(current: MetricSale[], previous: MetricSal
   const byDate = new Map<string, number>();
   const byItem = new Map<string, { saleItemId: string; saleItemName: string; quantity: number }>();
   const byDateAndItem = new Map<string, { serviceDate: string; saleItemId: string; saleItemName: string; quantity: number }>();
-  let totalQuantity = 0, manualQuantity = 0, csvQuantity = 0, correctedCsvQuantity = 0;
+  let totalQuantity = 0, manualQuantity = 0, csvQuantity = 0, demoSimulationQuantity = 0, correctedCsvQuantity = 0;
   for (const sale of current) {
     totalQuantity += sale.quantity;
     byDate.set(sale.serviceDate, (byDate.get(sale.serviceDate) ?? 0) + sale.quantity);
@@ -24,8 +24,11 @@ export function calculateSalesMetrics(current: MetricSale[], previous: MetricSal
     dateItem.quantity += sale.quantity;
     byDateAndItem.set(dateItemKey, dateItem);
     if (sale.source === "manual") manualQuantity += sale.quantity;
-    else { csvQuantity += sale.quantity; if (sale.revision > 0) correctedCsvQuantity += sale.quantity; }
+    else if (sale.source === "csv") { csvQuantity += sale.quantity; if (sale.revision > 0) correctedCsvQuantity += sale.quantity; }
+    else demoSimulationQuantity += sale.quantity;
   }
+  const sources = new Set([...current, ...previous].map((sale) => sale.source));
+  const provenance = sources.has("demo_simulation") ? sources.size > 1 ? "mixed" : "demo_simulation" : "recorded_sales";
   const previousDays = new Set(previous.map((sale) => sale.serviceDate)).size;
   const previousQuantity = previous.reduce((sum, sale) => sum + sale.quantity, 0);
   const observedDays = byDate.size;
@@ -36,9 +39,9 @@ export function calculateSalesMetrics(current: MetricSale[], previous: MetricSal
   const averagePerObservedDay = status === "ready" ? round(totalQuantity / observedDays) : null;
   const previousAverage = status === "ready" ? previousQuantity / previousDays : null;
   return {
-    period: { from, to }, previousPeriod: { from: previousFrom, to: previousTo }, provenance: "recorded_sales" as const,
+    period: { from, to }, previousPeriod: { from: previousFrom, to: previousTo }, provenance,
     status, minimumObservedDays, observedDays, previousObservedDays: previousDays,
-    totalQuantity, manualQuantity, csvQuantity, correctedCsvQuantity,
+    totalQuantity, manualQuantity, csvQuantity, demoSimulationQuantity, correctedCsvQuantity,
     averagePerObservedDay,
     previousAveragePerObservedDay: previousAverage === null ? null : round(previousAverage),
     changePercent: averagePerObservedDay === null || previousAverage === null || previousAverage === 0

@@ -3,6 +3,7 @@ export interface BaselineSale {
   saleItemId: string;
   saleItemName: string;
   quantity: number;
+  source: "manual" | "csv" | "demo_simulation";
 }
 
 const HISTORY_DAYS = 28;
@@ -16,8 +17,10 @@ const round = (value: number) => Math.round(value * 10) / 10;
 export function evaluateSalesBaseline(sales: BaselineSale[], asOfDate: string) {
   const dates = Array.from({ length: HISTORY_DAYS }, (_, index) => day(asOfDate, index - HISTORY_DAYS + 1));
   const byItem = new Map<string, { saleItemId: string; saleItemName: string; byDate: Map<string, number> }>();
+  const sources = new Set<string>();
   for (const sale of sales) {
     if (!dates.includes(sale.serviceDate)) continue;
+    sources.add(sale.source);
     const item = byItem.get(sale.saleItemId) ?? { saleItemId: sale.saleItemId, saleItemName: sale.saleItemName,
       byDate: new Map<string, number>() };
     item.byDate.set(sale.serviceDate, (item.byDate.get(sale.serviceDate) ?? 0) + sale.quantity);
@@ -37,8 +40,9 @@ export function evaluateSalesBaseline(sales: BaselineSale[], asOfDate: string) {
         days: EVALUATION_DAYS, meanAbsoluteError: round(errors.reduce((sum, error) => sum + error, 0) / EVALUATION_DAYS),
         weightedAbsolutePercentageError: actualTotal === 0 ? null : round(errors.reduce((sum, error) => sum + error, 0) / actualTotal * 100) } }];
   }).sort((a, b) => a.saleItemName.localeCompare(b.saleItemName, "fr"));
+  const provenance = sources.has("demo_simulation") ? sources.size > 1 ? "mixed" : "demo_simulation" : "recorded_sales";
   return {
-    provenance: "recorded_sales" as const, model: "rolling_mean_7_v1" as const,
+    provenance, model: "rolling_mean_7_v1" as const,
     asOfDate, forecastDate: day(asOfDate, 1), historyFrom: dates[0],
     requiredConsecutiveDays: HISTORY_DAYS, lookbackDays: LOOKBACK_DAYS, evaluationDays: EVALUATION_DAYS,
     status: byItem.size === 0 ? "no_data" as const : items.length === 0 ? "insufficient_history" as const : "experimental" as const,

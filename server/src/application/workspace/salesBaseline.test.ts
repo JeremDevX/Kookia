@@ -3,9 +3,10 @@ import { evaluateSalesBaseline, type BaselineSale } from "./salesBaseline.js";
 
 const asOf = "2026-09-22";
 const day = (offset: number) => new Date(Date.parse(asOf) + offset * 86_400_000).toISOString().slice(0, 10);
-const history = (id: string, name: string, quantity: (index: number) => number): BaselineSale[] =>
+const history = (id: string, name: string, quantity: (index: number) => number,
+  source: BaselineSale["source"] = "manual"): BaselineSale[] =>
   Array.from({ length: 28 }, (_, index) => ({ serviceDate: day(index - 27), saleItemId: id,
-    saleItemName: name, quantity: quantity(index) }));
+    saleItemName: name, quantity: quantity(index), source }));
 
 it("backtests a rolling seven-day mean without leaking target-day data", () => {
   const result = evaluateSalesBaseline(history("pizza", "Pizza", (index) => index + 1), asOf);
@@ -26,4 +27,9 @@ it("withholds a forecast for an incomplete item and never treats missing days as
       weightedAbsolutePercentageError: 0 } }]);
   expect(evaluateSalesBaseline(incomplete, asOf)).toMatchObject({ status: "insufficient_history", items: [] });
   expect(evaluateSalesBaseline([], asOf)).toMatchObject({ status: "no_data", items: [] });
+});
+
+it("labels a complete simulated baseline as demonstration data", () => {
+  expect(evaluateSalesBaseline(history("pizza", "Pizza", () => 12, "demo_simulation"), asOf))
+    .toMatchObject({ provenance: "demo_simulation", status: "experimental", observedItemCount: 1 });
 });

@@ -13,6 +13,11 @@ export default function SalesMetrics({ from, to }: Props) {
   const [loading, setLoading] = useState(true);
   const [itemPage, setItemPage] = useState(0);
   const [dayPage, setDayPage] = useState(0);
+  const sourceDescription = metrics?.provenance === "demo_simulation"
+    ? "Ces données sont simulées pour la démonstration et ne sont pas des ventes observées."
+    : metrics?.provenance === "mixed"
+      ? "Les résultats mélangent ventes observées et données simulées ; ils ne représentent pas une mesure terrain."
+      : "Les données de démonstration, le stock et les commandes sont exclus.";
   useEffect(() => {
     let active = true;
     void getSalesMetrics(from, to).then((result) => {
@@ -25,11 +30,11 @@ export default function SalesMetrics({ from, to }: Props) {
 
   return <section className="sales-panel sales-metrics" aria-labelledby="sales-metrics-title">
     <h2 id="sales-metrics-title">Indicateurs des ventes enregistrées</h2>
-    <p>Source : saisies manuelles et imports CSV du restaurant, après corrections. Les données de démonstration, le stock et les commandes sont exclus. Une journée sans saisie n’est pas comptée comme zéro vente.</p>
+    <p>Source : saisies manuelles, imports CSV ou simulation du restaurant. {sourceDescription} Une journée sans saisie n’est pas comptée comme zéro vente.</p>
     {loading ? <p role="status">Calcul des indicateurs…</p> : error ? <p role="alert">Indicateurs indisponibles : {error}</p> : metrics && <>
       <p>Période : du {displayDate(metrics.period.from)} au {displayDate(metrics.period.to)} · {metrics.observedDays} jour{metrics.observedDays > 1 ? "s" : ""} avec ventes enregistrées.</p>
       {metrics.status === "no_data" ? <p>Aucune vente enregistrée sur cette période. <Link to="/sales#sales-start">Ajouter des ventes</Link>.</p> : <>
-        <p className="sales-metrics-total"><strong>{metrics.totalQuantity} unités vendues enregistrées</strong><br />{metrics.manualQuantity} en saisie manuelle · {metrics.csvQuantity} par import CSV{metrics.correctedCsvQuantity > 0 ? `, dont ${metrics.correctedCsvQuantity} corrigées` : ""}.</p>
+        <p className="sales-metrics-total"><strong>{metrics.totalQuantity} unités vendues ({metrics.provenance === "demo_simulation" ? "simulées" : metrics.provenance === "mixed" ? "observées et simulées" : "enregistrées"})</strong><br />{metrics.manualQuantity} en saisie manuelle · {metrics.csvQuantity} par import CSV{metrics.correctedCsvQuantity > 0 ? `, dont ${metrics.correctedCsvQuantity} corrigées` : ""} · {metrics.demoSimulationQuantity} simulées.</p>
         {metrics.status === "insufficient_history" ?
           <p role="status">Comparaison indisponible : {metrics.observedDays} jours saisis sur cette période et {metrics.previousObservedDays} sur la précédente. Il faut au moins {metrics.minimumObservedDays} jours avec ventes dans chacune.</p> :
           <p>Moyenne par jour avec ventes : {metrics.averagePerObservedDay} unités, contre {metrics.previousAveragePerObservedDay} sur la période précédente ({metrics.previousObservedDays} jours observés). Évolution : {metrics.changePercent !== null && metrics.changePercent > 0 ? "+" : ""}{metrics.changePercent} %.</p>}

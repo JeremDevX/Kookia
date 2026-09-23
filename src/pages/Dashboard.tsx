@@ -101,7 +101,7 @@ export default function Dashboard() {
         {productsLoading ? <p role="status">Chargement du stock…</p> : productsError ? <div role="alert"><p>Stock indisponible.</p><Button variant="outline" onClick={() => void refreshProducts()}>Réessayer</Button></div> :
           <p>{stockToReview.length === 0 ? "Aucun produit au seuil bas dans l'inventaire enregistré." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier dans l'inventaire enregistré.`}</p>}
         {!productsLoading && !productsError && criticalStockCount > 0 && <Badge label={`${criticalStockCount} critique${criticalStockCount > 1 ? "s" : ""} selon le seuil`} status="urgent" />}
-        <small>Les produits initiaux sont des exemples à confirmer.</small>
+        <small>Stocks, réceptions, productions et pertes historiques simulés : à ne pas confondre avec un inventaire réel.</small>
         <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><button type="button" onClick={() => setInvoiceOpen(true)}>Saisir une facture</button></div>
       </section>
       <section className="today-card" aria-labelledby="today-sales-title"><h2 id="today-sales-title">Ventes</h2>

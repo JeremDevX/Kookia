@@ -23,7 +23,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "db:seed": "node --import tsx server/src/scripts/seedWorkspaces.ts",
-    "import:invoices": "node --import tsx server/src/scripts/importSourceInvoices.ts"
+    "import:invoices": "node --import tsx server/src/scripts/importSourceInvoices.ts",
+    "simulate:restaurant": "node --import tsx server/src/scripts/simulateRestaurant.ts",
+    "restore:restaurant-simulation": "node --import tsx server/src/scripts/restoreRestaurantSimulation.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
