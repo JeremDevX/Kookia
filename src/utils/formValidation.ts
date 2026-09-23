@@ -83,6 +83,8 @@ export function validateAddProductForm(
     errors.currentStock = "Le stock initial doit etre un nombre positif ou nul.";
   } else if (currentStock > 100000) {
     errors.currentStock = "Le stock initial depasse la borne autorisee (100000).";
+  } else if ((values.currentStock.trim().split(".")[1]?.length ?? 0) > 3) {
+    errors.currentStock = "Le stock initial est limité à 3 décimales.";
   }
 
   if (values.minThreshold.trim()) {
@@ -101,6 +103,8 @@ export function validateAddProductForm(
     errors.pricePerUnit = "Le prix unitaire doit etre strictement positif.";
   } else if (pricePerUnit > 10000) {
     errors.pricePerUnit = "Le prix unitaire depasse la borne autorisee (10000).";
+  } else if ((values.pricePerUnit.trim().split(".")[1]?.length ?? 0) > 4) {
+    errors.pricePerUnit = "Le prix unitaire est limité à 4 décimales.";
   }
 
   return { isValid: Object.keys(errors).length === 0, errors };

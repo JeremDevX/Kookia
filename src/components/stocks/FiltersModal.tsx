@@ -3,23 +3,24 @@ import Modal from "../common/Modal";
 import Button from "../common/Button";
 import { Filter } from "lucide-react";
 import type { StockFilters } from "../../types/callbacks";
+import type { Supplier } from "../../types";
 
 interface FiltersModalProps {
   isOpen: boolean;
   onClose: () => void;
   onApply: (filters: StockFilters) => void;
+  suppliers: Supplier[];
+  appliedFilters: StockFilters;
 }
 
 const FiltersModal: React.FC<FiltersModalProps> = ({
   isOpen,
   onClose,
   onApply,
+  suppliers,
+  appliedFilters,
 }) => {
-  const [filters, setFilters] = useState<StockFilters>({
-    status: "all",
-    supplier: "all",
-    stockLevel: "all",
-  });
+  const [filters, setFilters] = useState<StockFilters>(appliedFilters);
 
   const handleApply = () => {
     onApply(filters);
@@ -70,11 +71,7 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
             }
           >
             <option value="all">Tous les fournisseurs</option>
-            <option value="sup1">Franck Légumes</option>
-            <option value="sup2">Fromages Dupont</option>
-            <option value="sup3">Avicole MM</option>
-            <option value="sup4">Viandes de Rungis</option>
-            <option value="sup5">Bio Local IDF</option>
+            {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
           </select>
         </div>
 
@@ -93,15 +90,15 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
             }
           >
             <option value="all">Tous les niveaux</option>
-            <option value="low">Stock bas (&lt; seuil)</option>
-            <option value="medium">Stock moyen</option>
-            <option value="high">Stock élevé</option>
+            <option value="low">Stock bas (≤ seuil)</option>
+            <option value="medium">Stock moyen (&gt; seuil et &lt; 2× seuil)</option>
+            <option value="high">Stock élevé (≥ 2× seuil)</option>
           </select>
         </div>
 
         <div className="bg-gray-50 p-3 rounded-md text-sm text-gray-600">
           <Filter size={16} className="inline mr-2" />
-          Les filtres s'appliquent en temps réel sur votre inventaire.
+          Les filtres seront appliqués après confirmation.
         </div>
 
         <div className="flex justify-between gap-3 mt-4">

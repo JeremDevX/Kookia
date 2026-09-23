@@ -55,6 +55,15 @@ describe("formValidation", () => {
       expect(result.errors.minThreshold).toBeTruthy();
       expect(result.errors.pricePerUnit).toBeTruthy();
     });
+
+    it("rejects quantities and prices exceeding persisted precision", () => {
+      const values = { name: "Tomates", category: "Légumes", currentStock: "1.0001",
+        unit: "kg" as const, minThreshold: "2", pricePerUnit: "3.00001" };
+      const result = validateAddProductForm(values);
+      expect(result.errors.currentStock).toBeTruthy();
+      expect(result.errors.pricePerUnit).toBeTruthy();
+      expect(validateAddProductForm({ ...values, currentStock: "1.001", pricePerUnit: "3.0001" }).isValid).toBe(true);
+    });
   });
 
   describe("validateRecordProductionForm", () => {

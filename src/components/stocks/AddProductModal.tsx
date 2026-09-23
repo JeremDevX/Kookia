@@ -4,8 +4,7 @@ import Button from "../common/Button";
 import Input from "../common/Input";
 import { Package, DollarSign, AlertCircle } from "lucide-react";
 import type { NewProduct } from "../../types/callbacks";
-import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
-import type { Unit } from "../../types";
+import type { Supplier, Unit } from "../../types";
 import {
   validateAddProductForm,
   type AddProductFormErrors,
@@ -15,14 +14,15 @@ interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (product: NewProduct) => Promise<void>;
+  suppliers: Supplier[];
 }
 
 const AddProductModal: React.FC<AddProductModalProps> = ({
   isOpen,
   onClose,
   onAdd,
+  suppliers,
 }) => {
-  const { suppliers } = useInventoryCatalog();
   const [supplierId, setSupplierId] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -86,6 +86,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     >
       <div className="flex flex-col gap-4">
         {saveError && <p role="alert">{saveError}</p>}
+        {suppliers.length === 0 && <p role="status">Aucun fournisseur disponible. L’ajout d’un produit est indisponible.</p>}
         <div><label htmlFor="product-supplier">Fournisseur</label><select id="product-supplier" value={supplierId || suppliers[0]?.id || ""} onChange={(event) => setSupplierId(event.target.value)}>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></div>
         <div>
           <label htmlFor="addproductmodal-1" className="block text-sm font-medium mb-2">
@@ -142,6 +143,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
             </label>
             <Input id="addproductmodal-4"
               type="number"
+              min="0"
+              step="0.001"
               placeholder="0"
               icon={<Package size={16} />}
               value={formData.currentStock}
@@ -158,6 +161,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
             </label>
             <Input id="addproductmodal-5"
               type="number"
+              min="0"
+              step="1"
               placeholder="10"
               icon={<AlertCircle size={16} />}
               value={formData.minThreshold}
@@ -173,9 +178,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           <label htmlFor="addproductmodal-6" className="block text-sm font-medium mb-2">
             Prix unitaire (€) *
           </label>
-          <Input id="addproductmodal-6"
-            type="number"
-            step="0.01"
+            <Input id="addproductmodal-6"
+              type="number"
+              min="0"
+              step="0.0001"
             placeholder="0.00"
             icon={<DollarSign size={16} />}
             value={formData.pricePerUnit}

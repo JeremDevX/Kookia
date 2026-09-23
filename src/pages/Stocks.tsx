@@ -12,6 +12,8 @@ import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
 import type { Product } from "../types";
 import type { StockFilters } from "../types/callbacks";
+import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
+import { getSuggestedOrderQuantity } from "../domain/inventory/product.policies";
 import "./Stocks.css";
 import "../styles/Workspace.css";
 
@@ -20,6 +22,7 @@ const Stocks: React.FC = () => {
   const { addToCart, loading: cartLoading } = useCart();
   const { products, updateStock, addProduct, getStatus, loading, error, refetch } =
     useProductsWithMutations();
+  const { suppliers } = useInventoryCatalog();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     null
@@ -34,6 +37,7 @@ const Stocks: React.FC = () => {
   });
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? null;
+  const categories = Array.from(new Set(products.map((product) => product.category))).sort((a, b) => a.localeCompare(b, "fr"));
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name
@@ -52,12 +56,12 @@ const Stocks: React.FC = () => {
 
     let matchesStockLevel = true;
     if (advancedFilters.stockLevel === "low") {
-      matchesStockLevel = p.currentStock < p.minThreshold;
+      matchesStockLevel = p.currentStock <= p.minThreshold;
     } else if (advancedFilters.stockLevel === "medium") {
       matchesStockLevel =
-        p.currentStock >= p.minThreshold && p.currentStock < p.minThreshold * 2;
+        p.currentStock > p.minThreshold && p.currentStock < p.minThreshold * 2;
     } else if (advancedFilters.stockLevel === "high") {
-      matchesStockLevel = p.currentStock >= p.minThreshold * 2;
+      matchesStockLevel = p.currentStock > p.minThreshold && p.currentStock >= p.minThreshold * 2;
     }
 
     return (
@@ -146,12 +150,7 @@ const Stocks: React.FC = () => {
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
               <option value="all">Toutes les catégories</option>
-              <option value="Légumes">Légumes</option>
-              <option value="Fromages">Fromages</option>
-              <option value="Frais">Frais</option>
-              <option value="Viandes">Viandes</option>
-              <option value="Epicerie">Epicerie</option>
-              <option value="Charcuterie">Charcuterie</option>
+              {categories.map((category) => <option key={category} value={category}>{category}</option>)}
             </select>
             </label>
             <Button
@@ -219,7 +218,7 @@ const Stocks: React.FC = () => {
                         disabled={cartLoading}
                         onClick={async () => {
                           const saved = await addToCart({ id: `product-${product.id}`, productId: product.id,
-                            productName: product.name, quantity: Math.max(1, product.minThreshold - product.currentStock),
+                            productName: product.name, quantity: getSuggestedOrderQuantity(product),
                             unit: product.unit, source: "stocks" });
                           if (saved) addToast("success", "Ajouté au panier", `${product.name} ajouté à votre sélection à revoir.`);
                         }}
@@ -251,23 +250,28 @@ const Stocks: React.FC = () => {
           </tbody>
         </table>
       </div>
-      <ProductDetail
+      {selectedProduct && <ProductDetail
+        key={selectedProduct.id}
         product={selectedProduct}
         onClose={() => setSelectedProductId(null)}
         onAdjustStock={handleDrawerAdjustStock}
-      />
+        suppliers={suppliers}
+      />}
 
       <AddProductModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={handleAddProduct}
+        suppliers={suppliers}
       />
 
-      <FiltersModal
-        isOpen={isFiltersModalOpen}
+      {isFiltersModalOpen && <FiltersModal
+        isOpen
         onClose={() => setIsFiltersModalOpen(false)}
         onApply={handleApplyFilters}
-      />
+        suppliers={suppliers}
+        appliedFilters={advancedFilters}
+      />}
     </div>
   );
 };

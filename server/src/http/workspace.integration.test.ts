@@ -44,12 +44,15 @@ describe("persistent catalog HTTP", () => {
     await first.post(`/api/workspace/products/${id}/stock`).send({ operationId, delta: 4 }).expect(409);
     await second.post(`/api/workspace/products/${id}/stock`).send({ operationId: randomUUID(), delta: 1 }).expect(404);
     await first.post(`/api/workspace/products/${id}/stock`).send({ operationId: randomUUID(), delta: "bad" }).expect(400);
+    await first.post(`/api/workspace/products/${id}/stock`).send({ operationId: randomUUID(), delta: 1, reason: "loss" }).expect(400);
     const concurrent = await Promise.all([1, 2].map(() => first.post(`/api/workspace/products/${id}/stock`).send({ operationId: randomUUID(), delta: -5 })));
     expect(concurrent.map((response) => response.status).sort()).toEqual([200, 409]);
     const refreshed = await first.get("/api/workspace/catalog").expect(200);
     expect(refreshed.body.products.find((item: { id: string }) => item.id === id).currentStock).toBe(2.5);
     const history = await first.get(`/api/workspace/products/${id}/movements`).expect(200);
     expect(history.body).toHaveLength(3);
+    const isolatedHistory = await second.get(`/api/workspace/products/${id}/movements`).expect(200);
+    expect(isolatedHistory.body).toEqual([]);
     const foreign = await second.get("/api/workspace/catalog").expect(200);
     expect(foreign.body.products.some((item: { id: string }) => item.id === id)).toBe(false);
     await first.post("/api/workspace/products").send({

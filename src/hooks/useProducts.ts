@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Product } from "../types";
 import { getProducts, getProductStatus, createProduct, adjustProductStock } from "../services/productService";
 import type { ProductStatus } from "../types";
@@ -53,14 +53,19 @@ export const useProducts = (): UseProductsReturn => {
 export const useProductsWithMutations = () => {
   const { products: initialProducts, loading, error, refetch } = useProducts();
   const [products, setProducts] = useState<Product[]>([]);
+  const stockQueue = useRef(Promise.resolve());
 
   useEffect(() => {
     setProducts(initialProducts);
   }, [initialProducts]);
 
-  const updateStock = useCallback(async (id: string, amount: number, reason: "adjustment" | "loss" = "adjustment") => {
-    const updated = await adjustProductStock(id, amount, reason);
-    setProducts((prev) => prev.map((product) => product.id === id ? updated : product));
+  const updateStock = useCallback((id: string, amount: number, reason: "adjustment" | "loss" = "adjustment") => {
+    const operation = stockQueue.current.then(async () => {
+      const updated = await adjustProductStock(id, amount, reason);
+      setProducts((prev) => prev.map((product) => product.id === id ? updated : product));
+    });
+    stockQueue.current = operation.catch(() => undefined);
+    return operation;
   }, []);
 
   const addProduct = useCallback(async (product: Product) => {

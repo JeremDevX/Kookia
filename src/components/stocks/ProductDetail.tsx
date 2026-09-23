@@ -10,13 +10,13 @@ import {
   Phone,
   ShoppingCart,
 } from "lucide-react";
-import type { Product } from "../../types";
+import type { Product, Supplier } from "../../types";
 import { useToast } from "../../context/ToastContext";
 import {
   getProductStatus,
   getProductStatusLabel,
+  getSuggestedOrderQuantity,
 } from "../../domain/inventory/product.policies";
-import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 
 import { getStockMovements, type StockMovement } from "../../services/productService";
 import { useCart } from "../../context/useCart";
@@ -26,12 +26,14 @@ interface ProductDetailProps {
   product: Product | null;
   onClose: () => void;
   onAdjustStock: (productId: string, delta: number, reason?: "adjustment" | "loss") => Promise<void>;
+  suppliers: Supplier[];
 }
 
 const ProductDetail: React.FC<ProductDetailProps> = ({
   product,
   onClose,
   onAdjustStock,
+  suppliers,
 }) => {
   const { addToast } = useToast();
   const { addToCart } = useCart();
@@ -39,7 +41,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [historyError, setHistoryError] = useState("");
   const [saving, setSaving] = useState(false);
   const [adjustReason, setAdjustReason] = useState<"adjustment" | "loss">("adjustment");
-  const { findSupplierByProductId } = useInventoryCatalog();
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState("");
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -72,7 +73,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   if (!product) return null;
 
   const status = getProductStatus(product);
-  const supplier = findSupplierByProductId(product.id);
+  const supplier = suppliers.find((item) => item.id === product.supplierId);
 
   const handleContactSupplier = () => {
     if (supplier?.phone) window.location.href = `tel:${supplier.phone.replace(/[^+0-9]/g, "")}`;
@@ -80,7 +81,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
   const handleOrderFromSupplier = async () => {
     const saved = await addToCart({ id: `product-${product.id}`, productId: product.id, productName: product.name,
-      source: "stocks", quantity: Math.max(1, product.minThreshold - product.currentStock), unit: product.unit });
+      source: "stocks", quantity: getSuggestedOrderQuantity(product), unit: product.unit });
     if (saved) addToast("info", "Ajouté au panier", "Vérifiez et validez la commande depuis le tableau de bord.");
   };
 
@@ -93,10 +94,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const handleAdjustStock = async () => {
     if (saving) return;
     if (!showAdjustModal) { setAdjustReason("adjustment"); setShowAdjustModal(true); return; }
-    const amount = Number(adjustAmount.trim().replace(",", "."));
+    const normalizedAmount = adjustAmount.trim().replace(",", ".");
+    const amount = Number(normalizedAmount);
     const delta = adjustReason === "loss" ? -Math.abs(amount) : amount;
-    if (!Number.isFinite(delta) || delta === 0) {
-      addToast("info", "Ajustement invalide", "Entrez une quantité non nulle (ex. +10 ou -2,5).");
+    if (!/^[+-]?(?:\d+(?:\.\d{1,3})?|\.\d{1,3})$/.test(normalizedAmount) || !Number.isFinite(delta) || delta === 0 || Math.abs(delta) > 1_000_000) {
+      addToast("info", "Ajustement invalide", "Entrez une quantité non nulle, de 3 décimales au maximum (ex. +10 ou -2,5).");
+      return;
+    }
+    if (product.currentStock + delta < 0) {
+      addToast("info", "Ajustement invalide", "La quantité retirée dépasse le stock disponible.");
       return;
     }
     setSaving(true);
@@ -130,7 +136,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               <Badge
                 label={
                   status === "urgent"
-                    ? "Rupture Imminente"
+                    ? "Stock critique"
                     : status === "moderate"
                     ? "Stock Faible"
                     : getProductStatusLabel(status)
@@ -192,7 +198,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                   size="sm"
                   variant="outline"
                   icon={<Phone size={14} />}
-                  onClick={handleContactSupplier}
+                  onClick={handleContactSupplier} disabled={!supplier?.phone}
                 >
                   Contacter
                 </Button>
@@ -215,7 +221,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               {historyError ? <p role="alert">{historyError}</p> : movements.length === 0 ? <p>Aucun mouvement enregistré.</p> : movements.map((movement) => (
                 <div className="history-item" key={movement.id}>
                   <span className="date">{new Date(movement.createdAt).toLocaleDateString("fr-FR")}</span>
-                  <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {product.unit} ({movement.reason === "loss" ? "Perte" : movement.reason === "initial" ? "Stock initial" : "Ajustement"})</span>
+                  <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {product.unit} ({movement.reason === "loss" ? "Perte" : movement.reason === "initial" ? "Stock initial" : movement.reason === "receipt" ? "Réception" : movement.reason === "production" ? "Production" : "Ajustement"})</span>
                 </div>
               ))}
             </div>

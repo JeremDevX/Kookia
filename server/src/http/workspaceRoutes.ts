@@ -49,7 +49,7 @@ const newProductSchema = z.object({
 const stockSchema = z.object({
   operationId: z.uuid(), delta: z.number().finite().min(-1_000_000).max(1_000_000).multipleOf(0.001).refine((value) => value !== 0),
   reason: z.enum(["adjustment", "loss"]).default("adjustment"),
-}).strict();
+}).strict().refine((data) => data.reason !== "loss" || data.delta < 0);
 
 workspaceRoutes.get("/catalog", async (_req, res, next) => {
   try { res.json(await getCatalog(context(res).restaurantId)); } catch (error) { next(error); }
