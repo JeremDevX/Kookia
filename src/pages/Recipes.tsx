@@ -38,6 +38,7 @@ const Recipes: React.FC = () => {
   const [refusalRecipe, setRefusalRecipe] = useState<Recipe | null>(null);
   const [productions, setProductions] = useState<Production[]>([]);
   const [productionError, setProductionError] = useState("");
+  const today = formatLocalISODate(new Date());
   const refreshProductions = useCallback(async () => {
     try { setProductions(await getProductions()); setProductionError(""); }
     catch { setProductionError("Historique de production indisponible."); }
@@ -48,7 +49,10 @@ const Recipes: React.FC = () => {
       () => { if (active) setProductionError("Historique de production indisponible."); });
     return () => { active = false; };
   }, []);
-  const producedRecipes = productions.filter((item) => item.kind === "production" && item.date.slice(0, 10) === formatLocalISODate(new Date())).map((item) => item.recipeId);
+  const producedRecipes = productions.filter((item) => item.kind === "production" && item.date.slice(0, 10) === today).map((item) => item.recipeId);
+  const simulatedProductionThisWeek = productions.some((item) => item.kind === "production" &&
+    item.operationId.startsWith("restaurant-simulation-v1:") &&
+    isSameWeek(parseISO(item.date.slice(0, 10)), parseISO(today), { weekStartsOn: 1 }));
   const formatIngredientCost = (recipe: Recipe) => {
     const cost = getIngredientCost(recipe.ingredients);
     return cost === null ? "Indisponible" : `${cost.toFixed(2)} €`;
@@ -152,6 +156,10 @@ const Recipes: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {displayedTab === "history" && simulatedProductionThisWeek && <p className="workspace-subtitle" role="note">
+        Cette semaine comprend des productions simulées pour la démonstration ; elles ne sont pas des productions observées.
+      </p>}
 
       {/* TAB 1: HISTORY */}
       {displayedTab === "history" && (
