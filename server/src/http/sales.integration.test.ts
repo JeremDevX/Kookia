@@ -21,6 +21,8 @@ it("records, reads and corrects only sales of owner-created items", async () => 
   const ownerCatalog = await owner.get("/api/workspace/catalog").expect(200);
   const beforeStock = ownerCatalog.body.products[0].currentStock;
   await request(app).get("/api/workspace/sales").expect(401);
+  await request(app).get("/api/workspace/sales/latest").expect(401);
+  expect((await owner.get("/api/workspace/sales/latest").expect(200)).body).toBeNull();
   expect((await owner.get("/api/workspace/sales/items").expect(200)).body).toEqual([]);
   const item = await owner.post("/api/workspace/sales/items").send({ name: "Pizza du jour" }).expect(201);
   const foreignItem = await other.post("/api/workspace/sales/items").send({ name: "Autre plat" }).expect(201);
@@ -30,6 +32,8 @@ it("records, reads and corrects only sales of owner-created items", async () => 
   const input = { saleItemId, serviceDate: "2026-09-20", quantity: 12, operationId: randomUUID() };
   const created = await owner.post("/api/workspace/sales").send(input).expect(201);
   expect(created.body).toMatchObject({ saleItemId, saleItemName: "Pizza du jour", serviceDate: input.serviceDate, quantity: 12, source: "manual", revision: 0 });
+  expect((await owner.get("/api/workspace/sales/latest").expect(200)).body).toEqual({ serviceDate: input.serviceDate, sources: ["manual"] });
+  expect((await other.get("/api/workspace/sales/latest").expect(200)).body).toBeNull();
   await owner.post("/api/workspace/sales").send(input).expect(201);
   await owner.post("/api/workspace/sales").send({ ...input, quantity: 13 }).expect(409);
   await owner.post("/api/workspace/sales").send({ ...input, operationId: randomUUID() }).expect(409);
@@ -43,6 +47,7 @@ it("records, reads and corrects only sales of owner-created items", async () => 
   await other.patch(`/api/workspace/sales/${created.body.id}`).send({ saleItemId: foreignItem.body.id, serviceDate: input.serviceDate, quantity: 3, revision: 0 }).expect(404);
   const corrected = await owner.patch(`/api/workspace/sales/${created.body.id}`).send({ saleItemId, serviceDate: "2026-09-19", quantity: 9, revision: 0 }).expect(200);
   expect(corrected.body).toMatchObject({ serviceDate: "2026-09-19", quantity: 9, revision: 1, source: "manual" });
+  expect((await owner.get("/api/workspace/sales/latest").expect(200)).body).toEqual({ serviceDate: "2026-09-19", sources: ["manual"] });
   await owner.patch(`/api/workspace/sales/${created.body.id}`).send({ saleItemId, serviceDate: "2026-09-19", quantity: 10, revision: 0 }).expect(409);
   expect((await owner.get("/api/workspace/catalog").expect(200)).body.products[0].currentStock).toBe(beforeStock);
   expect((await prisma.dailySale.count({ where: { id: created.body.id } }))).toBe(1);

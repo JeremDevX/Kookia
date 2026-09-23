@@ -23,6 +23,7 @@ export default function RestaurantSettings() {
     finally { setSaving(false); }
   };
   return <Card title="Établissement">
+    <p>À la création, ces champs sont préremplis avec un exemple. Confirmez vos propres informations avant de les utiliser pour vos achats.</p>
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {!restaurant ? !error && <p role="status">Chargement du restaurant…</p> : <form onSubmit={submit} className="form-grid">

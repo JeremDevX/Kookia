@@ -5,6 +5,7 @@ export interface DailySale {
   quantity: number; source: "manual" | "csv"; revision: number;
   createdBy: string; updatedBy: string; createdAt: string; updatedAt: string;
 }
+export interface LatestService { serviceDate: string; sources: ("manual" | "csv")[] }
 export interface SaleItem { id: string; name: string }
 export interface SaleValues { saleItemId: string; serviceDate: string; quantity: number }
 export interface SalesMetrics {
@@ -25,6 +26,7 @@ export const createSaleItem = (name: string) => apiRequest<SaleItem>("/workspace
 export const getSales = (from: string, to: string) => apiRequest<DailySale[]>(
   `/workspace/sales?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
 );
+export const getLatestService = () => apiRequest<LatestService | null>("/workspace/sales/latest");
 export const getSalesMetrics = (from: string, to: string) => apiRequest<SalesMetrics>(
   `/workspace/sales/metrics?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
 );

@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { createSale, correctSale, listSales, listSaleItems, createSaleItem } from "../application/workspace/salesService.js";
+import { createSale, correctSale, listSales, listSaleItems, createSaleItem, latestService } from "../application/workspace/salesService.js";
 import { commitSalesImport, previewSalesImport } from "../application/workspace/salesImportService.js";
 import { calculateSalesMetrics } from "../application/workspace/salesMetrics.js";
 import { evaluateSalesBaseline } from "../application/workspace/salesBaseline.js";
@@ -30,6 +30,9 @@ salesRoutes.get("/sales", async (req, res, next) => {
     const query = parsePeriod(req);
     res.json(await listSales(workspace(res).restaurantId, query.from, query.to));
   } catch (error) { next(error); }
+});
+salesRoutes.get("/sales/latest", async (_req, res, next) => {
+  try { res.json(await latestService(workspace(res).restaurantId)); } catch (error) { next(error); }
 });
 salesRoutes.get("/sales/metrics", async (req, res, next) => {
   try {

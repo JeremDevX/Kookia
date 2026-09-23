@@ -41,6 +41,13 @@ export async function listSales(restaurantId: string, from: string, to: string) 
   return rows.map(saleDto);
 }
 
+export async function latestService(restaurantId: string) {
+  const latest = await prisma.dailySale.findFirst({ where: { restaurantId }, orderBy: { serviceDate: "desc" }, select: { serviceDate: true } });
+  if (!latest) return null;
+  const sources = await prisma.dailySale.findMany({ where: { restaurantId, serviceDate: latest.serviceDate }, distinct: ["source"], select: { source: true } });
+  return { serviceDate: latest.serviceDate.toISOString().slice(0, 10), sources: sources.map((row) => row.source) };
+}
+
 export async function createSale(restaurantId: string, actorId: string, operationId: string, input: SaleValues) {
   const prior = await prisma.dailySale.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { saleItem: true } });
   if (prior) {

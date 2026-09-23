@@ -8,8 +8,10 @@ import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
 import { getProductStatus } from "../domain/inventory/product.policies";
+import { describeServiceSources } from "../features/sales/salesPresentation";
 import { useProducts } from "../hooks";
-import { getSales, type DailySale } from "../services/salesService";
+import { getLatestService, type LatestService } from "../services/salesService";
+import { getRestaurant, type Restaurant } from "../services/restaurantService";
 import { formatLocalISODate } from "../utils/date";
 import "./Dashboard.css";
 
@@ -19,23 +21,36 @@ export default function Dashboard() {
   const { addToast } = useToast();
   const { cartItems, loading: cartLoading } = useCart();
   const { products, loading: productsLoading, error: productsError, refetch: refreshProducts } = useProducts();
-  const [sales, setSales] = useState<DailySale[] | null>(null);
+  const [latestService, setLatestService] = useState<LatestService | null | undefined>(undefined);
   const [salesError, setSalesError] = useState("");
   const [salesReload, setSalesReload] = useState(0);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [restaurantError, setRestaurantError] = useState("");
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const stockToReview = products.filter((product) => getProductStatus(product) !== "optimal");
-  const latestSale = sales?.[0];
   const hasExampleItem = cartItems.some((item) => !!item.predictionId);
+  const isFirstRun = latestService === null;
+  const showSalesStartActions = isFirstRun && !cartLoading && cartItems.length === 0 && !salesError;
 
   useEffect(() => {
     let active = true;
-    getSales(thirtyDaysAgo, today).then(
-      (rows) => { if (active) { setSales(rows); setSalesError(""); } },
+    getLatestService().then(
+      (result) => { if (active) { setLatestService(result); setSalesError(""); } },
       () => { if (active) setSalesError("Les ventes enregistrées ne sont pas disponibles."); },
     );
     return () => { active = false; };
-  }, [salesReload, thirtyDaysAgo, today]);
+  }, [salesReload]);
+
+  useEffect(() => {
+    if (!isFirstRun) return;
+    let active = true;
+    getRestaurant().then(
+      (result) => { if (active) { setRestaurant(result); setRestaurantError(""); } },
+      () => { if (active) setRestaurantError("Informations de l'établissement indisponibles."); },
+    );
+    return () => { active = false; };
+  }, [isFirstRun]);
 
   const focus = !cartLoading && cartItems.length > 0
     ? hasExampleItem
@@ -43,16 +58,18 @@ export default function Dashboard() {
       : { title: "Une commande attend votre validation", detail: `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`, to: "/orders#selection", action: "Revoir les quantités" }
     : salesError
       ? { title: "Vérifiez vos ventes", detail: "Leur état n'a pas pu être chargé.", to: "/sales", action: "Ouvrir les ventes" }
-      : sales === null
+      : latestService === undefined
         ? { title: "Retrouvez vos données", detail: "Vos ventes et vos stocks sont en cours de chargement.", to: "/sales", action: "Ouvrir les ventes" }
-        : sales.length === 0
-          ? { title: "Ajoutez des ventes récentes", detail: "Aucune vente sur les 30 derniers jours. Importez un CSV Kookia ou saisissez le dernier service.", to: "/sales#sales-start", action: "Ajouter des ventes" }
+        : latestService === null
+          ? { title: "Ajoutez vos premières ventes", detail: "Importez un CSV Kookia ou saisissez une vente pour commencer avec vos données.", to: "/sales#sales-start", action: "Ajouter des ventes" }
+          : latestService.serviceDate < thirtyDaysAgo
+            ? { title: "Complétez vos ventes récentes", detail: `Dernier service enregistré le ${new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")}.`, to: "/sales#sales-start", action: "Ajouter des ventes" }
           : productsError
             ? { title: "Vérifiez votre stock", detail: "L'inventaire n'a pas pu être chargé.", to: "/stocks", action: "Ouvrir les stocks" }
             : productsLoading
               ? { title: "Retrouvez vos données", detail: "L'inventaire est en cours de chargement.", to: "/stocks", action: "Ouvrir les stocks" }
               : stockToReview.length > 0
-                ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} au seuil ou en dessous, selon les quantités enregistrées.`, to: "/stocks", action: "Voir les stocks" }
+                ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} au seuil ou en dessous. Les produits initiaux sont des exemples à confirmer.`, to: "/stocks", action: "Voir les stocks" }
                 : { title: "Aucune alerte de stock enregistrée", detail: "Vérifiez les ventes du dernier service ou préparez vos prochains achats.", to: "/orders", action: "Ouvrir les achats" };
 
   return <div className="dashboard-container">
@@ -64,8 +81,18 @@ export default function Dashboard() {
       <span className="today-eyebrow">À faire</span>
       <h2 id="today-focus-title">{focus.title}</h2>
       <p>{focus.detail}</p>
-      <Link to={focus.to} className="btn btn-primary">{focus.action}<ArrowRight size={17} aria-hidden="true" /></Link>
+      {showSalesStartActions ? <div className="today-focus-actions"><Link to="/sales#sales-import-title" className="btn btn-primary">Importer un CSV<ArrowRight size={17} aria-hidden="true" /></Link>
+        <Link to="/sales#sales-entry-title" className="btn btn-outline">Saisir une vente</Link></div> :
+        <Link to={focus.to} className="btn btn-primary">{focus.action}<ArrowRight size={17} aria-hidden="true" /></Link>}
     </section>
+
+    {isFirstRun && <section className="today-onboarding" aria-labelledby="today-onboarding-title">
+      <h2 id="today-onboarding-title">Votre mise en route</h2>
+      <ol><li><strong>Établissement</strong><span>{restaurant ? `${restaurant.name} · informations initiales à confirmer` : restaurantError || "Chargement des informations…"}</span><Link to="/settings">Vérifier l'établissement</Link></li>
+        <li><strong>Ventes</strong><span>Aucune vente enregistrée. Choisissez l'import CSV ou la saisie ci-dessus.</span></li>
+        <li><strong>Stocks</strong><span>Les produits initiaux sont des exemples à confirmer avant vos premiers achats.</span><Link to="/stocks">Vérifier les stocks</Link></li></ol>
+      <p>Les ventes alimentent le bilan, mais pas encore des suggestions d'achat automatiques.</p>
+    </section>}
 
     <div className="today-grid">
       <section className="today-card" aria-labelledby="today-stock-title"><h2 id="today-stock-title">Stocks</h2>
@@ -75,9 +102,9 @@ export default function Dashboard() {
         <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><button type="button" onClick={() => setInvoiceOpen(true)}>Saisir une facture</button></div>
       </section>
       <section className="today-card" aria-labelledby="today-sales-title"><h2 id="today-sales-title">Ventes</h2>
-        {salesError ? <div role="alert"><p>{salesError}</p><Button variant="outline" onClick={() => setSalesReload((value) => value + 1)}>Réessayer</Button></div> : sales === null ? <p role="status">Chargement des ventes…</p> :
-          <p>{latestSale ? `Dernières ventes enregistrées le ${new Date(`${latestSale.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")}.` : "Aucune vente enregistrée sur les 30 derniers jours."}</p>}
-        {latestSale && <small>Source : {latestSale.source === "csv" ? "import CSV" : "saisie manuelle"}.</small>}
+        {salesError ? <div role="alert"><p>{salesError}</p><Button variant="outline" onClick={() => { setLatestService(undefined); setSalesError(""); setSalesReload((value) => value + 1); }}>Réessayer</Button></div> : latestService === undefined ? <p role="status">Chargement des ventes…</p> :
+          <p>{latestService ? `Dernier service enregistré le ${new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")}.` : "Aucune vente enregistrée."}</p>}
+        {latestService && <small>Source : {describeServiceSources(latestService.sources)}.</small>}
         <div className="today-card-actions"><Link to="/sales#sales-start">Ajouter ou corriger des ventes</Link></div>
       </section>
       <section className="today-card" aria-labelledby="today-order-title"><h2 id="today-order-title">Commande en préparation</h2>

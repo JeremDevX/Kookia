@@ -3,7 +3,8 @@ import Button from "../components/common/Button";
 import SalesImport from "../components/sales/SalesImport";
 import SalesMetrics from "../components/sales/SalesMetrics";
 import SalesBaseline from "../components/sales/SalesBaseline";
-import { correctSale, createSale, createSaleItem, getSaleItems, getSales, type DailySale, type SaleItem, type SaleValues } from "../services/salesService";
+import { correctSale, createSale, createSaleItem, getLatestService, getSaleItems, getSales, type DailySale, type LatestService, type SaleItem, type SaleValues } from "../services/salesService";
+import { describeServiceSources } from "../features/sales/salesPresentation";
 import "../styles/Workspace.css";
 import "./Sales.css";
 
@@ -16,6 +17,7 @@ const message = (error: unknown) => error instanceof Error ? error.message : "R�
 export default function Sales() {
   const [items, setItems] = useState<SaleItem[]>([]);
   const [sales, setSales] = useState<DailySale[]>([]);
+  const [latestService, setLatestService] = useState<LatestService | null>(null);
   const [salesRevision, setSalesRevision] = useState(0);
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(parisToday);
@@ -45,13 +47,14 @@ export default function Sales() {
     setLoadError("");
     setSales([]);
     try {
-      const [catalog, rows] = await Promise.all([getSaleItems(), getSales(from, to)]);
+      const [catalog, rows, latest] = await Promise.all([getSaleItems(), getSales(from, to), getLatestService()]);
       if (currentRequest === requestNumber.current) {
         setItems((current) => {
           const merged = new Map([...catalog, ...current].map((item) => [item.id, item]));
           return [...merged.values()].sort((a, b) => a.name.localeCompare(b.name, "fr"));
         });
         setSales(rows);
+        setLatestService(latest);
       }
     } catch (cause) { if (currentRequest === requestNumber.current) setLoadError(message(cause)); }
     finally { if (currentRequest === requestNumber.current) setLoading(false); }
@@ -114,9 +117,9 @@ export default function Sales() {
     </div></header>
     <section id="sales-start" className="sales-panel sales-start" aria-labelledby="sales-start-title">
       <h2 id="sales-start-title">Vos ventes enregistrées</h2>
-      {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <p role="alert">{loadError}</p> : sales.length === 0 ?
-        <p>Aucune vente enregistrée sur la période affichée. Une journée non saisie n'est pas comptée comme zéro vente.</p> :
-        <p>Dernier service enregistré : {sales[0].serviceDate} · {sales[0].source === "csv" ? "import CSV" : "saisie manuelle"}.</p>}
+      {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <p role="alert">{loadError}</p> : latestService ?
+        <p>Dernier service enregistré : {new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")} · source : {describeServiceSources(latestService.sources)}.</p> :
+        <p>Aucune vente enregistrée. Une journée non saisie n'est pas comptée comme zéro vente.</p>}
       <div className="sales-actions"><a href="#sales-import-title">Importer un CSV Kookia</a><a href="#sales-entry-title">Saisir une vente</a></div>
       <small>Ces ventes alimentent les indicateurs, pas encore les achats suggérés.</small>
     </section>
