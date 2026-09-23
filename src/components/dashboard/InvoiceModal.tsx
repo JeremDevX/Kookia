@@ -3,6 +3,7 @@ import Button from "../common/Button";
 import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 import { getInvoices, saveInvoice, type Invoice, type InvoiceLine } from "../../services/invoiceService";
 import { formatLocalISODate } from "../../utils/date";
+import SourceInvoiceArchive from "./SourceInvoiceArchive";
 import "./InvoiceModal.css";
 
 interface InvoiceModalProps { onValidate: () => void; onClose: () => void; }
@@ -41,6 +42,7 @@ export default function InvoiceModal({ onValidate, onClose }: InvoiceModalProps)
   const received = invoice?.status === "received";
   const disabled = saving || catalogLoading || !!catalogError;
   return <div className="invoice-modal flex flex-col gap-lg">
+    <SourceInvoiceArchive />
     <p>Saisie manuelle, sans lecture automatique. Vérifiez les lignes avant d’ajouter les quantités au stock.</p>
     {(error || catalogError) && <p role="alert">{error || catalogError?.message}</p>}
     {notice && <p role="status">{notice}</p>}

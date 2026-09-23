@@ -128,7 +128,7 @@ const Stocks: React.FC = () => {
         </Button>
       </header>
 
-      <p className="stocks-source">Quantités enregistrées dans ce restaurant. Le catalogue initial contient des exemples à confirmer ; les seuils ne tiennent pas compte des ventes importées.</p>
+      <p className="stocks-source">Quantités enregistrées dans ce restaurant. Le catalogue initial contient des exemples à confirmer ; les produits de la catégorie « Factures importées » et leurs sorties sont des simulations à vérifier sur les originaux. Les seuils ne tiennent pas compte des ventes importées.</p>
       <div className="view-toggles" aria-label="Vue des stocks">
         <Button size="sm" aria-pressed={view === "review"} onClick={() => setView("review")}>À vérifier ({productsToReview.length})</Button>
         <Button size="sm" aria-pressed={view === "all"} onClick={() => setView("all")}>Tout l'inventaire ({products.length})</Button>
