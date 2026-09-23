@@ -13,8 +13,8 @@ fonctionnalité déjà disponible**.
 | Qualité | ESLint, TypeScript, Vitest et CI GitHub Actions ; scripts `lint`, `build`, `test` | CI exécutable sans manipulation ; smoke test sur URL dédiée avant recette |
 | Hébergement | Configuration frontend Vercel (`vercel.json`) | Préproduction puis recette avant lancement commercial |
 | Backend et persistance | API Express/TypeScript et PostgreSQL/Prisma actifs pour comptes et espaces métier isolés | Étendre progressivement les frontières métier vers PostgreSQL/Prisma |
-| Intégrations | POS/OCR absents ; disponibilité réelle explicitée, saisie manuelle des factures | Adaptateur POS, import Ticket Z, service OCR externe avec fallback |
-| Prévision | Règles déterministes et prévisions de démonstration persistées | Historique de ventes, météo locale et calendrier événementiel ; moteur IA hors périmètre full-stack initial |
+| Intégrations | POS/OCR absents ; saisie manuelle des factures et des ventes, import CSV Kookia | Adaptateur POS, import Ticket Z, service OCR externe avec fallback |
+| Prévision | Prévisions de démonstration persistées ; baseline expérimentale distincte, calculée sur ventes enregistrées | Météo locale et calendrier événementiel ; moteur IA hors périmètre full-stack initial |
 
 Les versions et dépendances actives font foi dans [`package.json`](../package.json).
 
@@ -47,7 +47,7 @@ UI React → hooks/features → client API → API Express → domaine → Postg
 
 La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
 `Product`, `Recipe`, `RecipeIngredient`, `StockMovement`, `Production`,
-`Prediction`, `PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
+`Prediction`, `SaleItem`, `DailySale`, `SaleImport`, `PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
 et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics,
 préférences, panier, notifications, factures et menus), validés aux frontières.
 Les mutations critiques sont transactionnelles. Les liens internes sont différés
@@ -57,6 +57,9 @@ Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` ini
 les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au
 premier accès. Les dates des prévisions de démonstration sont figées. Aucun calcul
 IA, connecteur POS/OCR ou envoi fournisseur réel n’est impliqué par la persistance.
+Les ventes du restaurant sont saisies ou importées sans reprendre les exemples du
+seed. Les [indicateurs et la baseline expérimentale](sales.md) utilisent uniquement
+ces ventes, sans météo ni confiance calibrée ; aucune commande n'en découle.
 Le [plan de migration](plans/database-migration.md) contient la cartographie et les
 preuves de validation et les limites explicites de cette migration.
 

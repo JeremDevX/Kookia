@@ -25,7 +25,7 @@ contenant des données à conserver.
 
 Les données métier sont persistées dans un espace isolé par compte : restaurant,
 fournisseurs, produits, mouvements, recettes, productions/refus, prévisions,
-commandes, décisions, panier, notifications, factures, menus et analytics.
+ventes, commandes, décisions, panier, notifications, factures, menus et analytics.
 Les données initiales de démonstration restent **des exemples**, même en base.
 
 - Stocks : créations, ajustements et pertes historisés.
@@ -34,6 +34,9 @@ Les données initiales de démonstration restent **des exemples**, même en base
 - Commandes : quantités revues, validation tracée, statut « à transmettre ».
 - Factures : saisie manuelle et réception atomique, sans double crédit de stock.
 - Menus : modification, validation et impression séparées.
+- Ventes : articles vendus distincts des ingrédients, saisie/correction manuelle,
+  import CSV contrôlé et indicateurs par période. Une baseline expérimentale
+  sur ventes enregistrées est séparée des prévisions de démonstration.
 - Rapports : CSV, XML Excel et PDF via impression ; opérations filtrées par dates
   UTC. Les anciens graphiques sans dates sont un instantané de démonstration.
 
@@ -71,6 +74,8 @@ comptes temporaires qu’ils ont créés.
 
 - [Cartographie et suivi de migration](docs/plans/database-migration.md)
 - [Référence technique actuelle et cible](docs/technical-development.md)
+- [Format CSV des ventes](docs/sales-csv.md)
+- [Ventes, indicateurs, baseline et recette manuelle](docs/sales.md)
 - [Setup authentification](docs/setup-auth.md)
 - [Guidance du dépôt](AGENTS.md)
 - [Développement agentique](docs/agentic-development.md)
