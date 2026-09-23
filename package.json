@@ -19,7 +19,7 @@
     "preview": "vite preview",
     "test": "npm run test:css && vitest run",
     "test:css": "node --test scripts/*.test.mjs",
-    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration": "node scripts/runIntegrationTests.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "db:seed": "node --import tsx server/src/scripts/seedWorkspaces.ts",

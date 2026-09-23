@@ -8,6 +8,22 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: kookia_test
+          POSTGRES_USER: kookia
+          POSTGRES_PASSWORD: kookia_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kookia -d kookia_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://kookia:kookia_dev@127.0.0.1:5432/kookia_test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,5 +43,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build API
+        run: npm run build:api
+
+      - name: Migrate isolated integration database
+        run: npm run db:migrate
+
       - name: Test
         run: npm test
+
+      - name: Integration tests
+        run: npm run test:integration

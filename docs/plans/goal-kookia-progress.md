@@ -25,7 +25,8 @@ transmettent leurs preuves sans écrire ici simultanément.
 
 | ID / parcours | Preuve locale | Activation externe | Preuve (tests, rendu, données, fichier) | Limite / suite |
 | --- | --- | --- | --- | --- |
-| Q1/Q1b — test et scénario isolés | À auditer | Non applicable | — | Ne pas lancer l'intégration sur Camille. |
+| Q1 — garde et base d'intégration isolée | Prouvé localement | Non applicable | Garde URL fail-closed ; migration et 13 fichiers/21 tests sur PostgreSQL jetable ; lint, builds et tests unitaires passent. | Workflow CI ajouté mais non exécuté sur GitHub ; aucune base conservée utilisée. |
+| Q1b — bac de scénario jetable | À auditer | Non applicable | — | Le scénario actuel cible le workspace Camille ; concevoir une fixture/amorçage isolé sans relâcher ses scripts protégés. |
 | C1 — pièce fournisseur actionnable | À auditer | Non applicable | — | Archive existante ≠ nouvelle réception. |
 | C2 — chronologie continue | À auditer | Non applicable | — | Simulation existante, scénario UX à prouver. |
 | C3 — chaîne métier complète | À auditer | Non applicable | — | Aucune preuve de bout en bout encore consignée ici. |
@@ -36,6 +37,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 
 | Date | ID | Commit local | État avant → après | Commande/test ou scénario UI exécuté | Résultat et limite | Prochaine action |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-09-24 | Q1 | À consigner dans le commit de suivi | Runner direct sans garde → URL locale `kookia_test` obligatoire ; CI configurée sur PostgreSQL éphémère | `node --test scripts/integrationDatabaseGuard.test.mjs` (2/2) ; `npm run test:integration` avec `.env` développement (refus avant démarrage) ; PostgreSQL jetable sans volume : migrations 6/6 et intégration 13 fichiers/21 tests ; `npm run lint`, `npm run build`, `npm run build:api`, `npm test` | Réussite locale. Intégration n'a utilisé que le port aléatoire du conteneur temporaire, supprimé après usage. Action GitHub non exécutée ; cela ne prouve pas un run distant. | Q1b : amorcer et restaurer un tenant/DB de scénario jetable, sans toucher Camille. |
 
 ## Portes externes
 

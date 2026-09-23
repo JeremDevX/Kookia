@@ -48,16 +48,15 @@ npm run build:api
 npm test
 ```
 
-La CI lance actuellement `lint`, `build` et `test` ; `build:api` et les tests
-d'intégration sont des contrôles locaux complémentaires.
+La CI lance `lint`, les builds web/API, les tests unitaires et les tests
+d'intégration sur un service PostgreSQL éphémère.
 
 ## Base isolée pour les tests d'intégration
 
-Les tests créent des comptes aléatoires puis nettoient leurs identifiants, mais
-**le runner n'interdit pas encore une connexion à la base de développement**.
-Ne pas exécuter `npm run test:integration` sur la base `kookia` contenant un
-espace à conserver. Avec le PostgreSQL Docker local, créer une base dédiée une
-seule fois (une erreur « already exists » signifie seulement qu'elle existe) :
+Le runner refuse toute base autre que `kookia_test` sur la machine locale avant
+de charger les tests. Il n'accepte ni `kookia`, ni un hôte réseau inconnu.
+Avec le PostgreSQL Docker local, créer une base dédiée une seule fois (une
+erreur « already exists » signifie seulement qu'elle existe) :
 
 ```bash
 npm run db:up
@@ -66,10 +65,9 @@ DATABASE_URL=postgresql://kookia:kookia_dev@localhost:5432/kookia_test npm run d
 DATABASE_URL=postgresql://kookia:kookia_dev@localhost:5432/kookia_test npm run test:integration
 ```
 
-Cette URL utilise **les identifiants de développement de `compose.yaml`**, pas
-ceux d'un restaurant. Vérifier le nom `kookia_test` avant migration et test.
-Le premier incrément du [plan d'exécution](plans/plan-execution.md) doit ajouter
-un garde-fou automatique et la CI d'intégration sur base éphémère.
+Cette URL utilise **les identifiants locaux de `compose.yaml`**, pas ceux d'un
+restaurant. La migration et le runner ciblent uniquement `kookia_test`; chaque
+exécution CI crée sa propre base avec le service PostgreSQL du job.
 
 ## Arrêt de PostgreSQL
 
