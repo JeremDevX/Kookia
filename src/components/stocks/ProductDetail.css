@@ -92,6 +92,9 @@
   flex-direction: column;
   gap: var(--spacing-md);
 }
+.drawer-section > a { color: var(--color-primary); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
+.drawer-section > p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_8); }
+.product-drawer :is(a, button, input):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 
 .section-heading {
   display: flex;
@@ -123,6 +126,7 @@
   color: var(--color-text-secondary);
   font-weight: var(--font-weight-regular);
 }
+.drawer-source { color: var(--color-text-muted); font-size: var(--font-size-caption); }
 
 .info-grid {
   display: grid;
@@ -149,15 +153,18 @@
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-md);
 }
 .supplier-name {
   font-weight: var(--font-weight-semibold);
 }
+.supplier-card > div:first-child { display: flex; flex-direction: column; gap: var(--spacing-xs); }
 .supplier-actions {
   display: flex;
   gap: var(--spacing-sm);
+  flex-wrap: wrap;
 }
 
 .history-list {

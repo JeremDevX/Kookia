@@ -9,7 +9,7 @@
 .orders-examples { display: flex; flex-direction: column; gap: var(--spacing-sm); }
 .orders-examples h2 { font-size: var(--font-size-lg); }
 .orders-container a { color: var(--color-primary); text-decoration: underline; text-underline-offset: var(--size-3); }
-@media (--media-compact) {
+@media (--media-workspace-compact) {
   .orders-selection-actions { align-items: stretch; flex-direction: column; }
   .orders-selection-actions .btn { width: var(--unit-100percent); }
 }

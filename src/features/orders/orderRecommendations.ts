@@ -40,22 +40,19 @@ export interface SupplierOrder {
 
 export const createOrderRecommendationsFromCartItems = (
   cartItems: CartOrderItemInput[],
-  products: Product[]
 ): OrderRecommendation[] =>
-  cartItems.map((item) => {
-    const product = products.find((candidate) => candidate.id === item.productId);
-
-    return {
+  cartItems.map((item) => ({
       id: item.id,
       cartId: item.id,
       predictionId: item.predictionId,
       productId: item.productId,
       productName: item.productName,
       quantity: item.quantity,
-      reason: item.predictionId ? "Scénario d'exemple" : `Depuis ${item.source} - ${product?.category ?? "Stock"}`,
+      reason: item.predictionId ? "Scénario d'exemple — ne peut pas être commandé" : item.source === "stocks"
+        ? "Choisi dans Stocks. Quantité initiale basée sur le seuil, pas sur les ventes."
+        : "Sélection enregistrée auparavant. Vérifiez la quantité et le stock.",
       source: item.source,
-    };
-  });
+  }));
 
 export const groupRecommendationsBySupplier = (
   recommendations: OrderRecommendation[],

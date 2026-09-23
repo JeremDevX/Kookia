@@ -6,7 +6,9 @@ import Button from "../components/common/Button";
 import ProductDetail from "../components/stocks/ProductDetail";
 import AddProductModal from "../components/stocks/AddProductModal";
 import FiltersModal from "../components/stocks/FiltersModal";
+import StockReview from "../components/stocks/StockReview";
 import { Search, Filter, Plus, ShoppingCart } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useProductsWithMutations } from "../hooks";
 import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
@@ -18,6 +20,7 @@ import "./Stocks.css";
 import "../styles/Workspace.css";
 
 const Stocks: React.FC = () => {
+  const navigate = useNavigate();
   const { addToast } = useToast();
   const { addToCart, loading: cartLoading } = useCart();
   const { products, updateStock, addProduct, getStatus, loading, error, refetch } =
@@ -28,6 +31,7 @@ const Stocks: React.FC = () => {
     null
   );
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [view, setView] = useState<"review" | "all">("review");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<StockFilters>({
@@ -38,6 +42,7 @@ const Stocks: React.FC = () => {
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? null;
   const categories = Array.from(new Set(products.map((product) => product.category))).sort((a, b) => a.localeCompare(b, "fr"));
+  const productsToReview = products.filter((product) => getStatus(product) !== "optimal");
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name
@@ -73,15 +78,6 @@ const Stocks: React.FC = () => {
     );
   });
 
-  const handleAdjustStock = async (
-    e: React.MouseEvent,
-    id: string,
-    amount: number
-  ) => {
-    e.stopPropagation();
-    try { await updateStock(id, amount); } catch (error) { addToast("info", "Stock non modifié", error instanceof Error ? error.message : "Réessayez."); }
-  };
-
   const handleDrawerAdjustStock = async (productId: string, delta: number, reason?: "adjustment" | "loss") => {
     await updateStock(productId, delta, reason);
   };
@@ -109,6 +105,12 @@ const Stocks: React.FC = () => {
     }
   };
 
+  const handleSelectForOrder = async (product: Product) => {
+    const saved = await addToCart({ id: `product-${product.id}`, productId: product.id,
+      productName: product.name, quantity: getSuggestedOrderQuantity(product), unit: product.unit, source: "stocks" });
+    if (saved) navigate("/orders#selection");
+  };
+
   return (
     <div className="stocks-container workspace-page">
       {loading && <p role="status">Chargement du stock…</p>}
@@ -125,7 +127,15 @@ const Stocks: React.FC = () => {
         </Button>
       </header>
 
-      <div className="workspace-summary"><div><span>Inventaire</span><strong>{products.length} produits</strong></div></div>
+      <p className="stocks-source">Quantités enregistrées dans ce restaurant. Le catalogue initial contient des exemples à confirmer ; les seuils ne tiennent pas compte des ventes importées.</p>
+      <div className="view-toggles" aria-label="Vue des stocks">
+        <Button size="sm" aria-pressed={view === "review"} onClick={() => setView("review")}>À vérifier ({productsToReview.length})</Button>
+        <Button size="sm" aria-pressed={view === "all"} onClick={() => setView("all")}>Tout l'inventaire ({products.length})</Button>
+      </div>
+
+      {view === "review" ? <section aria-labelledby="stock-review-title"><div className="workspace-section-heading"><h2 id="stock-review-title">Produits au seuil ou en dessous</h2></div>
+        {!loading && !error && <StockReview products={productsToReview} suppliers={suppliers} selecting={cartLoading} onInspect={setSelectedProductId} onSelect={(product) => void handleSelectForOrder(product)} />}
+      </section> : <>
 
       <Card className="stocks-toolbar">
         <div className="toolbar-content">
@@ -179,11 +189,7 @@ const Stocks: React.FC = () => {
             {filteredProducts.map((product) => {
               const status = getStatus(product);
               return (
-                <tr
-                  key={product.id}
-                  onClick={() => setSelectedProductId(product.id)}
-                  className="clickable-row"
-                >
+                <tr key={product.id}>
                   <td>
                     <button className="product-name stock-product-link" onClick={() => setSelectedProductId(product.id)}>{product.name}</button>
                   </td>
@@ -199,46 +205,25 @@ const Stocks: React.FC = () => {
                     <Badge
                       label={
                         status === "optimal"
-                          ? "Bon"
+                          ? "Au-dessus du seuil"
                           : status === "moderate"
-                          ? "À surveiller"
-                          : "Critique"
+                          ? "Au seuil ou en dessous"
+                          : "Sous le seuil enregistré"
                       }
-                      status={status}
+                      status="neutral"
                     />
                   </td>
-                  <td onClick={(e) => e.stopPropagation()}>
+                  <td>
                     <div className="actions-cell">
                       <Button
                         size="sm"
                         variant="outline"
                         icon={<ShoppingCart size={14} />}
                         disabled={cartLoading}
-                        onClick={async () => {
-                          const saved = await addToCart({ id: `product-${product.id}`, productId: product.id,
-                            productName: product.name, quantity: getSuggestedOrderQuantity(product),
-                            unit: product.unit, source: "stocks" });
-                          if (saved) addToast("success", "Article sélectionné", `${product.name} ajouté à la commande en préparation.`);
-                        }}
+                        onClick={() => void handleSelectForOrder(product)}
                       >
                         Ajouter à la commande
                       </Button>
-                      <div className="stock-adjust">
-                        <button
-                          className="stock-action-btn minus"
-                          aria-label={`Retirer 1 ${product.unit} de ${product.name}`}
-                          onClick={(e) => handleAdjustStock(e, product.id, -1)}
-                        >
-                          -
-                        </button>
-                        <button
-                          className="stock-action-btn plus"
-                          aria-label={`Ajouter 1 ${product.unit} de ${product.name}`}
-                          onClick={(e) => handleAdjustStock(e, product.id, 1)}
-                        >
-                          +
-                        </button>
-                      </div>
                     </div>
                   </td>
                 </tr>
@@ -248,6 +233,7 @@ const Stocks: React.FC = () => {
           </tbody>
         </table>
       </div>
+      </>}
       {selectedProduct && <ProductDetail
         key={selectedProduct.id}
         product={selectedProduct}

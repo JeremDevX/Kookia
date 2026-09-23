@@ -48,7 +48,6 @@
 .workspace-page .stocks-table .product-name { font-size: var(--font-size-base); text-align: left; white-space: normal; max-width: none; }
 .workspace-page .stock-product-link:hover { text-decoration: underline; color: var(--color-primary); }
 .workspace-page .stock-value, .workspace-page .stock-price-cell { font-family: inherit; font-variant-numeric: tabular-nums; }
-.workspace-page .stock-action-btn { width: var(--size-36); height: var(--size-36); border-radius: var(--radius-compact); }
 .workspace-page .predictions-grid { gap: var(--spacing-xl); }
 .workspace-page .section-header { border: var(--number-0); margin-bottom: var(--spacing-md); padding: var(--number-0); }
 .workspace-page .section-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); }

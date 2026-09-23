@@ -15,7 +15,7 @@ export default function Orders() {
   const { products, loading: catalogLoading, error: catalogError, refetch } = useInventoryCatalog();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [historyRevision, setHistoryRevision] = useState(0);
-  const recommendations = createOrderRecommendationsFromCartItems(cartItems, products);
+  const recommendations = createOrderRecommendationsFromCartItems(cartItems);
   const missingProduct = cartItems.some((item) => !products.some((product) => product.id === item.productId));
   const hasExampleItem = cartItems.some((item) => !!item.predictionId);
 
@@ -35,7 +35,7 @@ export default function Orders() {
       {cartLoading || catalogLoading ? <p role="status">Chargement de votre commande…</p> : cartItems.length === 0 ?
         <div className="orders-empty"><p>Aucun article sélectionné.</p><Link to="/stocks">Choisir dans les stocks</Link></div> :
         <ul className="orders-selection-list">{cartItems.map((item) => <li key={item.id}>
-          <div><strong>{item.productName}</strong><span>{item.quantity} {item.unit}{item.predictionId ? " · scénario d'exemple" : ""}</span></div>
+          <div><strong>{item.productName}</strong><span>{item.quantity} {item.unit} · {item.predictionId ? "scénario d'exemple à écarter" : item.source === "stocks" ? "choisi dans Stocks" : "sélection précédente"}</span></div>
           <Button type="button" variant="outline" size="sm" onClick={() => void removeFromCart(item.id)} disabled={cartLoading}>Écarter</Button>
         </li>)}</ul>}
       {cartItems.length > 0 && <div className="orders-selection-actions"><p>La validation enregistre votre décision. Elle n'envoie rien au fournisseur et ne modifie pas le stock.</p>

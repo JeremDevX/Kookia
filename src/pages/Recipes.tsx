@@ -15,10 +15,13 @@ import { getProductions, recordProduction, type Production } from "../services/r
 import { formatLocalISODate } from "../utils/date";
 import type { ProductionRecord } from "../types/callbacks";
 import { ApiError } from "../config/api";
+import { Link, useSearchParams } from "react-router-dom";
 import "./Recipes.css";
 import "../styles/Workspace.css";
 
 const Recipes: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const productId = searchParams.get("product");
   const { addToast } = useToast();
   const {
     recipes, loading, error, refetch,
@@ -27,9 +30,8 @@ const Recipes: React.FC = () => {
     getProductName,
     getProductUnit,
   } = useRecipes();
-  const [activeTab, setActiveTab] = useState<"history" | "anti-waste">(
-    "history"
-  );
+  const [activeTab, setActiveTab] = useState<"history" | "anti-waste">("anti-waste");
+  const displayedTab = productId ? "anti-waste" : activeTab;
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isProductionModalOpen, setIsProductionModalOpen] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -100,9 +102,10 @@ const Recipes: React.FC = () => {
     ...recipe,
     maxYield: getMaxYield(recipe),
   }));
-  const antiWasteRecipes = recipesWithYield.filter((recipe) => recipe.maxYield > 0);
-  const unavailableRecipes = recipesWithYield.filter((recipe) => recipe.maxYield === 0 && recipe.ingredients.length > 0);
-  const incompleteRecipes = recipesWithYield.filter((recipe) => recipe.ingredients.length === 0);
+  const matchingRecipes = productId ? recipesWithYield.filter((recipe) => recipe.ingredients.some((ingredient) => ingredient.productId === productId)) : recipesWithYield;
+  const antiWasteRecipes = matchingRecipes.filter((recipe) => recipe.maxYield > 0);
+  const unavailableRecipes = matchingRecipes.filter((recipe) => recipe.maxYield === 0 && recipe.ingredients.length > 0);
+  const incompleteRecipes = matchingRecipes.filter((recipe) => recipe.ingredients.length === 0);
 
   const handleReportRefusal = async (recipe: Recipe, portions: number, operationId: string) => {
     const saved = await recordProduction({ operationId, recipeId: recipe.id,
@@ -120,26 +123,27 @@ const Recipes: React.FC = () => {
       {productionError && <div role="alert"><p>{productionError}</p><Button onClick={() => void refreshProductions()}>Réessayer</Button></div>}
       <header className="workspace-header">
         <div>
-          <h1>Recettes et productions</h1>
-          <p className="workspace-subtitle">Produisez une recette en déduisant les ingrédients du stock, ou notez une préparation hors catalogue.</p>
+          <h1>{productId ? `Recettes avec ${loading ? "ce produit" : getProductName(productId)}` : "Recettes réalisables"}</h1>
+          <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, réalisables ou non selon l'inventaire enregistré. Aucun surstock n'est déduit automatiquement." : "Faisabilité selon les quantités enregistrées. Les produits initiaux sont des exemples à confirmer ; une production validée déduit le stock."}</p>
         </div>
-        <Button icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>
+        {!productId && <Button icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>}
       </header>
 
-      <div className="workspace-summary"><div><span>Catalogue</span><strong>{recipes.length} recettes</strong></div></div>
+      {!productId && <div className="workspace-summary"><div><span>Catalogue</span><strong>{recipes.length} recettes</strong></div></div>}
+      {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to="/recipes" onClick={() => setActiveTab("anti-waste")}>Voir toutes les recettes</Link></p>}
       <div className="workspace-section-heading"><h2>Recettes</h2>
         <div className="view-toggles">
           <Button
-            aria-pressed={activeTab === "history"}
-            variant={activeTab === "history" ? "primary" : "outline"}
-            onClick={() => setActiveTab("history")}
+            aria-pressed={displayedTab === "history"}
+            variant={displayedTab === "history" ? "primary" : "outline"}
+            onClick={() => { setSearchParams({}); setActiveTab("history"); }}
             size="sm"
           >
             Produites cette semaine
           </Button>
           <Button
-            aria-pressed={activeTab === "anti-waste"}
-            variant={activeTab === "anti-waste" ? "primary" : "outline"}
+            aria-pressed={displayedTab === "anti-waste"}
+            variant={displayedTab === "anti-waste" ? "primary" : "outline"}
             onClick={() => setActiveTab("anti-waste")}
             size="sm"
             icon={<Leaf size={16} />}
@@ -150,7 +154,7 @@ const Recipes: React.FC = () => {
       </div>
 
       {/* TAB 1: HISTORY */}
-      {activeTab === "history" && (
+      {displayedTab === "history" && (
         <div className="recipes-grid">
           {historyRecipes.length > 0 ? (
             historyRecipes.map((recipe) => (
@@ -218,7 +222,7 @@ const Recipes: React.FC = () => {
       )}
 
       {/* TAB 2: ANTI-WASTE SUGGESTIONS */}
-      {activeTab === "anti-waste" && (
+      {displayedTab === "anti-waste" && (
         <div className="recipes-grid">
           {antiWasteRecipes.map((recipe) => {
             const isProduced = producedRecipes.includes(recipe.id);
@@ -287,7 +291,7 @@ const Recipes: React.FC = () => {
               </Card>
             );
           })}
-          {antiWasteRecipes.length === 0 && !loading && !error && (
+          {productId && matchingRecipes.length === 0 && !loading && !error ? <div className="empty-week col-span-full"><p>Aucune recette du catalogue ne contient ce produit.</p><Link to="/recipes" onClick={() => setActiveTab("anti-waste")}>Voir toutes les recettes</Link></div> : antiWasteRecipes.length === 0 && !loading && !error && (
             <div className="empty-week col-span-full">
               <p>{recipes.length === 0 ? "Aucune recette disponible." : unavailableRecipes.length > 0 ? "Pas assez de stock pour préparer une portion des recettes renseignées." : "Aucune recette avec des ingrédients renseignés."}</p>
             </div>
@@ -304,7 +308,7 @@ const Recipes: React.FC = () => {
         </div>
       )}
 
-      {activeTab === "history" && productions.length > 0 && <section aria-label="Journal de production">
+      {displayedTab === "history" && productions.length > 0 && <section aria-label="Journal de production">
         <h2>Productions enregistrées</h2>
         {productions.map((item) => <Card key={item.id}><strong>{item.recipeName}</strong><p>{item.portions} portions · {format(parseISO(item.date.slice(0, 10)), "dd/MM/yyyy")} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé" : "Production réalisée — stock déduit"}</p>{item.notes && <p>{item.notes}</p>}</Card>)}
       </section>}

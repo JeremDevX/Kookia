@@ -14,12 +14,12 @@ import type { Product, Supplier } from "../../types";
 import { useToast } from "../../context/ToastContext";
 import {
   getProductStatus,
-  getProductStatusLabel,
   getSuggestedOrderQuantity,
 } from "../../domain/inventory/product.policies";
 
 import { getStockMovements, type StockMovement } from "../../services/productService";
 import { useCart } from "../../context/useCart";
+import { Link, useNavigate } from "react-router-dom";
 import "./ProductDetail.css";
 
 interface ProductDetailProps {
@@ -36,6 +36,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   suppliers,
 }) => {
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const { addToCart } = useCart();
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [historyError, setHistoryError] = useState("");
@@ -82,7 +83,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const handleOrderFromSupplier = async () => {
     const saved = await addToCart({ id: `product-${product.id}`, productId: product.id, productName: product.name,
       source: "stocks", quantity: getSuggestedOrderQuantity(product), unit: product.unit });
-    if (saved) addToast("success", "Article sélectionné", "Vérifiez la quantité avant de valider la commande.");
+    if (saved) { onClose(); navigate("/orders#selection"); }
   };
 
   const handleReportLoss = () => {
@@ -135,19 +136,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             <div className="status-banner">
               <Badge
                 label={
-                  status === "urgent"
-                    ? "Stock critique"
-                    : status === "moderate"
-                    ? "Stock à surveiller"
-                    : getProductStatusLabel(status)
+                  status === "optimal" ? "Au-dessus du seuil enregistré" : status === "moderate" ? "Au seuil ou en dessous" : "Sous le seuil enregistré"
                 }
-                status={status}
+                status="neutral"
               />
               <span className="stock-big">
                 {product.currentStock}{" "}
                 <span className="unit">{product.unit}</span>
               </span>
             </div>
+            <small className="drawer-source">Source : inventaire enregistré. Le catalogue initial est à confirmer.</small>
+          </section>
+
+          <section className="drawer-section">
+            <h3 className="section-heading">Recettes avec ce produit</h3>
+            <p>Consultez les recettes contenant cet ingrédient et celles réalisables avec le stock enregistré. Aucun surstock n'est déduit automatiquement.</p>
+            <Link to={`/recipes?product=${encodeURIComponent(product.id)}`} onClick={onClose}>Voir les recettes avec {product.name}</Link>
           </section>
 
           <section className="drawer-section">
@@ -230,6 +234,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           {showAdjustModal && (
             <section className="drawer-section">
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <p role="status">Motif : {adjustReason === "loss" ? "perte déclarée" : "correction d'inventaire"}. Ce mouvement sera enregistré dans l'historique.</p>
                 <label htmlFor="stock-adjustment" className="block text-sm font-medium mb-2">
                   {adjustReason === "loss" ? `Quantité perdue (${product.unit})` : `Variation du stock (${product.unit})`}
                 </label>
