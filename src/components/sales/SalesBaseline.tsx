@@ -20,10 +20,10 @@ export default function SalesBaseline() {
   }, []);
 
   return <section className="sales-panel" aria-labelledby="sales-baseline-title">
-    <h2 id="sales-baseline-title">Baseline de ventes expérimentale</h2>
+    <h2 id="sales-baseline-title">Estimation test des ventes</h2>
     <p>Cette estimation utilise uniquement les ventes enregistrées du restaurant, manuelles ou CSV. Elle ne tient compte ni de la météo, ni des événements, ni du stock. Elle ne commande rien et n’est pas le moteur IA de prévision.</p>
-    {loading ? <p role="status">Évaluation de la baseline…</p> : error ?
-      <p role="alert">Baseline indisponible : {error}</p> : baseline && <>
+    {loading ? <p role="status">Calcul de l'estimation test…</p> : error ?
+      <p role="alert">Estimation test indisponible : {error}</p> : baseline && <>
         <p>Historique étudié : du {baseline.historyFrom} au {baseline.asOfDate}, sur des journées terminées. Estimation pour le {baseline.forecastDate}. Méthode : moyenne arrondie des {baseline.lookbackDays} derniers jours de ventes de chaque article.</p>
         {baseline.status === "no_data" ? <p>Historique insuffisant : aucune vente enregistrée dans cette fenêtre. Aucune estimation affichée.</p> :
           baseline.status === "insufficient_history" ? <p>Historique insuffisant : chaque article doit avoir des ventes enregistrées sur {baseline.requiredConsecutiveDays} jours calendaires consécutifs, sans jour manquant. Aucune estimation affichée ; une absence de saisie n’est pas assimilée à zéro vente.</p> : <>

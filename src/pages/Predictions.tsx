@@ -71,13 +71,13 @@ const Predictions: React.FC = () => {
         </div>
       </header>
 
-      {loading && <p role="status">Chargement des prévisions…</p>}
+      {loading && <p role="status">Chargement des scénarios…</p>}
       {error && <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>}
       {historicalCount > 0 && <p role="status">{historicalCount} scénario{historicalCount > 1 ? "s" : ""} passé{historicalCount > 1 ? "s" : ""} dans le calendrier.</p>}
 
       {viewMode === "list" ? (
         <div className="predictions-grid">
-          {!loading && !error && currentPredictions.length === 0 && <p className="workspace-empty">Aucune prévision à venir. Consultez le calendrier pour l’historique.</p>}
+          {!loading && !error && currentPredictions.length === 0 && <p className="workspace-empty">Aucun scénario à venir. Consultez le calendrier pour l’historique.</p>}
           {currentPredictions.length > 0 && <>
           <section>
             <div className="section-header">
@@ -123,10 +123,10 @@ const Predictions: React.FC = () => {
                       </div>
                       <div className="pred-action-panel">
                         <div className="recommendation-box">
-                          <span className="rec-label">Recommandation</span>
+                          <span className="rec-label">Achat illustré</span>
                           <div className="flex items-baseline gap-2">
                             <span className="rec-value">
-                              Achat suggéré : {pred.recommendation?.quantity} {unit ?? "(unité indisponible)"}
+                              Quantité d'exemple : {pred.recommendation?.quantity} {unit ?? "(unité indisponible)"}
                             </span>
                             {unitPrice !== undefined && <span className="text-sm font-medium text-primary">
                               (~
@@ -169,7 +169,7 @@ const Predictions: React.FC = () => {
                           {pred.productName}
                         </h3>
                         <span className="compact-reason">
-                          {pred.recommendation?.action === "wait" ? "Attendre · " : pred.recommendation?.action === "reduce" ? "Réduire · " : "Achat suggéré · "}{pred.recommendation?.reason || "Aucune explication disponible."}
+                          {pred.recommendation?.action === "wait" ? "Attendre · " : pred.recommendation?.action === "reduce" ? "Réduire · " : "Achat illustré · "}{pred.recommendation?.reason || "Aucune explication disponible."}
                         </span>
                       </div>
                       <div className="pred-meta">

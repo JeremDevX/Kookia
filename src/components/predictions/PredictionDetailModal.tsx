@@ -45,7 +45,7 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
           <div>
             <h3 className="text-2xl font-bold">{prediction.productName}</h3>
             <p className="text-sm text-secondary mt-1">
-              Prévision pour le{" "}
+              Date du scénario :{" "}
               {new Date(`${prediction.predictedDate}T12:00:00`).toLocaleDateString("fr-FR")}
             </p>
           </div>
@@ -115,13 +115,13 @@ const PredictionDetailModal: React.FC<PredictionDetailModalProps> = ({
             <TrendingUp className="text-secondary mt-1" size={20} />
             <div className="flex-1">
               <h4 className="font-semibold mb-2">
-                Recommandation
+                Décision illustrée
               </h4>
               <p className="text-sm mb-3">
-                {canOrder ? <>Achat suggéré : <strong>{prediction.recommendation?.quantity} {productUnit ?? "(unité indisponible)"}</strong> auprès de <strong>{supplierName ?? "un fournisseur non renseigné"}</strong>.</> :
+                {canOrder ? <>Quantité d'exemple : <strong>{prediction.recommendation?.quantity} {productUnit ?? "(unité indisponible)"}</strong> auprès de <strong>{supplierName ?? "un fournisseur non renseigné"}</strong>.</> :
                   isHistorical ? "Scénario passé, non proposé à la commande." :
-                  prediction.recommendation?.action === "reduce" ? "Réduction suggérée : vérifiez les besoins avant de modifier vos achats." :
-                  "Attente suggérée : aucun achat à valider depuis cet exemple."}
+                  prediction.recommendation?.action === "reduce" ? "Réduction illustrée : vérifiez les besoins avant de modifier vos achats." :
+                  "Attente illustrée : aucun achat à valider depuis cet exemple."}
               </p>
               <p className="text-xs text-secondary mb-3">Démonstration uniquement : aucune commande ne peut être préparée depuis ce scénario.</p>
               <div className="flex items-center gap-4 text-xs text-secondary">

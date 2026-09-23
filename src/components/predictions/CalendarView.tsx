@@ -48,7 +48,7 @@ export default function CalendarView({ predictions, onPredictionClick }: Calenda
       </header>
       <div className="planning-summary">
         <p><strong>{periodPredictions.length}</strong> scénarios d'exemple sur {mode === "week" ? "la semaine affichée" : "le mois affiché"} <span>· {purchaseCount} achats illustrés</span></p>
-        <label><input type="checkbox" checked={purchaseOnly} onChange={(event) => setPurchaseOnly(event.target.checked)} /> Achats suggérés uniquement</label>
+        <label><input type="checkbox" checked={purchaseOnly} onChange={(event) => setPurchaseOnly(event.target.checked)} /> Achats illustrés uniquement</label>
       </div>
       <div className="planning-layout">
         <div className="planning-board">
@@ -84,7 +84,7 @@ export default function CalendarView({ predictions, onPredictionClick }: Calenda
         <aside className="planning-detail" aria-label="Scénarios du jour sélectionné">
           <div className="planning-detail-heading"><CalendarDays size={21} aria-hidden="true" /><div><p>SCÉNARIOS DU JOUR</p><h3>{format(selected, "EEEE d MMMM", { locale: fr })}</h3></div></div>
           <p className="planning-detail-count" role="status">{selectedPredictions.length} scénario{selectedPredictions.length > 1 ? "s" : ""} d'exemple</p>
-          {selectedPredictions.length === 0 ? <div className="planning-empty"><CalendarDays size={28} aria-hidden="true" /><h4>{purchaseOnly ? "Aucun achat suggéré" : "Aucun scénario"}</h4><p>{purchaseOnly ? "Désactivez le filtre pour voir les autres scénarios." : "Choisissez un autre jour."}</p></div> :
+          {selectedPredictions.length === 0 ? <div className="planning-empty"><CalendarDays size={28} aria-hidden="true" /><h4>{purchaseOnly ? "Aucun achat illustré" : "Aucun scénario"}</h4><p>{purchaseOnly ? "Désactivez le filtre pour voir les autres scénarios." : "Choisissez un autre jour."}</p></div> :
             <div className="planning-agenda">{selectedPredictions.map((prediction) => {
               return <article key={prediction.id} className="planning-item">
                 <div className="planning-item-top"><span className="planning-priority">Exemple</span></div>
