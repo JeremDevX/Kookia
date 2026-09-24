@@ -7,6 +7,7 @@ import ProductDetail from "../components/stocks/ProductDetail";
 import AddProductModal from "../components/stocks/AddProductModal";
 import FiltersModal from "../components/stocks/FiltersModal";
 import StockReview from "../components/stocks/StockReview";
+import StockInventoryCard from "../components/stocks/StockInventoryCard";
 import { Search, Filter, Plus, ShoppingCart } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useProductsWithMutations } from "../hooks";
@@ -228,6 +229,11 @@ const Stocks: React.FC = () => {
           </tbody>
         </table>
       </div>
+      <ul className="stock-inventory-cards" aria-label="Inventaire des produits">
+        {!loading && !error && filteredProducts.map((product) => <StockInventoryCard key={product.id} product={product} selecting={cartLoading}
+          onInspect={() => setSelectedProductId(product.id)} onSelect={() => void handleSelectForOrder(product)} />)}
+        {!loading && !error && filteredProducts.length === 0 && <li className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</li>}
+      </ul>
       </>}
       {selectedProduct && <ProductDetail
         key={selectedProduct.id}
