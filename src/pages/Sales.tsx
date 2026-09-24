@@ -141,7 +141,8 @@ export default function Sales() {
           {latestService.status === "closed" ? " Aucune activité n’était prévue." : latestService.coverage === "complete" && latestService.salesCount === 0 ? " Zéro vente observé après revue complète." : latestService.coverage !== "complete" ? " " + latestService.salesCount + " ligne(s) enregistrée(s) ; les absences restent inconnues." : " " + latestService.salesCount + " ligne(s) enregistrée(s)."}
           {latestService.salesCount > 0 ? ` Sources : ${describeServiceSources(latestService.sources)}.` : ""}</p> :
         <p>Aucun jour de service renseigné. Une absence de donnée n'est ni un jour fermé ni zéro vente.</p>}
-      <div className="sales-actions"><a href="#sales-import-title">Importer un CSV Kookia</a><a href="#sales-entry-title">Saisir une vente</a></div>
+      <div className="sales-actions"><a href="#sales-import-title">Importer un CSV Kookia</a><a href="#sales-entry-title">Saisir une vente</a>
+        <a href="#sales-baseline-summary">Estimation test (non utilisée pour les achats)</a></div>
       <small>Ces ventes alimentent les indicateurs, pas encore les achats suggérés.</small>
     </section>
     <ServiceCalendar from={from} to={to} today={parisToday()} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} />
@@ -205,7 +206,7 @@ export default function Sales() {
     <details className="sales-disclosure" onToggle={(event) => setShowMetrics(event.currentTarget.open)}><summary>Indicateurs des ventes</summary>
       {showMetrics && <SalesMetrics key={`${from}:${to}:${salesRevision}`} from={from} to={to} />}
     </details>
-    <details className="sales-disclosure" onToggle={(event) => setShowBaseline(event.currentTarget.open)}><summary>Estimation test (non utilisée pour les achats)</summary>
+    <details className="sales-disclosure" onToggle={(event) => setShowBaseline(event.currentTarget.open)}><summary id="sales-baseline-summary">Estimation test (non utilisée pour les achats)</summary>
       {showBaseline && <SalesBaseline key={salesRevision} />}
     </details>
   </div>;
