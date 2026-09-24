@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/common/Button";
 import { getTimeline, type TimelineEvent, type TimelineProvenance, type TimelineResult } from "../services/timelineService";
@@ -45,6 +45,9 @@ export default function Timeline() {
   const [to, setTo] = useState(today);
   const [asOf, setAsOf] = useState(today);
   const [requestAttempt, setRequestAttempt] = useState(0);
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const retryFocusPending = useRef(false);
   const rangeDays = (Date.parse(to) - Date.parse(from)) / 86_400_000;
   const validRequest = /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to) &&
     /^\d{4}-\d{2}-\d{2}$/.test(asOf) && from >= historyStart && asOf >= historyStart && from <= to && rangeDays <= 30 &&
@@ -79,10 +82,23 @@ export default function Timeline() {
     return () => { active = false; };
   }, [requestKey]);
 
+  useEffect(() => {
+    if (loading || !retryFocusPending.current) return;
+    retryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (currentState?.error) retryButtonRef.current?.focus();
+    else headingRef.current?.focus();
+  }, [currentState, loading]);
+
+  const retryHistory = () => {
+    retryFocusPending.current = document.activeElement === retryButtonRef.current;
+    setRequestAttempt((attempt) => attempt + 1);
+  };
+
   return <div className="workspace-page timeline-page">
     <header className="workspace-header"><div>
       <p className="workspace-eyebrow">Historique consultable</p>
-      <h1>Histoire sur quatre années</h1>
+      <h1 ref={headingRef} tabIndex={-1}>Histoire sur quatre années</h1>
       <p className="workspace-subtitle">Parcourez les pièces, le stock, les recettes, les services et les décisions sans modifier les données actuelles.</p>
     </div></header>
 
@@ -112,8 +128,8 @@ export default function Timeline() {
       <span role={error ? "alert" : "status"} aria-live="polite">
         {loading ? "Chargement de l’historique…" : error || (timeline ? `${timeline.count} événement(s) pour la période.` : "")}
       </span>
-      {currentState?.error && <Button type="button" variant="outline" size="sm"
-        onClick={() => setRequestAttempt((attempt) => attempt + 1)}>Réessayer</Button>}
+      {currentState?.error && <Button ref={retryButtonRef} type="button" variant="outline" size="sm"
+        onClick={retryHistory}>Réessayer</Button>}
     </div>
     {timeline?.truncated && <p className="timeline-truncated" role="status">Période dense : seuls les premiers événements sont affichés. Choisissez une période plus courte pour continuer à parcourir l’historique.</p>}
     {timeline && timeline.events.length === 0 && <p className="workspace-empty">Aucun événement disponible avec ces dates et ces informations connues.</p>}
