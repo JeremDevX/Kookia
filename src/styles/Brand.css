@@ -18,6 +18,15 @@ body .btn-outline {
   border-color: var(--color-border);
   color: var(--palette-sage-11);
 }
+body .btn:disabled,
+body .btn:disabled:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
 body :is(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline: var(--size-3) solid var(--color-focus);
   outline-offset: var(--size-3);
