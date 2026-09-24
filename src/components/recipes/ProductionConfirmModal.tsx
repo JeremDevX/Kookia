@@ -71,7 +71,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
           <div>
             <h3 className="text-2xl font-bold">{recipe.name}</h3>
             <p className="text-sm text-secondary mt-1">
-              {recipe.category}
+              {recipe.category} · version {recipe.version} · effet {recipe.effectiveFrom ?? "historique inconnu"}
             </p>
           </div>
           <Badge label={safeMaxYield > 0 ? "Stock disponible" : "Stock insuffisant"} status={safeMaxYield > 0 ? "optimal" : "urgent"} />
@@ -127,13 +127,13 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
         <div className="bg-white p-4 rounded-lg border">
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle size={18} className="text-optimal" />
-            <h4 className="font-semibold">Ingrédients par portion</h4>
+              <h4 className="font-semibold">Ingrédients du lot ({recipe.yieldPortions} portions)</h4>
           </div>
           <div className="space-y-2">
             {recipe.ingredients.map((ing) => (
               <div key={ing.productId} className="flex justify-between text-sm">
-                <span>{getProductName(ing.productId)}</span>
-                <span>{ing.quantity} {getProductUnit(ing.productId)} par portion</span>
+                <span>{ing.productName || getProductName(ing.productId)}</span>
+                <span>{ing.quantity} {ing.unit || getProductUnit(ing.productId)} pour le lot</span>
               </div>
             ))}
           </div>

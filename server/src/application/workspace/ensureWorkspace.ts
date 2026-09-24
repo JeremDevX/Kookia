@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
+import { appendRecipeVersion } from "./recipeVersionStorage.js";
 import catalog from "../../infrastructure/database/seed/catalog.json" with { type: "json" };
 
 // Seed only once per account. The complete graph is committed atomically.
@@ -19,6 +20,7 @@ export async function ensureWorkspace(ownerId: string) {
         ...product, restaurantId,
         lastDelivery: null,
       })) });
+      const productsById = new Map(catalog.products.map((product) => [product.id, product]));
       for (const recipe of catalog.recipes) {
         await tx.recipe.create({ data: {
           id: recipe.id, restaurantId, name: recipe.name, category: recipe.category,
@@ -27,6 +29,14 @@ export async function ensureWorkspace(ownerId: string) {
         await tx.recipeIngredient.createMany({ data: recipe.ingredients.map((ingredient) => ({
           ...ingredient, restaurantId, recipeId: recipe.id,
         })) });
+        await appendRecipeVersion(tx, { restaurantId, recipeId: recipe.id, version: 1, effectiveFrom: null,
+          operationId: `workspace-seed:recipe:${recipe.id}:v1`, actorId: "workspace-seed:v1",
+          name: recipe.name, category: recipe.category, prepTime: recipe.prepTime, yieldPortions: 1,
+          ingredients: recipe.ingredients.map((ingredient) => {
+            const product = productsById.get(ingredient.productId)!;
+            return { productId: ingredient.productId, productName: product.name, productUnit: product.unit,
+              quantity: new Prisma.Decimal(ingredient.quantity) };
+          }) });
       }
       await tx.prediction.createMany({ data: catalog.predictions.map((prediction) => ({
         id: prediction.id, restaurantId, productId: prediction.productId,

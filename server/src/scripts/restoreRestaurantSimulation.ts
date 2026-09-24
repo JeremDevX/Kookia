@@ -29,7 +29,10 @@ interface SavedMovement {
   id: string; restaurantId: string; productId: string; delta: string | number; reason: string;
   operationId: string; actorId: string; createdAt: string;
 }
-interface SavedRecipe { id: string; restaurantId: string; name: string; category: string; prepTime: number; lastMade: string | null }
+interface SavedRecipe {
+  id: string; restaurantId: string; name: string; category: string; prepTime: number;
+  yieldPortions: number; revision: number; lastMade: string | null;
+}
 interface SavedIngredient { restaurantId: string; recipeId: string; productId: string; quantity: string | number }
 const savedProducts = backup.products as SavedProduct[];
 const savedMovements = backup.stockMovements as SavedMovement[];
@@ -52,9 +55,11 @@ try {
     where: { restaurantId_kind: { restaurantId, kind: SIMULATION_MARKER } }, select: { data: true },
   });
   const marker = markerRow?.data as { version?: string; sourceDigest?: string; counts?: Record<string, number>;
-    productState?: Array<Record<string, unknown>>; recipeDigest?: string; saleItemIds?: string[] } | undefined;
+    productState?: Array<Record<string, unknown>>; recipeDigest?: string; saleItemIds?: string[];
+    recipeVersionIds?: string[]; recipeRevisionById?: Record<string, number> } | undefined;
   if (!markerRow || marker?.version !== SIMULATION_VERSION || marker.sourceDigest !== backup.sourceDigest ||
-    !marker.counts || !marker.productState || !marker.recipeDigest || !marker.saleItemIds) {
+    !marker.counts || !marker.productState || !marker.recipeDigest || !marker.saleItemIds ||
+    !marker.recipeVersionIds || !marker.recipeRevisionById) {
     throw new Error("La simulation active ne correspond pas à cette sauvegarde ; aucune écriture effectuée.");
   }
   await assertNoHumanChanges(restaurantId, marker);
@@ -70,6 +75,7 @@ try {
     await tx.dailySale.deleteMany({ where: { restaurantId, source: "demo_simulation", operationId: { startsWith: `${SIMULATION_VERSION}:` } } });
     await tx.saleContribution.deleteMany({ where: { restaurantId, id: { in: generatedContributions.map((row) => row.id) } } });
     await tx.production.deleteMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } } });
+    await tx.recipeVersion.deleteMany({ where: { restaurantId, id: { in: marker.recipeVersionIds } } });
     await tx.stockMovement.deleteMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } } });
     await tx.workspaceDocument.delete({ where: { restaurantId_kind: { restaurantId, kind: SIMULATION_MARKER } } });
     await tx.serviceDay.deleteMany({ where: {
@@ -94,6 +100,7 @@ try {
     for (const recipe of savedRecipes) await tx.recipe.update({
       where: { restaurantId_id: { restaurantId, id: recipe.id } },
       data: { name: recipe.name, category: recipe.category, prepTime: recipe.prepTime,
+        yieldPortions: recipe.yieldPortions, revision: recipe.revision,
         lastMade: recipe.lastMade ? new Date(recipe.lastMade) : null },
     });
     await batch(savedIngredients, (rows) => tx.recipeIngredient.createMany({ data: rows.map((row) => ({
@@ -127,7 +134,8 @@ try {
 }
 
 type ActiveMarker = { version?: string; sourceDigest?: string; counts?: Record<string, number>;
-  productState?: Array<Record<string, unknown>>; recipeDigest?: string; saleItemIds?: string[] };
+  productState?: Array<Record<string, unknown>>; recipeDigest?: string; saleItemIds?: string[];
+  recipeVersionIds?: string[]; recipeRevisionById?: Record<string, number> };
 
 async function assertNoHumanChanges(restaurantId: string, marker: ActiveMarker) {
   const [movementCount, productionCount, saleCount, contributionCount, unrelatedMovements, unrelatedProductions, currentProducts, currentRecipes] = await Promise.all([
@@ -144,20 +152,26 @@ async function assertNoHumanChanges(restaurantId: string, marker: ActiveMarker) 
     saleCount !== marker.counts?.sales || contributionCount !== marker.counts?.sales || unrelatedMovements || unrelatedProductions) {
     throw new Error("Des mouvements manuels ou un scénario incomplet existent ; rollback arrêté pour préserver les saisies.");
   }
-  const [generatedSales, generatedContributions, generatedProductions] = await Promise.all([
+  const [generatedSales, generatedContributions, generatedProductions, generatedVersions] = await Promise.all([
     prisma.dailySale.findMany({ where: { restaurantId, source: "demo_simulation", operationId: { startsWith: `${SIMULATION_VERSION}:` } },
       select: { createdBy: true, updatedBy: true, revision: true } }),
     prisma.saleContribution.findMany({ where: { restaurantId, source: "demo_simulation", sourceKey: { startsWith: `${SIMULATION_VERSION}:` } },
       select: { id: true, reviewedBy: true, reviewRevision: true, status: true, source: true } }),
     prisma.production.findMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } },
-      select: { actorId: true } }),
+      select: { actorId: true, recipeVersionId: true } }),
+    prisma.recipeVersion.findMany({ where: { restaurantId, id: { in: marker.recipeVersionIds ?? [] } },
+      select: { id: true, recipeId: true, version: true, actorId: true, operationId: true } }),
   ]);
   if (generatedSales.some((sale) => sale.createdBy !== SIMULATION_MARKER || sale.updatedBy !== SIMULATION_MARKER || sale.revision !== 0) ||
     generatedContributions.some((contribution) => contribution.reviewedBy !== SIMULATION_MARKER || contribution.reviewRevision !== 1 ||
       contribution.status !== "accepted" || contribution.source !== "demo_simulation") ||
     await prisma.saleContributionEvent.count({ where: { restaurantId,
       contributionId: { in: generatedContributions.map((row) => row.id) } } }) !== marker.counts?.sales ||
-    generatedProductions.some((production) => production.actorId !== SIMULATION_MARKER)) {
+    generatedProductions.some((production) => production.actorId !== SIMULATION_MARKER ||
+      !marker.recipeVersionIds?.includes(production.recipeVersionId ?? "")) ||
+    generatedVersions.length !== marker.recipeVersionIds?.length || generatedVersions.some((version) =>
+      version.actorId !== SIMULATION_MARKER || version.operationId !== `${SIMULATION_VERSION}:recipe:${version.recipeId}:v${version.version}` ||
+      marker.recipeRevisionById?.[version.recipeId] !== version.version)) {
     throw new Error("Une vente ou production simulée a été modifiée dans l’application ; rollback arrêté pour préserver la saisie.");
   }
   const currentById = new Map(currentProducts.map((product) => [product.id, product]));
@@ -176,5 +190,6 @@ async function assertNoHumanChanges(restaurantId: string, marker: ActiveMarker) 
   const digest = digestRecipePlan(currentRecipes.map((recipe): PlannedRecipe => ({ id: recipe.id, name: recipe.name,
     category: recipe.category, prepTime: recipe.prepTime, lastMade: recipe.lastMade?.toISOString().slice(0, 10) ?? null,
     ingredients: recipe.ingredients.map((ingredient) => ({ productId: ingredient.productId, quantity: Number(ingredient.quantity) })) })));
-  if (digest !== marker.recipeDigest) throw new Error("Une recette a été modifiée depuis l’import ; rollback arrêté sans l’écraser.");
+  if (digest !== marker.recipeDigest || currentRecipes.some((recipe) => marker.recipeRevisionById?.[recipe.id] !== recipe.revision))
+    throw new Error("Une recette a été modifiée depuis l’import ; rollback arrêté sans l’écraser.");
 }

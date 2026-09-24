@@ -98,6 +98,11 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   const plannedRecipes = buildRecipePlan(recipeSnapshots, plan.productions);
   const suppliers = await prisma.supplier.findMany({ where: { restaurantId: scenarioOwner.restaurantId }, select: { id: true } });
   await applyRestaurantSimulation(scenarioOwner.restaurantId, plan, plannedRecipes, [], [], new Set(suppliers.map(({ id }) => id)));
+  const scenarioProductions = await prisma.production.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
+    operationId: { startsWith: "restaurant-simulation-v1:" } }, include: { recipeVersion: true } });
+  expect(scenarioProductions).toHaveLength(plan.productions.length);
+  expect(scenarioProductions.every((production) => production.recipeVersionId && production.recipeVersion?.actorId === "restaurant-simulation:v1" &&
+    production.recipeVersion?.effectiveFrom?.toISOString().slice(0, 10) === plan.startDate)).toBe(true);
   await prisma.workspaceDocument.createMany({ data: invoices.map((invoice) => ({
     restaurantId: scenarioOwner.restaurantId,
     kind: `source-invoice:${invoice.id}`,

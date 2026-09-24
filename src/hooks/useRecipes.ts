@@ -10,13 +10,12 @@ import { getProducts } from "../services/productService";
 
 interface UseRecipesReturn {
   recipes: Recipe[];
+  products: Product[];
   loading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
   getMaxYield: (recipe: Recipe) => number;
-  getIngredientCost: (
-    ingredients: { productId: string; quantity: number }[]
-  ) => number | null;
+  getIngredientCost: (recipe: Recipe) => number | null;
   getProductName: (productId: string) => string;
   getProductUnit: (productId: string) => string;
 }
@@ -52,11 +51,12 @@ export const useRecipes = (): UseRecipesReturn => {
 
   return {
     recipes,
+    products,
     loading,
     error,
     refetch: fetchRecipes,
     getMaxYield: (recipe) => calculateMaxYield(recipe, products),
-    getIngredientCost: (ingredients) => calculateIngredientCost(ingredients, products),
+    getIngredientCost: (recipe) => calculateIngredientCost(recipe, products),
     getProductName: (id) => products.find((product) => product.id === id)?.name ?? "Inconnu",
     getProductUnit: (id) => products.find((product) => product.id === id)?.unit ?? "",
   };

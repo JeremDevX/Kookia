@@ -104,6 +104,7 @@ model Restaurant {
   serviceDays  ServiceDay[]
   saleContributions SaleContribution[]
   saleContributionEvents SaleContributionEvent[]
+  recipeVersions RecipeVersion[]
 }
 
 model Supplier {
@@ -133,6 +134,7 @@ model Product {
   revision     Int @default(1)
   stockRevision Int @default(1)
   ingredients  RecipeIngredient[]
+  recipeVersionIngredients RecipeVersionIngredient[]
   movements    StockMovement[]
   stockCounts  StockCount[]
   predictions  Prediction[]
@@ -146,8 +148,11 @@ model Recipe {
   name         String
   category     String
   prepTime     Int
+  yieldPortions Int @default(1)
+  revision     Int @default(1)
   lastMade     DateTime? @db.Date
   ingredients  RecipeIngredient[]
+  versions     RecipeVersion[]
   productions  Production[]
   @@id([restaurantId, id])
 }
@@ -160,6 +165,43 @@ model RecipeIngredient {
   recipe       Recipe @relation(fields: [restaurantId, recipeId], references: [restaurantId, id], onDelete: Cascade)
   product      Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
   @@id([restaurantId, recipeId, productId])
+}
+
+model RecipeVersion {
+  id            String @id @default(uuid())
+  restaurantId  String
+  recipeId      String
+  version       Int
+  effectiveFrom DateTime? @db.Date
+  operationId   String
+  actorId       String
+  name          String
+  category      String
+  prepTime      Int
+  yieldPortions Int
+  createdAt     DateTime @default(now())
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  recipe        Recipe @relation(fields: [restaurantId, recipeId], references: [restaurantId, id], onDelete: NoAction)
+  ingredients   RecipeVersionIngredient[]
+  productions   Production[]
+
+  @@unique([restaurantId, id])
+  @@unique([restaurantId, recipeId, version])
+  @@unique([restaurantId, operationId])
+  @@index([restaurantId, recipeId, effectiveFrom, version])
+}
+
+model RecipeVersionIngredient {
+  restaurantId  String
+  recipeVersionId String
+  productId     String
+  productName   String
+  productUnit   String
+  quantity      Decimal @db.Decimal(14, 3)
+  recipeVersion RecipeVersion @relation(fields: [restaurantId, recipeVersionId], references: [restaurantId, id], onDelete: Cascade)
+  product       Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
+
+  @@id([restaurantId, recipeVersionId, productId])
 }
 
 model StockMovement {
@@ -214,6 +256,8 @@ model Production {
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   recipeId     String?
   recipe       Recipe? @relation(fields: [restaurantId, recipeId], references: [restaurantId, id], onDelete: NoAction)
+  recipeVersionId String?
+  recipeVersion RecipeVersion? @relation(fields: [restaurantId, recipeVersionId], references: [restaurantId, id], onDelete: NoAction)
   recipeName   String
   portions     Int
   prepTime     Int
@@ -224,6 +268,8 @@ model Production {
   operationId  String
   createdAt    DateTime @default(now())
   @@unique([restaurantId, operationId])
+  @@unique([restaurantId, id])
+  @@index([restaurantId, recipeVersionId])
 }
 
 model Prediction {

@@ -64,13 +64,16 @@ function productSnapshot(rows: Array<{ id: string; unit: string; currentStock: P
 async function assertNoopComplete(restaurantId: string, markerData: unknown, otherWorkspaceCount: number) {
   if (!markerData || typeof markerData !== "object" || Array.isArray(markerData)) throw new Error("Marqueur de simulation invalide.");
   const marker = markerData as { version?: string; sourceDigest?: string; counts?: Record<string, number>;
-    yearCoverage?: unknown; productState?: Array<Record<string, unknown>>; recipeDigest?: string; saleItemIds?: string[] };
-  if (marker.version !== SIMULATION_VERSION || !marker.counts || !Array.isArray(marker.productState) || !marker.saleItemIds) {
+    yearCoverage?: unknown; productState?: Array<Record<string, unknown>>; recipeDigest?: string; saleItemIds?: string[];
+    recipeVersionIds?: string[]; recipeRevisionById?: Record<string, number> };
+  if (marker.version !== SIMULATION_VERSION || !marker.counts || !Array.isArray(marker.productState) ||
+    !marker.saleItemIds || !marker.recipeVersionIds || !marker.recipeRevisionById) {
     throw new Error("Une simulation précédente incomplète existe ; aucune donnée ne sera remplacée.");
   }
   const [movementCount, productionRows, salesRows, saleItemCount, legacyProducts, allMovements, products, recipes] = await Promise.all([
     prisma.stockMovement.count({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } } }),
-    prisma.production.findMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } }, select: { actorId: true } }),
+    prisma.production.findMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } },
+      select: { actorId: true, recipeVersionId: true } }),
     prisma.dailySale.findMany({ where: { restaurantId, source: "demo_simulation", operationId: { startsWith: `${SIMULATION_VERSION}:` } },
       select: { createdBy: true, updatedBy: true, revision: true } }),
     prisma.saleItem.count({ where: { restaurantId, id: { in: marker.saleItemIds } } }),
@@ -80,10 +83,15 @@ async function assertNoopComplete(restaurantId: string, markerData: unknown, oth
     prisma.product.findMany({ where: { restaurantId, id: { in: simulationProductIds } } }),
     prisma.recipe.findMany({ where: { restaurantId }, include: { ingredients: { orderBy: { productId: "asc" } } }, orderBy: { id: "asc" } }),
   ]);
+  const generatedVersions = await prisma.recipeVersion.findMany({ where: { restaurantId, id: { in: marker.recipeVersionIds } },
+    select: { id: true, recipeId: true, version: true, actorId: true, operationId: true } });
   const legacyMovementCount = allMovements.filter(isLegacyImportMovement).length;
   if (movementCount !== marker.counts.stockMovements || productionRows.length !== marker.counts.productions ||
     salesRows.length !== marker.counts.sales || saleItemCount !== marker.saleItemIds.length || legacyProducts !== 0 || legacyMovementCount !== 0 ||
-    productionRows.some((row) => row.actorId !== SIMULATION_MARKER) ||
+    productionRows.some((row) => row.actorId !== SIMULATION_MARKER || !marker.recipeVersionIds!.includes(row.recipeVersionId ?? "")) ||
+    generatedVersions.length !== marker.recipeVersionIds.length || generatedVersions.some((version) =>
+      version.actorId !== SIMULATION_MARKER || version.operationId !== `${SIMULATION_VERSION}:recipe:${version.recipeId}:v${version.version}` ||
+      marker.recipeRevisionById?.[version.recipeId] !== version.version) ||
     salesRows.some((row) => row.createdBy !== SIMULATION_MARKER || row.updatedBy !== SIMULATION_MARKER || row.revision !== 0)) {
     throw new Error("La simulation existante ne correspond plus à son inventaire ; aucun remplacement automatique n’est sûr.");
   }
@@ -102,7 +110,10 @@ async function assertNoopComplete(restaurantId: string, markerData: unknown, oth
   const currentRecipeDigest = digestRecipePlan(recipes.map((recipe) => ({ id: recipe.id, name: recipe.name,
     category: recipe.category, prepTime: recipe.prepTime, lastMade: recipe.lastMade?.toISOString().slice(0, 10) ?? null,
     ingredients: recipe.ingredients.map((ingredient) => ({ productId: ingredient.productId, quantity: Number(ingredient.quantity) })) })));
-  if (currentRecipeDigest !== marker.recipeDigest) throw new Error("Les recettes ont changé depuis la simulation ; aucune saisie ne sera écrasée.");
+  if (currentRecipeDigest !== marker.recipeDigest || recipes.some((recipe) =>
+    marker.recipeRevisionById?.[recipe.id] !== recipe.revision)) {
+    throw new Error("Les recettes ont changé depuis la simulation ; aucune saisie ne sera écrasée.");
+  }
   return { counts: marker.counts, yearCoverage: marker.yearCoverage, otherWorkspaceCount };
 }
 
@@ -217,7 +228,8 @@ async function runFirstSimulation(restaurantId: string, invoices: ReturnType<typ
     suppliers: supplierRows.map(({ id }) => ({ id })),
     stockMovements: legacyMovements,
     recipes: recipes.map((recipe) => ({ id: recipe.id, restaurantId: recipe.restaurantId, name: recipe.name,
-      category: recipe.category, prepTime: recipe.prepTime, lastMade: recipe.lastMade })),
+      category: recipe.category, prepTime: recipe.prepTime, yieldPortions: recipe.yieldPortions,
+      revision: recipe.revision, lastMade: recipe.lastMade })),
     recipeIngredients: recipes.flatMap((recipe) => recipe.ingredients.map((ingredient) => ({
       restaurantId, recipeId: recipe.id, productId: ingredient.productId, quantity: ingredient.quantity,
     }))),
@@ -242,7 +254,8 @@ async function assertPersistedSimulation(restaurantId: string, plan: ReturnType<
       productId: true, delta: true, reason: true, operationId: true, createdAt: true,
     } }),
     prisma.production.findMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } },
-      select: { operationId: true, portions: true, notes: true, date: true, actorId: true } }),
+      select: { operationId: true, portions: true, notes: true, date: true, actorId: true,
+        recipeVersionId: true } }),
     prisma.dailySale.findMany({ where: { restaurantId, source: "demo_simulation", operationId: { startsWith: `${SIMULATION_VERSION}:` } },
       select: { operationId: true, quantity: true, serviceDate: true, createdBy: true, updatedBy: true, revision: true } }),
     prisma.saleItem.count({ where: { restaurantId, id: { in: [...new Set(plan.sales.map((sale) => sale.itemId))] } } }),
@@ -274,7 +287,7 @@ async function assertPersistedSimulation(restaurantId: string, plan: ReturnType<
   for (const sale of plan.sales) {
     const production = productionsByOperation.get(sale.productionOperationId);
     const persistedSale = salesByOperation.get(sale.operationId);
-    if (!production || !persistedSale || production.actorId !== SIMULATION_MARKER ||
+    if (!production || !persistedSale || production.actorId !== SIMULATION_MARKER || !production.recipeVersionId ||
       persistedSale.createdBy !== SIMULATION_MARKER || persistedSale.updatedBy !== SIMULATION_MARKER || persistedSale.revision !== 0 ||
       sale.operationId !== `${sale.productionOperationId}:sale` ||
       production.portions !== sale.portionsPrepared || production.portions !== sale.quantity + sale.estimatedUnsold ||

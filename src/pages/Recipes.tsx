@@ -5,6 +5,7 @@ import Badge from "../components/common/Badge";
 import RecordProductionModal from "../components/recipes/RecordProductionModal";
 import ProductionConfirmModal from "../components/recipes/ProductionConfirmModal";
 import ReportRefusalModal from "../components/recipes/ReportRefusalModal";
+import RecipeEditor from "../components/recipes/RecipeEditor";
 import { Clock, ChefHat, CheckCircle, Leaf, AlertTriangle } from "lucide-react";
 import { format, parseISO, isSameWeek } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -24,7 +25,7 @@ const Recipes: React.FC = () => {
   const productId = searchParams.get("product");
   const { addToast } = useToast();
   const {
-    recipes, loading, error, refetch,
+    recipes, products, loading, error, refetch,
     getMaxYield,
     getIngredientCost,
     getProductName,
@@ -38,6 +39,10 @@ const Recipes: React.FC = () => {
   const [refusalRecipe, setRefusalRecipe] = useState<Recipe | null>(null);
   const [productions, setProductions] = useState<Production[]>([]);
   const [productionError, setProductionError] = useState("");
+  const [recipeEditorOpen, setRecipeEditorOpen] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+  const recipeEditorHeading = React.useRef<HTMLHeadingElement>(null);
+  const recipeEditOrigin = React.useRef<HTMLButtonElement | null>(null);
   const today = formatLocalISODate(new Date());
   const refreshProductions = useCallback(async () => {
     try { setProductions(await getProductions()); setProductionError(""); }
@@ -54,8 +59,18 @@ const Recipes: React.FC = () => {
     item.operationId.startsWith("restaurant-simulation-v1:") &&
     isSameWeek(parseISO(item.date.slice(0, 10)), parseISO(today), { weekStartsOn: 1 }));
   const formatIngredientCost = (recipe: Recipe) => {
-    const cost = getIngredientCost(recipe.ingredients);
+    const cost = getIngredientCost(recipe);
     return cost === null ? "Indisponible" : `${cost.toFixed(2)} €`;
+  };
+
+  const openRecipeEditor = (recipe: Recipe | null, trigger: HTMLButtonElement) => {
+    recipeEditOrigin.current = trigger;
+    setEditingRecipe(recipe); setRecipeEditorOpen(true);
+    requestAnimationFrame(() => document.getElementById("recipe-editor-section-title")?.scrollIntoView({ block: "nearest" }));
+  };
+  const closeRecipeEditor = () => {
+    setRecipeEditorOpen(false); setEditingRecipe(null);
+    requestAnimationFrame(() => { if (recipeEditOrigin.current?.isConnected) recipeEditOrigin.current.focus(); });
   };
 
 
@@ -81,6 +96,7 @@ const Recipes: React.FC = () => {
     if (selectedRecipe) {
       try {
         const saved = await recordProduction({ operationId, recipeId: selectedRecipe.id,
+          expectedRecipeRevision: selectedRecipe.version,
           recipeName: selectedRecipe.name, portions: quantity, prepTime: selectedRecipe.prepTime,
           notes: "", date: formatLocalISODate(new Date()), kind: "production" });
         setProductions((prev) => [saved, ...prev]);
@@ -113,6 +129,7 @@ const Recipes: React.FC = () => {
 
   const handleReportRefusal = async (recipe: Recipe, portions: number, operationId: string) => {
     const saved = await recordProduction({ operationId, recipeId: recipe.id,
+      expectedRecipeRevision: recipe.version,
       recipeName: recipe.name, portions, prepTime: 0, notes: "",
       date: formatLocalISODate(new Date()), kind: "refusal" });
     setProductions((prev) => [saved, ...prev]);
@@ -132,6 +149,9 @@ const Recipes: React.FC = () => {
         </div>
         {!productId && <Button icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>}
       </header>
+
+      <RecipeEditor open={recipeEditorOpen} recipe={editingRecipe} products={products} headingRef={recipeEditorHeading}
+        onCreate={(trigger) => openRecipeEditor(null, trigger)} onClose={closeRecipeEditor} onSaved={refetch} />
 
       {!productId && <div className="workspace-summary"><div><span>Catalogue</span><strong>{recipes.length} recettes</strong></div></div>}
       {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to="/recipes" onClick={() => setActiveTab("anti-waste")}>Voir toutes les recettes</Link></p>}
@@ -182,16 +202,13 @@ const Recipes: React.FC = () => {
                     })}
                   </span>
                 </div>
+                <p>Version {recipe.version} · {recipe.effectiveFrom ? `effective depuis ${recipe.effectiveFrom}` : "date d’effet historique inconnue"} · rendement {recipe.yieldPortions} portions.</p>
                 <div className="recipe-ingredients">
-                  <h4 className="text-xs font-semibold uppercase text-secondary mb-2">
-                    Ingrédients par portion
-                  </h4>
+                  <h4 className="text-xs font-semibold uppercase text-secondary mb-2">Ingrédients du lot ({recipe.yieldPortions} portions)</h4>
                   {recipe.ingredients.map((ing, i) => (
                     <div key={i} className="ingredient-item">
-                      <span>{getProductName(ing.productId)}</span>
-                      <span>
-                        {ing.quantity} {getProductUnit(ing.productId)}
-                      </span>
+                      <span>{ing.productName || getProductName(ing.productId)}</span>
+                      <span>{ing.quantity} {ing.unit || getProductUnit(ing.productId)}</span>
                     </div>
                   ))}
                   {/* Economics Section */}
@@ -214,6 +231,7 @@ const Recipes: React.FC = () => {
                   >
                     Signaler un refus
                   </Button>
+                  <Button size="sm" variant="outline" onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
                 </div>
               </Card>
             ))
@@ -280,8 +298,8 @@ const Recipes: React.FC = () => {
 
                   {recipe.ingredients.map((ing, i) => (
                     <div key={i} className="ingredient-row">
-                      <span>{getProductName(ing.productId)}</span>
-                      <span className="font-medium text-optimal">{ing.quantity} {getProductUnit(ing.productId)} / portion</span>
+                      <span>{ing.productName || getProductName(ing.productId)}</span>
+                      <span className="font-medium text-optimal">{ing.quantity} {ing.unit || getProductUnit(ing.productId)} / lot</span>
                     </div>
                   ))}
                 </div>
@@ -295,6 +313,7 @@ const Recipes: React.FC = () => {
                   >
                     {isProduced ? "Produire à nouveau" : "Produire cette recette"}
                   </Button>
+                  <Button size="sm" variant="outline" className="w-full" onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
                 </div>
               </Card>
             );
@@ -310,15 +329,24 @@ const Recipes: React.FC = () => {
             <div className="recipes-grid">{unavailableRecipes.map((recipe) => <Card key={recipe.id} className="recipe-card">
               <strong>{recipe.name}</strong>
               <Button size="sm" variant="outline" onClick={() => setRefusalRecipe(recipe)}>Signaler un refus</Button>
+              <Button size="sm" variant="outline" onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
             </Card>)}</div>
           </section>}
-          {incompleteRecipes.length > 0 && <p className="col-span-full" role="status">{incompleteRecipes.length} recette{incompleteRecipes.length > 1 ? "s" : ""} sans ingrédients renseignés ne peuvent pas être produites.</p>}
+          {incompleteRecipes.length > 0 && <section className="col-span-full" aria-label="Recettes sans ingrédients renseignés">
+            <p role="status">{incompleteRecipes.length} recette{incompleteRecipes.length > 1 ? "s" : ""} sans ingrédients renseignés ne peuvent pas être produites.</p>
+            {incompleteRecipes.map((recipe) => <Card key={recipe.id} className="recipe-card"><strong>{recipe.name}</strong>
+              <Button size="sm" variant="outline" onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Compléter la recette</Button>
+            </Card>)}
+          </section>}
         </div>
       )}
 
       {displayedTab === "history" && productions.length > 0 && <section aria-label="Journal de production">
         <h2>Productions enregistrées</h2>
-        {productions.map((item) => <Card key={item.id}><strong>{item.recipeName}</strong><p>{item.portions} portions · {format(parseISO(item.date.slice(0, 10)), "dd/MM/yyyy")} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé" : "Production réalisée — stock déduit"}</p>{item.notes && <p>{item.notes}</p>}</Card>)}
+        {productions.map((item) => <Card key={item.id}><strong>{item.recipeName}</strong>
+          <p>{item.portions} portions · {format(parseISO(item.date.slice(0, 10)), "dd/MM/yyyy")} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé" : "Production réalisée — stock déduit"}</p>
+          {item.recipeVersion && <p>Version recette {item.recipeVersion.version} · rendement {item.recipeVersion.yieldPortions} portions · effet {item.recipeVersion.effectiveFrom ? format(parseISO(item.recipeVersion.effectiveFrom.slice(0, 10)), "dd/MM/yyyy") : "date historique inconnue"}</p>}
+          {item.notes && <p>{item.notes}</p>}</Card>)}
       </section>}
 
       <RecordProductionModal
@@ -333,7 +361,7 @@ const Recipes: React.FC = () => {
         onClose={() => setIsProductionModalOpen(false)}
         recipe={selectedRecipe}
         maxYield={selectedRecipe ? getMaxYield(selectedRecipe) : 0}
-        costPerPortion={selectedRecipe ? getIngredientCost(selectedRecipe.ingredients) : null}
+        costPerPortion={selectedRecipe ? getIngredientCost(selectedRecipe) : null}
         getProductName={getProductName}
         getProductUnit={getProductUnit}
         onConfirm={handleConfirmProduction}

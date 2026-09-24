@@ -8,6 +8,41 @@
 .recipes-context { padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); font-size: var(--font-size-sm); }
 .recipes-context a, .empty-week a { color: var(--color-primary); text-underline-offset: var(--size-3); }
 
+.recipe-editor-panel {
+  display: grid;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border: var(--size-1) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.recipe-editor-heading, .recipe-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+.recipe-editor-form, .recipe-editor-fields, .recipe-editor-ingredients, .recipe-editor-ingredient {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+.recipe-editor-fields { grid-template-columns: repeat(auto-fit, minmax(var(--size-180), var(--unit-1fr))); }
+.recipe-editor-form label, .recipe-editor-ingredients label { display: grid; gap: var(--spacing-xs); }
+.recipe-editor-form input, .recipe-editor-form select {
+  width: var(--unit-100percent);
+  padding: var(--spacing-sm);
+  border: var(--size-1) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+.recipe-editor-ingredients { min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
+.recipe-editor-ingredient { grid-template-columns: minmax(var(--size-180), var(--unit-1fr)) minmax(var(--size-120), var(--unit-1fr)) auto; align-items: end; }
+.recipe-version-history ol { display: grid; gap: var(--spacing-md); padding-inline-start: var(--spacing-lg); }
+.recipe-version-history li { display: grid; gap: var(--spacing-xs); overflow-wrap: var(--overflow-wrap-anywhere); }
+.recipe-version-history span { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+
 .recipes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--size-300), var(--unit-1fr)));
@@ -201,6 +236,9 @@
     grid-template-columns: var(--unit-1fr);
     gap: var(--spacing-md);
   }
+
+  .recipe-editor-panel { padding: var(--spacing-md); }
+  .recipe-editor-ingredient { grid-template-columns: var(--unit-1fr); }
 
   .recipe-header {
     margin-bottom: var(--spacing-sm);

@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { appendRecipeVersion } from "../application/workspace/recipeVersionStorage.js";
 import { digestRecipePlan } from "./restaurantSimulationSupport.js";
 import {
   SIMULATION_MARKER, SIMULATION_VERSION, stableUuid,
@@ -63,11 +64,38 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
     }
 
     const recipeIds = recipes.map((recipe) => recipe.id);
+    const currentRecipes = await tx.recipe.findMany({ where: { restaurantId, id: { in: recipeIds } },
+      select: { id: true, revision: true } });
+    if (currentRecipes.length !== recipeIds.length) throw new Error("Une recette du scénario est absente de l’espace.");
+    const currentRecipeById = new Map(currentRecipes.map((recipe) => [recipe.id, recipe]));
+    const ingredientProductIds = [...new Set(recipes.flatMap((recipe) => recipe.ingredients.map((ingredient) => ingredient.productId)))];
+    const ingredientProducts = await tx.product.findMany({ where: { restaurantId, id: { in: ingredientProductIds } },
+      select: { id: true, name: true, unit: true } });
+    const ingredientProductById = new Map(ingredientProducts.map((product) => [product.id, product]));
+    if (ingredientProducts.length !== ingredientProductIds.length) throw new Error("Un produit ingrédient du scénario est absent de l’espace.");
     await tx.recipeIngredient.deleteMany({ where: { restaurantId, recipeId: { in: recipeIds } } });
+    const recipeVersionIds = new Map<string, string>();
+    const recipeRevisionById: Record<string, number> = {};
     for (const recipe of recipes) await tx.recipe.update({
       where: { restaurantId_id: { restaurantId, id: recipe.id } },
-      data: { lastMade: recipe.lastMade ? new Date(`${recipe.lastMade}T00:00:00.000Z`) : null },
+      data: { name: recipe.name, category: recipe.category, prepTime: recipe.prepTime,
+        lastMade: recipe.lastMade ? new Date(`${recipe.lastMade}T00:00:00.000Z`) : null,
+        yieldPortions: 1, revision: { increment: 1 } },
     });
+    for (const recipe of recipes) {
+      const version = currentRecipeById.get(recipe.id)!.revision + 1;
+      const savedVersion = await appendRecipeVersion(tx, { restaurantId, recipeId: recipe.id, version,
+        effectiveFrom: new Date(`${plan.startDate}T00:00:00.000Z`),
+        operationId: `${SIMULATION_VERSION}:recipe:${recipe.id}:v${version}`, actorId: SIMULATION_MARKER,
+        name: recipe.name, category: recipe.category, prepTime: recipe.prepTime, yieldPortions: 1,
+        ingredients: recipe.ingredients.map((ingredient) => {
+          const product = ingredientProductById.get(ingredient.productId)!;
+          return { productId: ingredient.productId, productName: product.name, productUnit: product.unit,
+            quantity: new Prisma.Decimal(ingredient.quantity) };
+        }) });
+      recipeVersionIds.set(recipe.id, savedVersion.id);
+      recipeRevisionById[recipe.id] = version;
+    }
     await insertBatches(recipes.flatMap((recipe) => recipe.ingredients.map((ingredient) => ({
       restaurantId, recipeId: recipe.id, productId: ingredient.productId, quantity: ingredient.quantity,
     }))), (batch) => tx.recipeIngredient.createMany({ data: batch }));
@@ -83,6 +111,7 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
       portions: production.portions, prepTime: production.prepTime, notes: production.notes,
       date: new Date(`${production.date}T00:00:00.000Z`), kind: "production", actorId: SIMULATION_MARKER,
       operationId: production.operationId, createdAt: new Date(production.createdAt),
+      recipeVersionId: recipeVersionIds.get(production.recipeId)!,
     } satisfies Prisma.ProductionCreateManyInput)), (batch) => tx.production.createMany({ data: batch }));
 
     await tx.saleItem.createMany({ data: saleItems.map((sale) => ({
@@ -121,7 +150,8 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
       version: SIMULATION_VERSION, sourceDigest: plan.sourceDigest,
       counts: plan.counts, yearCoverage: plan.yearCoverage, productState: plan.productState,
       receiptConversions: plan.receipts,
-      recipeDigest: digestRecipePlan(recipes), saleItemIds: saleItems.map((sale) => sale.itemId), createdSupplierIds,
+      recipeDigest: digestRecipePlan(recipes), recipeVersionIds: [...recipeVersionIds.values()], recipeRevisionById,
+      saleItemIds: saleItems.map((sale) => sale.itemId), createdSupplierIds,
       startDate: plan.startDate, endDate: plan.endDate,
     })) as Prisma.InputJsonValue;
     await tx.workspaceDocument.create({ data: { restaurantId, kind: SIMULATION_MARKER, data: marker } });

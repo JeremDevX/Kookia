@@ -15,7 +15,7 @@ import { getUserBySessionToken } from "../application/auth/authService.js";
 import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { adjustStock, createProduct, editProduct, getCatalog, WorkspaceError } from "../application/workspace/catalogService.js";
 import { getStockCounts, recordStockCount } from "../application/workspace/stockCountService.js";
-import { getRecipes, recordProduction } from "../application/workspace/recipeService.js";
+import { createRecipe, getRecipes, recordProduction, updateRecipe } from "../application/workspace/recipeService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
 interface WorkspaceContext { restaurantId: string; actorId: string; }
@@ -116,18 +116,48 @@ workspaceRoutes.get("/products/:id/movements", async (req, res, next) => {
 workspaceRoutes.get("/recipes", async (_req, res, next) => {
   try { res.json(await getRecipes(context(res).restaurantId)); } catch (error) { next(error); }
 });
+const recipeIngredientSchema = z.object({ productId: z.string().trim().min(1).max(100),
+  quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001) }).strict();
+const recipeMutationSchema = z.object({
+  operationId: z.uuid(), name: z.string().trim().min(1).max(120), category: z.enum(["Plat", "Dessert", "Entrée"]),
+  prepTime: z.number().int().min(0).max(10080), yieldPortions: z.number().int().min(1).max(10000),
+  effectiveFrom: z.iso.date(), ingredients: z.array(recipeIngredientSchema).min(1).max(100),
+}).strict();
+workspaceRoutes.post("/recipes", async (req, res, next) => {
+  try {
+    const { operationId, ...input } = recipeMutationSchema.parse(req.body);
+    const { restaurantId, actorId } = context(res);
+    res.status(201).json(await createRecipe(restaurantId, actorId, operationId, input));
+  } catch (error) { next(error); }
+});
+workspaceRoutes.patch("/recipes/:id", async (req, res, next) => {
+  try {
+    const { operationId, expectedRevision, ...values } = recipeMutationSchema.safeExtend({
+      expectedRevision: z.number().int().positive(),
+    }).parse(req.body);
+    const id = z.string().trim().min(1).max(100).parse(req.params.id);
+    const { restaurantId, actorId } = context(res);
+    res.json(await updateRecipe(restaurantId, actorId, id, expectedRevision, operationId, values));
+  } catch (error) { next(error); }
+});
 const productionSchema = z.object({
   operationId: z.uuid(), recipeId: z.string().min(1).max(100).optional(),
+  expectedRecipeRevision: z.number().int().positive().optional(),
   recipeName: z.string().trim().min(1).max(120), portions: z.number().int().min(1).max(10000),
   prepTime: z.number().int().min(0).max(10080), notes: z.string().max(4000),
   date: z.iso.date(), kind: z.enum(["production", "record", "refusal"]),
 }).strict()
-  .refine((data) => data.kind === "record" || data.recipeId !== undefined)
+  .refine((data) => data.kind === "record"
+    ? (data.recipeId === undefined && data.expectedRecipeRevision === undefined) ||
+      (data.recipeId !== undefined && data.expectedRecipeRevision !== undefined)
+    : data.recipeId !== undefined && data.expectedRecipeRevision !== undefined)
   .refine((data) => data.date <= new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
   }).format(new Date()));
 workspaceRoutes.get("/productions", async (_req, res, next) => {
-  try { res.json(await prisma.production.findMany({ where: { restaurantId: context(res).restaurantId }, orderBy: { date: "desc" } })); } catch (error) { next(error); }
+  try { res.json(await prisma.production.findMany({ where: { restaurantId: context(res).restaurantId },
+    include: { recipeVersion: { select: { version: true, effectiveFrom: true, yieldPortions: true } } },
+    orderBy: { date: "desc" } })); } catch (error) { next(error); }
 });
 workspaceRoutes.post("/productions", async (req, res, next) => {
   try {
