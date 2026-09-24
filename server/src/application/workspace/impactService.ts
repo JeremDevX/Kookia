@@ -74,7 +74,14 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
       const serviceDate = dateOnly(row.serviceDate);
       if (!inRange(serviceDate, start, end)) continue;
       const isSimulation = workspace.mode === "demo" || row.source === "demo_simulation";
-      if (isSimulation) { period.hasSimulationData = true; continue; }
+      if (isSimulation) {
+        period.hasSimulationData = true;
+        if (row.status === "closed") period.simulation.serviceDays.closed++;
+        else if (row.coverage === "complete") period.simulation.serviceDays.complete++;
+        else if (row.coverage === "partial") period.simulation.serviceDays.partial++;
+        else period.simulation.serviceDays.coverageMissing++;
+        continue;
+      }
       period.hasRecordedData = true;
       recordedServiceDates.add(serviceDate);
       if (row.status === "closed") period.recorded.serviceDays.closed++;

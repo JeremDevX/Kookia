@@ -87,6 +87,54 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   const invoices = createAnonymizedSourceInvoices();
   const { plan, recipeIdeaSources } = await seedLocalDemoScenario(scenarioOwner.userId);
   expect(plan.counts.invoiceDocuments).toBe(invoices.length);
+  const rangeStart = new Date("2023-01-01T00:00:00.000Z");
+  const rangeEnd = new Date("2027-01-01T00:00:00.000Z");
+  const [monthlyServiceDays, monthlySales, monthlyLosses] = await Promise.all([
+    prisma.serviceDay.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
+      serviceDate: { gte: rangeStart, lt: rangeEnd } }, select: { serviceDate: true, status: true, coverage: true } }),
+    prisma.dailySale.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
+      serviceDate: { gte: rangeStart, lt: rangeEnd } }, include: { saleItem: { select: { name: true } } } }),
+    prisma.stockMovement.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
+      createdAt: { gte: rangeStart, lt: rangeEnd }, reason: { in: ["loss", "simulation_loss"] }, delta: { lt: 0 } },
+      include: { product: { select: { unit: true } } } }),
+  ]);
+  for (let monthOffset = 0; monthOffset < 48; monthOffset += 1) {
+    const year = 2023 + Math.floor(monthOffset / 12);
+    const month = monthOffset % 12 + 1;
+    const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+    const from = `${monthKey}-01`;
+    const to = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+    const calendarDays = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const inMonth = (date: Date) => date.toISOString().slice(0, 7) === monthKey;
+    const days = monthlyServiceDays.filter((day) => inMonth(day.serviceDate));
+    const sales = monthlySales.filter((sale) => inMonth(sale.serviceDate));
+    const losses = monthlyLosses.filter((movement) => inMonth(movement.createdAt));
+    const compatibleLosses = losses.filter((movement) =>
+      (movement.productUnitSnapshot ?? movement.product.unit) === movement.product.unit);
+    const unitsSold = sales.reduce((total, sale) => total + sale.quantity, 0);
+    const lossQuantity = compatibleLosses.reduce((total, movement) => total + movement.delta.abs().toNumber(), 0);
+    const lossCost = compatibleLosses.reduce((total, movement) => total + (movement.unitPriceSnapshot === null ? 0 :
+      movement.delta.abs().mul(movement.unitPriceSnapshot).toNumber()), 0);
+    const report = await scenarioOwner.agent.get("/api/workspace/impact").query({ from, to }).expect(200);
+    const current = report.body.current;
+    expect(current).toMatchObject({ from, to, calendarDays, hasRecordedData: false,
+      hasSimulationData: days.length + sales.length + losses.length > 0,
+      excluded: { simulatedSales: sales.length, simulatedLosses: losses.length, simulatedReceiptLines: 0 } });
+    expect(current.recorded).toMatchObject({ menuItemUnits: 0, lossMovementCount: 0, receivedCost: 0,
+      serviceDays: { complete: 0, partial: 0, coverageMissing: 0, closed: 0, unregistered: calendarDays } });
+    expect(current.simulation).toMatchObject({ menuItemUnits: unitsSold, lossMovementCount: compatibleLosses.length,
+      unpricedLossMovementCount: compatibleLosses.filter((movement) => movement.unitPriceSnapshot === null).length,
+      receiptCount: 0, receivedCost: 0, serviceDays: { complete: days.filter((day) => day.status === "open" &&
+        day.coverage === "complete").length, partial: 0, coverageMissing: 0, closed: 0,
+        unregistered: calendarDays - days.length } });
+    expect(current.simulation.knownLossCost).toBeCloseTo(lossCost, 8);
+    expect(current.simulation.lossesByProduct.reduce((total: number, item: { quantity: number }) => total + item.quantity, 0))
+      .toBeCloseTo(lossQuantity, 8);
+    expect(current.simulation.salesByItem.flatMap((item: { operationIds: string[] }) => item.operationIds).sort())
+      .toEqual(sales.map((sale) => sale.operationId).sort());
+    expect(current.simulation.lossesByProduct.flatMap((item: { operationIds: string[] }) => item.operationIds).sort())
+      .toEqual(compatibleLosses.map((movement) => movement.operationId).sort());
+  }
   const seededCandidates = await scenarioOwner.agent.get("/api/workspace/recipe-candidates").expect(200);
   expect(seededCandidates.body.available).toBe(true);
   expect(seededCandidates.body.candidates.map((candidate: { status: string; recipeId: string | null;

@@ -8,6 +8,11 @@ const ownerIds: string[] = [];
 afterAll(async () => { await prisma.user.deleteMany({ where: { id: { in: ownerIds } } }); await prisma.$disconnect(); });
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
   month: "2-digit", day: "2-digit" }).format(new Date());
+const shiftDay = (date: string, days: number) => {
+  const shifted = new Date(`${date}T00:00:00.000Z`);
+  shifted.setUTCDate(shifted.getUTCDate() + days);
+  return shifted.toISOString().slice(0, 10);
+};
 it("compares equal calendar periods, traces losses/receipts, and excludes simulation and incompatible units", async () => {
   const agent = request.agent(app);
   const registration = await agent.post("/api/auth/register").send({ displayName: "Impact test",
@@ -22,6 +27,16 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   const serviceDay = new Date(`${serviceDate}T00:00:00.000Z`);
   await prisma.serviceDay.create({ data: { restaurantId: restaurant.id, serviceDate: serviceDay, status: "open",
     coverage: "complete", source: "recorded", actorId: registration.body.user.id } });
+  await prisma.serviceDay.createMany({ data: [
+    { restaurantId: restaurant.id, serviceDate: new Date(`${shiftDay(serviceDate, -1)}T00:00:00.000Z`),
+      status: "open", coverage: "complete", source: "demo_simulation", actorId: registration.body.user.id },
+    { restaurantId: restaurant.id, serviceDate: new Date(`${shiftDay(serviceDate, -2)}T00:00:00.000Z`),
+      status: "open", coverage: "partial", source: "demo_simulation", actorId: registration.body.user.id },
+    { restaurantId: restaurant.id, serviceDate: new Date(`${shiftDay(serviceDate, -3)}T00:00:00.000Z`),
+      status: "open", coverage: "missing", source: "demo_simulation", actorId: registration.body.user.id },
+    { restaurantId: restaurant.id, serviceDate: new Date(`${shiftDay(serviceDate, -4)}T00:00:00.000Z`),
+      status: "closed", coverage: "complete", source: "demo_simulation", actorId: registration.body.user.id },
+  ] });
   const recordedItem = await agent.post("/api/workspace/sales/items").send({ name: "Plat constaté" }).expect(201);
   const simulatedItem = await agent.post("/api/workspace/sales/items").send({ name: "Plat simulé" }).expect(201);
   await prisma.dailySale.createMany({ data: [
@@ -50,7 +65,7 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   ] });
 
   const utcToday = new Date().toISOString().slice(0, 10);
-  const from = serviceDate < utcToday ? serviceDate : utcToday;
+  const from = shiftDay(utcToday, -4);
   const to = serviceDate > utcToday ? serviceDate : utcToday;
   const response = await agent.get(`/api/workspace/impact?from=${from}&to=${to}`).expect(200);
   expect(response.body).toMatchObject({ comparison: "same_number_of_calendar_days", timezone: "Europe/Paris",
@@ -60,7 +75,8 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
     lossMovementCount: 2, knownLossCost: product.pricePerUnit * 0.5, unpricedLossMovementCount: 1 });
   expect(response.body.current.recorded.lossesByProduct).toMatchObject([{ productId: product.id, quantity: 0.75,
     movementCount: 2, unpricedMovementCount: 1 }]);
-  expect(response.body.current.simulation).toMatchObject({ menuItemUnits: 80, lossMovementCount: 1 });
+  expect(response.body.current.simulation).toMatchObject({ menuItemUnits: 80, lossMovementCount: 1,
+    serviceDays: { complete: 1, partial: 1, coverageMissing: 1, closed: 1 } });
   expect(response.body.current.excluded).toMatchObject({ simulatedSales: 1, simulatedLosses: 1, lossUnitMismatch: 1 });
   expect(response.body.current.recorded.lossesByProduct[0].operationIds).toHaveLength(2);
   const exportedReport = await agent.get(`/api/workspace/report?from=${from}&to=${to}`).expect(200);
