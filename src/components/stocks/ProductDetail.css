@@ -189,6 +189,8 @@
   border-top: var(--size-1) solid var(--color-border);
   background-color: var(--color-surface);
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
   justify-content: space-between;
 }
 
