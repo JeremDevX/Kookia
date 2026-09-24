@@ -96,7 +96,18 @@ Stocks→Ventes conservait l'ancien défilement ; Layout le remet désormais en 
 et préserve les ancres, vérifiés en cliquant depuis Aujourd'hui vers la saisie.
 Le calendrier Ventes conserve un défilement horizontal interne ; à 320 px, un
 texte indique ce geste, Tab focalise sa région et la flèche droite révèle les
-colonnes suivantes. Le fournisseur CUA garde
+colonnes suivantes. À 200 % de zoom Chrome natif, Aujourd'hui, Ventes, Stocks et
+Achats gardent leurs contenus et actions lisibles, sans débordement horizontal
+visible ; états vides, service inconnu et provenance de simulation restent
+explicitement nommés. La navigation hors ligne vers une route différée a laissé
+la zone principale vide. `RouteErrorBoundary` dans Layout affiche désormais une
+alerte nommée, conserve la navigation et propose de recharger. Rejoué sur
+`/history` avec l'émulation hors ligne, l'AXTree expose le message et le bouton ;
+après reconnexion, ce bouton recharge correctement la route. Le rechargement
+complet hors ligne n'affiche que l'erreur réseau native de Chrome. Les erreurs
+API par section, conflits et états longs restent à contrôler ; aucun lecteur
+d'écran réel n'a été utilisé. Les routes hors de ce parcours restent à vérifier
+à 320–375/768 px et à 200 %. Le fournisseur CUA garde
 `browsers: []` et `getBrowser` répond « No browser is available », mais
 `getApp("com.google.Chrome")` permet maintenant la revue de la fenêtre native.
 Un conflit de révision

@@ -2,6 +2,7 @@ import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopNav from "./TopNav";
+import RouteErrorBoundary from "./RouteErrorBoundary";
 import "../../styles/index.css";
 import "./Layout.css";
 
@@ -30,7 +31,9 @@ const Layout: React.FC = () => {
       <div className="main-content-wrapper">
         <TopNav onMenuClick={toggleSidebar} isSidebarOpen={isSidebarOpen} menuButtonRef={menuButtonRef} />
         <main ref={mainContentRef} className="main-content" id="main-content" tabIndex={-1}>
-          <Outlet />
+          <RouteErrorBoundary key={location.key}>
+            <Outlet />
+          </RouteErrorBoundary>
         </main>
       </div>
     </div>
