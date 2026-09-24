@@ -13,6 +13,23 @@ const children = new Set();
 let interruptedSignal = null;
 let resolveStop;
 const stopRequested = new Promise((resolve) => { resolveStop = resolve; });
+const seedWorkspaceSource = `
+import { prisma } from "./server/src/infrastructure/database/prisma.ts";
+import { seedLocalDemoScenario } from "./server/src/scripts/localDemoScenario.ts";
+
+const ownerId = process.env.LOCAL_DEMO_USER_ID;
+if (!ownerId) throw new Error("Compte de démonstration manquant.");
+try {
+  const users = await prisma.user.findMany({ select: { id: true } });
+  if (users.length !== 1 || users[0].id !== ownerId) {
+    throw new Error("Le bac démo doit contenir uniquement le compte local créé pour cette session.");
+  }
+  const { plan } = await seedLocalDemoScenario(ownerId);
+  console.info(JSON.stringify({ mode: "demo", counts: plan.counts, yearCoverage: plan.yearCoverage }, null, 2));
+} finally {
+  await prisma.$disconnect();
+}
+`.trim();
 
 function spawnTask(command, args, { env = process.env, capture = false } = {}) {
   if (interruptedSignal) return Promise.reject(new Error("Démo locale interrompue."));
@@ -160,7 +177,7 @@ async function main() {
     await waitForHttp(`${webOrigin}/login`, [api, web]);
     const ownerId = await registerDemoAccount(demoPassword, webOrigin);
     await spawnTask(process.execPath, ["--import", "tsx", "server/src/scripts/seedWorkspaces.ts"], { env: demoEnv });
-    await spawnTask(process.execPath, ["--import", "tsx", "server/src/scripts/seedLocalDemoWorkspace.ts"], {
+    await spawnTask(process.execPath, ["--import", "tsx", "--input-type=module", "-e", seedWorkspaceSource], {
       env: { ...demoEnv, LOCAL_DEMO_USER_ID: ownerId },
     });
 
