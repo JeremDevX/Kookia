@@ -5,12 +5,20 @@ import { lockSalesWorkspace, recordSaleContributionEvent } from "./salesContribu
 
 const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
+async function markTicketBatchReviewed(tx: Parameters<typeof lockSalesWorkspace>[0], restaurantId: string, ticketBatchId: string | null) {
+  if (!ticketBatchId) return;
+  const pending = await tx.saleContribution.count({ where: { restaurantId, ticketBatchId, status: "pending" } });
+  if (!pending) await tx.ticketZBatch.update({ where: { id: ticketBatchId }, data: { status: "reviewed" } });
+}
+
 export async function listSaleContributions(restaurantId: string, from: string, to: string) {
   const rows = await prisma.saleContribution.findMany({ where: { restaurantId,
     OR: [{ status: "pending" }, { serviceDate: { gte: date(from), lte: date(to) } },
       { serviceDate: null, createdAt: { gte: date(from) } }],
   }, include: { saleItem: { select: { name: true } }, importRecord: { select: { fileHash: true } },
     posBatch: { select: { provider: true, batchId: true, fromDate: true, toDate: true, coverage: true, provenance: true } },
+    ticketBatch: { select: { contentHash: true, mimeType: true, byteSize: true, sourceDateText: true,
+      serviceDate: true, status: true, provenance: true, recordCount: true } },
     events: { orderBy: { createdAt: "asc" } }, supersedes: { select: { id: true, source: true, sourceDate: true, sourceItemName: true, sourceQuantity: true } },
   }, orderBy: [{ status: "asc" }, { createdAt: "desc" }], take: 250 });
   const pending = rows.filter((row) => row.status === "pending" && row.serviceDate && row.saleItemId);
@@ -28,6 +36,12 @@ export async function listSaleContributions(restaurantId: string, from: string, 
       posBatch: row.posBatch ? { provider: row.posBatch.provider, batchId: row.posBatch.batchId,
         from: row.posBatch.fromDate.toISOString().slice(0, 10), to: row.posBatch.toDate.toISOString().slice(0, 10),
         coverage: row.posBatch.coverage, provenance: row.posBatch.provenance } : null,
+      ticketBatch: row.ticketBatch ? { contentHash: row.ticketBatch.contentHash, mimeType: row.ticketBatch.mimeType,
+        byteSize: row.ticketBatch.byteSize, sourceDateText: row.ticketBatch.sourceDateText,
+        serviceDate: row.ticketBatch.serviceDate?.toISOString().slice(0, 10) ?? null,
+        status: row.ticketBatch.status, provenance: row.ticketBatch.provenance, recordCount: row.ticketBatch.recordCount,
+        originalFileStored: false } : null,
+      ticketLineNumber: row.ticketLineNumber,
       sourceItemName: row.sourceItemName, sourceDate: row.sourceDate, serviceDate: row.serviceDate?.toISOString().slice(0, 10) ?? null,
       sourceQuantity: row.sourceQuantity, quantity: row.quantity, saleItemId: row.saleItemId,
       saleItemName: row.saleItem?.name ?? null, status: row.status, reviewRevision: row.reviewRevision,
@@ -53,10 +67,10 @@ export async function reviewSaleContribution(restaurantId: string, actorId: stri
         throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette décision existe déjà avec un autre contenu.");
       return { replayed: true, status: choice === "replace" ? "accepted" as const : "rejected" as const };
     }
-    const candidate = await tx.saleContribution.findFirst({ where: { restaurantId, id } });
+    const candidate = await tx.saleContribution.findFirst({ where: { restaurantId, id }, include: { ticketBatch: { select: { provenance: true } } } });
     if (!candidate) throw new WorkspaceError(404, "NOT_FOUND", "Apport introuvable.");
     if (candidate.status !== "pending" || candidate.reviewRevision !== revision) throw new WorkspaceError(409, "REVISION_CONFLICT", "Cet apport a déjà été revu ; rechargez la liste.");
-    if (selectedSaleItemId && !candidate.posBatchId) throw new WorkspaceError(400, "INVALID_SALE_ITEM", "La correspondance d’article ne s’applique qu’aux lignes de caisse.");
+    if (selectedSaleItemId && !candidate.posBatchId && !candidate.ticketBatchId) throw new WorkspaceError(400, "INVALID_SALE_ITEM", "La correspondance d’article ne s’applique qu’aux lignes de source externe.");
     if (candidate.sourceRefunded && choice !== "reject") throw new WorkspaceError(409, "POS_REFUND_NOT_SALE", "Un remboursement POS doit être écarté ou rapproché séparément, pas compté comme vente.");
     if (candidate.sourceRefunded && selectedSaleItemId) throw new WorkspaceError(409, "POS_REFUND_NOT_SALE", "Un remboursement POS ne peut pas créer de correspondance d’article vendu.");
     const saleItemId = selectedSaleItemId ?? candidate.saleItemId;
@@ -81,17 +95,20 @@ export async function reviewSaleContribution(restaurantId: string, actorId: stri
         if (!current) throw new WorkspaceError(409, "NO_EXISTING_SALE", "Aucune vente existante ne correspond à cet article et ce service.");
       }
       await tx.saleContribution.update({ where: { id }, data: { status: "rejected", reviewRevision: { increment: 1 },
+        ...(choice === "keep" && candidate.ticketBatchId && selectedSaleItemId ? { saleItemId: selectedSaleItemId } : {}),
         reviewedBy: actorId, reviewedAt: new Date(), reviewReason: reason.slice(0, 240) } });
       await recordSaleContributionEvent(tx, { restaurantId, contributionId: id, operationId: eventOperationId,
         revision: revision + 1, kind: "rejected", actorId, reason: reason.slice(0, 240),
         snapshot: { decision: choice === "keep" ? "keep_existing" : "reject_candidate",
           sourceKey: candidate.sourceKey, saleItemId: selectedSaleItemId ?? null } });
+      await markTicketBatchReviewed(tx, restaurantId, candidate.ticketBatchId);
       return { replayed: false, status: "rejected" as const };
     }
     if (!candidate.serviceDate || candidate.quantity === null || !saleItemId || !item)
       throw new WorkspaceError(400, "INVALID_CONTRIBUTION", "Cet apport ne contient pas de date, quantité et article valides.");
+    const acceptedSource = candidate.ticketBatch?.provenance === "demo_simulation" ? "demo_simulation" : candidate.source;
     await ensureOpenPartialServiceDay(tx, restaurantId, actorId, candidate.serviceDate.toISOString().slice(0, 10),
-      candidate.source === "demo_simulation" ? "demo_simulation" : "recorded");
+      acceptedSource === "demo_simulation" ? "demo_simulation" : "recorded");
     const current = await tx.dailySale.findUnique({ where: { restaurantId_serviceDate_saleItemId: {
       restaurantId, serviceDate: candidate.serviceDate, saleItemId,
     } }, include: { contribution: true } });
@@ -106,10 +123,10 @@ export async function reviewSaleContribution(restaurantId: string, actorId: stri
     await tx.saleContribution.update({ where: { id }, data: { saleItemId, status: "accepted", reviewRevision: { increment: 1 },
       reviewedBy: actorId, reviewedAt: new Date(), reviewReason: reason.slice(0, 240) } });
     if (current) await tx.dailySale.update({ where: { id: current.id }, data: { quantity: candidate.quantity,
-      source: candidate.source, importId: candidate.importId, importLine: candidate.importLine,
+      source: acceptedSource, importId: candidate.importId, importLine: candidate.importLine,
       contributionId: candidate.id, updatedBy: actorId, revision: { increment: 1 } } });
     else await tx.dailySale.create({ data: { restaurantId, saleItemId: item.id, serviceDate: candidate.serviceDate,
-      quantity: candidate.quantity, source: candidate.source, operationId: `reconcile:${candidate.sourceKey}`,
+      quantity: candidate.quantity, source: acceptedSource, operationId: `reconcile:${candidate.sourceKey}`,
       importId: candidate.importId, importLine: candidate.importLine, contributionId: candidate.id,
       createdBy: actorId, updatedBy: actorId } });
     await recordSaleContributionEvent(tx, { restaurantId, contributionId: id, operationId: eventOperationId,
@@ -117,6 +134,7 @@ export async function reviewSaleContribution(restaurantId: string, actorId: stri
       snapshot: { decision: "replace", replacedContributionId: current?.contributionId ?? null,
         acceptedQuantity: candidate.quantity, saleItemId, sourceRecordId: candidate.sourceRecordId,
         serviceDate: candidate.serviceDate.toISOString().slice(0, 10) } });
+    await markTicketBatchReviewed(tx, restaurantId, candidate.ticketBatchId);
     return { replayed: false, status: "accepted" as const };
   });
 }

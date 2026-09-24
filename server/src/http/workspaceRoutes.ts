@@ -175,5 +175,8 @@ workspaceRoutes.post("/productions", async (req, res, next) => {
 workspaceRoutes.use((error: unknown, _req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
   if (error instanceof z.ZodError) { res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données fournies sont invalides." } }); return; }
   if (error instanceof WorkspaceError) { res.status(error.status).json({ error: { code: error.code, message: error.message } }); return; }
+  if (error && typeof error === "object" && "type" in error && error.type === "entity.too.large") {
+    res.status(413).json({ error: { code: "PAYLOAD_TOO_LARGE", message: "Le contenu dépasse la taille autorisée." } }); return;
+  }
   next(error);
 });

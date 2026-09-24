@@ -4,6 +4,7 @@ export const describeServiceSources = (sources: LatestService["sources"]): strin
   const labels = [
     ...(sources.includes("demo_simulation") ? ["simulation de démonstration"] : []),
     ...(sources.includes("pos") ? ["caisse POS"] : []),
+    ...(sources.includes("ticket_z") ? ["ticket de caisse"] : []),
     ...(sources.includes("csv") ? ["import CSV"] : []),
     ...(sources.includes("manual") ? ["saisie manuelle"] : []),
   ];

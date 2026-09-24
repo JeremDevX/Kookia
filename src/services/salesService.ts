@@ -2,7 +2,7 @@ import { apiRequest } from "../config/api";
 
 export interface DailySale {
   id: string; saleItemId: string; saleItemName: string; serviceDate: string;
-  quantity: number; source: "manual" | "csv" | "pos" | "demo_simulation"; revision: number;
+  quantity: number; source: "manual" | "csv" | "pos" | "ticket_z" | "demo_simulation"; revision: number;
   createdBy: string; updatedBy: string; createdAt: string; updatedAt: string;
 }
 export type ServiceStatus = "open" | "closed";
@@ -11,7 +11,7 @@ export interface ServiceDay {
   serviceDate: string; status: ServiceStatus; coverage: ServiceCoverage; source: "recorded" | "demo_simulation" | "mixed"; revision: number;
   actorId: string; salesCount: number; updatedAt: string;
 }
-export interface LatestService extends ServiceDay { sources: ("manual" | "csv" | "pos" | "demo_simulation")[] }
+export interface LatestService extends ServiceDay { sources: ("manual" | "csv" | "pos" | "ticket_z" | "demo_simulation")[] }
 export interface SaleItem { id: string; name: string }
 export interface SaleRecipeMapping {
   id: string; saleItemId: string; recipeId: string; recipeName: string; revision: number;
@@ -27,7 +27,8 @@ export interface SalesMetrics {
   minimumObservedDays: number; observedDays: number; previousObservedDays: number;
   completeServiceDays: number; incompleteServiceDays: number;
   previousCompleteServiceDays: number; previousIncompleteServiceDays: number;
-  totalQuantity: number; manualQuantity: number; csvQuantity: number; posQuantity: number; demoSimulationQuantity: number; correctedCsvQuantity: number;
+  totalQuantity: number; manualQuantity: number; csvQuantity: number; posQuantity: number; ticketZQuantity: number;
+  demoSimulationQuantity: number; correctedCsvQuantity: number;
   averagePerObservedDay: number | null; previousAveragePerObservedDay: number | null; changePercent: number | null;
   items: { saleItemId: string; saleItemName: string; quantity: number }[];
   dailyItems: { serviceDate: string; saleItemId: string; saleItemName: string; quantity: number }[];
@@ -97,10 +98,14 @@ export interface SaleContributionEvent {
   kind: string; actorId: string; reason: string; revision: number; createdAt: string; snapshot: unknown;
 }
 export interface SaleContribution {
-  id: string; source: "manual" | "csv" | "pos" | "demo_simulation"; sourceKey: string; sourceRevision: number;
+  id: string; source: "manual" | "csv" | "pos" | "ticket_z" | "demo_simulation"; sourceKey: string; sourceRevision: number;
   importLine: number | null; sourceFileHash: string | null; sourceItemName: string; sourceDate: string;
   sourceRecordId: string | null; sourceExternalItemId: string | null; sourceRefunded: boolean;
   posBatch: { provider: string; batchId: string; from: string; to: string; coverage: "complete" | "partial"; provenance: "recorded_sales" | "demo_simulation" } | null;
+  ticketLineNumber: number | null;
+  ticketBatch: { contentHash: string; mimeType: string; byteSize: number; sourceDateText: string | null; serviceDate: string | null;
+    status: "uploaded" | "candidates" | "no_details" | "reviewed"; provenance: "recorded_sales" | "demo_simulation";
+    recordCount: number; originalFileStored: false } | null;
   serviceDate: string | null; sourceQuantity: string; quantity: number | null; saleItemId: string | null;
   saleItemName: string | null; status: "pending" | "accepted" | "rejected" | "superseded" | "voided";
   reviewRevision: number; reviewedBy: string | null; reviewedAt: string | null; reviewReason: string | null;
@@ -108,6 +113,21 @@ export interface SaleContribution {
   currentSale: Pick<DailySale, "id" | "serviceDate" | "quantity" | "revision" | "source"> | null;
   events: SaleContributionEvent[];
 }
+export interface TicketZBatch {
+  id: string; contentHash: string; mimeType: "application/pdf" | "image/jpeg" | "image/png"; byteSize: number;
+  sourceDateText: string | null; serviceDate: string | null; status: "uploaded" | "candidates" | "no_details" | "reviewed";
+  provenance: "recorded_sales" | "demo_simulation"; recordCount: number; duplicate: boolean; createdAt?: string;
+}
+export const uploadTicketZFile = (file: File) => apiRequest<TicketZBatch>("/workspace/sales/tickets/upload", {
+  method: "POST", body: file, headers: { "Content-Type": file.type },
+});
+export const createTicketZCandidates = (id: string, input: {
+  sourceDateText: string; serviceDate: string; lines: Array<{ itemLabel: string; quantity: number }>;
+}) => apiRequest<TicketZBatch & { replayed: boolean }>(`/workspace/sales/tickets/${encodeURIComponent(id)}/candidates`, {
+  method: "POST", body: JSON.stringify(input),
+});
+export const getTicketZBatches = () => apiRequest<TicketZBatch[]>("/workspace/sales/tickets");
+export const deleteTicketZBatch = (id: string) => apiRequest<void>(`/workspace/sales/tickets/${encodeURIComponent(id)}`, { method: "DELETE" });
 export const getSaleContributions = (from: string, to: string) => apiRequest<SaleContribution[]>(
   `/workspace/sales/contributions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
 );

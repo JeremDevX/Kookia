@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from "express";
+import express, { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { createSale, correctSale, listSales, listSaleItems, createSaleItem, latestService, listServiceDays, saveServiceDay,
   } from "../application/workspace/salesService.js";
@@ -9,6 +9,7 @@ import { getSalesBaseline, previousParisDay } from "../application/workspace/sal
 import { createSaleRecipeMapping, listSaleRecipeMappings } from "../application/workspace/salesRecipeMappingService.js";
 import { syncPosSales } from "../application/workspace/posSalesSyncService.js";
 import { unconfiguredPosAdapter } from "../integrations/posAdapter.js";
+import { createTicketZCandidates, deleteUnusedTicketZBatch, inspectTicketZUpload, listTicketZBatches, registerTicketZUpload } from "../application/workspace/ticketZService.js";
 import { WorkspaceError } from "../application/workspace/catalogService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
@@ -74,14 +75,14 @@ salesRoutes.get("/sales/metrics", async (req, res, next) => {
     const { restaurantId } = workspace(res);
     const start = new Date(`${previousFrom}T00:00:00Z`), end = new Date(`${to}T00:00:00Z`);
     const [rows, serviceDays] = await Promise.all([
-      prisma.dailySale.findMany({ where: { restaurantId, source: { in: ["manual", "csv", "pos", "demo_simulation"] },
+      prisma.dailySale.findMany({ where: { restaurantId, source: { in: ["manual", "csv", "pos", "ticket_z", "demo_simulation"] },
         serviceDate: { gte: start, lte: end } }, include: { saleItem: { select: { name: true } } } }),
       prisma.serviceDay.findMany({ where: { restaurantId, serviceDate: { gte: start, lte: end } },
         select: { serviceDate: true, status: true, coverage: true } }),
     ]);
     const mapped = rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
       saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity,
-      source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : row.source === "pos" ? "pos" as const : "manual" as const,
+      source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : row.source === "pos" ? "pos" as const : row.source === "ticket_z" ? "ticket_z" as const : "manual" as const,
       revision: row.revision }));
     const mappedDays = serviceDays.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
       status: row.status, coverage: row.coverage }));
@@ -170,6 +171,26 @@ salesRoutes.post("/sales/pos/sync", async (req, res, next) => {
     }
     res.json(result);
   } catch (error) { next(error); }
+});
+salesRoutes.post("/sales/tickets/upload", express.raw({ type: ["application/pdf", "image/jpeg", "image/png"], limit: "4mb", inflate: false }), async (req, res, next) => {
+  try {
+    const { restaurantId, actorId } = workspace(res);
+    const metadata = inspectTicketZUpload(req.get("content-type"), req.body);
+    res.status(201).json(await registerTicketZUpload(restaurantId, actorId, metadata));
+  } catch (error) { next(error); }
+});
+salesRoutes.get("/sales/tickets", async (_req, res, next) => {
+  try { res.json(await listTicketZBatches(workspace(res).restaurantId)); } catch (error) { next(error); }
+});
+salesRoutes.post("/sales/tickets/:id/candidates", async (req, res, next) => {
+  try {
+    const { restaurantId, actorId } = workspace(res);
+    res.status(201).json(await createTicketZCandidates(restaurantId, actorId, z.uuid().parse(req.params.id), req.body));
+  } catch (error) { next(error); }
+});
+salesRoutes.delete("/sales/tickets/:id", async (req, res, next) => {
+  try { await deleteUnusedTicketZBatch(workspace(res).restaurantId, z.uuid().parse(req.params.id)); res.status(204).send(); }
+  catch (error) { next(error); }
 });
 const outcomeBody = z.object({ expectedRevision: z.number().int().min(0), operationId: z.uuid(),
   reason: z.string().trim().min(1).max(240) }).strict();

@@ -1,7 +1,7 @@
 import { Prisma, type SaleContributionEventKind } from "@prisma/client";
 
 export type ContributionSnapshot = {
-  source: "manual" | "csv" | "pos" | "demo_simulation";
+  source: "manual" | "csv" | "pos" | "ticket_z" | "demo_simulation";
   sourceKey: string;
   sourceRevision: number;
   importId?: string;

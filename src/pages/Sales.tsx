@@ -4,6 +4,7 @@ import SalesImport from "../components/sales/SalesImport";
 import SalesMetrics from "../components/sales/SalesMetrics";
 import SalesBaseline from "../components/sales/SalesBaseline";
 import ServiceCalendar from "../components/sales/ServiceCalendar";
+import SalesTicketImport, { type TicketPreview } from "../components/sales/SalesTicketImport";
 import SalesReconciliation from "../components/sales/SalesReconciliation";
 import SalesRecipeMappings from "../components/sales/SalesRecipeMappings";
 import { correctSale, createSale, createSaleItem, getLatestService, getSaleItems, getSales, recordSaleOutcome,
@@ -23,6 +24,7 @@ export default function Sales() {
   const [sales, setSales] = useState<DailySale[]>([]);
   const [latestService, setLatestService] = useState<LatestService | null>(null);
   const [salesRevision, setSalesRevision] = useState(0);
+  const [ticketPreview, setTicketPreview] = useState<TicketPreview | null>(null);
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(parisToday);
   const [values, setValues] = useState<SaleValues>({ saleItemId: "", serviceDate: parisToday(), quantity: 1 });
@@ -137,7 +139,12 @@ export default function Sales() {
       <small>Ces ventes alimentent les indicateurs, pas encore les achats suggérés.</small>
     </section>
     <ServiceCalendar from={from} to={to} today={parisToday()} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} />
-    <SalesReconciliation from={from} to={to} refreshToken={salesRevision} items={items}
+    <SalesTicketImport onCandidatesSaved={async (serviceDate) => {
+      setSalesRevision((current) => current + 1);
+      if (serviceDate < from || serviceDate > to) { setFrom(serviceDate); setTo(serviceDate); }
+      else await load();
+    }} onPreviewChanged={setTicketPreview} />
+    <SalesReconciliation from={from} to={to} refreshToken={salesRevision} items={items} ticketPreview={ticketPreview}
       onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} />
     <SalesImport items={items} onImported={showImportedDate} onItemsCreated={setItems} />
     <section className="sales-panel" aria-labelledby="sale-item-title">
@@ -179,7 +186,7 @@ export default function Sales() {
           <th>Date de service</th><th>Article vendu</th><th>Quantité</th><th>Provenance</th><th>Dernière modification</th><th>Action</th>
         </tr></thead><tbody>{sales.map((sale) => <tr key={sale.id}>
           <td>{sale.serviceDate}</td><td>{sale.saleItemName}</td><td>{sale.quantity} unités</td>
-          <td>{sale.source === "demo_simulation" ? "Simulation de démonstration" : sale.source === "manual" ? "Saisie manuelle" : sale.source === "pos" ? sale.revision ? "Caisse POS corrigée" : "Caisse POS" : sale.revision ? "Import CSV corrigé manuellement" : "Import CSV"}</td>
+          <td>{sale.source === "demo_simulation" ? "Simulation de démonstration" : sale.source === "manual" ? "Saisie manuelle" : sale.source === "pos" ? sale.revision ? "Caisse POS corrigée" : "Caisse POS" : sale.source === "ticket_z" ? "Ticket Z vérifié" : sale.revision ? "Import CSV corrigé manuellement" : "Import CSV"}</td>
           <td>{new Date(sale.updatedAt).toLocaleString("fr-FR")}</td>
           <td><div className="sales-history-actions"><Button type="button" size="sm" variant="outline" onClick={(event) => { editOrigin.current = event.currentTarget; setEditing(sale); setCorrectionOperationId(crypto.randomUUID()); setValues({ saleItemId: sale.saleItemId, serviceDate: sale.serviceDate, quantity: sale.quantity }); setEditReason(""); setError(""); setStatus(""); document.getElementById("sales-entry-title")?.scrollIntoView(); }}>Corriger</Button>
             <SaleOutcomeActions sale={sale} onUpdated={async (action) => {

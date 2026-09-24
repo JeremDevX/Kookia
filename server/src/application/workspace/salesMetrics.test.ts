@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { calculateSalesMetrics, type MetricSale } from "./salesMetrics.js";
 
-const sale = (serviceDate: string, quantity: number, source: "manual" | "csv" | "pos" | "demo_simulation" = "manual"): MetricSale =>
+const sale = (serviceDate: string, quantity: number, source: "manual" | "csv" | "pos" | "ticket_z" | "demo_simulation" = "manual"): MetricSale =>
   ({ serviceDate, saleItemId: "pizza", saleItemName: "Pizza", quantity, source, revision: 0 });
 const reviewedDays = (from: string, count: number) => Array.from({ length: count }, (_, index) => ({
   serviceDate: new Date(Date.parse(from) + index * 86_400_000).toISOString().slice(0, 10),
@@ -20,7 +20,8 @@ it("uses only recorded service days and withholds evolution until both periods h
   const ready = calculateSalesMetrics(current, previous, reviewedDays("2026-09-01", 7), reviewedDays("2026-08-25", 7),
     "2026-09-01", "2026-09-14", "2026-08-18", "2026-08-31");
   expect(ready).toMatchObject({ status: "ready", observedDays: 7, totalQuantity: 28,
-    manualQuantity: 20, csvQuantity: 4, posQuantity: 4, averagePerObservedDay: 4, previousAveragePerObservedDay: 2, changePercent: 100 });
+    manualQuantity: 20, csvQuantity: 4, posQuantity: 4, ticketZQuantity: 0,
+    averagePerObservedDay: 4, previousAveragePerObservedDay: 2, changePercent: 100 });
   expect(ready.dailyItems).toHaveLength(7);
 });
 

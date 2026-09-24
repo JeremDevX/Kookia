@@ -13,7 +13,7 @@ fonctionnalité déjà disponible**.
 | Qualité | ESLint, TypeScript, Vitest et CI GitHub Actions ; scripts `lint`, `build`, `test` | CI exécutable sans manipulation ; smoke test sur URL dédiée avant recette |
 | Hébergement | Configuration frontend Vercel (`vercel.json`) | Préproduction puis recette avant lancement commercial |
 | Backend et persistance | API Express/TypeScript et PostgreSQL/Prisma actifs pour comptes et espaces métier isolés | Renforcer les contrats d'ingestion, la provenance et l'évaluation des calculs |
-| Intégrations | POS/OCR/météo absents ; connexions affichées de façon statique ; saisie manuelle et revue/réception simulée explicite des pièces source déjà importées dans l'espace (si présentes), saisie ventes et import CSV Kookia | Contrats et adaptateurs fournisseur, ingestion contrôlée, correction et repli manuel |
+| Intégrations | Aucun fournisseur POS/OCR/météo actif ; `Plus → Connexions` lit les statuts serveur `not_connected`. POS reste une fixture revue manuellement ; Ticket Z a un parcours de transcription manuelle avec original temporaire côté navigateur, sans fichier conservé ni OCR ; saisie et CSV restent disponibles. | Contrats et adaptateurs fournisseur, extraction contrôlée, correction et repli manuel |
 | Prévision | Prévisions de démonstration persistées ; baseline expérimentale distincte, calculée sur ventes enregistrées | Météo locale et calendrier événementiel ; moteur IA hors périmètre full-stack initial |
 
 Les versions et dépendances actives font foi dans [`package.json`](../package.json).
@@ -38,10 +38,12 @@ La [cartographie détaillée des écarts](ecarts-techniques.md) confronte cette 
 
 Le modèle persistant actuel comprend notamment `Restaurant`, `Product`,
 `StockMovement`, `SaleItem`, `ServiceDay`, `DailySale`, `SaleImport`, `SaleContribution`,
-`SaleContributionEvent`, `Prediction`, `PurchaseOrder`, `PurchaseReceipt`,
-`PurchaseReceiptLine` et `RecommendationDecision`. Les
-[contrats proposés pour les sources externes](integrations.md), non implémentés,
-devront rester distincts de ces modèles et des payloads bruts des fournisseurs.
+`SaleContributionEvent`, `TicketZBatch`, `PosSalesBatch`, `Prediction`,
+`PurchaseOrder`, `PurchaseReceipt`, `PurchaseReceiptLine` et
+`RecommendationDecision`. Les contrats futurs pour les sources externes
+([détails](integrations.md)) et leur ingestion devront rester distincts des
+payloads bruts des fournisseurs. Le parcours manuel Ticket Z persiste uniquement
+des métadonnées, candidats transcrits et décisions.
 
 ```text
 UI React → hooks/features → client API → API Express → domaine → PostgreSQL
@@ -51,7 +53,8 @@ UI React → hooks/features → client API → API Express → domaine → Postg
 La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
 `Product`, `Recipe`, `RecipeIngredient`, `StockMovement`, `StockCount`,
 `RecipeVersion`, `RecipeVersionIngredient`, `InvoiceDraftRevision`, `Production`, `Prediction`, `SaleItem`, `DailySale`,
-`SaleImport`, `SaleContribution`, `SaleContributionEvent`, `ServiceDay`,
+`SaleImport`, `SaleContribution`, `SaleContributionEvent`, `TicketZBatch`,
+`PosSalesBatch`, `ServiceDay`,
 `PurchaseOrder`, `PurchaseOrderLine`, `PurchaseReceipt`, `PurchaseReceiptLine`, `RecommendationDecision`
 et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics,
 préférences, panier, notifications, pièces source, factures et menus), validés aux frontières.
@@ -93,7 +96,7 @@ est impossible de reconstruire cette information.
 Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` initialise
 les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au
 premier accès. Les dates des prévisions de démonstration sont figées. Aucun calcul
-IA, connecteur POS/OCR ou envoi fournisseur réel n’est impliqué par la persistance.
+IA, connecteur POS/OCR réel ou envoi fournisseur n’est impliqué par la persistance.
 Les ventes du restaurant sont saisies, importées ou issues de la simulation locale
 `demo_simulation` ; elles ne sont pas les prévisions de démonstration du seed.
 `SaleContribution` conserve chaque snapshot source et son état de revue avant
@@ -117,8 +120,10 @@ compté encore courant et n'intègrent ni délai fournisseur ni commande non re�
 le prix affiché est indicatif. Le chef peut écarter, modifier et valider une
 suggestion, avec une décision immuable côté serveur. Une origine
 `demo_simulation` ne crée jamais une commande réelle ; le tenant démo persiste
-des commandes/réceptions explicitement simulées. POS et Ticket Z restent non
-connectés.
+des commandes/réceptions explicitement simulées. POS et OCR restent non
+connectés ; le Ticket Z manuel produit des candidats relus, jamais des ventes
+automatiques. Le contrôle de fichier, l'absence de stockage brut et la
+conservation du hash sont décrits dans [Sources de données](integrations.md).
 
 La page **Bilan** appelle `GET /api/workspace/impact` pour comparer la période
 choisie à la précédente de même durée calendaire. Les ventes sont datées par

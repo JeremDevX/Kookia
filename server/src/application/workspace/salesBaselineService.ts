@@ -14,7 +14,7 @@ export async function getSalesBaseline(restaurantId: string, asOfDate = previous
   const historyFrom = new Date(Date.parse(asOfDate) - 27 * 86_400_000).toISOString().slice(0, 10);
   const start = new Date(`${historyFrom}T00:00:00Z`), end = new Date(`${asOfDate}T00:00:00Z`);
   const [rows, serviceDays] = await Promise.all([
-    db.dailySale.findMany({ where: { restaurantId, source: { in: ["manual", "csv", "pos", "demo_simulation"] },
+    db.dailySale.findMany({ where: { restaurantId, source: { in: ["manual", "csv", "pos", "ticket_z", "demo_simulation"] },
       serviceDate: { gte: start, lte: end } }, include: { saleItem: { select: { name: true } } } }),
     db.serviceDay.findMany({ where: { restaurantId, serviceDate: { gte: start, lte: end } },
       select: { serviceDate: true, status: true, coverage: true, source: true } }),
@@ -29,7 +29,7 @@ export async function getSalesBaseline(restaurantId: string, asOfDate = previous
   }) : [];
   return evaluateSalesBaseline(rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
     saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity,
-    source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : row.source === "pos" ? "pos" as const : "manual" as const })),
+    source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : row.source === "pos" ? "pos" as const : row.source === "ticket_z" ? "ticket_z" as const : "manual" as const })),
   serviceDays.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
     status: row.status, coverage: row.coverage, source: row.source })), asOfDate,
   mappings.map((mapping) => ({ saleItemId: mapping.saleItemId, recipeId: mapping.recipeId,

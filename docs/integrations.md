@@ -11,8 +11,9 @@ La rubrique **Plus → Connexions** lit maintenant `GET /api/workspace/sources`,
 authentifié et limité au restaurant de la session. En
 l'absence d'adaptateur configuré, chaque source répond `not_connected` avec
 `lastSuccessAt: null` ; aucune requête fournisseur ni synchronisation n'est
-déclenchée. La saisie et le CSV restent les seuls chemins disponibles pour les
-ventes, et les factures restent vérifiées dans Achats.
+déclenchée. Les ventes sont saisies, importées en CSV ou rapprochées depuis la
+transcription manuelle Ticket Z décrite ci-dessous. Les factures restent
+vérifiées dans Achats ; aucun OCR réel n'est branché.
 
 ## Contrat minimal présent et extensions futures
 
@@ -166,20 +167,45 @@ ou réceptions validées : l'interprétation métier est une étape séparée.
 
 ### Ticket Z — parcours de revue
 
-1. Vérifier type réel du fichier, taille, résolution, nombre de pages et absence
-   de fichier exécutable avant stockage temporaire.
-2. Limiter l'accès à l'espace restaurant ; supprimer ou expurger les données
-   sensibles inutiles, et fixer une durée de rétention documentée avant usage
-   réel.
-3. Extraire les champs, puis montrer date, total, lignes de vente et zones
-   illisibles côte à côte avec l'image accessible au responsable.
-4. Sous le seuil cible de confiance de **90 % mentionné dans les Jalons**, aider
-   la correction ; ne jamais considérer ce seuil comme un taux de précision
-   acquis du fournisseur.
-5. Associer les articles vendus, vérifier les doublons avec la caisse ou le CSV,
-   confirmer le service et conserver la piste de correction.
-6. En cas d'échec OCR, conserver le chemin de saisie/CSV sans inventer une
-   journée « zéro vente ».
+**Parcours actuellement disponible (sans OCR).** Un responsable authentifié
+peut téléverser un PDF, JPEG ou PNG de 4 Mio au plus. L'API contrôle le MIME,
+la signature du fichier et, pour les images, les dimensions (10 000 pixels par
+côté et 25 mégapixels au plus). Les octets sont lus en mémoire pendant la
+requête, hachés puis abandonnés : ils ne sont ni enregistrés, ni envoyés à un
+prestataire, ni ajoutés à `WorkspaceDocument`. Le navigateur garde l'original
+localement pour l'aperçu.
+
+La date lue et les lignes détaillées (libellé et quantité entière) sont
+transcrites manuellement. Le serveur conserve le hash, le type/taille, les
+dates, le nombre de lignes, la provenance `recorded_sales` ou
+`demo_simulation`, puis les contributions et événements de revue. Il ne déduit
+pas les articles ni ne transforme un total général en quantités par article.
+Une ligne candidate ne devient `DailySale` qu'après association à un article,
+vérification des ventes déjà enregistrées et décision explicite ; les conflits
+CSV/POS passent par la même réconciliation. Un ticket sans détail n'ajoute
+aucune vente et son brouillon peut être supprimé.
+
+Les pièces ne sont pas conservées : après rechargement de la page, le même
+fichier doit être téléversé de nouveau pour afficher l'original et autoriser
+« accepter/remplacer » ou « garder la vente existante ». Les apports candidats
+et leur historique ne sont pas effaçables depuis ce parcours ; il faut écarter
+les lignes dans la revue. Le hash et les données de transcription restent
+persistés jusqu'à la suppression de l'espace, sans durée TTL implémentée.
+
+**Limites explicites.** Aucun OCR ni parsing complet du PDF n'est exécuté ; le
+nombre de pages PDF n'est pas vérifié côté serveur. Les contrôles d'image
+vérifient la structure des chunks et les dimensions, pas un décodage complet.
+Ce flux manuel n'établit donc ni précision OCR ni durée de rétention d'une
+pièce source. Toute extraction automatique, stockage durable, transfert à un
+fournisseur ou conservation terrain exige un contrat, des droits et une
+politique de rétention séparés. Le seuil cible de confiance de **90 % mentionné
+dans les Jalons** reste une cible, jamais une performance acquise.
+
+Pour le flux futur, contrôler aussi le nombre de pages et le décodage avant
+traitement temporaire, puis présenter les champs et zones illisibles à côté de
+l'original accessible. Sous le seuil cible, la correction humaine reste
+obligatoire. En cas d'échec, conserver la saisie/CSV sans inventer un jour
+« zéro vente ».
 
 ### Facture fournisseur — séparation des effets
 

@@ -3,7 +3,7 @@ export interface BaselineSale {
   saleItemId: string;
   saleItemName: string;
   quantity: number;
-  source: "manual" | "csv" | "pos" | "demo_simulation";
+  source: "manual" | "csv" | "pos" | "ticket_z" | "demo_simulation";
 }
 
 export interface BaselineServiceDay {

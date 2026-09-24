@@ -33,6 +33,7 @@ enum SaleContributionSource {
   manual
   csv
   pos
+  ticket_z
   demo_simulation
 }
 
@@ -61,6 +62,18 @@ enum PosBatchCoverage {
 }
 
 enum PosBatchProvenance {
+  recorded_sales
+  demo_simulation
+}
+
+enum TicketZBatchStatus {
+  uploaded
+  candidates
+  no_details
+  reviewed
+}
+
+enum TicketZBatchProvenance {
   recorded_sales
   demo_simulation
 }
@@ -128,6 +141,7 @@ model Restaurant {
   posSyncStates PosSyncState[]
   posSalesBatches PosSalesBatch[]
   posArticleMappings PosArticleMapping[]
+  ticketZBatches TicketZBatch[]
 }
 
 model Supplier {
@@ -476,6 +490,28 @@ model PosArticleMapping {
   @@index([restaurantId, saleItemId])
 }
 
+model TicketZBatch {
+  id           String @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  contentHash  String @db.Char(64)
+  mimeType     String @db.VarChar(40)
+  byteSize     Int
+  sourceDateText String? @db.VarChar(80)
+  serviceDate  DateTime? @db.Date
+  status       TicketZBatchStatus @default(uploaded)
+  provenance   TicketZBatchProvenance
+  candidateHash String? @db.Char(64)
+  recordCount  Int @default(0)
+  createdBy    String
+  createdAt    DateTime @default(now())
+  contributions SaleContribution[]
+
+  @@unique([restaurantId, id])
+  @@unique([restaurantId, contentHash])
+  @@index([restaurantId, createdAt])
+}
+
 model SaleContribution {
   id             String @id @default(uuid())
   restaurantId   String
@@ -488,6 +524,9 @@ model SaleContribution {
   importLine      Int?
   posBatchId      String?
   posBatch        PosSalesBatch? @relation(fields: [restaurantId, posBatchId], references: [restaurantId, id], onDelete: NoAction)
+  ticketBatchId   String?
+  ticketBatch     TicketZBatch? @relation(fields: [restaurantId, ticketBatchId], references: [restaurantId, id], onDelete: NoAction)
+  ticketLineNumber Int?
   sourceRecordId  String? @db.VarChar(160)
   sourceExternalItemId String? @db.VarChar(120)
   sourceRefunded  Boolean @default(false)

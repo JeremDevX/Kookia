@@ -34,4 +34,13 @@
 .sales-recipe-mapping-details { display: grid; gap: var(--spacing-sm); margin-top: var(--spacing-md); }
 .sales-recipe-mapping-details ol { display: grid; gap: var(--spacing-sm); padding-inline-start: var(--spacing-xl); }
 .sales-recipe-mapping-details li { overflow-wrap: var(--overflow-wrap-anywhere); }
+.ticket-transcription-layout { display: grid; grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-lg); align-items: start; }
+.ticket-original-preview { display: grid; gap: var(--spacing-sm); min-width: var(--number-0); margin: var(--number-0); }
+.ticket-original-preview figcaption, .ticket-original-preview a { overflow-wrap: var(--overflow-wrap-anywhere); }
+.ticket-original-preview iframe { width: var(--unit-100percent); height: var(--size-400); border: var(--size-1) solid var(--color-border); }
+.ticket-original-preview img { max-width: var(--unit-100percent); max-height: var(--size-400); border: var(--size-1) solid var(--color-border); }
+.ticket-transcription-form, .ticket-transcription-form label, .ticket-transcription-lines { display: grid; gap: var(--spacing-md); min-width: var(--number-0); }
+.ticket-transcription-form input { width: var(--unit-100percent); min-width: var(--number-0); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
+.ticket-transcription-lines fieldset { display: grid; gap: var(--spacing-sm); min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
+@media (--media-compact) { .ticket-transcription-layout { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); } }
 @media (--media-compact) { .sales-page { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); } }
