@@ -40,6 +40,12 @@ const day = (date: string, offset: number) =>
 const mean = (values: number[]) => Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 const round = (value: number) => Math.round(value * 10) / 10;
 const roundQuantity = (value: number) => Math.round(value * 1000) / 1000;
+const errorMetrics = (errors: number[], actuals: number[]) => {
+  const absoluteError = errors.reduce((sum, error) => sum + error, 0);
+  const actualTotal = actuals.reduce((sum, value) => sum + value, 0);
+  return { meanAbsoluteError: round(absoluteError / errors.length),
+    weightedAbsolutePercentageError: actualTotal === 0 ? null : round(absoluteError / actualTotal * 100) };
+};
 
 function mappingAt(saleItemId: string, serviceDate: string, knownThrough: string, mappings: BaselineRecipeMapping[]) {
   return mappings.filter((mapping) => mapping.saleItemId === saleItemId && mapping.effectiveFrom <= serviceDate &&
@@ -135,16 +141,22 @@ export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: Baseli
   }
   const items = incompleteDates.length || mixedSourceWindow ? [] : [...byItem.values()].flatMap((item) => {
     const quantities = dates.map((date) => item.byDate.get(date) ?? 0);
-    const errors = Array.from({ length: EVALUATION_DAYS }, (_, index) => {
+    const rollingMeanErrors: number[] = [];
+    const previousWeekdayErrors: number[] = [];
+    const evaluationActuals: number[] = [];
+    for (let index = 0; index < EVALUATION_DAYS; index++) {
       const target = HISTORY_DAYS - EVALUATION_DAYS + index;
-      return Math.abs(mean(quantities.slice(target - LOOKBACK_DAYS, target)) - quantities[target]);
-    });
-    const actualTotal = quantities.slice(-EVALUATION_DAYS).reduce((sum, value) => sum + value, 0);
+      const actual = quantities[target];
+      rollingMeanErrors.push(Math.abs(mean(quantities.slice(target - LOOKBACK_DAYS, target)) - actual));
+      previousWeekdayErrors.push(Math.abs(quantities[target - 7] - actual));
+      evaluationActuals.push(actual);
+    }
     return [{ saleItemId: item.saleItemId, saleItemName: item.saleItemName,
       forecastQuantity: mean(quantities.slice(-LOOKBACK_DAYS)),
       backtest: { from: dates[HISTORY_DAYS - EVALUATION_DAYS], to: asOfDate,
-        days: EVALUATION_DAYS, meanAbsoluteError: round(errors.reduce((sum, error) => sum + error, 0) / EVALUATION_DAYS),
-        weightedAbsolutePercentageError: actualTotal === 0 ? null : round(errors.reduce((sum, error) => sum + error, 0) / actualTotal * 100) },
+        days: EVALUATION_DAYS,
+        rollingMean7: errorMetrics(rollingMeanErrors, evaluationActuals),
+        previousWeekday: errorMetrics(previousWeekdayErrors, evaluationActuals) },
       recipeProjection: recipeProjection(item.saleItemId, day(asOfDate, 1), day(asOfDate, 1),
         mean(quantities.slice(-LOOKBACK_DAYS)), recipeMappings, recipeVersions),
       recipeBacktest: recipeUsageBacktest(item.saleItemId, dates, quantities, recipeMappings, recipeVersions) }];

@@ -3,17 +3,18 @@
 ## Statut et objectif
 
 Ce plan décrit une **cible**, pas une prévision déjà livrée. Aujourd'hui, les
-ventes enregistrées (`manual`, `csv` et, dans Camille, `demo_simulation`)
+ventes enregistrées (`manual`, `csv` et, dans le jeu local, `demo_simulation`)
 alimentent des indicateurs et une
 [baseline expérimentale](../sales.md) distincte des prévisions de démonstration.
 Cette baseline accepte actuellement aussi la simulation ; elle requiert
 28 journées consécutives, calcule une moyenne mobile sur
-7 jours et la confronte aux 7 jours suivants ; avec une correspondance
+7 jours et la compare à « même jour de semaine précédent » sur les 7 dernières
+dates complètes ; avec une correspondance
 article↔recette explicitement confirmée et datée, elle projette aussi les
 ingrédients au rendement effectif par jour, sans stock ni commande. Les
 recettes à date inconnue/future ne sont pas utilisées dans le backtest. Les 946
-jours du jeu Camille sont simulés : ils servent aux tests de cohérence et
-d'ergonomie, jamais à affirmer une performance terrain.
+jours du jeu de démonstration sont simulés : ils servent aux tests de cohérence
+et d'ergonomie, jamais à affirmer une performance terrain.
 
 La sortie utile au chef est une **quantité à revoir**, avec son horizon, sa
 raison et ses limites. L'objectif opérationnel est de réduire les ruptures et

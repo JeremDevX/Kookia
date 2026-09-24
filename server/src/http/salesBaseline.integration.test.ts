@@ -54,6 +54,9 @@ it("requires complete calendar coverage and treats absent item rows as zero only
   expect(response.body.items.map((item: { saleItemId: string; forecastQuantity: number }) =>
     [item.saleItemId, item.forecastQuantity])).toEqual([[complete.body.id, 10], [incomplete.body.id, 2]]);
   const pizzaBaseline = response.body.items.find((item: { saleItemId: string }) => item.saleItemId === complete.body.id);
+  expect(pizzaBaseline.backtest).toMatchObject({ days: 7,
+    rollingMean7: { meanAbsoluteError: 0, weightedAbsolutePercentageError: 0 },
+    previousWeekday: { meanAbsoluteError: 0, weightedAbsolutePercentageError: 0 } });
   expect(pizzaBaseline.recipeProjection).toMatchObject({ status: "mapped", recipeId: recipe.body.id, recipeVersion: 2,
     mappingRevision: 1, recipeEffectiveFrom: date(24).toISOString().slice(0, 10), forecastPortions: 20,
     ingredients: [{ productId: catalog.body.products[0].id, quantity: 40 }] });

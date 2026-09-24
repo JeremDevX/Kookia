@@ -69,8 +69,9 @@ export interface SalesBaseline {
   observedItemCount: number; excludedSimulationRows: number; mixedSourceWindow: boolean;
   items: {
     saleItemId: string; saleItemName: string; forecastQuantity: number;
-    backtest: { from: string; to: string; days: number; meanAbsoluteError: number;
-      weightedAbsolutePercentageError: number | null };
+    backtest: { from: string; to: string; days: number;
+      rollingMean7: { meanAbsoluteError: number; weightedAbsolutePercentageError: number | null };
+      previousWeekday: { meanAbsoluteError: number; weightedAbsolutePercentageError: number | null } };
     recipeProjection:
       | { status: "unmapped"; reason: string }
       | { status: "recipe_version_unknown"; mappingRevision: number; mappingEffectiveFrom: string;

@@ -16,9 +16,19 @@ it("backtests a rolling seven-day mean without leaking target-day data", () => {
   expect(result).toMatchObject({ provenance: "recorded_sales", model: "rolling_mean_7_v1",
     status: "experimental", asOfDate: asOf, forecastDate: "2026-09-23", requiredConsecutiveDays: 28 });
   expect(result.items).toEqual([{ saleItemId: "pizza", saleItemName: "Pizza", forecastQuantity: 25,
-    backtest: { from: "2026-09-16", to: asOf, days: 7, meanAbsoluteError: 4,
-      weightedAbsolutePercentageError: 16 }, recipeProjection: { status: "unmapped", reason: expect.any(String) },
+    backtest: { from: "2026-09-16", to: asOf, days: 7,
+      rollingMean7: { meanAbsoluteError: 4, weightedAbsolutePercentageError: 16 },
+      previousWeekday: { meanAbsoluteError: 7, weightedAbsolutePercentageError: 28 } },
+    recipeProjection: { status: "unmapped", reason: expect.any(String) },
     recipeBacktest: { days: 7, mappedDays: 0, missingMappingDays: 7, missingDatedRecipeDays: 0, versionsUsed: [], ingredients: [] } }]);
+});
+
+it("evaluates both fixed baselines on the same held-out dates and uses only earlier values", () => {
+  const quantities = (index: number) => index < 21 ? index + 1 : index === 21 ? 100 : index + 1;
+  const item = evaluateSalesBaseline(history("pizza", "Pizza", quantities), completeCalendar(), asOf).items[0];
+  expect(item.backtest).toMatchObject({ from: "2026-09-16", to: asOf, days: 7,
+    rollingMean7: { meanAbsoluteError: 17.7 }, previousWeekday: { meanAbsoluteError: 18.1 } });
+  expect(item.forecastQuantity).toBe(36);
 });
 
 it("uses only the mapping and dated recipe version effective on each backtest day", () => {

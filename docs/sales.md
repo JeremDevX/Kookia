@@ -80,9 +80,12 @@ observé ; un jour non renseigné n'est jamais imputé à zéro. L'estimation
 expérimentale pour demain est la moyenne arrondie des sept derniers jours
 calendaires complets.
 Le backtest prédit séparément chacun des sept derniers jours à partir de ses
-sept jours **antérieurs**, puis affiche l'erreur absolue moyenne (EAM, en unités)
-et l'erreur absolue pondérée (WAPE). Les articles incomplets ne reçoivent pas
-d'estimation. Ce test rétrospectif interne ne constitue ni une confiance
+sept jours **antérieurs**, puis compare cette moyenne à la vente du même jour de
+semaine précédent (J−7), sur les mêmes dates figées. L'EAM (en unités) et le
+WAPE sont affichés séparément pour les deux références. L'estimation de demain
+reste la moyenne mobile ; cette comparaison ne sélectionne pas automatiquement
+un nouveau modèle. Les articles incomplets ne reçoivent pas d'estimation. Ce
+test rétrospectif interne ne constitue ni une confiance
 calibrée, ni une validation terrain, ni le moteur IA « ventes + météo ». Lorsque
 sa provenance est `demo_simulation`, il s'agit seulement d'un exercice sur les
 quantités générées ; la baseline ne déclenche aucune recommandation ou commande
