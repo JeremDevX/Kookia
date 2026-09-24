@@ -11,11 +11,15 @@ parcours clavier ouvre/annule le formulaire et restaure le focus. Dans un bac
 tmpfs neuf, l'UI a aussi créé deux hypothèses depuis deux pièces tomate
 synthétiques, corrigé puis confirmé l'une, laissé l'autre en attente, rechargé
 la page et retrouvé leurs états ainsi que la recette active ; quantité, révision
-et nombre de mouvements de stock restent identiques. Le contrôle CUA reste
-incomplet : `getState()` garde `browsers: []`, `createBrowserTab("chrome", …)`
-refuse le navigateur, même si `getApp("Google Chrome")` expose maintenant une
-fenêtre native. Autres routes/états, lecteur d'écran et vrai zoom page restent
-à vérifier.
+et nombre de mouvements de stock restent identiques. Après activation, le
+connecteur garde `browsers: []` et `createBrowserTab("chrome", …)` refuse les
+onglets, mais `getApp("Google Chrome")` a permis de contrôler la fenêtre native
+sur le bac local. Accueil, Stocks et Ventes ont été rendues au bureau ; le focus
+visible progresse au clavier jusqu'au lien Stocks, ouvert avec Entrée. Sur
+Ventes, le jour courant reste explicitement inconnu tant qu'il n'est pas
+enregistré et les jours simulés gardent leur provenance. La revue native ne
+remplace pas la matrice headless : largeur mobile, zoom réel 200 %, états
+non nominaux et lecteur d'écran restent à vérifier.
 Un autre parcours UI confirme une production de Pizza Margherita : les quatre
 déductions suivent exactement les quantités/version de recette et le journal
 « Production réalisée — stock déduit » persiste après rechargement.
@@ -149,6 +153,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-24 | Q2 — conflit du calendrier des services | `53968c6` | Après un 409 de `saveServiceDay`, l'erreur était immédiatement effacée par `load()` et l'état serveur réinitialisait les choix sans explication. Le rechargement retourne maintenant son résultat ; l'alerte reste visible avec l'échec initial et indique si l'état a été rechargé (changements non enregistrés abandonnés) ou si ce rechargement a aussi échoué. | `npm run lint`, `npm run build`, `npm test` (24 fichiers/102 tests Vitest + 33 Node/CSS), `git diff --check`. Le test d'intégration existant couvre le 409 serveur. Pas de harnais de test composant installé ; revue UI native impossible à ce stade. | Rejouer le conflit depuis le formulaire, vérifier le focus/annonce et la conservation des données affichées avec Chrome/AT quand un onglet contrôlable sera disponible. |
 | 2026-09-24 | Q2 — décision de suggestion → commande | `ab2e4df` | `GET /orders/suggestions` renvoie la dernière décision correspondant au `suggestionKey` courant, y compris son lien de commande après validation. L'UI garde les exclusions après rechargement, pointe vers la commande exacte, distingue une décision ajoutée d'un panier présent et peut retenter l'ajout si la décision a été sauvée mais pas le panier ; rafraîchit après validation/réception. `OrderHistory` expose l'ancre cible. | `npm run verify:local-delivery` : lint, builds web/API, migrations fraîches 18/18, tests 24 fichiers/102 Vitest + 33 Node/CSS, intégration 25 fichiers/36 tests (dont exclusion persistée, décision liée à la commande et isolation), sauvegarde/restauration. Après l'ajout de la cible d'ancre : `npm run lint`, `npm run build`, `npm test`, `git diff --check`. | API/intégration et compilation vérifiées ; le passage UI ne peut pas être rejoué dans le Chrome natif (CUA `browsers: []`, `createBrowserTab` refusé). Aucun achat réel, envoi ou mouvement de stock ajouté. | Rejouer exclusion, ajout, validation, rechargement et lien direct sur téléphone/clavier/AT quand un onglet contrôlable est disponible. |
 | 2026-09-24 | Q2 — recharger une proposition périmée | `2e25f75` | Après erreur de décision, un bouton relance le calcul ; le champ quantité n'est conservé que si le `suggestionKey` n'a pas changé. Le test d'intégration confirme qu'une réception incrémente la révision stock, invalide le comptage, et ne réapplique donc pas l'ancienne décision à la nouvelle proposition. | `npm run verify:local-delivery` passe : lint, build web/API, 18 migrations fraîches, 24 fichiers/102 Vitest + 33 Node/CSS, 25 fichiers/36 intégrations et sauvegarde/restauration synthétique. | Le résultat est couvert par contrat et intégration ; interaction visuelle/clavier/AT non rejouée faute d'onglet accessible. | Vérifier en rendu que le message d'erreur/rechargement et la quantité remise à l'estimation courante restent lisibles sur mobile et au clavier. |
+| 2026-09-24 | Q2 — revue Chrome natif après activation | — (vérification) | Bac `demo:local` isolé sur loopback ; captures bureau de l'accueil, Stocks et Ventes. Depuis l'accueil, Tab révèle un focus visible, Tab atteint Stocks et Entrée ouvre cette route. Stocks affiche l'avertissement de données simulées et de revue humaine ; Ventes montre 2026-09-24 non renseigné/manquant/inconnu, et les jours démo comme simulés. Aucune donnée n'a été modifiée. | CUA `getState()` garde `browsers: []` et `createBrowserTab` refuse les onglets, mais `getApp("Google Chrome")` contrôle la fenêtre native. Vérification visuelle à environ 1224×768 (zoom Chrome 90 %), et clavier sur l'accueil/Stocks. | Pas de largeur mobile native, vrai zoom 200 %, état erreur/conflit/chargement, annonce lecteur d'écran ou parcours Achats confirmé ; cette preuve desktop ne clôt pas Q2. Démo arrêtée par Ctrl-C (code 130), ports 63240/63241 et répertoire d'identifiants absents après l'arrêt. | Reprendre Q2 pour mobile/zoom/états/AT ; ne marquer le parcours complet qu'après ces contrôles. |
 
 ## Portes externes
 
