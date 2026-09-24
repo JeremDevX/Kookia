@@ -61,6 +61,13 @@ ligne dans l'historique ; la corriger depuis cet historique.
 - Une correction conserve la provenance de l'import et incrémente sa révision.
   Une vente est une observation d'article vendu ; elle ne déduit pas
   automatiquement les ingrédients d'une recette.
+- Le panneau **Articles vendus et recettes** propose seulement les noms
+  normalisés identiques ; un humain choisit puis valide une correspondance
+  datée et un facteur de portions. Le serveur conserve chaque révision et
+  l'instantané du nom de recette. La baseline résout correspondance et version
+  de recette selon le jour de service ; une version `effectiveFrom = NULL`
+  reste inconnue pour les projections historiques. Les quantités matière
+  affichées sont expérimentales et ne créent aucun mouvement de stock.
 
 **À vérifier :** quantité positive, date valide, article du bon restaurant,
 rejeu identique sans doublon, correction avec révision périmée refusée,

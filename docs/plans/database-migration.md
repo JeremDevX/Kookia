@@ -164,6 +164,35 @@ fractionnaire bloque avant tout mouvement. Les productions et leurs déductions
 passées ne sont pas recalculées. D3 ne fournit pas de migration descendante
 destructive.
 
+### Incrément D6 — article vendu ↔ recette (2026-09-24)
+
+La migration additive `20260924060000_sale_item_recipe_mappings` crée
+`SaleItemRecipeMapping` avec références tenant-scopées vers `SaleItem` et
+`Recipe`, révision append-only, date d'effet, portions par article, auteur,
+identifiant d'opération et nom de recette snapshoté. Aucun lien historique
+n'est inféré ou rétro-rempli : le restaurant doit confirmer chaque association.
+Un nom normalisé identique n'est qu'une proposition, pas une validation.
+
+Pour les estimations, chaque service sélectionne sa correspondance effective,
+puis la `RecipeVersion` dont la date d'effet connue est la plus récente sans
+dépasser ce service. Les versions héritées dont la date est `NULL` sont
+explicitement inconnues et exclues du backtest matière, comme toute version
+future par rapport à sa date cible. La quantité projetée applique les portions
+par article et le rendement de lot ; cette lecture ne crée aucun mouvement de
+stock, production ou commande.
+
+Preuve locale D6 : PostgreSQL 16 jetable sans volume ; `migrate deploy` applique
+13/13 migrations, puis les 16 fichiers/26 tests d'intégration passent. Ils
+couvrent la proposition exacte sans activation automatique, session et tenant,
+rejeu/conflit d'opération, version de mapping, changement de carte, snapshot du
+nom recette après renommage, article/recette inconnus ou non datés, et absence
+de mouvement de stock. L'intégration baseline confirme le rendement et la
+version effective de chaque jour du backtest ; le test unitaire inclut une
+version de recette future afin de vérifier qu'elle n'est jamais utilisée avant
+sa date. `npm test` passe (16 fichiers/83 tests Vitest et 30 tests Node/CSS),
+ainsi que lint, builds web/API, `prisma validate` et `git diff --check`. Aucune
+correspondance legacy n'est fabriquée ; migration additive sans perte de données.
+
 - Cartographie initiale : inspection des services, hooks, fixtures, modèles Prisma,
   composants métiers et handlers de confirmation. Auth déjà en base confirmée.
 - Implémentation et validation des lots suivants : à renseigner au fil des commits.

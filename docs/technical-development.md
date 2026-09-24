@@ -92,7 +92,12 @@ expérimentale](sales.md) exposent la provenance. Dans une fenêtre mixte, le
 backtest exclut les lignes simulées du calcul enregistré ; un résultat composé
 uniquement de simulation reste étiqueté démonstration et ne mesure pas la
 précision terrain. Il n'y a ni météo, ni confiance calibrée, ni commande dérivée
-de cette baseline. POS et Ticket Z restent non connectés.
+de cette baseline. `SaleItemRecipeMapping` conserve l'association confirmée,
+son facteur de portions par article, sa date d'effet, son auteur, son nom de
+recette snapshoté et ses révisions. Le backtest matière résout la correspondance
+et la `RecipeVersion` à la date de chaque service ; les versions à date inconnue
+ou futures ne sont pas utilisées. La projection ne modifie pas les mouvements
+de stock. POS et Ticket Z restent non connectés.
 Le [plan de migration](plans/database-migration.md) contient la cartographie et les
 preuves de validation et les limites explicites de cette migration.
 

@@ -34,6 +34,26 @@ complet est un jour sans service, pas une ouverture à zéro. Les jours de servi
 sont stockés en date seule (`DATE`) : les heures d'enregistrement restent des
 timestamps explicites, sans conversion implicite autour du changement d'heure.
 
+## Articles vendus et recettes
+
+Dans **Ventes → Articles vendus et recettes**, un nom strictement identique peut
+proposer une recette, mais ne l'associe jamais automatiquement. Le restaurateur
+choisit ou confirme la recette, le nombre de portions représentées par un
+article vendu et la date d'effet. Chaque confirmation append-only est attribuée
+et révisée ; un changement de carte ajoute une nouvelle date, sans écraser les
+associations précédentes. Le nom de recette est conservé tel qu'il était au
+moment de la confirmation.
+
+Pour une date de service, la projection sélectionne la dernière correspondance
+validée et la dernière `RecipeVersion` dont la date d'effet connue n'est pas
+postérieure à cette date. Une version de recette historique à date `NULL` est
+inconnue : elle ne sert ni à inventer une consommation passée ni à compléter un
+backtest. Sans correspondance ou version datée, l'estimation matière reste
+indisponible pour ces jours. Sinon, le calcul applique
+`quantité vendue × portions par article × quantité ingrédient / rendement du
+lot`. Le détail apparaît dans la baseline expérimentale ; il ne déduit pas le
+stock, ne crée pas de production et ne propose ni ne valide de commande.
+
 ## Indicateurs
 
 Les quantités par article et par date proviennent des ventes présentes dans la
@@ -86,6 +106,11 @@ complétude par source. Un résultat uniquement simulé reste étiqueté démons
    comparer l'estimation et les erreurs du backtest aux quantités saisies ;
    une ligne d'article absente est zéro seulement si le calendrier du jour est
    complet, tandis qu'une date partielle/exclue suspend la baseline.
-5. Se connecter avec un autre compte : ses articles, ventes, indicateurs et
+5. Dans **Articles vendus et recettes**, confirmer un candidat exact ou choisir
+   une recette, son rendement de portions par article et une date d'effet.
+   Ajouter une nouvelle date de carte et vérifier l'historique ; la projection
+   matière doit appliquer la recette effective de chaque jour, ignorer les
+   versions non datées/futures au backtest et laisser le stock inchangé.
+6. Se connecter avec un autre compte : ses articles, ventes, indicateurs et
    baseline ne doivent pas révéler ceux du premier restaurant. Aucune de ces
    opérations ne doit créer une commande ou modifier le stock.

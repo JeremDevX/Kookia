@@ -8,7 +8,10 @@ alimentent des indicateurs et une
 [baseline expérimentale](../sales.md) distincte des prévisions de démonstration.
 Cette baseline accepte actuellement aussi la simulation ; elle requiert
 28 journées consécutives, calcule une moyenne mobile sur
-7 jours et la confronte aux 7 jours suivants ; elle ne commande rien. Les 946
+7 jours et la confronte aux 7 jours suivants ; avec une correspondance
+article↔recette explicitement confirmée et datée, elle projette aussi les
+ingrédients au rendement effectif par jour, sans stock ni commande. Les
+recettes à date inconnue/future ne sont pas utilisées dans le backtest. Les 946
 jours du jeu Camille sont simulés : ils servent aux tests de cohérence et
 d'ergonomie, jamais à affirmer une performance terrain.
 
