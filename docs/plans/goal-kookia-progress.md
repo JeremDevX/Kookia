@@ -14,12 +14,16 @@ la page et retrouvé leurs états ainsi que la recette active ; quantité, révi
 et nombre de mouvements de stock restent identiques. Après activation, le
 connecteur garde `browsers: []` et `createBrowserTab("chrome", …)` refuse les
 onglets, mais `getApp("Google Chrome")` a permis de contrôler la fenêtre native
-sur le bac local. Accueil, Stocks et Ventes ont été rendues au bureau ; le focus
-visible progresse au clavier jusqu'au lien Stocks, ouvert avec Entrée. Sur
-Ventes, le jour courant reste explicitement inconnu tant qu'il n'est pas
-enregistré et les jours simulés gardent leur provenance. La revue native ne
-remplace pas la matrice headless : largeur mobile, zoom réel 200 %, états
-non nominaux et lecteur d'écran restent à vérifier.
+sur le bac local. Accueil, Stocks et Ventes avaient été rendues au bureau ; cette
+reprise ajoute Aujourd'hui, Stocks, Achats et Ventes en émulation mobile 390×750.
+Les cartes/sections se réorganisent en lecture
+verticale, sans débordement horizontal visible. Sur mobile, Échap ferme le menu
+et rend le focus à son bouton ; Tab atteint Aujourd'hui puis Achats, et Entrée
+ouvre cette route. Le focus visible est présent. Ventes conserve le jour courant
+explicitement inconnu tant qu'il n'est pas enregistré et marque les jours
+simulés. Cette revue native ne remplace pas la matrice headless : largeur
+320–375 px, tablette, zoom réel 200 %, états non nominaux et lecteur d'écran
+restent à vérifier.
 Un autre parcours UI confirme une production de Pizza Margherita : les quatre
 déductions suivent exactement les quantités/version de recette et le journal
 « Production réalisée — stock déduit » persiste après rechargement.
@@ -54,15 +58,16 @@ ajoute la fiche candidate à 1440/390 px et vérifie création, correction,
 confirmation, attente et persistance dans l'UI sans effet stock, mais pas le
 parcours complet. Une production a aussi été confirmée dans l'UI : déductions
 matière exactes puis journal visible après rechargement. La modale mobile
-est nommée, contenue et clavier-opérable, sans lecteur d'écran réel. La fenêtre
-Chrome native est maintenant visible par CUA, mais le connecteur refuse toujours
-de créer un onglet ; reprendre Aujourd'hui → Ventes → Stocks → Achats, les états
-d'erreur/conflit/chargement restants, le zoom 200 % et la technologie
-d'assistance dès qu'un onglet contrôlable est disponible. Un conflit de révision
+est nommée, contenue et clavier-opérable, sans lecteur d'écran réel. Chrome
+natif couvre maintenant Aujourd'hui, Stocks, Achats et Ventes avec menu au
+clavier et émulation 390×750 ; il reste à vérifier 320–375/768 px, zoom 200 %,
+états chargement/erreur/conflit/long et technologie d'assistance. Le connecteur
+refuse toujours de créer un onglet, mais `getApp("Google Chrome")` contrôle la
+fenêtre native. Un conflit de révision
 du calendrier des services ne masque plus silencieusement l'échec après
 rechargement (`53968c6`). L'API et le contrat d'intégration Achats persistent
-maintenant les exclusions et commandes liées ; le rendu clavier/mobile reste à
-observer. Le parcours « pièces → idées
+maintenant les exclusions et commandes liées ; les décisions d'ajout/exclusion
+et le rendu au zoom restent à observer. Le parcours « pièces → idées
 de recette » reste ouvert : le bac recette ne prouve pas que deux familles
 d'ingrédients du corpus sont défendables.
 Aucun POS/OCR fournisseur n'est activé.
@@ -154,6 +159,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-24 | Q2 — décision de suggestion → commande | `ab2e4df` | `GET /orders/suggestions` renvoie la dernière décision correspondant au `suggestionKey` courant, y compris son lien de commande après validation. L'UI garde les exclusions après rechargement, pointe vers la commande exacte, distingue une décision ajoutée d'un panier présent et peut retenter l'ajout si la décision a été sauvée mais pas le panier ; rafraîchit après validation/réception. `OrderHistory` expose l'ancre cible. | `npm run verify:local-delivery` : lint, builds web/API, migrations fraîches 18/18, tests 24 fichiers/102 Vitest + 33 Node/CSS, intégration 25 fichiers/36 tests (dont exclusion persistée, décision liée à la commande et isolation), sauvegarde/restauration. Après l'ajout de la cible d'ancre : `npm run lint`, `npm run build`, `npm test`, `git diff --check`. | API/intégration et compilation vérifiées ; le passage UI ne peut pas être rejoué dans le Chrome natif (CUA `browsers: []`, `createBrowserTab` refusé). Aucun achat réel, envoi ou mouvement de stock ajouté. | Rejouer exclusion, ajout, validation, rechargement et lien direct sur téléphone/clavier/AT quand un onglet contrôlable est disponible. |
 | 2026-09-24 | Q2 — recharger une proposition périmée | `2e25f75` | Après erreur de décision, un bouton relance le calcul ; le champ quantité n'est conservé que si le `suggestionKey` n'a pas changé. Le test d'intégration confirme qu'une réception incrémente la révision stock, invalide le comptage, et ne réapplique donc pas l'ancienne décision à la nouvelle proposition. | `npm run verify:local-delivery` passe : lint, build web/API, 18 migrations fraîches, 24 fichiers/102 Vitest + 33 Node/CSS, 25 fichiers/36 intégrations et sauvegarde/restauration synthétique. | Le résultat est couvert par contrat et intégration ; interaction visuelle/clavier/AT non rejouée faute d'onglet accessible. | Vérifier en rendu que le message d'erreur/rechargement et la quantité remise à l'estimation courante restent lisibles sur mobile et au clavier. |
 | 2026-09-24 | Q2 — revue Chrome natif après activation | — (vérification) | Bac `demo:local` isolé sur loopback ; captures bureau de l'accueil, Stocks et Ventes. Depuis l'accueil, Tab révèle un focus visible, Tab atteint Stocks et Entrée ouvre cette route. Stocks affiche l'avertissement de données simulées et de revue humaine ; Ventes montre 2026-09-24 non renseigné/manquant/inconnu, et les jours démo comme simulés. Aucune donnée n'a été modifiée. | CUA `getState()` garde `browsers: []` et `createBrowserTab` refuse les onglets, mais `getApp("Google Chrome")` contrôle la fenêtre native. Vérification visuelle à environ 1224×768 (zoom Chrome 90 %), et clavier sur l'accueil/Stocks. | Pas de largeur mobile native, vrai zoom 200 %, état erreur/conflit/chargement, annonce lecteur d'écran ou parcours Achats confirmé ; cette preuve desktop ne clôt pas Q2. Démo arrêtée par Ctrl-C (code 130), ports 63240/63241 et répertoire d'identifiants absents après l'arrêt. | Reprendre Q2 pour mobile/zoom/états/AT ; ne marquer le parcours complet qu'après ces contrôles. |
+| 2026-09-24 | Q2 — navigation native mobile | — (vérification) | Bac `demo:local` tmpfs sur loopback : Aujourd'hui, Stocks, Achats et Ventes observés en Chrome natif, émulation responsive 390×750 (Ventes aussi au préréglage iPhone 16, 393×852). Cartes/sections en lecture verticale, sans débordement horizontal visible. Sur Stocks, l'avertissement démo reste lisible ; Achats expose un panier vide et « besoin incomplet », sans proposition, avec avertissement sans envoi réel ; Ventes montre la provenance simulée. Au clavier, Échap ferme le menu et rend le focus au déclencheur ; Tab atteint Aujourd'hui/Achats et Entrée ouvre Achats. Aucune action métier n'a été déclenchée. | CUA `browsers: []`, contrôle natif via `getApp`. Largeur 320–375 px et tablette non vérifiées en raison du contrôle de largeur de l'émulateur ; le bac reste synthétique et temporaire. | Compléter la matrice native à 320–375/768/1280 px, zoom 200 %, états chargement/erreur/conflit/long et technologie d'assistance ; cette revue partielle ne clôt pas Q2. |
 
 ## Portes externes
 
