@@ -24,5 +24,9 @@
 .timeline-event .timeline-qualifier { color: var(--color-text-primary); }
 .timeline-event a { align-self: flex-start; color: var(--color-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
 .timeline-read-only { padding-top: var(--spacing-sm); border-top: var(--size-1) solid var(--color-border); }
-@media (--media-workspace-compact) { .timeline-controls { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); } .timeline-controls p { grid-column: var(--number-1) / var(--number-negative-1); } }
+@media (--media-workspace-compact) {
+  .timeline-controls { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); }
+  .timeline-controls p { grid-column: var(--number-1) / var(--number-negative-1); }
+  .timeline-event a { display: inline-flex; align-items: center; min-height: var(--size-44); }
+}
 @media (--media-compact) { .timeline-controls { grid-template-columns: var(--unit-1fr); } .timeline-controls p { grid-column: auto; } .timeline-event { padding: var(--spacing-md); } }
