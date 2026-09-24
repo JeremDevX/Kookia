@@ -19,6 +19,9 @@ fenêtre native. Autres routes/états, lecteur d'écran et vrai zoom page resten
 Un autre parcours UI confirme une production de Pizza Margherita : les quatre
 déductions suivent exactement les quantités/version de recette et le journal
 « Production réalisée — stock déduit » persiste après rechargement.
+Les décisions de suggestion d'achat sont aussi renvoyées par l'API au rechargement ;
+une exclusion reste visible, un ajout renvoie à la commande liée, et les
+suggestions sont actualisées après validation/réception (`ab2e4df`).
 La modale de production a aussi été vérifiée à 390×844 : aucun débordement,
 dialogue/commandes nommés dans l'AXTree, piège Tab/Shift-Tab, fermeture Échap,
 focus rendu au déclencheur et aucune mutation avant confirmation.
@@ -51,7 +54,9 @@ de créer un onglet ; reprendre Aujourd'hui → Ventes → Stocks → Achats, le
 d'erreur/conflit/chargement restants, le zoom 200 % et la technologie
 d'assistance dès qu'un onglet contrôlable est disponible. Un conflit de révision
 du calendrier des services ne masque plus silencieusement l'échec après
-rechargement (`53968c6`). Le parcours « pièces → idées
+rechargement (`53968c6`). L'API et le contrat d'intégration Achats persistent
+maintenant les exclusions et commandes liées ; le rendu clavier/mobile reste à
+observer. Le parcours « pièces → idées
 de recette » reste ouvert : le bac recette ne prouve pas que deux familles
 d'ingrédients du corpus sont défendables.
 Aucun POS/OCR fournisseur n'est activé.
@@ -140,6 +145,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-24 | Q2 — recette → production UI | — (vérification) | Chrome headless sur bac tmpfs neuf : confirmation UI d'1 portion de Pizza Margherita, rendement/version active 1. Farine T55 0,2 kg, tomates 0,1 kg, mozzarella 0,12 kg et huile d'olive 0,02 L déduits exactement ; chaque stockRevision progresse de 1. Après rechargement, le journal affiche « Production réalisée — stock déduit ». L'arrêt Ctrl-C nettoie le bac. | Validation synthétique et sur ce seul parcours ; pas de CUA natif, lecteur d'écran, zoom réel ou états conflit/erreur. Aucun chiffre terrain. | Continuer les autres tâches UI du mandat et le parcours chronologique complet. |
 | 2026-09-24 | Q2 — modale de production mobile | — (vérification) | Chrome headless/CDP à 390×844 : boîte de dialogue 366×799, largeur du contenu égale au viewport (390 px), commandes nommées dans l'AXTree. Focus initial, Tab et Shift-Tab bouclent entre fermer/confirmer ; Échap ferme et rend le focus à « Produire cette recette ». Snapshot de stock avant/après ouverture/fermeture identique : aucune déduction sans confirmation. | Vérification synthétique ; pas de lecteur d'écran réel ni de zoom de navigateur 200 %. Démo tmpfs, profil et captures temporaires nettoyés. | Rejouer avec Chrome natif/technologie d'assistance lorsque l'onglet contrôlable est disponible. |
 | 2026-09-24 | Q2 — conflit du calendrier des services | `53968c6` | Après un 409 de `saveServiceDay`, l'erreur était immédiatement effacée par `load()` et l'état serveur réinitialisait les choix sans explication. Le rechargement retourne maintenant son résultat ; l'alerte reste visible avec l'échec initial et indique si l'état a été rechargé (changements non enregistrés abandonnés) ou si ce rechargement a aussi échoué. | `npm run lint`, `npm run build`, `npm test` (24 fichiers/102 tests Vitest + 33 Node/CSS), `git diff --check`. Le test d'intégration existant couvre le 409 serveur. Pas de harnais de test composant installé ; revue UI native impossible à ce stade. | Rejouer le conflit depuis le formulaire, vérifier le focus/annonce et la conservation des données affichées avec Chrome/AT quand un onglet contrôlable sera disponible. |
+| 2026-09-24 | Q2 — décision de suggestion → commande | `ab2e4df` | `GET /orders/suggestions` renvoie la dernière décision correspondant au `suggestionKey` courant, y compris son lien de commande après validation. L'UI garde les exclusions après rechargement, pointe vers la commande exacte, distingue une décision ajoutée d'un panier présent et peut retenter l'ajout si la décision a été sauvée mais pas le panier ; rafraîchit après validation/réception. `OrderHistory` expose l'ancre cible. | `npm run verify:local-delivery` : lint, builds web/API, migrations fraîches 18/18, tests 24 fichiers/102 Vitest + 33 Node/CSS, intégration 25 fichiers/36 tests (dont exclusion persistée, décision liée à la commande et isolation), sauvegarde/restauration. Après l'ajout de la cible d'ancre : `npm run lint`, `npm run build`, `npm test`, `git diff --check`. | API/intégration et compilation vérifiées ; le passage UI ne peut pas être rejoué dans le Chrome natif (CUA `browsers: []`, `createBrowserTab` refusé). Aucun achat réel, envoi ou mouvement de stock ajouté. | Rejouer exclusion, ajout, validation, rechargement et lien direct sur téléphone/clavier/AT quand un onglet contrôlable est disponible. |
 
 ## Portes externes
 
