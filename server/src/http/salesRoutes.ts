@@ -1,6 +1,8 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { createSale, correctSale, listSales, listSaleItems, createSaleItem, latestService, listServiceDays, saveServiceDay } from "../application/workspace/salesService.js";
+import { createSale, correctSale, listSales, listSaleItems, createSaleItem, latestService, listServiceDays, saveServiceDay,
+  } from "../application/workspace/salesService.js";
+import { listSaleContributions, reviewSaleContribution, recordSaleOutcome } from "../application/workspace/salesReconciliationService.js";
 import { commitSalesImport, previewSalesImport } from "../application/workspace/salesImportService.js";
 import { calculateSalesMetrics } from "../application/workspace/salesMetrics.js";
 import { evaluateSalesBaseline } from "../application/workspace/salesBaseline.js";
@@ -30,6 +32,12 @@ salesRoutes.get("/sales", async (req, res, next) => {
   try {
     const query = parsePeriod(req);
     res.json(await listSales(workspace(res).restaurantId, query.from, query.to));
+  } catch (error) { next(error); }
+});
+salesRoutes.get("/sales/contributions", async (req, res, next) => {
+  try {
+    const { from, to } = parsePeriod(req);
+    res.json(await listSaleContributions(workspace(res).restaurantId, from, to));
   } catch (error) { next(error); }
 });
 salesRoutes.get("/sales/latest", async (_req, res, next) => {
@@ -88,13 +96,13 @@ salesRoutes.get("/sales/baseline", async (_req, res, next) => {
       prisma.dailySale.findMany({ where: { restaurantId, source: { in: ["manual", "csv", "demo_simulation"] },
         serviceDate: { gte: start, lte: end } }, include: { saleItem: { select: { name: true } } } }),
       prisma.serviceDay.findMany({ where: { restaurantId, serviceDate: { gte: start, lte: end } },
-        select: { serviceDate: true, status: true, coverage: true } }),
+        select: { serviceDate: true, status: true, coverage: true, source: true } }),
     ]);
     res.json(evaluateSalesBaseline(rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
       saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity,
       source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : "manual" as const })),
     serviceDays.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
-      status: row.status, coverage: row.coverage })), asOfDate));
+      status: row.status, coverage: row.coverage, source: row.source })), asOfDate));
   } catch (error) { next(error); }
 });
 salesRoutes.get("/sales/items", async (_req, res, next) => {
@@ -130,8 +138,31 @@ salesRoutes.post("/sales", async (req, res, next) => {
 salesRoutes.patch("/sales/:id", async (req, res, next) => {
   try {
     const id = z.uuid().parse(req.params.id);
-    const { revision, ...input } = saleValues.safeExtend({ revision: z.number().int().min(0) }).parse(req.body);
+    const { revision, operationId, reason, ...input } = saleValues.safeExtend({ revision: z.number().int().min(0),
+      operationId: z.uuid(), reason: z.string().trim().min(1).max(240) }).parse(req.body);
     const { restaurantId, actorId } = workspace(res);
-    res.json(await correctSale(restaurantId, actorId, id, revision, input));
+    res.json(await correctSale(restaurantId, actorId, id, revision, input, operationId, reason));
   } catch (error) { next(error); }
 });
+const contributionReview = z.object({ expectedRevision: z.number().int().min(0),
+  decision: z.enum(["replace", "keep", "reject"]), operationId: z.uuid(), reason: z.string().trim().min(1).max(240) }).strict();
+salesRoutes.post("/sales/contributions/:id/review", async (req, res, next) => {
+  try {
+    const id = z.uuid().parse(req.params.id), input = contributionReview.parse(req.body);
+    const { restaurantId, actorId } = workspace(res);
+    res.json(await reviewSaleContribution(restaurantId, actorId, id, input.expectedRevision,
+      input.decision, input.operationId, input.reason));
+  } catch (error) { next(error); }
+});
+const outcomeBody = z.object({ expectedRevision: z.number().int().min(0), operationId: z.uuid(),
+  reason: z.string().trim().min(1).max(240) }).strict();
+for (const kind of ["voided", "refund_recorded"] as const) {
+  salesRoutes.post(`/sales/:id/${kind === "voided" ? "void" : "refund"}`, async (req, res, next) => {
+    try {
+      const id = z.uuid().parse(req.params.id), input = outcomeBody.parse(req.body);
+      const { restaurantId, actorId } = workspace(res);
+      res.json(await recordSaleOutcome(restaurantId, actorId, id, input.expectedRevision,
+        kind, input.operationId, input.reason));
+    } catch (error) { next(error); }
+  });
+}

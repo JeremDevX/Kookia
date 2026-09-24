@@ -8,7 +8,7 @@ const history = (id: string, name: string, quantity: (index: number) => number,
   Array.from({ length: 28 }, (_, index) => ({ serviceDate: day(index - 27), saleItemId: id,
     saleItemName: name, quantity: quantity(index), source }));
 const completeCalendar = (): BaselineServiceDay[] => Array.from({ length: 28 }, (_, index) => ({
-  serviceDate: day(index - 27), status: "open", coverage: "complete",
+  serviceDate: day(index - 27), status: "open", coverage: "complete", source: "recorded",
 }));
 
 it("backtests a rolling seven-day mean without leaking target-day data", () => {
@@ -34,8 +34,17 @@ it("treats an absent item line as zero only when the whole service day is comple
 });
 
 it("labels a complete simulated baseline as demonstration data", () => {
-  expect(evaluateSalesBaseline(history("pizza", "Pizza", () => 12, "demo_simulation"), completeCalendar(), asOf))
-    .toMatchObject({ provenance: "demo_simulation", status: "experimental", observedItemCount: 1 });
+  const simulatedCalendar = completeCalendar().map((serviceDay) => ({ ...serviceDay, source: "demo_simulation" as const }));
+  expect(evaluateSalesBaseline(history("pizza", "Pizza", () => 12, "demo_simulation"), simulatedCalendar, asOf))
+    .toMatchObject({ provenance: "demo_simulation", status: "experimental", observedItemCount: 1, excludedSimulationRows: 0 });
+});
+
+it("excludes simulated rows from a mixed recorded backtest", () => {
+  const recorded = history("pizza", "Pizza", (index) => index + 1);
+  const simulated = history("pizza", "Pizza", () => 1000, "demo_simulation");
+  expect(evaluateSalesBaseline([...recorded, ...simulated], completeCalendar(), asOf))
+    .toMatchObject({ provenance: "mixed", observedItemCount: 1, excludedSimulationRows: 28,
+      mixedSourceWindow: true, status: "insufficient_history", items: [] });
 });
 
 it("accepts a closed and fully reviewed date in the calendar without requiring a sale line", () => {
@@ -43,4 +52,11 @@ it("accepts a closed and fully reviewed date in the calendar without requiring a
     ? { ...serviceDay, status: "closed" as const } : serviceDay);
   expect(evaluateSalesBaseline(history("pizza", "Pizza", (index) => index + 1), days, asOf))
     .toMatchObject({ status: "experimental", completeServiceDays: 28, openServiceDays: 27 });
+});
+
+it("withholds the backtest when the calendar itself mixes demo and recorded coverage", () => {
+  const days = completeCalendar().map((serviceDay, index) => index === 0
+    ? { ...serviceDay, source: "mixed" as const } : serviceDay);
+  expect(evaluateSalesBaseline(history("pizza", "Pizza", () => 10), days, asOf))
+    .toMatchObject({ mixedSourceWindow: true, status: "insufficient_history", items: [] });
 });

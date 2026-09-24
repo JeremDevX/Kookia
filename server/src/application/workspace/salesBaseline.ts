@@ -10,6 +10,7 @@ export interface BaselineServiceDay {
   serviceDate: string;
   status: "open" | "closed";
   coverage: "complete" | "partial" | "missing";
+  source: "recorded" | "demo_simulation" | "mixed";
 }
 
 const HISTORY_DAYS = 28;
@@ -22,6 +23,15 @@ const round = (value: number) => Math.round(value * 10) / 10;
 
 export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: BaselineServiceDay[], asOfDate: string) {
   const dates = Array.from({ length: HISTORY_DAYS }, (_, index) => day(asOfDate, index - HISTORY_DAYS + 1));
+  const inWindow = sales.filter((sale) => dates.includes(sale.serviceDate));
+  const hasRecordedSales = inWindow.some((sale) => sale.source !== "demo_simulation");
+  const hasSimulationSales = inWindow.some((sale) => sale.source === "demo_simulation");
+  const windowServiceDays = serviceDays.filter((serviceDay) => dates.includes(serviceDay.serviceDate));
+  const hasRecordedCalendar = windowServiceDays.some((serviceDay) => serviceDay.source === "recorded");
+  const hasSimulationCalendar = windowServiceDays.some((serviceDay) => serviceDay.source === "demo_simulation");
+  const mixedSourceWindow = windowServiceDays.some((serviceDay) => serviceDay.source === "mixed") ||
+    (hasRecordedSales && hasSimulationSales) || (hasRecordedCalendar && hasSimulationCalendar) ||
+    (hasRecordedSales && hasSimulationCalendar) || (hasSimulationSales && hasRecordedCalendar);
   const serviceDayByDate = new Map(serviceDays.map((serviceDay) => [serviceDay.serviceDate, serviceDay]));
   const incompleteDates = dates.filter((date) => serviceDayByDate.get(date)?.coverage !== "complete");
   const completeServiceDays = dates.filter((date) => serviceDayByDate.get(date)?.coverage === "complete").length;
@@ -30,16 +40,15 @@ export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: Baseli
     return serviceDay?.status === "open" && serviceDay.coverage === "complete";
   }).length;
   const byItem = new Map<string, { saleItemId: string; saleItemName: string; byDate: Map<string, number> }>();
-  const sources = new Set<string>();
-  for (const sale of sales) {
-    if (!dates.includes(sale.serviceDate)) continue;
-    sources.add(sale.source);
+  let excludedSimulationRows = 0;
+  for (const sale of inWindow) {
+    if (hasRecordedSales && sale.source === "demo_simulation") { excludedSimulationRows++; continue; }
     const item = byItem.get(sale.saleItemId) ?? { saleItemId: sale.saleItemId, saleItemName: sale.saleItemName,
       byDate: new Map<string, number>() };
     item.byDate.set(sale.serviceDate, (item.byDate.get(sale.serviceDate) ?? 0) + sale.quantity);
     byItem.set(sale.saleItemId, item);
   }
-  const items = incompleteDates.length ? [] : [...byItem.values()].flatMap((item) => {
+  const items = incompleteDates.length || mixedSourceWindow ? [] : [...byItem.values()].flatMap((item) => {
     const quantities = dates.map((date) => item.byDate.get(date) ?? 0);
     const errors = Array.from({ length: EVALUATION_DAYS }, (_, index) => {
       const target = HISTORY_DAYS - EVALUATION_DAYS + index;
@@ -52,13 +61,14 @@ export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: Baseli
         days: EVALUATION_DAYS, meanAbsoluteError: round(errors.reduce((sum, error) => sum + error, 0) / EVALUATION_DAYS),
         weightedAbsolutePercentageError: actualTotal === 0 ? null : round(errors.reduce((sum, error) => sum + error, 0) / actualTotal * 100) } }];
   }).sort((a, b) => a.saleItemName.localeCompare(b.saleItemName, "fr"));
-  const provenance = sources.has("demo_simulation") ? sources.size > 1 ? "mixed" : "demo_simulation" : "recorded_sales";
+  const provenance = hasRecordedSales ? hasSimulationSales ? "mixed" : "recorded_sales"
+    : hasSimulationSales ? "demo_simulation" : "recorded_sales";
   return {
     provenance, model: "rolling_mean_7_v1" as const,
     asOfDate, forecastDate: day(asOfDate, 1), historyFrom: dates[0],
     requiredConsecutiveDays: HISTORY_DAYS, lookbackDays: LOOKBACK_DAYS, evaluationDays: EVALUATION_DAYS,
     completeServiceDays, openServiceDays, incompleteDates,
-    status: byItem.size === 0 ? "no_data" as const : incompleteDates.length > 0 ? "insufficient_history" as const : "experimental" as const,
-    observedItemCount: byItem.size, items,
+    status: byItem.size === 0 ? "no_data" as const : incompleteDates.length > 0 || mixedSourceWindow ? "insufficient_history" as const : "experimental" as const,
+    observedItemCount: byItem.size, excludedSimulationRows, mixedSourceWindow, items,
   };
 }

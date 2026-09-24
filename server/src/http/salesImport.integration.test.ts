@@ -33,12 +33,22 @@ it("previews row errors and mappings, imports valid rows once, and keeps manual 
   expect(first.body.rows.map((row: { status: string }) => row.status)).toEqual(["ready", "duplicate", "existing", "unmapped", "invalid", "ready", "closed"]);
   const foreignMapping = await owner.post(`${url}/preview`).send({ csv, mapping: { Salaat: foreign.body.id } }).expect(200);
   expect(foreignMapping.body.rows[3].status).toBe("unmapped");
+  expect(foreignMapping.body.hash).not.toBe(first.body.hash);
   const mapped = await owner.post(`${url}/preview`).send({ csv, mapping: { Salaat: salad.body.id } }).expect(200);
   expect(mapped.body.readyCount).toBe(3);
-  expect(mapped.body.rejectedCount).toBe(4);
+  expect(mapped.body.rejectedCount).toBe(3);
+  expect(mapped.body.conflictCount).toBe(1);
   await owner.post(url).send({ csv, mapping: { Salaat: salad.body.id }, expectedHash: "0".repeat(64) }).expect(409);
   const saved = await owner.post(url).send({ csv, mapping: { Salaat: salad.body.id }, expectedHash: mapped.body.hash }).expect(201);
-  expect(saved.body).toMatchObject({ alreadyImported: false, acceptedCount: 3, rejectedCount: 4 });
+  expect(saved.body).toMatchObject({ alreadyImported: false, acceptedCount: 3, rejectedCount: 3, conflictCount: 1 });
+  const contributions = await prisma.saleContribution.findMany({ where: { importId: saved.body.id }, orderBy: { importLine: "asc" } });
+  expect(contributions).toHaveLength(7);
+  expect(contributions.map((row) => row.status)).toEqual(["accepted", "rejected", "pending", "accepted", "rejected", "accepted", "rejected"]);
+  expect(contributions[0]).toMatchObject({ source: "csv", sourceItemName: "Pizza", sourceDate: "2026-09-19", sourceQuantity: "3", quantity: 3, importLine: 2 });
+  expect(contributions[4]).toMatchObject({ sourceDate: "2026-09-21", sourceQuantity: "0", quantity: null, status: "rejected" });
+  expect((await prisma.saleContributionEvent.findFirstOrThrow({ where: { contributionId: contributions[4].id } })).reason)
+    .toContain("Quantité entière positive attendue");
+  expect(await prisma.saleImport.findUniqueOrThrow({ where: { id: saved.body.id } })).toMatchObject({ mappingSnapshot: { Salaat: salad.body.id } });
   const daysAfterImport = (await owner.get("/api/workspace/sales/service-days?from=2026-09-19&to=2026-09-23").expect(200)).body;
   expect(daysAfterImport).toEqual(expect.arrayContaining([
     expect.objectContaining({ serviceDate: "2026-09-19", status: "open", coverage: "partial", salesCount: 1 }),
@@ -77,10 +87,15 @@ it("isolates identical files by restaurant, preserves import provenance after co
   expect(second.body.alreadyImported).toBe(false);
   expect(first.body.id).not.toBe(second.body.id);
   const imported = (await owner.get("/api/workspace/sales?from=2026-09-17&to=2026-09-17").expect(200)).body[0];
+  const correctionOperationId = randomUUID();
   const corrected = await owner.patch(`/api/workspace/sales/${imported.id}`).send({ saleItemId: item.body.id,
-    serviceDate: "2026-09-17", quantity: 9, revision: 0 }).expect(200);
+    serviceDate: "2026-09-17", quantity: 9, revision: 0, operationId: correctionOperationId,
+    reason: "Correction après comparaison au ticket." }).expect(200);
   expect(corrected.body).toMatchObject({ source: "csv", revision: 1, quantity: 9 });
   expect((await prisma.dailySale.findUniqueOrThrow({ where: { id: imported.id } })).importId).toBe(first.body.id);
+  const correctedContribution = await prisma.dailySale.findUniqueOrThrow({ where: { id: imported.id }, include: { contribution: true } });
+  expect(correctedContribution.contribution).toMatchObject({ source: "manual", sourceItemName: "Burger", sourceQuantity: "9", status: "accepted", sourceRevision: 1 });
+  expect(await prisma.saleContributionEvent.count({ where: { contribution: { importId: first.body.id }, kind: "corrected" } })).toBe(1);
   expect((await other.get("/api/workspace/sales?from=2026-09-17&to=2026-09-17").expect(200)).body[0].quantity).toBe(8);
 
   const concurrentDate = "2026-09-16";
@@ -94,6 +109,64 @@ it("isolates identical files by restaurant, preserves import provenance after co
     owner.post(url).send({ csv: one, mapping: {}, expectedHash: p1.body.hash }),
     owner.post(url).send({ csv: two, mapping: {}, expectedHash: p2.body.hash }),
   ]);
-  expect(outcomes.filter((result) => result.status === 201)).toHaveLength(1);
+  expect(outcomes.filter((result) => result.status === 201)).toHaveLength(2);
+  expect(outcomes.map((result) => result.body.conflictCount)).toContain(1);
+  expect(outcomes.map((result) => result.body.acceptedCount)).toContain(1);
   expect((await owner.get(`/api/workspace/sales?from=${concurrentDate}&to=${concurrentDate}`).expect(200)).body).toHaveLength(1);
+});
+
+it("persists manual/CSV conflicts and requires an explicit replacement, keep, refund or void decision", async () => {
+  const owner = await account();
+  const other = await account();
+  const item = await owner.post("/api/workspace/sales/items").send({ name: "Tarte du jour" }).expect(201);
+  const date = "2026-09-15";
+  const original = await owner.post("/api/workspace/sales").send({ operationId: randomUUID(), saleItemId: item.body.id,
+    serviceDate: date, quantity: 5 }).expect(201);
+  const csv = `service_date,item_name,quantity\n${date},Tarte du jour,2\n`;
+  const preview = await owner.post("/api/workspace/sales/imports/preview").send({ csv, mapping: {} }).expect(200);
+  expect(preview.body.rows[0].status).toBe("existing");
+  const saved = await owner.post("/api/workspace/sales/imports").send({ csv, mapping: {}, expectedHash: preview.body.hash }).expect(201);
+  expect(saved.body).toMatchObject({ acceptedCount: 0, rejectedCount: 0, conflictCount: 1 });
+  expect((await owner.get(`/api/workspace/sales?from=${date}&to=${date}`).expect(200)).body).toHaveLength(1);
+  expect((await owner.get(`/api/workspace/sales/contributions?from=${date}&to=${date}`).expect(200)).body)
+    .toEqual(expect.arrayContaining([expect.objectContaining({ status: "pending", source: "csv", quantity: 2,
+      sourceItemName: "Tarte du jour", currentSale: expect.objectContaining({ id: original.body.id, quantity: 5 }) })]));
+  const candidate = await prisma.saleContribution.findFirstOrThrow({ where: { importId: saved.body.id } });
+  await other.post(`/api/workspace/sales/contributions/${candidate.id}/review`).send({ expectedRevision: 0,
+    decision: "replace", reason: "Autre tenant", operationId: randomUUID() }).expect(404);
+  const operationId = randomUUID();
+  await owner.post(`/api/workspace/sales/contributions/${candidate.id}/review`).send({ expectedRevision: 0,
+    decision: "replace", reason: "Le rapport de caisse corrigé remplace la saisie provisoire.", operationId }).expect(200);
+  await owner.post(`/api/workspace/sales/contributions/${candidate.id}/review`).send({ expectedRevision: 0,
+    decision: "replace", reason: "Le rapport de caisse corrigé remplace la saisie provisoire.", operationId }).expect(200).then(({ body }) => expect(body.replayed).toBe(true));
+  await owner.post(`/api/workspace/sales/contributions/${candidate.id}/review`).send({ expectedRevision: 0,
+    decision: "keep", reason: "Autre décision avec la même clé.", operationId }).expect(409);
+  expect((await owner.get(`/api/workspace/sales?from=${date}&to=${date}`).expect(200)).body)
+    .toMatchObject([expect.objectContaining({ id: original.body.id, quantity: 2, source: "csv", revision: 1 })]);
+  expect(await prisma.dailySale.count({ where: { restaurantId: candidate.restaurantId, serviceDate: new Date(`${date}T00:00:00.000Z`), saleItemId: item.body.id } })).toBe(1);
+
+  await owner.post("/api/workspace/sales").send({ operationId: randomUUID(), saleItemId: item.body.id, serviceDate: date, quantity: 8 }).expect(409);
+  const manualConflict = await prisma.saleContribution.findFirstOrThrow({ where: { restaurantId: candidate.restaurantId,
+    source: "manual", status: "pending", sourceQuantity: "8" } });
+  await owner.post(`/api/workspace/sales/contributions/${manualConflict.id}/review`).send({ expectedRevision: 0,
+    decision: "keep", reason: "Le rapport importé est la source retenue.", operationId: randomUUID() }).expect(200);
+  const kept = (await owner.get(`/api/workspace/sales?from=${date}&to=${date}`).expect(200)).body[0];
+  expect(kept.quantity).toBe(2);
+  const refundOperationId = randomUUID();
+  await owner.post(`/api/workspace/sales/${kept.id}/refund`).send({ expectedRevision: kept.revision,
+    reason: "Remboursement client, plat consommé.", operationId: refundOperationId }).expect(200);
+  await owner.post(`/api/workspace/sales/${kept.id}/refund`).send({ expectedRevision: kept.revision,
+    reason: "Remboursement client, plat consommé.", operationId: refundOperationId }).expect(200)
+    .then(({ body }) => expect(body).toMatchObject({ replayed: true, quantity: 2 }));
+  await owner.post(`/api/workspace/sales/${kept.id}/refund`).send({ expectedRevision: kept.revision,
+    reason: "Autre contenu avec la même clé.", operationId: refundOperationId }).expect(409);
+  expect((await owner.get(`/api/workspace/sales?from=${date}&to=${date}`).expect(200)).body[0].quantity).toBe(2);
+  const voidOperationId = randomUUID();
+  await owner.post(`/api/workspace/sales/${kept.id}/void`).send({ expectedRevision: kept.revision,
+    reason: "Annulation d’une ligne saisie par erreur.", operationId: voidOperationId }).expect(200);
+  await owner.post(`/api/workspace/sales/${kept.id}/void`).send({ expectedRevision: kept.revision,
+    reason: "Annulation d’une ligne saisie par erreur.", operationId: voidOperationId }).expect(200)
+    .then(({ body }) => expect(body).toMatchObject({ replayed: true }));
+  expect((await owner.get(`/api/workspace/sales?from=${date}&to=${date}`).expect(200)).body).toEqual([]);
+  expect(await prisma.saleContributionEvent.count({ where: { contributionId: kept.contributionId ?? candidate.id } })).toBeGreaterThan(0);
 });

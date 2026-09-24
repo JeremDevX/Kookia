@@ -2,7 +2,8 @@
 .sales-panel { min-width: var(--number-0); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--spacing-lg); }
 .sales-form, .sales-filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--spacing-md); }
 .sales-form label, .sales-filters label { display: grid; gap: var(--spacing-sm); min-width: min(var(--unit-100percent), var(--size-180)); }
-.sales-form input, .sales-form select, .sales-filters input { width: var(--unit-100percent); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
+.sales-form input, .sales-form select, .sales-form textarea, .sales-filters input { width: var(--unit-100percent); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
+.sales-form textarea, .sales-reconciliation-card textarea, .sales-outcome-actions textarea { min-height: var(--size-80); }
 .sales-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
 .sales-file-label, .sales-mapping-label { display: grid; gap: var(--spacing-sm); }
 .sales-mapping-label select { max-width: var(--size-180); }
@@ -21,4 +22,13 @@
 .sales-metrics h3 { margin-top: var(--spacing-sm); font-size: var(--font-size-md); }
 .sales-metrics p { line-height: var(--number-1_8); }
 .sales-metrics-total strong { font-size: var(--font-size-xl); }
+.sales-reconciliation-card { display: grid; gap: var(--spacing-sm); margin-top: var(--spacing-md); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
+.sales-reconciliation-card h3 { margin: var(--number-0); font-size: var(--font-size-md); }
+.sales-reconciliation-card label, .sales-outcome-actions label { display: grid; gap: var(--spacing-sm); }
+.sales-reconciliation-card textarea, .sales-outcome-actions textarea { width: var(--unit-100percent); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
+.sales-contribution-history { display: grid; gap: var(--spacing-sm); margin: var(--number-0); padding: var(--number-0) var(--spacing-lg) var(--spacing-lg); list-style: none; }
+.sales-contribution-history li { display: grid; gap: var(--spacing-xs); padding: var(--spacing-md); border-bottom: var(--size-1) solid var(--color-border); overflow-wrap: var(--overflow-wrap-anywhere); }
+.sales-contribution-history span { color: var(--color-text-muted); }
+.sales-history-actions, .sales-outcome-actions { display: grid; gap: var(--spacing-xs); min-width: var(--size-180); }
+.sales-outcome-actions form { display: grid; gap: var(--spacing-xs); min-width: min(var(--unit-100percent), var(--size-240)); }
 @media (--media-compact) { .sales-page { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); } }

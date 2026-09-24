@@ -4,7 +4,9 @@ import SalesImport from "../components/sales/SalesImport";
 import SalesMetrics from "../components/sales/SalesMetrics";
 import SalesBaseline from "../components/sales/SalesBaseline";
 import ServiceCalendar from "../components/sales/ServiceCalendar";
-import { correctSale, createSale, createSaleItem, getLatestService, getSaleItems, getSales, type DailySale, type LatestService, type SaleItem, type SaleValues } from "../services/salesService";
+import SalesReconciliation from "../components/sales/SalesReconciliation";
+import { correctSale, createSale, createSaleItem, getLatestService, getSaleItems, getSales, recordSaleOutcome,
+  type DailySale, type LatestService, type SaleItem, type SaleValues } from "../services/salesService";
 import { describeServiceSources } from "../features/sales/salesPresentation";
 import "../styles/Workspace.css";
 import "./Sales.css";
@@ -27,6 +29,8 @@ export default function Sales() {
   const [itemSaving, setItemSaving] = useState(false);
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [editing, setEditing] = useState<DailySale | null>(null);
+  const [editReason, setEditReason] = useState("");
+  const [correctionOperationId, setCorrectionOperationId] = useState(() => crypto.randomUUID());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -68,6 +72,8 @@ export default function Sales() {
   };
   const cancel = (returnFocus = true) => {
     setEditing(null);
+    setEditReason("");
+    setCorrectionOperationId(crypto.randomUUID());
     setValues({ saleItemId: "", serviceDate: parisToday(), quantity: 1 });
     setOperationId(crypto.randomUUID());
     setError("");
@@ -87,9 +93,9 @@ export default function Sales() {
     } catch (cause) { setItemError(message(cause)); }
     finally { setItemSaving(false); }
   };
-  const showImportedDate = async (date: string) => {
+  const showImportedDate = async (date?: string) => {
     setSalesRevision((current) => current + 1);
-    if (date < from || date > to) { setFrom(date); setTo(date); }
+    if (date && (date < from || date > to)) { setFrom(date); setTo(date); }
     else await load();
     requestAnimationFrame(() => historyHeading.current?.focus());
   };
@@ -97,7 +103,7 @@ export default function Sales() {
     event.preventDefault();
     setSaving(true); setError(""); setStatus("");
     try {
-      if (editing) await correctSale(editing.id, editing.revision, values);
+      if (editing) await correctSale(editing.id, editing.revision, values, correctionOperationId, editReason);
       else await createSale(values, operationId);
       setStatus(editing ? "Vente corrigée et enregistrée." : "Vente enregistrée.");
       setSalesRevision((current) => current + 1);
@@ -108,7 +114,10 @@ export default function Sales() {
       }
       else await load();
       requestAnimationFrame(() => historyHeading.current?.focus());
-    } catch (cause) { setError(message(cause)); }
+    } catch (cause) {
+      setError(message(cause));
+      if (!editing) { setSalesRevision((current) => current + 1); await load(); }
+    }
     finally { setSaving(false); }
   };
 
@@ -127,6 +136,8 @@ export default function Sales() {
       <small>Ces ventes alimentent les indicateurs, pas encore les achats suggérés.</small>
     </section>
     <ServiceCalendar from={from} to={to} today={parisToday()} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} />
+    <SalesReconciliation from={from} to={to} refreshToken={salesRevision}
+      onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} />
     <SalesImport items={items} onImported={showImportedDate} onItemsCreated={setItems} />
     <section className="sales-panel" aria-labelledby="sale-item-title">
       <h2 id="sale-item-title">Articles vendus</h2>
@@ -148,6 +159,7 @@ export default function Sales() {
         </select></label>
         <label>Date de service<input type="date" required max={parisToday()} value={values.serviceDate} onChange={(event) => change({ ...values, serviceDate: event.target.value })} /></label>
         <label>Quantité vendue (unités)<input type="number" required min="1" max="1000000" step="1" value={values.quantity} onChange={(event) => change({ ...values, quantity: Number(event.target.value) })} /></label>
+        {editing && <label>Motif de correction, sans donnée personnelle<textarea required maxLength={240} value={editReason} onChange={(event) => setEditReason(event.target.value)} /></label>}
         <div className="sales-actions"><Button type="submit" disabled={saving || !items.length}>{saving ? "Enregistrement…" : editing ? "Enregistrer la correction" : "Valider la vente"}</Button>
           {editing && <Button type="button" variant="outline" onClick={() => cancel()}>Annuler</Button>}
         </div>
@@ -167,7 +179,12 @@ export default function Sales() {
           <td>{sale.serviceDate}</td><td>{sale.saleItemName}</td><td>{sale.quantity} unités</td>
           <td>{sale.source === "demo_simulation" ? "Simulation de démonstration" : sale.source === "manual" ? "Saisie manuelle" : sale.revision ? "Import CSV corrigé manuellement" : "Import CSV"}</td>
           <td>{new Date(sale.updatedAt).toLocaleString("fr-FR")}</td>
-          <td><Button type="button" size="sm" variant="outline" onClick={(event) => { editOrigin.current = event.currentTarget; setEditing(sale); setValues({ saleItemId: sale.saleItemId, serviceDate: sale.serviceDate, quantity: sale.quantity }); setError(""); setStatus(""); document.getElementById("sales-entry-title")?.scrollIntoView(); }}>Corriger</Button></td>
+          <td><div className="sales-history-actions"><Button type="button" size="sm" variant="outline" onClick={(event) => { editOrigin.current = event.currentTarget; setEditing(sale); setCorrectionOperationId(crypto.randomUUID()); setValues({ saleItemId: sale.saleItemId, serviceDate: sale.serviceDate, quantity: sale.quantity }); setEditReason(""); setError(""); setStatus(""); document.getElementById("sales-entry-title")?.scrollIntoView(); }}>Corriger</Button>
+            <SaleOutcomeActions sale={sale} onUpdated={async (action) => {
+              setStatus(action === "void" ? "Vente annulée et conservée dans la provenance." : "Remboursement signalé ; les unités vendues restent inchangées.");
+              setSalesRevision((current) => current + 1); await load();
+              requestAnimationFrame(() => historyHeading.current?.focus());
+            }} /></div></td>
         </tr>)}</tbody></table></div>}
     </section>
     <details className="sales-disclosure" onToggle={(event) => setShowMetrics(event.currentTarget.open)}><summary>Indicateurs des ventes</summary>
@@ -177,4 +194,35 @@ export default function Sales() {
       {showBaseline && <SalesBaseline key={salesRevision} />}
     </details>
   </div>;
+}
+
+function SaleOutcomeActions({ sale, onUpdated }: { sale: DailySale; onUpdated: (action: "void" | "refund") => Promise<void> }) {
+  const [action, setAction] = useState<"void" | "refund" | null>(null);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!action || !reason.trim()) return;
+    setBusy(true); setError(""); setStatus("");
+    try {
+      await recordSaleOutcome(sale.id, sale.revision, action, reason.trim(), crypto.randomUUID());
+      const savedAction = action;
+      setStatus(savedAction === "void" ? "Vente annulée et conservée dans la provenance." : "Remboursement signalé ; les unités vendues restent inchangées.");
+      setAction(null); setReason(""); await onUpdated(savedAction);
+    } catch (cause) { setError(message(cause)); }
+    finally { setBusy(false); }
+  };
+  return <details className="sales-outcome-actions"><summary>Annulation / remboursement</summary>
+    {!action ? <><Button type="button" size="sm" variant="outline" onClick={() => { setAction("void"); setError(""); }}>Annuler une erreur</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => { setAction("refund"); setError(""); }}>Signaler un remboursement</Button></> :
+      <form onSubmit={(event) => void submit(event)}>
+        <p>{action === "void" ? "L’annulation retire la quantité erronée de la projection." : "Un remboursement monétaire ne modifie pas les unités vendues."}</p>
+        <label>Motif, sans donnée personnelle<textarea required maxLength={240} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
+        <div className="sales-actions"><Button type="submit" size="sm" disabled={busy}>{busy ? "Enregistrement…" : "Confirmer"}</Button>
+          <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => { setAction(null); setReason(""); }}>Fermer</Button></div>
+      </form>}
+    {error && <p role="alert">{error}</p>}{status && <p role="status">{status}</p>}
+  </details>;
 }

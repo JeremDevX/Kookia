@@ -90,13 +90,31 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
     })) });
     await tx.serviceDay.createMany({ data: plan.serviceDays.map((serviceDate) => ({
       restaurantId, serviceDate: new Date(serviceDate + "T00:00:00.000Z"),
-      status: "open", coverage: "complete", actorId: SIMULATION_MARKER,
+      status: "open", coverage: "complete", source: "demo_simulation", actorId: SIMULATION_MARKER,
     })) });
+    const contributionBySale = new Map(plan.sales.map((sale) => [sale.id, stableUuid(`${sale.operationId}:contribution`)]));
+    await insertBatches(plan.sales.map((sale) => ({
+      id: contributionBySale.get(sale.id)!, restaurantId, source: "demo_simulation" as const,
+      sourceKey: sale.operationId, sourceRevision: 1, sourceItemName: sale.itemName, sourceDate: sale.date,
+      serviceDate: new Date(`${sale.date}T00:00:00.000Z`), sourceQuantity: String(sale.quantity), quantity: sale.quantity,
+      saleItemId: sale.itemId, status: "accepted" as const, reviewRevision: 1,
+      reviewedBy: SIMULATION_MARKER, reviewedAt: new Date(sale.createdAt),
+      reviewReason: "Vente synthétique marquée comme démonstration.", createdAt: new Date(sale.createdAt),
+    } satisfies Prisma.SaleContributionCreateManyInput)), (batch) => tx.saleContribution.createMany({ data: batch }));
+    await insertBatches(plan.sales.map((sale) => ({
+      id: stableUuid(`${sale.operationId}:contribution-event`), restaurantId,
+      contributionId: contributionBySale.get(sale.id)!, operationId: `simulation:${sale.operationId}`,
+      revision: 1, kind: "accepted" as const, actorId: SIMULATION_MARKER,
+      reason: "Vente synthétique marquée comme démonstration.",
+      snapshot: { sourceItemName: sale.itemName, sourceDate: sale.date, quantity: sale.quantity,
+        source: "demo_simulation" } as Prisma.InputJsonObject, createdAt: new Date(sale.createdAt),
+    } satisfies Prisma.SaleContributionEventCreateManyInput)), (batch) => tx.saleContributionEvent.createMany({ data: batch }));
     await insertBatches(plan.sales.map((sale) => ({
       id: sale.id, restaurantId, saleItemId: sale.itemId,
       serviceDate: new Date(`${sale.date}T00:00:00.000Z`), quantity: sale.quantity,
       source: "demo_simulation", operationId: sale.operationId, createdBy: SIMULATION_MARKER,
-      updatedBy: SIMULATION_MARKER, createdAt: new Date(sale.createdAt), updatedAt: new Date(sale.createdAt),
+      updatedBy: SIMULATION_MARKER, contributionId: contributionBySale.get(sale.id)!,
+      createdAt: new Date(sale.createdAt), updatedAt: new Date(sale.createdAt),
     } satisfies Prisma.DailySaleCreateManyInput)), (batch) => tx.dailySale.createMany({ data: batch }));
 
     const marker = JSON.parse(JSON.stringify({

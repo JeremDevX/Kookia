@@ -18,6 +18,36 @@ enum ServiceDayCoverage {
   missing
 }
 
+enum ServiceDaySource {
+  recorded
+  demo_simulation
+  mixed
+}
+
+enum SaleContributionSource {
+  manual
+  csv
+  demo_simulation
+}
+
+enum SaleContributionStatus {
+  pending
+  accepted
+  rejected
+  superseded
+  voided
+}
+
+enum SaleContributionEventKind {
+  accepted
+  conflict_detected
+  rejected
+  replaced
+  corrected
+  voided
+  refund_recorded
+}
+
 model User {
   id             String    @id @default(uuid())
   email          String
@@ -72,6 +102,8 @@ model Restaurant {
   saleItems    SaleItem[]
   saleImports  SaleImport[]
   serviceDays  ServiceDay[]
+  saleContributions SaleContribution[]
+  saleContributionEvents SaleContributionEvent[]
 }
 
 model Supplier {
@@ -217,6 +249,7 @@ model SaleItem {
   name           String
   normalizedName String
   sales          DailySale[]
+  contributions  SaleContribution[]
 
   @@unique([restaurantId, normalizedName])
   @@unique([restaurantId, id])
@@ -228,6 +261,7 @@ model ServiceDay {
   serviceDate  DateTime @db.Date
   status       ServiceDayStatus
   coverage     ServiceDayCoverage
+  source       ServiceDaySource @default(recorded)
   revision     Int @default(0)
   actorId      String
   createdAt    DateTime @default(now())
@@ -249,8 +283,10 @@ model DailySale {
   source       String   @default("manual")
   operationId  String
   importId     String?
-  importRecord SaleImport? @relation(fields: [importId], references: [id], onDelete: NoAction)
+  importRecord SaleImport? @relation(fields: [restaurantId, importId], references: [restaurantId, id], onDelete: NoAction)
   importLine   Int?
+  contributionId String? @unique
+  contribution SaleContribution? @relation(fields: [restaurantId, contributionId], references: [restaurantId, id], onDelete: NoAction)
   createdBy    String
   updatedBy    String
   revision     Int      @default(0)
@@ -259,6 +295,8 @@ model DailySale {
 
   @@unique([restaurantId, serviceDate, saleItemId])
   @@unique([restaurantId, operationId])
+  @@unique([restaurantId, id])
+  @@unique([restaurantId, contributionId])
   @@index([restaurantId, serviceDate])
 }
 
@@ -267,13 +305,71 @@ model SaleImport {
   restaurantId  String
   restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   fileHash      String
+  mappingHash   String
+  mappingSnapshot Json
   acceptedCount Int
   rejectedCount Int
+  conflictCount Int @default(0)
   createdBy     String
   createdAt     DateTime @default(now())
   sales         DailySale[]
+  contributions SaleContribution[]
 
-  @@unique([restaurantId, fileHash])
+  @@unique([restaurantId, id])
+  @@unique([restaurantId, fileHash, mappingHash])
+}
+
+model SaleContribution {
+  id             String @id @default(uuid())
+  restaurantId   String
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  source          SaleContributionSource
+  sourceKey       String
+  sourceRevision  Int @default(1)
+  importId        String?
+  importRecord    SaleImport? @relation(fields: [restaurantId, importId], references: [restaurantId, id], onDelete: NoAction)
+  importLine      Int?
+  sourceItemName  String @db.VarChar(120)
+  sourceDate      String @db.VarChar(40)
+  serviceDate     DateTime? @db.Date
+  sourceQuantity  String @db.VarChar(32)
+  quantity        Int?
+  saleItemId      String?
+  saleItem        SaleItem? @relation(fields: [restaurantId, saleItemId], references: [restaurantId, id], onDelete: NoAction)
+  status          SaleContributionStatus
+  reviewRevision  Int @default(0)
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  reviewReason    String? @db.VarChar(240)
+  supersedesId    String?
+  supersedes      SaleContribution? @relation("SaleContributionRevisions", fields: [restaurantId, supersedesId], references: [restaurantId, id], onDelete: NoAction)
+  supersededBy    SaleContribution[] @relation("SaleContributionRevisions")
+  dailySale       DailySale?
+  events          SaleContributionEvent[]
+  createdAt       DateTime @default(now())
+
+  @@unique([restaurantId, id])
+  @@unique([restaurantId, sourceKey])
+  @@index([restaurantId, status, createdAt])
+  @@index([restaurantId, serviceDate, saleItemId])
+}
+
+model SaleContributionEvent {
+  id             String @id @default(uuid())
+  restaurantId   String
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  contributionId String
+  contribution   SaleContribution @relation(fields: [restaurantId, contributionId], references: [restaurantId, id], onDelete: Cascade)
+  operationId    String
+  revision       Int
+  kind           SaleContributionEventKind
+  actorId        String
+  reason         String @db.VarChar(240)
+  snapshot       Json
+  createdAt      DateTime @default(now())
+
+  @@unique([restaurantId, operationId])
+  @@index([restaurantId, contributionId, createdAt])
 }
 
 model PurchaseOrder {

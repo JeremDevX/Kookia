@@ -64,8 +64,11 @@ try {
       where: { restaurantId, source: "demo_simulation", operationId: { startsWith: SIMULATION_VERSION + ":" } },
       select: { serviceDate: true }, distinct: ["serviceDate"],
     });
+    const generatedContributions = await tx.saleContribution.findMany({ where: { restaurantId,
+      source: "demo_simulation", sourceKey: { startsWith: `${SIMULATION_VERSION}:` } }, select: { id: true } });
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
     await tx.dailySale.deleteMany({ where: { restaurantId, source: "demo_simulation", operationId: { startsWith: `${SIMULATION_VERSION}:` } } });
+    await tx.saleContribution.deleteMany({ where: { restaurantId, id: { in: generatedContributions.map((row) => row.id) } } });
     await tx.production.deleteMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } } });
     await tx.stockMovement.deleteMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } } });
     await tx.workspaceDocument.delete({ where: { restaurantId_kind: { restaurantId, kind: SIMULATION_MARKER } } });
@@ -127,26 +130,33 @@ type ActiveMarker = { version?: string; sourceDigest?: string; counts?: Record<s
   productState?: Array<Record<string, unknown>>; recipeDigest?: string; saleItemIds?: string[] };
 
 async function assertNoHumanChanges(restaurantId: string, marker: ActiveMarker) {
-  const [movementCount, productionCount, saleCount, unrelatedMovements, unrelatedProductions, currentProducts, currentRecipes] = await Promise.all([
+  const [movementCount, productionCount, saleCount, contributionCount, unrelatedMovements, unrelatedProductions, currentProducts, currentRecipes] = await Promise.all([
     prisma.stockMovement.count({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } } }),
     prisma.production.count({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } } }),
     prisma.dailySale.count({ where: { restaurantId, source: "demo_simulation", operationId: { startsWith: `${SIMULATION_VERSION}:` } } }),
+    prisma.saleContribution.count({ where: { restaurantId, source: "demo_simulation", sourceKey: { startsWith: `${SIMULATION_VERSION}:` } } }),
     prisma.stockMovement.count({ where: { restaurantId, productId: { in: simulationProductIds }, NOT: { operationId: { startsWith: `${SIMULATION_VERSION}:` } } } }),
     prisma.production.count({ where: { restaurantId, recipeId: { in: savedRecipeIds }, NOT: { operationId: { startsWith: `${SIMULATION_VERSION}:` } } } }),
     prisma.product.findMany({ where: { restaurantId, id: { in: simulationProductIds } } }),
     prisma.recipe.findMany({ where: { restaurantId }, include: { ingredients: { orderBy: { productId: "asc" } } }, orderBy: { id: "asc" } }),
   ]);
   if (movementCount !== marker.counts?.stockMovements || productionCount !== marker.counts?.productions ||
-    saleCount !== marker.counts?.sales || unrelatedMovements || unrelatedProductions) {
+    saleCount !== marker.counts?.sales || contributionCount !== marker.counts?.sales || unrelatedMovements || unrelatedProductions) {
     throw new Error("Des mouvements manuels ou un scénario incomplet existent ; rollback arrêté pour préserver les saisies.");
   }
-  const [generatedSales, generatedProductions] = await Promise.all([
+  const [generatedSales, generatedContributions, generatedProductions] = await Promise.all([
     prisma.dailySale.findMany({ where: { restaurantId, source: "demo_simulation", operationId: { startsWith: `${SIMULATION_VERSION}:` } },
       select: { createdBy: true, updatedBy: true, revision: true } }),
+    prisma.saleContribution.findMany({ where: { restaurantId, source: "demo_simulation", sourceKey: { startsWith: `${SIMULATION_VERSION}:` } },
+      select: { id: true, reviewedBy: true, reviewRevision: true, status: true, source: true } }),
     prisma.production.findMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } },
       select: { actorId: true } }),
   ]);
   if (generatedSales.some((sale) => sale.createdBy !== SIMULATION_MARKER || sale.updatedBy !== SIMULATION_MARKER || sale.revision !== 0) ||
+    generatedContributions.some((contribution) => contribution.reviewedBy !== SIMULATION_MARKER || contribution.reviewRevision !== 1 ||
+      contribution.status !== "accepted" || contribution.source !== "demo_simulation") ||
+    await prisma.saleContributionEvent.count({ where: { restaurantId,
+      contributionId: { in: generatedContributions.map((row) => row.id) } } }) !== marker.counts?.sales ||
     generatedProductions.some((production) => production.actorId !== SIMULATION_MARKER)) {
     throw new Error("Une vente ou production simulée a été modifiée dans l’application ; rollback arrêté pour préserver la saisie.");
   }

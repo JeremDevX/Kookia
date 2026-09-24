@@ -3,10 +3,10 @@ import Button from "../common/Button";
 import { commitSalesImport, createSaleItem, getSaleItems, previewSalesImport, type SaleItem, type SalesImportPreview } from "../../services/salesService";
 
 const errorMessage = (cause: unknown) => cause instanceof Error ? cause.message : "Réessayez.";
-const statusLabel = { ready: "Prête", invalid: "Invalide", unmapped: "Sans correspondance", duplicate: "Doublon dans le fichier", existing: "Vente déjà enregistrée", closed: "Service fermé" };
+const statusLabel = { ready: "Prête", invalid: "Invalide", unmapped: "Sans correspondance", duplicate: "Doublon dans le fichier", existing: "Conflit à réconcilier", closed: "Service fermé" };
 
 export default function SalesImport({ items, onImported, onItemsCreated }: {
-  items: SaleItem[]; onImported: (date: string) => Promise<void>; onItemsCreated: (items: SaleItem[]) => void;
+  items: SaleItem[]; onImported: (date?: string) => Promise<void>; onItemsCreated: (items: SaleItem[]) => void;
 }) {
   const [csv, setCsv] = useState("");
   const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -52,7 +52,7 @@ export default function SalesImport({ items, onImported, onItemsCreated }: {
     void inspect(csv, next);
   };
   const commit = async () => {
-    if (!preview || !preview.readyCount || preview.alreadyImported) return;
+    if (!preview || preview.alreadyImported) return;
     const current = sequence.current;
     setCommitting(true); setError(""); setStatus("");
     try {
@@ -60,12 +60,12 @@ export default function SalesImport({ items, onImported, onItemsCreated }: {
       if (current === sequence.current) {
         setStatus(result.alreadyImported
           ? "Ce fichier a déjà été importé ; aucune vente ajoutée."
-          : `${result.acceptedCount} vente(s) importée(s), ${result.rejectedCount} ligne(s) rejetée(s).`);
+          : `${result.acceptedCount} vente(s) acceptée(s), ${result.conflictCount} conflit(s) à réconcilier, ${result.rejectedCount} ligne(s) rejetée(s) et tracée(s).`);
         setPreview({ ...preview, alreadyImported: true });
       }
-      const latestDate = preview.rows.filter((row) => row.status === "ready")
+      const latestDate = preview.rows.filter((row) => ["ready", "existing", "closed"].includes(row.status))
         .map((row) => row.serviceDate).sort().at(-1);
-      if (latestDate) await onImported(latestDate);
+      await onImported(latestDate);
     } catch (cause) { if (current === sequence.current) setError(errorMessage(cause)); }
     finally { setCommitting(false); }
   };
@@ -111,7 +111,7 @@ export default function SalesImport({ items, onImported, onItemsCreated }: {
     {error && <p role="alert">{error}</p>}
     {status && <p role="status">{status}</p>}
     {preview && <>
-      <p role="status">{preview.alreadyImported ? "Fichier déjà importé. " : ""}{preview.readyCount} ligne(s) prête(s), {preview.rejectedCount} rejetée(s). Les lignes rejetées ne seront pas enregistrées.</p>
+      <p role="status">{preview.alreadyImported ? "Fichier et correspondances déjà importés. " : ""}{preview.readyCount} ligne(s) prête(s), {preview.conflictCount} conflit(s), {preview.rejectedCount} rejetée(s). Les lignes seront tracées ; seules les lignes prêtes sont projetées automatiquement.</p>
       {pageCount > 1 && <div className="sales-actions"><Button type="button" variant="outline" disabled={page === 0} onClick={() => setPage((value) => value - 1)}>Page précédente</Button>
         <span role="status">Page {page + 1} sur {pageCount}</span>
         <Button type="button" variant="outline" disabled={page >= pageCount - 1} onClick={() => setPage((value) => value + 1)}>Page suivante</Button></div>}
@@ -131,8 +131,8 @@ export default function SalesImport({ items, onImported, onItemsCreated }: {
       {missingNames.length > 0 && <Button type="button" variant="outline" disabled={creatingItems || committing || loading} onClick={() => void createMissingItems()}>
         {creatingItems ? "Création…" : `Créer et associer ${missingNames.length} article${missingNames.length > 1 ? "s" : ""} du fichier`}
       </Button>}
-      <Button type="button" disabled={!preview.readyCount || preview.alreadyImported || committing || loading || creatingItems} onClick={() => void commit()}>
-        {committing ? "Import en cours…" : `Confirmer l’import de ${preview.readyCount} ligne(s)`}
+      <Button type="button" disabled={preview.alreadyImported || committing || loading || creatingItems} onClick={() => void commit()}>
+        {committing ? "Import en cours…" : `Enregistrer la revue de ${preview.rows.length} ligne(s)`}
       </Button>
     </>}
   </section>;

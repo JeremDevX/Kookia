@@ -156,8 +156,18 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
 
   const scenarioMovementCount = await prisma.stockMovement.count({ where: { restaurantId: scenarioOwner.restaurantId } });
   const scenarioSalesCount = await prisma.dailySale.count({ where: { restaurantId: scenarioOwner.restaurantId, source: "demo_simulation" } });
+  const scenarioContributionCount = await prisma.saleContribution.count({ where: { restaurantId: scenarioOwner.restaurantId,
+    source: "demo_simulation", sourceKey: { startsWith: "restaurant-simulation-v1:" }, status: "accepted" } });
+  const scenarioServiceDays = await prisma.serviceDay.findMany({ where: { restaurantId: scenarioOwner.restaurantId },
+    select: { source: true } });
+  const scenarioEventCount = await prisma.saleContributionEvent.count({ where: { restaurantId: scenarioOwner.restaurantId,
+    kind: "accepted", actorId: "restaurant-simulation:v1" } });
   expect(scenarioMovementCount).toBe(plan.counts.stockMovements);
   expect(scenarioSalesCount).toBe(plan.counts.sales);
+  expect(scenarioContributionCount).toBe(plan.counts.sales);
+  expect(scenarioServiceDays.length).toBeGreaterThan(0);
+  expect(scenarioServiceDays.every((day) => day.source === "demo_simulation")).toBe(true);
+  expect(scenarioEventCount).toBe(plan.counts.sales);
   const otherSources = await archiveOwner.agent.get("/api/workspace/source-invoices").expect(200);
   expect(otherSources.body).toHaveLength(1);
   await archiveOwner.agent.get(`/api/workspace/products/${received.productId}/movements`).expect(200).expect(({ body }) => expect(body).toEqual([]));
@@ -171,6 +181,8 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   expect(await prisma.workspaceDocument.count({ where: { restaurantId: scenarioOwner.restaurantId } })).toBe(0);
   expect(await prisma.stockMovement.count({ where: { restaurantId: scenarioOwner.restaurantId } })).toBe(0);
   expect(await prisma.dailySale.count({ where: { restaurantId: scenarioOwner.restaurantId } })).toBe(0);
+  expect(await prisma.saleContribution.count({ where: { restaurantId: scenarioOwner.restaurantId } })).toBe(0);
+  expect(await prisma.saleContributionEvent.count({ where: { restaurantId: scenarioOwner.restaurantId } })).toBe(0);
   expect(await prisma.product.count({ where: { restaurantId: scenarioOwner.restaurantId } })).toBe(0);
   expect(await prisma.restaurant.findUnique({ where: { id: archiveOwner.restaurantId } })).toBeNull();
   expect(await prisma.workspaceDocument.count({ where: { restaurantId: archiveOwner.restaurantId } })).toBe(0);

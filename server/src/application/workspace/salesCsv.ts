@@ -7,6 +7,9 @@ export interface CsvSaleRow {
   serviceDate: string;
   itemName: string;
   quantity: number;
+  sourceQuantity: string;
+  validServiceDate: boolean;
+  validQuantity: boolean;
   error?: string;
 }
 
@@ -49,13 +52,16 @@ export function parseSalesCsv(csv: string, today: string) {
     const itemName = rawName.trim();
     const serviceDate = rawDate.trim();
     const quantity = Number(rawQuantity);
+    const validServiceDate = z.iso.date().safeParse(serviceDate).success && serviceDate <= today;
+    const validQuantity = /^[1-9]\d*$/.test(rawQuantity.trim()) && Number.isSafeInteger(quantity) && quantity <= 1_000_000;
     let error: string | undefined;
     if (fields.length !== 3) error = "Trois colonnes sont attendues.";
-    else if (!z.iso.date().safeParse(serviceDate).success || serviceDate > today) error = "Date de service invalide ou future.";
+    else if (!validServiceDate) error = "Date de service invalide ou future.";
     else if (!itemName || itemName.length > 120) error = "Nom d’article manquant ou trop long.";
-    else if (!/^[1-9]\d*$/.test(rawQuantity.trim()) || !Number.isSafeInteger(quantity) || quantity > 1_000_000)
+    else if (!validQuantity)
       error = "Quantité entière positive attendue (maximum 1 000 000).";
-    return { line, serviceDate, itemName, quantity, ...(error ? { error } : {}) };
+    return { line, serviceDate, itemName, quantity, sourceQuantity: rawQuantity.trim().slice(0, 32),
+      validServiceDate, validQuantity, ...(error ? { error } : {}) };
   });
   return { hash: createHash("sha256").update(csv, "utf8").digest("hex"), rows };
 }

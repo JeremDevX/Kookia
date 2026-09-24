@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
+import { createSaleContribution, lockSalesWorkspace, recordSaleContributionEvent } from "./salesContributionLedger.js";
 
 export interface SaleValues { saleItemId: string; serviceDate: string; quantity: number }
 
@@ -14,7 +15,7 @@ const saleDto = (sale: Prisma.DailySaleGetPayload<{ include: { saleItem: true } 
   createdAt: sale.createdAt.toISOString(), updatedAt: sale.updatedAt.toISOString(),
 });
 const serviceDayDto = (day: Prisma.ServiceDayGetPayload<{ include: { _count: { select: { sales: true } } } }>) => ({
-  serviceDate: day.serviceDate.toISOString().slice(0, 10), status: day.status, coverage: day.coverage,
+  serviceDate: day.serviceDate.toISOString().slice(0, 10), status: day.status, coverage: day.coverage, source: day.source,
   revision: day.revision, actorId: day.actorId, salesCount: day._count.sales, updatedAt: day.updatedAt.toISOString(),
 });
 
@@ -53,7 +54,9 @@ export async function ensureOpenPartialServiceDay(tx: Prisma.TransactionClient, 
   const current = await tx.serviceDay.findUnique({ where });
   if (current?.status === "closed") throw new WorkspaceError(409, "SERVICE_CLOSED", "Ce jour est déclaré fermé ; aucune vente ne peut y être ajoutée.");
   if (!current) return tx.serviceDay.create({ data: { restaurantId, serviceDate: date(serviceDate), status: "open", coverage: "partial", actorId } });
-  if (current.coverage !== "partial") return tx.serviceDay.update({ where, data: { coverage: "partial", actorId, revision: { increment: 1 } } });
+    const source = current.source === "demo_simulation" ? "mixed" : current.source;
+    if (current.coverage !== "partial" || current.source !== source)
+      return tx.serviceDay.update({ where, data: { coverage: "partial", source, actorId, revision: { increment: 1 } } });
   return current;
 }
 
@@ -93,48 +96,110 @@ export async function latestService(restaurantId: string) {
 }
 
 export async function createSale(restaurantId: string, actorId: string, operationId: string, input: SaleValues) {
-  try {
-    return await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
-      const prior = await tx.dailySale.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { saleItem: true } });
-      if (prior) {
-        if (prior.saleItemId === input.saleItemId && prior.serviceDate.getTime() === date(input.serviceDate).getTime() && prior.quantity === input.quantity) return saleDto(prior);
-        throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération correspond déjà à une autre vente.");
-      }
-      const item = await tx.saleItem.findUnique({ where: { restaurantId_id: { restaurantId, id: input.saleItemId } } });
-      if (!item) throw new WorkspaceError(400, "INVALID_SALE_ITEM", "Article vendu introuvable dans votre espace.");
-      await ensureOpenPartialServiceDay(tx, restaurantId, actorId, input.serviceDate);
-      const sale = await tx.dailySale.create({ data: {
-        restaurantId, saleItemId: input.saleItemId, serviceDate: date(input.serviceDate),
-        quantity: input.quantity, source: "manual", operationId, createdBy: actorId, updatedBy: actorId,
-      }, include: { saleItem: true } });
-      return saleDto(sale);
-    });
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      const retry = await prisma.dailySale.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { saleItem: true } });
-      if (retry && retry.saleItemId === input.saleItemId && retry.serviceDate.getTime() === date(input.serviceDate).getTime() && retry.quantity === input.quantity) return saleDto(retry);
-      throw new WorkspaceError(409, "SALE_CONFLICT", "Une vente existe déjà pour cet article et cette date ; corrigez-la dans l’historique.");
+  const outcome = await prisma.$transaction(async (tx) => {
+    await lockSalesWorkspace(tx, restaurantId);
+    const prior = await tx.dailySale.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { saleItem: true } });
+    if (prior) {
+      if (prior.saleItemId === input.saleItemId && prior.serviceDate.getTime() === date(input.serviceDate).getTime() && prior.quantity === input.quantity) return { sale: saleDto(prior) };
+      throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération correspond déjà à une autre vente.");
     }
-    throw error;
-  }
+    const sourceKey = `manual:${operationId}`;
+    const previous = await tx.saleContribution.findUnique({ where: { restaurantId_sourceKey: { restaurantId, sourceKey } } });
+    if (previous) {
+      if (previous.saleItemId !== input.saleItemId || previous.serviceDate?.getTime() !== date(input.serviceDate).getTime() || previous.quantity !== input.quantity)
+        throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération correspond déjà à une autre vente.");
+      if (previous.status === "accepted") {
+        const replayed = await tx.dailySale.findFirst({ where: { restaurantId, contributionId: previous.id }, include: { saleItem: true } });
+        if (replayed) return { sale: saleDto(replayed) };
+      }
+      return { conflict: true as const };
+    }
+    const item = await tx.saleItem.findUnique({ where: { restaurantId_id: { restaurantId, id: input.saleItemId } } });
+    if (!item) throw new WorkspaceError(400, "INVALID_SALE_ITEM", "Article vendu introuvable dans votre espace.");
+    const existing = await tx.dailySale.findUnique({ where: { restaurantId_serviceDate_saleItemId: {
+      restaurantId, serviceDate: date(input.serviceDate), saleItemId: input.saleItemId,
+    } }, include: { saleItem: true, contribution: true } });
+    const status = existing ? "pending" : "accepted";
+    const contribution = await createSaleContribution(tx, restaurantId, {
+      source: "manual", sourceKey, sourceRevision: 1, sourceItemName: item.name,
+      sourceDate: input.serviceDate, serviceDate: date(input.serviceDate), sourceQuantity: String(input.quantity), quantity: input.quantity,
+      saleItemId: input.saleItemId, status, reviewRevision: existing ? 0 : 1,
+      reviewedBy: existing ? null : actorId, reviewedAt: existing ? null : new Date(),
+      reviewReason: existing ? null : "Saisie manuelle confirmée.",
+    });
+    await recordSaleContributionEvent(tx, { restaurantId, contributionId: contribution.id, operationId: `create:${sourceKey}`,
+      revision: contribution.reviewRevision, kind: existing ? "conflict_detected" : "accepted", actorId,
+      reason: existing ? "Vente déjà acceptée pour cet article et cette date ; revue requise." : "Saisie manuelle confirmée.",
+      snapshot: { sourceItemName: item.name, sourceDate: input.serviceDate, quantity: input.quantity,
+        existingSaleId: existing?.id ?? null } });
+    if (existing) return { conflict: true as const };
+    await ensureOpenPartialServiceDay(tx, restaurantId, actorId, input.serviceDate);
+    const sale = await tx.dailySale.create({ data: {
+      restaurantId, saleItemId: input.saleItemId, serviceDate: date(input.serviceDate),
+      quantity: input.quantity, source: "manual", operationId, contributionId: contribution.id, createdBy: actorId, updatedBy: actorId,
+    }, include: { saleItem: true } });
+    return { sale: saleDto(sale) };
+  });
+  if ("conflict" in outcome) throw new WorkspaceError(409, "SALE_CONFLICT", "Une vente existe déjà ; le nouvel apport est en attente de réconciliation dans l’historique des apports.");
+  return outcome.sale;
 }
 
-export async function correctSale(restaurantId: string, actorId: string, id: string, revision: number, input: SaleValues) {
+export async function correctSale(restaurantId: string, actorId: string, id: string, revision: number, input: SaleValues,
+  operationId: string, reason: string) {
   await assertSaleItem(restaurantId, input.saleItemId);
   try {
     return await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
-      const current = await tx.dailySale.findFirst({ where: { id, restaurantId }, select: { serviceDate: true, revision: true } });
+      await lockSalesWorkspace(tx, restaurantId);
+      const correctionEvent = await tx.saleContributionEvent.findUnique({ where: { restaurantId_operationId: {
+        restaurantId, operationId: `correct:${operationId}`,
+      } } });
+      if (correctionEvent) {
+        const snapshot = correctionEvent.snapshot as { saleId?: string; after?: { serviceDate?: string; saleItemId?: string; quantity?: number } };
+        if (correctionEvent.kind !== "corrected" || snapshot.saleId !== id || correctionEvent.reason !== reason.slice(0, 240) ||
+          snapshot.after?.serviceDate !== input.serviceDate || snapshot.after.saleItemId !== input.saleItemId || snapshot.after.quantity !== input.quantity)
+          throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération de correction existe déjà avec un autre contenu.");
+        const replayed = await tx.dailySale.findFirst({ where: { id, restaurantId }, include: { saleItem: true } });
+        if (!replayed) throw new WorkspaceError(409, "SALE_VOIDED", "La vente corrigée n’est plus active.");
+        return saleDto(replayed);
+      }
+      const current = await tx.dailySale.findFirst({ where: { id, restaurantId }, include: { saleItem: true, contribution: true } });
       if (!current) throw new WorkspaceError(404, "NOT_FOUND", "Vente introuvable.");
       if (current.revision !== revision) throw new WorkspaceError(409, "REVISION_CONFLICT", "Cette vente a changé ; rechargez l’historique avant correction.");
       const oldDate = current.serviceDate.toISOString().slice(0, 10);
-      if (oldDate !== input.serviceDate) await ensureOpenPartialServiceDay(tx, restaurantId, actorId, input.serviceDate);
-      const updated = await tx.dailySale.updateMany({
-        where: { id, restaurantId, revision },
-        data: { saleItemId: input.saleItemId, serviceDate: date(input.serviceDate), quantity: input.quantity,
-          updatedBy: actorId, revision: { increment: 1 } },
+      for (const serviceDate of new Set([oldDate, input.serviceDate]))
+        await ensureOpenPartialServiceDay(tx, restaurantId, actorId, serviceDate);
+      const occupied = await tx.dailySale.findUnique({ where: { restaurantId_serviceDate_saleItemId: {
+        restaurantId, serviceDate: date(input.serviceDate), saleItemId: input.saleItemId,
+      } } });
+      if (occupied && occupied.id !== current.id) throw new WorkspaceError(409, "SALE_CONFLICT", "Une autre vente occupe déjà cette date et cet article ; aucune correction appliquée.");
+      const item = await tx.saleItem.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: input.saleItemId } } });
+      const nextRevision = current.revision + 1;
+      const contribution = await createSaleContribution(tx, restaurantId, {
+        source: "manual", sourceKey: `correction:${id}:${nextRevision}`, sourceRevision: nextRevision,
+        sourceItemName: item.name, sourceDate: input.serviceDate, serviceDate: date(input.serviceDate),
+        sourceQuantity: String(input.quantity), quantity: input.quantity, saleItemId: input.saleItemId,
+        status: "accepted", reviewRevision: 1, reviewedBy: actorId, reviewedAt: new Date(),
+        reviewReason: reason.slice(0, 240), supersedesId: current.contributionId,
       });
+      if (current.contribution) {
+        await tx.saleContribution.update({ where: { id: current.contribution.id }, data: {
+          status: "superseded", reviewRevision: { increment: 1 }, reviewedBy: actorId,
+          reviewedAt: new Date(), reviewReason: reason.slice(0, 240),
+        } });
+        await recordSaleContributionEvent(tx, { restaurantId, contributionId: current.contribution.id,
+          operationId: `correct:${operationId}`, revision: nextRevision, kind: "corrected", actorId,
+          reason: reason.slice(0, 240), snapshot: { before: { serviceDate: oldDate, saleItemId: current.saleItemId,
+            saleItemName: current.saleItem.name, quantity: current.quantity }, saleId: id,
+          after: { serviceDate: input.serviceDate, saleItemId: input.saleItemId, quantity: input.quantity }, afterContributionId: contribution.id } });
+      }
+      await recordSaleContributionEvent(tx, { restaurantId, contributionId: contribution.id,
+        operationId: `correction:${id}:${nextRevision}`, revision: 1, kind: "accepted", actorId,
+        reason: reason.slice(0, 240), snapshot: { sourceItemName: item.name, sourceDate: input.serviceDate,
+          quantity: input.quantity, supersedesId: current.contributionId } });
+      const updated = await tx.dailySale.updateMany({ where: { id, restaurantId, revision }, data: {
+        saleItemId: input.saleItemId, serviceDate: date(input.serviceDate), quantity: input.quantity,
+        contributionId: contribution.id, updatedBy: actorId, revision: { increment: 1 },
+      } });
       if (!updated.count) throw new WorkspaceError(409, "REVISION_CONFLICT", "Cette vente a changé ; rechargez l’historique avant correction.");
       return saleDto(await tx.dailySale.findFirstOrThrow({ where: { id, restaurantId }, include: { saleItem: true } }));
     });
