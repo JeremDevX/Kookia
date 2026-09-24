@@ -19,6 +19,9 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
   const [refreshRevision, setRefreshRevision] = useState(0);
   const operationIds = useRef<Record<string, string>>({});
   const suggestionKeys = useRef<Record<string, string>>({});
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const retryFocusPending = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -39,6 +42,19 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [refreshKey, refreshRevision]);
+
+  useEffect(() => {
+    if (loading || !retryFocusPending.current) return;
+    retryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (error) retryButtonRef.current?.focus();
+    else headingRef.current?.focus();
+  }, [data, error, loading]);
+
+  const retrySuggestions = () => {
+    retryFocusPending.current = document.activeElement === retryButtonRef.current;
+    setRefreshRevision((value) => value + 1);
+  };
 
   const retryAddition = async (productId: string) => {
     if (!data || busyProductId) return;
@@ -82,11 +98,11 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
   };
 
   return <section className="purchase-suggestions" aria-labelledby="purchase-suggestions-title">
-    <header className="workspace-section-heading"><h2 id="purchase-suggestions-title">Besoins à revoir</h2>
+    <header className="workspace-section-heading"><h2 ref={headingRef} id="purchase-suggestions-title" tabIndex={-1}>Besoins à revoir</h2>
       <span>{loading ? "Calcul…" : data?.status === "ready" ? `${data.suggestions.length} produit${data.suggestions.length === 1 ? "" : "s"}` : "Pas de quantité fiable"}</span>
     </header>
     {loading ? <p role="status">Vérification des services, recettes et comptages…</p> : error && !data
-      ? <p role="alert">{error}</p> : data && <>
+      ? <div role="alert"><p>{error}</p><Button ref={retryButtonRef} type="button" variant="outline" onClick={retrySuggestions}>Recharger les propositions</Button></div> : data && <>
         {data.workspaceMode === "demo" && <p className="purchase-suggestions-note">Espace de démonstration : toute commande validée reste simulée, sans envoi ni mouvement de stock.</p>}
         {data.status === "simulation_only" && <p className="purchase-suggestions-note" role="status">Les ventes utilisées sont simulées. Elles ne peuvent pas préparer un achat dans cet espace réel.</p>}
         {data.status === "no_data" && <p>Aucune vente complète ne permet encore d’estimer le prochain service.</p>}
@@ -143,7 +159,7 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
           <ul className="purchase-suggestions-assumptions">{data.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}</ul>
         </>}
       </>}
-    {error && data && <div role="alert"><p>{error}</p><Button variant="outline" onClick={() => setRefreshRevision((value) => value + 1)}>
+    {error && data && <div role="alert"><p>{error}</p><Button ref={retryButtonRef} type="button" variant="outline" onClick={retrySuggestions}>
       Recharger les propositions
     </Button></div>}
   </section>;
