@@ -166,7 +166,7 @@ export default function InvoiceModal({ initialInvoice, onValidate, onPersist, on
             <option value="">Choisir un produit</option>
             {products.map((product) => <option key={product.id} value={product.id}>{product.name} ({product.unit})</option>)}
           </select>
-          <label htmlFor={`invoice-quantity-${index}`}>Quantité à ajouter ({products.find((product) => product.id === line.productId)?.unit ?? line.unit ?? "unité"})</label>
+          <label htmlFor={`invoice-quantity-${index}`}>Quantité à ajouter ({products.find((product) => product.id === line.productId)?.unit || line.unit || "unité du produit"})</label>
           <input className="input-field" id={`invoice-quantity-${index}`} type="number" min="0" step="0.001"
             value={line.quantity} onChange={(event) => updateLine(index, { quantity: Number(event.target.value), disposition: sourceLinked ? "pending" : line.disposition })} />
           <label htmlFor={`invoice-price-${index}`}>Prix unitaire indicatif (€)</label>

@@ -157,7 +157,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
             </li>)}
           </ul>}
           <details><summary>Lire la transcription source</summary><pre className="source-invoice-content">{selected.content}</pre></details>
-          <button type="button" className="btn btn-primary" onClick={() => void resume()} disabled={opening}>
+          <button type="button" className="btn btn-primary" onClick={() => void resume()} aria-disabled={opening}>
             {opening ? "Ouverture…" : selected.invoiceStatus === "draft" ? "Reprendre le brouillon" : selected.invoiceStatus === "received" ? "Voir la réception" :
               selected.type === "invoice" ? "Créer un brouillon corrigible" : "Consulter et classer la pièce"}
           </button>

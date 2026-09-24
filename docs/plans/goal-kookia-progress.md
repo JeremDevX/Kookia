@@ -66,7 +66,21 @@ confirmation, attente et persistance dans l'UI sans effet stock, mais pas le
 parcours complet. L'archive I4 est aussi vérifiée à 320/375/390/768/1280 px,
 sans débordement ; AX nomme son bouton, Tab le focalise avec focus visible,
 Espace ouvre `Facture DEMO-2026-09-01`, son aperçu PDF et son unique ligne.
-Le rejeu reste à 432 pièces ; aucun brouillon ni mouvement n'est créé.
+Le rejeu reste à 432 pièces. Dans le bac tmpfs actuel, l'essai a aussi créé un
+brouillon synthétique lié à la fixture publique ; aucun produit n'a été choisi,
+aucune réception n'a eu lieu et aucun mouvement de stock n'a été ajouté. À
+320×750, l'AXTree a révélé un libellé de quantité vide lorsqu'aucun produit
+n'était rapproché ; le fallback affiche désormais « unité du produit ». Le
+parcours clavier Entrée→Échap a révélé une perte de focus, causée par la
+désactivation native temporaire du déclencheur pendant l'ouverture asynchrone.
+`aria-disabled` conserve ce bouton focalisable, avec le garde `opening` existant ;
+le focus revient maintenant à « Reprendre le brouillon ». La modale est rendue
+sans débordement horizontal visible et défile verticalement ; aucun lecteur
+d'écran réel n'a été utilisé.
+Point de reprise du 2026-09-24, branche `main`, base `e969ea8`, espace de
+travail propre avant cette tranche ; aucune migration n'est concernée.
+`npm run lint`, `npm run build`, `npm test -- --run` (33 contrôles scripts/CSS,
+102 tests Vitest) et `git diff --check` passent.
 Une production a aussi été confirmée dans l'UI : déductions
 matière exactes puis journal visible après rechargement. La modale mobile
 est nommée, contenue et clavier-opérable, sans lecteur d'écran réel. Chrome
