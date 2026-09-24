@@ -85,7 +85,8 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   const archiveOwner = await account("scenario-archive");
   const replayOwner = await account("scenario-replay");
   const invoices = createAnonymizedSourceInvoices();
-  const { plan } = await seedLocalDemoScenario(scenarioOwner.userId);
+  const { plan, recipeIdeaSources } = await seedLocalDemoScenario(scenarioOwner.userId);
+  expect(plan.counts.invoiceDocuments).toBe(invoices.length);
   const scenarioProductions = await prisma.production.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
     operationId: { startsWith: "restaurant-simulation-v1:" } }, include: { recipeVersion: true } });
   expect(scenarioProductions).toHaveLength(plan.productions.length);
@@ -242,7 +243,9 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   const archiveStockBefore = await archiveOwner.agent.get("/api/workspace/catalog").expect(200);
   const archiveProductBefore = archiveStockBefore.body.products.find((product: { id: string }) => product.id === received.productId);
   const sourceList = await scenarioOwner.agent.get("/api/workspace/source-invoices").expect(200);
-  expect(sourceList.body).toHaveLength(431);
+  expect(sourceList.body).toHaveLength(invoices.length + recipeIdeaSources.length);
+  expect(sourceList.body.map((source: { id: string }) => source.id))
+    .toEqual(expect.arrayContaining(recipeIdeaSources.map((source) => source.id)));
   expect((await scenarioOwner.agent.get(`/api/workspace/source-invoices/${receivedInvoice.id}`).expect(200)).body.title)
     .toBe(receivedInvoice.title);
   expect((await archiveOwner.agent.get(`/api/workspace/source-invoices/${receivedInvoice.id}`).expect(200)).body.title)

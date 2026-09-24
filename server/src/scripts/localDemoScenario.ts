@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { createAnonymizedSourceInvoices } from "./fixtures/anonymizedSourceInvoices.js";
+import { createDemoRecipeIdeaSourceInvoices } from "./fixtures/demoRecipeIdeaSourceInvoices.js";
 import { applyRestaurantSimulation } from "./restaurantSimulationStorage.js";
 import { assertSeedSnapshot, buildRecipePlan } from "./restaurantSimulationSupport.js";
 import { buildRestaurantSimulation } from "./restaurantSimulationPlan.js";
@@ -53,6 +54,7 @@ export async function seedLocalDemoScenario(ownerId: string) {
   const restaurant = await ensureWorkspace(ownerId);
   const { productSnapshots, recipeSnapshots } = await assertFreshWorkspace(restaurant.id);
   const invoices = createAnonymizedSourceInvoices();
+  const recipeIdeaSources = createDemoRecipeIdeaSourceInvoices();
   const plan = buildRestaurantSimulation(invoices, productSnapshots.map((product) => ({
     id: product.id, name: product.name, unit: product.unit, currentStock: product.currentStock,
     minThreshold: product.minThreshold, pricePerUnit: product.pricePerUnit,
@@ -61,7 +63,7 @@ export async function seedLocalDemoScenario(ownerId: string) {
   const plannedRecipes = buildRecipePlan(recipeSnapshots, plan.productions, plan.recipeVersions);
   const suppliers = await prisma.supplier.findMany({ where: { restaurantId: restaurant.id }, select: { id: true } });
 
-  await prisma.workspaceDocument.createMany({ data: invoices.map((invoice) => ({
+  await prisma.workspaceDocument.createMany({ data: [...invoices, ...recipeIdeaSources].map((invoice) => ({
     restaurantId: restaurant.id, kind: `source-invoice:${invoice.id}`, data: sourceDocument(invoice),
   })) });
   await applyRestaurantSimulation(restaurant.id, plan, plannedRecipes, [], [], new Set(suppliers.map(({ id }) => id)));
@@ -69,5 +71,5 @@ export async function seedLocalDemoScenario(ownerId: string) {
     mode: "demo", name: "Restaurant de démonstration KookIA", type: "Restaurant de démonstration",
     address: "", city: "", phone: "", email: "demo@kookia.local", dailyCovers: 50,
   } });
-  return { invoices, plan };
+  return { invoices, recipeIdeaSources, plan };
 }

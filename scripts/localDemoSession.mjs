@@ -24,8 +24,9 @@ try {
   if (users.length !== 1 || users[0].id !== ownerId) {
     throw new Error("Le bac démo doit contenir uniquement le compte local créé pour cette session.");
   }
-  const { plan } = await seedLocalDemoScenario(ownerId);
-  console.info(JSON.stringify({ mode: "demo", counts: plan.counts, yearCoverage: plan.yearCoverage }, null, 2));
+  const { plan, recipeIdeaSources } = await seedLocalDemoScenario(ownerId);
+  console.info(JSON.stringify({ mode: "demo", counts: plan.counts, yearCoverage: plan.yearCoverage,
+    fictitiousRecipeIdeaSources: recipeIdeaSources.length }, null, 2));
 } finally {
   await prisma.$disconnect();
 }
