@@ -31,4 +31,7 @@
 .sales-contribution-history span { color: var(--color-text-muted); }
 .sales-history-actions, .sales-outcome-actions { display: grid; gap: var(--spacing-xs); min-width: var(--size-180); }
 .sales-outcome-actions form { display: grid; gap: var(--spacing-xs); min-width: min(var(--unit-100percent), var(--size-240)); }
+.sales-recipe-mapping-details { display: grid; gap: var(--spacing-sm); margin-top: var(--spacing-md); }
+.sales-recipe-mapping-details ol { display: grid; gap: var(--spacing-sm); padding-inline-start: var(--spacing-xl); }
+.sales-recipe-mapping-details li { overflow-wrap: var(--overflow-wrap-anywhere); }
 @media (--media-compact) { .sales-page { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); } }

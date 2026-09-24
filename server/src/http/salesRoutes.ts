@@ -6,6 +6,7 @@ import { listSaleContributions, reviewSaleContribution, recordSaleOutcome } from
 import { commitSalesImport, previewSalesImport } from "../application/workspace/salesImportService.js";
 import { calculateSalesMetrics } from "../application/workspace/salesMetrics.js";
 import { evaluateSalesBaseline } from "../application/workspace/salesBaseline.js";
+import { createSaleRecipeMapping, listSaleRecipeMappings } from "../application/workspace/salesRecipeMappingService.js";
 import { WorkspaceError } from "../application/workspace/catalogService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
@@ -98,11 +99,28 @@ salesRoutes.get("/sales/baseline", async (_req, res, next) => {
       prisma.serviceDay.findMany({ where: { restaurantId, serviceDate: { gte: start, lte: end } },
         select: { serviceDate: true, status: true, coverage: true, source: true } }),
     ]);
+    const saleItemIds = [...new Set(rows.map((row) => row.saleItemId))];
+    const mappings = saleItemIds.length ? await prisma.saleItemRecipeMapping.findMany({
+      where: { restaurantId, saleItemId: { in: saleItemIds } },
+    }) : [];
+    const recipeIds = [...new Set(mappings.map((mapping) => mapping.recipeId))];
+    const versions = recipeIds.length ? await prisma.recipeVersion.findMany({
+      where: { restaurantId, recipeId: { in: recipeIds } }, include: { ingredients: true },
+    }) : [];
     res.json(evaluateSalesBaseline(rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
       saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity,
       source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : "manual" as const })),
     serviceDays.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
-      status: row.status, coverage: row.coverage, source: row.source })), asOfDate));
+      status: row.status, coverage: row.coverage, source: row.source })), asOfDate,
+    mappings.map((mapping) => ({ saleItemId: mapping.saleItemId, recipeId: mapping.recipeId,
+      revision: mapping.revision, effectiveFrom: mapping.effectiveFrom.toISOString().slice(0, 10),
+      portionsPerItem: Number(mapping.portionsPerItem) })),
+    versions.map((version) => ({ recipeId: version.recipeId, version: version.version,
+      effectiveFrom: version.effectiveFrom?.toISOString().slice(0, 10) ?? null, name: version.name,
+      yieldPortions: version.yieldPortions, ingredients: version.ingredients.map((ingredient) => ({
+        productId: ingredient.productId, productName: ingredient.productName, unit: ingredient.productUnit,
+        quantity: Number(ingredient.quantity),
+      })) }))));
   } catch (error) { next(error); }
 });
 salesRoutes.get("/sales/items", async (_req, res, next) => {
@@ -112,6 +130,20 @@ salesRoutes.post("/sales/items", async (req, res, next) => {
   try {
     const { name } = z.object({ name: z.string().trim().min(1).max(120) }).strict().parse(req.body);
     res.status(201).json(await createSaleItem(workspace(res).restaurantId, name));
+  } catch (error) { next(error); }
+});
+salesRoutes.get("/sales/recipe-mappings", async (_req, res, next) => {
+  try { res.json(await listSaleRecipeMappings(workspace(res).restaurantId)); } catch (error) { next(error); }
+});
+const saleRecipeMapping = z.object({ saleItemId: z.uuid(), recipeId: z.string().trim().min(1).max(100), expectedRevision: z.number().int().min(0),
+  operationId: z.uuid(), effectiveFrom: z.iso.date(), portionsPerItem: z.number().positive().max(1_000_000)
+    .refine((value) => Math.abs(value * 1000 - Math.round(value * 1000)) < 1e-7,
+      { message: "Le nombre de portions doit avoir au plus trois décimales." }) }).strict();
+salesRoutes.post("/sales/recipe-mappings", async (req, res, next) => {
+  try {
+    const input = saleRecipeMapping.parse(req.body);
+    const { restaurantId, actorId } = workspace(res);
+    res.status(201).json(await createSaleRecipeMapping(restaurantId, actorId, input));
   } catch (error) { next(error); }
 });
 const importBody = z.object({ csv: z.string().min(1).max(256_000), mapping: z.record(z.string(), z.uuid()) }).strict();

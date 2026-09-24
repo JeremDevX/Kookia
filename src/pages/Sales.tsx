@@ -5,6 +5,7 @@ import SalesMetrics from "../components/sales/SalesMetrics";
 import SalesBaseline from "../components/sales/SalesBaseline";
 import ServiceCalendar from "../components/sales/ServiceCalendar";
 import SalesReconciliation from "../components/sales/SalesReconciliation";
+import SalesRecipeMappings from "../components/sales/SalesRecipeMappings";
 import { correctSale, createSale, createSaleItem, getLatestService, getSaleItems, getSales, recordSaleOutcome,
   type DailySale, type LatestService, type SaleItem, type SaleValues } from "../services/salesService";
 import { describeServiceSources } from "../features/sales/salesPresentation";
@@ -149,6 +150,7 @@ export default function Sales() {
       {itemError && <p role="alert">{itemError}</p>}
       {itemStatus && <p role="status">{itemStatus}</p>}
     </section>
+    <SalesRecipeMappings itemCount={items.length} />
     <section className="sales-panel" aria-labelledby="sales-entry-title">
       <h2 id="sales-entry-title">{editing ? "Corriger une vente" : "Saisir une vente"}</h2>
       <p>Provenance : saisie manuelle. Une correction se fait depuis l'historique ci-dessous.</p>

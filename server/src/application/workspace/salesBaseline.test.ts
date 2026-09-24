@@ -17,7 +17,40 @@ it("backtests a rolling seven-day mean without leaking target-day data", () => {
     status: "experimental", asOfDate: asOf, forecastDate: "2026-09-23", requiredConsecutiveDays: 28 });
   expect(result.items).toEqual([{ saleItemId: "pizza", saleItemName: "Pizza", forecastQuantity: 25,
     backtest: { from: "2026-09-16", to: asOf, days: 7, meanAbsoluteError: 4,
-      weightedAbsolutePercentageError: 16 } }]);
+      weightedAbsolutePercentageError: 16 }, recipeProjection: { status: "unmapped", reason: expect.any(String) },
+    recipeBacktest: { days: 7, mappedDays: 0, missingMappingDays: 7, missingDatedRecipeDays: 0, versionsUsed: [], ingredients: [] } }]);
+});
+
+it("uses only the mapping and dated recipe version effective on each backtest day", () => {
+  const serviceDay = (index: number) => day(index - 27);
+  const mappings = [
+    { saleItemId: "pizza", recipeId: "old-menu", revision: 1, effectiveFrom: serviceDay(0), portionsPerItem: 1 },
+    { saleItemId: "pizza", recipeId: "new-menu", revision: 2, effectiveFrom: serviceDay(28), portionsPerItem: 2 },
+  ];
+  const versions = [
+    { recipeId: "old-menu", version: 1, effectiveFrom: serviceDay(0), name: "Pizza initiale", yieldPortions: 10,
+      ingredients: [{ productId: "flour", productName: "Farine", unit: "kg", quantity: 5 }] },
+    { recipeId: "old-menu", version: 2, effectiveFrom: serviceDay(24), name: "Pizza corrigée", yieldPortions: 10,
+      ingredients: [{ productId: "flour", productName: "Farine", unit: "kg", quantity: 20 }] },
+    { recipeId: "old-menu", version: 99, effectiveFrom: null, name: "Version legacy non datée", yieldPortions: 1,
+      ingredients: [{ productId: "flour", productName: "Farine", unit: "kg", quantity: 999 }] },
+    { recipeId: "old-menu", version: 3, effectiveFrom: serviceDay(28), name: "Recette future", yieldPortions: 10,
+      ingredients: [{ productId: "flour", productName: "Farine", unit: "kg", quantity: 100 }] },
+    { recipeId: "new-menu", version: 1, effectiveFrom: serviceDay(28), name: "Nouvelle carte", yieldPortions: 2,
+      ingredients: [{ productId: "cheese", productName: "Fromage", unit: "kg", quantity: 4 }] },
+  ];
+  const result = evaluateSalesBaseline(history("pizza", "Pizza", () => 10), completeCalendar(), asOf, mappings, versions);
+  const item = result.items[0];
+  expect(item.recipeProjection).toMatchObject({ status: "mapped", recipeId: "new-menu", recipeVersion: 1,
+    recipeEffectiveFrom: serviceDay(28), forecastPortions: 20, ingredients: [{ productId: "cheese", quantity: 40 }] });
+  expect(item.recipeBacktest.versionsUsed).toHaveLength(7);
+  expect(item.recipeBacktest.versionsUsed.filter((usage) => usage.serviceDate < serviceDay(24)).every((usage) =>
+    usage.recipeId === "old-menu" && usage.recipeVersion === 1)).toBe(true);
+  expect(item.recipeBacktest.versionsUsed.filter((usage) => usage.serviceDate >= serviceDay(24)).every((usage) =>
+    usage.recipeId === "old-menu" && usage.recipeVersion === 2)).toBe(true);
+  expect(item.recipeBacktest.versionsUsed.every((usage) => usage.recipeEffectiveFrom <= usage.serviceDate)).toBe(true);
+  expect(item.recipeBacktest.versionsUsed.some((usage) => usage.recipeVersion === 3 || usage.recipeId === "new-menu")).toBe(false);
+  expect(item.recipeBacktest.mappedDays).toBe(7);
 });
 
 it("treats an absent item line as zero only when the whole service day is complete", () => {

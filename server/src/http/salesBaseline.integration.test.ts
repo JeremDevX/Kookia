@@ -34,11 +34,36 @@ it("requires complete calendar coverage and treats absent item rows as zero only
     ...(index === 10 ? [] : [{ saleItemId: incomplete.body.id as string, quantity: 2, serviceDate: date(index) }]),
   ]).flat().map((row) => ({ ...row, restaurantId: owner.restaurantId, source: "manual",
     operationId: randomUUID(), createdBy: owner.actorId, updatedBy: owner.actorId })) });
+  const catalog = await owner.agent.get("/api/workspace/catalog").expect(200);
+  const recipe = await owner.agent.post("/api/workspace/recipes").send({ operationId: randomUUID(),
+    name: "Pizza baseline versionnée", category: "Plat", prepTime: 12, yieldPortions: 4,
+    effectiveFrom: date(0).toISOString().slice(0, 10),
+    ingredients: [{ productId: catalog.body.products[0].id, quantity: 2 }] }).expect(201);
+  await owner.agent.post("/api/workspace/sales/recipe-mappings").send({ saleItemId: complete.body.id,
+    recipeId: recipe.body.id, expectedRevision: 0, operationId: randomUUID(),
+    effectiveFrom: date(0).toISOString().slice(0, 10), portionsPerItem: 2 }).expect(201);
+  const recipeRevision = await owner.agent.patch(`/api/workspace/recipes/${recipe.body.id}`).send({
+    operationId: randomUUID(), expectedRevision: 1, name: "Pizza baseline version 2", category: "Plat",
+    prepTime: 12, yieldPortions: 4, effectiveFrom: date(24).toISOString().slice(0, 10),
+    ingredients: [{ productId: catalog.body.products[0].id, quantity: 8 }],
+  }).expect(200);
+  expect(recipeRevision.body.version).toBe(2);
   const response = await owner.agent.get("/api/workspace/sales/baseline").expect(200);
   expect(response.body).toMatchObject({ provenance: "recorded_sales", status: "experimental",
     model: "rolling_mean_7_v1", asOfDate: asOf, forecastDate: today, observedItemCount: 2 });
   expect(response.body.items.map((item: { saleItemId: string; forecastQuantity: number }) =>
     [item.saleItemId, item.forecastQuantity])).toEqual([[complete.body.id, 10], [incomplete.body.id, 2]]);
+  const pizzaBaseline = response.body.items.find((item: { saleItemId: string }) => item.saleItemId === complete.body.id);
+  expect(pizzaBaseline.recipeProjection).toMatchObject({ status: "mapped", recipeId: recipe.body.id, recipeVersion: 2,
+    mappingRevision: 1, recipeEffectiveFrom: date(24).toISOString().slice(0, 10), forecastPortions: 20,
+    ingredients: [{ productId: catalog.body.products[0].id, quantity: 40 }] });
+  expect(pizzaBaseline.recipeBacktest.versionsUsed.map((usage: { serviceDate: string; recipeVersion: number }) =>
+    [usage.serviceDate, usage.recipeVersion])).toEqual([
+    [date(21).toISOString().slice(0, 10), 1], [date(22).toISOString().slice(0, 10), 1],
+    [date(23).toISOString().slice(0, 10), 1], [date(24).toISOString().slice(0, 10), 2],
+    [date(25).toISOString().slice(0, 10), 2], [date(26).toISOString().slice(0, 10), 2],
+    [date(27).toISOString().slice(0, 10), 2],
+  ]);
   await prisma.serviceDay.update({ where: { restaurantId_serviceDate: {
     restaurantId: owner.restaurantId, serviceDate: date(10),
   } }, data: { coverage: "partial" } });

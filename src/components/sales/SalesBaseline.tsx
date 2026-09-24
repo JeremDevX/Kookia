@@ -21,7 +21,7 @@ export default function SalesBaseline() {
 
   return <section className="sales-panel" aria-labelledby="sales-baseline-title">
     <h2 id="sales-baseline-title">Estimation test des ventes</h2>
-    <p>Cette estimation utilise les ventes manuelles, CSV et éventuellement simulées. Elle ne tient compte ni de la météo, ni des événements, ni du stock. Elle ne commande rien et n’est pas le moteur IA de prévision.</p>
+    <p>Cette estimation utilise les ventes manuelles, CSV et éventuellement simulées. Elle ne tient compte ni de la météo, ni des événements, ni du stock. Les ingrédients restent une projection expérimentale, sans mouvement ni commande ; chaque vente est associée uniquement à la correspondance et à la version de recette datées pour son jour.</p>
     {loading ? <p role="status">Calcul de l'estimation test…</p> : error ?
       <p role="alert">Estimation test indisponible : {error}</p> : baseline && <>
         <p>Historique étudié : du {baseline.historyFrom} au {baseline.asOfDate}. Calendrier confirmé complet : {baseline.completeServiceDays}/{baseline.requiredConsecutiveDays} jours, dont {baseline.openServiceDays} services ouverts. Une ligne absente vaut zéro observé seulement pour un jour complet (ou fermé confirmé) ; une date non renseignée, partielle ou manquante reste inconnue. Estimation pour le {baseline.forecastDate}. Méthode : moyenne arrondie des {baseline.lookbackDays} derniers jours calendaires complets de ventes de chaque article. {baseline.provenance === "demo_simulation" ? "Ces résultats reposent sur des données simulées et ne mesurent pas l’activité réelle." : baseline.provenance === "mixed" ? "L’historique mélange données simulées et ventes enregistrées : ces résultats ne sont pas une mesure terrain." : ""}{baseline.excludedSimulationRows > 0 ? ` ${baseline.excludedSimulationRows} ligne(s) simulée(s) exclue(s) du calcul car des ventes enregistrées sont présentes.` : ""}</p>
@@ -29,10 +29,24 @@ export default function SalesBaseline() {
           baseline.status === "insufficient_history" ? <p>{baseline.mixedSourceWindow ? "Sources simulées et enregistrées mélangées : les simulations sont exclues, mais le calendrier ne distingue pas la complétude par source. Aucune estimation ni erreur de backtest n’est publiée." : `Historique insuffisant : les ${baseline.requiredConsecutiveDays} jours doivent être marqués complets (ouverts ou fermés confirmés). ${baseline.incompleteDates.length} date(s) restent inconnues ou partielles. Aucune estimation affichée ; ces jours ne sont jamais convertis en zéro vente.`}</p> : <>
             <p><strong>Résultats expérimentaux, non validés sur un jeu de données terrain indépendant.</strong> {baseline.items.length} article(s) sur {baseline.observedItemCount} disposent de l’historique requis ; {baseline.observedItemCount - baseline.items.length} article(s) observé(s) ne sont pas estimés faute de {baseline.requiredConsecutiveDays} jours complets. Une ligne absente sur ces journées complètes représente zéro vente observé. Chaque ligne a été évaluée sur les {baseline.evaluationDays} derniers jours, sans utiliser la vente du jour à prédire. L’erreur absolue moyenne (EAM) est exprimée en unités ; le pourcentage d’erreur absolue pondérée (WAPE) résume les erreurs sur ces mêmes jours. Ces mesures rétrospectives ne sont pas un score de confiance ni une garantie de fiabilité.</p>
             <div className="sales-table-wrap" role="region" aria-label="Baseline expérimentale par article" tabIndex={0}><table className="sales-table"><thead><tr>
-              <th>Article vendu</th><th>Estimation pour le {baseline.forecastDate}</th><th>EAM sur {baseline.evaluationDays} jours</th><th>WAPE sur {baseline.evaluationDays} jours</th>
+              <th>Article vendu</th><th>Estimation pour le {baseline.forecastDate}</th><th>EAM sur {baseline.evaluationDays} jours</th><th>WAPE sur {baseline.evaluationDays} jours</th><th>Projection recette datée</th>
             </tr></thead><tbody>{baseline.items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((item) => <tr key={item.saleItemId}>
               <td>{item.saleItemName}</td><td>{item.forecastQuantity} unités</td><td>{item.backtest.meanAbsoluteError} unités</td>
               <td>{item.backtest.weightedAbsolutePercentageError === null ? "Non calculable" : `${item.backtest.weightedAbsolutePercentageError} %`}</td>
+              <td>{item.recipeProjection.status === "unmapped" ? item.recipeProjection.reason :
+                item.recipeProjection.status === "recipe_version_unknown" ? item.recipeProjection.reason : <details>
+                  <summary>{item.recipeProjection.recipeName} v{item.recipeProjection.recipeVersion} · {item.recipeProjection.forecastPortions} portions</summary>
+                  <p>Correspondance {item.recipeProjection.mappingRevision} depuis le {item.recipeProjection.mappingEffectiveFrom} · recette v{item.recipeProjection.recipeVersion} effective le {item.recipeProjection.recipeEffectiveFrom} · {item.recipeProjection.portionsPerItem} portion(s) par article vendu.</p>
+                  <ul>{item.recipeProjection.ingredients.map((ingredient) => <li key={ingredient.productId}>
+                    {ingredient.productName} : {ingredient.quantity} {ingredient.unit}
+                  </li>)}</ul>
+                  <p>Backtest matière : {item.recipeBacktest.mappedDays}/{item.recipeBacktest.days} jours avec correspondance et recette datées ; {item.recipeBacktest.missingMappingDays} sans correspondance, {item.recipeBacktest.missingDatedRecipeDays} sans version datée. La recette est résolue séparément à la date cible, jamais depuis sa version actuelle si elle est future.</p>
+                  {item.recipeBacktest.versionsUsed.length > 0 && <ul>{item.recipeBacktest.versionsUsed.map((usage) =>
+                    <li key={usage.serviceDate}>{usage.serviceDate} : {usage.recipeName} v{usage.recipeVersion} (effet {usage.recipeEffectiveFrom}), correspondance {usage.mappingRevision}</li>)}</ul>}
+                  {item.recipeBacktest.ingredients.length > 0 && <ul>{item.recipeBacktest.ingredients.map((ingredient) => <li key={ingredient.productId}>
+                    Erreur matière {ingredient.productName} : {ingredient.meanAbsoluteError} {ingredient.unit}/jour · WAPE {ingredient.weightedAbsolutePercentageError === null ? "non calculable" : `${ingredient.weightedAbsolutePercentageError} %`}
+                  </li>)}</ul>}
+                </details>}</td>
             </tr>)}</tbody></table></div>
             {baseline.items.length > PAGE_SIZE && <div className="sales-actions">
               <Button type="button" variant="outline" disabled={page === 0} onClick={() => setPage((current) => current - 1)}>Articles précédents</Button>

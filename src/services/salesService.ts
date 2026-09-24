@@ -13,6 +13,13 @@ export interface ServiceDay {
 }
 export interface LatestService extends ServiceDay { sources: ("manual" | "csv" | "demo_simulation")[] }
 export interface SaleItem { id: string; name: string }
+export interface SaleRecipeMapping {
+  id: string; saleItemId: string; recipeId: string; recipeName: string; revision: number;
+  effectiveFrom: string; portionsPerItem: number; actorId: string; createdAt: string;
+}
+export interface SaleRecipeMappingItem {
+  id: string; name: string; revision: number; suggestedRecipeId: string | null; mappings: SaleRecipeMapping[];
+}
 export interface SaleValues { saleItemId: string; serviceDate: string; quantity: number }
 export interface SalesMetrics {
   period: { from: string; to: string }; previousPeriod: { from: string; to: string };
@@ -29,6 +36,13 @@ export interface SalesMetrics {
 export const getSaleItems = () => apiRequest<SaleItem[]>("/workspace/sales/items");
 export const createSaleItem = (name: string) => apiRequest<SaleItem>("/workspace/sales/items", {
   method: "POST", body: JSON.stringify({ name }),
+});
+export const getSaleRecipeMappings = () => apiRequest<SaleRecipeMappingItem[]>("/workspace/sales/recipe-mappings");
+export const createSaleRecipeMapping = (values: {
+  saleItemId: string; recipeId: string; expectedRevision: number; operationId: string;
+  effectiveFrom: string; portionsPerItem: number;
+}) => apiRequest<SaleRecipeMapping & { replayed: boolean }>("/workspace/sales/recipe-mappings", {
+  method: "POST", body: JSON.stringify(values),
 });
 
 export const getSales = (from: string, to: string) => apiRequest<DailySale[]>(
@@ -56,6 +70,18 @@ export interface SalesBaseline {
     saleItemId: string; saleItemName: string; forecastQuantity: number;
     backtest: { from: string; to: string; days: number; meanAbsoluteError: number;
       weightedAbsolutePercentageError: number | null };
+    recipeProjection:
+      | { status: "unmapped"; reason: string }
+      | { status: "recipe_version_unknown"; mappingRevision: number; mappingEffectiveFrom: string;
+          portionsPerItem: number; reason: string }
+      | { status: "mapped"; recipeId: string; recipeName: string; mappingRevision: number;
+          mappingEffectiveFrom: string; portionsPerItem: number; recipeVersion: number; recipeEffectiveFrom: string;
+          forecastPortions: number; ingredients: Array<{ productId: string; productName: string; unit: string; quantity: number }> };
+    recipeBacktest: { days: number; mappedDays: number; missingMappingDays: number; missingDatedRecipeDays: number;
+      versionsUsed: Array<{ serviceDate: string; mappingRevision: number; mappingEffectiveFrom: string;
+        recipeId: string; recipeName: string; recipeVersion: number; recipeEffectiveFrom: string }>;
+      ingredients: Array<{ productId: string; productName: string; unit: string; meanAbsoluteError: number;
+        weightedAbsolutePercentageError: number | null }> };
   }[];
 }
 export const getSalesBaseline = () => apiRequest<SalesBaseline>("/workspace/sales/baseline");
