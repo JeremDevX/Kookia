@@ -59,13 +59,16 @@ facture reste limitée à la fixture PDF publique en `demo:local`, sans OCR
 général ni fournisseur. L'original peut être ouvert depuis Achats ; comparaison
 latérale reste à revoir. L'archive et l'aperçu I4 ont été rendus en headless,
 avec contrôle clavier Tab/Espace et sans effet stock.
-Q2 reste en cours : la matrice
-headless couvre sept routes/cinq largeurs et le focus du menu ; cette reprise
-ajoute la fiche candidate à 1440/390 px et vérifie création, correction,
-confirmation, attente et persistance dans l'UI sans effet stock, mais pas le
-parcours complet. L'archive I4 est aussi vérifiée à 320/375/390/768/1280 px,
+Q2 — parcours ciblé prouvé localement : la matrice
+headless couvre sept routes/cinq largeurs et le focus du menu ; la fiche
+candidate a été créée, corrigée, confirmée, laissée en attente puis rechargée
+dans l'UI sans effet stock. L'archive I4 est aussi vérifiée à 320/375/390/768/1280 px,
 sans débordement ; AX nomme son bouton, Tab le focalise avec focus visible,
 Espace ouvre `Facture DEMO-2026-09-01`, son aperçu PDF et son unique ligne.
+Après les corrections ci-dessous, le trajet complet Aujourd'hui→Ventes→Stocks→Achats
+a été rejoué à 320×750 au clavier (Tab/Entrée) ; les états vides, les quantités
+à vérifier et les simulations sont clairement annoncés, sans débordement
+horizontal visible.
 Le rejeu reste à 432 pièces. Dans le bac tmpfs actuel, l'essai a aussi créé un
 brouillon synthétique lié à la fixture publique ; aucun produit n'a été choisi,
 aucune réception n'a eu lieu et aucun mouvement de stock n'a été ajouté. À
@@ -89,8 +92,8 @@ clavier et émulation 390×750. Cette reprise étend l'archive I4 à 320/375/390
 768/1280 px, au clavier natif Tab/Entrée/Espace et au zoom Chrome réel 200 % ;
 aucun débordement horizontal n'apparaît sur cette page. Ventes et le tiroir
 Stocks ont aussi été observés à 320 px, et Stocks/Ventes à 200 % ; le tiroir
-reste lisible, Échap le ferme et rend le focus à son déclencheur. Les autres
-routes restent à vérifier à 320–375/768 px et à 200 %, ainsi que les états de
+reste lisible, Échap le ferme et rend le focus à son déclencheur. Les écrans
+hors de ce parcours restent à vérifier à 320–375/768 px et à 200 %, ainsi que les états de
 chargement/erreur/conflit/long et la technologie d'assistance. La navigation
 Stocks→Ventes conservait l'ancien défilement ; Layout le remet désormais en haut
 et préserve les ancres, vérifiés en cliquant depuis Aujourd'hui vers la saisie.
@@ -110,6 +113,9 @@ d'écran réel n'a été utilisé. Les routes hors de ce parcours restent à vé
 à 320–375/768 px et à 200 %. Le fournisseur CUA garde
 `browsers: []` et `getBrowser` répond « No browser is available », mais
 `getApp("com.google.Chrome")` permet maintenant la revue de la fenêtre native.
+Après le correctif de chargement de route (`424c8f9`), `npm run lint`,
+`npm run build`, `npm test -- --run` (33 contrôles scripts/CSS, 102 tests
+Vitest) et `git diff --check` passent de nouveau.
 Un conflit de révision
 du calendrier des services ne masque plus silencieusement l'échec après
 rechargement (`53968c6`). L'API et le contrat d'intégration Achats persistent
