@@ -53,21 +53,22 @@ d'intégration sur un service PostgreSQL éphémère.
 
 ## Base isolée pour les tests d'intégration
 
-Le runner refuse toute base autre que `kookia_test` sur la machine locale avant
-de charger les tests. Il n'accepte ni `kookia`, ni un hôte réseau inconnu.
-Avec le PostgreSQL Docker local, créer une base dédiée une seule fois (une
-erreur « already exists » signifie seulement qu'elle existe) :
+Pour vérifier le dépôt sur des données jetables, utiliser de préférence la
+recette complète, qui crée son propre PostgreSQL 16 sur tmpfs, applique
+les migrations, lance les contrôles CI locaux et vérifie un dump/restauration :
 
 ```bash
-npm run db:up
-docker compose exec -T postgres createdb -U kookia kookia_test
-DATABASE_URL=postgresql://kookia:kookia_dev@localhost:5432/kookia_test npm run db:migrate
-DATABASE_URL=postgresql://kookia:kookia_dev@localhost:5432/kookia_test npm run test:integration
+npm run verify:local-delivery
 ```
 
-Cette URL utilise **les identifiants locaux de `compose.yaml`**, pas ceux d'un
-restaurant. La migration et le runner ciblent uniquement `kookia_test`; chaque
-exécution CI crée sa propre base avec le service PostgreSQL du job.
+Le runner d'intégration seul refuse toute URL autre que PostgreSQL sur un hôte
+loopback avec une base nommée `kookia_test`. Cette garde ne rend pas la base
+jetable : une URL autorisée peut viser le `kookia_test` persistant du volume
+Compose. Pour un diagnostic manuel seulement, la base dédiée est créée dans ce
+volume et peut contenir des comptes/tests synthétiques après leur exécution.
+L'URL locale de `compose.yaml` et son mot de passe d'exemple ne doivent pas être
+réutilisés hors développement. Chaque exécution CI utilise son propre service
+PostgreSQL éphémère.
 
 ## Arrêt de PostgreSQL
 

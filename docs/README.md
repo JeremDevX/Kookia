@@ -10,6 +10,7 @@ pour les capacités disponibles.
 | Reprendre et tester les flux développés | [Parcours techniques actuels](parcours-techniques-actuels.md) |
 | Concevoir un parcours rapide et lisible | [Parcours produit cible](product-parcours.md) |
 | Savoir ce qui existe et ce qui manque | [Référence technique](technical-development.md) et [écarts vérifiés](ecarts-techniques.md) |
+| Préparer et vérifier une livraison locale | [Topologie, sauvegardes et recette jetable](local-delivery.md) |
 | Construire dans le bon ordre | [Roadmap produit](plans/roadmap-produit.md) et [plan d'exécution vérifiable](plans/plan-execution.md) |
 | Lancer un développement long centré restaurateur | [Prompt `/goal` prêt à coller](plans/goal-kookia-prompt.md), [référentiel complet](plans/goal-kookia-reference.md) et [journal de reprise](plans/goal-kookia-progress.md) |
 | Brancher caisse, OCR, position, météo et événements | [Contrats et flux de données](integrations.md) |
@@ -25,7 +26,7 @@ pour les capacités disponibles.
   règles et limites des données enregistrées.
 - [Simulation locale de Camille](plans/restaurant-simulation.md) : hypothèses,
   provenance, idempotence et retour arrière du jeu de démonstration.
-- [Installation locale](setup-auth.md) et
+- [Installation locale](setup-auth.md), [préparation de livraison](local-delivery.md) et
   [preuves de migration](plans/database-migration.md) : usage développeur et
   historique de la persistance.
 - [Guidance agentique](agentic-development.md) et

@@ -63,12 +63,13 @@ npm run lint
 npm run build
 npm run build:api
 npm test
+npm run verify:local-delivery
 ```
 
-Les tests d’intégration nécessitent PostgreSQL local et une
-[base dédiée](docs/setup-auth.md#base-isolée-pour-les-tests-dintégration).
-Ils créent des comptes temporaires, mais le runner ne bloque pas encore une
-connexion accidentelle à la base de développement.
+La recette `verify:local-delivery` utilise un PostgreSQL temporaire sur tmpfs,
+des données synthétiques, puis vérifie un dump/restore avant suppression du
+conteneur. Pour le détail réseau, migrations, sessions, sauvegardes et limites
+de livraison, voir [la préparation locale](docs/local-delivery.md).
 
 ## Documentation
 
@@ -79,6 +80,7 @@ connexion accidentelle à la base de développement.
 - [Sources de données](docs/integrations.md) et [plan du moteur de prévision](docs/plans/forecast-engine.md)
 - [Cartographie et suivi de migration](docs/plans/database-migration.md)
 - [Référence technique actuelle et cible](docs/technical-development.md)
+- [Préparation locale de livraison](docs/local-delivery.md)
 - [Format CSV des ventes](docs/sales-csv.md)
 - [Ventes, indicateurs, baseline et recette manuelle](docs/sales.md)
 - [Setup authentification](docs/setup-auth.md)

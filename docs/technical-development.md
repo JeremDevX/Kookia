@@ -11,13 +11,16 @@ fonctionnalité déjà disponible**.
 | --- | --- | --- |
 | Application web | React 19, TypeScript, Vite ; données métier persistées via API | Réduire les gestes du parcours quotidien et vérifier l'usage mobile/clavier |
 | Qualité | ESLint, TypeScript, Vitest et CI GitHub Actions ; scripts `lint`, `build`, `test` | CI exécutable sans manipulation ; smoke test sur URL dédiée avant recette |
-| Hébergement | Configuration frontend Vercel (`vercel.json`) | Préproduction puis recette avant lancement commercial |
+| Hébergement | `vercel.json` sert une SPA frontend ; aucun runtime API ni réécriture `/api` | Définir et vérifier séparément l'API, le réseau, les sessions et la persistance avant préproduction |
+| Réseau local | Vite proxifie `/api` vers `http://localhost:3001` ; la recette R0 utilise PostgreSQL jetable sur loopback | Configurer un routage `/api` de même origine, une origine mutatrice autorisée et TLS selon l'hébergeur choisi |
 | Backend et persistance | API Express/TypeScript et PostgreSQL/Prisma actifs pour comptes et espaces métier isolés | Renforcer les contrats d'ingestion, la provenance et l'évaluation des calculs |
 | Intégrations | Aucun fournisseur POS/OCR/météo actif ; `Plus → Connexions` lit les statuts serveur `not_connected`. POS reste une fixture revue manuellement ; Ticket Z a un parcours de transcription manuelle avec original temporaire côté navigateur, sans fichier conservé ni OCR ; saisie et CSV restent disponibles. | Contrats et adaptateurs fournisseur, extraction contrôlée, correction et repli manuel |
 | Prévision | Prévisions de démonstration persistées ; baseline expérimentale distincte, calculée sur ventes enregistrées | Météo locale et calendrier événementiel ; moteur IA hors périmètre full-stack initial |
 
 Les versions et dépendances actives font foi dans [`package.json`](../package.json).
 La [cartographie détaillée des écarts](ecarts-techniques.md) confronte cette cible au code actuel, brique par brique.
+La [préparation locale de livraison](local-delivery.md) décrit aussi les cookies,
+les secrets d'environnement, la disponibilité observée et les limites de reprise.
 
 ## Invariants produit et données
 
