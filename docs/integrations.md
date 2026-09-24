@@ -48,6 +48,17 @@ sera configuré, une panne de son statut ne devra pas masquer les autres. L'UI
 de Connexions ne déclenche jamais `read` ; elle offre les replis CSV/saisie et
 n'affiche une dernière synchronisation que lorsqu'elle existe réellement.
 
+Pour I4, un port OCR de facture préparé sur fixture borne l'original à 4 Mio et
+PDF/JPEG/PNG, calcule son SHA-256 côté serveur, valide strictement le résultat
+normalisé et le transforme en candidat C1 lié au hash et au tenant. Les lignes
+restent à rapprocher ; avoir/bon de livraison ne produit aucune ligne stock.
+Le test utilise uniquement des octets et textes synthétiques, puis exerce le
+brouillon C1, la correction, le refus avant confirmation humaine et la réception
+simulée explicite. L'adaptateur actif reste `not_configured` : aucune route
+d'upload facture ni aucun fournisseur n'est branché, et l'original n'est pas
+persisté. L'aperçu/comparaison à l'original et une règle de conservation sont
+des prérequis avant activation ; la saisie manuelle reste le repli utilisable.
+
 ### Formes normalisées minimales à stabiliser
 
 | Source | Requête du port | Résultat métier avant persistance |
