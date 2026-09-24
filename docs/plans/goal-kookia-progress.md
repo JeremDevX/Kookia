@@ -5,14 +5,19 @@ Un lancement local interactif isolé des chapitres C2/C3 est maintenant
 disponible et exercé via `npm run demo:local` (`5a51b39`). Le récit 2025 a
 maintenant une version de recette effective, un surstock, une perte et un refus
 de production sur manque mesurable (`818b1d5`), sans mouvement pour le refus.
-La matrice Q2 existante reste rendue par Chrome headless. Une reprise a aussi
-rendu la page Recettes et sa fiche candidate à 1440×1000 et 390×844 : aucune
-largeur débordante mesurée ; Espace ouvre le formulaire, son titre reçoit le
-focus, Tab atteint Annuler et l'annulation restaure le bouton déclencheur. Le
-contrôle CUA reste indisponible (`browsers: []`, `cgWindowNotFound`) ; autres
-routes/états, lecteur d'écran et vrai zoom page restent à vérifier.
+La matrice Q2 existante reste rendue par Chrome headless. La page Recettes et sa
+fiche candidate ont été rendues à 1440×1000 et 390×844, sans débordement ; un
+parcours clavier ouvre/annule le formulaire et restaure le focus. Dans un bac
+tmpfs neuf, l'UI a aussi créé deux hypothèses depuis deux pièces tomate
+synthétiques, corrigé puis confirmé l'une, laissé l'autre en attente, rechargé
+la page et retrouvé leurs états ainsi que la recette active ; quantité, révision
+et nombre de mouvements de stock restent identiques. Le contrôle CUA reste
+indisponible (`browsers: []`, `cgWindowNotFound`) ; autres routes/états, lecteur
+d'écran et vrai zoom page restent à vérifier.
 Le seed exécutable est réservé à ce runner, qui crée lui-même sa base tmpfs
 neuve (`3dddd2e`) ; aucun utilitaire séparé ne cible une base locale par nom.
+Le gestionnaire d'arrêt du runner est maintenant répétable (`6570815`) et une
+nouvelle smoke test confirme que Ctrl-C retire serveurs, conteneur et identifiants.
 Le flux technique « pièces → candidate recette » existe désormais dans le bac
 démo et passe sur deux factures synthétiques, sans mutation de stock. La preuve
 produit reste non acquise : les fixtures autorisées ne justifient pas deux
@@ -28,8 +33,9 @@ C2/C3, I1–I3, F1, M2–M3, O1 et R0 sont prouvés localement ; I4 est prépar�
 une fixture, avec F3/F4, O2, M1 et les prérequis D1–D6. I4 n'a ni fournisseur
 actif ni comparaison visuelle à l'original. Q2 reste en cours : la matrice
 headless couvre sept routes/cinq largeurs et le focus du menu ; cette reprise
-ajoute la fiche candidate à 1440/390 px et au clavier, mais pas le parcours
-complet. Reprendre Aujourd'hui → Ventes → Stocks → Achats, les états
+ajoute la fiche candidate à 1440/390 px et vérifie création, correction,
+confirmation, attente et persistance dans l'UI sans effet stock, mais pas le
+parcours complet. Reprendre Aujourd'hui → Ventes → Stocks → Achats, les états
 d'erreur/conflit/chargement, le zoom 200 % et la technologie d'assistance
 lorsque le navigateur CUA sera réellement listé. Le parcours « pièces → idées
 de recette » reste ouvert : le bac recette ne prouve pas que deux familles
@@ -115,7 +121,8 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-24 | Q2 — tentative native après activation | — (vérification) | `cua.getState()` et `cua.listBrowsers()` conservent `browsers: []` ; `getApp("Google Chrome")` a permis un onglet séparé sur la démo locale, avec connexion synthétique puis accueil. Le redimensionnement a échoué `windowNotFoundAtPosition`, puis `getApp` `cgWindowNotFound`. Retest après la réponse utilisateur : inventaire toujours vide et `getApp("Google Chrome")` échoue encore `cgWindowNotFound`. | La démo et le compte étaient jetables ; arrêt Ctrl-C, conteneur et fichier d'identifiants confirmés supprimés. La route complète, les largeurs natives, le clavier et les états d'erreur/conflit restent non vérifiés ; la matrice Chrome headless déjà consignée n'est pas remplacée. | Réexposer une fenêtre/onglet Chrome à CUA, puis rejouer Aujourd'hui → Ventes → Stocks → Achats et les états manquants avant de clore Q2. |
 | 2026-09-24 | Pièces → candidates de recette | 13f1010 | Nouveau flux bac démo : créer/éditer une fiche hypothétique à partir de lignes de factures, garder l'une en attente, confirmer l'autre en recette versionnée ou l'écarter. L'intégration PostgreSQL exerce deux factures artificielles champignons/crème, source périmée, autre tenant, replay simultané et zéro mouvement/production. npm run verify:local-delivery passe : lint, build web/API, 18 migrations fraîches, 24 fichiers/102 tests Vitest + 33 Node/CSS, intégration 25 fichiers/36 tests, restauration synthétique. | Les deux familles et factures d'intégration sont fabriquées ; aucune preuve de couverture du corpus ni création de candidate terrain. Aucune mutation de stock ou production. | Obtenir une fixture multi-familles anonymisée autorisée, puis exercer les deux sources sans inférer qu'un plat a été cuisiné. |
 | 2026-09-24 | Q2 — page Recettes candidate | 13f1010 | Chrome headless, profil temporaire, bac isolé : 1440×1000 et 390×844 ; aucun descendant plus large que son conteneur après correction des onglets mobiles. Espace ouvre la fiche, le titre reçoit le focus, Tab atteint « Annuler », puis Espace annule et rend le focus à « Nouvelle candidate ». Aucun formulaire n'a été enregistré. | Ce sous-parcours seulement ; le connecteur CUA reste browsers: [] / cgWindowNotFound. Autres routes/états, lecteur d'écran et vrai zoom 200 % non couverts. | Réexposer Chrome au contrôle CUA puis compléter le parcours et les états Q2. |
-
+| 2026-09-24 | Pièces → candidate — parcours UI | 13f1010 | Chrome headless sur un bac tmpfs neuf : deux hypothèses créées depuis deux factures tomates synthétiques ; quantité de la première corrigée de 0,1 à 0,2, puis confirmée comme recette active ; seconde conservée en attente. Après rechargement, états et recette active visibles dans l'interface. Snapshot tomate avant/après identique : 25,2 kg, révision 2, 3 525 mouvements. | Parcours technique seulement ; les deux pièces sont synthétiques et de même famille tomate. Ne prouve pas les deux familles réclamées par le corpus. | Obtenir une fixture multi-familles anonymisée autorisée avant d'affirmer la couverture métier. |
+| 2026-09-24 | R0 — arrêt du runner démo | 6570815 | Deux arrêts Ctrl-C précédents avaient laissé conteneurs tmpfs et répertoires d'identifiants ; artefacts exacts vérifiés puis supprimés. Gestionnaires SIGINT/SIGTERM passés de once à on avec garde de répétition. Nouvelle exécution réelle : Ctrl-C, code 130, aucun processus API/Vite, conteneur disposable-local-demo ou dossier d'identifiants restant. npm run lint, npm test (24 fichiers/102 Vitest + 33 Node/CSS) et git diff --check passent. | Test uniquement local, base neuve et données synthétiques ; aucune base conservée, aucun script --write. | Conserver l'arrêt idempotent et vérifier le nettoyage si le runner change. |
 ## Portes externes
 
 | Sujet | Ce qui est possible sans accès | Preuve requise pour « activé » | État |
