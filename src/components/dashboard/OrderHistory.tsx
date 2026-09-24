@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Button from "../common/Button";
 import { getOrders, type PurchaseOrder } from "../../services/orderService";
 import PurchaseReceiptReview from "./PurchaseReceiptReview";
+import SupplierOrderSheets from "./SupplierOrderSheets";
 import "./OrderHistory.css";
 
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
@@ -35,6 +36,7 @@ export default function OrderHistory({ onReceiptSaved }: OrderHistoryProps) {
         <p>Référence : {order.id}</p>
         <p>{order.status.startsWith("simulated") ? "Opération de démonstration : aucun achat, envoi ni mouvement de stock réel." : "Prix enregistrés à la validation. Aucun envoi fournisseur."}</p>
         <ul>{order.lines.map((line) => <li key={line.id}><span><strong>{line.productName}</strong><small>{line.supplierName} · {line.quantity} {line.unit} × {money.format(line.pricePerUnit)} · reçu {line.receivedQuantity} {line.unit}, reste {line.remainingQuantity} {line.unit}</small></span><strong>{money.format(line.quantity * line.pricePerUnit)}</strong></li>)}</ul>
+        {order.status === "validated" && <SupplierOrderSheets order={order} />}
         {order.receipts.length > 0 && <section aria-label="Réceptions rapprochées"><h3>Réceptions rapprochées</h3>
           {order.receipts.map((receipt) => <article key={receipt.id}>
             <p><strong>{receipt.deliveryReference}</strong> · facture {receipt.invoiceReference} · {receipt.deliveryDate}

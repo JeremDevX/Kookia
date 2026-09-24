@@ -1,0 +1,19 @@
+.supplier-order-sheets { display: grid; gap: var(--spacing-sm); padding-top: var(--spacing-md); border-top: var(--size-1) solid var(--color-border-light); }
+.supplier-order-sheets h3, .supplier-order-sheets p { margin: var(--number-0); }
+.supplier-order-sheets > p { color: var(--color-text-secondary); }
+.supplier-order-sheet-preview { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border-light); border-radius: var(--radius-md); }
+.supplier-order-sheet-preview > div { display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.supplier-order-sheet-preview span, .supplier-order-sheet-status { color: var(--color-text-secondary); }
+.supplier-order-sheet-print-root { display: none; }
+
+@media (--media-print) {
+  body.printing-supplier-order-sheet > *:not(.supplier-order-sheet-print-root) { display: none !important; }
+  body.printing-supplier-order-sheet > .supplier-order-sheet-print-root { display: block !important; color: var(--color-text-primary); background: var(--color-surface); }
+  .supplier-order-sheet-document { max-width: var(--size-800); margin: var(--number-0) auto; padding: var(--spacing-lg); font-family: var(--font-family); font-size: var(--font-size-base); }
+  .supplier-order-sheet-document h1 { font-size: var(--font-size-2xl); }
+  .supplier-order-sheet-document table { width: var(--unit-100percent); margin: var(--spacing-lg) var(--number-0); border-collapse: collapse; }
+  .supplier-order-sheet-document caption { margin-bottom: var(--spacing-xs); text-align: left; font-weight: var(--font-weight-bold); }
+  .supplier-order-sheet-document th, .supplier-order-sheet-document td { padding: var(--spacing-xs); border: var(--size-1) solid var(--color-text-primary); text-align: left; }
+  .supplier-order-sheet-document td:nth-child(n+2) { text-align: right; }
+  .supplier-order-sheet-document tfoot th, .supplier-order-sheet-document tfoot td { font-weight: var(--font-weight-bold); }
+}

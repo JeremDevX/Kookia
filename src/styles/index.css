@@ -15,6 +15,7 @@
 @custom-media --media-wide (min-width: 1700px);
 @custom-media --media-dashboard-compact (max-width: 900px);
 @custom-media --media-workspace-compact (max-width: 1100px);
+@custom-media --media-print (print);
 
 :root {
   --white-space-pre-wrap: pre-wrap;
