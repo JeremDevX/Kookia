@@ -111,6 +111,18 @@ démonstration ; la date de la pièce d'origine reste consultable.
 
 ## Recettes et bilan
 
+- **Aujourd'hui → Voir le menu d'exemple** : dans le bac de démonstration,
+  choisissez un comptage positif encore actuel et indiquez la quantité que vous
+  désignez explicitement comme surstock. Aucun seuil haut global n'est utilisé.
+  Chaque recette est évaluée séparément avec cette quantité ; les portions de
+  plusieurs idées ne s'additionnent pas.
+  Les idées utilisent la version de recette applicable et les autres stocks
+  comptés avec une unité compatible ; si une quantité n'est pas vérifiée, la
+  recette est signalée comme non réalisable. Les dates de péremption sont
+  inconnues : contrôlez-les vous-même. Une idée faisable ne remplit que le
+  brouillon modifiable ; relisez-le puis enregistrez ou validez séparément. Cela
+  ne lance aucune production et ne modifie pas le stock. Cette aide n'est pas
+  disponible dans les espaces opérationnels.
 - **Plus → Recettes réalisables** : consultez la faisabilité à partir des
   quantités enregistrées. Depuis une fiche de stock, ouvrez les recettes qui
   contiennent ce produit. Une recette réalisable n'est pas nécessairement une

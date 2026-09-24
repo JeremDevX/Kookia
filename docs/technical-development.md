@@ -125,6 +125,20 @@ connectés ; le Ticket Z manuel produit des candidats relus, jamais des ventes
 automatiques. Le contrôle de fichier, l'absence de stockage brut et la
 conservation du hash sont décrits dans [Sources de données](integrations.md).
 
+L'aide **Voir le menu d'exemple** est limitée au tenant démo. Elle propose des
+recettes depuis un comptage positif dont la révision est encore actuelle, après
+que le responsable a explicitement désigné une quantité comme surstock. Elle
+n'utilise aucun seuil haut global. Le calcul retient la dernière version datée
+applicable de chaque recette ; une quantité d'ingrédient inconnue ou une unité
+incompatible bloque la faisabilité. Les portions maximales sont indicatives et
+les dates de péremption sont toujours inconnues. Les idées calculées sont
+persistées comme décision `menu_ideas_generated` avec provenance
+`demo_simulation`. Appliquer une idée ne modifie que le brouillon du menu ; sa
+sauvegarde/validation reste une action distincte, sans mouvement de stock ni
+production. Les recettes sont évaluées séparément avec toute la quantité
+d'étiquette ; leurs portions maximales ne sont pas additives. Aucun schéma ou
+modèle de péremption n'est introduit par ce parcours.
+
 La page **Bilan** appelle `GET /api/workspace/impact` pour comparer la période
 choisie à la précédente de même durée calendaire. Les ventes sont datées par
 service, les pertes explicites par enregistrement UTC et les achats par date de
@@ -275,9 +289,12 @@ de S3 ; il ne mesure pas la couverture actuelle sans rapport généré.
 
 - Production du modèle prédictif et de l'OCR : services externes/stubs pendant
   le périmètre full-stack initial.
-- Rapports de gaspillage AGEC et suggestions de menus sur surstocks : cible
-  *Should have* à T+9 mois. Ne pas revendiquer une conformité réglementaire sans
-  vérification dédiée.
+- Rapport de gaspillage AGEC : cible *Should have* à T+9 mois. Ne pas revendiquer
+  une conformité réglementaire sans vérification dédiée. Les idées de menus
+  issues d'un surstock explicite sont préparées localement dans le tenant démo
+  uniquement ; leur extension à des espaces opérationnels, des seuils globaux ou
+  une gestion des péremptions attend une validation pilote et un modèle de
+  données adapté.
 - EDI fournisseurs et enregistrement HACCP : cible *Could have* à T+12 mois.
 - Infrastructure dédiée et machine IA : option de montée en charge vers 100
   clients, chiffrée comme enveloppe haute à confirmer par devis ; le scénario de
