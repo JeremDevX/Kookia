@@ -55,6 +55,9 @@ et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics
 préférences, panier, notifications, pièces source, factures et menus), validés aux frontières.
 Les mutations critiques sont transactionnelles. Les liens internes sont différés
 pour permettre la suppression en cascade d’un compte sans casser ses références.
+La fiche `Product` porte une révision pour détecter les modifications concurrentes ;
+la mise à jour ne change pas l'unité. Les lignes validées de `PurchaseOrderLine`
+gardent leur nom, fournisseur, unité et prix snapshotés lors de la commande.
 
 Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` initialise
 les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au
