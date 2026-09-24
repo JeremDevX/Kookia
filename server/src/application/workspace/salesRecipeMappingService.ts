@@ -44,9 +44,13 @@ export async function listSaleRecipeMappings(restaurantId: string) {
   for (const mapping of mappings) byItem.set(mapping.saleItemId, [...(byItem.get(mapping.saleItemId) ?? []), mapping]);
   return items.map((item) => {
     const history = byItem.get(item.id) ?? [];
-    const exactMatches = recipeNames.get(normalizedName(item.name)) ?? [];
+    const normalizedSaleName = normalizedName(item.name);
+    const recipeMatchName = normalizedSaleName.replace(/\s+—\s+demonstration$/u, "");
+    const ignoredDemoSuffix = recipeMatchName !== normalizedSaleName;
+    const exactMatches = recipeNames.get(recipeMatchName) ?? [];
     return { id: item.id, name: item.name, revision: history[0]?.revision ?? 0,
       suggestedRecipeId: exactMatches.length === 1 ? exactMatches[0] : null,
+      suggestionBasis: exactMatches.length === 1 ? ignoredDemoSuffix ? "demo_suffix_ignored" as const : "normalized_name" as const : null,
       mappings: history.map(mappingDto) };
   });
 }

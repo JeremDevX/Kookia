@@ -18,7 +18,8 @@ export interface SaleRecipeMapping {
   effectiveFrom: string; portionsPerItem: number; actorId: string; createdAt: string;
 }
 export interface SaleRecipeMappingItem {
-  id: string; name: string; revision: number; suggestedRecipeId: string | null; mappings: SaleRecipeMapping[];
+  id: string; name: string; revision: number; suggestedRecipeId: string | null;
+  suggestionBasis: "normalized_name" | "demo_suffix_ignored" | null; mappings: SaleRecipeMapping[];
 }
 export interface SaleValues { saleItemId: string; serviceDate: string; quantity: number }
 export interface SalesMetrics {
