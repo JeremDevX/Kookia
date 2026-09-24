@@ -5,6 +5,7 @@ import Modal from "../components/common/Modal";
 import InvoiceModal from "../components/dashboard/InvoiceModal";
 import OrderGenerator from "../components/dashboard/OrderGenerator";
 import OrderHistory from "../components/dashboard/OrderHistory";
+import PurchaseSuggestions from "../components/dashboard/PurchaseSuggestions";
 import SourceInvoiceArchive from "../components/dashboard/SourceInvoiceArchive";
 import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
@@ -56,6 +57,8 @@ export default function Orders() {
       {cartItems.length > 0 && <div className="orders-selection-actions"><p>La validation enregistre votre décision. Elle n'envoie rien au fournisseur et ne modifie pas le stock.</p>
         <Button onClick={() => setReviewOpen(true)} disabled={cartLoading || catalogLoading || !!catalogError || missingProduct || hasExampleItem}>Revoir les quantités</Button></div>}
     </section>
+
+    <PurchaseSuggestions />
 
     <SourceInvoiceArchive refreshKey={invoiceRefresh} sourceId={searchParams.get("source") ?? undefined}
       onCreateManual={openManualInvoice}

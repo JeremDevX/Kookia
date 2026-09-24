@@ -12,6 +12,11 @@ enum ServiceDayStatus {
   closed
 }
 
+enum WorkspaceMode {
+  operational
+  demo
+}
+
 enum ServiceDayCoverage {
   complete
   partial
@@ -86,6 +91,7 @@ model Restaurant {
   phone        String
   email        String
   dailyCovers  Int
+  mode         WorkspaceMode @default(operational)
   seededAt     DateTime @default(now())
   suppliers    Supplier[]
   products     Product[]
@@ -470,6 +476,8 @@ model PurchaseOrderLine {
   quantity     Decimal @db.Decimal(14, 3)
   unit         String
   pricePerUnit Decimal @db.Decimal(14, 4)
+  suggestionDecisionId String? @unique
+  suggestionDecision RecommendationDecision? @relation(fields: [suggestionDecisionId], references: [id], onDelete: SetNull)
 }
 
 model RecommendationDecision {
@@ -482,6 +490,7 @@ model RecommendationDecision {
   decision     String
   snapshot     Json
   createdAt    DateTime @default(now())
+  purchaseOrderLine PurchaseOrderLine?
   @@index([restaurantId, createdAt])
 }
 

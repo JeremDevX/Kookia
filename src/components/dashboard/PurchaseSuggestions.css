@@ -1,0 +1,11 @@
+.purchase-suggestions { display: flex; flex-direction: column; gap: var(--spacing-md); margin-block: var(--spacing-lg); }
+.purchase-suggestions-note, .purchase-suggestions-blockers { padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-warning-soft); }
+.purchase-suggestions-period { color: var(--color-text-muted); }
+.purchase-suggestions-blockers ul, .purchase-suggestions-assumptions { margin-block: var(--spacing-sm) var(--number-0); padding-left: var(--spacing-md); }
+.purchase-suggestion-list { display: grid; gap: var(--spacing-md); padding: var(--number-0); list-style: none; }
+.purchase-suggestion-card { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.purchase-suggestion-card p, .purchase-suggestion-card h3 { margin: var(--number-0); }
+.purchase-suggestion-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spacing-sm); }
+.purchase-suggestion-heading span, .purchase-suggestion-sources { color: var(--color-text-muted); }
+.purchase-suggestion-sources { margin: var(--number-0); padding-left: var(--spacing-md); }
+.purchase-suggestion-actions { display: flex; flex-direction: column; align-items: stretch; gap: var(--spacing-sm); }

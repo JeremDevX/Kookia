@@ -149,7 +149,7 @@ export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: Baseli
         mean(quantities.slice(-LOOKBACK_DAYS)), recipeMappings, recipeVersions),
       recipeBacktest: recipeUsageBacktest(item.saleItemId, dates, quantities, recipeMappings, recipeVersions) }];
   }).sort((a, b) => a.saleItemName.localeCompare(b.saleItemName, "fr"));
-  const provenance = hasRecordedSales ? hasSimulationSales ? "mixed" : "recorded_sales"
+  const provenance: "recorded_sales" | "demo_simulation" | "mixed" = hasRecordedSales ? hasSimulationSales ? "mixed" : "recorded_sales"
     : hasSimulationSales ? "demo_simulation" : "recorded_sales";
   return {
     provenance, model: "rolling_mean_7_v1" as const,

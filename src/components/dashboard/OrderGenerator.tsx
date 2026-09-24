@@ -5,17 +5,13 @@ import { Link } from "react-router-dom";
 import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 import type { OrderRecommendation } from "../../features/orders/orderRecommendations";
 import { validateOrder, type PurchaseOrder } from "../../services/orderService";
+import { isValidOrderQuantity } from "../../domain/orders/orderQuantity";
 
 interface OrderGeneratorProps {
   recommendations: OrderRecommendation[];
   onClose: () => void;
   onValidated?: () => void;
 }
-
-const isValidOrderQuantity = (value: string): boolean => {
-  const quantity = Number(value);
-  return /^\d+(?:\.\d{1,3})?$/.test(value.trim()) && Number.isFinite(quantity) && quantity > 0 && quantity <= 1_000_000;
-};
 
 export default function OrderGenerator({ recommendations, onClose, onValidated }: OrderGeneratorProps) {
   const { products, suppliers, loading, error } = useInventoryCatalog();
@@ -45,10 +41,10 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
 
   if (order) return <div className="flex flex-col gap-lg" role="status">
     <CheckCircle size={40} aria-hidden="true" />
-    <h3>Commande enregistrée</h3>
-    <p>À transmettre au fournisseur : aucun email n’a été envoyé et le stock n’a pas changé.</p>
+    <h3>{order.status === "simulated" ? "Commande de démonstration enregistrée" : "Commande enregistrée"}</h3>
+    <p>{order.status === "simulated" ? "Cette opération reste simulée : aucun achat réel, aucun email et aucun mouvement de stock." : "À transmettre au fournisseur : aucun email n’a été envoyé et le stock n’a pas changé."}</p>
     <p>Référence : {order.id}</p>
-    <Link to="/orders#to-transmit" onClick={onClose}>Voir la commande à transmettre</Link>
+    <Link to="/orders#to-transmit" onClick={onClose}>{order.status === "simulated" ? "Voir la commande simulée" : "Voir la commande à transmettre"}</Link>
     <Button onClick={onClose}>Fermer</Button>
   </div>;
 

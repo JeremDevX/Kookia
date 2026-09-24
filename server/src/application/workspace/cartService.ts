@@ -8,6 +8,7 @@ export const cartItemSchema = z.object({
   productName: z.string().max(120), quantity: z.number().finite().positive().max(1000000).multipleOf(0.001),
   unit: z.string().max(10), source: z.enum(["notification", "dashboard", "stocks", "prediction"]),
   predictionId: z.string().min(1).max(100).optional(),
+  purchaseSuggestionOperationId: z.uuid().optional(),
 }).strict();
 export const cartSchema = z.array(cartItemSchema).max(100);
 export const cartMutationSchema = z.discriminatedUnion("action", [
@@ -30,6 +31,18 @@ export async function mutateCart(restaurantId: string, mutation: z.infer<typeof 
       if (item.predictionId) throw new WorkspaceError(400, "DEMO_PREDICTION", "Les scénarios d'exemple ne peuvent pas préparer une commande.");
       const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: item.productId } } });
       if (!product) throw new WorkspaceError(400, "INVALID_PRODUCT", "Produit introuvable dans votre espace.");
+      if (item.purchaseSuggestionOperationId) {
+        const decision = await tx.recommendationDecision.findFirst({ where: { restaurantId,
+          operationId: item.purchaseSuggestionOperationId, decision: "purchase_suggestion_added" } });
+        const snapshot = decision?.snapshot;
+        if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot) || snapshot.productId !== item.productId ||
+            snapshot.quantity !== item.quantity || snapshot.workspaceMode !== "operational" && snapshot.workspaceMode !== "demo") {
+          throw new WorkspaceError(409, "SUGGESTION_DECISION_REQUIRED", "La proposition doit être revue et enregistrée avant son ajout à la commande.");
+        }
+        if (await tx.purchaseOrderLine.findUnique({ where: { suggestionDecisionId: decision.id }, select: { id: true } })) {
+          throw new WorkspaceError(409, "SUGGESTION_ALREADY_ORDERED", "Cette proposition est déjà associée à une commande enregistrée.");
+        }
+      }
       if (!items.some((existing) => existing.id === item.id)) items.push({ ...item, productName: product.name, unit: product.unit });
     }
     if (items.length > 100) throw new WorkspaceError(400, "CART_FULL", "Le panier est limité à 100 articles.");

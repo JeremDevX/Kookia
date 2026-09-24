@@ -5,6 +5,7 @@ export interface CartItem {
   quantity: number;
   unit: string;
   predictionId?: string;
+  purchaseSuggestionOperationId?: string;
   source: "notification" | "dashboard" | "stocks" | "prediction";
 }
 
