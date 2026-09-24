@@ -1,12 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
-import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 import { getInvoices, saveInvoice, type Invoice, type InvoiceLine, type SourceLineDisposition } from "../../services/invoiceService";
+import type { Product, Supplier } from "../../types";
 import { formatLocalISODate } from "../../utils/date";
 import "./InvoiceModal.css";
 
 interface InvoiceModalProps {
   initialInvoice?: Invoice;
+  products: Product[];
+  suppliers: Supplier[];
+  catalogLoading: boolean;
+  catalogError: Error | null;
+  onRetryCatalog: () => Promise<void>;
   onValidate: (invoice: Invoice) => void;
   onPersist: () => void;
   onClose: () => void;
@@ -19,27 +24,71 @@ const exclusionLabels: Record<NonNullable<InvoiceLine["exclusionReason"]>, strin
   other: "Autre motif",
 };
 
-export default function InvoiceModal({ initialInvoice, onValidate, onPersist, onClose }: InvoiceModalProps) {
-  const { products, suppliers, loading: catalogLoading, error: catalogError } = useInventoryCatalog();
+export default function InvoiceModal({ initialInvoice, products, suppliers, catalogLoading, catalogError,
+  onRetryCatalog, onValidate, onPersist, onClose }: InvoiceModalProps) {
+  const [historyRetryRevision, setHistoryRetryRevision] = useState(0);
+  const [loadedHistoryRetryRevision, setLoadedHistoryRetryRevision] = useState(-1);
+  const loading = loadedHistoryRetryRevision !== historyRetryRevision;
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoice, setInvoice] = useState<Invoice | null>(initialInvoice ?? null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [invoiceLoadError, setInvoiceLoadError] = useState("");
   const [notice, setNotice] = useState("");
+  const invoiceHistorySelectRef = useRef<HTMLSelectElement>(null);
+  const historyRetryButtonRef = useRef<HTMLButtonElement>(null);
+  const catalogRetryButtonRef = useRef<HTMLButtonElement>(null);
+  const firstProductSelectRef = useRef<HTMLSelectElement>(null);
+  const historyRetryFocusPending = useRef(false);
+  const catalogRetryFocusPending = useRef(false);
+  const currentInvoiceLoadError = loading ? "" : invoiceLoadError;
+  const sourceLinked = invoice?.source === "source_document";
+  const persistenceBlocked = !!invoice && !sourceLinked && (loading || !!currentInvoiceLoadError);
 
   useEffect(() => {
     let active = true;
     getInvoices().then((data) => {
       if (active) {
         setInvoices(data);
-        setInvoice(initialInvoice ?? data[0] ?? null);
+        setInvoice((current) => current ?? initialInvoice ?? data[0] ?? null);
+        setInvoiceLoadError("");
+        setLoadedHistoryRetryRevision(historyRetryRevision);
       }
     }, (cause: unknown) => {
-      if (active) setError(cause instanceof Error ? cause.message : "Factures indisponibles.");
-    }).finally(() => { if (active) setLoading(false); });
+      if (active) {
+        setInvoiceLoadError(cause instanceof Error ? cause.message : "Factures indisponibles.");
+        setLoadedHistoryRetryRevision(historyRetryRevision);
+      }
+    });
     return () => { active = false; };
-  }, [initialInvoice]);
+  }, [historyRetryRevision, initialInvoice]);
+
+  useEffect(() => {
+    if (loading || !historyRetryFocusPending.current) return;
+    historyRetryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (currentInvoiceLoadError) historyRetryButtonRef.current?.focus();
+    else invoiceHistorySelectRef.current?.focus();
+  }, [currentInvoiceLoadError, invoices, loading]);
+
+  useEffect(() => {
+    if (catalogLoading || !catalogRetryFocusPending.current) return;
+    catalogRetryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (catalogError) catalogRetryButtonRef.current?.focus();
+    else if (firstProductSelectRef.current) firstProductSelectRef.current.focus();
+    else invoiceHistorySelectRef.current?.focus();
+  }, [catalogError, catalogLoading, invoice]);
+
+  const retryHistory = () => {
+    historyRetryFocusPending.current = document.activeElement === historyRetryButtonRef.current;
+    setHistoryRetryRevision((value) => value + 1);
+  };
+
+  const retryCatalog = () => {
+    catalogRetryFocusPending.current = document.activeElement === catalogRetryButtonRef.current;
+    void onRetryCatalog();
+  };
 
   const updateLine = (index: number, change: Partial<InvoiceLine>) => setInvoice((current) => current
     ? { ...current, lines: current.lines.map((line, lineIndex) => lineIndex === index ? { ...line, ...change } : line) }
@@ -50,7 +99,7 @@ export default function InvoiceModal({ initialInvoice, onValidate, onPersist, on
       status: "draft", source: "manual", revision: 0 });
   };
   const persist = async (receive: boolean) => {
-    if (!invoice || saving) return;
+    if (!invoice || saving || persistenceBlocked || catalogLoading || catalogError) return;
     setSaving(true); setError(""); setNotice("");
     try {
       const saved = await saveInvoice(invoice, receive);
@@ -69,7 +118,6 @@ export default function InvoiceModal({ initialInvoice, onValidate, onPersist, on
   };
 
   const received = invoice?.status === "received";
-  const sourceLinked = invoice?.source === "source_document";
   const disabled = saving || catalogLoading || !!catalogError;
   const canReceive = !!invoice && !received && !!invoice.reference.trim() && !!invoice.date && invoice.lines.length > 0 &&
     (sourceLinked
@@ -89,11 +137,18 @@ export default function InvoiceModal({ initialInvoice, onValidate, onPersist, on
         ? "Réception de démonstration liée à une pièce transcrite. Les lignes sont en lecture seule et ne créditeront pas le stock une seconde fois."
         : "Brouillon lié à une pièce transcrite : vérifiez le type, la date et chaque ligne. L’enregistrement du brouillon ne modifie pas le stock."
       : "Saisie manuelle sans lecture automatique. Vérifiez les quantités et les produits avant tout ajout au stock."}</p>
-    {(error || catalogError) && <p role="alert">{error || catalogError?.message}</p>}
+    {error && <p role="alert">{error}</p>}
+    {catalogError && <div role="alert"><p>Catalogue indisponible : {catalogError.message}</p>
+      <Button ref={catalogRetryButtonRef} type="button" variant="outline" disabled={catalogLoading} onClick={retryCatalog}>Réessayer le catalogue</Button>
+    </div>}
+    {currentInvoiceLoadError && <div role="alert"><p>Historique des factures indisponible : {currentInvoiceLoadError}</p>
+      <Button ref={historyRetryButtonRef} type="button" variant="outline" onClick={retryHistory}>Recharger les factures</Button>
+    </div>}
+    {persistenceBlocked && <p role="status">L’historique doit être relu avant d’enregistrer cette facture. Votre brouillon en cours reste conservé.</p>}
     {notice && <p role="status">{notice}</p>}
     {loading ? <p role="status">Chargement des factures…</p> : <>
       <label htmlFor="invoice-history">Factures enregistrées</label>
-      <select className="input-field" id="invoice-history" disabled={saving}
+      <select ref={invoiceHistorySelectRef} className="input-field" id="invoice-history" disabled={saving}
         value={invoice && invoices.some((item) => item.id === invoice.id) ? invoice.id : ""}
         onChange={(event) => {
           setInvoice(invoices.find((item) => item.id === event.target.value) ?? null);
@@ -155,7 +210,8 @@ export default function InvoiceModal({ initialInvoice, onValidate, onPersist, on
             Vérifiez le produit, l’unité et le prix avant inclusion.
           </p>}
           <label htmlFor={`invoice-product-${index}`}>Produit</label>
-          <select className="input-field" id={`invoice-product-${index}`} value={line.productId}
+          <select ref={index === 0 ? firstProductSelectRef : undefined} className="input-field"
+            id={`invoice-product-${index}`} value={line.productId}
             onChange={(event) => {
               const product = products.find((item) => item.id === event.target.value);
               const sameUnit = !!product && product.unit === line.sourceUnit;
@@ -203,8 +259,9 @@ export default function InvoiceModal({ initialInvoice, onValidate, onPersist, on
           ? <p>Total indicatif des lignes incluses : {total.toFixed(2)} €. Les bases HT/TTC de la transcription peuvent différer ; ce n’est pas un montant comptable.</p>
           : <strong>Total : {total.toFixed(2)} €</strong>}
         {!received && <div className="invoice-actions">
-          <Button variant="outline" onClick={() => void persist(false)} disabled={disabled || !invoice.reference.trim()}>Enregistrer le brouillon</Button>
-          <Button onClick={() => void persist(true)} disabled={disabled || !canReceive}>
+          <Button variant="outline" onClick={() => void persist(false)}
+            disabled={disabled || persistenceBlocked || !invoice.reference.trim()}>Enregistrer le brouillon</Button>
+          <Button onClick={() => void persist(true)} disabled={disabled || persistenceBlocked || !canReceive}>
             {sourceLinked ? "Réceptionner dans le scénario" : "Réceptionner et ajouter au stock"}
           </Button>
         </div>}

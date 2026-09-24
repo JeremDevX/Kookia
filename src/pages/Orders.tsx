@@ -88,7 +88,8 @@ export default function Orders() {
         onValidated={() => { void refreshCart(); setHistoryRevision((value) => value + 1); setSuggestionsRevision((value) => value + 1); }} />
     </Modal>
     <Modal isOpen={invoiceOpen} onClose={() => setInvoiceOpen(false)} title="Revoir une facture" width="lg">
-      <InvoiceModal initialInvoice={invoiceDraft}
+      <InvoiceModal initialInvoice={invoiceDraft} products={products} suppliers={suppliers}
+        catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
         onPersist={() => setInvoiceRefresh((value) => value + 1)}
         onValidate={(invoice) => {
           addToast("success", invoice.source === "source_document" ? "Réception simulée enregistrée" : "Réception enregistrée",
