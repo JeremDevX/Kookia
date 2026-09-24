@@ -43,7 +43,9 @@ export default function Orders() {
 
     <section id="selection" className="orders-selection" aria-labelledby="selection-title">
       <div className="workspace-section-heading"><h2 id="selection-title">Commande en préparation</h2>
-        <span>{cartLoading ? "Chargement…" : `${cartItems.length} article${cartItems.length > 1 ? "s" : ""}`}</span>
+        <span role="status" aria-busy={cartLoading}>
+          {cartItems.length} article{cartItems.length > 1 ? "s" : ""}
+        </span>
       </div>
       {catalogError && <div role="alert"><p>Catalogue indisponible : {catalogError.message}</p><Button variant="outline" onClick={() => void refetch()}>Réessayer</Button></div>}
       {missingProduct && !catalogLoading && !catalogError && <p role="alert">Un produit de votre sélection n'est plus dans le catalogue. Retirez-le avant de valider.</p>}
