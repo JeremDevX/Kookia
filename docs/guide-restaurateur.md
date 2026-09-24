@@ -136,8 +136,14 @@ démonstration ; la date de la pièce d'origine reste consultable.
   dépenses de produits réceptionnés avec leurs sources. Les simulations sont
   séparées ; ruptures et invendus restent non mesurés tant qu'ils ne sont pas
   enregistrés. Les économies réalisées ne sont pas déduites. Vous pouvez ensuite
-  exporter le rapport opérationnel. Les graphiques de démonstration repliés ne
-  mesurent pas votre activité.
+  exporter le rapport opérationnel : la section **Pertes déclarées** ne retient
+  que les mouvements négatifs explicitement enregistrés comme pertes, datés en
+  UTC et reliés à leur opération source. Le coût n'est indiqué qu'à partir du
+  prix snapshoté ; un prix absent est marqué non valorisé et une unité
+  incompatible apparaît à vérifier, hors total. L'export exclut les simulations
+  et rappelle que ruptures et invendus ne sont pas mesurés. Ce n'est pas une
+  attestation AGEC. Les graphiques de démonstration repliés ne mesurent pas votre
+  activité.
 
 Un rapport Kookia n'est pas, par son seul titre, une attestation réglementaire
 ou une mesure de pertes évitées. Gardez les justificatifs originaux nécessaires

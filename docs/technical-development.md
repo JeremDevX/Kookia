@@ -146,9 +146,14 @@ livraison ; les quantités restent séparées par produit/unité. Le coût d'une
 est calculé uniquement depuis un prix snapshoté au mouvement, et les dépenses
 uniquement depuis des quantités de réception confirmées et leur prix de facture.
 Les simulations sont séparées des totaux enregistrés ; les mouvements sans
-unité cohérente sont exclus. Les ruptures et invendus ne sont pas saisis dans un
-ledger dédié, donc restent « non mesurés » ; aucune économie réalisée n'est
-calculée. L'export opérationnel exclut les espaces et événements de démonstration.
+unité cohérente sont exclus des totaux et exposés à vérifier. Ruptures et invendus
+ne sont pas saisis dans un ledger dédié, donc restent « non mesurés » ; aucune
+économie réalisée n'est calculée. L'export opérationnel comporte une section
+**Pertes déclarées** fondée uniquement sur les mouvements négatifs explicitement
+étiquetés `loss`, avec quantité absolue, date UTC et identifiant d'opération
+source. Il compte les coûts non valorisés et les incompatibilités d'unité,
+signale les métriques non mesurées et exclut les simulations. Il ne constitue
+pas une attestation AGEC.
 
 La page **Plus → Histoire sur quatre années** (`/history`) appelle la route
 tenant-scopée de lecture seule `GET /api/workspace/timeline`, sur une période
