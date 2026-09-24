@@ -11,6 +11,7 @@ export interface CartItem {
 
 export interface CartContextType {
   cartItems: CartItem[];
+  loadError: string;
   addToCart: (item: CartItem) => Promise<boolean>;
   addMultipleToCart: (items: CartItem[]) => Promise<boolean>;
   removeFromCart: (id: string) => Promise<boolean>;

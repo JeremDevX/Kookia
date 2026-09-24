@@ -14,6 +14,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 function AccountCart({ children, authenticated }: { children: ReactNode; authenticated: boolean }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(authenticated);
+  const [loadError, setLoadError] = useState("");
   const { addToast } = useToast();
   const alive = useRef(true);
   const sequence = useRef(Promise.resolve());
@@ -25,11 +26,15 @@ function AccountCart({ children, authenticated }: { children: ReactNode; authent
     const operation = sequence.current.then(async () => {
       if (!alive.current) return;
       setLoading(true);
+      if (!body) setLoadError("");
       try {
         const data = await apiRequest<CartItem[]>("/workspace/cart", body ? { method: "POST", body: JSON.stringify(body) } : {});
-        if (alive.current) { setCartItems(data); success = true; }
+        if (alive.current) { setCartItems(data); setLoadError(""); success = true; }
       } catch (error) {
-        if (alive.current) addToast("info", "Panier indisponible", error instanceof Error ? error.message : "Réessayez.");
+        if (alive.current) {
+          if (body) addToast("info", "Panier indisponible", error instanceof Error ? error.message : "Réessayez.");
+          else setLoadError(error instanceof Error ? error.message : "Réessayez.");
+        }
       } finally { if (alive.current) setLoading(false); }
     });
     sequence.current = operation;
@@ -40,6 +45,6 @@ function AccountCart({ children, authenticated }: { children: ReactNode; authent
   const addMultipleToCart = useCallback((items: CartItem[]) => request({ action: "add", items }), [request]);
   const removeFromCart = useCallback((id: string) => request({ action: "remove", ids: [id] }), [request]);
   const refreshCart = useCallback(() => request(), [request]);
-  return <CartContext.Provider value={{ cartItems, addToCart, addMultipleToCart, removeFromCart, refreshCart,
+  return <CartContext.Provider value={{ cartItems, loadError, addToCart, addMultipleToCart, removeFromCart, refreshCart,
     loading, cartCount: cartItems.length, isInCart: (id) => cartItems.some((item) => item.id === id) }}>{children}</CartContext.Provider>;
 }

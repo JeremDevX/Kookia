@@ -19,7 +19,7 @@ export default function Dashboard() {
   const today = formatLocalISODate(new Date());
   const thirtyDaysAgo = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
   const { addToast } = useToast();
-  const { cartItems, loading: cartLoading } = useCart();
+  const { cartItems, loading: cartLoading, loadError: cartError, refreshCart } = useCart();
   const { products, loading: productsLoading, error: productsError, refetch: refreshProducts } = useProducts();
   const [latestService, setLatestService] = useState<LatestService | null | undefined>(undefined);
   const [salesError, setSalesError] = useState("");
@@ -31,7 +31,7 @@ export default function Dashboard() {
   const criticalStockCount = stockToReview.filter((product) => getProductStatus(product) === "urgent").length;
   const hasExampleItem = cartItems.some((item) => !!item.predictionId);
   const isFirstRun = latestService === null;
-  const showSalesStartActions = isFirstRun && !cartLoading && cartItems.length === 0 && !salesError;
+  const showSalesStartActions = isFirstRun && !cartLoading && !cartError && cartItems.length === 0 && !salesError;
 
   useEffect(() => {
     let active = true;
@@ -52,25 +52,27 @@ export default function Dashboard() {
     return () => { active = false; };
   }, [isFirstRun]);
 
-  const focus = !cartLoading && cartItems.length > 0
-    ? hasExampleItem
-      ? { title: "Corrigez votre sélection", detail: "Un ancien scénario d'exemple doit être écarté avant la validation.", to: "/orders#selection", action: "Ouvrir la sélection" }
-      : { title: "Une commande attend votre validation", detail: `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`, to: "/orders#selection", action: "Revoir les quantités" }
-    : salesError
-      ? { title: "Vérifiez vos ventes", detail: "Leur état n'a pas pu être chargé.", to: "/sales", action: "Ouvrir les ventes" }
-      : latestService === undefined
-        ? { title: "Retrouvez vos données", detail: "Vos ventes et vos stocks sont en cours de chargement.", to: "/sales", action: "Ouvrir les ventes" }
-        : latestService === null
-          ? { title: "Ajoutez vos premières ventes", detail: "Importez un CSV Kookia ou saisissez une vente pour commencer avec vos données.", to: "/sales#sales-start", action: "Ajouter des ventes" }
-          : latestService.serviceDate < thirtyDaysAgo
-            ? { title: "Complétez vos ventes récentes", detail: `Dernier service enregistré le ${new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")}.`, to: "/sales#sales-start", action: "Ajouter des ventes" }
-          : productsError
-            ? { title: "Vérifiez votre stock", detail: "L'inventaire n'a pas pu être chargé.", to: "/stocks", action: "Ouvrir les stocks" }
-            : productsLoading
-              ? { title: "Retrouvez vos données", detail: "L'inventaire est en cours de chargement.", to: "/stocks", action: "Ouvrir les stocks" }
-              : stockToReview.length > 0
-                ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} au seuil ou en dessous. Les produits initiaux sont des exemples à confirmer.`, to: "/stocks", action: "Voir les stocks" }
-                : { title: "Aucune alerte de stock enregistrée", detail: "Vérifiez les ventes du dernier service ou préparez vos prochains achats.", to: "/orders", action: "Ouvrir les achats" };
+  const focus = cartError
+    ? { title: "Commande en préparation indisponible", detail: cartError, to: "/orders#selection", action: "Reprendre les achats" }
+    : !cartLoading && cartItems.length > 0
+      ? hasExampleItem
+        ? { title: "Corrigez votre sélection", detail: "Un ancien scénario d'exemple doit être écarté avant la validation.", to: "/orders#selection", action: "Ouvrir la sélection" }
+        : { title: "Une commande attend votre validation", detail: `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`, to: "/orders#selection", action: "Revoir les quantités" }
+      : salesError
+        ? { title: "Vérifiez vos ventes", detail: "Leur état n'a pas pu être chargé.", to: "/sales", action: "Ouvrir les ventes" }
+        : latestService === undefined
+          ? { title: "Retrouvez vos données", detail: "Vos ventes et vos stocks sont en cours de chargement.", to: "/sales", action: "Ouvrir les ventes" }
+          : latestService === null
+            ? { title: "Ajoutez vos premières ventes", detail: "Importez un CSV Kookia ou saisissez une vente pour commencer avec vos données.", to: "/sales#sales-start", action: "Ajouter des ventes" }
+            : latestService.serviceDate < thirtyDaysAgo
+              ? { title: "Complétez vos ventes récentes", detail: `Dernier service enregistré le ${new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")}.`, to: "/sales#sales-start", action: "Ajouter des ventes" }
+              : productsError
+                ? { title: "Vérifiez votre stock", detail: "L'inventaire n'a pas pu être chargé.", to: "/stocks", action: "Ouvrir les stocks" }
+                : productsLoading
+                  ? { title: "Retrouvez vos données", detail: "L'inventaire est en cours de chargement.", to: "/stocks", action: "Ouvrir les stocks" }
+                  : stockToReview.length > 0
+                    ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} au seuil ou en dessous. Les produits initiaux sont des exemples à confirmer.`, to: "/stocks", action: "Voir les stocks" }
+                    : { title: "Aucune alerte de stock enregistrée", detail: "Vérifiez les ventes du dernier service ou préparez vos prochains achats.", to: "/orders", action: "Ouvrir les achats" };
 
   return <div className="dashboard-container">
     <header className="dashboard-header"><h1>Aujourd'hui</h1>
@@ -111,7 +113,9 @@ export default function Dashboard() {
         <div className="today-card-actions"><Link to="/sales#sales-start">Ajouter ou corriger des ventes</Link></div>
       </section>
       <section className="today-card" aria-labelledby="today-order-title"><h2 id="today-order-title">Commande en préparation</h2>
-        <p aria-live="polite">{cartLoading ? "Chargement…" : cartItems.length === 0 ? "Aucun article sélectionné." : `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`}</p>
+        {cartLoading ? <p role="status">Chargement…</p> : cartError ? <div role="alert"><p>Commande indisponible : {cartError}</p>
+          <Button type="button" variant="outline" onClick={() => void refreshCart()}>Réessayer</Button></div> :
+          <p aria-live="polite">{cartItems.length === 0 ? "Aucun article sélectionné." : `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`}</p>}
         <div className="today-card-actions"><Link to="/orders#selection">Ouvrir les achats</Link></div>
       </section>
     </div>
