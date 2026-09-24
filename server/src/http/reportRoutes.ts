@@ -24,7 +24,7 @@ reportRoutes.get("/report", async (req, res, next) => {
     const rows: Row[] = [];
     if (workspace?.mode !== "demo") {
       for (const item of sales) if (item.source !== "demo_simulation" && item.serviceDay.source !== "demo_simulation")
-        rows.push({ section: "Ventes enregistrées", date: item.serviceDate.toISOString().slice(0, 10), metric: `${item.saleItem.name} — unités vendues`, value: item.quantity, source: item.source === "csv" ? item.revision ? "Import CSV corrigé" : "Import CSV" : "Saisie manuelle" });
+        rows.push({ section: "Ventes enregistrées", date: item.serviceDate.toISOString().slice(0, 10), metric: `${item.saleItem.name} — unités vendues`, value: item.quantity, source: item.source === "csv" ? item.revision ? "Import CSV corrigé" : "Import CSV" : item.source === "pos" ? item.revision ? "Caisse POS corrigée" : "Caisse POS" : "Saisie manuelle" });
       for (const item of movements) if (item.actorId !== "restaurant-simulation:v1" && !item.reason.startsWith("simulation_") &&
         item.reason !== "invoice_import_demo" && !item.operationId.startsWith("restaurant-simulation-v1:") && !item.purchaseReceiptLine?.receipt.simulated)
         rows.push({ section: "Mouvements de stock", date: item.createdAt.toISOString(), metric: `${item.productNameSnapshot ?? item.product.name} — ${item.reason} (${item.productUnitSnapshot ?? item.product.unit})`, value: Number(item.delta), source: item.invoiceDocumentId ? "Pièce validée" : "Opération enregistrée" });

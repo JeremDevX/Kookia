@@ -117,28 +117,45 @@ pas sa méthode de lecture. La panne d'un statut fournisseur devra devenir
 
 ## Caisse / POS
 
-Le port cible `pos` demande une plage de journées de service et renvoie
-`PosSalesBatch` avec `coverage: complete | partial` et des lignes identifiées
-par `sourceRecordId`. Chaque ligne contient date, identifiant d'article
-fournisseur éventuel, libellé, quantité et indicateur de remboursement.
+Le port serveur `PosAdapter` demande une fenêtre de journées de service bornée
+à 31 jours et un curseur, puis renvoie un lot identifié avec `coverage:
+complete | partial`. Chaque ligne a un `sourceRecordId`, une révision source,
+une date, un identifiant d'article fournisseur éventuel, un libellé, une
+quantité positive et un indicateur de remboursement. Les réponses externes
+sont validées avant toute écriture ; une date hors fenêtre, un lot invalide ou
+une exception d'adaptateur n'ajoute aucune vente.
 
-### Flux prévu
+### Comportement local implémenté
 
-1. Connecter une caisse pour **le restaurant authentifié**.
-2. Récupérer un lot sur une fenêtre de dates bornée ; conserver curseur de
-   synchronisation, horodatage, état et identifiant de lot.
-3. Traiter annulations/remboursements comme corrections explicites ; ne pas
-   faire entrer une quantité négative dans le modèle `DailySale` actuel sans
-   politique métier définie.
-4. Associer chaque article POS à un `SaleItem`, puis à une recette seulement
-   après revue. Un article inconnu reste « à associer ».
-5. Prévisualiser les journées complètes et partielles ; seul un lot confirmé
-   devient une vente exploitable par la prévision.
-6. Rejouer le même lot et vérifier l'absence de doublons. Une journée partielle
-   ne remplace pas silencieusement une journée complète.
+- `syncPosSales` isole le curseur par restaurant et fournisseur, rend les
+  fenêtres partielles reprenables uniquement sur leur fenêtre d'origine et
+  refuse une fenêtre future. Les lots et lignes source sont idempotents ; une
+  révision modifiée sans incrément explicite est un conflit.
+- Chaque ligne devient d'abord une `SaleContribution` en attente, associée au
+  lot, à l'article source, sa révision, son état de remboursement et sa
+  provenance. Elle ne devient jamais un `DailySale` avant la décision explicite
+  du restaurateur.
+- Un article inconnu se mappe vers un `SaleItem` dans la revue. « Accepter /
+  remplacer », « garder la vente existante » et « écarter » sont journalisés ;
+  la vente existante n'est pas additionnée implicitement. Un remboursement
+  demeure une information source, ne retire pas les quantités vendues et ne
+  peut pas être accepté comme vente.
+- `coverage` du lot n'affirme pas que le restaurateur a terminé la revue d'une
+  journée : le jour reste partiel tant qu'il ne confirme pas lui-même sa
+  couverture complète. Une fixture porte `demo_simulation` jusqu'aux ventes,
+  métriques et baselines ; elle n'est jamais convertie en POS enregistré.
+- Il n'existe encore aucun adaptateur fournisseur actif : la route de sync
+  répond `not_connected` (`503`), les statuts de Connexions restent
+  `not_connected`, et saisie/CSV restent disponibles. Les tests POS utilisent
+  exclusivement un adaptateur fixture et une base d'intégration jetable.
 
-La cible Jalon 2 cite Lightspeed ; le choix et les droits API sont à confirmer
-avant un adaptateur concret. Le port ne suppose pas ce fournisseur.
+### Activation fournisseur non réalisée
+
+Le choix du fournisseur, du contrat, des droits API et du restaurant pilote
+reste à confirmer. Le flux générique ne prétend pas connecter Lightspeed ni
+une autre caisse. Avant activation, il faut implémenter et tester l'adaptateur
+réel, ses erreurs et ses remboursements sur un restaurant autorisé, puis mettre
+à jour les statuts serveur sans faire transiter de secrets côté client.
 
 ## Ticket Z et factures par OCR
 

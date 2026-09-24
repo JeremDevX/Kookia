@@ -2,7 +2,7 @@ import { apiRequest } from "../config/api";
 
 export interface DailySale {
   id: string; saleItemId: string; saleItemName: string; serviceDate: string;
-  quantity: number; source: "manual" | "csv" | "demo_simulation"; revision: number;
+  quantity: number; source: "manual" | "csv" | "pos" | "demo_simulation"; revision: number;
   createdBy: string; updatedBy: string; createdAt: string; updatedAt: string;
 }
 export type ServiceStatus = "open" | "closed";
@@ -11,7 +11,7 @@ export interface ServiceDay {
   serviceDate: string; status: ServiceStatus; coverage: ServiceCoverage; source: "recorded" | "demo_simulation" | "mixed"; revision: number;
   actorId: string; salesCount: number; updatedAt: string;
 }
-export interface LatestService extends ServiceDay { sources: ("manual" | "csv" | "demo_simulation")[] }
+export interface LatestService extends ServiceDay { sources: ("manual" | "csv" | "pos" | "demo_simulation")[] }
 export interface SaleItem { id: string; name: string }
 export interface SaleRecipeMapping {
   id: string; saleItemId: string; recipeId: string; recipeName: string; revision: number;
@@ -27,7 +27,7 @@ export interface SalesMetrics {
   minimumObservedDays: number; observedDays: number; previousObservedDays: number;
   completeServiceDays: number; incompleteServiceDays: number;
   previousCompleteServiceDays: number; previousIncompleteServiceDays: number;
-  totalQuantity: number; manualQuantity: number; csvQuantity: number; demoSimulationQuantity: number; correctedCsvQuantity: number;
+  totalQuantity: number; manualQuantity: number; csvQuantity: number; posQuantity: number; demoSimulationQuantity: number; correctedCsvQuantity: number;
   averagePerObservedDay: number | null; previousAveragePerObservedDay: number | null; changePercent: number | null;
   items: { saleItemId: string; saleItemName: string; quantity: number }[];
   dailyItems: { serviceDate: string; saleItemId: string; saleItemName: string; quantity: number }[];
@@ -97,8 +97,10 @@ export interface SaleContributionEvent {
   kind: string; actorId: string; reason: string; revision: number; createdAt: string; snapshot: unknown;
 }
 export interface SaleContribution {
-  id: string; source: "manual" | "csv" | "demo_simulation"; sourceKey: string; sourceRevision: number;
+  id: string; source: "manual" | "csv" | "pos" | "demo_simulation"; sourceKey: string; sourceRevision: number;
   importLine: number | null; sourceFileHash: string | null; sourceItemName: string; sourceDate: string;
+  sourceRecordId: string | null; sourceExternalItemId: string | null; sourceRefunded: boolean;
+  posBatch: { provider: string; batchId: string; from: string; to: string; coverage: "complete" | "partial"; provenance: "recorded_sales" | "demo_simulation" } | null;
   serviceDate: string | null; sourceQuantity: string; quantity: number | null; saleItemId: string | null;
   saleItemName: string | null; status: "pending" | "accepted" | "rejected" | "superseded" | "voided";
   reviewRevision: number; reviewedBy: string | null; reviewedAt: string | null; reviewReason: string | null;
@@ -110,9 +112,9 @@ export const getSaleContributions = (from: string, to: string) => apiRequest<Sal
   `/workspace/sales/contributions?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
 );
 export const reviewSaleContribution = (id: string, expectedRevision: number,
-  decision: "replace" | "keep" | "reject", reason: string, operationId: string) =>
+  decision: "replace" | "keep" | "reject", reason: string, operationId: string, saleItemId?: string) =>
   apiRequest<{ replayed: boolean; status?: string }>(`/workspace/sales/contributions/${encodeURIComponent(id)}/review`, {
-    method: "POST", body: JSON.stringify({ expectedRevision, decision, reason, operationId }),
+    method: "POST", body: JSON.stringify({ expectedRevision, decision, reason, operationId, ...(saleItemId ? { saleItemId } : {}) }),
   });
 export const recordSaleOutcome = (id: string, revision: number, action: "void" | "refund", reason: string, operationId: string) =>
   apiRequest<{ replayed: boolean; quantity?: number | null }>(`/workspace/sales/${encodeURIComponent(id)}/${action}`, {

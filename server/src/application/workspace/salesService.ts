@@ -49,14 +49,15 @@ export async function saveServiceDay(restaurantId: string, actorId: string, serv
   });
 }
 
-export async function ensureOpenPartialServiceDay(tx: Prisma.TransactionClient, restaurantId: string, actorId: string, serviceDate: string) {
+export async function ensureOpenPartialServiceDay(tx: Prisma.TransactionClient, restaurantId: string, actorId: string,
+  serviceDate: string, source: "recorded" | "demo_simulation" = "recorded") {
   const where = serviceDayWhere(restaurantId, serviceDate);
   const current = await tx.serviceDay.findUnique({ where });
   if (current?.status === "closed") throw new WorkspaceError(409, "SERVICE_CLOSED", "Ce jour est déclaré fermé ; aucune vente ne peut y être ajoutée.");
-  if (!current) return tx.serviceDay.create({ data: { restaurantId, serviceDate: date(serviceDate), status: "open", coverage: "partial", actorId } });
-    const source = current.source === "demo_simulation" ? "mixed" : current.source;
-    if (current.coverage !== "partial" || current.source !== source)
-      return tx.serviceDay.update({ where, data: { coverage: "partial", source, actorId, revision: { increment: 1 } } });
+  if (!current) return tx.serviceDay.create({ data: { restaurantId, serviceDate: date(serviceDate), status: "open", coverage: "partial", actorId, source } });
+  const nextSource = current.source === source || current.source === "mixed" ? current.source : "mixed";
+  if (current.coverage !== "partial" || current.source !== nextSource)
+    return tx.serviceDay.update({ where, data: { coverage: "partial", source: nextSource, actorId, revision: { increment: 1 } } });
   return current;
 }
 

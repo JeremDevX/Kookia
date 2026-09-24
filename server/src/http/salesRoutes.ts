@@ -7,6 +7,8 @@ import { commitSalesImport, previewSalesImport } from "../application/workspace/
 import { calculateSalesMetrics } from "../application/workspace/salesMetrics.js";
 import { getSalesBaseline, previousParisDay } from "../application/workspace/salesBaselineService.js";
 import { createSaleRecipeMapping, listSaleRecipeMappings } from "../application/workspace/salesRecipeMappingService.js";
+import { syncPosSales } from "../application/workspace/posSalesSyncService.js";
+import { unconfiguredPosAdapter } from "../integrations/posAdapter.js";
 import { WorkspaceError } from "../application/workspace/catalogService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
@@ -72,14 +74,14 @@ salesRoutes.get("/sales/metrics", async (req, res, next) => {
     const { restaurantId } = workspace(res);
     const start = new Date(`${previousFrom}T00:00:00Z`), end = new Date(`${to}T00:00:00Z`);
     const [rows, serviceDays] = await Promise.all([
-      prisma.dailySale.findMany({ where: { restaurantId, source: { in: ["manual", "csv", "demo_simulation"] },
+      prisma.dailySale.findMany({ where: { restaurantId, source: { in: ["manual", "csv", "pos", "demo_simulation"] },
         serviceDate: { gte: start, lte: end } }, include: { saleItem: { select: { name: true } } } }),
       prisma.serviceDay.findMany({ where: { restaurantId, serviceDate: { gte: start, lte: end } },
         select: { serviceDate: true, status: true, coverage: true } }),
     ]);
     const mapped = rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
       saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity,
-      source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : "manual" as const,
+      source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : row.source === "pos" ? "pos" as const : "manual" as const,
       revision: row.revision }));
     const mappedDays = serviceDays.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
       status: row.status, coverage: row.coverage }));
@@ -148,13 +150,25 @@ salesRoutes.patch("/sales/:id", async (req, res, next) => {
   } catch (error) { next(error); }
 });
 const contributionReview = z.object({ expectedRevision: z.number().int().min(0),
-  decision: z.enum(["replace", "keep", "reject"]), operationId: z.uuid(), reason: z.string().trim().min(1).max(240) }).strict();
+  decision: z.enum(["replace", "keep", "reject"]), operationId: z.uuid(), reason: z.string().trim().min(1).max(240),
+  saleItemId: z.uuid().optional() }).strict();
 salesRoutes.post("/sales/contributions/:id/review", async (req, res, next) => {
   try {
     const id = z.uuid().parse(req.params.id), input = contributionReview.parse(req.body);
     const { restaurantId, actorId } = workspace(res);
     res.json(await reviewSaleContribution(restaurantId, actorId, id, input.expectedRevision,
-      input.decision, input.operationId, input.reason));
+      input.decision, input.operationId, input.reason, input.saleItemId));
+  } catch (error) { next(error); }
+});
+salesRoutes.post("/sales/pos/sync", async (req, res, next) => {
+  try {
+    const { restaurantId, actorId } = workspace(res);
+    const result = await syncPosSales(restaurantId, actorId, req.body, unconfiguredPosAdapter);
+    if (result.status === "unavailable") {
+      res.status(503).json({ status: result.reason === "not_configured" ? "not_connected" : "degraded", reason: result.reason });
+      return;
+    }
+    res.json(result);
   } catch (error) { next(error); }
 });
 const outcomeBody = z.object({ expectedRevision: z.number().int().min(0), operationId: z.uuid(),

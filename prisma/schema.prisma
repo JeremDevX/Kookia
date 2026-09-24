@@ -32,6 +32,7 @@ enum ServiceDaySource {
 enum SaleContributionSource {
   manual
   csv
+  pos
   demo_simulation
 }
 
@@ -44,6 +45,7 @@ enum SaleContributionStatus {
 }
 
 enum SaleContributionEventKind {
+  source_received
   accepted
   conflict_detected
   rejected
@@ -51,6 +53,16 @@ enum SaleContributionEventKind {
   corrected
   voided
   refund_recorded
+}
+
+enum PosBatchCoverage {
+  complete
+  partial
+}
+
+enum PosBatchProvenance {
+  recorded_sales
+  demo_simulation
 }
 
 model User {
@@ -113,6 +125,9 @@ model Restaurant {
   saleContributionEvents SaleContributionEvent[]
   recipeVersions RecipeVersion[]
   saleItemRecipeMappings SaleItemRecipeMapping[]
+  posSyncStates PosSyncState[]
+  posSalesBatches PosSalesBatch[]
+  posArticleMappings PosArticleMapping[]
 }
 
 model Supplier {
@@ -315,6 +330,7 @@ model SaleItem {
   sales          DailySale[]
   contributions  SaleContribution[]
   recipeMappings SaleItemRecipeMapping[]
+  posMappings    PosArticleMapping[]
 
   @@unique([restaurantId, normalizedName])
   @@unique([restaurantId, id])
@@ -407,6 +423,59 @@ model SaleImport {
   @@unique([restaurantId, fileHash, mappingHash])
 }
 
+model PosSyncState {
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  provider     String @db.VarChar(60)
+  cursor       String? @db.VarChar(2000)
+  lastBatchId  String? @db.VarChar(160)
+  lastSuccessAt DateTime?
+  revision     Int @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@id([restaurantId, provider])
+}
+
+model PosSalesBatch {
+  id           String @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  provider     String @db.VarChar(60)
+  batchId      String @db.VarChar(160)
+  fromDate     DateTime @db.Date
+  toDate       DateTime @db.Date
+  cursorBefore String? @db.VarChar(2000)
+  cursorAfter  String? @db.VarChar(2000)
+  coverage     PosBatchCoverage
+  provenance   PosBatchProvenance
+  contentHash  String @db.Char(64)
+  recordCount  Int
+  candidateCount Int @default(0)
+  duplicateRecordCount Int @default(0)
+  createdBy    String
+  createdAt    DateTime @default(now())
+  contributions SaleContribution[]
+
+  @@unique([restaurantId, id])
+  @@unique([restaurantId, provider, batchId])
+  @@index([restaurantId, fromDate, toDate])
+}
+
+model PosArticleMapping {
+  restaurantId   String
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  provider       String @db.VarChar(60)
+  externalItemId String @db.VarChar(120)
+  saleItemId     String
+  saleItem       SaleItem @relation(fields: [restaurantId, saleItemId], references: [restaurantId, id], onDelete: NoAction)
+  actorId        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@id([restaurantId, provider, externalItemId])
+  @@index([restaurantId, saleItemId])
+}
+
 model SaleContribution {
   id             String @id @default(uuid())
   restaurantId   String
@@ -417,6 +486,11 @@ model SaleContribution {
   importId        String?
   importRecord    SaleImport? @relation(fields: [restaurantId, importId], references: [restaurantId, id], onDelete: NoAction)
   importLine      Int?
+  posBatchId      String?
+  posBatch        PosSalesBatch? @relation(fields: [restaurantId, posBatchId], references: [restaurantId, id], onDelete: NoAction)
+  sourceRecordId  String? @db.VarChar(160)
+  sourceExternalItemId String? @db.VarChar(120)
+  sourceRefunded  Boolean @default(false)
   sourceItemName  String @db.VarChar(120)
   sourceDate      String @db.VarChar(40)
   serviceDate     DateTime? @db.Date
