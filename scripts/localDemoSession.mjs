@@ -150,8 +150,8 @@ async function main() {
   let credentialDirectory;
   let apiPort;
   let webPort;
-  process.once("SIGINT", () => requestStop("SIGINT"));
-  process.once("SIGTERM", () => requestStop("SIGTERM"));
+  process.on("SIGINT", () => requestStop("SIGINT"));
+  process.on("SIGTERM", () => requestStop("SIGTERM"));
   try {
     apiPort = await findLoopbackPort();
     webPort = await findLoopbackPort(new Set([apiPort]));
