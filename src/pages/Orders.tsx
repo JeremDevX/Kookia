@@ -70,8 +70,8 @@ export default function Orders() {
       onCreateManual={openManualInvoice}
       onOpenDraft={(invoice) => { setInvoiceDraft(invoice); setInvoiceOpen(true); }} />
 
-    <OrderHistory key={historyRevision} onReceiptSaved={() => {
-      setHistoryRevision((value) => value + 1); setInvoiceRefresh((value) => value + 1);
+    <OrderHistory refreshKey={historyRevision} onReceiptSaved={() => {
+      setInvoiceRefresh((value) => value + 1);
       setSuggestionsRevision((value) => value + 1);
     }} />
 

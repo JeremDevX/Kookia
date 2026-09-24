@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { getOrders, type PurchaseOrder } from "../../services/orderService";
 import PurchaseReceiptReview from "./PurchaseReceiptReview";
@@ -8,19 +8,40 @@ import "./OrderHistory.css";
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 const orderTotal = (order: PurchaseOrder) => order.lines.reduce((total, line) => total + line.quantity * line.pricePerUnit, 0);
 
-interface OrderHistoryProps { onReceiptSaved?: () => void; }
+interface OrderHistoryProps { refreshKey?: number; onReceiptSaved?: () => void; }
 
-export default function OrderHistory({ onReceiptSaved }: OrderHistoryProps) {
+export default function OrderHistory({ refreshKey = 0, onReceiptSaved }: OrderHistoryProps) {
+  const [reload, setReload] = useState(0);
+  const requestKey = `${refreshKey}:${reload}`;
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [reload, setReload] = useState(0);
+  const [loadedRequestKey, setLoadedRequestKey] = useState("");
+  const loading = loadedRequestKey !== requestKey;
+  const currentError = loading ? "" : error;
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const retryFocusPending = useRef(false);
   useEffect(() => {
     let active = true;
-    getOrders().then((data) => { if (active) { setOrders(data); setError(""); } }, () => { if (active) setError("Historique des commandes indisponible."); }).finally(() => { if (active) setLoading(false); });
+    getOrders().then((data) => {
+      if (active) { setOrders(data); setError(""); setLoadedRequestKey(requestKey); }
+    }, () => {
+      if (active) { setError("Historique des commandes indisponible."); setLoadedRequestKey(requestKey); }
+    });
     return () => { active = false; };
-  }, [reload]);
-  const refreshAfterReceipt = () => { setLoading(true); setReload((value) => value + 1); onReceiptSaved?.(); };
+  }, [requestKey]);
+  useEffect(() => {
+    if (loading || !retryFocusPending.current) return;
+    retryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (error) retryButtonRef.current?.focus();
+    else headingRef.current?.focus();
+  }, [error, loading, orders]);
+  const refreshAfterReceipt = () => { setReload((value) => value + 1); onReceiptSaved?.(); };
+  const retryHistory = () => {
+    retryFocusPending.current = document.activeElement === retryButtonRef.current;
+    setReload((value) => value + 1);
+  };
   const statusLabel = (status: string) => status === "validated" ? "Validée, à transmettre"
     : status === "partially_received" ? "Réception partielle"
       : status === "received" ? "Entièrement réceptionnée"
@@ -29,8 +50,14 @@ export default function OrderHistory({ onReceiptSaved }: OrderHistoryProps) {
             : status === "simulated_received" ? "Commande simulée réceptionnée" : status;
 
   return <section id="to-transmit" className="orders-history" aria-labelledby="orders-history-title">
-    <div className="workspace-section-heading"><h2 id="orders-history-title">Commandes enregistrées</h2><span>{!loading && !error && `${orders.length} commande${orders.length > 1 ? "s" : ""}`}</span></div>
-    {loading ? <p role="status">Chargement des commandes…</p> : error ? <div role="alert"><p>{error}</p><Button variant="outline" onClick={() => { setLoading(true); setReload((value) => value + 1); }}>Réessayer</Button></div> : orders.length === 0 ? <p className="orders-empty">Aucune commande enregistrée. Vos articles sélectionnés restent dans la commande en préparation jusqu'à validation.</p> : orders.map((order) => <details className="order-record" key={order.id} id={`order-${order.id}`}>
+    <div className="workspace-section-heading"><h2 ref={headingRef} id="orders-history-title" tabIndex={-1}>Commandes enregistrées</h2><span>{!loading && !currentError && `${orders.length} commande${orders.length > 1 ? "s" : ""}`}</span></div>
+    {loading && <p role="status">{orders.length > 0 ? "Actualisation des commandes…" : "Chargement des commandes…"}</p>}
+    {currentError && <div role="alert"><p>{currentError}</p>
+      {orders.length > 0 && <p>Les commandes déjà chargées restent visibles ; leur réception est suspendue jusqu’à une lecture réussie.</p>}
+      <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryHistory}>Réessayer</Button>
+    </div>}
+    {!loading && !currentError && orders.length === 0 && <p className="orders-empty">Aucune commande enregistrée. Vos articles sélectionnés restent dans la commande en préparation jusqu'à validation.</p>}
+    {orders.map((order) => <details className="order-record" key={order.id} id={`order-${order.id}`}>
       <summary><span className="order-record-main"><strong>{new Date(order.createdAt).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}</strong><small>{order.lines.length} article{order.lines.length > 1 ? "s" : ""} · {statusLabel(order.status)}</small></span><strong className="order-record-total">{money.format(orderTotal(order))}</strong></summary>
       <div className="order-record-body">
         <p>Référence : {order.id}</p>
@@ -47,7 +74,8 @@ export default function OrderHistory({ onReceiptSaved }: OrderHistoryProps) {
             </li>)}</ul>
           </article>)}
         </section>}
-        {!order.status.endsWith("received") && <PurchaseReceiptReview order={order} onSaved={refreshAfterReceipt} />}
+        {!order.status.endsWith("received") && <PurchaseReceiptReview order={order}
+          orderStateCurrent={!loading && !currentError} onSaved={refreshAfterReceipt} />}
       </div>
     </details>)}
   </section>;

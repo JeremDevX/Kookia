@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { getInvoices, type Invoice } from "../../services/invoiceService";
 import { reconcilePurchaseReceipt, type PurchaseOrder, type PurchaseReceiptInput } from "../../services/orderService";
 import "./PurchaseReceiptReview.css";
 
-interface PurchaseReceiptReviewProps { order: PurchaseOrder; onSaved: () => void; }
+interface PurchaseReceiptReviewProps { order: PurchaseOrder; orderStateCurrent: boolean; onSaved: () => void; }
 interface ReceiptLineDraft { orderLineId: string; receivedQuantity: string; priceDifferenceReason: string; }
 
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
@@ -13,7 +13,7 @@ const validQuantity = (value: string) => /^\d+(?:\.\d{1,3})?$/.test(value.trim()
   Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 1_000_000;
 const equalPrice = (left: number, right: number) => Math.round(left * 10_000) === Math.round(right * 10_000);
 
-export default function PurchaseReceiptReview({ order, onSaved }: PurchaseReceiptReviewProps) {
+export default function PurchaseReceiptReview({ order, orderStateCurrent, onSaved }: PurchaseReceiptReviewProps) {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -24,8 +24,15 @@ export default function PurchaseReceiptReview({ order, onSaved }: PurchaseReceip
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [invoiceLoadError, setInvoiceLoadError] = useState("");
   const [notice, setNotice] = useState("");
   const operation = useRef<{ signature: string; id: string } | null>(null);
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
+  const invoiceSelectRef = useRef<HTMLSelectElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const summaryRef = useRef<HTMLElement>(null);
+  const retryFocusPending = useRef(false);
+  const saveFocusPending = useRef(false);
   const invoice = invoices.find((candidate) => candidate.id === invoiceId);
   const demoOrder = order.status.startsWith("simulated");
   const eligibleInvoices = invoices.filter((candidate) => candidate.status === "draft" && !!candidate.supplierId &&
@@ -36,12 +43,26 @@ export default function PurchaseReceiptReview({ order, onSaved }: PurchaseReceip
     : [{ line, index }]) ?? [];
 
   const loadInvoices = async () => {
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setInvoiceLoadError("");
     try {
       const result = await getInvoices();
       setInvoices(result); setLoaded(true);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Factures indisponibles."); }
+    } catch (cause) { setInvoiceLoadError(cause instanceof Error ? cause.message : "Factures indisponibles."); }
     finally { setLoading(false); }
+  };
+
+  useEffect(() => {
+    if (loading || !retryFocusPending.current) return;
+    retryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (invoiceLoadError) retryButtonRef.current?.focus();
+    else if (eligibleInvoices.length > 0) invoiceSelectRef.current?.focus();
+    else summaryRef.current?.focus();
+  }, [eligibleInvoices.length, invoiceLoadError, loading]);
+
+  const retryInvoices = () => {
+    retryFocusPending.current = document.activeElement === retryButtonRef.current;
+    void loadInvoices();
   };
 
   const chooseInvoice = (id: string) => {
@@ -79,6 +100,7 @@ export default function PurchaseReceiptReview({ order, onSaved }: PurchaseReceip
   } satisfies Omit<PurchaseReceiptInput, "operationId">);
 
   const canSubmit = !!invoice && !!payload && deliveryReference.trim().length > 0 && !!deliveryDate &&
+    orderStateCurrent && !loading && !invoiceLoadError && invoice.status === "draft" &&
     includedLines.length > 0 && includedLines.every(({ line, index }) => {
       const draft = lines[index];
       const orderLine = order.lines.find((candidate) => candidate.id === draft?.orderLineId);
@@ -95,6 +117,7 @@ export default function PurchaseReceiptReview({ order, onSaved }: PurchaseReceip
 
   const submit = async () => {
     if (!canSubmit || !invoice || !payload || saving) return;
+    saveFocusPending.current = document.activeElement === submitButtonRef.current;
     const signature = JSON.stringify(payload);
     if (!operation.current || operation.current.signature !== signature)
       operation.current = { signature, id: crypto.randomUUID() };
@@ -106,8 +129,15 @@ export default function PurchaseReceiptReview({ order, onSaved }: PurchaseReceip
         : `Réception enregistrée${saved.invoiceComplete ? "; facture rapprochée" : "; rapprochement partiel, facture conservée en brouillon"}.`);
       operation.current = null;
       await loadInvoices();
+      if (saveFocusPending.current && document.activeElement === document.body) {
+        document.getElementById(`order-${order.id}`)?.querySelector("summary")?.focus();
+      }
+      saveFocusPending.current = false;
       onSaved();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Réception non enregistrée."); }
+    } catch (cause) {
+      saveFocusPending.current = false;
+      setError(cause instanceof Error ? cause.message : "Réception non enregistrée.");
+    }
     finally { setSaving(false); }
   };
 
@@ -116,16 +146,21 @@ export default function PurchaseReceiptReview({ order, onSaved }: PurchaseReceip
     setOpen(nextOpen);
     if (nextOpen && !loaded && !loading) void loadInvoices();
   }}>
-    <summary>Rapprocher une facture et une livraison</summary>
+    <summary ref={summaryRef}>Rapprocher une facture et une livraison</summary>
     {open && <div className="purchase-receipt-form">
       {demoOrder && <p className="purchase-receipt-note">Espace de démonstration : cette réception restera simulée et ne modifiera pas le stock réel.</p>}
       {loading && <p role="status">Chargement des factures brouillon…</p>}
+      {invoiceLoadError && <div role="alert"><p>Factures brouillon indisponibles : {invoiceLoadError}</p>
+        <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryInvoices}>Recharger les factures</Button>
+      </div>}
       {error && <p role="alert">{error}</p>}
       {notice && <p role="status">{notice}</p>}
-      {!loading && eligibleInvoices.length === 0 && <p>Aucune facture brouillon avec fournisseur vérifié et lignes correspondant au reliquat de cette commande.</p>}
+      {!loading && !invoiceLoadError && eligibleInvoices.length === 0 && !invoice &&
+        <p>Aucune facture brouillon avec fournisseur vérifié et lignes correspondant au reliquat de cette commande.</p>}
       {eligibleInvoices.length > 0 && <>
         <label htmlFor={`receipt-invoice-${order.id}`}>Facture revue</label>
-        <select className="input-field" id={`receipt-invoice-${order.id}`} value={invoiceId} disabled={saving}
+        <select ref={invoiceSelectRef} className="input-field" id={`receipt-invoice-${order.id}`} value={invoiceId}
+          disabled={saving || loading || !!invoiceLoadError || !orderStateCurrent}
           onChange={(event) => chooseInvoice(event.target.value)}>
           <option value="">Choisir une facture</option>
           {eligibleInvoices.map((item) => <option key={item.id} value={item.id}>
@@ -135,11 +170,14 @@ export default function PurchaseReceiptReview({ order, onSaved }: PurchaseReceip
         </select>
       </>}
       {invoice && <>
+        {invoice.status === "received" && <p role="status">Cette facture est déjà entièrement rapprochée ; aucune seconde réception n’est possible.</p>}
         <label htmlFor={`receipt-delivery-reference-${order.id}`}>Référence du bon de livraison</label>
-        <input className="input-field" id={`receipt-delivery-reference-${order.id}`} value={deliveryReference} disabled={saving}
+        <input className="input-field" id={`receipt-delivery-reference-${order.id}`} value={deliveryReference}
+          disabled={saving || loading || !!invoiceLoadError || !orderStateCurrent || invoice.status === "received"}
           onChange={(event) => setDeliveryReference(event.target.value)} />
         <label htmlFor={`receipt-delivery-date-${order.id}`}>Date de livraison</label>
-        <input className="input-field" id={`receipt-delivery-date-${order.id}`} type="date" value={deliveryDate} disabled={saving}
+        <input className="input-field" id={`receipt-delivery-date-${order.id}`} type="date" value={deliveryDate}
+          disabled={saving || loading || !!invoiceLoadError || !orderStateCurrent || invoice.status === "received"}
           onChange={(event) => setDeliveryDate(event.target.value)} />
         {invoice.source === "source_document" && <p>Pièce source simulée · type/date et chaque ligne doivent déjà avoir été vérifiés dans sa facture.</p>}
         {includedLines.map(({ line, index }) => {
@@ -151,7 +189,8 @@ export default function PurchaseReceiptReview({ order, onSaved }: PurchaseReceip
           const priceDiffers = !!matched && !equalPrice(line.unitPrice, matched.pricePerUnit);
           const progress = invoice.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index)
             .reduce((sum, entry) => sum + entry.receivedQuantity, 0) ?? 0;
-          return <fieldset key={index} className="purchase-receipt-line" disabled={saving}>
+          return <fieldset key={index} className="purchase-receipt-line"
+            disabled={saving || loading || !!invoiceLoadError || !orderStateCurrent || invoice.status === "received"}>
             <legend>{line.sourceName ? `Pièce revue : ${line.sourceName}` : `Ligne de facture ${index + 1}`}</legend>
             <p>{line.productId ? order.lines.find((candidate) => candidate.productId === line.productId)?.productName ?? "Produit" : "Produit non associé"} · Facturé : {line.quantity} {line.unit ?? "unité"} × {line.unitPrice.toFixed(4)} €</p>
             {progress > 0 && <p>Déjà rapproché : {progress} {line.unit}.</p>}
@@ -178,7 +217,7 @@ export default function PurchaseReceiptReview({ order, onSaved }: PurchaseReceip
         })}
         {invoice.source === "source_document" && invoice.lines.some((line) => line.disposition === "pending") &&
           <p role="alert">Terminez d’abord la revue des lignes source dans la facture.</p>}
-        <Button onClick={() => void submit()} disabled={!canSubmit || saving}>
+        <Button ref={submitButtonRef} onClick={() => void submit()} disabled={!canSubmit || saving}>
           {saving ? "Enregistrement…" : demoOrder ? "Enregistrer la réception simulée" : "Rapprocher et ajouter au stock"}
         </Button>
       </>}
