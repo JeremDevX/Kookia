@@ -135,7 +135,7 @@ export default function InvoiceModal({ initialInvoice, onValidate, onPersist, on
         <input className="input-field" id="invoice-date" type="date" value={invoice.date} disabled={disabled || received}
           onChange={(event) => setInvoice({ ...invoice, date: event.target.value,
             ...(sourceLinked ? { sourceDateConfirmed: false } : {}) })} />
-        {sourceLinked && !received && <>
+        {sourceLinked && !received && invoice.sourceType === "invoice" && <>
           <label className="invoice-confirmation">
             <input type="checkbox" checked={invoice.sourceTypeConfirmed ?? false} disabled={disabled}
               onChange={(event) => setInvoice({ ...invoice, sourceTypeConfirmed: event.target.checked })} />
