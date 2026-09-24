@@ -15,26 +15,44 @@ Créer d'abord un article vendu, puis enregistrer une quantité pour une date de
 service non future. Une vente déjà présente pour le même article et la même date
 doit être **corrigée**, pas ajoutée une seconde fois. L'[import CSV Kookia](sales-csv.md)
 présente les lignes avant confirmation, signale les rejets et évite le double
-import d'un même fichier dans le restaurant.
+import d'un même fichier dans le restaurant. Le **calendrier des services**
+enregistre séparément, par date civile de Paris, si le restaurant était ouvert
+ou fermé et si les ventes sont complètes, partielles ou manquantes. Une saisie
+manuelle ou un import ouvre automatiquement le jour avec une couverture
+partielle ; le restaurateur peut ensuite confirmer la revue complète. Un jour
+fermé ne peut contenir de vente. Les anciens jours issus des ventes sont
+migrés comme ouverts/partiels, jamais comme complets par supposition.
+
+« Ouvert + complet » signifie que le relevé du service a été revu : un article
+vendu sans ligne ce jour-là vaut alors zéro observé. Une date absente, une
+couverture partielle ou manquante reste inconnue. Un jour fermé et confirmé
+complet est un jour sans service, pas une ouverture à zéro. Les jours de service
+sont stockés en date seule (`DATE`) : les heures d'enregistrement restent des
+timestamps explicites, sans conversion implicite autour du changement d'heure.
 
 ## Indicateurs
 
 Les quantités par article et par date proviennent des ventes présentes dans la
 période choisie. Les totaux distinguent saisies manuelles, imports CSV et
 simulation ; l'interface identifie explicitement les données de démonstration.
-Une correction conserve la provenance CSV. Une date sans saisie n'est pas
-interprétée comme zéro vente. La comparaison avec la période
-immédiatement précédente porte sur la **moyenne par jour avec ventes
-enregistrées**, pas sur tous les jours calendaires. Elle n'est affichée que si
-chaque période compte au moins sept jours observés et au moins la moitié de ses
-jours calendaires. Ces chiffres ne mesurent ni économies ni gaspillage évité.
+Une correction conserve la provenance CSV. Le total présente les lignes
+enregistrées dans la période ; la comparaison et la moyenne ne reposent que sur
+les jours **ouverts et complets**, y compris ceux où toutes les quantités
+revues valent zéro. Les jours partiels, fermés ou inconnus ne sont pas comptés
+comme jours ouverts observés. La comparaison n'est affichée que si chaque
+période compte au moins sept jours ouverts complets et au moins la moitié de
+ses jours calendaires. Le nombre de dates complètes et manquantes/partielles
+reste visible. Ces chiffres ne mesurent ni économies ni gaspillage évité.
 
 ## Baseline
 
-Pour chaque article, le serveur examine les **28 journées terminées** précédant
-la date du jour (heure de Paris). Il exige une vente présente pour chacun de ces
-28 jours calendaires ; un jour manquant n'est pas imputé à zéro. L'estimation
-expérimentale pour aujourd'hui est la moyenne arrondie des sept derniers jours.
+Le serveur examine les **28 dates civiles terminées** précédant la date du jour
+(heure de Paris). Il exige une couverture complète pour chacune, ouverte ou
+fermée et confirmée ; la moindre date absente ou partielle suspend toutes les
+estimations. Sur une date complète, l'absence de ligne d'un article est un zéro
+observé ; un jour non renseigné n'est jamais imputé à zéro. L'estimation
+expérimentale pour demain est la moyenne arrondie des sept derniers jours
+calendaires complets.
 Le backtest prédit séparément chacun des sept derniers jours à partir de ses
 sept jours **antérieurs**, puis affiche l'erreur absolue moyenne (EAM, en unités)
 et l'erreur absolue pondérée (WAPE). Les articles incomplets ne reçoivent pas
@@ -56,10 +74,11 @@ fournisseur.
 3. Filtrer une période sans vente : l'historique et les indicateurs indiquent
    l'absence de données ; aucune évolution n'est calculée. Comparer ensuite
    deux périodes ayant chacune assez de jours renseignés.
-4. Avec moins de 28 jours consécutifs par article, vérifier que la baseline
-   affiche « historique insuffisant » sans estimation. Sur un jeu de test de
-   28 jours consécutifs, comparer l'estimation et les erreurs du backtest aux
-   quantités saisies ; une journée manquante doit exclure cet article.
+4. Sans 28 jours complets, vérifier que la baseline affiche « historique
+   insuffisant » sans estimation. Sur un jeu de test de 28 jours confirmés,
+   comparer l'estimation et les erreurs du backtest aux quantités saisies ;
+   une ligne d'article absente est zéro seulement si le calendrier du jour est
+   complet, tandis qu'une date partielle/exclue suspend la baseline.
 5. Se connecter avec un autre compte : ses articles, ventes, indicateurs et
    baseline ne doivent pas révéler ceux du premier restaurant. Aucune de ces
    opérations ne doit créer une commande ou modifier le stock.

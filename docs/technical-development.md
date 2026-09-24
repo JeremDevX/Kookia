@@ -37,7 +37,7 @@ La [cartographie détaillée des écarts](ecarts-techniques.md) confronte cette 
 ## Modèle cible et frontières
 
 Le modèle persistant actuel comprend notamment `Restaurant`, `Product`,
-`StockMovement`, `SaleItem`, `DailySale`, `SaleImport`, `Prediction`,
+`StockMovement`, `SaleItem`, `ServiceDay`, `DailySale`, `SaleImport`, `Prediction`,
 `PurchaseOrder` et `RecommendationDecision`. Les
 [contrats proposés pour les sources externes](integrations.md), non implémentés,
 devront rester distincts de ces modèles et des payloads bruts des fournisseurs.
@@ -50,7 +50,7 @@ UI React → hooks/features → client API → API Express → domaine → Postg
 La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
 `Product`, `Recipe`, `RecipeIngredient`, `StockMovement`, `StockCount`,
 `InvoiceDraftRevision`, `Production`, `Prediction`, `SaleItem`, `DailySale`,
-`SaleImport`, `PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
+`SaleImport`, `ServiceDay`, `PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
 et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics,
 préférences, panier, notifications, pièces source, factures et menus), validés aux frontières.
 Les mutations critiques sont transactionnelles. Les liens internes sont différés
@@ -62,6 +62,12 @@ gardent leur nom, fournisseur, unité et prix snapshotés lors de la commande.
 écart, unité, date et acteur ; un écart accepté ajoute un `StockMovement` lié.
 La révision de stock évolue avec chaque entrée/sortie et permet d'étiqueter un
 comptage comme « à vérifier » après tout mouvement ultérieur.
+`ServiceDay` conserve le statut ouvert/fermé, la couverture des ventes
+complète/partielle/manquante, une révision et l'acteur, par date civile. Une
+vente manuelle ou CSV ouvre un service partiel ; seul un jour explicitement
+complet qualifie les absences de lignes comme zéro observé. La migration classe
+les dates historiques avec ventes comme ouvertes/partielles, sans inventer une
+complétude rétrospective.
 
 Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` initialise
 les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au
