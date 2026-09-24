@@ -16,7 +16,9 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
   const [loading, setLoading] = useState(true);
   const [busyProductId, setBusyProductId] = useState("");
   const [error, setError] = useState("");
+  const [refreshRevision, setRefreshRevision] = useState(0);
   const operationIds = useRef<Record<string, string>>({});
+  const suggestionKeys = useRef<Record<string, string>>({});
 
   useEffect(() => {
     let active = true;
@@ -24,15 +26,19 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
     getPurchaseSuggestions().then((suggestions) => {
       if (active) {
         setData(suggestions);
+        const previousKeys = suggestionKeys.current;
+        const nextKeys = Object.fromEntries(suggestions.suggestions.map((item) => [item.productId, item.suggestionKey]));
         setQuantities((current) => Object.fromEntries(suggestions.suggestions.flatMap((item) => item.estimatedQuantity === null
-          ? [] : [[item.productId, current[item.productId] ?? String(item.estimatedQuantity)]])));
+          ? [] : [[item.productId, previousKeys[item.productId] === item.suggestionKey
+            ? current[item.productId] ?? String(item.estimatedQuantity) : String(item.estimatedQuantity)]])));
         setDecisions({});
         operationIds.current = {};
+        suggestionKeys.current = nextKeys;
       }
     }, (cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : "Propositions indisponibles."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [refreshKey]);
+  }, [refreshKey, refreshRevision]);
 
   const retryAddition = async (productId: string) => {
     if (!data || busyProductId) return;
@@ -137,6 +143,8 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
           <ul className="purchase-suggestions-assumptions">{data.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}</ul>
         </>}
       </>}
-    {error && data && <p role="alert">{error}</p>}
+    {error && data && <div role="alert"><p>{error}</p><Button variant="outline" onClick={() => setRefreshRevision((value) => value + 1)}>
+      Recharger les propositions
+    </Button></div>}
   </section>;
 }

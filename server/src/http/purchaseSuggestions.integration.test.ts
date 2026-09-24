@@ -119,6 +119,9 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
     lines: [{ invoiceQuantity: 3, receivedQuantity: 2, quantityDifference: 1 }] });
   expect(Number((await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: {
     restaurantId: owner.restaurantId, id: product.id } } })).currentStock)).toBe(stockBeforeOrder + 2);
+  const afterReceiptSuggestions = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
+  expect(afterReceiptSuggestions.body.suggestions.find((item: { productId: string }) => item.productId === product.id))
+    .toMatchObject({ status: "needs_stock_count", canAdd: false, countedStock: null, decision: null });
   const receiptMovements = await prisma.stockMovement.findMany({ where: { restaurantId: owner.restaurantId,
     reason: "purchase_receipt", invoiceDocumentId: invoiceId } });
   expect(receiptMovements).toHaveLength(1);
