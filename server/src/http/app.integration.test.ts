@@ -17,6 +17,10 @@ describe("authentication HTTP flow", () => {
     await prisma.$disconnect();
   });
 
+  it("returns the API liveness status", async () => {
+    await request(app).get("/api/health").expect(200, { status: "ok" });
+  });
+
   it("registers, authenticates, updates account, rotates password and deletes account", async () => {
     const agent = request.agent(app);
     const registration = await agent.post("/api/auth/register").send({ displayName: "Integration User", email: ` ${email.toUpperCase()} `, password: firstPassword }).expect(201);
