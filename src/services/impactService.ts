@@ -22,13 +22,26 @@ export interface ImpactPeriod {
   excluded: { simulatedSales: number; simulatedLosses: number; simulatedReceiptLines: number;
     lossUnitMismatch: number; receiptUnitMismatch: number };
 }
+export interface ImpactMonthlyPeriod {
+  month: string; from: string; to: string; calendarDays: number;
+  recorded: Pick<ImpactBucket, "menuItemUnits" | "serviceDays" | "lossMovementCount" | "knownLossCost" |
+    "unpricedLossMovementCount" | "receivedCost" | "receiptCount">;
+  simulation: Pick<ImpactBucket, "menuItemUnits" | "serviceDays" | "lossMovementCount" | "knownLossCost" |
+    "unpricedLossMovementCount" | "receivedCost" | "receiptCount">;
+  hasRecordedData: boolean; hasSimulationData: boolean;
+  excluded: ImpactPeriod["excluded"];
+}
 export interface ImpactReport {
   from: string; to: string; previous: { from: string; to: string }; comparison: "same_number_of_calendar_days";
   timezone: string; currency: string;
   dateBasis: { sales: string; losses: string; receipts: string };
   unavailableMetrics: string[]; savingsClaim: "not_measured"; generatedAt: string;
   current: ImpactPeriod; prior: ImpactPeriod;
+  monthly?: ImpactMonthlyPeriod[];
 }
 
-export const getImpactReport = (from: string, to: string) =>
-  apiRequest<ImpactReport>(`/workspace/impact?${new URLSearchParams({ from, to })}`);
+export const getImpactReport = (from: string, to: string, includeMonthly = false) => {
+  const query = new URLSearchParams({ from, to });
+  if (includeMonthly) query.set("monthly", "true");
+  return apiRequest<ImpactReport>(`/workspace/impact?${query}`);
+};

@@ -100,7 +100,14 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
 
   const empty = await agent.get("/api/workspace/impact?from=2020-01-01&to=2020-01-01").expect(200);
   expect(empty.body.current.hasRecordedData).toBe(false);
+  expect(empty.body.monthly).toBeUndefined();
   expect(empty.body.current.recorded).toMatchObject({ menuItemUnits: 0, lossMovementCount: 0, receivedCost: 0,
     serviceDays: { complete: 0 } });
+  const fourYearMonthly = await agent.get("/api/workspace/impact").query({
+    from: "2020-01-01", to: "2023-12-31", monthly: "true",
+  }).expect(200);
+  expect(fourYearMonthly.body.monthly).toHaveLength(48);
+  expect(fourYearMonthly.body.monthly[0]).toMatchObject({ month: "2020-01", from: "2020-01-01", to: "2020-01-31" });
+  await agent.get("/api/workspace/impact").query({ from: "2020-01-01", to: "2024-01-01", monthly: "true" }).expect(400);
   await agent.get("/api/workspace/impact?from=2026-09-02&to=2026-09-01").expect(400);
 });

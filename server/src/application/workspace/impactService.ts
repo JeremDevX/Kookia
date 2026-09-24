@@ -14,6 +14,7 @@ type ImpactBucket = { menuItemUnits: number; salesByItem: SaleItem[]; serviceDay
   receiptsByProduct: ReceiptItem[] };
 
 const DAY_MS = 86_400_000;
+export const MAX_MONTHLY_IMPACT_MONTHS = 48;
 const dateAt = (date: string) => new Date(`${date}T00:00:00.000Z`);
 const dateOnly = (date: Date) => date.toISOString().slice(0, 10);
 const addDays = (date: string, days: number) => {
@@ -22,6 +23,21 @@ const addDays = (date: string, days: number) => {
   return dateOnly(result);
 };
 const inRange = (date: string, from: string, to: string) => date >= from && date <= to;
+const monthIndex = (date: string) => Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7)) - 1;
+
+export const calendarMonthCount = (from: string, to: string) => monthIndex(to) - monthIndex(from) + 1;
+
+function monthRanges(from: string, to: string) {
+  const ranges: Array<{ month: string; from: string; to: string }> = [];
+  for (let index = monthIndex(from); index <= monthIndex(to); index += 1) {
+    const year = Math.floor(index / 12), monthNumber = index % 12 + 1;
+    const month = `${year}-${String(monthNumber).padStart(2, "0")}`;
+    const monthStart = `${month}-01`;
+    const monthEnd = dateOnly(new Date(Date.UTC(year, monthNumber, 0)));
+    ranges.push({ month, from: from > monthStart ? from : monthStart, to: to < monthEnd ? to : monthEnd });
+  }
+  return ranges;
+}
 
 function emptyBucket(calendarDays: number): ImpactBucket {
   return { menuItemUnits: 0, salesByItem: [], serviceDays: { complete: 0, partial: 0, coverageMissing: 0, closed: 0,
@@ -36,9 +52,21 @@ function emptyPeriod(from: string, to: string, calendarDays: number) {
       lossUnitMismatch: 0, receiptUnitMismatch: 0 } };
 }
 
+function monthlyPeriod(month: string, period: ReturnType<typeof emptyPeriod>) {
+  const project = (bucket: ImpactBucket) => ({ menuItemUnits: bucket.menuItemUnits, serviceDays: bucket.serviceDays,
+    lossMovementCount: bucket.lossMovementCount, knownLossCost: bucket.knownLossCost,
+    unpricedLossMovementCount: bucket.unpricedLossMovementCount, receivedCost: bucket.receivedCost,
+    receiptCount: bucket.receiptCount });
+  return { month, from: period.from, to: period.to, calendarDays: period.calendarDays,
+    recorded: project(period.recorded), simulation: project(period.simulation),
+    hasRecordedData: period.hasRecordedData, hasSimulationData: period.hasSimulationData,
+    excluded: period.excluded };
+}
+
 function quantity(decimal: Prisma.Decimal) { return Number(decimal); }
 
-export async function getImpactReport(restaurantId: string, from: string, to: string, db: ImpactDatabase = prisma) {
+export async function getImpactReport(restaurantId: string, from: string, to: string, db: ImpactDatabase = prisma,
+  options: { includeMonthly?: boolean } = {}) {
   const dayCount = Math.floor((dateAt(to).getTime() - dateAt(from).getTime()) / DAY_MS) + 1;
   const previous = { from: addDays(from, -dayCount), to: addDays(from, -1) };
   const rangeStart = dateAt(previous.from);
@@ -193,8 +221,13 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
 
   const current = summarize(from, to);
   const prior = summarize(previous.from, previous.to);
-  return { from, to, previous, comparison: "same_number_of_calendar_days", timezone: "Europe/Paris", currency: "EUR",
+  const report = { from, to, previous, comparison: "same_number_of_calendar_days" as const,
+    timezone: "Europe/Paris", currency: "EUR",
     dateBasis: { sales: "serviceDate Europe/Paris", losses: "stock movement recordedAt UTC", receipts: "deliveryDate on confirmed receipt" },
     unavailableMetrics: ["stockouts", "unsold_quantity"], savingsClaim: "not_measured", generatedAt: new Date().toISOString(),
     current, prior };
+  if (!options.includeMonthly) return report;
+  const monthly = monthRanges(from, to).map(({ month, from: monthFrom, to: monthTo }) =>
+    monthlyPeriod(month, summarize(monthFrom, monthTo)));
+  return { ...report, monthly };
 }

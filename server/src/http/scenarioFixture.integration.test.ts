@@ -98,6 +98,9 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
       createdAt: { gte: rangeStart, lt: rangeEnd }, reason: { in: ["loss", "simulation_loss"] }, delta: { lt: 0 } },
       include: { product: { select: { unit: true } } } }),
   ]);
+  const monthlyReport = await scenarioOwner.agent.get("/api/workspace/impact")
+    .query({ from: "2023-01-01", to: "2026-12-31", monthly: "true" }).expect(200);
+  expect(monthlyReport.body.monthly).toHaveLength(48);
   for (let monthOffset = 0; monthOffset < 48; monthOffset += 1) {
     const year = 2023 + Math.floor(monthOffset / 12);
     const month = monthOffset % 12 + 1;
@@ -117,6 +120,17 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
       movement.delta.abs().mul(movement.unitPriceSnapshot).toNumber()), 0);
     const report = await scenarioOwner.agent.get("/api/workspace/impact").query({ from, to }).expect(200);
     const current = report.body.current;
+    const monthly = monthlyReport.body.monthly[monthOffset];
+    expect(monthly).toMatchObject({ month: monthKey, from, to, calendarDays, hasRecordedData: false,
+      hasSimulationData: days.length + sales.length + losses.length > 0, excluded: current.excluded });
+    expect(monthly.recorded).toMatchObject({ menuItemUnits: current.recorded.menuItemUnits,
+      serviceDays: current.recorded.serviceDays, lossMovementCount: current.recorded.lossMovementCount,
+      knownLossCost: current.recorded.knownLossCost, unpricedLossMovementCount: current.recorded.unpricedLossMovementCount,
+      receivedCost: current.recorded.receivedCost, receiptCount: current.recorded.receiptCount });
+    expect(monthly.simulation).toMatchObject({ menuItemUnits: current.simulation.menuItemUnits,
+      serviceDays: current.simulation.serviceDays, lossMovementCount: current.simulation.lossMovementCount,
+      knownLossCost: current.simulation.knownLossCost, unpricedLossMovementCount: current.simulation.unpricedLossMovementCount,
+      receivedCost: current.simulation.receivedCost, receiptCount: current.simulation.receiptCount });
     expect(current).toMatchObject({ from, to, calendarDays, hasRecordedData: false,
       hasSimulationData: days.length + sales.length + losses.length > 0,
       excluded: { simulatedSales: sales.length, simulatedLosses: losses.length, simulatedReceiptLines: 0 } });
