@@ -25,6 +25,9 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
+  const saveButton = useRef<HTMLButtonElement>(null);
+  const retryButton = useRef<HTMLButtonElement>(null);
+  const restoreSubmitFocus = useRef(false);
   const selected = days.find((day) => day.serviceDate === selectedDate) ?? null;
   const calendarDates = useMemo(() => dateRange(from, to), [from, to]);
 
@@ -45,9 +48,17 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
     setStatus(selectedDay.status); setCoverage(selectedDay.coverage);
   }, [selectedDate, days]);
   useEffect(() => { setSelectedDate(to); }, [from, to]);
+  useEffect(() => {
+    if (saving || !restoreSubmitFocus.current) return;
+    restoreSubmitFocus.current = false;
+    if (document.activeElement !== document.body) return;
+    if (error) retryButton.current?.focus();
+    else saveButton.current?.focus();
+  }, [error, saving]);
 
   const submit = async (event: FormEvent) => {
-    event.preventDefault(); setSaving(true); setError(""); setMessage("");
+    event.preventDefault(); restoreSubmitFocus.current = document.activeElement === saveButton.current;
+    setSaving(true); setError(""); setMessage("");
     try {
       const updated = await saveServiceDay({ serviceDate: selectedDate, revision: selected?.revision ?? 0, status, coverage });
       setDays((current) => [...current.filter((day) => day.serviceDate !== updated.serviceDate), updated].sort((a, b) => b.serviceDate.localeCompare(a.serviceDate)));
@@ -80,9 +91,9 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
         <option value="partial">Partielle — revue incomplète</option>
         <option value="missing">Manquante — données inconnues</option>
       </select></label>
-      <Button type="submit" disabled={saving || loading || !!error || !calendarDates.includes(selectedDate)}>{saving ? "Enregistrement…" : "Enregistrer l’état du service"}</Button>
+      <Button ref={saveButton} type="submit" disabled={saving || loading || !!error || !calendarDates.includes(selectedDate)}>{saving ? "Enregistrement…" : "Enregistrer l’état du service"}</Button>
     </form>
-    {error && <div role="alert"><p>{error}</p><Button type="button" variant="outline" onClick={retryLoad} disabled={loading || saving}>Réessayer</Button></div>}{message && <p role="status">{message}</p>}
+    {error && <div role="alert"><p>{error}</p><Button ref={retryButton} type="button" variant="outline" onClick={retryLoad} disabled={loading || saving}>Réessayer</Button></div>}{message && <p role="status">{message}</p>}
     <p className="sales-table-hint">Sur petit écran, faites défiler le tableau horizontalement pour voir les autres colonnes.</p>
     <div className="sales-table-wrap" role="region" aria-label="Jours de service sur la période" tabIndex={0}>
       <table className="sales-table"><thead><tr><th>Date</th><th>État du restaurant</th><th>Couverture</th><th>Ventes enregistrées</th></tr></thead>
