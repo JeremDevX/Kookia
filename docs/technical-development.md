@@ -13,7 +13,7 @@ fonctionnalité déjà disponible**.
 | Qualité | ESLint, TypeScript, Vitest et CI GitHub Actions ; scripts `lint`, `build`, `test` | CI exécutable sans manipulation ; smoke test sur URL dédiée avant recette |
 | Hébergement | Configuration frontend Vercel (`vercel.json`) | Préproduction puis recette avant lancement commercial |
 | Backend et persistance | API Express/TypeScript et PostgreSQL/Prisma actifs pour comptes et espaces métier isolés | Renforcer les contrats d'ingestion, la provenance et l'évaluation des calculs |
-| Intégrations | POS/OCR/météo absents ; connexions affichées de façon statique ; saisie manuelle des factures et ventes, import CSV Kookia | Contrats et adaptateurs fournisseur, ingestion contrôlée, correction et repli manuel |
+| Intégrations | POS/OCR/météo absents ; connexions affichées de façon statique ; saisie manuelle et revue/réception simulée explicite des pièces source déjà importées dans l'espace (si présentes), saisie ventes et import CSV Kookia | Contrats et adaptateurs fournisseur, ingestion contrôlée, correction et repli manuel |
 | Prévision | Prévisions de démonstration persistées ; baseline expérimentale distincte, calculée sur ventes enregistrées | Météo locale et calendrier événementiel ; moteur IA hors périmètre full-stack initial |
 
 Les versions et dépendances actives font foi dans [`package.json`](../package.json).
@@ -48,10 +48,11 @@ UI React → hooks/features → client API → API Express → domaine → Postg
 ```
 
 La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
-`Product`, `Recipe`, `RecipeIngredient`, `StockMovement`, `Production`,
-`Prediction`, `SaleItem`, `DailySale`, `SaleImport`, `PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
+`Product`, `Recipe`, `RecipeIngredient`, `StockMovement`,
+`InvoiceDraftRevision`, `Production`, `Prediction`, `SaleItem`, `DailySale`,
+`SaleImport`, `PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
 et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics,
-préférences, panier, notifications, factures et menus), validés aux frontières.
+préférences, panier, notifications, pièces source, factures et menus), validés aux frontières.
 Les mutations critiques sont transactionnelles. Les liens internes sont différés
 pour permettre la suppression en cascade d’un compte sans casser ses références.
 
