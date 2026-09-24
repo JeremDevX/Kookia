@@ -269,6 +269,21 @@
     gap: var(--spacing-sm);
   }
 
+  .recipes-container .workspace-section-heading {
+    align-items: stretch;
+  }
+
+  .recipes-container .view-toggles {
+    flex: var(--number-1) var(--number-1) var(--unit-100percent);
+    flex-direction: column;
+    min-width: var(--number-0);
+  }
+
+  .recipes-container .view-toggles .btn {
+    width: var(--unit-100percent);
+    justify-content: center;
+  }
+
   .recipe-card .card-content {
     gap: var(--spacing-sm);
   }

@@ -1,0 +1,174 @@
+.recipe-candidates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  border: var(--size-1) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.recipe-candidates-heading,
+.recipe-candidate-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.recipe-candidates-heading h2,
+.recipe-candidate-title h3,
+.recipe-candidate-form h3 {
+  margin: var(--number-0);
+  color: var(--color-text-primary);
+}
+
+.recipe-candidates-heading p,
+.recipe-candidate-form > p {
+  margin: var(--spacing-xs) var(--number-0) var(--number-0);
+  color: var(--color-text-secondary);
+  line-height: var(--number-1_5);
+}
+
+.recipe-candidate-list {
+  display: grid;
+  gap: var(--spacing-md);
+  margin: var(--number-0);
+  padding: var(--number-0);
+  list-style: none;
+}
+
+.recipe-candidate {
+  min-width: var(--number-0);
+  padding: var(--spacing-md);
+  border: var(--size-1) solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow-wrap: var(--overflow-wrap-anywhere);
+}
+
+.recipe-candidate-title span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.recipe-candidate > p,
+.recipe-candidate li {
+  color: var(--color-text-secondary);
+  line-height: var(--number-1_5);
+}
+
+.recipe-candidate > ul {
+  display: grid;
+  gap: var(--spacing-xs);
+  padding-left: var(--spacing-lg);
+}
+
+.recipe-candidate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.recipe-candidate-reject {
+  flex-basis: var(--unit-100percent);
+  padding: var(--spacing-sm);
+  border-left: var(--size-3) solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.recipe-candidate-reject p {
+  margin-top: var(--number-0);
+  color: var(--color-text-secondary);
+}
+
+.recipe-candidate-form {
+  display: grid;
+  gap: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: var(--size-1) solid var(--color-border);
+}
+
+.recipe-candidate-fields {
+  display: grid;
+  grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr)));
+  gap: var(--spacing-md);
+}
+
+.recipe-candidate-form label {
+  display: grid;
+  gap: var(--spacing-xs);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.recipe-candidate-form input,
+.recipe-candidate-form select {
+  width: var(--unit-100percent);
+  min-width: var(--number-0);
+  padding: var(--spacing-sm);
+  border: var(--size-1) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.recipe-candidate-form fieldset {
+  display: grid;
+  gap: var(--spacing-md);
+  min-width: var(--number-0);
+  padding: var(--spacing-md);
+  border: var(--size-1) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.recipe-candidate-form legend {
+  padding: var(--number-0) var(--spacing-xs);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.recipe-candidate-form fieldset > p {
+  margin: var(--number-0);
+  color: var(--color-text-secondary);
+  line-height: var(--number-1_5);
+}
+
+.recipe-candidate-ingredient {
+  display: grid;
+  grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr)));
+  align-items: end;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: var(--size-1) solid var(--color-border);
+}
+
+.recipe-candidates-alert {
+  color: var(--color-urgent-text);
+}
+
+.recipe-candidates-notice {
+  color: var(--color-primary-text);
+}
+
+@media (--media-phone) {
+  .recipe-candidates {
+    padding: var(--spacing-md);
+  }
+
+  .recipe-candidate-fields,
+  .recipe-candidate-ingredient {
+    grid-template-columns: minmax(var(--number-0), var(--unit-1fr));
+  }
+
+  .recipe-candidate-actions > .btn {
+    width: var(--unit-100percent);
+    justify-content: center;
+  }
+}

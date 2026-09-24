@@ -97,24 +97,29 @@ function versionData(restaurantId: string, recipeId: string, version: number, ac
     ingredients: snapshotIngredients(ingredients) };
 }
 
+export async function createRecipeInTransaction(tx: Prisma.TransactionClient, restaurantId: string, actorId: string,
+  operationId: string, input: RecipeValues) {
+  const replay = await tx.recipeVersion.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { ingredients: true } });
+  if (replay) {
+    if (!sameSnapshot(replay, input)) throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération de recette existe déjà avec un autre contenu.");
+    return recipeDto(await tx.recipe.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: replay.recipeId } }, include: recipeInclude }));
+  }
+  assertEffectiveDate(input, null);
+  const ingredients = await productsForIngredients(tx, restaurantId, input.ingredients);
+  const id = randomUUID();
+  await tx.recipe.create({ data: { id, restaurantId, name: input.name, category: input.category,
+    prepTime: input.prepTime, yieldPortions: input.yieldPortions, revision: 1 } });
+  if (ingredients.length) await tx.recipeIngredient.createMany({ data: ingredients.map(({ productId, quantity }) => ({
+    restaurantId, recipeId: id, productId, quantity: new Prisma.Decimal(quantity.toFixed(3)),
+  })) });
+  await appendRecipeVersion(tx, versionData(restaurantId, id, 1, actorId, operationId, input, ingredients));
+  return recipeDto(await tx.recipe.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id } }, include: recipeInclude }));
+}
+
 export async function createRecipe(restaurantId: string, actorId: string, operationId: string, input: RecipeValues) {
   return prisma.$transaction(async (tx) => {
     await lockWorkspace(tx, restaurantId);
-    const replay = await tx.recipeVersion.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { ingredients: true } });
-    if (replay) {
-      if (!sameSnapshot(replay, input)) throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération de recette existe déjà avec un autre contenu.");
-      return recipeDto(await tx.recipe.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: replay.recipeId } }, include: recipeInclude }));
-    }
-    assertEffectiveDate(input, null);
-    const ingredients = await productsForIngredients(tx, restaurantId, input.ingredients);
-    const id = randomUUID();
-    await tx.recipe.create({ data: { id, restaurantId, name: input.name, category: input.category,
-      prepTime: input.prepTime, yieldPortions: input.yieldPortions, revision: 1 } });
-    if (ingredients.length) await tx.recipeIngredient.createMany({ data: ingredients.map(({ productId, quantity }) => ({
-      restaurantId, recipeId: id, productId, quantity: new Prisma.Decimal(quantity.toFixed(3)),
-    })) });
-    await appendRecipeVersion(tx, versionData(restaurantId, id, 1, actorId, operationId, input, ingredients));
-    return recipeDto(await tx.recipe.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id } }, include: recipeInclude }));
+    return createRecipeInTransaction(tx, restaurantId, actorId, operationId, input);
   });
 }
 

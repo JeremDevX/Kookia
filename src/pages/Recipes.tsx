@@ -6,6 +6,7 @@ import RecordProductionModal from "../components/recipes/RecordProductionModal";
 import ProductionConfirmModal from "../components/recipes/ProductionConfirmModal";
 import ReportRefusalModal from "../components/recipes/ReportRefusalModal";
 import RecipeEditor from "../components/recipes/RecipeEditor";
+import RecipeCandidates from "../components/recipes/RecipeCandidates";
 import { Clock, ChefHat, CheckCircle, Leaf, AlertTriangle } from "lucide-react";
 import { format, parseISO, isSameWeek } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -152,6 +153,7 @@ const Recipes: React.FC = () => {
 
       <RecipeEditor open={recipeEditorOpen} recipe={editingRecipe} products={products} headingRef={recipeEditorHeading}
         onCreate={(trigger) => openRecipeEditor(null, trigger)} onClose={closeRecipeEditor} onSaved={refetch} />
+      {!productId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
 
       {!productId && <div className="workspace-summary"><div><span>Catalogue</span><strong>{recipes.length} recettes</strong></div></div>}
       {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to="/recipes" onClick={() => setActiveTab("anti-waste")}>Voir toutes les recettes</Link></p>}

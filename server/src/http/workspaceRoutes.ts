@@ -19,6 +19,7 @@ import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { adjustStock, createProduct, editProduct, getCatalog, WorkspaceError } from "../application/workspace/catalogService.js";
 import { getStockCounts, recordStockCount } from "../application/workspace/stockCountService.js";
 import { createRecipe, getRecipes, recordProduction, updateRecipe } from "../application/workspace/recipeService.js";
+import { createRecipeCandidate, decideRecipeCandidate, getRecipeCandidates, updateRecipeCandidate } from "../application/workspace/recipeCandidateService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
 interface WorkspaceContext { restaurantId: string; actorId: string; }
@@ -124,11 +125,16 @@ workspaceRoutes.get("/recipes", async (_req, res, next) => {
 });
 const recipeIngredientSchema = z.object({ productId: z.string().trim().min(1).max(100),
   quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001) }).strict();
-const recipeMutationSchema = z.object({
-  operationId: z.uuid(), name: z.string().trim().min(1).max(120), category: z.enum(["Plat", "Dessert", "Entrée"]),
+const recipeValuesSchema = z.object({
+  name: z.string().trim().min(1).max(120), category: z.enum(["Plat", "Dessert", "Entrée"]),
   prepTime: z.number().int().min(0).max(10080), yieldPortions: z.number().int().min(1).max(10000),
   effectiveFrom: z.iso.date(), ingredients: z.array(recipeIngredientSchema).min(1).max(100),
 }).strict();
+const recipeMutationSchema = recipeValuesSchema.extend({ operationId: z.uuid() });
+const recipeCandidateInputSchema = recipeValuesSchema.extend({ ingredients: z.array(z.object({
+  productId: z.string().trim().min(1).max(100), quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001),
+  sourceDocumentId: z.string().regex(/^[a-f0-9]{24}$/), sourceLineNumber: z.number().int().positive(),
+}).strict()).min(1).max(100) }).strict();
 workspaceRoutes.post("/recipes", async (req, res, next) => {
   try {
     const { operationId, ...input } = recipeMutationSchema.parse(req.body);
@@ -144,6 +150,35 @@ workspaceRoutes.patch("/recipes/:id", async (req, res, next) => {
     const id = z.string().trim().min(1).max(100).parse(req.params.id);
     const { restaurantId, actorId } = context(res);
     res.json(await updateRecipe(restaurantId, actorId, id, expectedRevision, operationId, values));
+  } catch (error) { next(error); }
+});
+workspaceRoutes.get("/recipe-candidates", async (_req, res, next) => {
+  try { res.json(await getRecipeCandidates(context(res).restaurantId)); } catch (error) { next(error); }
+});
+workspaceRoutes.post("/recipe-candidates", async (req, res, next) => {
+  try {
+    const { operationId, ...input } = recipeCandidateInputSchema.extend({ operationId: z.uuid() }).parse(req.body);
+    const { restaurantId, actorId } = context(res);
+    res.status(201).json(await createRecipeCandidate(restaurantId, actorId, operationId, input));
+  } catch (error) { next(error); }
+});
+workspaceRoutes.patch("/recipe-candidates/:id", async (req, res, next) => {
+  try {
+    const { operationId, expectedRevision, ...input } = recipeCandidateInputSchema.extend({
+      operationId: z.uuid(), expectedRevision: z.number().int().positive(),
+    }).parse(req.body);
+    const id = z.uuid().parse(req.params.id);
+    const { restaurantId, actorId } = context(res);
+    res.json(await updateRecipeCandidate(restaurantId, actorId, id, expectedRevision, operationId, input));
+  } catch (error) { next(error); }
+});
+workspaceRoutes.post("/recipe-candidates/:id/decision", async (req, res, next) => {
+  try {
+    const { operationId, expectedRevision, action } = z.object({ operationId: z.uuid(),
+      expectedRevision: z.number().int().positive(), action: z.enum(["confirm", "reject"]) }).strict().parse(req.body);
+    const id = z.uuid().parse(req.params.id);
+    const { restaurantId, actorId } = context(res);
+    res.json(await decideRecipeCandidate(restaurantId, actorId, id, expectedRevision, operationId, action));
   } catch (error) { next(error); }
 });
 const productionSchema = z.object({
