@@ -1,6 +1,8 @@
 # Journal de reprise du Goal Kookia
 
 **État du Goal :** travail en cours ; Q1, Q1b, C1, D1, D2, D3, D4, D5, D6, C2, F1, F3/F4, O1–O2, M1–M3, R0 et I1–I3 sont prouvés localement ; I4 est préparé sur fixtures.
+La matrice « pièces → idées de recette » reste non prouvée : les fixtures
+autorisées ne justifient pas deux candidates.
 Ce fichier n'est pas une preuve que
 les fonctionnalités cibles complètes sont livrées. À chaque reprise, relever
 date, branche, `git status`, migrations et tests disponibles sans effacer les
@@ -14,7 +16,9 @@ actif ni comparaison visuelle à l'original. R1 reste une porte externe (hôte,
 configuration et accord non définis). La revue UI rendue, responsive et au
 clavier reste à faire lorsqu'un
 navigateur sera accessible ; elle n'est pas déduite des tests d'intégration ni
-du build. Aucun POS/OCR fournisseur n'est activé.
+du build. Le parcours « pièces → idées de recette » reste également ouvert : la
+fixture actuelle ne permet pas deux propositions défendables. Aucun POS/OCR
+fournisseur n'est activé.
 
 ## Registre des incréments
 
@@ -44,6 +48,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | O2 — réception rapprochée | Prouvé localement (fixtures synthétiques) | Non activé sur pilote | Facture brouillon, fournisseur, commande et référence/date de livraison liés par clés tenant ; réception partielle, écart de prix expliqué, snapshot prix/provenance, idempotence concurrente ; stock crédité uniquement en mode opérationnel et simulé sans mouvement dans le tenant démo. Commit `5c76e31`. | Aucun envoi fournisseur ; pas de données réelles ni de validation visuelle/clavier faute de navigateur CUA. L'ancien chemin de réception d'une facture non liée à une commande reste disponible. |
 | M1 — impact opérationnel | Prouvé localement (fixtures synthétiques) | Non activé / mesure terrain en attente | Comparaison de périodes de même durée ; pertes explicites et réceptions confirmées liées à leurs opérations, coût calculé depuis prix snapshotés ; unités incohérentes et simulation exclues des totaux enregistrés, espace démo séparé. Voir `5c76e31`. | Ruptures et invendus ne sont pas enregistrés dans un ledger dédié et restent non mesurés ; mouvements sans prix historique restent non valorisés. Aucune économie réalisée calculée ; rendu/clavier en attente du navigateur. |
 | M2 — surstock et menus | Prouvé localement (bac démo uniquement) | Non activé dans les espaces opérationnels / validation pilote en attente | `GET /menu/surplus-options` n'expose que les comptages positifs encore actuels ; `POST /menu/ideas` exige quantité explicitement désignée, verrouille les produits concernés, vérifie tenant/révision/unité et enregistre une décision rejouable `demo_simulation`. Dernière version datée applicable, seuil global ignoré, autre ingrédient non vérifié → non réalisable ; résultat appliqué au brouillon sans production ni mouvement. Commit `9b474c1`. | Chaque recette utilise séparément toute la quantité désignée ; portions maximales non additives. Péremption inconnue, seuil haut opérationnel non introduit, aide indisponible hors démo. Pas de migration ni de rendu/responsive/clavier observé (CUA sans navigateur). |
+| Pièces → idées de recette | Non prouvé (écart de données) | Non applicable | L'audit du code ne trouve pas de flux candidat dérivé des pièces. `createAnonymizedSourceInvoices` ne contient que des lignes synthétiques de tomates ; la fixture ne permet pas d'étayer deux candidates ni leurs familles d'ingrédients. | Les six recettes du scénario sont des hypothèses de démonstration ; M2 part d'un surplus compté, pas des pièces. Le corpus d'origine n'a pas été audité dans ce passage. Ne pas inventer de fiches : reprendre lorsque des familles et identifiants source pourront être représentés dans une fixture autorisée, puis faire confirmer/corriger une candidate et laisser l'autre en attente ou l'écarter. |
 | M3 — export des pertes déclarées | Prouvé localement (export opérationnel) | Non activé / aucune revendication AGEC | L'export existant ajoute les mouvements négatifs `loss` comme pertes séparées, quantité absolue, `createdAt` UTC, identifiant source, coût seulement si prix snapshoté. Nombre sans prix, unités incompatibles (lignes « à vérifier », hors total), simulations exclues et métriques indisponibles stockouts/invendus sont visibles dans CSV/Excel/PDF. Vérifié en API avec operation IDs, prix manquant, unité incompatible, simulation, tenant croisé et formats protégés. | Ne mesure que les pertes explicitement déclarées ; pas de ledger de rupture/invendu, pas de causalité d'économie ni d'attestation réglementaire. PostgreSQL 16 tmpfs migrations 18/18 ; intégration 24/34, `npm test` 23/100 + 30 Node/CSS, lint/builds/Prisma/diff-check. Pas d'observation de rendu/clavier (CUA sans navigateur). |
 | C3 — chaîne métier complète | Prouvé localement (API / fixture synthétique) | Non applicable | `timelineEventMappers` expose décisions, commandes internes et réceptions rapprochées avec provenance simulation, identifiant/source liée et coupe `asOf`; les archives ouvrent la pièce dans Achats. `demoStory.integration.test.ts` rejoue quatre chapitres, 2023 sans réception source, ventes simulées datées + comptage → suggestion → décision → commande démo → réception de pièce synthétique → `/impact` calculé depuis les opérations, stock inchangé. Commit `290d354`. | Preuve API/DB, pas un parcours visuel : CUA ne fournit aucun navigateur, donc rendu, responsive et clavier de la chaîne restent à vérifier. Aucune précision terrain ni aucun KPI seedé ; aucun envoi n'est déclenché. |
 | I1 — statuts des sources | Prouvé localement | Non activé (aucun adaptateur/fournisseur configuré) | `GET /workspace/sources` authentifié renvoie les cinq types en `not_connected` et `lastSuccessAt: null`; deux sessions isolées, tentative de `restaurantId` client ignorée, session absente refusée. Page Connexions avec état de chargement/erreur, replis CSV/saisie/Achats, sans appel fournisseur ni fausse synchronisation. Commit `095d547`. | La page et son parcours clavier/mobile restent non rendus ; aucun POS, OCR, géocodage, météo ou événements connecté. |
@@ -100,6 +105,19 @@ Noter ici les retours des sous-agents/relecteurs : constat, gravité, preuve,
 responsable, correction et nouveau test. Une remarque importante non résolue
 empêche de marquer le parcours concerné comme terminé. Les tickets externes
 restent distincts des défauts locaux corrigeables.
+
+- **Pièces → idées de recette — écart conservé, sans proposition fabriquée** :
+  l'exigence de la matrice de `goal-kookia-reference.md` porte sur deux fiches
+  appuyées par des ingrédients et familles traçables aux pièces. Le seul corpus
+  consulté pour cet audit est la fixture synthétique
+  `createAnonymizedSourceInvoices`, qui ne génère que des lignes de tomates ;
+  elle n'étaye donc pas deux recettes candidates. Les six recettes déjà
+  simulées et M2 (idées depuis un surplus explicitement compté) ne prouvent pas
+  ce parcours. Le corpus d'origine n'a pas été consulté dans cet audit. Suite :
+  obtenir une fixture anonymisée autorisée avec au moins deux familles
+  traçables, puis construire et faire confirmer/corriger une candidate et
+  laisser l'autre en attente ou l'écarter. Aucun plat cuisiné ne sera inféré de
+  la seule présence d'ingrédients.
 
 - **Q1b — isolation des données de test (corrigée localement)** :
   `sourceInvoices.test.ts` utilise maintenant un répertoire temporaire de textes

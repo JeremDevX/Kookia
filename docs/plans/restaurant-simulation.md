@@ -140,3 +140,12 @@ dans l’archive source.
 - Les achats synthétiques n’ajoutent rien au panier, ne valident rien et
   n’envoient aucun message fournisseur. Le bon de commande et la décision déjà
   présents sont laissés intacts.
+- Le parcours « pièce → recette candidate » n'est pas fourni par ce scénario.
+  La fixture anonymisée d'intégration ne contient que des lignes synthétiques
+  de tomates ; elle ne suffit pas à justifier deux fiches reliées à des familles
+  d'ingrédients traçables. Les six recettes ci-dessus restent des hypothèses de
+  démonstration, et les idées M2 partent d'un surplus compté, non de factures.
+  Aucun plat candidat ni plat cuisiné ne doit en être déduit. Reprendre ce
+  parcours seulement avec une fixture source autorisée et assez riche pour
+  étayer deux candidates ; la limite est aussi suivie dans le
+  [journal du Goal](goal-kookia-progress.md).
