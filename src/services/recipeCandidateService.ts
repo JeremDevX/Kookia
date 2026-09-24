@@ -35,8 +35,6 @@ export interface RecipeCandidate {
   id: string;
   status: "pending" | "confirmed" | "rejected";
   recipeId: string | null;
-  createdBy: string;
-  updatedBy: string;
   recipe: RecipeCandidateRecipe;
   ingredients: RecipeCandidateIngredient[];
   revision: number;

@@ -69,7 +69,8 @@ async function listDocumentEvents(restaurantId: string, from: string, to: string
 export async function listTimeline(restaurantId: string, from: string, to: string, asOf: string) {
   const bounds = timelineDateBounds(from, to, asOf);
   const dateRange = { gte: bounds.dateStart, lte: bounds.dateEnd };
-  const [movements, productions, sales, serviceDays, recipeVersions, mappings, decisions, documents, orders, receipts] = await Promise.all([
+  const [restaurant, movements, productions, sales, serviceDays, recipeVersions, mappings, decisions, documents, orders, receipts] = await Promise.all([
+    prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } }),
     prisma.stockMovement.findMany({ where: { restaurantId, createdAt: { gte: bounds.start, lt: bounds.end, lte: bounds.knownThrough } },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: QUERY_LIMIT }),
     prisma.production.findMany({ where: { restaurantId, date: dateRange, createdAt: { lte: bounds.knownThrough } },
@@ -130,7 +131,7 @@ export async function listTimeline(restaurantId: string, from: string, to: strin
         : day.source === "demo_simulation" ? { qualifier: "État de service synthétique." } : {}),
       href: "/sales",
     })),
-    ...recipeVersions.map(versionEvent),
+    ...recipeVersions.map((version) => versionEvent(version, restaurant?.mode === "demo" ? "demo" : "operational")),
     ...mappings.map((mapping): TimelineEvent => ({
       id: `mapping:${mapping.id}`, kind: "mapping", effectiveAt: isoDate(mapping.effectiveFrom),
       knownAt: mapping.createdAt.toISOString(), recordedAt: mapping.createdAt.toISOString(),

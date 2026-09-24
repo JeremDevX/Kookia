@@ -33,7 +33,8 @@ const candidateDataSchema = z.object({ id: z.string().uuid(), status: z.enum(["p
     yieldPortions: z.number().int(), effectiveFrom: z.iso.date() }).strict(),
   ingredients: z.array(candidateIngredientSchema).min(1),
 }).strict();
-const eventSchema = z.object({ candidateId: z.string().uuid(), request: z.unknown(), result: candidateDataSchema }).strict();
+const eventSchema = z.object({ workspaceMode: z.literal("demo").optional(), candidateId: z.string().uuid(),
+  request: z.unknown(), result: candidateDataSchema }).strict();
 type CandidateData = z.infer<typeof candidateDataSchema>;
 type CandidateDocument = { data: Prisma.JsonValue; revision: number; updatedAt: Date };
 
@@ -131,7 +132,7 @@ async function assertEvidenceCurrent(tx: Prisma.TransactionClient, restaurantId:
 async function recordEvent(tx: Prisma.TransactionClient, restaurantId: string, actorId: string, operationId: string,
   decision: string, request: unknown, result: CandidateData) {
   await tx.recommendationDecision.create({ data: { restaurantId, actorId, operationId, decision,
-    snapshot: snapshotJson({ candidateId: result.id, request, result }) } });
+    snapshot: snapshotJson({ workspaceMode: "demo", candidateId: result.id, request, result }) } });
 }
 
 export async function getRecipeCandidates(restaurantId: string) {

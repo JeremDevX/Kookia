@@ -87,6 +87,19 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   const invoices = createAnonymizedSourceInvoices();
   const { plan, recipeIdeaSources } = await seedLocalDemoScenario(scenarioOwner.userId);
   expect(plan.counts.invoiceDocuments).toBe(invoices.length);
+  const seededCandidates = await scenarioOwner.agent.get("/api/workspace/recipe-candidates").expect(200);
+  expect(seededCandidates.body.available).toBe(true);
+  expect(seededCandidates.body.candidates.map((candidate: { status: string; recipeId: string | null;
+    recipe: { name: string }; ingredients: Array<{ evidence: { sourceDocumentId: string; sourceName: string } }> }) => ({
+    status: candidate.status, recipeId: candidate.recipeId, name: candidate.recipe.name,
+    sourceDocumentId: candidate.ingredients[0]?.evidence.sourceDocumentId,
+    sourceName: candidate.ingredients[0]?.evidence.sourceName,
+  }))).toEqual(expect.arrayContaining([
+    { status: "pending", recipeId: null, name: "Hypothèse — poêlée de champignons",
+      sourceDocumentId: recipeIdeaSources[0].id, sourceName: "Champignons" },
+    { status: "pending", recipeId: null, name: "Hypothèse — sauce à la crème",
+      sourceDocumentId: recipeIdeaSources[1].id, sourceName: "Crème Fraîche" },
+  ]));
   const scenarioProductions = await prisma.production.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
     operationId: { startsWith: "restaurant-simulation-v1:" } }, include: { recipeVersion: true } });
   expect(scenarioProductions).toHaveLength(plan.productions.length);

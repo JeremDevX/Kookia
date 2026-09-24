@@ -24,9 +24,10 @@ try {
   if (users.length !== 1 || users[0].id !== ownerId) {
     throw new Error("Le bac démo doit contenir uniquement le compte local créé pour cette session.");
   }
-  const { plan, recipeIdeaSources } = await seedLocalDemoScenario(ownerId);
+  const { plan, recipeIdeaSources, recipeCandidates } = await seedLocalDemoScenario(ownerId);
   console.info(JSON.stringify({ mode: "demo", counts: plan.counts, yearCoverage: plan.yearCoverage,
-    fictitiousRecipeIdeaSources: recipeIdeaSources.length }, null, 2));
+    fictitiousRecipeIdeaSources: recipeIdeaSources.length,
+    pendingRecipeCandidates: recipeCandidates.filter((candidate) => candidate.status === "pending").length }, null, 2));
 } finally {
   await prisma.$disconnect();
 }

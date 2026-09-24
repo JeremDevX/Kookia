@@ -38,6 +38,12 @@ type PurchaseReceiptRow = Prisma.PurchaseReceiptGetPayload<{ include: {
 type DecisionRow = RecommendationDecision;
 
 const SIMULATION_ACTOR = "restaurant-simulation:v1";
+const recipeCandidateDecisionLabels: Record<string, string> = {
+  recipe_candidate_created: "Hypothèse de recette créée dans le bac de démonstration",
+  recipe_candidate_saved: "Hypothèse de recette corrigée dans le bac de démonstration",
+  recipe_candidate_confirmed: "Candidate confirmée comme recette dans le bac de démonstration",
+  recipe_candidate_rejected: "Candidate écartée dans le bac de démonstration",
+};
 const isoDate = (value: Date) => value.toISOString().slice(0, 10);
 const quantity = (value: Prisma.Decimal) => Number(value).toLocaleString("fr-FR", { maximumFractionDigits: 3 });
 const safeText = (value: string, max = 120) => [...value]
@@ -105,9 +111,12 @@ export function stockEvent(movement: StockMovementRow): TimelineEvent {
   };
 }
 
-export function versionEvent(version: RecipeVersionRow): TimelineEvent {
+export function versionEvent(version: RecipeVersionRow, workspaceMode: "operational" | "demo" = "operational"): TimelineEvent {
   const unknownDate = !version.effectiveFrom;
-  const simulated = version.actorId === SIMULATION_ACTOR;
+  const simulated = workspaceMode === "demo" || version.actorId === SIMULATION_ACTOR;
+  const qualifier = workspaceMode === "demo"
+    ? "Version du bac de démonstration ; elle n’atteste pas une recette réellement pratiquée."
+    : "Instantané de recette simulé.";
   return {
     id: `recipe:${version.id}`, kind: "recipe", effectiveAt: version.effectiveFrom ? isoDate(version.effectiveFrom) : null,
     knownAt: version.createdAt.toISOString(), recordedAt: version.createdAt.toISOString(),
@@ -115,7 +124,7 @@ export function versionEvent(version: RecipeVersionRow): TimelineEvent {
     detail: `${safeText(version.name)} · rendement ${version.yieldPortions} portion(s)`,
     provenance: unknownDate ? "unknown" : simulated ? "simulation" : "recorded",
     ...(unknownDate ? { qualifier: `Date d’effet inconnue${simulated ? " ; version issue de la simulation" : ""}.` }
-      : simulated ? { qualifier: "Instantané de recette simulé." } : {}),
+      : simulated ? { qualifier } : {}),
     href: "/recipes",
   };
 }
@@ -164,20 +173,33 @@ export function decisionEvent(decision: DecisionRow): TimelineEvent {
     ? decision.snapshot as Prisma.JsonObject : null;
   const suggestion = snapshot?.suggestion && typeof snapshot.suggestion === "object" && !Array.isArray(snapshot.suggestion)
     ? snapshot.suggestion as Prisma.JsonObject : null;
-  const simulated = snapshot?.workspaceMode === "demo" || snapshot?.provenance === "demo_simulation" ||
+  const candidate = snapshot?.result && typeof snapshot.result === "object" && !Array.isArray(snapshot.result)
+    ? snapshot.result as Prisma.JsonObject : null;
+  const candidateRecipe = candidate?.recipe && typeof candidate.recipe === "object" && !Array.isArray(candidate.recipe)
+    ? candidate.recipe as Prisma.JsonObject : null;
+  const candidateDecisionLabel = recipeCandidateDecisionLabels[decision.decision];
+  const isRecipeCandidateDecision = candidateDecisionLabel !== undefined;
+  const candidateName = typeof candidateRecipe?.name === "string" ? safeText(candidateRecipe.name) : "";
+  const candidateStatus = typeof candidate?.status === "string" ? safeText(candidate.status) : "";
+  const simulated = isRecipeCandidateDecision || snapshot?.workspaceMode === "demo" || snapshot?.provenance === "demo_simulation" ||
     decision.decision.includes("simulated") || suggestion?.provenance === "demo_simulation";
   const productName = typeof suggestion?.productName === "string" ? safeText(suggestion.productName) : "";
   const quantityValue = typeof snapshot?.quantity === "number" ? snapshot.quantity : null;
-  const detail = decision.decision.startsWith("purchase_suggestion_") && productName
-    ? `${productName}${quantityValue === null ? "" : ` · quantité retenue ${quantityValue.toLocaleString("fr-FR", { maximumFractionDigits: 3 })}`}`
-    : "La décision est conservée séparément des recommandations actuelles.";
+  const detail = isRecipeCandidateDecision
+    ? `${candidateName ? `« ${candidateName} »` : "Fiche candidate"}${candidateStatus ? ` · état : ${candidateStatus}` : ""}`
+    : decision.decision.startsWith("purchase_suggestion_") && productName
+      ? `${productName}${quantityValue === null ? "" : ` · quantité retenue ${quantityValue.toLocaleString("fr-FR", { maximumFractionDigits: 3 })}`}`
+      : "La décision est conservée séparément des recommandations actuelles.";
   return {
     id: `decision:${decision.id}`, kind: "decision", effectiveAt: decision.createdAt.toISOString(),
     knownAt: decision.createdAt.toISOString(), recordedAt: decision.createdAt.toISOString(),
-    label: `Décision enregistrée : ${safeText(decision.decision, 80)}`, detail,
+    label: candidateDecisionLabel ?? `Décision enregistrée : ${safeText(decision.decision, 80)}`, detail,
     provenance: simulated ? "simulation" : "recorded",
-    ...(simulated ? { qualifier: "Décision liée à des données ou à un espace simulé ; elle ne vaut pas achat réel." } : {}),
-    href: decision.decision.startsWith("purchase_suggestion_") || decision.decision.startsWith("order_")
-      ? "/orders#selection" : "/predictions",
+    ...(isRecipeCandidateDecision
+      ? { qualifier: "Hypothèse de recette du bac de démonstration ; aucune cuisson n’est déclarée." }
+      : simulated ? { qualifier: "Décision liée à des données ou à un espace simulé ; elle ne vaut pas achat réel." } : {}),
+    href: isRecipeCandidateDecision ? "/recipes"
+      : decision.decision.startsWith("purchase_suggestion_") || decision.decision.startsWith("order_")
+        ? "/orders#selection" : "/predictions",
   };
 }
