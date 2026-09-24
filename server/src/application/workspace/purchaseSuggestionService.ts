@@ -23,6 +23,7 @@ export interface PurchaseSuggestion {
   estimatedCost: number | null;
   sources: Array<{ saleItemName: string; recipeName: string; recipeVersion: number; quantity: number }>;
   reason: string;
+  decision: { kind: "added" | "excluded"; operationId: string; quantity: number | null; orderId: string | null } | null;
 }
 
 export interface PurchaseSuggestions {
@@ -81,7 +82,7 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
     countDate: countVerified ? count!.countDate.toISOString().slice(0, 10) : null,
     estimatedQuantity, currentUnitPrice: Number(product.pricePerUnit),
     estimatedCost: estimatedQuantity === null ? null : roundQuantity(estimatedQuantity * Number(product.pricePerUnit)),
-    sources: need.sources, reason };
+    sources: need.sources, reason, decision: null };
 }
 
 function summarizeNeeds(baseline: Baseline, products: Array<{ id: string; name: string; unit: string }>) {
@@ -145,9 +146,30 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
     return product ? [suggestionFor(need, product, latestCount.get(need.productId), workspaceMode,
       baseline, canUseProvenance, blockers.length === 0)] : [];
   });
+  const decisionRows = await db.recommendationDecision.findMany({
+    where: { restaurantId, decision: { in: ["purchase_suggestion_added", "purchase_suggestion_excluded"] } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    include: { purchaseOrderLine: { select: { orderId: true } } },
+  });
+  const decisionsBySuggestion = new Map<string, PurchaseSuggestion["decision"]>();
+  for (const row of decisionRows) {
+    const snapshot = row.snapshot;
+    if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot) ||
+        typeof snapshot.productId !== "string" || typeof snapshot.suggestionKey !== "string") continue;
+    const key = `${snapshot.productId}\u0000${snapshot.suggestionKey}`;
+    if (decisionsBySuggestion.has(key)) continue;
+    decisionsBySuggestion.set(key, {
+      kind: row.decision === "purchase_suggestion_added" ? "added" : "excluded",
+      operationId: row.operationId,
+      quantity: typeof snapshot.quantity === "number" ? snapshot.quantity : null,
+      orderId: row.purchaseOrderLine?.orderId ?? null,
+    });
+  }
   return { status: "ready", provenance: workspaceMode === "demo" ? "demo_simulation" : baseline.provenance,
     workspaceMode, model: baseline.model, asOfDate: baseline.asOfDate, forecastDate: baseline.forecastDate,
-    completeServiceDays: baseline.completeServiceDays, blockers, suggestions,
+    completeServiceDays: baseline.completeServiceDays, blockers,
+    suggestions: suggestions.map((suggestion) => ({ ...suggestion, decision: decisionsBySuggestion.get(
+      `${suggestion.productId}\u0000${suggestion.suggestionKey}`) ?? null })),
     assumptions: ["Calcul du prochain service uniquement : aucun délai fournisseur n’est renseigné.",
       "Les commandes non réceptionnées ne sont pas déduites du besoin.",
       "Le prix utilise le catalogue actuel, à titre indicatif; ce n’est pas un prix historique ni un montant comptable."] };

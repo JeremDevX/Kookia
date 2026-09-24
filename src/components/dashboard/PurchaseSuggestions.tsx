@@ -8,7 +8,7 @@ import "./PurchaseSuggestions.css";
 
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 
-export default function PurchaseSuggestions() {
+export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number }) {
   const { cartItems, addToCart } = useCart();
   const [data, setData] = useState<PurchaseSuggestionsDto | null>(null);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
@@ -20,16 +20,39 @@ export default function PurchaseSuggestions() {
 
   useEffect(() => {
     let active = true;
+    setLoading(true); setError("");
     getPurchaseSuggestions().then((suggestions) => {
       if (active) {
         setData(suggestions);
-        setQuantities(Object.fromEntries(suggestions.suggestions.flatMap((item) =>
-          item.estimatedQuantity === null ? [] : [[item.productId, String(item.estimatedQuantity)]])));
+        setQuantities((current) => Object.fromEntries(suggestions.suggestions.flatMap((item) => item.estimatedQuantity === null
+          ? [] : [[item.productId, current[item.productId] ?? String(item.estimatedQuantity)]])));
+        setDecisions({});
+        operationIds.current = {};
       }
     }, (cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : "Propositions indisponibles."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [refreshKey]);
+
+  const retryAddition = async (productId: string) => {
+    if (!data || busyProductId) return;
+    const suggestion = data.suggestions.find((item) => item.productId === productId);
+    if (!suggestion) return;
+    const savedDecision = suggestion.decision?.kind === "added" ? suggestion.decision : null;
+    const operationId = savedDecision?.operationId ?? operationIds.current[productId];
+    const quantity = savedDecision?.quantity ?? Number(quantities[productId] ?? "");
+    if (!operationId || !Number.isFinite(quantity) || quantity <= 0) {
+      setError("La décision existe, mais ses quantités ne peuvent pas être reprises. Rechargez les propositions.");
+      return;
+    }
+    setBusyProductId(productId); setError("");
+    try {
+      const added = await addToCart({ id: operationId, productId, productName: suggestion.productName,
+        quantity, unit: suggestion.unit, source: "dashboard", purchaseSuggestionOperationId: operationId });
+      if (!added) { setError("La décision est conservée, mais l’article n’a pas rejoint la commande en préparation. Réessayez."); return; }
+      setDecisions((current) => ({ ...current, [productId]: "added" }));
+    } finally { setBusyProductId(""); }
+  };
 
   const decide = async (productId: string, suggestionKey: string, decision: "added" | "excluded") => {
     if (!data || busyProductId) return;
@@ -71,7 +94,8 @@ export default function PurchaseSuggestions() {
           {data.suggestions.length === 0 ? <p>Aucun ingrédient projetable à partir des recettes reliées aux ventes.</p> : <ul className="purchase-suggestion-list">
             {data.suggestions.map((item) => {
               const inCart = cartItems.some((cartItem) => cartItem.productId === item.productId);
-              const decided = decisions[item.productId];
+              const localDecision = decisions[item.productId];
+              const decided = localDecision ?? item.decision?.kind;
               const quantity = Number(quantities[item.productId] ?? "");
               const validQuantity = isValidOrderQuantity(quantities[item.productId] ?? "");
               return <li key={item.productId} className="purchase-suggestion-card">
@@ -84,14 +108,23 @@ export default function PurchaseSuggestions() {
                   {source.saleItemName} → {source.recipeName} (version {source.recipeVersion}) : {source.quantity} {item.unit}
                 </li>)}</ul>
                 {item.estimatedQuantity !== null && <p>Reste à revoir : <strong>{item.estimatedQuantity} {item.unit}</strong> · estimation au prix actuel du catalogue : {item.estimatedCost === null ? "—" : money.format(item.estimatedCost)}.</p>}
-                {decided === "added" || inCart
+                {item.decision?.orderId && !localDecision
+                  ? <p role="status">Déjà présente dans une commande enregistrée. <Link to={`/orders#order-${item.decision.orderId}`}>Voir la commande</Link></p>
+                  : inCart
                   ? <p role="status">Présent dans la commande en préparation. La validation finale reste à faire.</p>
                   : decided === "excluded" ? <p role="status">Proposition écartée et conservée dans l’historique des décisions.</p>
+                    : decided === "added" ? <div><p role="status">Décision conservée, mais article absent de la commande en préparation.</p>
+                      <Button variant="outline" onClick={() => void retryAddition(item.productId)} disabled={busyProductId !== ""}>
+                        {busyProductId === item.productId ? "Ajout…" : "Remettre dans la commande"}
+                      </Button></div>
                     : item.canAdd ? <div className="purchase-suggestion-actions">
                       <label htmlFor={`suggested-quantity-${item.productId}`}>Quantité à commander ({item.unit})</label>
                       <input className="input-field" id={`suggested-quantity-${item.productId}`} type="number" min="0.001" step="0.001"
                         value={quantities[item.productId] ?? ""} disabled={busyProductId === item.productId}
-                        onChange={(event) => setQuantities((current) => ({ ...current, [item.productId]: event.target.value }))} />
+                        onChange={(event) => {
+                          operationIds.current[item.productId] = crypto.randomUUID();
+                          setQuantities((current) => ({ ...current, [item.productId]: event.target.value }));
+                        }} />
                       {!validQuantity && <p role="alert">Saisissez une quantité positive, au plus 1 000 000 avec trois décimales maximum.</p>}
                       <Button onClick={() => void decide(item.productId, item.suggestionKey, "added")}
                         disabled={busyProductId !== "" || !validQuantity || !Number.isFinite(quantity)}>Ajouter à la commande</Button>

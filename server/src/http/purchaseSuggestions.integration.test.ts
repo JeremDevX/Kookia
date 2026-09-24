@@ -21,7 +21,7 @@ const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Pa
   month: "2-digit", day: "2-digit" }).format(new Date());
 
 async function seedSalesAndRecipe(tenant: Awaited<ReturnType<typeof account>>, productId: string,
-  source: "manual" | "demo_simulation") {
+  source: "manual" | "demo_simulation", additionalProductId?: string) {
   const saleItem = await tenant.agent.post("/api/workspace/sales/items").send({ name: "Plat suivi" }).expect(201);
   const today = parisToday();
   const asOf = new Date(Date.parse(today) - 86_400_000).toISOString().slice(0, 10);
@@ -34,7 +34,7 @@ async function seedSalesAndRecipe(tenant: Awaited<ReturnType<typeof account>>, p
     operationId: randomUUID(), createdBy: tenant.actorId, updatedBy: tenant.actorId })) });
   const recipe = await tenant.agent.post("/api/workspace/recipes").send({ operationId: randomUUID(), name: "Recette suivie",
     category: "Plat", prepTime: 10, yieldPortions: 4, effectiveFrom: date(0).toISOString().slice(0, 10),
-    ingredients: [{ productId, quantity: 2 }] }).expect(201);
+    ingredients: [{ productId, quantity: 2 }, ...(additionalProductId ? [{ productId: additionalProductId, quantity: 1 }] : [])] }).expect(201);
   await tenant.agent.post("/api/workspace/sales/recipe-mappings").send({ saleItemId: saleItem.body.id,
     recipeId: recipe.body.id, expectedRevision: 0, operationId: randomUUID(),
     effectiveFrom: date(0).toISOString().slice(0, 10), portionsPerItem: 2 }).expect(201);
@@ -49,9 +49,11 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
   const catalog = await owner.agent.get("/api/workspace/catalog").expect(200);
   const product = catalog.body.products[0] as { id: string; name: string; unit: string; stockRevision: number;
     supplierId: string; pricePerUnit: number };
+  const additionalProduct = catalog.body.products.find((candidate: { id: string }) => candidate.id !== product.id) as
+    { id: string; unit: string };
   await prisma.product.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.id } },
     data: { currentStock: 2, stockRevision: { increment: 1 } } });
-  await seedSalesAndRecipe(owner, product.id, "manual");
+  await seedSalesAndRecipe(owner, product.id, "manual", additionalProduct.id);
 
   const beforeCount = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
   expect(beforeCount.body).toMatchObject({ status: "ready", provenance: "recorded_sales", workspaceMode: "operational" });
@@ -68,12 +70,21 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
   const afterCount = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
   const ready = afterCount.body.suggestions.find((item: { productId: string }) => item.productId === product.id);
   expect(ready).toMatchObject({ status: "ready", canAdd: true, forecastNeed: 10, countedStock: 2, estimatedQuantity: 8 });
+  const excludedSuggestion = afterCount.body.suggestions.find((item: { productId: string }) => item.productId === additionalProduct.id);
+  const exclusionInput = { operationId: randomUUID(), suggestionKey: excludedSuggestion.suggestionKey, decision: "excluded" };
+  await owner.agent.post(`/api/workspace/orders/suggestions/${additionalProduct.id}/decision`).send(exclusionInput).expect(201);
+  const afterExclusion = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
+  expect(afterExclusion.body.suggestions.find((item: { productId: string }) => item.productId === additionalProduct.id))
+    .toMatchObject({ decision: { kind: "excluded", operationId: exclusionInput.operationId, quantity: null, orderId: null } });
   await other.agent.post(`/api/workspace/orders/suggestions/${product.id}/decision`).send({ operationId: randomUUID(),
     suggestionKey: ready.suggestionKey, decision: "added", quantity: 5 }).expect(409);
 
   const decisionInput = { operationId: randomUUID(), suggestionKey: ready.suggestionKey, decision: "added", quantity: 5 };
   const decision = await owner.agent.post(`/api/workspace/orders/suggestions/${product.id}/decision`).send(decisionInput).expect(201);
   expect(decision.body).toMatchObject({ decision: "purchase_suggestion_added", replayed: false });
+  const afterDecision = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
+  expect(afterDecision.body.suggestions.find((item: { productId: string }) => item.productId === product.id))
+    .toMatchObject({ decision: { kind: "added", operationId: decision.body.operationId, quantity: 5, orderId: null } });
   const decisionReplays = await Promise.all([1, 2].map(() => owner.agent
     .post(`/api/workspace/orders/suggestions/${product.id}/decision`).send(decisionInput).expect(201)));
   expect(decisionReplays.map((response) => response.body.id)).toEqual([decision.body.id, decision.body.id]);
@@ -87,6 +98,9 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
   const orderInput = { operationId: randomUUID(), lines: [{ productId: product.id, quantity: 4, cartId: decision.body.operationId }] };
   const order = await owner.agent.post("/api/workspace/orders").send(orderInput).expect(201);
   expect(order.body).toMatchObject({ status: "validated", lines: [{ productName: product.name, quantity: 4 }] });
+  const afterOrder = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
+  expect(afterOrder.body.suggestions.find((item: { productId: string }) => item.productId === product.id))
+    .toMatchObject({ decision: { kind: "added", operationId: decision.body.operationId, quantity: 5, orderId: order.body.id } });
   const savedDecision = await prisma.recommendationDecision.findFirstOrThrow({ where: { restaurantId: owner.restaurantId,
     operationId: orderInput.operationId } });
   expect(savedDecision.snapshot).toMatchObject({ workspaceMode: "operational", suggestions: [{ operationId: decision.body.operationId }] });

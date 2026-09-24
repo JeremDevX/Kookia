@@ -27,6 +27,7 @@ export interface PurchaseSuggestion {
   estimatedCost: number | null;
   sources: Array<{ saleItemName: string; recipeName: string; recipeVersion: number; quantity: number }>;
   reason: string;
+  decision: { kind: "added" | "excluded"; operationId: string; quantity: number | null; orderId: string | null } | null;
 }
 
 export interface PurchaseSuggestions {

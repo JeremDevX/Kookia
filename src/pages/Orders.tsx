@@ -23,6 +23,7 @@ export default function Orders() {
   const { addToast } = useToast();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [historyRevision, setHistoryRevision] = useState(0);
+  const [suggestionsRevision, setSuggestionsRevision] = useState(0);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceDraft, setInvoiceDraft] = useState<Invoice | undefined>();
   const [invoiceRefresh, setInvoiceRefresh] = useState(0);
@@ -60,7 +61,7 @@ export default function Orders() {
         <Button onClick={() => setReviewOpen(true)} disabled={cartLoading || catalogLoading || !!catalogError || missingProduct || hasExampleItem}>Revoir les quantités</Button></div>}
     </section>
 
-    <PurchaseSuggestions />
+    <PurchaseSuggestions refreshKey={suggestionsRevision} />
 
     <SourceInvoiceArchive refreshKey={invoiceRefresh} sourceId={searchParams.get("source") ?? undefined}
       onCreateManual={openManualInvoice}
@@ -68,6 +69,7 @@ export default function Orders() {
 
     <OrderHistory key={historyRevision} onReceiptSaved={() => {
       setHistoryRevision((value) => value + 1); setInvoiceRefresh((value) => value + 1);
+      setSuggestionsRevision((value) => value + 1);
     }} />
 
     <section className="orders-examples" aria-labelledby="orders-examples-title">
@@ -78,7 +80,7 @@ export default function Orders() {
 
     <Modal isOpen={reviewOpen} onClose={() => setReviewOpen(false)} title="Revoir les quantités" width="lg">
       <OrderGenerator recommendations={recommendations} onClose={() => setReviewOpen(false)}
-        onValidated={() => { void refreshCart(); setHistoryRevision((value) => value + 1); }} />
+        onValidated={() => { void refreshCart(); setHistoryRevision((value) => value + 1); setSuggestionsRevision((value) => value + 1); }} />
     </Modal>
     <Modal isOpen={invoiceOpen} onClose={() => setInvoiceOpen(false)} title="Revoir une facture" width="lg">
       <InvoiceModal initialInvoice={invoiceDraft}
