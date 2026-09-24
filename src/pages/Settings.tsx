@@ -1,9 +1,9 @@
 import Card from "../components/common/Card";
-import Badge from "../components/common/Badge";
 import RestaurantSettings from "../components/settings/RestaurantSettings";
 import SupplierSettings from "../components/settings/SupplierSettings";
+import ConnectionsSettings from "../components/settings/ConnectionsSettings";
 import { Store, Users, Plug, UserRound } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import AccountSettings from "../features/account/AccountSettings";
 import "./Settings.css";
 import "../styles/Workspace.css";
@@ -35,6 +35,7 @@ export default function Settings() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                aria-label={tab.label}
                 aria-pressed={activeTab === tab.id}
                 aria-controls="settings-panel"
                 className={`nav-tab ${activeTab === tab.id ? "active" : ""}`}
@@ -50,15 +51,7 @@ export default function Settings() {
         <div className="settings-content" id="settings-panel">
           {activeTab === "restaurant" && <RestaurantSettings />}
           {activeTab === "suppliers" && <SupplierSettings />}
-          {activeTab === "connections" && <Card title="Caisses et facturation">
-            <p className="settings-section-intro">Aucune connexion automatique n'est disponible aujourd'hui. Aucun paramètre de caisse ou de facturation ne peut encore être enregistré.</p>
-            <h3>Caisses envisagées</h3>
-            <ul className="connection-list">{["Innovorder", "Lightspeed", "SumUp"].map((name) =>
-              <li className="integration-item" key={name}><strong>{name}</strong><Badge label="Non disponible" status="neutral" /></li>)}</ul>
-            <h3>Facturation</h3>
-            <p>Pas de connexion à un logiciel de facturation. Les factures peuvent être saisies manuellement depuis Aujourd'hui.</p>
-            <p>Pour vos ventes, utilisez actuellement l'<Link to="/sales#sales-import-title">import CSV Kookia</Link> ou la saisie manuelle.</p>
-          </Card>}
+          {activeTab === "connections" && <ConnectionsSettings />}
           {activeTab === "account" && <AccountSettings />}
         </div>
       </div>

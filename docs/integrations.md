@@ -7,14 +7,14 @@ Les ventes utilisables sont saisies ou importées au
 stock après réception explicite. Les 431 pièces de l'espace local Camille sont
 des transcriptions à vérifier, pas un service OCR connecté.
 
-**Aucun point de branchement ci-dessous n'est encore codé.** La rubrique
-**Plus → Connexions** est aujourd'hui une liste statique de fournisseurs, sans
-état serveur ni action de connexion. Cette page spécifie les futurs contrats,
-endpoints, critères d'acceptation et cas d'échec pour les implémenter sans
-faire croire qu'une collecte existe. La saisie et le CSV restent les seuls
-chemins disponibles pour les ventes.
+La rubrique **Plus → Connexions** lit maintenant `GET /api/workspace/sources`,
+authentifié et limité au restaurant de la session. En
+l'absence d'adaptateur configuré, chaque source répond `not_connected` avec
+`lastSuccessAt: null` ; aucune requête fournisseur ni synchronisation n'est
+déclenchée. La saisie et le CSV restent les seuls chemins disponibles pour les
+ventes, et les factures restent vérifiées dans Achats.
 
-## Contrat cible minimal (à créer, pas présent dans le dépôt)
+## Contrat minimal présent et extensions futures
 
 Placer les types normalisés et ports sous `server/src/integrations`, puis un
 registre par source. Les noms exacts pourront évoluer avec les contraintes du
@@ -39,14 +39,13 @@ interface SourceAdapter<Input, Output> {
 }
 ```
 
-La première implémentation peut répondre `not_connected`/`not_configured`
-pour chaque source, **sans requête externe ni valeur inventée**. Une future
-route `GET /api/workspace/sources` doit être authentifiée et prendre le
-`restaurantId` de la session serveur, pas d'un paramètre client. Sa réponse
-prévue est `{ sources: Array<{ kind: SourceKind } & SourceHealth> }`. Une panne
-de statut d'un fournisseur ne masque pas les autres. L'UI de Connexions ne
-déclenche jamais `read` ; elle offre les replis CSV/saisie et n'affiche une
-dernière synchronisation que lorsqu'elle existe réellement.
+La route renvoie actuellement `not_connected` pour chaque source, **sans
+requête externe ni valeur inventée**. Elle prend le `restaurantId` de la session
+serveur, pas d'un paramètre client. Sa réponse est
+`{ sources: Array<{ kind: SourceKind } & SourceHealth> }`. Lorsqu'un adaptateur
+sera configuré, une panne de son statut ne devra pas masquer les autres. L'UI
+de Connexions ne déclenche jamais `read` ; elle offre les replis CSV/saisie et
+n'affiche une dernière synchronisation que lorsqu'elle existe réellement.
 
 ### Formes normalisées minimales à stabiliser
 
@@ -85,7 +84,7 @@ détermine jamais directement ces champs de confiance.
 Le type cible `SourceResult<T>` distingue `ok` de `unavailable`. Le code appelant
 doit traiter `not_configured`, `temporary_error` et `invalid_data`
 explicitement. Un adaptateur peut signaler `ready`, `degraded` ou
-`not_connected` pour **un restaurant donné** ; la future page de Connexions n'appelle
+`not_connected` pour **un restaurant donné** ; la page de Connexions n'appelle
 pas sa méthode de lecture. La panne d'un statut fournisseur devra devenir
 `degraded` sans masquer les autres statuts.
 
