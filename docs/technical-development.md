@@ -37,7 +37,8 @@ La [cartographie détaillée des écarts](ecarts-techniques.md) confronte cette 
 ## Modèle cible et frontières
 
 Le modèle persistant actuel comprend notamment `Restaurant`, `Product`,
-`StockMovement`, `SaleItem`, `ServiceDay`, `DailySale`, `SaleImport`, `Prediction`,
+`StockMovement`, `SaleItem`, `ServiceDay`, `DailySale`, `SaleImport`, `SaleContribution`,
+`SaleContributionEvent`, `Prediction`,
 `PurchaseOrder` et `RecommendationDecision`. Les
 [contrats proposés pour les sources externes](integrations.md), non implémentés,
 devront rester distincts de ces modèles et des payloads bruts des fournisseurs.
@@ -50,7 +51,8 @@ UI React → hooks/features → client API → API Express → domaine → Postg
 La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
 `Product`, `Recipe`, `RecipeIngredient`, `StockMovement`, `StockCount`,
 `InvoiceDraftRevision`, `Production`, `Prediction`, `SaleItem`, `DailySale`,
-`SaleImport`, `ServiceDay`, `PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
+`SaleImport`, `SaleContribution`, `SaleContributionEvent`, `ServiceDay`,
+`PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
 et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics,
 préférences, panier, notifications, pièces source, factures et menus), validés aux frontières.
 Les mutations critiques sont transactionnelles. Les liens internes sont différés
@@ -75,10 +77,15 @@ premier accès. Les dates des prévisions de démonstration sont figées. Aucun 
 IA, connecteur POS/OCR ou envoi fournisseur réel n’est impliqué par la persistance.
 Les ventes du restaurant sont saisies, importées ou issues de la simulation locale
 `demo_simulation` ; elles ne sont pas les prévisions de démonstration du seed.
-Les [indicateurs et la baseline expérimentale](sales.md) lisent les `DailySale`
-enregistrées, y compris simulées lorsque présentes. Leur provenance est affichée :
-une simulation ne mesure ni la précision terrain ni un gain réel. Il n'y a ni
-météo, ni confiance calibrée, ni commande dérivée de cette baseline.
+`SaleContribution` conserve chaque snapshot source et son état de revue avant
+projection vers l'unique `DailySale` du restaurant/date/article ;
+`SaleContributionEvent` journalise les décisions, corrections, annulations et
+remboursements signalés sans écraser l'audit. Les [indicateurs et la baseline
+expérimentale](sales.md) exposent la provenance. Dans une fenêtre mixte, le
+backtest exclut les lignes simulées du calcul enregistré ; un résultat composé
+uniquement de simulation reste étiqueté démonstration et ne mesure pas la
+précision terrain. Il n'y a ni météo, ni confiance calibrée, ni commande dérivée
+de cette baseline. POS et Ticket Z restent non connectés.
 Le [plan de migration](plans/database-migration.md) contient la cartographie et les
 preuves de validation et les limites explicites de cette migration.
 

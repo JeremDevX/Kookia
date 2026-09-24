@@ -21,14 +21,26 @@ service_date,item_name,quantity
 
 L'aperçu valide chaque ligne et propose une correspondance par nom exact
 (insensible à la casse) avec le catalogue du restaurant. Les noms inconnus
-nécessitent une correspondance explicite. Une ligne invalide, sans
-correspondance, répétée dans le fichier ou déjà enregistrée pour le même
-article et la même date est rejetée ; elle n'est jamais additionnée à une vente
-existante. La confirmation enregistre **uniquement les lignes prêtes**, en une
-transaction. Corriger le CSV et le réimporter pour traiter les lignes rejetées.
+nécessitent une correspondance explicite. Un import confirmé crée un lot et un
+snapshot borné de chaque ligne : libellé/date/quantité source, numéro de ligne,
+mapping retenu, statut et motif. Le CSV brut n'est jamais conservé. Les lignes
+invalides, sans correspondance ou dupliquées dans le lot restent rejetées et
+consultables ; seules les lignes valides sans conflit sont projetées en vente.
 
-Le fichier brut n'est pas conservé. Son empreinte SHA-256, le numéro de ligne,
-la source `csv`, la date et l'auteur de l'import sont conservés pour assurer la
-provenance et empêcher qu'un même fichier soit importé deux fois dans un même
-restaurant. Le même contenu dans un autre restaurant est isolé. L'import ne
-modifie ni stock, ni commande, ni prévision de démonstration.
+Une vente déjà présente pour le même article et la même date devient un conflit
+à réconcilier. Dans **Ventes**, le responsable peut remplacer explicitement la
+vente acceptée ou la garder et rejeter le candidat. Un remplacement est
+atomique, versionné et ne somme jamais les quantités. La saisie manuelle
+concurrente suit le même parcours de revue. Corrections, remplacements,
+annulations et remboursements signalés conservent des événements d'audit avec
+acteur, révision et motif. Une annulation retire une ligne erronée de la
+projection ; signaler un remboursement monétaire ne change pas les unités
+vendues (le modèle n'enregistre ni prix de vente ni chiffre d'affaires).
+
+L'empreinte d'import lie le hash du CSV à celui des correspondances : rejouer
+le même contenu et le même mapping dans un restaurant est idempotent ; changer
+le mapping requiert un nouvel aperçu et une nouvelle confirmation. Le même
+contenu dans un autre restaurant reste isolé. Les sources POS et Ticket Z ne
+sont pas connectées ; leur éventuelle activation devra rejoindre cette
+réconciliation, pas additionner une nouvelle projection. L'import ne modifie
+ni stock, ni commande, ni prévision de démonstration.

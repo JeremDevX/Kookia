@@ -13,9 +13,13 @@ ne fait pas déduire automatiquement le stock par l'application.
 
 Créer d'abord un article vendu, puis enregistrer une quantité pour une date de
 service non future. Une vente déjà présente pour le même article et la même date
-doit être **corrigée**, pas ajoutée une seconde fois. L'[import CSV Kookia](sales-csv.md)
-présente les lignes avant confirmation, signale les rejets et évite le double
-import d'un même fichier dans le restaurant. Le **calendrier des services**
+doit être **corrigée** ou réconciliée, pas additionnée une seconde fois.
+L'[import CSV Kookia](sales-csv.md) conserve le lot et des snapshots de lignes
+bornés sans conserver le fichier brut ; l'empreinte comprend aussi le mapping.
+Les apports en conflit restent à revoir : remplacer ou garder l'existant sont
+deux décisions explicites et historisées. Les corrections et annulations
+gardent leur provenance et leur motif ; un remboursement signalé ne réduit pas
+les unités vendues. Le **calendrier des services**
 enregistre séparément, par date civile de Paris, si le restaurant était ouvert
 ou fermé et si les ventes sont complètes, partielles ou manquantes. Une saisie
 manuelle ou un import ouvre automatiquement le jour avec une couverture
@@ -60,7 +64,10 @@ d'estimation. Ce test rétrospectif interne ne constitue ni une confiance
 calibrée, ni une validation terrain, ni le moteur IA « ventes + météo ». Lorsque
 sa provenance est `demo_simulation`, il s'agit seulement d'un exercice sur les
 quantités générées ; la baseline ne déclenche aucune recommandation ou commande
-fournisseur.
+fournisseur. Si des lignes simulées et enregistrées coexistent dans la fenêtre
+du backtest, les lignes simulées sont exclues, le mélange est signalé et aucune
+estimation/backtest n'est publié : le calendrier actuel ne sépare pas la
+complétude par source. Un résultat uniquement simulé reste étiqueté démonstration.
 
 ## Recette manuelle
 

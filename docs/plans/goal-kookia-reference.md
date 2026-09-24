@@ -182,7 +182,9 @@ exports ; le clic humain ne la transforme pas en achat réellement observé.
 5. **Manquant ≠ zéro.** Jour fermé, ouvert sans vente, partiel et non renseigné
    sont quatre états. POS, CSV, Ticket Z et saisie se réconcilient ; ils ne se
    somment pas silencieusement. Un Ticket Z sans détail article ne prouve pas
-   des quantités par recette.
+   des quantités par recette. Une annulation de vente retire une quantité
+   erronée avec audit ; un remboursement financier est un événement distinct
+   et ne diminue pas les unités vendues sans preuve d'annulation des articles.
 6. **Stock théorique ≠ compté.** Afficher dernier comptage, réceptions, pertes,
    productions et écart ; un stock initial ou simulé ne devient pas fiable par
    ancienneté. Les unités ne changent pas par simple édition après mouvement.

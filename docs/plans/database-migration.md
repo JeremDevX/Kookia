@@ -108,6 +108,34 @@ notification externe ou commande fournisseur n’est envoyée par l’agent.
 
 ## Suivi
 
+### Incrément D5 — journal de contributions de vente (2026-09-24)
+
+La migration additive `20260924040000_sales_contribution_ledger` ajoute la
+provenance `ServiceDay.source`, les snapshots bornés `SaleContribution`, leurs
+décisions append-only `SaleContributionEvent`, et lie chaque vente active à la
+contribution projetée. Chaque `DailySale` préexistante est rétroliée comme
+contribution acceptée avec un événement de backfill ; ce procédé ne réinterprète
+ni complétude de service ni résultat terrain. Les jours de l'ancienne simulation
+sont repérés par leur marqueur d'acteur et les autres par les sources de leurs
+ventes. Les anciens lots `SaleImport` gardent leur hash, reçoivent un mapping
+marqué legacy inconnu et un compteur de conflits nul. Le hash d'idempotence des
+nouveaux imports combine contenu et mapping.
+
+Preuve locale D5 : PostgreSQL 16 sans volume ; les 10 migrations pré-D5 ont
+d'abord été appliquées, puis deux ventes legacy synthétiques (manuelle et
+simulation) ajoutées avant D5. La 11e migration a lié chacune à une contribution
+acceptée et à un événement d'audit ; les deux jours ressortent respectivement
+`recorded` et `demo_simulation`, aucune vente ne reste non liée. `migrate status`
+annonce 11/11 à jour. Le diff de parité schéma/base a aussi signalé trois écarts
+historiques hors D5 (index stock-count absent du modèle Prisma, défaut SQL de
+`ServiceDay.updatedAt`, nom tronqué d'index `InvoiceDraftRevision`) ; ils restent
+à traiter séparément, sans élargir cette migration. Suite API/intégration et
+rejeu simulation isolé consignés dans
+[`goal-kookia-progress.md`](goal-kookia-progress.md). Cette migration ne
+supprime pas d'historique ; elle ne fournit pas de migration descendante qui
+effacerait le journal. En cas de retour applicatif après de nouvelles décisions,
+restaurer une sauvegarde vérifiée plutôt que supprimer les contributions.
+
 - Cartographie initiale : inspection des services, hooks, fixtures, modèles Prisma,
   composants métiers et handlers de confirmation. Auth déjà en base confirmée.
 - Implémentation et validation des lots suivants : à renseigner au fil des commits.
