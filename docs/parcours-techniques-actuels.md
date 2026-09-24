@@ -183,6 +183,31 @@ démonstration repliés ne doivent pas être lus comme résultats du restaurant.
 cohérents, dates/unité/source dans le rapport, période vide, export qui ne
 transforme pas une simulation en économie mesurée ou attestation réglementaire.
 
+## Histoire consultable sur quatre années
+
+Dans **Plus → Histoire sur quatre années**, choisir une période et une date
+« Connu au ». La vue lecture seule rassemble pièces d'archive, mouvements et
+pertes de stock, versions de recettes, productions, ventes, jours de service,
+correspondances article-recette et décisions. Les mouvements ouvrent la fiche
+actuelle du produit ; les liens ne rejouent pas l'opération historique.
+
+Chaque ligne sépare date d'effet, connaissance et enregistrement, puis porte
+une origine visible : archive source, enregistrée, simulation, hypothèse ou
+inconnue. L'année 2023 ne montre aucune réception fondée sur une pièce source ;
+l'ouverture et les réapprovisionnements fictifs sont explicitement des
+hypothèses. Une transcription d'archive reste consultable mais ne prouve pas
+une livraison. Une journée partielle ou manquante n'est jamais assimilée à un
+service complet ni à zéro vente.
+
+La fenêtre est bornée à 31 jours. Les pièces source ne renvoient que des
+métadonnées et un nombre de lignes, sans contenu de transcription. Les noms,
+unités et fournisseurs des mouvements récents sont snapshotés ; pour les
+mouvements antérieurs sans snapshot, le libellé historique reste inconnu au
+lieu d'être repris du catalogue actuel. Les documents mutables n'ont pas de
+journal de versions : leur date d'enregistrement disponible est la dernière
+mise à jour, et les états antérieurs ne sont pas reconstruits. La consultation
+n'écrit ni stock, ni vente, ni production.
+
 ## Vérification locale minimale et reprise
 
 Pour une modification future, choisir d'abord le test du service/contrat

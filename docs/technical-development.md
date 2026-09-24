@@ -62,6 +62,9 @@ la mise à jour ne change pas l'unité. Les lignes validées de `PurchaseOrderLi
 gardent leur nom, fournisseur, unité et prix snapshotés lors de la commande.
 `StockCount` conserve séparément quantité comptée, quantité théorique observée,
 écart, unité, date et acteur ; un écart accepté ajoute un `StockMovement` lié.
+Les nouveaux `StockMovement` gardent aussi des snapshots facultatifs du nom,
+de l'unité et du fournisseur au moment du mouvement. Les anciennes lignes restent
+sans snapshot plutôt que d'hériter d'un libellé actuel.
 La révision de stock évolue avec chaque entrée/sortie et permet d'étiqueter un
 comptage comme « à vérifier » après tout mouvement ultérieur.
 `ServiceDay` conserve le statut ouvert/fermé, la couverture des ventes
@@ -95,9 +98,27 @@ précision terrain. Il n'y a ni météo, ni confiance calibrée, ni commande dé
 de cette baseline. `SaleItemRecipeMapping` conserve l'association confirmée,
 son facteur de portions par article, sa date d'effet, son auteur, son nom de
 recette snapshoté et ses révisions. Le backtest matière résout la correspondance
-et la `RecipeVersion` à la date de chaque service ; les versions à date inconnue
-ou futures ne sont pas utilisées. La projection ne modifie pas les mouvements
-de stock. POS et Ticket Z restent non connectés.
+et la `RecipeVersion` à la date de chaque service, mais seulement si leur
+enregistrement était connu à cette date ; une association ou version saisie
+après coup ne fuit pas vers les jours précédents, même avec une date d'effet
+rétrodatée. Les versions à date inconnue ou future ne sont pas utilisées. La
+projection ne modifie pas les mouvements de stock. POS et Ticket Z restent non
+connectés.
+
+La page **Plus → Histoire sur quatre années** (`/history`) appelle la route
+tenant-scopée de lecture seule `GET /api/workspace/timeline`, sur une période
+de 31 jours au maximum et une coupe `asOf`. Chaque événement sépare date
+d'effet, date à laquelle son état est connu et date d'enregistrement ; les
+provenances affichées sont archive source, saisie, simulation, hypothèse ou
+inconnue. Les pièces sont réduites côté SQL à des métadonnées (aucun texte de
+transcription ni ligne brute), et les prix actuels ne sont pas injectés dans
+l'historique. Les lignes `WorkspaceDocument` n'ayant pas de journal de versions,
+leur date disponible est la dernière mise à jour ; les états antérieurs restent
+inconnus et les entrées modifiées après `asOf` sont masquées. Les mouvements
+legacy sans snapshots gardent un libellé historique inconnu. Les liens ouvrent
+les vues actuelles (un mouvement peut ouvrir la fiche produit) sans rejouer
+l'opération ni modifier le solde.
+
 Le [plan de migration](plans/database-migration.md) contient la cartographie et les
 preuves de validation et les limites explicites de cette migration.
 

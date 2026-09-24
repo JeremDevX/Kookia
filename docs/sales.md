@@ -45,11 +45,13 @@ associations précédentes. Le nom de recette est conservé tel qu'il était au
 moment de la confirmation.
 
 Pour une date de service, la projection sélectionne la dernière correspondance
-validée et la dernière `RecipeVersion` dont la date d'effet connue n'est pas
-postérieure à cette date. Une version de recette historique à date `NULL` est
-inconnue : elle ne sert ni à inventer une consommation passée ni à compléter un
-backtest. Sans correspondance ou version datée, l'estimation matière reste
-indisponible pour ces jours. Sinon, le calcul applique
+validée et la dernière `RecipeVersion` dont la date d'effet **et la date
+d'enregistrement** sont connues au plus tard ce jour-là. Une correction ou une
+association enregistrée ultérieurement n'est pas rétrodatée dans le backtest,
+même si sa date d'effet est antérieure. Une version de recette historique à
+date `NULL` est inconnue : elle ne sert ni à inventer une consommation passée
+ni à compléter un backtest. Sans correspondance ou version datée et connue à
+temps, l'estimation matière reste indisponible pour ces jours. Sinon, le calcul applique
 `quantité vendue × portions par article × quantité ingrédient / rendement du
 lot`. Le détail apparaît dans la baseline expérimentale ; il ne déduit pas le
 stock, ne crée pas de production et ne propose ni ne valide de commande.

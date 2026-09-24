@@ -175,9 +175,11 @@ Un nom normalisé identique n'est qu'une proposition, pas une validation.
 
 Pour les estimations, chaque service sélectionne sa correspondance effective,
 puis la `RecipeVersion` dont la date d'effet connue est la plus récente sans
-dépasser ce service. Les versions héritées dont la date est `NULL` sont
-explicitement inconnues et exclues du backtest matière, comme toute version
-future par rapport à sa date cible. La quantité projetée applique les portions
+dépasser ce service ; correspondance et version doivent aussi avoir été
+enregistrées au plus tard ce jour-là. Une date d'effet antidatée ne révèle donc
+pas rétroactivement une association/version créée plus tard. Les versions
+héritées dont la date est `NULL` sont explicitement inconnues et exclues du
+backtest matière, comme toute version future par rapport à sa date cible. La quantité projetée applique les portions
 par article et le rendement de lot ; cette lecture ne crée aucun mouvement de
 stock, production ou commande.
 
@@ -192,6 +194,41 @@ version de recette future afin de vérifier qu'elle n'est jamais utilisée avant
 sa date. `npm test` passe (16 fichiers/83 tests Vitest et 30 tests Node/CSS),
 ainsi que lint, builds web/API, `prisma validate` et `git diff --check`. Aucune
 correspondance legacy n'est fabriquée ; migration additive sans perte de données.
+
+### Incrément C2 — chronologie consultable (2026-09-24)
+
+La migration additive `20260924070000_workspace_timeline` ajoute des instantanés
+facultatifs de nom d'article, unité et fournisseur à `StockMovement`. Les
+nouveaux mouvements les enregistrent au moment de l'écriture ; aucun libellé
+n'est rétro-inféré depuis le catalogue courant et les lignes legacy restent
+explicitement sans nom/unité historiques. Les documents `WorkspaceDocument`
+restent sans journal de versions : leur première saisie et leurs états
+antérieurs ne sont pas reconstitués.
+
+La route tenant-scopée `GET /api/workspace/timeline?from=…&to=…&asOf=…` est en
+lecture seule et borne chaque période à 31 jours. Elle sépare `effectiveAt`,
+`knownAt` et `recordedAt`, masque les lignes dont l'état courant a été modifié
+après la coupe, et identifie source d'archive, enregistrement, simulation,
+hypothèse et date inconnue. Les pièces source sont projetées en SQL vers titre,
+date, fournisseur, statut et nombre de lignes ; contenu et lignes transcrites
+ne sont jamais chargés dans cette chronologie. Les prix courants ne sont pas
+affichés dans les événements passés. Les liens ouvrent les espaces actuels,
+indépendamment de l'instantané historique ; consulter une date passée ne rejoue
+ni ne modifie aucune opération.
+
+Pour les fixtures du scénario, `RecipeVersion.createdAt` reflète sa date
+fictionnelle de départ et les timestamps du `ServiceDay` sa date de service ;
+ces enregistrements restent marqués simulation. Les dates de source, elles,
+ne prouvent pas qu'une pièce était connue ou qu'une livraison a eu lieu.
+
+Preuve locale C2 : PostgreSQL 16 jetable sans volume ; `migrate deploy` applique
+14/14 migrations, puis `npm run test:integration` passe (16 fichiers/26 tests),
+et `npm test` (17 Vitest/85 tests et 30 tests Node/CSS), lint, builds web/API,
+`prisma validate` et `git diff --check` passent. La fixture vérifie les catégories
+du récit, l'archive 2023 sans réception sourcée, l'ouverture fictive distincte,
+la date de connaissance, la séparation tenant et le solde inchangé à la lecture.
+Le conteneur sans volume est supprimé après les tests ; aucun jeu conservé n'est
+utilisé. L'écran n'a pas pu être rendu/clavier-testé faute de navigateur CUA.
 
 - Cartographie initiale : inspection des services, hooks, fixtures, modèles Prisma,
   composants métiers et handlers de confirmation. Auth déjà en base confirmée.
