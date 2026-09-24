@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import Button from "../components/common/Button";
 import { getTimeline, type TimelineEvent, type TimelineProvenance, type TimelineResult } from "../services/timelineService";
 import { formatLocalISODate } from "../utils/date";
 import "../styles/Workspace.css";
@@ -43,11 +44,12 @@ export default function Timeline() {
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(today);
   const [asOf, setAsOf] = useState(today);
+  const [requestAttempt, setRequestAttempt] = useState(0);
   const rangeDays = (Date.parse(to) - Date.parse(from)) / 86_400_000;
   const validRequest = /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to) &&
     /^\d{4}-\d{2}-\d{2}$/.test(asOf) && from >= historyStart && asOf >= historyStart && from <= to && rangeDays <= 30 &&
     to <= today && asOf <= today;
-  const requestKey = validRequest ? `${from}:${to}:${asOf}` : "";
+  const requestKey = validRequest ? `${from}:${to}:${asOf}:${requestAttempt}` : "";
   const [requestState, setRequestState] = useState<{ key: string; result?: TimelineResult; error?: string } | null>(null);
   const currentState = requestState?.key === requestKey ? requestState : null;
   const timeline = currentState?.result ?? null;
@@ -106,8 +108,12 @@ export default function Timeline() {
       <p>Une transcription d’archive n’établit pas une livraison. Les hypothèses et simulations ne sont pas des observations.</p>
     </section>
 
-    <div className="timeline-status" role={error ? "alert" : "status"} aria-live="polite">
-      {loading ? "Chargement de l’historique…" : error || (timeline ? `${timeline.count} événement(s) pour la période.` : "")}
+    <div className="timeline-status">
+      <span role={error ? "alert" : "status"} aria-live="polite">
+        {loading ? "Chargement de l’historique…" : error || (timeline ? `${timeline.count} événement(s) pour la période.` : "")}
+      </span>
+      {currentState?.error && <Button type="button" variant="outline" size="sm"
+        onClick={() => setRequestAttempt((attempt) => attempt + 1)}>Réessayer</Button>}
     </div>
     {timeline?.truncated && <p className="timeline-truncated" role="status">Période dense : seuls les premiers événements sont affichés. Choisissez une période plus courte pour continuer à parcourir l’historique.</p>}
     {timeline && timeline.events.length === 0 && <p className="workspace-empty">Aucun événement disponible avec ces dates et ces informations connues.</p>}
