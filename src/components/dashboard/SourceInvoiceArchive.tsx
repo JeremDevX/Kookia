@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { createInvoiceDraftFromSource, getSourceInvoice, getSourceInvoices, type Invoice,
-  type SourceInvoiceDetail, type SourceInvoiceSummary } from "../../services/invoiceService";
+  extractInvoiceFixture, getInvoiceExtractionMode, type InvoiceExtractionMode, type SourceInvoiceDetail,
+  type SourceInvoiceSummary } from "../../services/invoiceService";
 import "./InvoiceModal.css";
 
 interface SourceInvoiceArchiveProps {
   refreshKey: number;
   sourceId?: string;
   onCreateManual: () => void;
+  onExtractionComplete: () => void;
   onOpenDraft: (invoice: Invoice) => void;
 }
 
@@ -15,7 +17,7 @@ const sourceTypeLabel = (type: SourceInvoiceSummary["type"]) => ({
   invoice: "Facture (type transcrit, à confirmer)", credit: "Avoir — aucune entrée stock", delivery: "Bon de livraison — à rapprocher",
 }[type]);
 
-export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateManual, onOpenDraft }: SourceInvoiceArchiveProps) {
+export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateManual, onExtractionComplete, onOpenDraft }: SourceInvoiceArchiveProps) {
   const [invoices, setInvoices] = useState<SourceInvoiceSummary[]>([]);
   const [selected, setSelected] = useState<SourceInvoiceDetail | null>(null);
   const [selectedId, setSelectedId] = useState("");
@@ -23,9 +25,22 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [opening, setOpening] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractionMode, setExtractionMode] = useState<InvoiceExtractionMode>("manual");
+  const [fixturePreviewUrl, setFixturePreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const requestId = useRef(0);
   const selectedIdRef = useRef("");
+
+  useEffect(() => {
+    let active = true;
+    getInvoiceExtractionMode().then(({ mode }) => { if (active) setExtractionMode(mode); }, () => {
+      if (active) setError("Lecture automatique indisponible. La saisie manuelle reste disponible.");
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => () => { if (fixturePreviewUrl) URL.revokeObjectURL(fixturePreviewUrl); }, [fixturePreviewUrl]);
 
   useEffect(() => {
     let active = true;
@@ -72,6 +87,24 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
     finally { setOpening(false); }
   };
 
+  const tryFixtureExtraction = async () => {
+    if (extracting) return;
+    setExtracting(true);
+    setError("");
+    try {
+      const response = await fetch("/fixtures/invoice-extraction-demo.pdf", { cache: "no-store" });
+      if (!response.ok) throw new Error("La pièce fictive est indisponible. Vous pouvez saisir la facture manuellement.");
+      const file = await response.blob();
+      const previewUrl = URL.createObjectURL(file);
+      setFixturePreviewUrl(previewUrl);
+      const candidate = await extractInvoiceFixture(file);
+      onExtractionComplete();
+      await open(candidate.id);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Lecture automatique indisponible. Vous pouvez saisir la facture manuellement.");
+    } finally { setExtracting(false); }
+  };
+
   const filtered = invoices.filter((invoice) => `${invoice.title} ${invoice.supplier} ${invoice.date ?? ""}`
     .toLocaleLowerCase("fr").includes(query.toLocaleLowerCase("fr")));
   const linkedStatus = selected?.invoiceStatus === "received" ? "Réception simulée enregistrée"
@@ -84,9 +117,15 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
       <p>Les transcriptions sont des sources à confirmer. Les lignes ci-dessous sont des candidates, pas des mouvements de stock.</p>
     </div><div className="source-invoice-heading-actions">
       <span>{loading ? "Chargement…" : `${invoices.length} pièce${invoices.length === 1 ? "" : "s"}`}</span>
+      {extractionMode === "demo_fixture" && <Button variant="outline" onClick={() => void tryFixtureExtraction()} disabled={extracting}>
+        {extracting ? "Lecture de la fixture…" : "Essayer la fixture fictive"}
+      </Button>}
       <Button variant="outline" onClick={onCreateManual}>Saisir manuellement</Button>
     </div></div>
-    <p>Les dates affichées peuvent être décalées pour le scénario. Toute réception issue de ces pièces reste simulée : aucun achat ni envoi réel n’est créé.</p>
+    {extracting && <p role="status">Lecture de la pièce fictive en cours…</p>}
+    <p>Les dates affichées peuvent être décalées pour le scénario. Toute réception issue de ces pièces reste simulée : aucun achat ni envoi réel n’est créé.
+      {extractionMode === "demo_fixture" && " L’essai utilise uniquement une pièce PDF publique et fictive; l’original reste dans le navigateur et n’est pas conservé par l’API."}</p>
+    {fixturePreviewUrl && <p><a href={fixturePreviewUrl} target="_blank" rel="noreferrer">Consulter l’original fictif (PDF)</a></p>}
     {error && <p role="alert">{error}</p>}
     {loading ? <p role="status">Chargement des pièces…</p> : invoices.length === 0 ?
       <p>Aucune pièce importée dans cet espace. Vous pouvez saisir une facture manuellement.</p> : <div className="source-invoice-controls">

@@ -1,0 +1,62 @@
+%PDF-1.4
+%fixture
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+6 0 obj
+<< /Length 1387 >>
+stream
+0.06 0.15 0.16 rg 0 0 595 842 re f
+1 1 1 rg 34 34 527 774 re f
+0.06 0.15 0.16 rg
+BT /F2 10 Tf 58 760 Td (KOOKIA - FIXTURE LOCALE) Tj ET
+BT /F2 24 Tf 58 708 Td (FACTURE DE DEMONSTRATION) Tj ET
+BT /F2 10 Tf 58 683 Td (DOCUMENT ENTIEREMENT FICTIF - AUCUN FOURNISSEUR REEL) Tj ET
+0.75 0.82 0.80 RG 58 660 m 537 660 l S
+BT /F2 14 Tf 58 625 Td (Maison Potager Demo) Tj ET
+BT /F1 10 Tf 58 603 Td (Coordonnees et references fictives, sans donnees personnelles.) Tj ET
+BT /F1 10 Tf 58 563 Td (Reference : DEMO-2026-09-01) Tj ET
+BT /F1 10 Tf 58 545 Td (Date de facture : 20/09/2026) Tj ET
+0.92 0.96 0.95 rg 58 485 479 34 re f 0.06 0.15 0.16 rg
+BT /F2 10 Tf 70 497 Td (ARTICLE) Tj ET
+BT /F2 10 Tf 350 497 Td (QUANTITE) Tj ET
+BT /F2 10 Tf 432 497 Td (PU HT) Tj ET
+BT /F2 10 Tf 493 497 Td (TOTAL) Tj ET
+BT /F1 11 Tf 70 457 Td (Tomates rondes \(origine fictive\)) Tj ET
+BT /F1 10 Tf 362 457 Td (2 kg) Tj ET
+BT /F1 10 Tf 433 457 Td (3.50 EUR) Tj ET
+BT /F1 10 Tf 492 457 Td (7.00 EUR) Tj ET
+0.75 0.82 0.80 RG 58 438 m 537 438 l S
+BT /F2 11 Tf 378 399 Td (TOTAL HT) Tj ET
+BT /F2 11 Tf 481 399 Td (7.00 EUR) Tj ET
+BT /F1 10 Tf 58 325 Td (Piece de test pour le parcours local de verification d extraction.) Tj ET
+BT /F1 10 Tf 58 307 Td (Elle ne represente ni une commande ni un achat reel.) Tj ET
+BT /F1 9 Tf 58 76 Td (Fixture publique synthetique - la piece originale n est pas conservee par l API.) Tj ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000018 00000 n 
+0000000067 00000 n 
+0000000124 00000 n 
+0000000260 00000 n 
+0000000330 00000 n 
+0000000405 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1844
+%%EOF

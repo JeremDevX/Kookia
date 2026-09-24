@@ -33,6 +33,11 @@ export interface SourceInvoiceLine {
 export interface SourceInvoiceDetail extends SourceInvoiceSummary { content: string; stockLines: SourceInvoiceLine[]; }
 export const getSourceInvoices = () => apiRequest<SourceInvoiceSummary[]>("/workspace/source-invoices");
 export const getSourceInvoice = (id: string) => apiRequest<SourceInvoiceDetail>(`/workspace/source-invoices/${encodeURIComponent(id)}`);
+export type InvoiceExtractionMode = "demo_fixture" | "manual";
+export const getInvoiceExtractionMode = () => apiRequest<{ mode: InvoiceExtractionMode }>("/workspace/invoice-extraction/status");
+export const extractInvoiceFixture = (file: Blob) => apiRequest<{ id: string }>("/workspace/invoice-extractions", {
+  method: "POST", body: file, headers: { "Content-Type": file.type || "application/pdf" },
+});
 export const createInvoiceDraftFromSource = (id: string) => apiRequest<Invoice>(`/workspace/invoices/from-source/${encodeURIComponent(id)}`, {
   method: "POST", body: JSON.stringify({}),
 });

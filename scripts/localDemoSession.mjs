@@ -168,7 +168,8 @@ async function main() {
     console.log("Migrations terminées.");
 
     const webOrigin = `http://127.0.0.1:${webPort}`;
-    const apiEnv = { ...demoEnv, HOST: "127.0.0.1", PORT: String(apiPort), APP_ORIGIN: webOrigin };
+    const apiEnv = { ...demoEnv, HOST: "127.0.0.1", PORT: String(apiPort), APP_ORIGIN: webOrigin,
+      LOCAL_DEMO_INVOICE_FIXTURE: "true" };
     const api = startServer(process.execPath, ["--import", "tsx", "server/src/index.ts"], apiEnv);
     await waitForHttp(`http://127.0.0.1:${apiPort}/api/health`, [api]);
     const webEnv = { ...demoEnv, KOOKIA_API_PROXY_TARGET: `http://127.0.0.1:${apiPort}` };

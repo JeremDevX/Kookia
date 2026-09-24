@@ -64,6 +64,7 @@ export default function Orders() {
     <PurchaseSuggestions refreshKey={suggestionsRevision} />
 
     <SourceInvoiceArchive refreshKey={invoiceRefresh} sourceId={searchParams.get("source") ?? undefined}
+      onExtractionComplete={() => setInvoiceRefresh((value) => value + 1)}
       onCreateManual={openManualInvoice}
       onOpenDraft={(invoice) => { setInvoiceDraft(invoice); setInvoiceOpen(true); }} />
 

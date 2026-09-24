@@ -48,16 +48,29 @@ sera configuré, une panne de son statut ne devra pas masquer les autres. L'UI
 de Connexions ne déclenche jamais `read` ; elle offre les replis CSV/saisie et
 n'affiche une dernière synchronisation que lorsqu'elle existe réellement.
 
-Pour I4, un port OCR de facture préparé sur fixture borne l'original à 4 Mio et
-PDF/JPEG/PNG, calcule son SHA-256 côté serveur, valide strictement le résultat
-normalisé et le transforme en candidat C1 lié au hash et au tenant. Les lignes
-restent à rapprocher ; avoir/bon de livraison ne produit aucune ligne stock.
-Le test utilise uniquement des octets et textes synthétiques, puis exerce le
-brouillon C1, la correction, le refus avant confirmation humaine et la réception
-simulée explicite. L'adaptateur actif reste `not_configured` : aucune route
-d'upload facture ni aucun fournisseur n'est branché, et l'original n'est pas
-persisté. L'aperçu/comparaison à l'original et une règle de conservation sont
-des prérequis avant activation ; la saisie manuelle reste le repli utilisable.
+Pour I4, `GET /workspace/invoice-extraction/status` renvoie `demo_fixture` ou
+`manual` à l'UI authentifiée. `POST /workspace/invoice-extractions` valide un
+corps brut PDF/JPEG/PNG jusqu'à 4 Mio, contrôle son type/signature et calcule
+son SHA-256 côté serveur. Il n'accepte aucun tenant ni adaptateur du client.
+Seul `demo:local`
+active l'adaptateur `local_demo_fixture`, qui accepte l'empreinte exacte de la
+pièce PDF publique et synthétique `public/fixtures/invoice-extraction-demo.pdf`.
+Quand le mode manuel est actif, la route renvoie le repli avant son parseur
+d'upload et ne tente aucune lecture automatique.
+Les octets sont traités en mémoire ; seul le candidat normalisé tenant-scopé
+(empreinte et lignes comprises) est persisté, avec un identifiant stable et un
+rejeu qui ne remplace pas la pièce existante. Les autres fichiers valides
+renvoient `EXTRACTION_UNAVAILABLE` et gardent la saisie manuelle comme repli.
+
+L'UI `Achats` expose cette fixture en mode démo, permet d'ouvrir l'original dans
+le navigateur et envoie ses octets uniquement à l'API locale. Les lignes sont
+des candidates à corriger dans C1 ; l'upload ne crée ni brouillon reçu ni
+mouvement. Le test traverse l'upload HTTP authentifié, deux tenants, le rejeu
+concurrent, la correction C1, le refus sans confirmation type/date puis une
+réception simulée unique après confirmation explicite. Aucun OCR, parsing
+général, fournisseur ou transfert externe n'est actif. Avant tout OCR réel,
+stockage de document ou traitement de pièces non-fixture, définir séparément
+les droits, l'accès et la rétention ; la saisie manuelle reste disponible.
 
 ### Formes normalisées minimales à stabiliser
 
