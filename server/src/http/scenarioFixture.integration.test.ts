@@ -72,7 +72,7 @@ async function applyFixtureReceipt(restaurantId: string, productId: string, sour
     }
 
     await tx.product.update({ where: { restaurantId_id: { restaurantId, id: productId } },
-      data: { currentStock: { increment: delta } } });
+      data: { currentStock: { increment: delta }, stockRevision: { increment: 1 } } });
     await tx.stockMovement.create({ data: {
       restaurantId, productId, delta, reason: "invoice_import_demo", operationId, actorId: "restaurant-simulation:v1",
     } });

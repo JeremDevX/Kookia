@@ -35,7 +35,7 @@ describe("workspace bootstrap on PostgreSQL", () => {
     const analytics = await prisma.workspaceDocument.findUniqueOrThrow({ where: { restaurantId_kind: { restaurantId, kind: "analytics" } } });
     expect(analytics.data).toEqual(catalog.analytics);
     const id = catalog.products[0].id;
-    await prisma.product.update({ where: { restaurantId_id: { restaurantId, id } }, data: { currentStock: 123 } });
+    await prisma.product.update({ where: { restaurantId_id: { restaurantId, id } }, data: { currentStock: 123, stockRevision: { increment: 1 } } });
     await ensureWorkspace(owner);
     const persisted = await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id } } });
     expect(Number(persisted.currentStock)).toBe(123);

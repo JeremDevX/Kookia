@@ -40,7 +40,7 @@ export async function recordProduction(restaurantId: string, actorId: string, in
         const amount = ingredient.quantity.mul(input.portions);
         const updated = await tx.product.updateMany({
           where: { restaurantId, id: ingredient.productId, currentStock: { gte: amount } },
-          data: { currentStock: { decrement: amount } },
+          data: { currentStock: { decrement: amount }, stockRevision: { increment: 1 } },
         });
         if (!updated.count) throw new WorkspaceError(409, "INSUFFICIENT_STOCK", "Stock insuffisant : ajustez les portions et réessayez.");
         await tx.stockMovement.create({ data: {

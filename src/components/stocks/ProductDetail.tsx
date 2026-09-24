@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useEffectEvent, useRef } from "react";
 import Button from "../common/Button";
-import Badge from "../common/Badge";
 import {
   X,
   Package,
@@ -11,16 +10,15 @@ import {
   ShoppingCart,
   Pencil,
 } from "lucide-react";
-import type { Product, Supplier } from "../../types";
+import type { Product, StockCountSummary, Supplier } from "../../types";
 import { useToast } from "../../context/ToastContext";
-import {
-  getProductStatus,
-  getProductStatusLabel,
-  getSuggestedOrderQuantity,
-} from "../../domain/inventory/product.policies";
+import { getSuggestedOrderQuantity } from "../../domain/inventory/product.policies";
 
-import { getStockMovements, type StockMovement, type ProductEdit } from "../../services/productService";
+import { getProductStockCounts, getStockMovements, type StockMovement, type NewStockCount, type ProductEdit, type StockCountResult } from "../../services/productService";
 import EditProductModal from "./EditProductModal";
+import StockCountModal from "./StockCountModal";
+import StockVerificationSummary from "./StockVerificationSummary";
+import StockCountHistory from "./StockCountHistory";
 import { useCart } from "../../context/useCart";
 import { Link, useNavigate } from "react-router-dom";
 import "./ProductDetail.css";
@@ -30,6 +28,8 @@ interface ProductDetailProps {
   onClose: () => void;
   onAdjustStock: (productId: string, delta: number, reason?: "adjustment" | "loss") => Promise<void>;
   onUpdateProduct: (productId: string, edit: ProductEdit) => Promise<Product>;
+  onRecordCount: (productId: string, count: NewStockCount) => Promise<StockCountResult>;
+  onRefresh: () => Promise<void>;
   suppliers: Supplier[];
 }
 
@@ -38,7 +38,7 @@ const movementLabel = (reason: string) => ({
   invoice_import_demo: "Entrée de facture simulée", simulated_consumption: "Sortie simulée",
   simulated_unit_rounding: "Correction d’unité simulée", simulation_opening: "Stock de départ simulé",
   simulation_restock: "Réapprovisionnement simulé", simulation_loss: "Perte simulée (hypothèse)",
-  production: "Production",
+  production: "Production", stock_count: "Écart de comptage",
 }[reason] ?? "Ajustement");
 
 const ProductDetail: React.FC<ProductDetailProps> = ({
@@ -46,20 +46,27 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   onClose,
   onAdjustStock,
   onUpdateProduct,
+  onRecordCount,
+  onRefresh,
   suppliers,
 }) => {
   const { addToast } = useToast();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [movements, setMovements] = useState<StockMovement[]>([]);
+  const [stockCounts, setStockCounts] = useState<StockCountSummary[]>([]);
   const [historyError, setHistoryError] = useState("");
+  const [countHistoryError, setCountHistoryError] = useState("");
   const [saving, setSaving] = useState(false);
   const [adjustReason, setAdjustReason] = useState<"adjustment" | "loss">("adjustment");
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCountModal, setShowCountModal] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
-  const closeFromKeyboard = useEffectEvent(() => onClose());
+  const closeFromKeyboard = useEffectEvent(() => {
+    if (!showEditModal && !showCountModal) onClose();
+  });
   const productId = product?.id;
   useEffect(() => {
     if (!productId) return;
@@ -85,10 +92,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     return () => { active = false; };
   }, [productId, product?.currentStock]);
 
+  useEffect(() => {
+    if (!productId) return;
+    let active = true;
+    getProductStockCounts(productId).then((data) => { if (active) { setStockCounts(data); setCountHistoryError(""); } }, () => { if (active) setCountHistoryError("Historique des comptages indisponible."); });
+    return () => { active = false; };
+  }, [productId, product?.stockRevision]);
+
   if (!product) return null;
 
-  const status = getProductStatus(product);
   const supplier = suppliers.find((item) => item.id === product.supplierId);
+
+  const handleRecordCount = async (productId: string, count: NewStockCount) => {
+    const result = await onRecordCount(productId, count);
+    setStockCounts((previous) => [result.count, ...previous.filter((item) => item.id !== result.count.id)]);
+    return result;
+  };
 
   const handleContactSupplier = () => {
     if (supplier?.phone) window.location.href = `tel:${supplier.phone.replace(/[^+0-9]/g, "")}`;
@@ -146,16 +165,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         </header>
 
         <div className="drawer-content">
-          <section className="drawer-section">
-            <div className="status-banner">
-              <Badge label={getProductStatusLabel(status)} status={status} />
-              <span className="stock-big">
-                {product.currentStock}{" "}
-                <span className="unit">{product.unit}</span>
-              </span>
-            </div>
-            <small className="drawer-source">Niveau calculé selon le seuil enregistré. Le catalogue initial est à confirmer.</small>
-          </section>
+          <StockVerificationSummary product={product} onCount={() => setShowCountModal(true)} />
 
           <section className="drawer-section">
             <h3 className="section-heading">Recettes avec ce produit</h3>
@@ -190,6 +200,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
               </div>
             </div>
           </section>
+
+          <StockCountHistory counts={stockCounts} error={countHistoryError} />
 
           <section className="drawer-section">
             <h3 className="section-heading">
@@ -276,6 +288,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         </footer>
       </div>
       <EditProductModal product={product} suppliers={suppliers} isOpen={showEditModal} onClose={() => setShowEditModal(false)} onSave={onUpdateProduct} />
+      <StockCountModal product={product} isOpen={showCountModal} onClose={() => setShowCountModal(false)} onRefresh={onRefresh} onSave={handleRecordCount} />
     </>
   );
 };

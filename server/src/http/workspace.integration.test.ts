@@ -28,7 +28,7 @@ describe("persistent catalog HTTP", () => {
     const initial = await first.get("/api/workspace/catalog").expect(200);
     expect(initial.body.products).toHaveLength(catalog.products.length);
     for (const expected of catalog.products) {
-      expect(initial.body.products.find((item: { id: string }) => item.id === expected.id)).toEqual({ ...expected, revision: 1 });
+      expect(initial.body.products.find((item: { id: string }) => item.id === expected.id)).toEqual({ ...expected, revision: 1, stockRevision: 1, latestCount: null });
     }
     expect(initial.body.suppliers).toEqual(catalog.suppliers);
     const product = initial.body.products[0];
@@ -72,10 +72,37 @@ describe("persistent catalog HTTP", () => {
     await first.post(`/api/workspace/products/${id}/stock`).send({ operationId: randomUUID(), delta: 1, reason: "loss" }).expect(400);
     const concurrent = await Promise.all([1, 2].map(() => first.post(`/api/workspace/products/${id}/stock`).send({ operationId: randomUUID(), delta: -5 })));
     expect(concurrent.map((response) => response.status).sort()).toEqual([200, 409]);
+    const stockRevision = 3;
+    const zeroVarianceInput = { operationId: randomUUID(), expectedStockRevision: stockRevision, expectedUnit: "kg", countedQuantity: 2.5 };
+    const zeroVariance = await Promise.all([1, 2].map(() => first.post(`/api/workspace/products/${id}/counts`).send(zeroVarianceInput)));
+    expect(zeroVariance.map((response) => response.status)).toEqual([201, 201]);
+    expect(zeroVariance[0].body.count.id).toBe(zeroVariance[1].body.count.id);
+    expect(zeroVariance[0].body.count.delta).toBe(0);
+    expect(zeroVariance[0].body.count.stockRevisionAfter).toBe(stockRevision);
+    expect(zeroVariance[0].body.count.actorId).toBeTypeOf("string");
+    expect(zeroVariance[0].body.count.countDate).toBe(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()));
+    await first.post(`/api/workspace/products/${id}/counts`).send({ ...zeroVarianceInput, countedQuantity: 3 }).expect(409);
+    const afterZero = await first.get("/api/workspace/catalog").expect(200);
+    expect(afterZero.body.products.find((item: { id: string }) => item.id === id).latestCount).toMatchObject({ countedQuantity: 2.5, delta: 0 });
+    expect(await prisma.stockMovement.count({ where: { stockCountId: zeroVariance[0].body.count.id } })).toBe(0);
+    const discrepancyInput = { operationId: randomUUID(), expectedStockRevision: stockRevision, expectedUnit: "kg", countedQuantity: 0 };
+    const discrepancy = await first.post(`/api/workspace/products/${id}/counts`).send(discrepancyInput).expect(201);
+    expect(discrepancy.body.count).toMatchObject({ theoreticalQuantity: 2.5, countedQuantity: 0, delta: -2.5,
+      stockRevisionBefore: stockRevision, stockRevisionAfter: stockRevision + 1 });
+    expect(discrepancy.body.product.currentStock).toBe(0);
+    const countMovement = await prisma.stockMovement.findFirstOrThrow({ where: { stockCountId: discrepancy.body.count.id } });
+    expect(Number(countMovement.delta)).toBe(-2.5);
+    await first.post(`/api/workspace/products/${id}/counts`).send({ ...discrepancyInput, operationId: randomUUID() }).expect(409);
+    await first.post(`/api/workspace/products/${id}/counts`).send({ ...discrepancyInput, operationId: randomUUID(), countedQuantity: -0.001 }).expect(400);
+    await first.post(`/api/workspace/products/${id}/counts`).send({ ...discrepancyInput, operationId: randomUUID(), countDate: "2026-09-23" }).expect(400);
+    await first.post(`/api/workspace/products/${id}/counts`).send({ ...discrepancyInput, operationId: randomUUID(), expectedStockRevision: stockRevision + 1, expectedUnit: "L" }).expect(409);
+    await second.post(`/api/workspace/products/${id}/counts`).send({ ...discrepancyInput, operationId: randomUUID() }).expect(404);
+    await second.get(`/api/workspace/products/${id}/counts`).expect(404);
+    expect(await first.get(`/api/workspace/products/${id}/counts`).expect(200).then((response) => response.body)).toHaveLength(2);
     const refreshed = await first.get("/api/workspace/catalog").expect(200);
-    expect(refreshed.body.products.find((item: { id: string }) => item.id === id).currentStock).toBe(2.5);
+    expect(refreshed.body.products.find((item: { id: string }) => item.id === id).currentStock).toBe(0);
     const history = await first.get(`/api/workspace/products/${id}/movements`).expect(200);
-    expect(history.body).toHaveLength(3);
+    expect(history.body).toHaveLength(4);
     const isolatedHistory = await second.get(`/api/workspace/products/${id}/movements`).expect(200);
     expect(isolatedHistory.body).toEqual([]);
     const foreign = await second.get("/api/workspace/catalog").expect(200);
@@ -109,6 +136,7 @@ describe("persistent catalog HTTP", () => {
       const initial = before.body.products.find((product: { id: string }) => product.id === ingredient.productId);
       const changed = after.body.products.find((product: { id: string }) => product.id === ingredient.productId);
       expect(changed.currentStock).toBeCloseTo(initial.currentStock - ingredient.quantity, 3);
+      expect(changed.stockRevision).toBe(initial.stockRevision + 1);
     }
     await agent.post("/api/workspace/productions").send({ ...input, operationId: randomUUID(), portions: 10000 }).expect(409);
     const failed = await agent.get("/api/workspace/catalog").expect(200);

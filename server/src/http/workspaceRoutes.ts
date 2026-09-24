@@ -14,6 +14,7 @@ import { sessionCookieName } from "../config/env.js";
 import { getUserBySessionToken } from "../application/auth/authService.js";
 import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { adjustStock, createProduct, editProduct, getCatalog, WorkspaceError } from "../application/workspace/catalogService.js";
+import { getStockCounts, recordStockCount } from "../application/workspace/stockCountService.js";
 import { getRecipes, recordProduction } from "../application/workspace/recipeService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
@@ -58,6 +59,10 @@ const editProductSchema = z.object({
   supplierId: z.string().min(1).max(100),
   pricePerUnit: z.number().finite().min(0).max(1_000_000).multipleOf(0.0001),
 }).strict();
+const stockCountSchema = z.object({
+  operationId: z.uuid(), expectedStockRevision: z.number().int().positive(),
+  expectedUnit: z.enum(["kg", "L", "dz", "pcs"]), countedQuantity: quantity,
+}).strict();
 
 workspaceRoutes.get("/catalog", async (_req, res, next) => {
   try { res.json(await getCatalog(context(res).restaurantId)); } catch (error) { next(error); }
@@ -73,6 +78,16 @@ workspaceRoutes.patch("/products/:id", async (req, res, next) => {
   try {
     const data = editProductSchema.parse(req.body);
     res.json(await editProduct(context(res).restaurantId, String(req.params.id), data));
+  } catch (error) { next(error); }
+});
+workspaceRoutes.get("/products/:id/counts", async (req, res, next) => {
+  try { res.json(await getStockCounts(context(res).restaurantId, String(req.params.id))); } catch (error) { next(error); }
+});
+workspaceRoutes.post("/products/:id/counts", async (req, res, next) => {
+  try {
+    const input = stockCountSchema.parse(req.body);
+    const { restaurantId, actorId } = context(res);
+    res.status(201).json(await recordStockCount(restaurantId, actorId, String(req.params.id), input));
   } catch (error) { next(error); }
 });
 workspaceRoutes.post("/products/:id/stock", async (req, res, next) => {
@@ -93,6 +108,7 @@ workspaceRoutes.get("/products/:id/movements", async (req, res, next) => {
         ...(movement.sourceDocumentRevision !== null ? { sourceDocumentRevision: movement.sourceDocumentRevision } : {}),
         ...(movement.invoiceDocumentId ? { invoiceDocumentId: movement.invoiceDocumentId } : {}),
         ...(movement.invoiceRevision !== null ? { invoiceRevision: movement.invoiceRevision } : {}),
+        ...(movement.stockCountId ? { stockCountId: movement.stockCountId } : {}),
       };
     }));
   } catch (error) { next(error); }

@@ -32,7 +32,9 @@ it("persists corrected drafts, isolates accounts and receives invoices exactly o
   const results = await Promise.all([agent.post(`/api/workspace/invoices/${id}`).send(receipt), agent.post(`/api/workspace/invoices/${id}`).send(receipt)]);
   expect(results.map((result) => result.status)).toEqual([200, 200]);
   const after = await agent.get("/api/workspace/catalog").expect(200);
-  expect(after.body.products.find((item: { id: string }) => item.id === product.id).currentStock).toBe(product.currentStock + 5.5);
+  const receivedProduct = after.body.products.find((item: { id: string }) => item.id === product.id);
+  expect(receivedProduct.currentStock).toBe(product.currentStock + 5.5);
+  expect(receivedProduct.stockRevision).toBe(product.stockRevision + 1);
   await agent.post(`/api/workspace/invoices/${id}`).send({ draft, revision: results[0].body.revision, receive: false }).expect(409);
   const history = await agent.get(`/api/workspace/products/${product.id}/movements`).expect(200);
   expect(history.body.filter((item: { reason: string }) => item.reason === "receipt")).toHaveLength(1);

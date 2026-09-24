@@ -4,7 +4,7 @@ import type { Product } from "./product.types";
 
 const product: Product = {
   id: "p1", name: "Tomates", category: "Légumes", currentStock: 2,
-  minThreshold: 3, unit: "kg", supplierId: "s1", pricePerUnit: 2, revision: 1,
+  minThreshold: 3, unit: "kg", supplierId: "s1", pricePerUnit: 2, revision: 1, stockRevision: 1,
 };
 
 describe("inventory policies", () => {

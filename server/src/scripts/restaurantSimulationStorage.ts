@@ -52,7 +52,8 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
           supplierId: state.supplierId!, lastDelivery: state.lastDelivery ? new Date(`${state.lastDelivery}T00:00:00.000Z`) : null },
         update: { name: product.name, category: product.category, unit: product.unit, currentStock: state.closing,
           minThreshold: product.minThreshold, pricePerUnit: state.pricePerUnit, supplierId: state.supplierId!,
-          lastDelivery: state.lastDelivery ? new Date(`${state.lastDelivery}T00:00:00.000Z`) : null },
+          lastDelivery: state.lastDelivery ? new Date(`${state.lastDelivery}T00:00:00.000Z`) : null,
+          stockRevision: { increment: 1 } },
       });
     }
 

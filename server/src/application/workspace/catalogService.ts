@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
+import { stockCountDto } from "./stockCountDto.js";
 
 export class WorkspaceError extends Error {
   constructor(public readonly status: number, public readonly code: string, message: string) { super(message); }
@@ -9,16 +10,20 @@ export const productDto = (product: Awaited<ReturnType<typeof prisma.product.fin
   id: product.id, name: product.name, category: product.category, unit: product.unit,
   currentStock: Number(product.currentStock), minThreshold: Number(product.minThreshold),
   supplierId: product.supplierId, pricePerUnit: Number(product.pricePerUnit),
-  revision: product.revision,
+  revision: product.revision, stockRevision: product.stockRevision,
   ...(product.lastDelivery ? { lastDelivery: product.lastDelivery.toISOString().slice(0, 10) } : {}),
 });
 
 export async function getCatalog(restaurantId: string) {
   const [products, suppliers] = await prisma.$transaction([
-    prisma.product.findMany({ where: { restaurantId }, orderBy: { id: "asc" } }),
+    prisma.product.findMany({ where: { restaurantId }, orderBy: { id: "asc" }, include: {
+      stockCounts: { orderBy: [{ countedAt: "desc" }, { id: "desc" }], take: 1 },
+    } }),
     prisma.supplier.findMany({ where: { restaurantId }, orderBy: { id: "asc" } }),
   ]);
-  return { products: products.map(productDto), suppliers: suppliers.map(({ id, name, email, phone }) => ({ id, name, email, phone })) };
+  return { products: products.map(({ stockCounts, ...product }) => ({
+    ...productDto(product), latestCount: stockCounts[0] ? stockCountDto(stockCounts[0]) : null,
+  })), suppliers: suppliers.map(({ id, name, email, phone }) => ({ id, name, email, phone })) };
 }
 
 interface NewProductInput {
@@ -72,7 +77,7 @@ export async function adjustStock(restaurantId: string, actorId: string, product
     if (!prior) {
       const updated = await tx.product.updateMany({ where: {
         restaurantId, id: productId, ...(delta < 0 ? { currentStock: { gte: -delta } } : {}),
-      }, data: { currentStock: { increment: delta } } });
+      }, data: { currentStock: { increment: delta }, stockRevision: { increment: 1 } } });
       if (!updated.count) throw new WorkspaceError(409, "INSUFFICIENT_STOCK", "Le stock disponible est insuffisant.");
       await tx.stockMovement.create({ data: { restaurantId, productId, delta, reason, operationId, actorId } });
     } else if (!prior.delta.equals(delta) || prior.reason !== reason) {

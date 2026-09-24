@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Product } from "../types";
 import type { NewProduct } from "../types/callbacks";
-import { getProducts, getProductStatus, createProduct, editProduct, adjustProductStock, type ProductEdit } from "../services/productService";
+import { getProducts, getProductStatus, createProduct, createStockCount, editProduct, adjustProductStock, type NewStockCount, type ProductEdit } from "../services/productService";
 import type { ProductStatus } from "../types";
 
 interface UseProductsReturn {
@@ -63,7 +63,7 @@ export const useProductsWithMutations = () => {
   const updateStock = useCallback((id: string, amount: number, reason: "adjustment" | "loss" = "adjustment") => {
     const operation = stockQueue.current.then(async () => {
       const updated = await adjustProductStock(id, amount, reason);
-      setProducts((prev) => prev.map((product) => product.id === id ? updated : product));
+      setProducts((prev) => prev.map((product) => product.id === id ? { ...product, ...updated } : product));
     });
     stockQueue.current = operation.catch(() => undefined);
     return operation;
@@ -76,8 +76,16 @@ export const useProductsWithMutations = () => {
 
   const updateProduct = useCallback(async (id: string, data: ProductEdit) => {
     const updated = await editProduct(id, data);
-    setProducts((prev) => prev.map((product) => product.id === id ? updated : product));
+    setProducts((prev) => prev.map((product) => product.id === id ? { ...product, ...updated } : product));
     return updated;
+  }, []);
+
+  const recordCount = useCallback(async (id: string, input: NewStockCount) => {
+    const result = await createStockCount(id, input);
+    setProducts((prev) => prev.map((product) => product.id === id
+      ? { ...product, ...result.product, latestCount: result.latestCount }
+      : product));
+    return result;
   }, []);
 
   return {
@@ -87,6 +95,7 @@ export const useProductsWithMutations = () => {
     refetch,
     updateStock,
     updateProduct,
+    recordCount,
     addProduct,
     getStatus: getProductStatus,
   };

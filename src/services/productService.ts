@@ -1,4 +1,4 @@
-import type { Product, Supplier } from "../types";
+import type { Product, StockCountSummary, Supplier, Unit } from "../types";
 import type { NewProduct } from "../types/callbacks";
 import { apiRequest } from "../config/api";
 export { getProductStatus } from "../domain/inventory/product.policies";
@@ -17,10 +17,18 @@ export const createProduct = (product: NewProduct) => {
 export type ProductEdit = Pick<Product, "name" | "category" | "minThreshold" | "supplierId" | "pricePerUnit"> & { expectedRevision: number };
 export const editProduct = (id: string, data: ProductEdit) =>
   apiRequest<Product>(`/workspace/products/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) });
+export interface NewStockCount {
+  operationId: string; expectedStockRevision: number; expectedUnit: Unit; countedQuantity: number;
+}
+export interface StockCountResult { product: Product; count: StockCountSummary; latestCount: StockCountSummary | null; }
+export const createStockCount = (id: string, data: NewStockCount) =>
+  apiRequest<StockCountResult>(`/workspace/products/${encodeURIComponent(id)}/counts`, { method: "POST", body: JSON.stringify(data) });
+export const getProductStockCounts = (id: string) =>
+  apiRequest<StockCountSummary[]>(`/workspace/products/${encodeURIComponent(id)}/counts`);
 export const adjustProductStock = (id: string, delta: number, reason: "adjustment" | "loss" = "adjustment") =>
   apiRequest<Product>(`/workspace/products/${encodeURIComponent(id)}/stock`, { method: "POST", body: JSON.stringify({ delta, reason, operationId: crypto.randomUUID() }) });
 export interface StockMovement {
   id: string; delta: number; reason: string; createdAt: string; sourceDocumentId?: string;
-  sourceContentHash?: string; sourceDocumentRevision?: number; invoiceDocumentId?: string; invoiceRevision?: number;
+  sourceContentHash?: string; sourceDocumentRevision?: number; invoiceDocumentId?: string; invoiceRevision?: number; stockCountId?: string;
 }
 export const getStockMovements = (id: string) => apiRequest<StockMovement[]>(`/workspace/products/${encodeURIComponent(id)}/movements`);

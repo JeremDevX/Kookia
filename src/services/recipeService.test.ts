@@ -4,8 +4,8 @@ import type { Product, Recipe } from "../types";
 import { calculateIngredientCost, calculateMaxYield } from "./recipeService";
 
 const products: Product[] = [
-  { id: "p1", name: "Tomates", category: "Légumes", currentStock: 12, unit: "kg", minThreshold: 20, supplierId: "supplier", pricePerUnit: 2.4, revision: 1 },
-  { id: "p2", name: "Mozzarella", category: "Fromages", currentStock: 8, unit: "kg", minThreshold: 10, supplierId: "supplier", pricePerUnit: 8.5, revision: 1 },
+  { id: "p1", name: "Tomates", category: "Légumes", currentStock: 12, unit: "kg", minThreshold: 20, supplierId: "supplier", pricePerUnit: 2.4, revision: 1, stockRevision: 1 },
+  { id: "p2", name: "Mozzarella", category: "Fromages", currentStock: 8, unit: "kg", minThreshold: 10, supplierId: "supplier", pricePerUnit: 8.5, revision: 1, stockRevision: 1 },
 ];
 
 describe("recipeService", () => {

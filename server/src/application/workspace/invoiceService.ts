@@ -260,6 +260,7 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
         if (source && line.unit !== product.unit) throw new WorkspaceError(409, "UNIT_MISMATCH", `L’unité choisie ne correspond pas au stock de ${product.name}.`);
         const stockUpdated = await tx.product.updateMany({ where: { restaurantId, id: product.id }, data: {
           currentStock: { increment: line.quantity },
+          stockRevision: { increment: 1 },
           ...(!product.lastDelivery || product.lastDelivery < new Date(draft.date) ? { lastDelivery: new Date(draft.date) } : {}),
         } });
         if (!stockUpdated.count) throw new WorkspaceError(400, "INVALID_PRODUCT", "Un produit est absent de votre catalogue.");

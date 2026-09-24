@@ -96,7 +96,7 @@ try {
         pricePerUnit: new Prisma.Decimal(product.pricePerUnit),
         lastDelivery: product.lastDelivery ? new Date(product.lastDelivery) : null };
       await tx.product.upsert({ where: { restaurantId_id: { restaurantId, id: product.id } },
-        create: { restaurantId, id: product.id, ...data }, update: data });
+        create: { restaurantId, id: product.id, ...data }, update: { ...data, stockRevision: { increment: 1 } } });
     }
     await batch(savedMovements, (rows) => tx.stockMovement.createMany({ data: rows.map((row) => ({
       ...row, delta: new Prisma.Decimal(row.delta), createdAt: new Date(row.createdAt),

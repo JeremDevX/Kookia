@@ -114,7 +114,7 @@ it("blocks simulated duplicates, partial/unreviewed sources and non-invoice type
   await storeSource(owner.restaurantId, simulatedSource);
   const simulatedOperationId = `restaurant-simulation-v1:invoice:${simulatedSource.id}:${product.id}`;
   await prisma.$transaction([
-    prisma.product.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.id } }, data: { currentStock: { increment: 3 } } }),
+    prisma.product.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.id } }, data: { currentStock: { increment: 3 }, stockRevision: { increment: 1 } } }),
     prisma.stockMovement.create({ data: { restaurantId: owner.restaurantId, productId: product.id, delta: 3,
       reason: "invoice_import_demo", operationId: simulatedOperationId, actorId: "restaurant-simulation:v1" } }),
   ]);

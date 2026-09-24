@@ -48,6 +48,7 @@ model Restaurant {
   seededAt     DateTime @default(now())
   suppliers    Supplier[]
   products     Product[]
+  stockCounts  StockCount[]
   recipes      Recipe[]
   predictions  Prediction[]
   movements    StockMovement[]
@@ -86,8 +87,10 @@ model Product {
   pricePerUnit Decimal @db.Decimal(14, 4)
   lastDelivery DateTime? @db.Date
   revision     Int @default(1)
+  stockRevision Int @default(1)
   ingredients  RecipeIngredient[]
   movements    StockMovement[]
+  stockCounts  StockCount[]
   predictions  Prediction[]
   @@id([restaurantId, id])
 }
@@ -130,10 +133,35 @@ model StockMovement {
   sourceDocumentRevision Int?
   invoiceDocumentId      String?
   invoiceRevision        Int?
+  stockCountId            String?
+  stockCount             StockCount? @relation(fields: [restaurantId, stockCountId], references: [restaurantId, id], onDelete: NoAction)
   createdAt    DateTime @default(now())
   @@unique([restaurantId, operationId, productId])
   @@index([restaurantId, productId, createdAt])
   @@index([restaurantId, sourceDocumentId])
+}
+
+model StockCount {
+  id                  String
+  restaurantId        String
+  restaurant          Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  productId           String
+  product             Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
+  countedQuantity     Decimal @db.Decimal(14, 3)
+  theoreticalQuantity Decimal @db.Decimal(14, 3)
+  delta               Decimal @db.Decimal(14, 3)
+  unit                String
+  stockRevisionBefore Int
+  stockRevisionAfter  Int
+  operationId         String
+  actorId             String
+  countDate           DateTime @db.Date
+  countedAt           DateTime @default(now())
+  movements           StockMovement[]
+
+  @@id([restaurantId, id])
+  @@unique([restaurantId, operationId])
+  @@index([restaurantId, productId, countedAt])
 }
 
 model Production {

@@ -1,6 +1,7 @@
 export type {
   Product,
   ProductStatus,
+  StockCountSummary,
   Unit,
 } from "../domain/inventory/product.types";
 export type { Supplier } from "../domain/inventory/supplier.types";
