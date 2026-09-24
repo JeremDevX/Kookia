@@ -38,7 +38,8 @@ export async function createProduct(restaurantId: string, actorId: string, data:
     const supplier = await tx.supplier.findUnique({ where: { restaurantId_id: { restaurantId, id: data.supplierId } } });
     if (!supplier) throw new WorkspaceError(400, "INVALID_SUPPLIER", "Fournisseur introuvable dans votre espace.");
     const product = await tx.product.create({ data: { ...data, id: operationId, restaurantId } });
-    await tx.stockMovement.create({ data: { restaurantId, productId: product.id, actorId, operationId, delta: data.currentStock, reason: "initial" } });
+    await tx.stockMovement.create({ data: { restaurantId, productId: product.id, actorId, operationId, delta: data.currentStock,
+      reason: "initial", productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: supplier.name } });
     return productDto(product);
   });
 }
@@ -79,7 +80,10 @@ export async function adjustStock(restaurantId: string, actorId: string, product
         restaurantId, id: productId, ...(delta < 0 ? { currentStock: { gte: -delta } } : {}),
       }, data: { currentStock: { increment: delta }, stockRevision: { increment: 1 } } });
       if (!updated.count) throw new WorkspaceError(409, "INSUFFICIENT_STOCK", "Le stock disponible est insuffisant.");
-      await tx.stockMovement.create({ data: { restaurantId, productId, delta, reason, operationId, actorId } });
+      const product = await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: productId } },
+        include: { supplier: { select: { name: true } } } });
+      await tx.stockMovement.create({ data: { restaurantId, productId, delta, reason, operationId, actorId,
+        productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: product.supplier.name } });
     } else if (!prior.delta.equals(delta) || prior.reason !== reason) {
       throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération a déjà été utilisée avec d’autres valeurs.");
     }

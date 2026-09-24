@@ -24,19 +24,19 @@ it("backtests a rolling seven-day mean without leaking target-day data", () => {
 it("uses only the mapping and dated recipe version effective on each backtest day", () => {
   const serviceDay = (index: number) => day(index - 27);
   const mappings = [
-    { saleItemId: "pizza", recipeId: "old-menu", revision: 1, effectiveFrom: serviceDay(0), portionsPerItem: 1 },
-    { saleItemId: "pizza", recipeId: "new-menu", revision: 2, effectiveFrom: serviceDay(28), portionsPerItem: 2 },
+    { saleItemId: "pizza", recipeId: "old-menu", revision: 1, effectiveFrom: serviceDay(0), knownAt: serviceDay(0), portionsPerItem: 1 },
+    { saleItemId: "pizza", recipeId: "new-menu", revision: 2, effectiveFrom: serviceDay(28), knownAt: serviceDay(27), portionsPerItem: 2 },
   ];
   const versions = [
-    { recipeId: "old-menu", version: 1, effectiveFrom: serviceDay(0), name: "Pizza initiale", yieldPortions: 10,
+    { recipeId: "old-menu", version: 1, effectiveFrom: serviceDay(0), knownAt: serviceDay(0), name: "Pizza initiale", yieldPortions: 10,
       ingredients: [{ productId: "flour", productName: "Farine", unit: "kg", quantity: 5 }] },
-    { recipeId: "old-menu", version: 2, effectiveFrom: serviceDay(24), name: "Pizza corrigée", yieldPortions: 10,
+    { recipeId: "old-menu", version: 2, effectiveFrom: serviceDay(24), knownAt: serviceDay(24), name: "Pizza corrigée", yieldPortions: 10,
       ingredients: [{ productId: "flour", productName: "Farine", unit: "kg", quantity: 20 }] },
-    { recipeId: "old-menu", version: 99, effectiveFrom: null, name: "Version legacy non datée", yieldPortions: 1,
+    { recipeId: "old-menu", version: 99, effectiveFrom: null, knownAt: serviceDay(27), name: "Version legacy non datée", yieldPortions: 1,
       ingredients: [{ productId: "flour", productName: "Farine", unit: "kg", quantity: 999 }] },
-    { recipeId: "old-menu", version: 3, effectiveFrom: serviceDay(28), name: "Recette future", yieldPortions: 10,
+    { recipeId: "old-menu", version: 3, effectiveFrom: serviceDay(28), knownAt: serviceDay(27), name: "Recette future", yieldPortions: 10,
       ingredients: [{ productId: "flour", productName: "Farine", unit: "kg", quantity: 100 }] },
-    { recipeId: "new-menu", version: 1, effectiveFrom: serviceDay(28), name: "Nouvelle carte", yieldPortions: 2,
+    { recipeId: "new-menu", version: 1, effectiveFrom: serviceDay(28), knownAt: serviceDay(27), name: "Nouvelle carte", yieldPortions: 2,
       ingredients: [{ productId: "cheese", productName: "Fromage", unit: "kg", quantity: 4 }] },
   ];
   const result = evaluateSalesBaseline(history("pizza", "Pizza", () => 10), completeCalendar(), asOf, mappings, versions);
@@ -51,6 +51,27 @@ it("uses only the mapping and dated recipe version effective on each backtest da
   expect(item.recipeBacktest.versionsUsed.every((usage) => usage.recipeEffectiveFrom <= usage.serviceDate)).toBe(true);
   expect(item.recipeBacktest.versionsUsed.some((usage) => usage.recipeVersion === 3 || usage.recipeId === "new-menu")).toBe(false);
   expect(item.recipeBacktest.mappedDays).toBe(7);
+});
+
+it("does not backdate recipe or mapping knowledge to an earlier service day", () => {
+  const serviceDay = (index: number) => day(index - 27);
+  const mappings = [
+    { saleItemId: "pizza", recipeId: "old-menu", revision: 1, effectiveFrom: serviceDay(0), knownAt: serviceDay(0), portionsPerItem: 1 },
+    { saleItemId: "pizza", recipeId: "late-menu", revision: 2, effectiveFrom: serviceDay(10), knownAt: serviceDay(26), portionsPerItem: 2 },
+  ];
+  const versions = [
+    { recipeId: "old-menu", version: 1, effectiveFrom: serviceDay(0), knownAt: serviceDay(0), name: "Version connue à l’époque", yieldPortions: 1,
+      ingredients: [{ productId: "flour", productName: "Farine", unit: "kg", quantity: 1 }] },
+    { recipeId: "late-menu", version: 1, effectiveFrom: serviceDay(10), knownAt: serviceDay(26), name: "Version saisie tardivement", yieldPortions: 1,
+      ingredients: [{ productId: "cheese", productName: "Fromage", unit: "kg", quantity: 9 }] },
+  ];
+  const result = evaluateSalesBaseline(history("pizza", "Pizza", () => 4), completeCalendar(), asOf, mappings, versions);
+  const usage = result.items[0].recipeBacktest.versionsUsed;
+  expect(usage.filter((entry) => entry.serviceDate < serviceDay(26)).every((entry) =>
+    entry.mappingRevision === 1 && entry.recipeId === "old-menu" && entry.recipeVersion === 1)).toBe(true);
+  expect(usage.filter((entry) => entry.serviceDate >= serviceDay(26)).every((entry) =>
+    entry.mappingRevision === 2 && entry.recipeId === "late-menu" && entry.recipeVersion === 1)).toBe(true);
+  expect(result.items[0].recipeProjection).toMatchObject({ status: "mapped", recipeId: "late-menu", mappingRevision: 2 });
 });
 
 it("treats an absent item line as zero only when the whole service day is complete", () => {

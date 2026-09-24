@@ -86,6 +86,7 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
       const version = currentRecipeById.get(recipe.id)!.revision + 1;
       const savedVersion = await appendRecipeVersion(tx, { restaurantId, recipeId: recipe.id, version,
         effectiveFrom: new Date(`${plan.startDate}T00:00:00.000Z`),
+        createdAt: new Date(`${plan.startDate}T00:00:00.000Z`),
         operationId: `${SIMULATION_VERSION}:recipe:${recipe.id}:v${version}`, actorId: SIMULATION_MARKER,
         name: recipe.name, category: recipe.category, prepTime: recipe.prepTime, yieldPortions: 1,
         ingredients: recipe.ingredients.map((ingredient) => {
@@ -100,11 +101,17 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
       restaurantId, recipeId: recipe.id, productId: ingredient.productId, quantity: ingredient.quantity,
     }))), (batch) => tx.recipeIngredient.createMany({ data: batch }));
 
-    await insertBatches(plan.movements.map((movement) => ({
+    const simulationProductsById = new Map(scenarioProducts.map((product) => [product.id, product]));
+    await insertBatches(plan.movements.map((movement) => {
+      const product = simulationProductsById.get(movement.productId);
+      if (!product) throw new Error(`Produit du scénario introuvable : ${movement.productId}.`);
+      return {
       id: stableUuid(`${movement.operationId}:${movement.productId}`), restaurantId, productId: movement.productId,
       delta: movement.delta, reason: movement.reason, operationId: movement.operationId,
+      productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: movement.supplierName ?? null,
       actorId: SIMULATION_MARKER, createdAt: new Date(movement.at),
-    } satisfies Prisma.StockMovementCreateManyInput)), (batch) => tx.stockMovement.createMany({ data: batch }));
+    } satisfies Prisma.StockMovementCreateManyInput;
+    }), (batch) => tx.stockMovement.createMany({ data: batch }));
 
     await insertBatches(plan.productions.map((production) => ({
       id: production.id, restaurantId, recipeId: production.recipeId, recipeName: production.recipeName,
@@ -120,6 +127,7 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
     await tx.serviceDay.createMany({ data: plan.serviceDays.map((serviceDate) => ({
       restaurantId, serviceDate: new Date(serviceDate + "T00:00:00.000Z"),
       status: "open", coverage: "complete", source: "demo_simulation", actorId: SIMULATION_MARKER,
+      createdAt: new Date(serviceDate + "T00:00:00.000Z"), updatedAt: new Date(serviceDate + "T00:00:00.000Z"),
     })) });
     const contributionBySale = new Map(plan.sales.map((sale) => [sale.id, stableUuid(`${sale.operationId}:contribution`)]));
     await insertBatches(plan.sales.map((sale) => ({

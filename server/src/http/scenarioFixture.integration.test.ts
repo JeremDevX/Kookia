@@ -71,10 +71,13 @@ async function applyFixtureReceipt(restaurantId: string, productId: string, sour
       return;
     }
 
+    const product = await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: productId } },
+      include: { supplier: { select: { name: true } } } });
     await tx.product.update({ where: { restaurantId_id: { restaurantId, id: productId } },
       data: { currentStock: { increment: delta }, stockRevision: { increment: 1 } } });
     await tx.stockMovement.create({ data: {
       restaurantId, productId, delta, reason: "invoice_import_demo", operationId, actorId: "restaurant-simulation:v1",
+      productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: product.supplier.name,
     } });
   });
 }
@@ -146,6 +149,75 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
     restaurantId: scenarioOwner.restaurantId, operationId: { startsWith: archivedOnlyOperationPrefix },
   } })).toBe(0);
 
+  const archiveMonth = archiveOnly.date!.slice(0, 7);
+  const [archiveYear, archiveMonthNumber] = archiveMonth.split("-").map(Number);
+  const archiveMonthFrom = `${archiveMonth}-01`;
+  const archiveMonthTo = new Date(Date.UTC(archiveYear, archiveMonthNumber, 0)).toISOString().slice(0, 10);
+  const asOfToday = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  const movementCountBeforeTimeline = await prisma.stockMovement.count({ where: { restaurantId: scenarioOwner.restaurantId } });
+  expect(await prisma.stockMovement.count({ where: { restaurantId: scenarioOwner.restaurantId,
+    actorId: "restaurant-simulation:v1", productNameSnapshot: null } })).toBe(0);
+  const scenarioStockBeforeTimeline = await prisma.product.findMany({ where: { restaurantId: scenarioOwner.restaurantId },
+    select: { id: true, currentStock: true } });
+  const plannedSale = plan.sales.find((sale) => sale.date.startsWith(archiveMonth))!;
+  await scenarioOwner.agent.post("/api/workspace/sales/recipe-mappings").send({
+    saleItemId: plannedSale.itemId, recipeId: plannedSale.recipeId, expectedRevision: 0,
+    operationId: randomUUID(), effectiveFrom: archiveOnly.date, portionsPerItem: 1,
+  }).expect(201);
+  await prisma.recommendationDecision.create({ data: {
+    restaurantId: scenarioOwner.restaurantId, actorId: scenarioOwner.userId, operationId: randomUUID(),
+    decision: "scenario_reviewed", snapshot: { source: "isolated timeline fixture" },
+    createdAt: new Date(`${archiveOnly.date}T12:00:00.000Z`),
+  } });
+  await prisma.serviceDay.create({ data: {
+    restaurantId: scenarioOwner.restaurantId, serviceDate: new Date(`${archiveMonth}-01T00:00:00.000Z`),
+    status: "open", coverage: "partial", source: "recorded", actorId: scenarioOwner.userId,
+  } });
+  const archiveTimeline = await scenarioOwner.agent.get("/api/workspace/timeline")
+    .query({ from: archiveMonthFrom, to: archiveMonthTo, asOf: asOfToday }).expect(200);
+  expect(archiveTimeline.body.events.some((event: { id: string; provenance: string }) =>
+    event.id === `document:source-invoice:${archiveOnly.id}` && event.provenance === "source")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { label: string }) => event.label === "Stock d’ouverture fictif")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { label: string }) => event.label === "Réception simulée depuis une pièce source")).toBe(false);
+  expect(archiveTimeline.body.events.some((event: { provenance: string }) => event.provenance === "simulation")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { provenance: string }) => event.provenance === "assumption")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { provenance: string }) => event.provenance === "unknown")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { kind: string }) => event.kind === "recipe")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { kind: string }) => event.kind === "production")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { kind: string }) => event.kind === "sale")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { kind: string }) => event.kind === "loss")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { kind: string }) => event.kind === "service")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { kind: string; qualifier?: string }) =>
+    event.kind === "service" && event.qualifier?.includes("partiel"))).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { kind: string }) => event.kind === "mapping")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { kind: string }) => event.kind === "decision")).toBe(true);
+  expect(archiveTimeline.body.events.every((event: object) => !("content" in event) && !("stockLines" in event))).toBe(true);
+
+  const earlyVersion = await prisma.recipeVersion.findFirstOrThrow({ where: {
+    restaurantId: scenarioOwner.restaurantId, recipeId: plannedRecipes[0].id,
+  }, orderBy: { version: "desc" } });
+  const lateVersion = await prisma.recipeVersion.create({ data: {
+    restaurantId: scenarioOwner.restaurantId, recipeId: earlyVersion.recipeId, version: earlyVersion.version + 1,
+    effectiveFrom: new Date(`${archiveOnly.date}T00:00:00.000Z`), operationId: `timeline-late:${randomUUID()}`,
+    actorId: scenarioOwner.userId, name: "Version connue plus tard", category: earlyVersion.category,
+    prepTime: earlyVersion.prepTime, yieldPortions: earlyVersion.yieldPortions,
+  } });
+  const historicTimeline = await scenarioOwner.agent.get("/api/workspace/timeline")
+    .query({ from: archiveMonthFrom, to: archiveMonthTo, asOf: archiveOnly.date }).expect(200);
+  expect(historicTimeline.body.events.some((event: { id: string }) => event.id === `recipe:${lateVersion.id}`)).toBe(false);
+  expect(historicTimeline.body.events.some((event: { id: string }) => event.id === `document:source-invoice:${archiveOnly.id}`)).toBe(false);
+  const otherTenantTimeline = await archiveOwner.agent.get("/api/workspace/timeline")
+    .query({ from: archiveMonthFrom, to: archiveMonthTo, asOf: asOfToday }).expect(200);
+  expect(otherTenantTimeline.body.events.some((event: { id: string }) =>
+    event.id === `document:source-invoice:${archiveOnly.id}`)).toBe(false);
+  expect(await prisma.stockMovement.count({ where: { restaurantId: scenarioOwner.restaurantId } })).toBe(movementCountBeforeTimeline);
+  const scenarioStockAfterTimeline = await prisma.product.findMany({ where: { restaurantId: scenarioOwner.restaurantId },
+    select: { id: true, currentStock: true } });
+  expect(scenarioStockAfterTimeline.map((product) => [product.id, product.currentStock.toString()]))
+    .toEqual(scenarioStockBeforeTimeline.map((product) => [product.id, product.currentStock.toString()]));
+
   const archiveStockBefore = await archiveOwner.agent.get("/api/workspace/catalog").expect(200);
   const archiveProductBefore = archiveStockBefore.body.products.find((product: { id: string }) => product.id === received.productId);
   const sourceList = await scenarioOwner.agent.get("/api/workspace/source-invoices").expect(200);
@@ -163,7 +235,8 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   const scenarioSalesCount = await prisma.dailySale.count({ where: { restaurantId: scenarioOwner.restaurantId, source: "demo_simulation" } });
   const scenarioContributionCount = await prisma.saleContribution.count({ where: { restaurantId: scenarioOwner.restaurantId,
     source: "demo_simulation", sourceKey: { startsWith: "restaurant-simulation-v1:" }, status: "accepted" } });
-  const scenarioServiceDays = await prisma.serviceDay.findMany({ where: { restaurantId: scenarioOwner.restaurantId },
+  const scenarioServiceDays = await prisma.serviceDay.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
+    serviceDate: { gte: new Date(`${plan.startDate}T00:00:00.000Z`), lte: new Date(`${plan.endDate}T00:00:00.000Z`) } },
     select: { source: true } });
   const scenarioEventCount = await prisma.saleContributionEvent.count({ where: { restaurantId: scenarioOwner.restaurantId,
     kind: "accepted", actorId: "restaurant-simulation:v1" } });

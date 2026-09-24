@@ -31,6 +31,7 @@ export interface PlannedMovement {
   operationId: string;
   at: string;
   invoiceId?: string;
+  supplierName?: string;
 }
 
 export interface PlannedSale {
@@ -135,7 +136,8 @@ export function buildRestaurantSimulation(invoices: SourceInvoice[], existingPro
       const product = productByKey.get(receipt.productKey)!;
       const operationId = `${SIMULATION_VERSION}:invoice:${receipt.invoiceId}:${product.id}`;
       movements.push({ productId: product.id, productKey: product.key, delta: receipt.quantity,
-        reason: "invoice_import_demo", operationId, at: dateAt(date, 8), invoiceId: receipt.invoiceId });
+        reason: "invoice_import_demo", operationId, at: dateAt(date, 8), invoiceId: receipt.invoiceId,
+        supplierName: receipt.supplier });
       balances.set(product.key, round((balances.get(product.key) ?? 0) + receipt.quantity));
       const observed = invoicePrices.get(product.key) ?? [];
       if (receipt.pricePerUnit > 0) observed.push(receipt.pricePerUnit);

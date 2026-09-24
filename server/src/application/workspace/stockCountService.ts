@@ -19,8 +19,8 @@ export async function recordStockCount(restaurantId: string, actorId: string, pr
   return prisma.$transaction(async (tx) => {
     // Serialize operation keys within a workspace, then lock the stock row before comparing its version.
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
-    const locked = await tx.$queryRaw<{ id: string; currentStock: Prisma.Decimal; unit: string; stockRevision: number }[]>(
-      Prisma.sql`SELECT id, "currentStock", unit, "stockRevision" FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${productId} FOR UPDATE`,
+    const locked = await tx.$queryRaw<{ id: string; name: string; supplierId: string; currentStock: Prisma.Decimal; unit: string; stockRevision: number }[]>(
+      Prisma.sql`SELECT id, name, "supplierId", "currentStock", unit, "stockRevision" FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${productId} FOR UPDATE`,
     );
     const product = locked[0];
     if (!product) throw new WorkspaceError(404, "NOT_FOUND", "Produit introuvable.");
@@ -53,6 +53,8 @@ export async function recordStockCount(restaurantId: string, actorId: string, pr
       operationId: input.operationId, actorId, countDate: parisServiceDate(),
     } });
     if (!delta.isZero()) {
+      const supplier = await tx.supplier.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: product.supplierId } },
+        select: { name: true } });
       const updated = await tx.product.updateMany({
         where: { restaurantId, id: productId, stockRevision: input.expectedStockRevision },
         data: { currentStock: { increment: delta }, stockRevision: { increment: 1 } },
@@ -61,6 +63,7 @@ export async function recordStockCount(restaurantId: string, actorId: string, pr
       await tx.stockMovement.create({ data: {
         restaurantId, productId, stockCountId: count.id, delta, reason: "stock_count",
         operationId: `stock-count:${input.operationId}`, actorId,
+        productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: supplier.name,
       } });
     }
     return response(count);

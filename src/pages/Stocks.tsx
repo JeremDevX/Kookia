@@ -8,7 +8,7 @@ import AddProductModal from "../components/stocks/AddProductModal";
 import FiltersModal from "../components/stocks/FiltersModal";
 import StockReview from "../components/stocks/StockReview";
 import { Search, Filter, Plus, ShoppingCart } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useProductsWithMutations } from "../hooks";
 import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
@@ -22,6 +22,7 @@ import "../styles/Workspace.css";
 
 const Stocks: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { addToast } = useToast();
   const { addToCart, loading: cartLoading } = useCart();
   const { products, updateStock, updateProduct, recordCount, addProduct, getStatus, loading, error, refetch } =
@@ -29,7 +30,7 @@ const Stocks: React.FC = () => {
   const { suppliers } = useInventoryCatalog();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    null
+    () => searchParams.get("product")
   );
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [view, setView] = useState<"review" | "all">("review");

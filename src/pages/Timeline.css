@@ -1,0 +1,28 @@
+.timeline-page { gap: var(--spacing-lg); }
+.timeline-controls { display: grid; grid-template-columns: minmax(var(--size-180), var(--size-260)) minmax(var(--size-180), var(--size-260)) minmax(var(--size-220), var(--unit-1fr)); align-items: end; gap: var(--spacing-md); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
+.timeline-controls label { display: flex; flex-direction: column; gap: var(--spacing-xs); color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
+.timeline-controls input { min-height: var(--size-44); padding: var(--spacing-sm) var(--spacing-md); color: var(--color-text-primary); background: var(--color-bg); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); font: inherit; }
+.timeline-controls p, .timeline-key p, .timeline-read-only { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
+.timeline-key { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-sm); }
+.timeline-key p { flex-basis: var(--unit-100percent); margin: var(--number-0); }
+.timeline-badge { display: inline-flex; align-items: center; width: fit-content; padding: var(--size-6) var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-secondary); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); }
+.provenance-source { border-color: var(--palette-teal-3); color: var(--palette-sage-12); }
+.provenance-recorded { border-color: var(--palette-sage-5); color: var(--palette-sage-11); }
+.provenance-simulation { border-color: var(--palette-sand-2); color: var(--palette-sand-3); }
+.provenance-assumption { border-color: var(--palette-rose-6); color: var(--palette-rose-9); }
+.provenance-unknown { border-color: var(--color-urgent); color: var(--color-urgent); }
+.timeline-status { min-height: var(--size-20); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.timeline-truncated { padding: var(--spacing-md); border-left: var(--size-3) solid var(--color-urgent); background: var(--color-surface); color: var(--color-text-secondary); }
+.timeline-days { display: flex; flex-direction: column; gap: var(--spacing-xl); }
+.timeline-day h2 { margin: var(--number-0) var(--number-0) var(--spacing-md); padding-bottom: var(--spacing-sm); border-bottom: var(--size-2) solid var(--color-border); font-size: var(--font-size-lg); }
+.timeline-day ol { display: flex; flex-direction: column; gap: var(--spacing-sm); margin: var(--number-0); padding: var(--number-0); list-style: none; }
+.timeline-event { display: flex; flex-direction: column; gap: var(--spacing-xs); padding: var(--spacing-md) var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
+.timeline-event-heading { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-sm); }
+.timeline-event h3 { font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); }
+.timeline-event p { margin: var(--number-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_8); }
+.timeline-event-times { display: flex; flex-wrap: wrap; gap: var(--spacing-md); font-size: var(--font-size-xs) !important; }
+.timeline-event .timeline-qualifier { color: var(--color-text-primary); }
+.timeline-event a { align-self: flex-start; color: var(--color-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
+.timeline-read-only { padding-top: var(--spacing-sm); border-top: var(--size-1) solid var(--color-border); }
+@media (--media-workspace-compact) { .timeline-controls { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); } .timeline-controls p { grid-column: var(--number-1) / var(--number-negative-1); } }
+@media (--media-compact) { .timeline-controls { grid-template-columns: var(--unit-1fr); } .timeline-controls p { grid-column: auto; } .timeline-event { padding: var(--spacing-md); } }

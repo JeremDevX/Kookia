@@ -188,6 +188,7 @@ export async function recordProduction(restaurantId: string, actorId: string, in
         await tx.stockMovement.create({ data: {
           restaurantId, productId: ingredient.productId, delta: amount.negated(), reason: "production",
           actorId, operationId: input.operationId,
+          productNameSnapshot: ingredient.productName, productUnitSnapshot: ingredient.productUnit,
         } });
       }
     }

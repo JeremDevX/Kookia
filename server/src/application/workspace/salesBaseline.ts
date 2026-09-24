@@ -18,6 +18,7 @@ export interface BaselineRecipeMapping {
   recipeId: string;
   revision: number;
   effectiveFrom: string;
+  knownAt: string;
   portionsPerItem: number;
 }
 
@@ -25,6 +26,7 @@ export interface BaselineRecipeVersion {
   recipeId: string;
   version: number;
   effectiveFrom: string | null;
+  knownAt: string;
   name: string;
   yieldPortions: number;
   ingredients: Array<{ productId: string; productName: string; unit: string; quantity: number }>;
@@ -39,22 +41,23 @@ const mean = (values: number[]) => Math.round(values.reduce((sum, value) => sum 
 const round = (value: number) => Math.round(value * 10) / 10;
 const roundQuantity = (value: number) => Math.round(value * 1000) / 1000;
 
-function mappingAt(saleItemId: string, serviceDate: string, mappings: BaselineRecipeMapping[]) {
-  return mappings.filter((mapping) => mapping.saleItemId === saleItemId && mapping.effectiveFrom <= serviceDate)
+function mappingAt(saleItemId: string, serviceDate: string, knownThrough: string, mappings: BaselineRecipeMapping[]) {
+  return mappings.filter((mapping) => mapping.saleItemId === saleItemId && mapping.effectiveFrom <= serviceDate &&
+    mapping.knownAt <= knownThrough)
     .sort((left, right) => right.effectiveFrom.localeCompare(left.effectiveFrom) || right.revision - left.revision)[0] ?? null;
 }
 
-function recipeVersionAt(recipeId: string, serviceDate: string, versions: BaselineRecipeVersion[]) {
+function recipeVersionAt(recipeId: string, serviceDate: string, knownThrough: string, versions: BaselineRecipeVersion[]) {
   return versions.filter((version) => version.recipeId === recipeId && version.effectiveFrom !== null &&
-    version.effectiveFrom <= serviceDate)
+    version.effectiveFrom <= serviceDate && version.knownAt <= knownThrough)
     .sort((left, right) => right.effectiveFrom!.localeCompare(left.effectiveFrom!) || right.version - left.version)[0] ?? null;
 }
 
-function recipeProjection(saleItemId: string, serviceDate: string, quantity: number,
+function recipeProjection(saleItemId: string, serviceDate: string, knownThrough: string, quantity: number,
   mappings: BaselineRecipeMapping[], versions: BaselineRecipeVersion[]) {
-  const mapping = mappingAt(saleItemId, serviceDate, mappings);
+  const mapping = mappingAt(saleItemId, serviceDate, knownThrough, mappings);
   if (!mapping) return { status: "unmapped" as const, reason: "Aucune correspondance validée à cette date." };
-  const version = recipeVersionAt(mapping.recipeId, serviceDate, versions);
+  const version = recipeVersionAt(mapping.recipeId, serviceDate, knownThrough, versions);
   if (!version) return { status: "recipe_version_unknown" as const, mappingRevision: mapping.revision,
     mappingEffectiveFrom: mapping.effectiveFrom, portionsPerItem: mapping.portionsPerItem,
     reason: "Aucune version de recette avec date d’effet connue à cette date." };
@@ -77,9 +80,9 @@ function recipeUsageBacktest(saleItemId: string, dates: string[], quantities: nu
     recipeId: string; recipeName: string; recipeVersion: number; recipeEffectiveFrom: string }> = [];
   for (let target = start; target < HISTORY_DAYS; target++) {
     const serviceDate = dates[target];
-    const mapping = mappingAt(saleItemId, serviceDate, mappings);
+    const mapping = mappingAt(saleItemId, serviceDate, serviceDate, mappings);
     if (!mapping) { missingMappingDays++; continue; }
-    const version = recipeVersionAt(mapping.recipeId, serviceDate, versions);
+    const version = recipeVersionAt(mapping.recipeId, serviceDate, serviceDate, versions);
     if (!version) { missingDatedRecipeDays++; continue; }
     mappedDays++;
     versionsUsed.push({ serviceDate, mappingRevision: mapping.revision, mappingEffectiveFrom: mapping.effectiveFrom,
@@ -142,7 +145,8 @@ export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: Baseli
       backtest: { from: dates[HISTORY_DAYS - EVALUATION_DAYS], to: asOfDate,
         days: EVALUATION_DAYS, meanAbsoluteError: round(errors.reduce((sum, error) => sum + error, 0) / EVALUATION_DAYS),
         weightedAbsolutePercentageError: actualTotal === 0 ? null : round(errors.reduce((sum, error) => sum + error, 0) / actualTotal * 100) },
-      recipeProjection: recipeProjection(item.saleItemId, day(asOfDate, 1), mean(quantities.slice(-LOOKBACK_DAYS)), recipeMappings, recipeVersions),
+      recipeProjection: recipeProjection(item.saleItemId, day(asOfDate, 1), day(asOfDate, 1),
+        mean(quantities.slice(-LOOKBACK_DAYS)), recipeMappings, recipeVersions),
       recipeBacktest: recipeUsageBacktest(item.saleItemId, dates, quantities, recipeMappings, recipeVersions) }];
   }).sort((a, b) => a.saleItemName.localeCompare(b.saleItemName, "fr"));
   const provenance = hasRecordedSales ? hasSimulationSales ? "mixed" : "recorded_sales"

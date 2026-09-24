@@ -223,6 +223,9 @@ model StockMovement {
   invoiceRevision        Int?
   stockCountId            String?
   stockCount             StockCount? @relation(fields: [restaurantId, stockCountId], references: [restaurantId, id], onDelete: NoAction)
+  productNameSnapshot    String?
+  productUnitSnapshot    String?
+  supplierNameSnapshot   String?
   createdAt    DateTime @default(now())
   @@unique([restaurantId, operationId, productId])
   @@index([restaurantId, productId, createdAt])

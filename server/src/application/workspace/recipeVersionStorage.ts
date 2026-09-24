@@ -11,6 +11,7 @@ export interface RecipeVersionSnapshot {
   category: string;
   prepTime: number;
   yieldPortions: number;
+  createdAt?: Date;
   ingredients: Array<{ productId: string; productName: string; productUnit: string; quantity: Prisma.Decimal }>;
 }
 

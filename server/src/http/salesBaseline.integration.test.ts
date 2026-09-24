@@ -57,13 +57,8 @@ it("requires complete calendar coverage and treats absent item rows as zero only
   expect(pizzaBaseline.recipeProjection).toMatchObject({ status: "mapped", recipeId: recipe.body.id, recipeVersion: 2,
     mappingRevision: 1, recipeEffectiveFrom: date(24).toISOString().slice(0, 10), forecastPortions: 20,
     ingredients: [{ productId: catalog.body.products[0].id, quantity: 40 }] });
-  expect(pizzaBaseline.recipeBacktest.versionsUsed.map((usage: { serviceDate: string; recipeVersion: number }) =>
-    [usage.serviceDate, usage.recipeVersion])).toEqual([
-    [date(21).toISOString().slice(0, 10), 1], [date(22).toISOString().slice(0, 10), 1],
-    [date(23).toISOString().slice(0, 10), 1], [date(24).toISOString().slice(0, 10), 2],
-    [date(25).toISOString().slice(0, 10), 2], [date(26).toISOString().slice(0, 10), 2],
-    [date(27).toISOString().slice(0, 10), 2],
-  ]);
+  expect(pizzaBaseline.recipeBacktest).toMatchObject({ mappedDays: 0, missingMappingDays: 7,
+    missingDatedRecipeDays: 0, versionsUsed: [], ingredients: [] });
   await prisma.serviceDay.update({ where: { restaurantId_serviceDate: {
     restaurantId: owner.restaurantId, serviceDate: date(10),
   } }, data: { coverage: "partial" } });

@@ -12,9 +12,10 @@ import { prisma } from "../infrastructure/database/prisma.js";
 
 export const salesRoutes = Router();
 const workspace = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
-const today = () => new Intl.DateTimeFormat("en-CA", {
+const parisDate = (date: Date) => new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-}).format(new Date());
+}).format(date);
+const today = () => parisDate(new Date());
 const saleValues = z.object({
   saleItemId: z.uuid(), serviceDate: z.iso.date(),
   quantity: z.number().int().min(1).max(1_000_000),
@@ -114,9 +115,10 @@ salesRoutes.get("/sales/baseline", async (_req, res, next) => {
       status: row.status, coverage: row.coverage, source: row.source })), asOfDate,
     mappings.map((mapping) => ({ saleItemId: mapping.saleItemId, recipeId: mapping.recipeId,
       revision: mapping.revision, effectiveFrom: mapping.effectiveFrom.toISOString().slice(0, 10),
+      knownAt: parisDate(mapping.createdAt),
       portionsPerItem: Number(mapping.portionsPerItem) })),
     versions.map((version) => ({ recipeId: version.recipeId, version: version.version,
-      effectiveFrom: version.effectiveFrom?.toISOString().slice(0, 10) ?? null, name: version.name,
+      effectiveFrom: version.effectiveFrom?.toISOString().slice(0, 10) ?? null, knownAt: parisDate(version.createdAt), name: version.name,
       yieldPortions: version.yieldPortions, ingredients: version.ingredients.map((ingredient) => ({
         productId: ingredient.productId, productName: ingredient.productName, unit: ingredient.productUnit,
         quantity: Number(ingredient.quantity),

@@ -255,7 +255,8 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
       const receivableLines = source ? savedDraft.lines.filter((line) => line.disposition === "stock") : savedDraft.lines;
       if (receivableLines.length === 0) throw new WorkspaceError(409, "NO_RECEIVABLE_LINES", "Aucune ligne n’a été incluse au stock.");
       for (const [index, line] of receivableLines.entries()) {
-        const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: line.productId } } });
+        const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: line.productId } },
+          include: { supplier: { select: { name: true } } } });
         if (!product) throw new WorkspaceError(400, "INVALID_PRODUCT", "Un produit est absent de votre catalogue.");
         if (source && line.unit !== product.unit) throw new WorkspaceError(409, "UNIT_MISMATCH", `L’unité choisie ne correspond pas au stock de ${product.name}.`);
         const stockUpdated = await tx.product.updateMany({ where: { restaurantId, id: product.id }, data: {
@@ -269,6 +270,7 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
           : `invoice:${id}`;
         await tx.stockMovement.create({ data: { restaurantId, productId: product.id, delta: line.quantity,
           reason: source ? "invoice_import_demo" : "receipt", operationId, actorId,
+          productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: product.supplier.name,
           invoiceDocumentId: id, invoiceRevision: nextRevision,
           ...(source ? { sourceDocumentId: linkedSourceId, sourceContentHash, sourceDocumentRevision } : {}),
         } });
