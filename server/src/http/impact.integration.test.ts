@@ -33,14 +33,19 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
 
   await prisma.product.update({ where: { restaurantId_id: { restaurantId: restaurant.id, id: product.id } },
     data: { currentStock: 2, stockRevision: { increment: 1 } } });
-  await agent.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: randomUUID(), delta: -0.5, reason: "loss" }).expect(200);
+  const reportedLossOperationId = randomUUID();
+  await agent.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: reportedLossOperationId,
+    delta: -0.5, reason: "loss" }).expect(200);
+  const unpricedLossOperationId = `loss-unpriced-${randomUUID()}`;
+  const mismatchLossOperationId = `loss-unit-${randomUUID()}`;
+  const simulatedLossOperationId = `restaurant-simulation-v1:loss:${randomUUID()}`;
   await prisma.stockMovement.createMany({ data: [
-    { restaurantId: restaurant.id, productId: product.id, delta: -0.25, reason: "loss", operationId: `loss-unpriced-${randomUUID()}`,
+    { restaurantId: restaurant.id, productId: product.id, delta: -0.25, reason: "loss", operationId: unpricedLossOperationId,
       actorId: registration.body.user.id, productNameSnapshot: product.name, productUnitSnapshot: product.unit },
-    { restaurantId: restaurant.id, productId: product.id, delta: -0.25, reason: "loss", operationId: `loss-unit-${randomUUID()}`,
+    { restaurantId: restaurant.id, productId: product.id, delta: -0.25, reason: "loss", operationId: mismatchLossOperationId,
       actorId: registration.body.user.id, productNameSnapshot: product.name, productUnitSnapshot: "L", unitPriceSnapshot: product.pricePerUnit },
     { restaurantId: restaurant.id, productId: product.id, delta: -1.5, reason: "simulation_loss",
-      operationId: `restaurant-simulation-v1:loss:${randomUUID()}`, actorId: "restaurant-simulation:v1",
+      operationId: simulatedLossOperationId, actorId: "restaurant-simulation:v1",
       productNameSnapshot: product.name, productUnitSnapshot: product.unit, unitPriceSnapshot: product.pricePerUnit },
   ] });
 
@@ -59,6 +64,22 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   expect(response.body.current.excluded).toMatchObject({ simulatedSales: 1, simulatedLosses: 1, lossUnitMismatch: 1 });
   expect(response.body.current.recorded.lossesByProduct[0].operationIds).toHaveLength(2);
   const exportedReport = await agent.get(`/api/workspace/report?from=${from}&to=${to}`).expect(200);
+  expect(exportedReport.body.declaredLosses).toMatchObject({
+    dateBasis: expect.stringContaining("UTC"), reportedMovementCount: 2, unpricedMovementCount: 1,
+    incompatibleUnitMovementCount: 1, excludedSimulationMovementCount: 1,
+    unavailableMetrics: ["stockouts", "unsold_quantity"],
+  });
+  expect(exportedReport.body.rows).toContainEqual(expect.objectContaining({ section: "Pertes déclarées",
+    metric: expect.stringContaining("quantité perdue"), value: 0.5, source: expect.stringContaining(reportedLossOperationId) }));
+  expect(exportedReport.body.rows).toContainEqual(expect.objectContaining({ section: "Pertes déclarées",
+    metric: expect.stringContaining("coût connu"), value: (product.pricePerUnit * 0.5).toFixed(2),
+    source: expect.stringContaining(reportedLossOperationId) }));
+  expect(exportedReport.body.rows).toContainEqual(expect.objectContaining({ section: "Pertes déclarées",
+    metric: expect.stringContaining("coût connu"), value: "Non valorisé",
+    source: expect.stringContaining(unpricedLossOperationId) }));
+  expect(exportedReport.body.rows).toContainEqual(expect.objectContaining({ section: "Pertes à vérifier",
+    value: 0.25, source: expect.stringContaining(mismatchLossOperationId) }));
+  expect(exportedReport.body.rows.some((row: { source: string }) => row.source.includes(simulatedLossOperationId))).toBe(false);
   expect(exportedReport.body.rows.some((row: { metric: string }) => row.metric.includes("Plat simulé") || row.metric.includes("simulation_loss"))).toBe(false);
 
   const empty = await agent.get("/api/workspace/impact?from=2020-01-01&to=2020-01-01").expect(200);

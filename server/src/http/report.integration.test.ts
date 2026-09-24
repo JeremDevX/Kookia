@@ -40,4 +40,5 @@ it("exports database records within the selected interval and excludes another a
   ids.push(registration.body.user.id);
   const isolated = await other.get("/api/workspace/report?from=2026-09-10&to=2026-09-10").expect(200);
   expect(isolated.body.rows.some((row: { metric: string }) => row.metric.includes("Exported production"))).toBe(false);
+  expect(isolated.body.declaredLosses.reportedMovementCount).toBe(0);
 });

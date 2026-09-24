@@ -1,5 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
+import { isSimulationStockMovement } from "./stockMovementProvenance.js";
 
 type ImpactDatabase = PrismaClient | Prisma.TransactionClient;
 type ImpactItem = { productId: string; productName: string; unit: string; quantity: number; knownCost: number;
@@ -13,7 +14,6 @@ type ImpactBucket = { menuItemUnits: number; salesByItem: SaleItem[]; serviceDay
   receiptsByProduct: ReceiptItem[] };
 
 const DAY_MS = 86_400_000;
-const SIMULATION_ACTOR = "restaurant-simulation:v1";
 const dateAt = (date: string) => new Date(`${date}T00:00:00.000Z`);
 const dateOnly = (date: Date) => date.toISOString().slice(0, 10);
 const addDays = (date: string, days: number) => {
@@ -34,13 +34,6 @@ function emptyPeriod(from: string, to: string, calendarDays: number) {
     hasRecordedData: false, hasSimulationData: false,
     excluded: { simulatedSales: 0, simulatedLosses: 0, simulatedReceiptLines: 0,
       lossUnitMismatch: 0, receiptUnitMismatch: 0 } };
-}
-
-function movementIsSimulated(movement: { actorId: string; reason: string; operationId: string;
-  purchaseReceiptLine: { receipt: { simulated: boolean } } | null }, workspaceMode: string) {
-  return workspaceMode === "demo" || movement.actorId === SIMULATION_ACTOR || movement.reason.startsWith("simulation_") ||
-    movement.reason === "invoice_import_demo" || movement.operationId.startsWith("restaurant-simulation-v1:") ||
-    movement.purchaseReceiptLine?.receipt.simulated === true;
 }
 
 function quantity(decimal: Prisma.Decimal) { return Number(decimal); }
@@ -113,7 +106,7 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
     for (const movement of movements) {
       const recordedDate = dateOnly(movement.createdAt);
       if (!inRange(recordedDate, start, end) || !movement.delta.isNegative()) continue;
-      const isSimulation = movementIsSimulated(movement, workspace.mode);
+      const isSimulation = isSimulationStockMovement(movement, workspace.mode);
       if (isSimulation && movement.reason !== "loss" && movement.reason !== "simulation_loss") continue;
       const bucket = isSimulation ? period.simulation : period.recorded;
       if (isSimulation) period.hasSimulationData = true;
