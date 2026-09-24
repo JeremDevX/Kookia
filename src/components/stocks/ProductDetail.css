@@ -121,6 +121,12 @@
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
 }
+.stock-label {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+}
 .stock-big .unit {
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
@@ -132,6 +138,14 @@
   display: grid;
   grid-template-columns: var(--unit-1fr) var(--unit-1fr);
   gap: var(--spacing-md);
+}
+
+@media (--media-phone-small) {
+  .product-drawer .status-banner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
 }
 
 .info-item {

@@ -10,6 +10,7 @@
 .sales-table-wrap { overflow-x: auto; }
 .sales-table { width: var(--unit-100percent); border-collapse: collapse; }
 .sales-table th, .sales-table td { text-align: left; padding: var(--spacing-sm); border-bottom: var(--size-1) solid var(--color-border); }
+.sales-table-hint { display: none; }
 .sales-start { display: flex; flex-direction: column; gap: var(--spacing-md); scroll-margin-top: var(--spacing-lg); }
 .sales-start h2 { font-size: var(--font-size-lg); }
 .sales-start small { color: var(--color-text-muted); }
@@ -44,3 +45,4 @@
 .ticket-transcription-lines fieldset { display: grid; gap: var(--spacing-sm); min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
 @media (--media-compact) { .ticket-transcription-layout { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); } }
 @media (--media-compact) { .sales-page { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); } }
+@media (--media-mobile) { .sales-table-hint { display: block; margin: var(--number-0) var(--number-0) var(--spacing-sm); color: var(--color-text-muted); font-size: var(--font-size-caption); } }

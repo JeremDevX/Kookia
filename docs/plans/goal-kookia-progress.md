@@ -22,8 +22,11 @@ et rend le focus à son bouton ; Tab atteint Aujourd'hui puis Achats, et Entrée
 ouvre cette route. Le focus visible est présent. Ventes conserve le jour courant
 explicitement inconnu tant qu'il n'est pas enregistré et marque les jours
 simulés. Cette revue native ne remplace pas la matrice headless : largeur
-320–375 px, tablette, zoom réel 200 %, états non nominaux et lecteur d'écran
-restent à vérifier.
+tablette (768 px), 200 % sur les autres routes, états non nominaux et lecteur
+d'écran restent à vérifier. La revue à 320 px a aussi confirmé un défilement
+horizontal interne du calendrier Ventes ; la découvrabilité de ce défilement
+est indiquée par un texte mobile, et Tab/flèche droite permettent d'atteindre
+la région puis les colonnes suivantes.
 Un autre parcours UI confirme une production de Pizza Margherita : les quatre
 déductions suivent exactement les quantités/version de recette et le journal
 « Production réalisée — stock déduit » persiste après rechargement.
@@ -69,9 +72,16 @@ est nommée, contenue et clavier-opérable, sans lecteur d'écran réel. Chrome
 natif couvre maintenant Aujourd'hui, Stocks, Achats et Ventes avec menu au
 clavier et émulation 390×750. Cette reprise étend l'archive I4 à 320/375/390/
 768/1280 px, au clavier natif Tab/Entrée/Espace et au zoom Chrome réel 200 % ;
-aucun débordement horizontal n'apparaît sur cette page. Les autres routes restent
-à vérifier à 320–375/768 px et à 200 %, ainsi que les états de chargement/erreur/
-conflit/long et la technologie d'assistance. Le fournisseur CUA garde
+aucun débordement horizontal n'apparaît sur cette page. Ventes et le tiroir
+Stocks ont aussi été observés à 320 px, et Stocks/Ventes à 200 % ; le tiroir
+reste lisible, Échap le ferme et rend le focus à son déclencheur. Les autres
+routes restent à vérifier à 320–375/768 px et à 200 %, ainsi que les états de
+chargement/erreur/conflit/long et la technologie d'assistance. La navigation
+Stocks→Ventes conservait l'ancien défilement ; Layout le remet désormais en haut
+et préserve les ancres, vérifiés en cliquant depuis Aujourd'hui vers la saisie.
+Le calendrier Ventes conserve un défilement horizontal interne ; à 320 px, un
+texte indique ce geste, Tab focalise sa région et la flèche droite révèle les
+colonnes suivantes. Le fournisseur CUA garde
 `browsers: []` et `getBrowser` répond « No browser is available », mais
 `getApp("com.google.Chrome")` permet maintenant la revue de la fenêtre native.
 Un conflit de révision
@@ -179,6 +189,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 
 | 2026-09-24 | I4 — upload fixture → C1 | `0c011de` | Port préparé en mémoire → route d'upload authentifiée avec validation PDF/JPEG/PNG, adaptateur synthétique activé uniquement par `demo:local`, persistance idempotente d'un candidat tenant-scopé et aperçu original depuis le navigateur ; les autres pièces gardent la saisie manuelle. Aucun octet original n'est persisté. | `npm run verify:local-delivery` : lint, builds web/API, migrations 18/18, `npm test` (24 Vitest/102 + 33 Node/CSS), intégration (25 fichiers/37 tests), dump/restore synthétique et Prisma à jour. Le scénario d'intégration envoie le PDF public via HTTP, rejoue deux uploads concurrents, vérifie auth/MIME/signature/fallback, deux tenants, aucun mouvement avant C1, correction, refus sans confirmation type/date et une seule réception simulée après confirmation. Le PDF a été rendu en PNG par Quartz `sips` et visuellement inspecté ; `git diff --check`. | Fixture publique fictive seulement ; aucun OCR générique, fournisseur ou document réel. L'UI I4 compile mais attend encore son rendu/clavier/responsive natif. Le conteneur PostgreSQL tmpfs et son port ont été retirés par la recette. | Continuer Q2 en navigateur accessible et compléter les états/clavier/mobile/zoom ; garder OCR externe inactif sans politique d'accès/rétention. |
 | 2026-09-24 | Q2 — Ventes mobile | — (vérification) | Chrome natif sur `/sales` à 390 et 320 px : en-tête visible depuis le haut, état vide (« absence de donnée » distincte de zéro), actions et formulaire de vente empilés avec libellés visibles ; Tab affiche un focus net sur « Importer un CSV Kookia ». Le tableau du calendrier garde un défilement horizontal interne : plusieurs valeurs/colonnes sont tronquées avant balayage, sans débordement de page visible. Aucune action métier ni donnée modifiée. | Rendu observé en émulation responsive dans Chrome. Aucun lecteur d'écran ni parcours clavier complet des contrôles du calendrier. Après passage au zoom Chrome 200 %, CUA renvoie `cgWindowNotFound` bien que `getState()` indique Chrome actif ; fenêtre/zoom/emulation n'ont pas pu être restaurés via CUA. | Reprendre le contrôle natif, restaurer zoom 90 % et 1440×750 ; décider si le tableau mobile doit être remplacé par des cartes ou si son défilement est suffisamment découvrable, puis continuer les routes/états restants de Q2. |
+| 2026-09-24 | Q2 — tiroir Stocks, navigation et calendrier Ventes mobile | — (vérification + correctifs) | À 320 px, la fiche Tomates affichait « Stock théorique » au mauvais corps car `block`/`text-xs` n'existent pas dans le catalogue CSS ; remplacement par un label sémantique avec style local et empilement de la bannière au petit écran. Le rendu natif montre le libellé réduit et `12 kg` entier ; Tab focalise « Compter », Échap ferme le dialogue et rend le focus à « Voir la fiche ». Stocks/Ventes testés à 200 % sans coupe des contenus observés. Défaut séparé reproduit : après défilement Stocks, Ventes s'ouvrait au milieu du calendrier ; `Layout` remet maintenant le conteneur principal en haut et garde les ancres (`#sales-entry-title` testé depuis Ventes et Aujourd'hui). Le tableau calendrier reste défilable horizontalement, mais une consigne mobile explicite ce geste ; Tab focalise la région et la flèche droite révèle les colonnes suivantes. Aucune action métier ni donnée modifiée. | `npm run lint`, `npm run build`, `npm test` (24 fichiers/102 Vitest + 33 Node/CSS), `git diff --check`. Chrome natif, zoom réel 200 %, responsive 320×750, clavier Tab/flèche droite/Échap ; zoom revenu à 90 % et largeur responsive restaurée à 1440×750. | Pas de tablette 768 px sur ces routes, de technologie d'assistance réelle ni d'états non nominaux. | Continuer les routes et états Q2 manquants avant clôture. |
 
 ## Portes externes
 

@@ -77,6 +77,7 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
       <Button type="submit" disabled={saving || loading || !calendarDates.includes(selectedDate)}>{saving ? "Enregistrement…" : "Enregistrer l’état du service"}</Button>
     </form>
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
+    <p className="sales-table-hint">Sur petit écran, faites défiler le tableau horizontalement pour voir les autres colonnes.</p>
     <div className="sales-table-wrap" role="region" aria-label="Jours de service sur la période" tabIndex={0}>
       <table className="sales-table"><thead><tr><th>Date</th><th>État du restaurant</th><th>Couverture</th><th>Ventes enregistrées</th></tr></thead>
         <tbody>{calendarDates.slice().reverse().map((date) => {

@@ -14,7 +14,7 @@ export default function StockVerificationSummary({ product, onCount }: StockVeri
     <div className="status-banner">
       <Badge label={`Seuil : ${getProductStatusLabel(threshold)}`} status={threshold} />
       <span className="stock-big">
-        <span className="block text-xs text-secondary">Stock théorique</span>
+        <small className="stock-label">Stock théorique</small>
         {product.currentStock} <span className="unit">{product.unit}</span>
       </span>
     </div>
