@@ -84,7 +84,11 @@ export default function InvoiceModal({ initialInvoice, onValidate, onPersist, on
     .reduce((sum, line) => sum + line.quantity * line.unitPrice, 0) ?? 0;
 
   return <div className="invoice-modal flex flex-col gap-lg">
-    <p>Saisie manuelle sans lecture automatique. Vérifiez les quantités et les produits avant tout ajout au stock.</p>
+    <p>{sourceLinked
+      ? received
+        ? "Réception de démonstration liée à une pièce transcrite. Les lignes sont en lecture seule et ne créditeront pas le stock une seconde fois."
+        : "Brouillon lié à une pièce transcrite : vérifiez le type, la date et chaque ligne. L’enregistrement du brouillon ne modifie pas le stock."
+      : "Saisie manuelle sans lecture automatique. Vérifiez les quantités et les produits avant tout ajout au stock."}</p>
     {(error || catalogError) && <p role="alert">{error || catalogError?.message}</p>}
     {notice && <p role="status">{notice}</p>}
     {loading ? <p role="status">Chargement des factures…</p> : <>
