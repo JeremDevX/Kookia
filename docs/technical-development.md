@@ -38,8 +38,8 @@ La [cartographie détaillée des écarts](ecarts-techniques.md) confronte cette 
 
 Le modèle persistant actuel comprend notamment `Restaurant`, `Product`,
 `StockMovement`, `SaleItem`, `ServiceDay`, `DailySale`, `SaleImport`, `SaleContribution`,
-`SaleContributionEvent`, `Prediction`,
-`PurchaseOrder` et `RecommendationDecision`. Les
+`SaleContributionEvent`, `Prediction`, `PurchaseOrder`, `PurchaseReceipt`,
+`PurchaseReceiptLine` et `RecommendationDecision`. Les
 [contrats proposés pour les sources externes](integrations.md), non implémentés,
 devront rester distincts de ces modèles et des payloads bruts des fournisseurs.
 
@@ -52,7 +52,7 @@ La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
 `Product`, `Recipe`, `RecipeIngredient`, `StockMovement`, `StockCount`,
 `RecipeVersion`, `RecipeVersionIngredient`, `InvoiceDraftRevision`, `Production`, `Prediction`, `SaleItem`, `DailySale`,
 `SaleImport`, `SaleContribution`, `SaleContributionEvent`, `ServiceDay`,
-`PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
+`PurchaseOrder`, `PurchaseOrderLine`, `PurchaseReceipt`, `PurchaseReceiptLine`, `RecommendationDecision`
 et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics,
 préférences, panier, notifications, pièces source, factures et menus), validés aux frontières.
 Les mutations critiques sont transactionnelles. Les liens internes sont différés
@@ -62,6 +62,15 @@ la mise à jour ne change pas l'unité. Les lignes validées de `PurchaseOrderLi
 gardent leur nom, fournisseur, unité et prix snapshotés lors de la commande.
 `StockCount` conserve séparément quantité comptée, quantité théorique observée,
 écart, unité, date et acteur ; un écart accepté ajoute un `StockMovement` lié.
+`PurchaseReceipt` et `PurchaseReceiptLine` rapprochent une commande, un brouillon
+de facture, une référence/date de livraison et les quantités réellement reçues.
+Le lien tenant-scopé vers la ligne de commande et le produit, les noms/unités,
+quantités et prix de commande/facture sont snapshotés. Une réception partielle
+est conservée sans marquer la facture complète ; seule la quantité déclarée
+livrée ajoute du stock, dans la même transaction que son mouvement de provenance.
+Les répétitions d'opération sont idempotentes, les doublons facture/livraison
+sont refusés et un écart de prix exige une explication. En espace démo, réception
+et commande restent simulées et ne changent pas le stock.
 Les nouveaux `StockMovement` gardent aussi des snapshots facultatifs du nom,
 de l'unité et du fournisseur au moment du mouvement. Les anciennes lignes restent
 sans snapshot plutôt que d'hériter d'un libellé actuel.
@@ -102,8 +111,25 @@ et la `RecipeVersion` à la date de chaque service, mais seulement si leur
 enregistrement était connu à cette date ; une association ou version saisie
 après coup ne fuit pas vers les jours précédents, même avec une date d'effet
 rétrodatée. Les versions à date inconnue ou future ne sont pas utilisées. La
-projection ne modifie pas les mouvements de stock. POS et Ticket Z restent non
+projection ne modifie pas les mouvements de stock. Les suggestions d'achat
+réutilisent cette projection pour un seul service à venir, retranchent un stock
+compté encore courant et n'intègrent ni délai fournisseur ni commande non reçue ;
+le prix affiché est indicatif. Le chef peut écarter, modifier et valider une
+suggestion, avec une décision immuable côté serveur. Une origine
+`demo_simulation` ne crée jamais une commande réelle ; le tenant démo persiste
+des commandes/réceptions explicitement simulées. POS et Ticket Z restent non
 connectés.
+
+La page **Bilan** appelle `GET /api/workspace/impact` pour comparer la période
+choisie à la précédente de même durée calendaire. Les ventes sont datées par
+service, les pertes explicites par enregistrement UTC et les achats par date de
+livraison ; les quantités restent séparées par produit/unité. Le coût d'une perte
+est calculé uniquement depuis un prix snapshoté au mouvement, et les dépenses
+uniquement depuis des quantités de réception confirmées et leur prix de facture.
+Les simulations sont séparées des totaux enregistrés ; les mouvements sans
+unité cohérente sont exclus. Les ruptures et invendus ne sont pas saisis dans un
+ledger dédié, donc restent « non mesurés » ; aucune économie réalisée n'est
+calculée. L'export opérationnel exclut les espaces et événements de démonstration.
 
 La page **Plus → Histoire sur quatre années** (`/history`) appelle la route
 tenant-scopée de lecture seule `GET /api/workspace/timeline`, sur une période

@@ -85,16 +85,24 @@ une préparation libre conserve un journal sans inventer cette consommation.
    validation dans Kookia ne déclenche aucun email.
 6. À la livraison, enregistrez la réception séparément. La commande seule ne
    crédite pas le stock.
+7. Dans **Commandes enregistrées**, ouvrez « Rapprocher une facture et une
+   livraison ». Choisissez une facture brouillon du même fournisseur, vérifiez
+   les correspondances, indiquez référence/date du bon de livraison et quantité
+   réellement arrivée. Une réception partielle laisse le reliquat visible ; un
+   prix différent doit être expliqué avant d'ajouter la quantité reçue au stock.
 
-Une ligne provenant d'un ancien scénario de démonstration ne peut pas être
-validée comme achat ; écartez-la de la sélection.
+Une suggestion issue de ventes simulées ne devient pas un achat réel. Dans un
+espace de démonstration, commande et réception portent la mention simulation et
+ne changent pas le stock réel.
 
 ## Factures, réceptions et provenance
 
 Depuis **Aujourd'hui → Saisir une facture**, créez un brouillon avec référence,
-date, produits, quantités et prix. Vérifiez les lignes avant
-**Réceptionner et ajouter au stock**. La même facture ne doit pas créditer deux
-fois les quantités.
+date, fournisseur, produits, quantités et prix. Pour une commande existante,
+enregistrez la facture puis rapprochez chaque livraison depuis l'historique des
+commandes. Sans commande liée, vérifiez les lignes avant **Réceptionner et
+ajouter au stock**. Le système ne crédite que les quantités explicitement reçues
+et empêche de rejouer une même livraison ou de dépasser facture/commande.
 
 L'archive des pièces importées est distincte de la saisie manuelle. Une
 transcription ou un statut OCR à vérifier ne prouve pas une réception réelle.
@@ -111,9 +119,13 @@ démonstration ; la date de la pièce d'origine reste consultable.
   déduit à la validation si les ingrédients sont suffisants.
 - **Produites cette semaine** : consultez le journal ; les productions de
   démonstration sont identifiées dans l'espace Camille.
-- **Plus → Bilan** : choisissez une période, lisez les ventes datées et
-  sourcées, puis exportez un rapport opérationnel. Les graphiques de
-  démonstration repliés ne mesurent pas votre activité.
+- **Plus → Bilan** : choisissez une période, comparez-la à la période précédente
+  de même durée et consultez les ventes, pertes explicitement déclarées et
+  dépenses de produits réceptionnés avec leurs sources. Les simulations sont
+  séparées ; ruptures et invendus restent non mesurés tant qu'ils ne sont pas
+  enregistrés. Les économies réalisées ne sont pas déduites. Vous pouvez ensuite
+  exporter le rapport opérationnel. Les graphiques de démonstration repliés ne
+  mesurent pas votre activité.
 
 Un rapport Kookia n'est pas, par son seul titre, une attestation réglementaire
 ou une mesure de pertes évitées. Gardez les justificatifs originaux nécessaires
