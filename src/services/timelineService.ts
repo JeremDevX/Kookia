@@ -3,7 +3,8 @@ import { apiRequest } from "../config/api";
 export type TimelineProvenance = "source" | "recorded" | "simulation" | "assumption" | "unknown";
 export interface TimelineEvent {
   id: string;
-  kind: "document" | "stock" | "loss" | "recipe" | "mapping" | "production" | "sale" | "service" | "decision";
+  kind: "document" | "stock" | "loss" | "recipe" | "mapping" | "production" | "sale" | "service" |
+    "decision" | "purchase_order" | "purchase_receipt";
   effectiveAt: string | null;
   knownAt: string | null;
   recordedAt: string | null;

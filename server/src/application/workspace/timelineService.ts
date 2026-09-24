@@ -1,26 +1,15 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
+import { decisionEvent, documentEvent, purchaseOrderEvent, purchaseReceiptEvent, stockEvent, versionEvent,
+  type TimelineDocumentRow, type TimelineEvent } from "./timelineEventMappers.js";
 
-export type TimelineProvenance = "source" | "recorded" | "simulation" | "assumption" | "unknown";
-export type TimelineKind = "document" | "stock" | "loss" | "recipe" | "mapping" | "production" | "sale" | "service" | "decision";
-
-export interface TimelineEvent {
-  id: string;
-  kind: TimelineKind;
-  effectiveAt: string | null;
-  knownAt: string | null;
-  recordedAt: string | null;
-  label: string;
-  detail: string;
-  provenance: TimelineProvenance;
-  qualifier?: string;
-  href?: string;
-}
+export type { TimelineEvent, TimelineKind, TimelineProvenance } from "./timelineEventMappers.js";
 
 const QUERY_LIMIT = 1_501;
 const RESPONSE_LIMIT = 5_000;
 const SIMULATION_ACTOR = "restaurant-simulation:v1";
 const isoDate = (value: Date) => value.toISOString().slice(0, 10);
+const quantity = (value: Prisma.Decimal) => Number(value).toLocaleString("fr-FR", { maximumFractionDigits: 3 });
 
 function parisMidnight(date: string) {
   const [year, month, day] = date.split("-").map(Number);
@@ -49,26 +38,13 @@ export function timelineDateBounds(from: string, to: string, asOf: string) {
   };
 }
 
-const quantity = (value: Prisma.Decimal) => Number(value).toLocaleString("fr-FR", { maximumFractionDigits: 3 });
 const safeText = (value: string, max = 120) => [...value]
   .filter((character) => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127)
   .join("").trim().slice(0, max);
 
-interface SourceDocumentRow {
-  kind: string;
-  knownAt: Date;
-  sourceDate: string | null;
-  title: string | null;
-  supplier: string | null;
-  documentType: string | null;
-  status: string | null;
-  provenance: string | null;
-  lineCount: number;
-}
-
 async function listDocumentEvents(restaurantId: string, from: string, to: string, knownThrough: Date) {
   // Select only safe metadata; transcription content and stock-line payloads never enter the application.
-  return prisma.$queryRaw<SourceDocumentRow[]>(Prisma.sql`
+  return prisma.$queryRaw<TimelineDocumentRow[]>(Prisma.sql`
     SELECT kind,
       "updatedAt" AS "knownAt",
       data ->> 'date' AS "sourceDate",
@@ -90,89 +66,10 @@ async function listDocumentEvents(restaurantId: string, from: string, to: string
   `);
 }
 
-function documentEvent(row: SourceDocumentRow): TimelineEvent {
-  const archivedSource = row.kind.startsWith("source-invoice:");
-  const effectiveAt = row.sourceDate && /^\d{4}-\d{2}-\d{2}$/.test(row.sourceDate) ? row.sourceDate : null;
-  const provenance: TimelineProvenance = !effectiveAt ? "unknown"
-    : archivedSource ? "source" : row.provenance === "demo_simulation" ? "simulation" : "recorded";
-  const details = [row.title || (archivedSource ? "Pièce d’archive" : "Document d’achat"), row.supplier,
-    row.documentType, row.status, `${Math.max(0, row.lineCount)} ligne(s) transcrite(s)`]
-    .filter(Boolean).map((value) => safeText(value!, 120)).join(" · ");
-  return {
-    id: `document:${row.kind}`,
-    kind: "document",
-    effectiveAt,
-    knownAt: row.knownAt.toISOString(),
-    recordedAt: row.knownAt.toISOString(),
-    label: archivedSource ? "Pièce source d’archive" : "Document d’achat enregistré",
-    detail: details,
-    provenance,
-    qualifier: `La date affichée est la dernière mise à jour disponible ; la première saisie n’est pas historisée.${archivedSource
-      ? " Transcription d’archive : elle n’est pas une preuve de livraison." : ""}${!effectiveAt ? " Date d’effet inconnue." : ""}`,
-  };
-}
-
-function stockEvent(movement: Awaited<ReturnType<typeof prisma.stockMovement.findMany>>[number]): TimelineEvent {
-  const simulation = movement.actorId === SIMULATION_ACTOR;
-  const assumed = ["simulation_opening", "simulation_restock", "simulation_loss"].includes(movement.reason);
-  const labels: Record<string, string> = {
-    simulation_opening: "Stock d’ouverture fictif",
-    invoice_import_demo: "Réception simulée depuis une pièce source",
-    simulation_restock: "Réassort synthétique",
-    production: "Matières consommées pour une production",
-    simulation_loss: "Perte invendue estimée",
-    loss: "Perte enregistrée",
-    receipt: "Réception enregistrée",
-    initial: "Stock initial enregistré",
-    adjustment: "Ajustement de stock enregistré",
-    stock_count: "Écart d’inventaire enregistré",
-  };
-  const isLoss = movement.reason === "loss" || movement.reason === "simulation_loss";
-  const productName = movement.productNameSnapshot ? safeText(movement.productNameSnapshot) : "Libellé produit non archivé";
-  const unit = movement.productUnitSnapshot ? safeText(movement.productUnitSnapshot, 24) : "unité inconnue";
-  const direction = movement.delta.greaterThan(0) ? "+" : "";
-  const supplier = movement.supplierNameSnapshot ? ` · fournisseur : ${safeText(movement.supplierNameSnapshot)}` : "";
-  const qualifiers = [
-    !movement.productNameSnapshot ? "Le nom historique du produit est inconnu." : "",
-    assumed ? "Hypothèse du scénario, non observée." : "",
-    movement.reason === "invoice_import_demo" ? "Crédit de stock simulé ; la transcription source n’est pas une livraison vérifiée." : "",
-  ].filter(Boolean);
-  return {
-    id: `stock:${movement.id}`,
-    kind: isLoss ? "loss" : "stock",
-    effectiveAt: movement.createdAt.toISOString(),
-    knownAt: movement.createdAt.toISOString(),
-    recordedAt: movement.createdAt.toISOString(),
-    label: labels[movement.reason] ?? "Mouvement de stock enregistré",
-    detail: `${productName} · ${direction}${quantity(movement.delta)} ${unit}${supplier}`,
-    provenance: assumed ? "assumption" : simulation ? "simulation" : "recorded",
-    ...(qualifiers.length ? { qualifier: qualifiers.join(" ") } : {}),
-    href: `/stocks?product=${encodeURIComponent(movement.productId)}`,
-  };
-}
-
-function versionEvent(version: Awaited<ReturnType<typeof prisma.recipeVersion.findMany>>[number]): TimelineEvent {
-  const unknownDate = !version.effectiveFrom;
-  const simulated = version.actorId === SIMULATION_ACTOR;
-  return {
-    id: `recipe:${version.id}`,
-    kind: "recipe",
-    effectiveAt: version.effectiveFrom ? isoDate(version.effectiveFrom) : null,
-    knownAt: version.createdAt.toISOString(),
-    recordedAt: version.createdAt.toISOString(),
-    label: `Version ${version.version} de recette`,
-    detail: `${safeText(version.name)} · rendement ${version.yieldPortions} portion(s)`,
-    provenance: unknownDate ? "unknown" : simulated ? "simulation" : "recorded",
-    ...(unknownDate ? { qualifier: `Date d’effet inconnue${simulated ? " ; version issue de la simulation" : ""}.` }
-      : simulated ? { qualifier: "Instantané de recette simulé." } : {}),
-    href: "/recipes",
-  };
-}
-
 export async function listTimeline(restaurantId: string, from: string, to: string, asOf: string) {
   const bounds = timelineDateBounds(from, to, asOf);
   const dateRange = { gte: bounds.dateStart, lte: bounds.dateEnd };
-  const [movements, productions, sales, serviceDays, recipeVersions, mappings, decisions, documents] = await Promise.all([
+  const [movements, productions, sales, serviceDays, recipeVersions, mappings, decisions, documents, orders, receipts] = await Promise.all([
     prisma.stockMovement.findMany({ where: { restaurantId, createdAt: { gte: bounds.start, lt: bounds.end, lte: bounds.knownThrough } },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: QUERY_LIMIT }),
     prisma.production.findMany({ where: { restaurantId, date: dateRange, createdAt: { lte: bounds.knownThrough } },
@@ -191,6 +88,12 @@ export async function listTimeline(restaurantId: string, from: string, to: strin
       createdAt: { gte: bounds.start, lt: bounds.end, lte: bounds.knownThrough } },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: QUERY_LIMIT }),
     listDocumentEvents(restaurantId, from, to, bounds.knownThrough),
+    prisma.purchaseOrder.findMany({ where: { restaurantId,
+      createdAt: { gte: bounds.start, lt: bounds.end, lte: bounds.knownThrough } },
+      include: { lines: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: QUERY_LIMIT }),
+    prisma.purchaseReceipt.findMany({ where: { restaurantId, deliveryDate: dateRange,
+      createdAt: { lte: bounds.knownThrough } }, include: { supplier: { select: { name: true } }, lines: true },
+      orderBy: [{ deliveryDate: "asc" }, { createdAt: "asc" }, { id: "asc" }], take: QUERY_LIMIT }),
   ]);
 
   const events: TimelineEvent[] = [
@@ -234,16 +137,12 @@ export async function listTimeline(restaurantId: string, from: string, to: strin
       provenance: mapping.actorId === SIMULATION_ACTOR ? "simulation" : "recorded",
       href: "/sales",
     })),
-    ...decisions.map((decision): TimelineEvent => ({
-      id: `decision:${decision.id}`, kind: "decision", effectiveAt: decision.createdAt.toISOString(),
-      knownAt: decision.createdAt.toISOString(), recordedAt: decision.createdAt.toISOString(),
-      label: `Décision enregistrée : ${safeText(decision.decision, 80)}`,
-      detail: "La décision est conservée séparément des recommandations actuelles.",
-      provenance: "recorded", href: "/predictions",
-    })),
+    ...decisions.map(decisionEvent),
+    ...orders.map(purchaseOrderEvent),
+    ...receipts.map(purchaseReceiptEvent),
   ];
   events.sort((a, b) => (a.effectiveAt ?? "9999-12-31").localeCompare(b.effectiveAt ?? "9999-12-31") || a.id.localeCompare(b.id));
-  const truncated = events.length > RESPONSE_LIMIT || [movements, productions, sales, serviceDays, recipeVersions, mappings, decisions, documents]
+  const truncated = events.length > RESPONSE_LIMIT || [movements, productions, sales, serviceDays, recipeVersions, mappings, decisions, documents, orders, receipts]
     .some((rows) => rows.length === QUERY_LIMIT);
   return { from, to, asOf, count: Math.min(events.length, RESPONSE_LIMIT), truncated,
     events: events.slice(0, RESPONSE_LIMIT) };
