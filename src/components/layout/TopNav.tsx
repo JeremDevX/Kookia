@@ -8,9 +8,10 @@ import { useAuth } from "../../features/auth/context/AuthContext";
 interface TopNavProps {
   onMenuClick: () => void;
   isSidebarOpen: boolean;
+  menuButtonRef: React.RefObject<HTMLButtonElement | null>;
 }
 
-const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen }) => {
+const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonRef }) => {
   const { pathname } = useLocation();
   const { user } = useAuth();
 
@@ -32,6 +33,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen }) => {
     <header className="top-nav">
       <div className="top-nav-left">
         <button
+          ref={menuButtonRef}
           className="hamburger-btn"
           onClick={onMenuClick}
           aria-label="Ouvrir le menu"

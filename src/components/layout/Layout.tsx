@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopNav from "./TopNav";
@@ -7,15 +7,16 @@ import "./Layout.css";
 
 const Layout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
 
   return (
     <div className="layout-container">
-      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} returnFocusRef={menuButtonRef} />
       <div className="main-content-wrapper">
-        <TopNav onMenuClick={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+        <TopNav onMenuClick={toggleSidebar} isSidebarOpen={isSidebarOpen} menuButtonRef={menuButtonRef} />
         <main className="main-content" id="main-content" tabIndex={-1}>
           <Outlet />
         </main>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useLayoutEffect, useRef, type RefObject } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -19,19 +19,31 @@ import { useAuth } from "../../features/auth/context/AuthContext";
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  returnFocusRef: RefObject<HTMLButtonElement | null>;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const inMore = ["/recipes", "/analytics", "/settings", "/predictions"].includes(pathname);
   const sidebarRef = useRef<HTMLElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isOpen) return;
-    const previousFocus = document.activeElement;
+    const menuButton = returnFocusRef.current;
+    const previousFocus = menuButton ?? document.activeElement;
     const sidebar = sidebarRef.current;
-    const focusFrame = requestAnimationFrame(() => sidebar?.querySelector<HTMLButtonElement>(".sidebar-close-btn")?.focus());
+    let focusFrame = 0;
+    const focusWhenVisible = () => {
+      if (!sidebar) return;
+      if (getComputedStyle(sidebar).visibility !== "hidden") {
+        const closeButton = sidebar.querySelector<HTMLButtonElement>(".sidebar-close-btn");
+        if (closeButton?.getClientRects().length) closeButton.focus();
+        return;
+      }
+      focusFrame = requestAnimationFrame(focusWhenVisible);
+    };
+    focusFrame = requestAnimationFrame(focusWhenVisible);
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
       if (event.key !== "Tab" || !sidebar) return;
@@ -50,9 +62,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       cancelAnimationFrame(focusFrame);
       document.removeEventListener("keydown", handleKey);
       desktop.removeEventListener("change", closeOnDesktop);
-      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+      requestAnimationFrame(() => {
+        const target = previousFocus instanceof HTMLElement && previousFocus.isConnected
+          ? previousFocus
+          : menuButton;
+        target?.focus();
+      });
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, returnFocusRef]);
   const navItems = [
     { icon: LayoutDashboard, label: "Aujourd'hui", path: "/" },
     { icon: ShoppingBag, label: "Achats", path: "/orders" },
