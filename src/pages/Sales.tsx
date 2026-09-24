@@ -44,6 +44,7 @@ export default function Sales() {
   const [showMetrics, setShowMetrics] = useState(false);
   const [showBaseline, setShowBaseline] = useState(false);
   const productSelect = useRef<HTMLSelectElement>(null);
+  const startHeading = useRef<HTMLHeadingElement>(null);
   const historyHeading = useRef<HTMLHeadingElement>(null);
   const editOrigin = useRef<HTMLButtonElement>(null);
   const requestNumber = useRef(0);
@@ -68,6 +69,10 @@ export default function Sales() {
     finally { if (currentRequest === requestNumber.current) setLoading(false); }
   }, [from, to]);
   useEffect(() => { void load(); }, [load]);
+  const retryLoad = () => {
+    void load();
+    requestAnimationFrame(() => startHeading.current?.focus());
+  };
 
   const change = (next: SaleValues) => {
     setValues(next);
@@ -129,8 +134,9 @@ export default function Sales() {
       <p className="workspace-subtitle">Importez un CSV ou saisissez les ventes de votre dernier service.</p>
     </div></header>
     <section id="sales-start" className="sales-panel sales-start" aria-labelledby="sales-start-title">
-      <h2 id="sales-start-title">Vos ventes enregistrées</h2>
-      {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <p role="alert">{loadError}</p> : latestService ?
+      <h2 id="sales-start-title" ref={startHeading} tabIndex={-1}>Vos ventes enregistrées</h2>
+      {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <div role="alert"><p>{loadError}</p>
+        <Button type="button" variant="outline" onClick={retryLoad}>Réessayer</Button></div> : latestService ?
         <p>Dernière date de service renseignée : {new Date(`${latestService.serviceDate}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })} · {latestService.status === "open" ? "restaurant ouvert" : "restaurant fermé"} · couverture {latestService.coverage}.
           {latestService.status === "closed" ? " Aucune activité n’était prévue." : latestService.coverage === "complete" && latestService.salesCount === 0 ? " Zéro vente observé après revue complète." : latestService.coverage !== "complete" ? " " + latestService.salesCount + " ligne(s) enregistrée(s) ; les absences restent inconnues." : " " + latestService.salesCount + " ligne(s) enregistrée(s)."}
           {latestService.salesCount > 0 ? ` Sources : ${describeServiceSources(latestService.sources)}.` : ""}</p> :
@@ -181,7 +187,7 @@ export default function Sales() {
       <div className="sales-filters"><label>Du<input type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} /></label>
         <label>Au<input type="date" value={to} min={from} max={parisToday()} onChange={(event) => setTo(event.target.value)} /></label>
         <Button type="button" variant="outline" onClick={() => { void load(); setSalesRevision((current) => current + 1); }}>Actualiser</Button></div>
-      {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <p role="alert">Historique indisponible : {loadError}</p> : sales.length === 0 ? <p>Aucune vente enregistrée sur cette période.</p> :
+      {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <p>Historique indisponible. Réessayez depuis cette page.</p> : sales.length === 0 ? <p>Aucune vente enregistrée sur cette période.</p> :
         <div className="sales-table-wrap" role="region" aria-label="Ventes par date et produit" tabIndex={0}><table className="sales-table"><thead><tr>
           <th>Date de service</th><th>Article vendu</th><th>Quantité</th><th>Provenance</th><th>Dernière modification</th><th>Action</th>
         </tr></thead><tbody>{sales.map((sale) => <tr key={sale.id}>

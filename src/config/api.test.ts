@@ -15,6 +15,11 @@ describe("apiRequest", () => {
     await expect(apiRequest("/auth/register", { method: "POST", body: "{}" })).rejects.toMatchObject({ status: 400, details: { code: "VALIDATION_ERROR" } });
   });
 
+  it("turns fetch network failures into a recoverable French message", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
+    await expect(apiRequest("/workspace/sales")).rejects.toThrow("Connexion au serveur indisponible. Vérifiez votre connexion puis réessayez.");
+  });
+
   it("handles empty 204 responses", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
     await expect(apiRequest<void>("/auth/logout", { method: "POST" })).resolves.toBeUndefined();

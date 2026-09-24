@@ -21,13 +21,14 @@ export default function SalesReconciliation({ from, to, refreshToken, items, tic
   const [rows, setRows] = useState<SaleContribution[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [status, setStatus] = useState("");
   const [revision, setRevision] = useState(0);
   const heading = useRef<HTMLHeadingElement>(null);
   const load = useCallback(async () => {
-    setLoading(true); setError("");
+    setLoading(true); setLoadError("");
     try { setRows(await getSaleContributions(from, to)); }
-    catch (cause) { setError(errorMessage(cause)); }
+    catch (cause) { setLoadError(errorMessage(cause)); }
     finally { setLoading(false); }
   }, [from, to]);
   useEffect(() => { void load(); }, [load, revision, refreshToken]);
@@ -50,11 +51,13 @@ export default function SalesReconciliation({ from, to, refreshToken, items, tic
     <h2 id="sales-reconciliation-title" ref={heading} tabIndex={-1}>Réconciliation et provenance</h2>
     <p>Une seule vente est retenue par date et article. Les lignes de caisse restent à vérifier ; remboursements et doublons ne diminuent ni n’additionnent les ventes automatiquement.</p>
     {loading && <p role="status">Chargement des apports…</p>}
+    {loadError && <div role="alert"><p>Lecture des apports indisponible : {loadError}</p>
+      <Button type="button" variant="outline" onClick={() => { void load(); requestAnimationFrame(() => heading.current?.focus()); }}>Réessayer</Button></div>}
     {error && <p role="alert">{error}</p>}
     {status && <p role="status">{status}</p>}
-    {!loading && pending.length === 0 && <p>Aucun apport en attente de revue.</p>}
-    {pending.map((row) => <PendingContribution key={row.id} row={row} items={items} ticketPreview={ticketPreview} onReview={review} />)}
-    <details className="sales-disclosure"><summary>Historique des apports et décisions ({history.length})</summary>
+    {!loading && !loadError && pending.length === 0 && <p>Aucun apport en attente de revue.</p>}
+    {!loadError && pending.map((row) => <PendingContribution key={row.id} row={row} items={items} ticketPreview={ticketPreview} onReview={review} />)}
+    {!loading && !loadError && <details className="sales-disclosure"><summary>Historique des apports et décisions ({history.length})</summary>
       {history.length === 0 ? <p>Aucun apport sur cette période.</p> : <ul className="sales-contribution-history">
         {history.map((row) => <li key={row.id}>
           <strong>{row.serviceDate ?? row.sourceDate} · {row.saleItemName ?? row.sourceItemName} · {row.quantity ?? row.sourceQuantity}</strong>
@@ -68,7 +71,7 @@ export default function SalesReconciliation({ from, to, refreshToken, items, tic
           {row.events.map((event, index) => <span key={`${row.id}-${index}`}>{eventLabel[event.kind] ?? event.kind} · révision {event.revision} · par {event.actorId} · {new Date(event.createdAt).toLocaleString("fr-FR")} · {event.reason}</span>)}
         </li>)}
       </ul>}
-    </details>
+    </details>}
   </section>;
 }
 

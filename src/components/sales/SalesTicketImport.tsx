@@ -22,14 +22,19 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
   const [serviceDate, setServiceDate] = useState(parisToday);
   const [lines, setLines] = useState<CandidateLine[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listLoading, setListLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [listError, setListError] = useState("");
   const [status, setStatus] = useState("");
   const objectUrl = useRef<string | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   const refresh = useCallback(async () => {
+    setListLoading(true); setListError("");
     try { setBatches(await getTicketZBatches()); }
-    catch (cause) { setError(errorMessage(cause)); }
+    catch (cause) { setListError(errorMessage(cause)); }
+    finally { setListLoading(false); }
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => () => {
@@ -97,11 +102,14 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
   };
 
   return <section className="sales-panel sales-ticket-import" aria-labelledby="sales-ticket-title">
-    <h2 id="sales-ticket-title">Transcrire un Ticket Z</h2>
+    <h2 id="sales-ticket-title" ref={heading} tabIndex={-1}>Transcrire un Ticket Z</h2>
     <p>Lecture manuelle depuis l’original : aucune OCR n’est connectée. Le fichier est vérifié temporairement pour son type et son empreinte, puis supprimé ; seul le hash et votre transcription sont conservés. Il n’est envoyé à aucun prestataire.</p>
     <label className="sales-file-label">Fichier PDF, JPEG ou PNG (4 Mio maximum)
       <input type="file" accept="application/pdf,image/jpeg,image/png" disabled={loading || saving} onChange={(event) => void selectFile(event)} />
     </label>
+    {listLoading && <p role="status">Chargement des Tickets Z…</p>}
+    {listError && <div role="alert"><p>Historique des Tickets Z indisponible : {listError}</p>
+      <Button type="button" variant="outline" onClick={() => { void refresh(); requestAnimationFrame(() => heading.current?.focus()); }}>Réessayer</Button></div>}
     {loading && <p role="status">Vérification du fichier…</p>}
     {error && <p role="alert">{error}</p>}
     {status && <p role="status">{status}</p>}
@@ -129,7 +137,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
         <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : lines.length ? "Enregistrer les lignes à réconcilier" : "Enregistrer sans détail article"}</Button>
       </form> : <p>{statusLabel[batch.status]} · {batch.recordCount} ligne(s). L’original reste visible uniquement jusqu’à ce que vous quittiez cette page.</p>}
     </div>}
-    {batches.length > 0 && <details className="sales-disclosure"><summary>Tickets et transcriptions récents ({batches.length})</summary>
+    {!listError && batches.length > 0 && <details className="sales-disclosure"><summary>Tickets et transcriptions récents ({batches.length})</summary>
       <ul className="sales-contribution-history">{batches.map((row) => <li key={row.id}>
         <strong>{row.serviceDate ?? "Date de service à vérifier"} · {statusLabel[row.status]}</strong>
         <span>{row.recordCount} ligne(s) · {row.provenance === "demo_simulation" ? "simulation" : "donnée transcrite"} · empreinte {row.contentHash.slice(0, 12)}… · original non conservé</span>

@@ -19,13 +19,16 @@ export default function SalesRecipeMappings({ itemCount }: { itemCount: number }
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [reload, setReload] = useState(0);
   const [status, setStatus] = useState("");
   const operationId = useRef(crypto.randomUUID());
   const selectedIdRef = useRef("");
+  const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     let active = true;
-    setLoading(true); setError("");
+    setLoading(true); setLoadError("");
     void Promise.all([getSaleRecipeMappings(), getRecipes()]).then(([mappingItems, recipeRows]) => {
       if (!active) return;
       setItems(mappingItems); setRecipes(recipeRows);
@@ -39,10 +42,10 @@ export default function SalesRecipeMappings({ itemCount }: { itemCount: number }
         setEffectiveFrom(parisToday());
       }
     }).catch((cause: unknown) => {
-      if (active) setError(message(cause));
+      if (active) setLoadError(message(cause));
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [itemCount]);
+  }, [itemCount, reload]);
 
   const item = items.find((row) => row.id === selectedId);
   const current = item && currentMapping(item, parisToday());
@@ -73,9 +76,10 @@ export default function SalesRecipeMappings({ itemCount }: { itemCount: number }
   };
 
   return <section className="sales-panel" aria-labelledby="sales-recipe-mappings-title">
-    <h2 id="sales-recipe-mappings-title">Articles vendus et recettes</h2>
+    <h2 id="sales-recipe-mappings-title" ref={heading} tabIndex={-1}>Articles vendus et recettes</h2>
     <p>Une suggestion de nom reste à confirmer. La correspondance datée sert à une estimation de consommation ; elle ne crée aucune production ni mouvement de stock.</p>
-    {loading ? <p role="status">Chargement des correspondances…</p> : error && !items.length ? <p role="alert">Correspondances indisponibles : {error}</p> : !items.length ?
+    {loading ? <p role="status">Chargement des correspondances…</p> : loadError ? <div role="alert"><p>Correspondances indisponibles : {loadError}</p>
+      <Button type="button" variant="outline" onClick={() => { setReload((value) => value + 1); requestAnimationFrame(() => heading.current?.focus()); }}>Réessayer</Button></div> : !items.length ?
       <p>Créez un article vendu avant de l’associer à une recette.</p> : !recipes.length ?
         <p>Créez et datez une version de recette avant de valider une correspondance.</p> : <>
           <form className="sales-form" onSubmit={(event) => void submit(event)}>

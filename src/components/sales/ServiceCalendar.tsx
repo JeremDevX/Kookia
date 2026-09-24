@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Button from "../common/Button";
 import { getServiceDays, saveServiceDay, type ServiceCoverage, type ServiceDay, type ServiceStatus } from "../../services/salesService";
 
@@ -24,6 +24,7 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const heading = useRef<HTMLHeadingElement>(null);
   const selected = days.find((day) => day.serviceDate === selectedDate) ?? null;
   const calendarDates = useMemo(() => dateRange(from, to), [from, to]);
 
@@ -60,9 +61,14 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
         : `${failure} Le calendrier a été rechargé ; vos changements non enregistrés ont été abandonnés. Vérifiez l’état avant de réessayer.`);
     } finally { setSaving(false); }
   };
+  const retryLoad = () => {
+    setMessage("");
+    void load();
+    requestAnimationFrame(() => heading.current?.focus());
+  };
 
   return <section className="sales-panel" aria-labelledby="service-calendar-title">
-    <h2 id="service-calendar-title">Calendrier des services</h2>
+    <h2 id="service-calendar-title" ref={heading} tabIndex={-1}>Calendrier des services</h2>
     <p>« Ouvert + complet » signifie que les ventes du service ont été revues : un article sans ligne vaut alors zéro observé. Partiel, manquant ou non renseigné reste inconnu. Un jour fermé et confirmé complet n’est pas un service. La provenance simulée ou mixte est affichée et ne vaut pas une observation terrain.</p>
     <form className="sales-form" onSubmit={(event) => void submit(event)}>
       <label>Date de service<input type="date" required min={from} max={to < today ? to : today} value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} /></label>
@@ -74,9 +80,9 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
         <option value="partial">Partielle — revue incomplète</option>
         <option value="missing">Manquante — données inconnues</option>
       </select></label>
-      <Button type="submit" disabled={saving || loading || !calendarDates.includes(selectedDate)}>{saving ? "Enregistrement…" : "Enregistrer l’état du service"}</Button>
+      <Button type="submit" disabled={saving || loading || !!error || !calendarDates.includes(selectedDate)}>{saving ? "Enregistrement…" : "Enregistrer l’état du service"}</Button>
     </form>
-    {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
+    {error && <div role="alert"><p>{error}</p><Button type="button" variant="outline" onClick={retryLoad} disabled={loading || saving}>Réessayer</Button></div>}{message && <p role="status">{message}</p>}
     <p className="sales-table-hint">Sur petit écran, faites défiler le tableau horizontalement pour voir les autres colonnes.</p>
     <div className="sales-table-wrap" role="region" aria-label="Jours de service sur la période" tabIndex={0}>
       <table className="sales-table"><thead><tr><th>Date</th><th>État du restaurant</th><th>Couverture</th><th>Ventes enregistrées</th></tr></thead>
