@@ -1,6 +1,13 @@
 # Journal de reprise du Goal Kookia
 
 **État du Goal :** travail en cours ; Q1, Q1b, C1, D1, D2, D3, D4, D5, D6, C2, F1, F3/F4, O1–O2, M1–M3, R0 et I1–I4 sont prouvés localement sur leurs portées et fixtures respectives ; aucun fournisseur OCR n'est activé.
+Audit Prisma/SQL hors D5 : l'index `StockCount` est déjà présent dans le
+modèle ; `ServiceDay.updatedAt` reflète maintenant son défaut SQL `now()`, et
+l'index `InvoiceDraftRevision` mappe explicitement son nom PostgreSQL tronqué.
+`prisma validate` et le SQL généré depuis le modèle confirment ces déclarations.
+La comparaison directe avec l'historique des migrations n'a pas été lancée :
+le bac PostgreSQL jetable n'a pas pu démarrer, l'accès au socket Docker étant
+refusé par le sandbox. Aucune base ni migration n'a été modifiée.
 Un lancement local interactif isolé des chapitres C2/C3 est maintenant
 disponible et exercé via `npm run demo:local` (`5a51b39`). Le récit 2025 a
 maintenant une version de recette effective, un surstock, une perte et un refus

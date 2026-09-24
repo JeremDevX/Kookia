@@ -383,7 +383,7 @@ model ServiceDay {
   revision     Int @default(0)
   actorId      String
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime @default(now()) @updatedAt
   sales        DailySale[]
 
   @@id([restaurantId, serviceDate])
@@ -702,5 +702,5 @@ model InvoiceDraftRevision {
   createdAt               DateTime   @default(now())
 
   @@id([restaurantId, invoiceDocumentId, revision])
-  @@index([restaurantId, sourceDocumentId, createdAt])
+  @@index([restaurantId, sourceDocumentId, createdAt], map: "InvoiceDraftRevision_restaurantId_sourceDocumentId_createdAt_id")
 }

@@ -129,7 +129,11 @@ acceptée et à un événement d'audit ; les deux jours ressortent respectivemen
 annonce 11/11 à jour. Le diff de parité schéma/base a aussi signalé trois écarts
 historiques hors D5 (index stock-count absent du modèle Prisma, défaut SQL de
 `ServiceDay.updatedAt`, nom tronqué d'index `InvoiceDraftRevision`) ; ils restent
-à traiter séparément, sans élargir cette migration. Suite API/intégration et
+à traiter séparément, sans élargir cette migration. Un audit de suivi du
+24 septembre 2026 confirme que l'index de `StockCount` est présent dans le
+modèle Prisma actuel ; le défaut SQL de `ServiceDay.updatedAt` et le nom
+physique tronqué de l'index `InvoiceDraftRevision` sont désormais reflétés dans
+le schéma Prisma sans nouvelle migration. Suite API/intégration et
 rejeu simulation isolé consignés dans
 [`goal-kookia-progress.md`](goal-kookia-progress.md). Cette migration ne
 supprime pas d'historique ; elle ne fournit pas de migration descendante qui
