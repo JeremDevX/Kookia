@@ -3,6 +3,7 @@ import Button from "../components/common/Button";
 import SalesImport from "../components/sales/SalesImport";
 import SalesMetrics from "../components/sales/SalesMetrics";
 import SalesBaseline from "../components/sales/SalesBaseline";
+import ServiceCalendar from "../components/sales/ServiceCalendar";
 import { correctSale, createSale, createSaleItem, getLatestService, getSaleItems, getSales, type DailySale, type LatestService, type SaleItem, type SaleValues } from "../services/salesService";
 import { describeServiceSources } from "../features/sales/salesPresentation";
 import "../styles/Workspace.css";
@@ -118,11 +119,14 @@ export default function Sales() {
     <section id="sales-start" className="sales-panel sales-start" aria-labelledby="sales-start-title">
       <h2 id="sales-start-title">Vos ventes enregistrées</h2>
       {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <p role="alert">{loadError}</p> : latestService ?
-        <p>Dernier service enregistré : {new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")} · source : {describeServiceSources(latestService.sources)}.</p> :
-        <p>Aucune vente enregistrée. Une journée non saisie n'est pas comptée comme zéro vente.</p>}
+        <p>Dernière date de service renseignée : {new Date(`${latestService.serviceDate}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })} · {latestService.status === "open" ? "restaurant ouvert" : "restaurant fermé"} · couverture {latestService.coverage}.
+          {latestService.status === "closed" ? " Aucune activité n’était prévue." : latestService.coverage === "complete" && latestService.salesCount === 0 ? " Zéro vente observé après revue complète." : latestService.coverage !== "complete" ? " " + latestService.salesCount + " ligne(s) enregistrée(s) ; les absences restent inconnues." : " " + latestService.salesCount + " ligne(s) enregistrée(s)."}
+          {latestService.salesCount > 0 ? ` Sources : ${describeServiceSources(latestService.sources)}.` : ""}</p> :
+        <p>Aucun jour de service renseigné. Une absence de donnée n'est ni un jour fermé ni zéro vente.</p>}
       <div className="sales-actions"><a href="#sales-import-title">Importer un CSV Kookia</a><a href="#sales-entry-title">Saisir une vente</a></div>
       <small>Ces ventes alimentent les indicateurs, pas encore les achats suggérés.</small>
     </section>
+    <ServiceCalendar from={from} to={to} today={parisToday()} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} />
     <SalesImport items={items} onImported={showImportedDate} onItemsCreated={setItems} />
     <section className="sales-panel" aria-labelledby="sale-item-title">
       <h2 id="sale-item-title">Articles vendus</h2>

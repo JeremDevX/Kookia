@@ -250,7 +250,7 @@ export function buildRestaurantSimulation(invoices: SourceInvoice[], existingPro
 
   return { version: SIMULATION_VERSION, marker: SIMULATION_MARKER, sourceDigest, startDate: SIMULATION_FROM, endDate: SIMULATION_TO,
     receipts, movements: movements.sort((a, b) => a.at.localeCompare(b.at) || a.operationId.localeCompare(b.operationId)),
-    sales, productions, productState, yearCoverage, unitCosts,
+    serviceDays: [...serviceDaysByDate].sort(), sales, productions, productState, yearCoverage, unitCosts,
     counts: { invoiceDocuments: invoices.length, parsedLines: [...coverage.values()].reduce((n, row) => n + row.parsedLines, 0),
       mappedLines: [...coverage.values()].reduce((n, row) => n + row.mappedLines, 0),
       estimatedLines: [...coverage.values()].reduce((n, row) => n + row.estimatedLines, 0),

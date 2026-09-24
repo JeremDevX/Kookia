@@ -3,7 +3,7 @@ import Button from "../common/Button";
 import { commitSalesImport, createSaleItem, getSaleItems, previewSalesImport, type SaleItem, type SalesImportPreview } from "../../services/salesService";
 
 const errorMessage = (cause: unknown) => cause instanceof Error ? cause.message : "Réessayez.";
-const statusLabel = { ready: "Prête", invalid: "Invalide", unmapped: "Sans correspondance", duplicate: "Doublon dans le fichier", existing: "Vente déjà enregistrée" };
+const statusLabel = { ready: "Prête", invalid: "Invalide", unmapped: "Sans correspondance", duplicate: "Doublon dans le fichier", existing: "Vente déjà enregistrée", closed: "Service fermé" };
 
 export default function SalesImport({ items, onImported, onItemsCreated }: {
   items: SaleItem[]; onImported: (date: string) => Promise<void>; onItemsCreated: (items: SaleItem[]) => void;

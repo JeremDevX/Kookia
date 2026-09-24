@@ -5,13 +5,21 @@ export interface DailySale {
   quantity: number; source: "manual" | "csv" | "demo_simulation"; revision: number;
   createdBy: string; updatedBy: string; createdAt: string; updatedAt: string;
 }
-export interface LatestService { serviceDate: string; sources: ("manual" | "csv" | "demo_simulation")[] }
+export type ServiceStatus = "open" | "closed";
+export type ServiceCoverage = "complete" | "partial" | "missing";
+export interface ServiceDay {
+  serviceDate: string; status: ServiceStatus; coverage: ServiceCoverage; revision: number;
+  actorId: string; salesCount: number; updatedAt: string;
+}
+export interface LatestService extends ServiceDay { sources: ("manual" | "csv" | "demo_simulation")[] }
 export interface SaleItem { id: string; name: string }
 export interface SaleValues { saleItemId: string; serviceDate: string; quantity: number }
 export interface SalesMetrics {
   period: { from: string; to: string }; previousPeriod: { from: string; to: string };
   provenance: "recorded_sales" | "demo_simulation" | "mixed"; status: "no_data" | "insufficient_history" | "ready";
   minimumObservedDays: number; observedDays: number; previousObservedDays: number;
+  completeServiceDays: number; incompleteServiceDays: number;
+  previousCompleteServiceDays: number; previousIncompleteServiceDays: number;
   totalQuantity: number; manualQuantity: number; csvQuantity: number; demoSimulationQuantity: number; correctedCsvQuantity: number;
   averagePerObservedDay: number | null; previousAveragePerObservedDay: number | null; changePercent: number | null;
   items: { saleItemId: string; saleItemName: string; quantity: number }[];
@@ -27,6 +35,13 @@ export const getSales = (from: string, to: string) => apiRequest<DailySale[]>(
   `/workspace/sales?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
 );
 export const getLatestService = () => apiRequest<LatestService | null>("/workspace/sales/latest");
+export const getServiceDays = (from: string, to: string) => apiRequest<ServiceDay[]>(
+  `/workspace/sales/service-days?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+);
+export const saveServiceDay = (day: Pick<ServiceDay, "serviceDate" | "revision" | "status" | "coverage">) =>
+  apiRequest<ServiceDay>(`/workspace/sales/service-days/${encodeURIComponent(day.serviceDate)}`, {
+    method: "PUT", body: JSON.stringify({ expectedRevision: day.revision, status: day.status, coverage: day.coverage }),
+  });
 export const getSalesMetrics = (from: string, to: string) => apiRequest<SalesMetrics>(
   `/workspace/sales/metrics?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
 );
@@ -34,6 +49,7 @@ export interface SalesBaseline {
   provenance: "recorded_sales" | "demo_simulation" | "mixed"; model: "rolling_mean_7_v1";
   asOfDate: string; forecastDate: string; historyFrom: string;
   requiredConsecutiveDays: number; lookbackDays: number; evaluationDays: number;
+  completeServiceDays: number; openServiceDays: number; incompleteDates: string[];
   status: "no_data" | "insufficient_history" | "experimental";
   observedItemCount: number;
   items: {
@@ -54,7 +70,7 @@ export const correctSale = (id: string, revision: number, values: SaleValues) =>
 export interface SalesImportRow {
   line: number; serviceDate: string; itemName: string; quantity: number;
   saleItemId?: string; saleItemName?: string;
-  status: "ready" | "invalid" | "unmapped" | "duplicate" | "existing";
+  status: "ready" | "invalid" | "unmapped" | "duplicate" | "existing" | "closed";
   message?: string;
 }
 export interface SalesImportPreview {

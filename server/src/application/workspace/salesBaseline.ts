@@ -6,6 +6,12 @@ export interface BaselineSale {
   source: "manual" | "csv" | "demo_simulation";
 }
 
+export interface BaselineServiceDay {
+  serviceDate: string;
+  status: "open" | "closed";
+  coverage: "complete" | "partial" | "missing";
+}
+
 const HISTORY_DAYS = 28;
 const LOOKBACK_DAYS = 7;
 const EVALUATION_DAYS = 7;
@@ -14,8 +20,15 @@ const day = (date: string, offset: number) =>
 const mean = (values: number[]) => Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 const round = (value: number) => Math.round(value * 10) / 10;
 
-export function evaluateSalesBaseline(sales: BaselineSale[], asOfDate: string) {
+export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: BaselineServiceDay[], asOfDate: string) {
   const dates = Array.from({ length: HISTORY_DAYS }, (_, index) => day(asOfDate, index - HISTORY_DAYS + 1));
+  const serviceDayByDate = new Map(serviceDays.map((serviceDay) => [serviceDay.serviceDate, serviceDay]));
+  const incompleteDates = dates.filter((date) => serviceDayByDate.get(date)?.coverage !== "complete");
+  const completeServiceDays = dates.filter((date) => serviceDayByDate.get(date)?.coverage === "complete").length;
+  const openServiceDays = dates.filter((date) => {
+    const serviceDay = serviceDayByDate.get(date);
+    return serviceDay?.status === "open" && serviceDay.coverage === "complete";
+  }).length;
   const byItem = new Map<string, { saleItemId: string; saleItemName: string; byDate: Map<string, number> }>();
   const sources = new Set<string>();
   for (const sale of sales) {
@@ -26,9 +39,8 @@ export function evaluateSalesBaseline(sales: BaselineSale[], asOfDate: string) {
     item.byDate.set(sale.serviceDate, (item.byDate.get(sale.serviceDate) ?? 0) + sale.quantity);
     byItem.set(sale.saleItemId, item);
   }
-  const items = [...byItem.values()].flatMap((item) => {
-    if (dates.some((date) => !item.byDate.has(date))) return [];
-    const quantities = dates.map((date) => item.byDate.get(date)!);
+  const items = incompleteDates.length ? [] : [...byItem.values()].flatMap((item) => {
+    const quantities = dates.map((date) => item.byDate.get(date) ?? 0);
     const errors = Array.from({ length: EVALUATION_DAYS }, (_, index) => {
       const target = HISTORY_DAYS - EVALUATION_DAYS + index;
       return Math.abs(mean(quantities.slice(target - LOOKBACK_DAYS, target)) - quantities[target]);
@@ -45,7 +57,8 @@ export function evaluateSalesBaseline(sales: BaselineSale[], asOfDate: string) {
     provenance, model: "rolling_mean_7_v1" as const,
     asOfDate, forecastDate: day(asOfDate, 1), historyFrom: dates[0],
     requiredConsecutiveDays: HISTORY_DAYS, lookbackDays: LOOKBACK_DAYS, evaluationDays: EVALUATION_DAYS,
-    status: byItem.size === 0 ? "no_data" as const : items.length === 0 ? "insufficient_history" as const : "experimental" as const,
+    completeServiceDays, openServiceDays, incompleteDates,
+    status: byItem.size === 0 ? "no_data" as const : incompleteDates.length > 0 ? "insufficient_history" as const : "experimental" as const,
     observedItemCount: byItem.size, items,
   };
 }

@@ -16,7 +16,7 @@ async function account() {
   return { agent, actorId: result.body.user.id as string, restaurantId: restaurant.id };
 }
 
-it("evaluates only complete recorded-sale history of the authenticated restaurant", async () => {
+it("requires complete calendar coverage and treats absent item rows as zero only on reviewed days", async () => {
   const owner = await account();
   const other = await account();
   const complete = await owner.agent.post("/api/workspace/sales/items").send({ name: "Pizza" }).expect(201);
@@ -25,6 +25,10 @@ it("evaluates only complete recorded-sale history of the authenticated restauran
     month: "2-digit", day: "2-digit" }).format(new Date());
   const asOf = new Date(Date.parse(today) - 86_400_000).toISOString().slice(0, 10);
   const date = (index: number) => new Date(Date.parse(asOf) + (index - 27) * 86_400_000);
+  await prisma.serviceDay.createMany({ data: Array.from({ length: 28 }, (_, index) => ({
+    restaurantId: owner.restaurantId, serviceDate: date(index), status: "open", coverage: "complete",
+    actorId: owner.actorId,
+  })) });
   await prisma.dailySale.createMany({ data: Array.from({ length: 28 }, (_, index) => [
     { saleItemId: complete.body.id as string, quantity: 10, serviceDate: date(index) },
     ...(index === 10 ? [] : [{ saleItemId: incomplete.body.id as string, quantity: 2, serviceDate: date(index) }]),
@@ -33,9 +37,14 @@ it("evaluates only complete recorded-sale history of the authenticated restauran
   const response = await owner.agent.get("/api/workspace/sales/baseline").expect(200);
   expect(response.body).toMatchObject({ provenance: "recorded_sales", status: "experimental",
     model: "rolling_mean_7_v1", asOfDate: asOf, forecastDate: today, observedItemCount: 2 });
-  expect(response.body.items).toEqual([{ saleItemId: complete.body.id, saleItemName: "Pizza", forecastQuantity: 10,
-    backtest: { from: new Date(Date.parse(asOf) - 6 * 86_400_000).toISOString().slice(0, 10),
-      to: asOf, days: 7, meanAbsoluteError: 0, weightedAbsolutePercentageError: 0 } }]);
-  expect((await other.agent.get("/api/workspace/sales/baseline").expect(200)).body).toMatchObject({ status: "no_data", items: [] });
+  expect(response.body.items.map((item: { saleItemId: string; forecastQuantity: number }) =>
+    [item.saleItemId, item.forecastQuantity])).toEqual([[complete.body.id, 10], [incomplete.body.id, 2]]);
+  await prisma.serviceDay.update({ where: { restaurantId_serviceDate: {
+    restaurantId: owner.restaurantId, serviceDate: date(10),
+  } }, data: { coverage: "partial" } });
+  expect((await owner.agent.get("/api/workspace/sales/baseline").expect(200)).body)
+    .toMatchObject({ status: "insufficient_history", completeServiceDays: 27, items: [] });
+  expect((await other.agent.get("/api/workspace/sales/baseline").expect(200)).body)
+    .toMatchObject({ status: "no_data", items: [], completeServiceDays: 0, incompleteDates: expect.any(Array) });
   await request(app).get("/api/workspace/sales/baseline").expect(401);
 });

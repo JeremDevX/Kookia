@@ -5,6 +5,7 @@ import { WorkspaceError } from "./catalogService.js";
 export interface SaleValues { saleItemId: string; serviceDate: string; quantity: number }
 
 const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
+const serviceDayWhere = (restaurantId: string, serviceDate: string) => ({ restaurantId_serviceDate: { restaurantId, serviceDate: date(serviceDate) } });
 const saleDto = (sale: Prisma.DailySaleGetPayload<{ include: { saleItem: true } }>) => ({
   id: sale.id, saleItemId: sale.saleItemId, saleItemName: sale.saleItem.name,
   serviceDate: sale.serviceDate.toISOString().slice(0, 10),
@@ -12,6 +13,49 @@ const saleDto = (sale: Prisma.DailySaleGetPayload<{ include: { saleItem: true } 
   createdBy: sale.createdBy, updatedBy: sale.updatedBy,
   createdAt: sale.createdAt.toISOString(), updatedAt: sale.updatedAt.toISOString(),
 });
+const serviceDayDto = (day: Prisma.ServiceDayGetPayload<{ include: { _count: { select: { sales: true } } } }>) => ({
+  serviceDate: day.serviceDate.toISOString().slice(0, 10), status: day.status, coverage: day.coverage,
+  revision: day.revision, actorId: day.actorId, salesCount: day._count.sales, updatedAt: day.updatedAt.toISOString(),
+});
+
+export async function listServiceDays(restaurantId: string, from: string, to: string) {
+  const rows = await prisma.serviceDay.findMany({ where: { restaurantId, serviceDate: { gte: date(from), lte: date(to) } },
+    include: { _count: { select: { sales: true } } }, orderBy: { serviceDate: "desc" } });
+  return rows.map(serviceDayDto);
+}
+
+export async function saveServiceDay(restaurantId: string, actorId: string, serviceDate: string,
+  expectedRevision: number, status: "open" | "closed", coverage: "complete" | "partial" | "missing") {
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
+    const where = serviceDayWhere(restaurantId, serviceDate);
+    const current = await tx.serviceDay.findUnique({ where });
+    const salesCount = await tx.dailySale.count({ where: { restaurantId, serviceDate: date(serviceDate) } });
+    if (current ? current.revision !== expectedRevision : expectedRevision !== 0) {
+      throw new WorkspaceError(409, "REVISION_CONFLICT", "L’état de ce service a changé. Rechargez le calendrier.");
+    }
+    if (status === "closed" && salesCount > 0) throw new WorkspaceError(409, "DAY_HAS_SALES", "Ce jour contient des ventes ; il ne peut pas être déclaré fermé.");
+    if (status === "open" && coverage === "missing" && salesCount > 0) {
+      throw new WorkspaceError(409, "DAY_HAS_SALES", "Ce jour contient déjà des ventes ; choisissez une couverture partielle ou complète.");
+    }
+    if (status === "closed" && coverage !== "complete") throw new WorkspaceError(400, "INVALID_SERVICE_DAY", "Un jour fermé doit être confirmé comme complet.");
+    if (current) {
+      await tx.serviceDay.update({ where, data: { status, coverage, actorId, revision: { increment: 1 } } });
+    } else {
+      await tx.serviceDay.create({ data: { restaurantId, serviceDate: date(serviceDate), status, coverage, actorId, revision: 1 } });
+    }
+    return serviceDayDto(await tx.serviceDay.findUniqueOrThrow({ where, include: { _count: { select: { sales: true } } } }));
+  });
+}
+
+export async function ensureOpenPartialServiceDay(tx: Prisma.TransactionClient, restaurantId: string, actorId: string, serviceDate: string) {
+  const where = serviceDayWhere(restaurantId, serviceDate);
+  const current = await tx.serviceDay.findUnique({ where });
+  if (current?.status === "closed") throw new WorkspaceError(409, "SERVICE_CLOSED", "Ce jour est déclaré fermé ; aucune vente ne peut y être ajoutée.");
+  if (!current) return tx.serviceDay.create({ data: { restaurantId, serviceDate: date(serviceDate), status: "open", coverage: "partial", actorId } });
+  if (current.coverage !== "partial") return tx.serviceDay.update({ where, data: { coverage: "partial", actorId, revision: { increment: 1 } } });
+  return current;
+}
 
 export async function listSaleItems(restaurantId: string) {
   return prisma.saleItem.findMany({ where: { restaurantId }, select: { id: true, name: true }, orderBy: { name: "asc" } });
@@ -42,25 +86,30 @@ export async function listSales(restaurantId: string, from: string, to: string) 
 }
 
 export async function latestService(restaurantId: string) {
-  const latest = await prisma.dailySale.findFirst({ where: { restaurantId }, orderBy: { serviceDate: "desc" }, select: { serviceDate: true } });
+  const latest = await prisma.serviceDay.findFirst({ where: { restaurantId }, orderBy: { serviceDate: "desc" },
+    include: { _count: { select: { sales: true } }, sales: { distinct: ["source"], select: { source: true } } } });
   if (!latest) return null;
-  const sources = await prisma.dailySale.findMany({ where: { restaurantId, serviceDate: latest.serviceDate }, distinct: ["source"], select: { source: true } });
-  return { serviceDate: latest.serviceDate.toISOString().slice(0, 10), sources: sources.map((row) => row.source) };
+  return { ...serviceDayDto(latest), sources: latest.sales.map((row) => row.source) };
 }
 
 export async function createSale(restaurantId: string, actorId: string, operationId: string, input: SaleValues) {
-  const prior = await prisma.dailySale.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { saleItem: true } });
-  if (prior) {
-    if (prior.saleItemId === input.saleItemId && prior.serviceDate.getTime() === date(input.serviceDate).getTime() && prior.quantity === input.quantity) return saleDto(prior);
-    throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération correspond déjà à une autre vente.");
-  }
-  await assertSaleItem(restaurantId, input.saleItemId);
   try {
-    const sale = await prisma.dailySale.create({ data: {
-      restaurantId, saleItemId: input.saleItemId, serviceDate: date(input.serviceDate),
-      quantity: input.quantity, source: "manual", operationId, createdBy: actorId, updatedBy: actorId,
-    }, include: { saleItem: true } });
-    return saleDto(sale);
+    return await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
+      const prior = await tx.dailySale.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { saleItem: true } });
+      if (prior) {
+        if (prior.saleItemId === input.saleItemId && prior.serviceDate.getTime() === date(input.serviceDate).getTime() && prior.quantity === input.quantity) return saleDto(prior);
+        throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération correspond déjà à une autre vente.");
+      }
+      const item = await tx.saleItem.findUnique({ where: { restaurantId_id: { restaurantId, id: input.saleItemId } } });
+      if (!item) throw new WorkspaceError(400, "INVALID_SALE_ITEM", "Article vendu introuvable dans votre espace.");
+      await ensureOpenPartialServiceDay(tx, restaurantId, actorId, input.serviceDate);
+      const sale = await tx.dailySale.create({ data: {
+        restaurantId, saleItemId: input.saleItemId, serviceDate: date(input.serviceDate),
+        quantity: input.quantity, source: "manual", operationId, createdBy: actorId, updatedBy: actorId,
+      }, include: { saleItem: true } });
+      return saleDto(sale);
+    });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       const retry = await prisma.dailySale.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { saleItem: true } });
@@ -74,17 +123,21 @@ export async function createSale(restaurantId: string, actorId: string, operatio
 export async function correctSale(restaurantId: string, actorId: string, id: string, revision: number, input: SaleValues) {
   await assertSaleItem(restaurantId, input.saleItemId);
   try {
-    const updated = await prisma.dailySale.updateMany({
-      where: { id, restaurantId, revision },
-      data: { saleItemId: input.saleItemId, serviceDate: date(input.serviceDate), quantity: input.quantity,
-        updatedBy: actorId, revision: { increment: 1 } },
+    return await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
+      const current = await tx.dailySale.findFirst({ where: { id, restaurantId }, select: { serviceDate: true, revision: true } });
+      if (!current) throw new WorkspaceError(404, "NOT_FOUND", "Vente introuvable.");
+      if (current.revision !== revision) throw new WorkspaceError(409, "REVISION_CONFLICT", "Cette vente a changé ; rechargez l’historique avant correction.");
+      const oldDate = current.serviceDate.toISOString().slice(0, 10);
+      if (oldDate !== input.serviceDate) await ensureOpenPartialServiceDay(tx, restaurantId, actorId, input.serviceDate);
+      const updated = await tx.dailySale.updateMany({
+        where: { id, restaurantId, revision },
+        data: { saleItemId: input.saleItemId, serviceDate: date(input.serviceDate), quantity: input.quantity,
+          updatedBy: actorId, revision: { increment: 1 } },
+      });
+      if (!updated.count) throw new WorkspaceError(409, "REVISION_CONFLICT", "Cette vente a changé ; rechargez l’historique avant correction.");
+      return saleDto(await tx.dailySale.findFirstOrThrow({ where: { id, restaurantId }, include: { saleItem: true } }));
     });
-    if (!updated.count) {
-      const existing = await prisma.dailySale.findFirst({ where: { id, restaurantId }, select: { id: true } });
-      throw new WorkspaceError(existing ? 409 : 404, existing ? "REVISION_CONFLICT" : "NOT_FOUND",
-        existing ? "Cette vente a changé ; rechargez l’historique avant correction." : "Vente introuvable.");
-    }
-    return saleDto(await prisma.dailySale.findFirstOrThrow({ where: { id, restaurantId }, include: { saleItem: true } }));
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002")
       throw new WorkspaceError(409, "SALE_CONFLICT", "Une vente existe déjà pour cet article et cette date.");

@@ -7,6 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ServiceDayStatus {
+  open
+  closed
+}
+
+enum ServiceDayCoverage {
+  complete
+  partial
+  missing
+}
+
 model User {
   id             String    @id @default(uuid())
   email          String
@@ -60,6 +71,7 @@ model Restaurant {
   sales        DailySale[]
   saleItems    SaleItem[]
   saleImports  SaleImport[]
+  serviceDays  ServiceDay[]
 }
 
 model Supplier {
@@ -210,6 +222,21 @@ model SaleItem {
   @@unique([restaurantId, id])
 }
 
+model ServiceDay {
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  serviceDate  DateTime @db.Date
+  status       ServiceDayStatus
+  coverage     ServiceDayCoverage
+  revision     Int @default(0)
+  actorId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sales        DailySale[]
+
+  @@id([restaurantId, serviceDate])
+}
+
 model DailySale {
   id           String   @id @default(uuid())
   restaurantId String
@@ -217,6 +244,7 @@ model DailySale {
   saleItemId   String
   saleItem     SaleItem @relation(fields: [restaurantId, saleItemId], references: [restaurantId, id], onDelete: NoAction)
   serviceDate  DateTime @db.Date
+  serviceDay   ServiceDay @relation(fields: [restaurantId, serviceDate], references: [restaurantId, serviceDate], onDelete: NoAction)
   quantity     Int
   source       String   @default("manual")
   operationId  String

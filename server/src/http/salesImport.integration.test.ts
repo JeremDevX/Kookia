@@ -22,21 +22,29 @@ it("previews row errors and mappings, imports valid rows once, and keeps manual 
   const salad = await owner.post("/api/workspace/sales/items").send({ name: "Salade" }).expect(201);
   const foreign = await other.post("/api/workspace/sales/items").send({ name: "Other" }).expect(201);
   const catalogBefore = await owner.get("/api/workspace/catalog").expect(200);
+  await owner.put("/api/workspace/sales/service-days/2026-09-23")
+    .send({ expectedRevision: 0, status: "closed", coverage: "complete" }).expect(200);
   await owner.post("/api/workspace/sales").send({ operationId: randomUUID(), saleItemId: pizza.body.id,
     serviceDate: "2026-09-18", quantity: 2 }).expect(201);
-  const csv = "service_date,item_name,quantity\n2026-09-19,Pizza,3\n2026-09-19,Pizza,4\n2026-09-18,Pizza,5\n2026-09-20,Salaat,6\n2026-09-21,Salade,0\n2026-09-22,Salade,7\n";
+  const csv = "service_date,item_name,quantity\n2026-09-19,Pizza,3\n2026-09-19,Pizza,4\n2026-09-18,Pizza,5\n2026-09-20,Salaat,6\n2026-09-21,Salade,0\n2026-09-22,Salade,7\n2026-09-23,Pizza,2\n";
   const url = "/api/workspace/sales/imports";
   await request(app).post(`${url}/preview`).send({ csv, mapping: {} }).expect(401);
   const first = await owner.post(`${url}/preview`).send({ csv, mapping: {} }).expect(200);
-  expect(first.body.rows.map((row: { status: string }) => row.status)).toEqual(["ready", "duplicate", "existing", "unmapped", "invalid", "ready"]);
+  expect(first.body.rows.map((row: { status: string }) => row.status)).toEqual(["ready", "duplicate", "existing", "unmapped", "invalid", "ready", "closed"]);
   const foreignMapping = await owner.post(`${url}/preview`).send({ csv, mapping: { Salaat: foreign.body.id } }).expect(200);
   expect(foreignMapping.body.rows[3].status).toBe("unmapped");
   const mapped = await owner.post(`${url}/preview`).send({ csv, mapping: { Salaat: salad.body.id } }).expect(200);
   expect(mapped.body.readyCount).toBe(3);
-  expect(mapped.body.rejectedCount).toBe(3);
+  expect(mapped.body.rejectedCount).toBe(4);
   await owner.post(url).send({ csv, mapping: { Salaat: salad.body.id }, expectedHash: "0".repeat(64) }).expect(409);
   const saved = await owner.post(url).send({ csv, mapping: { Salaat: salad.body.id }, expectedHash: mapped.body.hash }).expect(201);
-  expect(saved.body).toMatchObject({ alreadyImported: false, acceptedCount: 3, rejectedCount: 3 });
+  expect(saved.body).toMatchObject({ alreadyImported: false, acceptedCount: 3, rejectedCount: 4 });
+  const daysAfterImport = (await owner.get("/api/workspace/sales/service-days?from=2026-09-19&to=2026-09-23").expect(200)).body;
+  expect(daysAfterImport).toEqual(expect.arrayContaining([
+    expect.objectContaining({ serviceDate: "2026-09-19", status: "open", coverage: "partial", salesCount: 1 }),
+    expect.objectContaining({ serviceDate: "2026-09-22", status: "open", coverage: "partial", salesCount: 1 }),
+    expect.objectContaining({ serviceDate: "2026-09-23", status: "closed", coverage: "complete", salesCount: 0 }),
+  ]));
   const repeated = await owner.post(url).send({ csv, mapping: { Salaat: salad.body.id }, expectedHash: mapped.body.hash }).expect(201);
   expect(repeated.body).toMatchObject({ id: saved.body.id, alreadyImported: true, acceptedCount: 3 });
   const list = await owner.get("/api/workspace/sales?from=2026-09-18&to=2026-09-22").expect(200);

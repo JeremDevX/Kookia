@@ -34,6 +34,11 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
   const saleItems = plan.sales.filter((sale, index, all) => all.findIndex((candidate) => candidate.itemId === sale.itemId) === index);
 
   await prisma.$transaction(async (tx) => {
+    const serviceDateValues = plan.serviceDays.map((serviceDate) => new Date(serviceDate + "T00:00:00.000Z"));
+    const existingServiceDays = await tx.serviceDay.count({
+      where: { restaurantId, serviceDate: { in: serviceDateValues } },
+    });
+    if (existingServiceDays) throw new Error("Calendrier déjà renseigné sur la période ; la simulation exige des dates libres.");
     if (legacyMovementIds.length) await tx.stockMovement.deleteMany({ where: { restaurantId, id: { in: legacyMovementIds } } });
     if (oldProductIds.length) await tx.product.deleteMany({ where: { restaurantId, id: { in: oldProductIds } } });
 
@@ -82,6 +87,10 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
 
     await tx.saleItem.createMany({ data: saleItems.map((sale) => ({
       id: sale.itemId, restaurantId, name: sale.itemName, normalizedName: normalizeName(sale.itemName),
+    })) });
+    await tx.serviceDay.createMany({ data: plan.serviceDays.map((serviceDate) => ({
+      restaurantId, serviceDate: new Date(serviceDate + "T00:00:00.000Z"),
+      status: "open", coverage: "complete", actorId: SIMULATION_MARKER,
     })) });
     await insertBatches(plan.sales.map((sale) => ({
       id: sale.id, restaurantId, saleItemId: sale.itemId,

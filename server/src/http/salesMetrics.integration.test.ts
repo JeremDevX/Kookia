@@ -26,6 +26,13 @@ it("computes recorded-sale metrics in the tenant and selected periods only", asy
     restaurantId: owner.restaurantId, saleItemId: itemId, serviceDate: new Date(`${serviceDate}T00:00:00Z`),
     quantity, source, revision, operationId: randomUUID(), createdBy: owner.actorId, updatedBy: owner.actorId,
   });
+  const serviceDates = Array.from({ length: 7 }, (_, index) =>
+    "2026-08-" + String(25 + index).padStart(2, "0")).concat(
+    Array.from({ length: 7 }, (_, index) => "2026-09-0" + (index + 1)));
+  await prisma.serviceDay.createMany({ data: serviceDates.map((serviceDate) => ({
+    restaurantId: owner.restaurantId, serviceDate: new Date(serviceDate + "T00:00:00Z"),
+    status: "open", coverage: "complete", actorId: owner.actorId,
+  })) });
   await prisma.dailySale.createMany({ data: [
     ...Array.from({ length: 7 }, (_, index) => makeRow(`2026-08-${25 + index}`, 2, "manual")),
     ...Array.from({ length: 7 }, (_, index) => makeRow(`2026-09-0${index + 1}`, 4, index === 0 ? "csv" : "manual", index === 0 ? 1 : 0)),
@@ -48,6 +55,15 @@ it("computes recorded-sale metrics in the tenant and selected periods only", asy
 it("includes simulation rows while keeping their provenance separate", async () => {
   const owner = await account();
   const item = await owner.agent.post("/api/workspace/sales/items").send({ name: "Pizza simulée" }).expect(201);
+  const serviceDates = Array.from({ length: 14 }, (_, index) => {
+    const month = index < 7 ? "08" : "09";
+    const date = index < 7 ? 25 + index : index - 6;
+    return "2026-" + month + "-" + String(date).padStart(2, "0");
+  });
+  await prisma.serviceDay.createMany({ data: serviceDates.map((serviceDate) => ({
+    restaurantId: owner.restaurantId, serviceDate: new Date(serviceDate + "T00:00:00Z"),
+    status: "open", coverage: "complete", actorId: owner.actorId,
+  })) });
   await prisma.dailySale.createMany({ data: Array.from({ length: 14 }, (_, index) => ({
     restaurantId: owner.restaurantId, saleItemId: item.body.id as string,
     serviceDate: new Date(`2026-${index < 7 ? "08" : "09"}-${String(index < 7 ? 25 + index : index - 6).padStart(2, "0")}T00:00:00Z`),

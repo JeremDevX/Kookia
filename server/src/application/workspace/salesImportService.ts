@@ -2,12 +2,13 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
 import { parseSalesCsv } from "./salesCsv.js";
+import { ensureOpenPartialServiceDay } from "./salesService.js";
 
 export interface ImportMapping { [itemName: string]: string }
 type PreviewRow = {
   line: number; serviceDate: string; itemName: string; quantity: number;
   saleItemId?: string; saleItemName?: string;
-  status: "ready" | "invalid" | "unmapped" | "duplicate" | "existing";
+  status: "ready" | "invalid" | "unmapped" | "duplicate" | "existing" | "closed";
   message?: string;
 };
 const key = (date: string, id: string) => `${date}:${id}`;
@@ -23,6 +24,8 @@ export async function previewSalesImport(restaurantId: string, csv: string, mapp
     select: { serviceDate: true, saleItemId: true },
   }) : [];
   const occupied = new Set(existing.map((sale) => key(sale.serviceDate.toISOString().slice(0, 10), sale.saleItemId)));
+  const closedDays = await prisma.serviceDay.findMany({ where: { restaurantId, serviceDate: { in: validDates.map((value) => new Date(`${value}T00:00:00Z`)) }, status: "closed" }, select: { serviceDate: true } });
+  const closedDates = new Set(closedDays.map((row) => row.serviceDate.toISOString().slice(0, 10)));
   const seen = new Set<string>();
   const rows: PreviewRow[] = parsed.rows.map((row) => {
     if (row.error) return { ...row, status: "invalid", message: row.error };
@@ -34,6 +37,8 @@ export async function previewSalesImport(restaurantId: string, csv: string, mapp
     seen.add(identity);
     if (occupied.has(identity)) return { ...row, saleItemId: item.id, saleItemName: item.name,
       status: "existing", message: "Une vente existe déjà pour cet article et cette date." };
+    if (closedDates.has(row.serviceDate)) return { ...row, saleItemId: item.id, saleItemName: item.name,
+      status: "closed", message: "Le calendrier indique que le restaurant était fermé ce jour-là." };
     return { ...row, saleItemId: item.id, saleItemName: item.name, status: "ready" };
   });
   const previous = await prisma.saleImport.findUnique({ where: { restaurantId_fileHash: { restaurantId, fileHash: parsed.hash } },
@@ -53,6 +58,10 @@ export async function commitSalesImport(restaurantId: string, actorId: string, c
   if (!ready.length) throw new WorkspaceError(400, "NO_VALID_ROWS", "Aucune ligne importable. Corrigez le fichier ou les correspondances.");
   try {
     return await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
+      for (const serviceDate of [...new Set(ready.map((row) => row.serviceDate))].sort()) {
+        await ensureOpenPartialServiceDay(tx, restaurantId, actorId, serviceDate);
+      }
       const record = await tx.saleImport.create({ data: { restaurantId, fileHash: preview.hash,
         acceptedCount: ready.length, rejectedCount: preview.rejectedCount, createdBy: actorId } });
       await tx.dailySale.createMany({ data: ready.map((row) => ({

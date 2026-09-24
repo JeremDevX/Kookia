@@ -13,6 +13,8 @@ it("builds a complete, deterministic multi-year service and inventory ledger", (
   expect(plan.sourceDigest).toBe(replay.sourceDigest);
   expect(plan.movements).toEqual(replay.movements);
   expect(plan.counts.serviceDays).toBeGreaterThan(900);
+  expect(plan.serviceDays).toHaveLength(plan.counts.serviceDays);
+  expect(plan.serviceDays.every((date) => plan.sales.some((sale) => sale.date === date))).toBe(true);
   expect(plan.sales).toHaveLength(plan.productions.length);
   expect(plan.sales.every((sale) => sale.portionsPrepared === sale.quantity + sale.estimatedUnsold)).toBe(true);
   expect(plan.counts.estimatedUnsoldPortions / plan.counts.soldPortions).toBeCloseTo(0.015, 2);

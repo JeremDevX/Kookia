@@ -60,11 +60,19 @@ try {
   await assertNoHumanChanges(restaurantId, marker);
 
   await prisma.$transaction(async (tx) => {
+    const generatedServiceDates = await tx.dailySale.findMany({
+      where: { restaurantId, source: "demo_simulation", operationId: { startsWith: SIMULATION_VERSION + ":" } },
+      select: { serviceDate: true }, distinct: ["serviceDate"],
+    });
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
     await tx.dailySale.deleteMany({ where: { restaurantId, source: "demo_simulation", operationId: { startsWith: `${SIMULATION_VERSION}:` } } });
     await tx.production.deleteMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } } });
     await tx.stockMovement.deleteMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } } });
     await tx.workspaceDocument.delete({ where: { restaurantId_kind: { restaurantId, kind: SIMULATION_MARKER } } });
+    await tx.serviceDay.deleteMany({ where: {
+      restaurantId, serviceDate: { in: generatedServiceDates.map((row) => row.serviceDate) },
+      actorId: SIMULATION_MARKER, revision: 0, status: "open", coverage: "complete", sales: { none: {} },
+    } });
 
     const remainingSales = await tx.dailySale.count({ where: { restaurantId, saleItemId: { in: marker.saleItemIds } } });
     if (remainingSales) throw new Error("Une vente manuelle utilise un article simulé ; rollback arrêté sans modifier son contenu.");
