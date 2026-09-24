@@ -72,7 +72,7 @@ export function stockEvent(movement: StockMovementRow): TimelineEvent {
     simulation_restock: "Réassort synthétique",
     production: "Matières consommées pour une production",
     simulation_loss: "Perte invendue estimée",
-    loss: "Perte enregistrée",
+    loss: simulation ? "Perte enregistrée — scénario simulé" : "Perte enregistrée",
     receipt: "Réception enregistrée",
     initial: "Stock initial enregistré",
     adjustment: "Ajustement de stock enregistré",
@@ -89,12 +89,15 @@ export function stockEvent(movement: StockMovementRow): TimelineEvent {
   const qualifiers = [
     !movement.productNameSnapshot ? "Le nom historique du produit est inconnu." : "",
     assumed ? "Hypothèse du scénario, non observée." : "",
+    simulation && movement.reason === "stock_count" ? "Comptage du scénario simulé, non observé." : "",
+    simulation && movement.reason === "loss" ? "Perte explicite du scénario, synthétique et non observée." : "",
     movement.reason === "invoice_import_demo" ? "Crédit de stock simulé ; la transcription source n’est pas une livraison vérifiée." : "",
   ].filter(Boolean);
   return {
     id: `stock:${movement.id}`, kind: isLoss ? "loss" : "stock",
     effectiveAt: movement.createdAt.toISOString(), knownAt: movement.createdAt.toISOString(),
-    recordedAt: movement.createdAt.toISOString(), label: labels[movement.reason] ?? "Mouvement de stock enregistré",
+    recordedAt: movement.createdAt.toISOString(), label: movement.reason === "stock_count" && movement.delta.greaterThan(0)
+      ? "Surstock compté" : labels[movement.reason] ?? "Mouvement de stock enregistré",
     detail: `${productName} · ${direction}${quantity(movement.delta)} ${unit}${supplier}${source}`,
     provenance: assumed ? "assumption" : simulation ? "simulation" : "recorded",
     ...(qualifiers.length ? { qualifier: qualifiers.join(" ") } : {}),

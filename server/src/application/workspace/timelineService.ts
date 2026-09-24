@@ -103,7 +103,9 @@ export async function listTimeline(restaurantId: string, from: string, to: strin
       id: `production:${production.id}`, kind: "production", effectiveAt: isoDate(production.date),
       knownAt: production.createdAt.toISOString(), recordedAt: production.createdAt.toISOString(),
       label: production.kind === "refusal" ? "Production refusée" : "Production enregistrée",
-      detail: `${safeText(production.recipeName)} · ${production.portions} portion(s préparée(s)${production.recipeVersion
+      detail: `${safeText(production.recipeName)} · ${production.kind === "refusal"
+        ? `${production.portions} portion(s) demandée(s), aucune sortie de stock`
+        : `${production.portions} portion(s) préparée(s)`}${production.recipeVersion
         ? ` · recette v${production.recipeVersion.version}${production.recipeVersion.effectiveFrom
           ? ` (effet ${isoDate(production.recipeVersion.effectiveFrom)})` : " (effet inconnu)"}` : " · version non liée"}`,
       provenance: production.actorId === SIMULATION_ACTOR ? "simulation" : "recorded",

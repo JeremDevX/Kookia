@@ -189,7 +189,7 @@ async function runFirstSimulation(restaurantId: string, invoices: ReturnType<typ
 
   const plannedExistingProducts = productSnapshot(seedRows);
   const plan = buildRestaurantSimulation(invoices, plannedExistingProducts);
-  const recipePlan = buildRecipePlan(normalizedRecipes, plan.productions);
+  const recipePlan = buildRecipePlan(normalizedRecipes, plan.productions, plan.recipeVersions);
   const scenarioNames = plan.sales.filter((sale, index, all) => all.findIndex((candidate) => candidate.itemId === sale.itemId) === index)
     .map((sale) => sale.itemName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR"));
   const existingSimulationItems = await prisma.saleItem.count({ where: { restaurantId, normalizedName: { in: scenarioNames } } });

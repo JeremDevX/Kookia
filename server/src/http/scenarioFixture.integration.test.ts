@@ -89,9 +89,49 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   const scenarioProductions = await prisma.production.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
     operationId: { startsWith: "restaurant-simulation-v1:" } }, include: { recipeVersion: true } });
   expect(scenarioProductions).toHaveLength(plan.productions.length);
-  expect(scenarioProductions.every((production) => production.recipeVersionId && production.recipeVersion?.actorId === "restaurant-simulation:v1" &&
-    production.recipeVersion?.effectiveFrom?.toISOString().slice(0, 10) === plan.startDate)).toBe(true);
+  for (const production of scenarioProductions) {
+    const planned = plan.productions.find((candidate) => candidate.id === production.id)!;
+    const version = plan.recipeVersions.find((candidate) => candidate.recipeId === production.recipeId &&
+      candidate.sequence === planned.recipeVersionSequence)!;
+    expect(production.recipeVersionId).toBeTruthy();
+    expect(production.recipeVersion?.actorId).toBe("restaurant-simulation:v1");
+    expect(production.recipeVersion?.effectiveFrom?.toISOString().slice(0, 10)).toBe(version.effectiveFrom);
+  }
+  const oldCarbonara = scenarioProductions.find((production) => production.recipeId === "r3" && production.date.toISOString().slice(0, 10) < "2025-06-16")!;
+  const newCarbonara = scenarioProductions.find((production) => production.recipeId === "r3" && production.date.toISOString().slice(0, 10) >= "2025-06-16")!;
+  expect(oldCarbonara.recipeVersion?.effectiveFrom?.toISOString().slice(0, 10)).toBe(plan.startDate);
+  expect(newCarbonara.recipeVersion?.effectiveFrom?.toISOString().slice(0, 10)).toBe("2025-06-16");
+  const refusal = scenarioProductions.find((production) => production.kind === "refusal")!;
+  expect(refusal.notes).toContain("Aucune sortie de stock");
+  expect(await prisma.stockMovement.count({ where: { restaurantId: scenarioOwner.restaurantId, operationId: refusal.operationId } })).toBe(0);
+  expect(scenarioProductions.some((production) => production.recipeId === refusal.recipeId && production.kind === "production" &&
+    production.date.toISOString().slice(0, 10) === refusal.date.toISOString().slice(0, 10))).toBe(true);
   expect((await prisma.restaurant.findUniqueOrThrow({ where: { id: scenarioOwner.restaurantId } })).mode).toBe("demo");
+
+  const storyCounts = await prisma.stockCount.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
+    productId: { in: ["p1", "p11"] }, operationId: { startsWith: "restaurant-simulation-v1:stock-count:" } },
+    orderBy: [{ countedAt: "asc" }, { id: "asc" }] });
+  const overstock = storyCounts.find((count) => count.operationId.endsWith(":overstock")!);
+  const currentTomatoCount = storyCounts.find((count) => count.operationId.endsWith(":current")!);
+  expect(overstock?.countedQuantity.greaterThan(overstock.theoreticalQuantity)).toBe(true);
+  expect(await prisma.stockMovement.count({ where: { restaurantId: scenarioOwner.restaurantId, stockCountId: overstock!.id } })).toBe(1);
+  const tomato = await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId: scenarioOwner.restaurantId, id: "p1" } } });
+  expect(currentTomatoCount?.countedQuantity.equals(tomato.currentStock)).toBe(true);
+  expect(currentTomatoCount?.stockRevisionAfter).toBe(tomato.stockRevision);
+  const surplusOptions = await scenarioOwner.agent.get("/api/workspace/menu/surplus-options").expect(200);
+  expect(surplusOptions.body.options).toContainEqual(expect.objectContaining({
+    productId: "p1", stockCountId: currentTomatoCount!.id, stockRevision: tomato.stockRevision,
+  }));
+  const juneTimeline = await scenarioOwner.agent.get("/api/workspace/timeline")
+    .query({ from: "2025-06-01", to: "2025-06-30", asOf: "2026-09-23" }).expect(200);
+  const decemberTimeline = await scenarioOwner.agent.get("/api/workspace/timeline")
+    .query({ from: "2025-12-01", to: "2025-12-31", asOf: "2026-09-23" }).expect(200);
+  expect(juneTimeline.body.events.some((event: { label: string; provenance: string; qualifier?: string }) =>
+    event.label === "Surstock compté" && event.provenance === "simulation" && event.qualifier?.includes("non observé"))).toBe(true);
+  expect(juneTimeline.body.events.some((event: { label: string; provenance: string; qualifier?: string }) =>
+    event.label === "Perte enregistrée — scénario simulé" && event.provenance === "simulation" && event.qualifier?.includes("non observée"))).toBe(true);
+  expect(decemberTimeline.body.events.some((event: { label: string; detail: string }) =>
+    event.label === "Production refusée" && event.detail.includes("aucune sortie de stock"))).toBe(true);
 
   const received = plan.receipts[0];
   const simulationOperationId = `restaurant-simulation-v1:invoice:${received.invoiceId}:${received.productId}`;

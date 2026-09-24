@@ -4,7 +4,8 @@ const RECENT_OPENING = "2026-08-26";
 const hash32 = (value: string) => createHash("sha256").update(value).digest().readUInt32BE(0);
 const dayOfWeek = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay();
 
-export const dateAt = (date: string, hour: number) => `${date}T${String(hour).padStart(2, "0")}:00:00.000Z`;
+export const dateAt = (date: string, hour: number, minute = 0) =>
+  `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00.000Z`;
 export const dayOffset = (date: string, offset: number) => new Date(Date.parse(`${date}T00:00:00Z`) + offset * 86_400_000).toISOString().slice(0, 10);
 
 export function isOpen(date: string, openThroughDate: string) {

@@ -39,3 +39,35 @@ it("builds a complete, deterministic multi-year service and inventory ledger", (
   expect(invoices.filter((invoice) => invoice.type === "credit")).toHaveLength(15);
   expect(invoices.filter((invoice) => invoice.type === "delivery")).toHaveLength(1);
 });
+
+it("plans the local demo story with effective recipe versions, counted overstock, loss, and a blocked production", () => {
+  const products = catalog.products.map((product) => ({ ...product, currentStock: Number(product.currentStock),
+    minThreshold: Number(product.minThreshold), pricePerUnit: Number(product.pricePerUnit) }));
+  const plan = buildRestaurantSimulation(createAnonymizedSourceInvoices(), products, true);
+  const tomato = plan.productState.find((product) => product.id === "p1")!;
+  const overstock = plan.stockCounts.find((count) => count.operationId.endsWith(":overstock"))!;
+  const currentCount = plan.stockCounts.find((count) => count.operationId.endsWith(":current"))!;
+  const loss = plan.movements.find((movement) => movement.reason === "loss")!;
+  const refusal = plan.productions.find((production) => production.kind === "refusal")!;
+  const oldCarbonara = plan.productions.find((production) => production.recipeId === "r3" && production.date < "2025-06-16")!;
+  const newCarbonara = plan.productions.find((production) => production.recipeId === "r3" && production.date >= "2025-06-16")!;
+
+  expect(plan.counts).toMatchObject({ stockCounts: 3, overstockCounts: 1, explicitLosses: 1, refusedProductions: 1 });
+  expect(overstock.countedQuantity).toBe(60);
+  expect(overstock.countedQuantity).toBeGreaterThan(overstock.theoreticalQuantity);
+  expect(plan.movements.some((movement) => movement.reason === "stock_count" &&
+    movement.stockCountOperationId === overstock.operationId && movement.delta === overstock.delta)).toBe(true);
+  expect(loss).toMatchObject({ productId: "p1", delta: -10, at: "2025-06-13T16:00:00.000Z" });
+  expect(refusal).toMatchObject({ date: "2025-12-26", portions: 35, recipeVersionSequence: 2 });
+  expect(refusal.notes).toContain("stock insuffisant");
+  expect(refusal.notes).toContain("Aucune sortie de stock");
+  expect(plan.movements.some((movement) => movement.operationId === refusal.operationId)).toBe(false);
+  expect(plan.productions.some((production) => production.date === refusal.date && production.kind === "production")).toBe(true);
+  expect(oldCarbonara.recipeVersionSequence).toBe(1);
+  expect(newCarbonara.recipeVersionSequence).toBe(2);
+  expect(plan.recipeVersions.find((version) => version.recipeId === "r3" && version.sequence === 2)?.effectiveFrom).toBe("2025-06-16");
+  expect(currentCount.countedQuantity).toBe(tomato.closing);
+  expect(currentCount.stockRevisionAfter).toBe(tomato.stockRevision);
+  expect(plan.yearCoverage["2025"]).toMatchObject({ stockCounts: 2, overstockCounts: 1, explicitLosses: 1, refusedProductions: 1 });
+  expect(Object.values(plan.productState).every((product) => product.closing >= 0)).toBe(true);
+});

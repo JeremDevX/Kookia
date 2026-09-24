@@ -55,11 +55,12 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
         where: { restaurantId_id: { restaurantId, id: product.id } },
         create: { restaurantId, id: product.id, name: product.name, category: product.category, unit: product.unit,
           currentStock: state.closing, minThreshold: product.minThreshold, pricePerUnit: state.pricePerUnit,
-          supplierId: state.supplierId!, lastDelivery: state.lastDelivery ? new Date(`${state.lastDelivery}T00:00:00.000Z`) : null },
+          supplierId: state.supplierId!, lastDelivery: state.lastDelivery ? new Date(`${state.lastDelivery}T00:00:00.000Z`) : null,
+          ...(state.stockRevision !== undefined ? { stockRevision: state.stockRevision } : {}) },
         update: { name: product.name, category: product.category, unit: product.unit, currentStock: state.closing,
           minThreshold: product.minThreshold, pricePerUnit: state.pricePerUnit, supplierId: state.supplierId!,
           lastDelivery: state.lastDelivery ? new Date(`${state.lastDelivery}T00:00:00.000Z`) : null,
-          stockRevision: { increment: 1 } },
+          ...(state.stockRevision !== undefined ? { stockRevision: state.stockRevision } : { stockRevision: { increment: 1 } }) },
       });
     }
 
@@ -68,7 +69,10 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
       select: { id: true, revision: true } });
     if (currentRecipes.length !== recipeIds.length) throw new Error("Une recette du scénario est absente de l’espace.");
     const currentRecipeById = new Map(currentRecipes.map((recipe) => [recipe.id, recipe]));
-    const ingredientProductIds = [...new Set(recipes.flatMap((recipe) => recipe.ingredients.map((ingredient) => ingredient.productId)))];
+    const ingredientProductIds = [...new Set([
+      ...recipes.flatMap((recipe) => recipe.ingredients.map((ingredient) => ingredient.productId)),
+      ...plan.recipeVersions.flatMap((version) => version.ingredients.map((ingredient) => ingredient.productId)),
+    ])];
     const ingredientProducts = await tx.product.findMany({ where: { restaurantId, id: { in: ingredientProductIds } },
       select: { id: true, name: true, unit: true } });
     const ingredientProductById = new Map(ingredientProducts.map((product) => [product.id, product]));
@@ -76,39 +80,63 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
     await tx.recipeIngredient.deleteMany({ where: { restaurantId, recipeId: { in: recipeIds } } });
     const recipeVersionIds = new Map<string, string>();
     const recipeRevisionById: Record<string, number> = {};
+    const versionsByRecipe = new Map<string, typeof plan.recipeVersions>();
+    for (const version of plan.recipeVersions) {
+      const rows = versionsByRecipe.get(version.recipeId) ?? [];
+      rows.push(version);
+      versionsByRecipe.set(version.recipeId, rows);
+    }
     for (const recipe of recipes) await tx.recipe.update({
       where: { restaurantId_id: { restaurantId, id: recipe.id } },
       data: { name: recipe.name, category: recipe.category, prepTime: recipe.prepTime,
         lastMade: recipe.lastMade ? new Date(`${recipe.lastMade}T00:00:00.000Z`) : null,
-        yieldPortions: 1, revision: { increment: 1 } },
+        yieldPortions: 1, revision: { increment: versionsByRecipe.get(recipe.id)?.length ?? 1 } },
     });
     for (const recipe of recipes) {
-      const version = currentRecipeById.get(recipe.id)!.revision + 1;
-      const savedVersion = await appendRecipeVersion(tx, { restaurantId, recipeId: recipe.id, version,
-        effectiveFrom: new Date(`${plan.startDate}T00:00:00.000Z`),
-        createdAt: new Date(`${plan.startDate}T00:00:00.000Z`),
-        operationId: `${SIMULATION_VERSION}:recipe:${recipe.id}:v${version}`, actorId: SIMULATION_MARKER,
-        name: recipe.name, category: recipe.category, prepTime: recipe.prepTime, yieldPortions: 1,
-        ingredients: recipe.ingredients.map((ingredient) => {
+      const versionPlans = versionsByRecipe.get(recipe.id)?.map((version) => ({ ...version,
+        ingredients: version.ingredients.map(({ productId, quantity }) => ({ productId, quantity })) })) ?? [{
+        sequence: 1, effectiveFrom: plan.startDate, ingredients: recipe.ingredients,
+      }];
+      for (const versionPlan of versionPlans.sort((left, right) => left.sequence - right.sequence)) {
+        const version = currentRecipeById.get(recipe.id)!.revision + versionPlan.sequence;
+        const savedVersion = await appendRecipeVersion(tx, { restaurantId, recipeId: recipe.id, version,
+          effectiveFrom: new Date(`${versionPlan.effectiveFrom}T00:00:00.000Z`),
+          createdAt: new Date(`${versionPlan.effectiveFrom}T00:00:00.000Z`),
+          operationId: `${SIMULATION_VERSION}:recipe:${recipe.id}:v${version}`, actorId: SIMULATION_MARKER,
+          name: recipe.name, category: recipe.category, prepTime: recipe.prepTime, yieldPortions: 1,
+          ingredients: versionPlan.ingredients.map((ingredient) => {
           const product = ingredientProductById.get(ingredient.productId)!;
           return { productId: ingredient.productId, productName: product.name, productUnit: product.unit,
             quantity: new Prisma.Decimal(ingredient.quantity) };
-        }) });
-      recipeVersionIds.set(recipe.id, savedVersion.id);
-      recipeRevisionById[recipe.id] = version;
+          }) });
+        recipeVersionIds.set(`${recipe.id}:${versionPlan.sequence}`, savedVersion.id);
+        recipeRevisionById[recipe.id] = version;
+      }
     }
     await insertBatches(recipes.flatMap((recipe) => recipe.ingredients.map((ingredient) => ({
       restaurantId, recipeId: recipe.id, productId: ingredient.productId, quantity: ingredient.quantity,
     }))), (batch) => tx.recipeIngredient.createMany({ data: batch }));
 
     const simulationProductsById = new Map(scenarioProducts.map((product) => [product.id, product]));
+    const stockCountIdByOperation = new Map(plan.stockCounts.map((count) => [count.operationId, count.id]));
+    await insertBatches(plan.stockCounts.map((count) => ({
+      id: count.id, restaurantId, productId: count.productId, countedQuantity: count.countedQuantity,
+      theoreticalQuantity: count.theoreticalQuantity, delta: count.delta, unit: count.unit,
+      stockRevisionBefore: count.stockRevisionBefore, stockRevisionAfter: count.stockRevisionAfter,
+      operationId: count.operationId, actorId: SIMULATION_MARKER,
+      countDate: new Date(`${count.countDate}T00:00:00.000Z`), countedAt: new Date(count.countedAt),
+    } satisfies Prisma.StockCountCreateManyInput)), (batch) => tx.stockCount.createMany({ data: batch }));
+
     await insertBatches(plan.movements.map((movement) => {
       const product = simulationProductsById.get(movement.productId);
       if (!product) throw new Error(`Produit du scénario introuvable : ${movement.productId}.`);
+      const stockCountId = movement.stockCountOperationId ? stockCountIdByOperation.get(movement.stockCountOperationId) : undefined;
+      if (movement.stockCountOperationId && !stockCountId) throw new Error("Mouvement de comptage sans comptage associé.");
       return {
       id: stableUuid(`${movement.operationId}:${movement.productId}`), restaurantId, productId: movement.productId,
       delta: movement.delta, reason: movement.reason, operationId: movement.operationId,
       productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: movement.supplierName ?? null,
+      ...(stockCountId ? { stockCountId } : {}),
       actorId: SIMULATION_MARKER, createdAt: new Date(movement.at),
     } satisfies Prisma.StockMovementCreateManyInput;
     }), (batch) => tx.stockMovement.createMany({ data: batch }));
@@ -116,9 +144,9 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
     await insertBatches(plan.productions.map((production) => ({
       id: production.id, restaurantId, recipeId: production.recipeId, recipeName: production.recipeName,
       portions: production.portions, prepTime: production.prepTime, notes: production.notes,
-      date: new Date(`${production.date}T00:00:00.000Z`), kind: "production", actorId: SIMULATION_MARKER,
+      date: new Date(`${production.date}T00:00:00.000Z`), kind: production.kind, actorId: SIMULATION_MARKER,
       operationId: production.operationId, createdAt: new Date(production.createdAt),
-      recipeVersionId: recipeVersionIds.get(production.recipeId)!,
+      recipeVersionId: recipeVersionIds.get(`${production.recipeId}:${production.recipeVersionSequence}`)!,
     } satisfies Prisma.ProductionCreateManyInput)), (batch) => tx.production.createMany({ data: batch }));
 
     await tx.saleItem.createMany({ data: saleItems.map((sale) => ({

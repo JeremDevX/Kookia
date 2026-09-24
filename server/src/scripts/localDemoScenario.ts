@@ -57,8 +57,8 @@ export async function seedLocalDemoScenario(ownerId: string) {
     id: product.id, name: product.name, unit: product.unit, currentStock: product.currentStock,
     minThreshold: product.minThreshold, pricePerUnit: product.pricePerUnit,
     supplierId: product.supplierId, category: product.category,
-  })));
-  const plannedRecipes = buildRecipePlan(recipeSnapshots, plan.productions);
+  })), true);
+  const plannedRecipes = buildRecipePlan(recipeSnapshots, plan.productions, plan.recipeVersions);
   const suppliers = await prisma.supplier.findMany({ where: { restaurantId: restaurant.id }, select: { id: true } });
 
   await prisma.workspaceDocument.createMany({ data: invoices.map((invoice) => ({

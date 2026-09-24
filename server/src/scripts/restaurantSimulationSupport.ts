@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import catalog from "../infrastructure/database/seed/catalog.json" with { type: "json" };
 import { getScenarioRecipeIngredients, type PlannedProduction } from "./restaurantSimulationPlan.js";
+import type { PlannedRecipeVersion } from "./restaurantSimulationVersions.js";
 import { recipeIngredientCorrections, scenarioProducts, scenarioRecipes } from "./restaurantSimulationCatalog.js";
 
 interface ProductRow {
@@ -52,17 +53,24 @@ export function assertSeedSnapshot(products: ProductRow[], recipes: RecipeRow[])
   }
 }
 
-export function buildRecipePlan(recipes: RecipeRow[], productions: PlannedProduction[]): PlannedRecipe[] {
+export function buildRecipePlan(recipes: RecipeRow[], productions: PlannedProduction[], versions: PlannedRecipeVersion[] = []): PlannedRecipe[] {
   const sourceRecipes = new Map(recipes.map((recipe) => [recipe.id, recipe]));
   const latestMade = new Map<string, string>();
-  for (const production of productions) latestMade.set(production.recipeId, production.date);
+  for (const production of productions) if (production.kind === "production") latestMade.set(production.recipeId, production.date);
   const productUnits = new Map(scenarioProducts.map((product) => [product.id, product.unit]));
   const scenarioRecipeIds = new Set(scenarioRecipes.map((recipe) => recipe.id));
+  const latestVersionByRecipe = new Map<string, PlannedRecipeVersion>();
+  for (const version of versions) {
+    const prior = latestVersionByRecipe.get(version.recipeId);
+    if (!prior || version.sequence > prior.sequence) latestVersionByRecipe.set(version.recipeId, version);
+  }
 
   return recipes.map((recipe) => {
     const scenarioRecipe = scenarioRecipes.find((candidate) => candidate.id === recipe.id);
     const replacement = recipeIngredientCorrections[recipe.id];
-    const ingredients = scenarioRecipe ? getScenarioRecipeIngredients(recipe.id) : replacement ?? recipe.ingredients.map((ingredient) => ({
+    const latestScenarioVersion = latestVersionByRecipe.get(recipe.id);
+    const ingredients = scenarioRecipe && latestScenarioVersion ? latestScenarioVersion.ingredients.map(({ productId, quantity }) => ({ productId, quantity }))
+      : scenarioRecipe ? getScenarioRecipeIngredients(recipe.id) : replacement ?? recipe.ingredients.map((ingredient) => ({
       productId: ingredient.productId,
       quantity: round(Number(ingredient.quantity) * (convertedSeedUnits[ingredient.productId] ?? 1)),
     }));
