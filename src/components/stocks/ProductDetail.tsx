@@ -230,6 +230,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 <div className="history-item" key={movement.id}>
                   <span className="date">{new Date(movement.createdAt).toLocaleDateString("fr-FR")}</span>
                   <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {product.unit} ({movementLabel(movement.reason)})</span>
+                  {movement.sourceDocumentId && <Link to={`/orders?source=${encodeURIComponent(movement.sourceDocumentId)}#invoices`}>Ouvrir la pièce source</Link>}
                 </div>
               ))}
             </div>

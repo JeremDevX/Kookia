@@ -51,6 +51,7 @@ model Restaurant {
   recipes      Recipe[]
   predictions  Prediction[]
   movements    StockMovement[]
+  invoiceDraftRevisions InvoiceDraftRevision[]
   productions  Production[]
   orders       PurchaseOrder[]
   decisions    RecommendationDecision[]
@@ -123,9 +124,15 @@ model StockMovement {
   reason       String
   operationId  String
   actorId      String
+  sourceDocumentId       String?
+  sourceContentHash      String?
+  sourceDocumentRevision Int?
+  invoiceDocumentId      String?
+  invoiceRevision        Int?
   createdAt    DateTime @default(now())
   @@unique([restaurantId, operationId, productId])
   @@index([restaurantId, productId, createdAt])
+  @@index([restaurantId, sourceDocumentId])
 }
 
 model Production {
@@ -260,4 +267,20 @@ model WorkspaceDocument {
   revision     Int @default(0)
   updatedAt    DateTime @updatedAt
   @@id([restaurantId, kind])
+}
+
+model InvoiceDraftRevision {
+  restaurantId           String
+  restaurant             Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  invoiceDocumentId      String
+  sourceDocumentId       String
+  sourceContentHash       String
+  sourceDocumentRevision Int
+  revision                Int
+  actorId                 String
+  data                    Json
+  createdAt               DateTime   @default(now())
+
+  @@id([restaurantId, invoiceDocumentId, revision])
+  @@index([restaurantId, sourceDocumentId, createdAt])
 }

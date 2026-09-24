@@ -38,7 +38,7 @@ function sourceDocument(invoice: ReturnType<typeof createAnonymizedSourceInvoice
     ...(line.code ? { code: line.code } : {}),
   }));
   return {
-    id: invoice.id, title: invoice.title, date: invoice.date ?? null, originalDate: invoice.originalDate ?? null,
+    id: invoice.id, contentHash: invoice.contentHash, title: invoice.title, date: invoice.date ?? null, originalDate: invoice.originalDate ?? null,
     supplier: invoice.supplier, type: invoice.type, status: invoice.status, content: invoice.content,
     stockLines,
   };

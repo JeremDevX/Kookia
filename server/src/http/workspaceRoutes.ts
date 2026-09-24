@@ -73,7 +73,16 @@ workspaceRoutes.post("/products/:id/stock", async (req, res, next) => {
 workspaceRoutes.get("/products/:id/movements", async (req, res, next) => {
   try {
     const data = await prisma.stockMovement.findMany({ where: { restaurantId: context(res).restaurantId, productId: String(req.params.id) }, orderBy: { createdAt: "desc" } });
-    res.json(data.map(({ id, delta, reason, createdAt }) => ({ id, delta: Number(delta), reason, createdAt })));
+    res.json(data.map((movement) => {
+      const legacySourceId = movement.operationId.match(/^restaurant-simulation-v1:invoice:([a-f0-9]{24}):/)?.[1];
+      return { id: movement.id, delta: Number(movement.delta), reason: movement.reason, createdAt: movement.createdAt,
+        ...(movement.sourceDocumentId ?? legacySourceId ? { sourceDocumentId: movement.sourceDocumentId ?? legacySourceId } : {}),
+        ...(movement.sourceContentHash ? { sourceContentHash: movement.sourceContentHash } : {}),
+        ...(movement.sourceDocumentRevision !== null ? { sourceDocumentRevision: movement.sourceDocumentRevision } : {}),
+        ...(movement.invoiceDocumentId ? { invoiceDocumentId: movement.invoiceDocumentId } : {}),
+        ...(movement.invoiceRevision !== null ? { invoiceRevision: movement.invoiceRevision } : {}),
+      };
+    }));
   } catch (error) { next(error); }
 });
 workspaceRoutes.get("/recipes", async (_req, res, next) => {

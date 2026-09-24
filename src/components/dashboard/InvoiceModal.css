@@ -5,6 +5,29 @@
 }
 
 .source-invoice-archive {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  background: var(--color-surface);
+  border: var(--size-1) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.source-invoice-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.source-invoice-controls,
+.source-invoice-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.source-invoice-archive details {
   border: var(--size-1) solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
@@ -15,7 +38,30 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.source-invoice-archive[open] {
+.source-line-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding-inline-start: var(--spacing-lg);
+}
+
+.invoice-source-note {
+  border-inline-start: var(--size-3) solid var(--color-info);
+  padding-inline-start: var(--spacing-md);
+}
+
+.invoice-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.invoice-source-line {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.invoice-line-decision {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -137,4 +183,17 @@
   justify-content: flex-end;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-xs);
+}
+
+@media (--media-workspace-compact) {
+  .source-invoice-heading-actions,
+  .invoice-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .source-invoice-heading-actions .btn,
+  .invoice-actions .btn {
+    width: var(--unit-100percent);
+  }
 }

@@ -1,23 +1,38 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import Modal from "../components/common/Modal";
+import InvoiceModal from "../components/dashboard/InvoiceModal";
 import OrderGenerator from "../components/dashboard/OrderGenerator";
 import OrderHistory from "../components/dashboard/OrderHistory";
+import SourceInvoiceArchive from "../components/dashboard/SourceInvoiceArchive";
 import { useCart } from "../context/useCart";
+import { useToast } from "../context/ToastContext";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { createOrderRecommendationsFromCartItems } from "../features/orders/orderRecommendations";
+import type { Invoice } from "../services/invoiceService";
+import { formatLocalISODate } from "../utils/date";
 import "../styles/Workspace.css";
 import "./Orders.css";
 
 export default function Orders() {
+  const [searchParams] = useSearchParams();
   const { cartItems, loading: cartLoading, removeFromCart, refreshCart } = useCart();
   const { products, loading: catalogLoading, error: catalogError, refetch } = useInventoryCatalog();
+  const { addToast } = useToast();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [historyRevision, setHistoryRevision] = useState(0);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [invoiceDraft, setInvoiceDraft] = useState<Invoice | undefined>();
+  const [invoiceRefresh, setInvoiceRefresh] = useState(0);
   const recommendations = createOrderRecommendationsFromCartItems(cartItems);
   const missingProduct = cartItems.some((item) => !products.some((product) => product.id === item.productId));
   const hasExampleItem = cartItems.some((item) => !!item.predictionId);
+  const openManualInvoice = () => {
+    setInvoiceDraft({ id: crypto.randomUUID(), reference: "", date: formatLocalISODate(new Date()),
+      lines: [], status: "draft", source: "manual", revision: 0 });
+    setInvoiceOpen(true);
+  };
 
   return <div className="orders-container workspace-page">
     <header className="workspace-header"><div>
@@ -42,6 +57,10 @@ export default function Orders() {
         <Button onClick={() => setReviewOpen(true)} disabled={cartLoading || catalogLoading || !!catalogError || missingProduct || hasExampleItem}>Revoir les quantités</Button></div>}
     </section>
 
+    <SourceInvoiceArchive refreshKey={invoiceRefresh} sourceId={searchParams.get("source") ?? undefined}
+      onCreateManual={openManualInvoice}
+      onOpenDraft={(invoice) => { setInvoiceDraft(invoice); setInvoiceOpen(true); }} />
+
     <OrderHistory key={historyRevision} />
 
     <section className="orders-examples" aria-labelledby="orders-examples-title">
@@ -53,6 +72,15 @@ export default function Orders() {
     <Modal isOpen={reviewOpen} onClose={() => setReviewOpen(false)} title="Revoir les quantités" width="lg">
       <OrderGenerator recommendations={recommendations} onClose={() => setReviewOpen(false)}
         onValidated={() => { void refreshCart(); setHistoryRevision((value) => value + 1); }} />
+    </Modal>
+    <Modal isOpen={invoiceOpen} onClose={() => setInvoiceOpen(false)} title="Revoir une facture" width="lg">
+      <InvoiceModal initialInvoice={invoiceDraft}
+        onPersist={() => setInvoiceRefresh((value) => value + 1)}
+        onValidate={(invoice) => {
+          addToast("success", invoice.source === "source_document" ? "Réception simulée enregistrée" : "Réception enregistrée",
+            invoice.source === "source_document" ? "Le scénario de stock a été mis à jour. Aucun achat réel n'a été créé." : "Le stock a été mis à jour.");
+          void refetch();
+        }} onClose={() => setInvoiceOpen(false)} />
     </Modal>
   </div>;
 }

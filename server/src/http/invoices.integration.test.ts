@@ -51,7 +51,7 @@ it("lists source invoices only within the authenticated restaurant", async () =>
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { restaurant: true } });
   const id = "abcdef0123456789abcdef01";
   await prisma.workspaceDocument.create({ data: { restaurantId: user.restaurant!.id, kind: `source-invoice:${id}`,
-    data: { id, title: "Pièce de test", date: "2026-09-23", originalDate: "2021-12-30",
+    data: { id, contentHash: "a".repeat(64), title: "Pièce de test", date: "2026-09-23", originalDate: "2021-12-30",
       supplier: "Fournisseur de test", type: "invoice", status: "À vérifier", content: "Transcription de test", stockLines: [] } } });
 
   await request(app).get("/api/workspace/source-invoices").expect(401);

@@ -15,5 +15,8 @@ export const createProduct = (product: Product) => {
 };
 export const adjustProductStock = (id: string, delta: number, reason: "adjustment" | "loss" = "adjustment") =>
   apiRequest<Product>(`/workspace/products/${encodeURIComponent(id)}/stock`, { method: "POST", body: JSON.stringify({ delta, reason, operationId: crypto.randomUUID() }) });
-export interface StockMovement { id: string; delta: number; reason: string; createdAt: string; }
+export interface StockMovement {
+  id: string; delta: number; reason: string; createdAt: string; sourceDocumentId?: string;
+  sourceContentHash?: string; sourceDocumentRevision?: number; invoiceDocumentId?: string; invoiceRevision?: number;
+}
 export const getStockMovements = (id: string) => apiRequest<StockMovement[]>(`/workspace/products/${encodeURIComponent(id)}/movements`);

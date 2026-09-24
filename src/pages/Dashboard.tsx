@@ -4,7 +4,6 @@ import { ArrowRight, Calendar } from "lucide-react";
 import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 import Modal from "../components/common/Modal";
-import InvoiceModal from "../components/dashboard/InvoiceModal";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
@@ -27,7 +26,6 @@ export default function Dashboard() {
   const [salesReload, setSalesReload] = useState(0);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [restaurantError, setRestaurantError] = useState("");
-  const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const stockToReview = products.filter((product) => getProductStatus(product) !== "optimal");
   const criticalStockCount = stockToReview.filter((product) => getProductStatus(product) === "urgent").length;
@@ -104,7 +102,7 @@ export default function Dashboard() {
         <small>{latestService?.sources.includes("demo_simulation")
           ? "Ce scénario contient des stocks, réceptions, productions et pertes simulés, à ne pas confondre avec un inventaire réel."
           : "Les seuils sont des exemples à confirmer ; vérifiez la provenance des quantités et mouvements avant vos décisions."}</small>
-        <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><button type="button" onClick={() => setInvoiceOpen(true)}>Saisir une facture</button></div>
+        <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><Link to="/orders#invoices">Revoir les factures</Link></div>
       </section>
       <section className="today-card" aria-labelledby="today-sales-title"><h2 id="today-sales-title">Ventes</h2>
         {salesError ? <div role="alert"><p>{salesError}</p><Button variant="outline" onClick={() => { setLatestService(undefined); setSalesError(""); setSalesReload((value) => value + 1); }}>Réessayer</Button></div> : latestService === undefined ? <p role="status">Chargement des ventes…</p> :
@@ -123,9 +121,6 @@ export default function Dashboard() {
       <div className="today-card-actions"><Link to="/predictions">Voir les scénarios</Link><button type="button" onClick={() => setMenuOpen(true)}>Voir le menu d'exemple</button></div>
     </details>
 
-    <Modal isOpen={invoiceOpen} onClose={() => setInvoiceOpen(false)} title="Factures et réceptions" width="lg">
-      <InvoiceModal onValidate={() => { addToast("success", "Réception enregistrée", "Stock mis à jour."); void refreshProducts(); }} onClose={() => setInvoiceOpen(false)} />
-    </Modal>
     <Modal isOpen={menuOpen} onClose={() => setMenuOpen(false)} title="Préparer le menu" width="md">
       <MenuIdeasModal onValidate={() => addToast("success", "Menu validé", "Le menu est prêt à imprimer.")} onClose={() => setMenuOpen(false)} />
     </Modal>
