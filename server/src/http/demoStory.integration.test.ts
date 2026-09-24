@@ -135,11 +135,15 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
     purchaseReceiptLine: { receiptId: receipt.body.id } } })).toBe(0);
 
   const yesterday = new Date(Date.parse(today) - 86_400_000).toISOString().slice(0, 10);
-  const impact = await owner.agent.get(`/api/workspace/impact?from=${yesterday}&to=${today}`).expect(200);
+  const impact = await owner.agent.get("/api/workspace/impact").query({ from: yesterday, to: today, monthly: "true" }).expect(200);
   expect(impact.body.current).toMatchObject({ recorded: { receivedCost: 0 }, hasSimulationData: true,
     simulation: { receiptCount: 1, menuItemUnits: 10 } });
-  expect(impact.body.current.simulation.receivedCost).toBe(product.pricePerUnit * ready.estimatedQuantity);
+  const expectedReceiptCost = product.pricePerUnit * ready.estimatedQuantity;
+  expect(impact.body.current.simulation.receivedCost).toBe(expectedReceiptCost);
   expect(impact.body.current.excluded.simulatedReceiptLines).toBe(1);
+  const receiptMonth = impact.body.monthly.find((month: { month: string }) => month.month === today.slice(0, 7));
+  expect(receiptMonth).toMatchObject({ hasSimulationData: true,
+    simulation: { receiptCount: 1, receivedCost: expectedReceiptCost } });
 
   for (const year of ["2023", "2024", "2025", "2026"]) {
     const from = `${year}-06-01`;
