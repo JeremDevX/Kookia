@@ -145,6 +145,17 @@ legacy sans snapshots gardent un libellé historique inconnu. Les liens ouvrent
 les vues actuelles (un mouvement peut ouvrir la fiche produit) sans rejouer
 l'opération ni modifier le solde.
 
+La chronologie inclut aussi la création des commandes internes, les décisions
+de suggestion et les réceptions rapprochées. Une commande n'est pas présentée
+comme envoyée et son état mutable n'est pas rejoué rétroactivement ; une
+réception distingue sa date de livraison de sa date d'enregistrement. Les
+commandes/réceptions et décisions du tenant démo portent la provenance
+simulation ; une pièce source liée est ouvrable depuis Achats. Pour les crédits
+de stock synthétiques historiques, l'identifiant source est repris de
+l'opération idempotente et reste explicitement qualifié de simulation, jamais
+de preuve de livraison. Ces projections exposent des snapshots bornés, pas le
+contenu des pièces ni leurs lignes OCR brutes.
+
 Le [plan de migration](plans/database-migration.md) contient la cartographie et les
 preuves de validation et les limites explicites de cette migration.
 
