@@ -5,15 +5,18 @@ Un lancement local interactif isolé des chapitres C2/C3 est maintenant
 disponible et exercé via `npm run demo:local` (`5a51b39`). Le récit 2025 a
 maintenant une version de recette effective, un surstock, une perte et un refus
 de production sur manque mesurable (`818b1d5`), sans mouvement pour le refus.
-La revue Q2 possède une matrice rendue Chrome headless à profil temporaire ;
-après activation, Chrome natif a aussi affiché la connexion et l'accueil local,
-mais l'inventaire CUA reste `browsers: []` et la fenêtre a cessé d'être
-contrôlable après un essai de redimensionnement. Parcours clavier/rendu complet,
-lecteur d'écran et vrai zoom page restent à faire.
+La matrice Q2 existante reste rendue par Chrome headless. Une reprise a aussi
+rendu la page Recettes et sa fiche candidate à 1440×1000 et 390×844 : aucune
+largeur débordante mesurée ; Espace ouvre le formulaire, son titre reçoit le
+focus, Tab atteint Annuler et l'annulation restaure le bouton déclencheur. Le
+contrôle CUA reste indisponible (`browsers: []`, `cgWindowNotFound`) ; autres
+routes/états, lecteur d'écran et vrai zoom page restent à vérifier.
 Le seed exécutable est réservé à ce runner, qui crée lui-même sa base tmpfs
 neuve (`3dddd2e`) ; aucun utilitaire séparé ne cible une base locale par nom.
-La matrice « pièces → idées de recette » reste non prouvée : les fixtures
-autorisées ne justifient pas deux candidates.
+Le flux technique « pièces → candidate recette » existe désormais dans le bac
+démo et passe sur deux factures synthétiques, sans mutation de stock. La preuve
+produit reste non acquise : les fixtures autorisées ne justifient pas deux
+candidates et le corpus d'origine n'a pas été consulté.
 Ce fichier n'est pas une preuve que
 les fonctionnalités cibles complètes sont livrées. À chaque reprise, relever
 date, branche, `git status`, migrations et tests disponibles sans effacer les
@@ -24,13 +27,13 @@ modifications déjà présentes.
 C2/C3, I1–I3, F1, M2–M3, O1 et R0 sont prouvés localement ; I4 est préparé sur
 une fixture, avec F3/F4, O2, M1 et les prérequis D1–D6. I4 n'a ni fournisseur
 actif ni comparaison visuelle à l'original. Q2 reste en cours : la matrice
-headless couvre sept routes/cinq largeurs et le focus du menu, mais la fenêtre
-Chrome native a seulement permis de confirmer la connexion et l'accueil de la
-démo avant `windowNotFoundAtPosition`/`cgWindowNotFound`. Reprendre le parcours
-Aujourd'hui → Ventes → Stocks → Achats, les états d'erreur/conflit/chargement,
-le zoom 200 % et la technologie d'assistance lorsque le navigateur CUA sera
-réellement listé. Le parcours « pièces → idées de recette » reste également
-ouvert : la fixture actuelle ne permet pas deux propositions défendables.
+headless couvre sept routes/cinq largeurs et le focus du menu ; cette reprise
+ajoute la fiche candidate à 1440/390 px et au clavier, mais pas le parcours
+complet. Reprendre Aujourd'hui → Ventes → Stocks → Achats, les états
+d'erreur/conflit/chargement, le zoom 200 % et la technologie d'assistance
+lorsque le navigateur CUA sera réellement listé. Le parcours « pièces → idées
+de recette » reste ouvert : le bac recette ne prouve pas que deux familles
+d'ingrédients du corpus sont défendables.
 Aucun POS/OCR fournisseur n'est activé.
 
 ## Registre des incréments
@@ -61,7 +64,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | O2 — réception rapprochée | Prouvé localement (fixtures synthétiques) | Non activé sur pilote | Facture brouillon, fournisseur, commande et référence/date de livraison liés par clés tenant ; réception partielle, écart de prix expliqué, snapshot prix/provenance, idempotence concurrente ; stock crédité uniquement en mode opérationnel et simulé sans mouvement dans le tenant démo. Commit `5c76e31`. | Aucun envoi fournisseur ; pas de données réelles ni de validation visuelle/clavier faute de navigateur CUA. L'ancien chemin de réception d'une facture non liée à une commande reste disponible. |
 | M1 — impact opérationnel | Prouvé localement (fixtures synthétiques) | Non activé / mesure terrain en attente | Comparaison de périodes de même durée ; pertes explicites et réceptions confirmées liées à leurs opérations, coût calculé depuis prix snapshotés ; unités incohérentes et simulation exclues des totaux enregistrés, espace démo séparé. Voir `5c76e31`. | Ruptures et invendus ne sont pas enregistrés dans un ledger dédié et restent non mesurés ; mouvements sans prix historique restent non valorisés. Aucune économie réalisée calculée ; rendu/clavier en attente du navigateur. |
 | M2 — surstock et menus | Prouvé localement (bac démo uniquement) | Non activé dans les espaces opérationnels / validation pilote en attente | `GET /menu/surplus-options` n'expose que les comptages positifs encore actuels ; `POST /menu/ideas` exige quantité explicitement désignée, verrouille les produits concernés, vérifie tenant/révision/unité et enregistre une décision rejouable `demo_simulation`. Le fixture C2 fournit aussi un comptage courant final de tomates et prouve sa présence dans les options ; dernière version datée applicable, seuil global ignoré, aucun mouvement/production implicite. Commits `9b474c1`, `818b1d5`. | Chaque recette utilise séparément toute la quantité désignée ; portions maximales non additives. Péremption inconnue, seuil haut opérationnel non introduit, aide indisponible hors démo. Aucun rendu/responsive/clavier complet (Q2 en cours). |
-| Pièces → idées de recette | Non prouvé (écart de données) | Non applicable | L'audit du code ne trouve pas de flux candidat dérivé des pièces. `createAnonymizedSourceInvoices` ne contient que des lignes synthétiques de tomates ; la fixture ne permet pas d'étayer deux candidates ni leurs familles d'ingrédients. | Les six recettes du scénario sont des hypothèses de démonstration ; M2 part d'un surplus compté, pas des pièces. Le corpus d'origine n'a pas été audité dans ce passage. Ne pas inventer de fiches : reprendre lorsque des familles et identifiants source pourront être représentés dans une fixture autorisée, puis faire confirmer/corriger une candidate et laisser l'autre en attente ou l'écarter. |
+| Pièces → idées de recette | Non prouvé (écart de données) | Non applicable | Un flux bac démo crée/édite une hypothèse reliée à une facture et à sa ligne, puis la confirme en version active ou l'écarte ; ingrédients, quantités, rendement et date d'effet restent sous contrôle humain. L'intégration utilise deux factures synthétiques (champignons/crème), en confirme une, laisse l'autre en attente et vérifie tenant, source périmée, rejouabilité et absence de mouvement/production. | Le corpus autorisé observé ici reste `createAnonymizedSourceInvoices`, limité à la tomate ; les deux familles du test sont entièrement fabriquées et ne justifient aucune candidate métier. M2 part d'un surplus compté, pas des pièces. Ne pas inventer de fiches : obtenir une fixture autorisée multi-familles, puis confirmer/corriger une candidate et laisser l'autre en attente ou l'écarter. |
 | M3 — export des pertes déclarées | Prouvé localement (export opérationnel) | Non activé / aucune revendication AGEC | L'export existant ajoute les mouvements négatifs `loss` comme pertes séparées, quantité absolue, `createdAt` UTC, identifiant source, coût seulement si prix snapshoté. Nombre sans prix, unités incompatibles (lignes « à vérifier », hors total), simulations exclues et métriques indisponibles stockouts/invendus sont visibles dans CSV/Excel/PDF. Les tests antérieurs couvrent operation IDs, prix manquant, unité incompatible, simulation, tenant croisé et formats protégés. La fixture C2 ajoute un mouvement explicite de 10 kg `loss`, distinct des invendus estimés ; sa chronologie qualifie la perte de synthétique/non observée. | Ne mesure que les pertes explicitement déclarées ; pas de ledger de rupture/invendu, pas de causalité d'économie ni d'attestation réglementaire. Aucun événement du bac démo ne constitue une mesure terrain. |
 | C3 — chaîne métier complète | Prouvé localement (API / fixture synthétique) | Non applicable | `timelineEventMappers` expose décisions, commandes internes et réceptions rapprochées avec provenance simulation, identifiant/source liée et coupe `asOf`; les archives ouvrent la pièce dans Achats. `demoStory.integration.test.ts` rejoue quatre chapitres, 2023 sans réception source, ventes simulées datées + comptage → suggestion → décision → commande démo → réception de pièce synthétique → `/impact` calculé depuis les opérations, stock inchangé. Le fixture C2 vérifie aussi en 2025 la version effective, comptages, perte explicite et refus sans déduction. Commits `290d354`, `818b1d5`. | Preuve API/DB, pas un parcours visuel complet : le contrôle CUA n'a pas gardé l'accès à la fenêtre native ; Q2 reste en cours. Aucune précision terrain ni aucun KPI seedé ; aucun envoi n'est déclenché. |
 | I1 — statuts des sources | Prouvé localement | Non activé (aucun adaptateur/fournisseur configuré) | `GET /workspace/sources` authentifié renvoie les cinq types en `not_connected` et `lastSuccessAt: null`; deux sessions isolées, tentative de `restaurantId` client ignorée, session absente refusée. Page Connexions avec état de chargement/erreur, replis CSV/saisie/Achats, sans appel fournisseur ni fausse synchronisation. Commit `095d547`. | La page et son parcours clavier/mobile restent non rendus ; aucun POS, OCR, géocodage, météo ou événements connecté. |
@@ -110,6 +113,8 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-24 | Q2 — revue rendue et focus menu | `a22cc5a` | Menu mobile n'entrait pas au focus après ouverture ; focus reporté jusqu'à visibilité, retour vers le déclencheur après fermeture. Chrome headless/CDP, profil neuf : 7 routes × 5 largeurs, aucun splash/débordement ; AX nommé sur six routes ; Tab/espace/Échap et lien clavier `/sales#sales-start` exercés. Captures synthétiques conservées sous `/var/folders/wx/tn89h3f53j3f2d44zpvtxnp00000gn/T/kookia-ui-review-vwEJXb`. | `npm run lint`, `npm run build`. Démo tmpfs et fichier d'identifiants supprimés. CUA reste à `browsers: []` ; pas de lecteur d'écran, zoom page réel 200 %, état erreur/conflit/chargement. CDP ne déclenche pas Entrée sur un bouton HTML témoin ; le contrôle Entrée du menu reste à confirmer sur vrai navigateur. | Continuer Q2 rendu avec technologie d'assistance et états non nominaux ; reprendre le scénario C3 et la fixture multi-familles. |
 | 2026-09-24 | C2/C3/M2/M3 — épisode 2025 | `818b1d5` | Plan de démo sans version de recette effective, comptage d'overstock, perte distincte ni refus → épisodes synthétiques datés et reliés au ledger | `npm run verify:local-delivery` : lint, build web/API, migrations fraîches 18/18, `npm test` 24 fichiers/102 Vitest + 33 Node/CSS, intégration 24 fichiers/35 tests, dump/restore synthétique avec témoin retrouvé. Le test de fixture vérifie Carbonara v1/v2 effective au 2025-06-16 et productions liées à leur version ; comptage de tomates 60 kg supérieur au théorique le 2025-06-13, perte explicite 10 kg ce jour, comptage de crème 0,05 L bloquant une demande de 35 portions le 2025-12-26 sans mouvement de sortie, puis réassort et production planifiée. Comptage courant final expose la tomate dans les options M2 ; le journal reste non négatif. Plan total : 5 027 écritures de production (dont 1 refus), 31 554 mouvements ; en 2025 : 1 427 ventes et 1 428 écritures de production. Après le dernier ajustement d'heure du comptage courant : plan 2/2, build API, diff-check. | Valeurs et événements entièrement synthétiques, non observés et non recommandés ; aucun script `--write`, Camille, base conservée ou service externe. Étiquettes timeline précisent simulation/non-observation. Conteneur de test tmpfs supprimé. | Maintenir Q2 ouvert ; ne pas confondre cette fixture narrative avec une preuve terrain ou deux candidates justifiées par les pièces. |
 | 2026-09-24 | Q2 — tentative native après activation | — (vérification) | `cua.getState()` et `cua.listBrowsers()` conservent `browsers: []` ; `getApp("Google Chrome")` a permis un onglet séparé sur la démo locale, avec connexion synthétique puis accueil. Le redimensionnement a échoué `windowNotFoundAtPosition`, puis `getApp` `cgWindowNotFound`. Retest après la réponse utilisateur : inventaire toujours vide et `getApp("Google Chrome")` échoue encore `cgWindowNotFound`. | La démo et le compte étaient jetables ; arrêt Ctrl-C, conteneur et fichier d'identifiants confirmés supprimés. La route complète, les largeurs natives, le clavier et les états d'erreur/conflit restent non vérifiés ; la matrice Chrome headless déjà consignée n'est pas remplacée. | Réexposer une fenêtre/onglet Chrome à CUA, puis rejouer Aujourd'hui → Ventes → Stocks → Achats et les états manquants avant de clore Q2. |
+| 2026-09-24 | Pièces → candidates de recette | 13f1010 | Nouveau flux bac démo : créer/éditer une fiche hypothétique à partir de lignes de factures, garder l'une en attente, confirmer l'autre en recette versionnée ou l'écarter. L'intégration PostgreSQL exerce deux factures artificielles champignons/crème, source périmée, autre tenant, replay simultané et zéro mouvement/production. npm run verify:local-delivery passe : lint, build web/API, 18 migrations fraîches, 24 fichiers/102 tests Vitest + 33 Node/CSS, intégration 25 fichiers/36 tests, restauration synthétique. | Les deux familles et factures d'intégration sont fabriquées ; aucune preuve de couverture du corpus ni création de candidate terrain. Aucune mutation de stock ou production. | Obtenir une fixture multi-familles anonymisée autorisée, puis exercer les deux sources sans inférer qu'un plat a été cuisiné. |
+| 2026-09-24 | Q2 — page Recettes candidate | 13f1010 | Chrome headless, profil temporaire, bac isolé : 1440×1000 et 390×844 ; aucun descendant plus large que son conteneur après correction des onglets mobiles. Espace ouvre la fiche, le titre reçoit le focus, Tab atteint « Annuler », puis Espace annule et rend le focus à « Nouvelle candidate ». Aucun formulaire n'a été enregistré. | Ce sous-parcours seulement ; le connecteur CUA reste browsers: [] / cgWindowNotFound. Autres routes/états, lecteur d'écran et vrai zoom 200 % non couverts. | Réexposer Chrome au contrôle CUA puis compléter le parcours et les états Q2. |
 
 ## Portes externes
 
@@ -134,13 +139,15 @@ restent distincts des défauts locaux corrigeables.
   appuyées par des ingrédients et familles traçables aux pièces. Le seul corpus
   consulté pour cet audit est la fixture synthétique
   `createAnonymizedSourceInvoices`, qui ne génère que des lignes de tomates ;
-  elle n'étaye donc pas deux recettes candidates. Les six recettes déjà
-  simulées et M2 (idées depuis un surplus explicitement compté) ne prouvent pas
-  ce parcours. Le corpus d'origine n'a pas été consulté dans cet audit. Suite :
-  obtenir une fixture anonymisée autorisée avec au moins deux familles
-  traçables, puis construire et faire confirmer/corriger une candidate et
-  laisser l'autre en attente ou l'écarter. Aucun plat cuisiné ne sera inféré de
-  la seule présence d'ingrédients.
+  elle n'étaye donc pas deux recettes candidates. Un flux bac démo a été ajouté
+  pour rattacher une hypothèse à chaque ligne facture, corriger les données
+  supposées, confirmer une recette ou écarter/retenir une autre fiche ; son
+  test d'intégration emploie des factures artificielles champignons/crème et
+  prouve seulement le contrat, l'isolation et la neutralité stock. Les six
+  recettes simulées et M2 (idées depuis un surplus explicitement compté) ne
+  prouvent pas la couverture du corpus. Suite : obtenir une fixture anonymisée
+  autorisée avec au moins deux familles traçables, puis rejouer ce parcours.
+  Aucun plat cuisiné ne sera inféré de la seule présence d'ingrédients.
 
 - **Q1b — isolation des données de test (corrigée localement)** :
   `sourceInvoices.test.ts` utilise maintenant un répertoire temporaire de textes
