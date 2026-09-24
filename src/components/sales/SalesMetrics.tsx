@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { Link } from "react-router-dom";
 import { getSalesMetrics, type SalesMetrics as Metrics } from "../../services/salesService";
@@ -8,11 +8,17 @@ const PAGE_SIZE = 50;
 const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
 
 export default function SalesMetrics({ from, to }: Props) {
+  const [refreshRevision, setRefreshRevision] = useState(0);
+  const requestKey = `${from}:${to}:${refreshRevision}`;
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loadedRequestKey, setLoadedRequestKey] = useState("");
+  const loading = loadedRequestKey !== requestKey;
   const [itemPage, setItemPage] = useState(0);
   const [dayPage, setDayPage] = useState(0);
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const retryFocusPending = useRef(false);
   const sourceDescription = metrics?.provenance === "demo_simulation"
     ? "Ces données sont simulées pour la démonstration et ne sont pas des ventes observées."
     : metrics?.provenance === "mixed"
@@ -21,17 +27,30 @@ export default function SalesMetrics({ from, to }: Props) {
   useEffect(() => {
     let active = true;
     void getSalesMetrics(from, to).then((result) => {
-      if (active) setMetrics(result);
+      if (active) { setMetrics(result); setError(""); setItemPage(0); setDayPage(0); setLoadedRequestKey(requestKey); }
     }).catch((cause: unknown) => {
-      if (active) setError(cause instanceof Error ? cause.message : "Réessayez.");
-    }).finally(() => { if (active) setLoading(false); });
+      if (active) { setError(cause instanceof Error ? cause.message : "Réessayez."); setLoadedRequestKey(requestKey); }
+    });
     return () => { active = false; };
-  }, [from, to]);
+  }, [from, to, requestKey]);
+  useEffect(() => {
+    if (loading || !retryFocusPending.current) return;
+    retryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (error) retryButtonRef.current?.focus();
+    else headingRef.current?.focus();
+  }, [error, loading, metrics]);
+  const retryMetrics = () => {
+    retryFocusPending.current = document.activeElement === retryButtonRef.current;
+    setRefreshRevision((value) => value + 1);
+  };
 
   return <section className="sales-panel sales-metrics" aria-labelledby="sales-metrics-title">
-    <h2 id="sales-metrics-title">Indicateurs des ventes enregistrées</h2>
+    <h2 ref={headingRef} id="sales-metrics-title" tabIndex={-1}>Indicateurs des ventes enregistrées</h2>
     <p>Source : saisies manuelles, imports CSV, tickets de caisse vérifiés, lignes POS confirmées ou simulation du restaurant. {sourceDescription} Une ligne absente ne vaut zéro que si le calendrier du jour est complet ; les jours partiels, manquants ou non renseignés restent inconnus.</p>
-    {loading ? <p role="status">Calcul des indicateurs…</p> : error ? <p role="alert">Indicateurs indisponibles : {error}</p> : metrics && <>
+    {loading ? <p role="status">Calcul des indicateurs…</p> : error ? <div role="alert"><p>Indicateurs indisponibles : {error}</p>
+      <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryMetrics}>Recharger les indicateurs</Button>
+    </div> : metrics && <>
       <p>Période : du {displayDate(metrics.period.from)} au {displayDate(metrics.period.to)} · {metrics.observedDays} jour{metrics.observedDays > 1 ? "s" : ""} ouvert{metrics.observedDays > 1 ? "s" : ""} confirmé{metrics.observedDays > 1 ? "s" : ""} complet{metrics.observedDays > 1 ? "s" : ""} · {metrics.completeServiceDays} date(s) complètes au total · {metrics.incompleteServiceDays} date(s) manquante(s) ou partielles.</p>
       {metrics.status === "no_data" ? <p>Aucune vente enregistrée sur cette période. <Link to="/sales#sales-start">Ajouter des ventes</Link>.</p> : <>
         <p className="sales-metrics-total"><strong>{metrics.totalQuantity} unités vendues ({metrics.provenance === "demo_simulation" ? "simulées" : metrics.provenance === "mixed" ? "observées et simulées" : "enregistrées"})</strong><br />{metrics.manualQuantity} en saisie manuelle · {metrics.csvQuantity} par import CSV{metrics.correctedCsvQuantity > 0 ? `, dont ${metrics.correctedCsvQuantity} corrigées` : ""} · {metrics.posQuantity} par caisse POS · {metrics.ticketZQuantity} par Ticket Z vérifié · {metrics.demoSimulationQuantity} simulées.</p>

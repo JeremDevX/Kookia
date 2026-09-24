@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Button from "../common/Button";
 import { getImpactReport, type ImpactBucket, type ImpactPeriod, type ImpactReport } from "../../services/impactService";
 
 interface Props { from: string; to: string }
@@ -52,21 +53,42 @@ function SimulationOperations({ bucket, currency }: { bucket: ImpactBucket; curr
 }
 
 export default function ImpactSummary({ from, to }: Props) {
+  const [refreshRevision, setRefreshRevision] = useState(0);
+  const requestKey = `${from}:${to}:${refreshRevision}`;
   const [report, setReport] = useState<ImpactReport | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loadedRequestKey, setLoadedRequestKey] = useState("");
+  const loading = loadedRequestKey !== requestKey;
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const retryFocusPending = useRef(false);
   useEffect(() => {
     let active = true;
-    void getImpactReport(from, to).then((result) => { if (active) setReport(result); })
-      .catch((cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : "Réessayez."); })
-      .finally(() => { if (active) setLoading(false); });
+    void getImpactReport(from, to).then((result) => {
+      if (active) { setReport(result); setError(""); setLoadedRequestKey(requestKey); }
+    }).catch((cause: unknown) => {
+      if (active) { setError(cause instanceof Error ? cause.message : "Réessayez."); setLoadedRequestKey(requestKey); }
+    });
     return () => { active = false; };
-  }, [from, to]);
+  }, [from, to, requestKey]);
+  useEffect(() => {
+    if (loading || !retryFocusPending.current) return;
+    retryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (error) retryButtonRef.current?.focus();
+    else headingRef.current?.focus();
+  }, [error, loading, report]);
+  const retryReport = () => {
+    retryFocusPending.current = document.activeElement === retryButtonRef.current;
+    setRefreshRevision((value) => value + 1);
+  };
 
   return <section className="sales-panel impact-summary" aria-labelledby="impact-summary-title">
-    <h2 id="impact-summary-title">Impact opérationnel mesuré</h2>
+    <h2 ref={headingRef} id="impact-summary-title" tabIndex={-1}>Impact opérationnel mesuré</h2>
     <p>Comparaison de périodes de même durée calendaire. Les ventes suivent la date de service (Europe/Paris), les pertes leur date d’enregistrement (UTC) et les achats leur date de livraison. Les unités restent séparées par produit.</p>
-    {loading ? <p role="status">Calcul de l’impact…</p> : error ? <p role="alert">Bilan d’impact indisponible : {error}</p> : report && <>
+    {loading ? <p role="status">Calcul de l’impact…</p> : error ? <div role="alert"><p>Bilan d’impact indisponible : {error}</p>
+      <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryReport}>Recharger le bilan</Button>
+    </div> : report && <>
       <p>Période actuelle : {periodRange(report.current)} · précédente : {periodRange(report.prior)}.</p>
       <div className="sales-table-wrap" role="region" aria-label="Comparaison des périodes" tabIndex={0}>
         <table className="sales-table"><thead><tr><th>Indicateur observé</th><th>Période actuelle</th><th>Période précédente</th></tr></thead><tbody>

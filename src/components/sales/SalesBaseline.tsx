@@ -1,29 +1,48 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { getSalesBaseline, type SalesBaseline as Baseline } from "../../services/salesService";
 
 const PAGE_SIZE = 50;
 
 export default function SalesBaseline() {
+  const [refreshRevision, setRefreshRevision] = useState(0);
+  const requestKey = String(refreshRevision);
   const [baseline, setBaseline] = useState<Baseline | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loadedRequestKey, setLoadedRequestKey] = useState("");
+  const loading = loadedRequestKey !== requestKey;
   const [page, setPage] = useState(0);
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const retryFocusPending = useRef(false);
   useEffect(() => {
     let active = true;
     void getSalesBaseline().then((result) => {
-      if (active) setBaseline(result);
+      if (active) { setBaseline(result); setError(""); setPage(0); setLoadedRequestKey(requestKey); }
     }).catch((cause: unknown) => {
-      if (active) setError(cause instanceof Error ? cause.message : "Réessayez.");
-    }).finally(() => { if (active) setLoading(false); });
+      if (active) { setError(cause instanceof Error ? cause.message : "Réessayez."); setLoadedRequestKey(requestKey); }
+    });
     return () => { active = false; };
-  }, []);
+  }, [requestKey]);
+  useEffect(() => {
+    if (loading || !retryFocusPending.current) return;
+    retryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (error) retryButtonRef.current?.focus();
+    else headingRef.current?.focus();
+  }, [baseline, error, loading]);
+  const retryBaseline = () => {
+    retryFocusPending.current = document.activeElement === retryButtonRef.current;
+    setRefreshRevision((value) => value + 1);
+  };
 
   return <section className="sales-panel" aria-labelledby="sales-baseline-title">
-    <h2 id="sales-baseline-title">Estimation test des ventes</h2>
+    <h2 ref={headingRef} id="sales-baseline-title" tabIndex={-1}>Estimation test des ventes</h2>
     <p>Cette estimation utilise les ventes manuelles, CSV et éventuellement simulées. Elle ne tient compte ni de la météo, ni des événements, ni du stock. Les ingrédients restent une projection expérimentale, sans mouvement ni commande ; chaque vente est associée uniquement à la correspondance et à la version de recette datées pour son jour.</p>
     {loading ? <p role="status">Calcul de l'estimation test…</p> : error ?
-      <p role="alert">Estimation test indisponible : {error}</p> : baseline && <>
+      <div role="alert"><p>Estimation test indisponible : {error}</p>
+        <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryBaseline}>Recharger l’estimation test</Button>
+      </div> : baseline && <>
         <p>Historique étudié : du {baseline.historyFrom} au {baseline.asOfDate}. Calendrier confirmé complet : {baseline.completeServiceDays}/{baseline.requiredConsecutiveDays} jours, dont {baseline.openServiceDays} services ouverts. Une ligne absente vaut zéro observé seulement pour un jour complet (ou fermé confirmé) ; une date non renseignée, partielle ou manquante reste inconnue. Estimation pour le {baseline.forecastDate}. Méthode : moyenne arrondie des {baseline.lookbackDays} derniers jours calendaires complets de ventes de chaque article. {baseline.provenance === "demo_simulation" ? "Ces résultats reposent sur des données simulées et ne mesurent pas l’activité réelle." : baseline.provenance === "mixed" ? "L’historique mélange données simulées et ventes enregistrées : ces résultats ne sont pas une mesure terrain." : ""}{baseline.excludedSimulationRows > 0 ? ` ${baseline.excludedSimulationRows} ligne(s) simulée(s) exclue(s) du calcul car des ventes enregistrées sont présentes.` : ""}</p>
         {baseline.status === "no_data" ? <p>Historique insuffisant : aucune vente enregistrée dans cette fenêtre. Aucune estimation affichée.</p> :
           baseline.status === "insufficient_history" ? <p>{baseline.mixedSourceWindow ? "Sources simulées et enregistrées mélangées : les simulations sont exclues, mais le calendrier ne distingue pas la complétude par source. Aucune estimation ni erreur de backtest n’est publiée." : `Historique insuffisant : les ${baseline.requiredConsecutiveDays} jours doivent être marqués complets (ouverts ou fermés confirmés). ${baseline.incompleteDates.length} date(s) restent inconnues ou partielles. Aucune estimation affichée ; ces jours ne sont jamais convertis en zéro vente.`}</p> : <>
