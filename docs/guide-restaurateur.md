@@ -81,11 +81,15 @@ une préparation libre conserve un journal sans inventer cette consommation.
    Modifiez les quantités selon le service à venir et votre expertise.
 4. Validez la commande complète. Kookia conserve la décision et les prix de
    cette validation dans **À transmettre**.
-5. Transmettez la commande au fournisseur par votre canal habituel. La
-   validation dans Kookia ne déclenche aucun email.
-6. À la livraison, enregistrez la réception séparément. La commande seule ne
+5. Dans la commande, utilisez **Imprimer la fiche** sous chaque fournisseur.
+   Chaque fiche reprend uniquement ses lignes de commande ; les prix et
+   quantités sont ceux enregistrés à la validation. L'impression ne transmet
+   rien et ne change pas le statut.
+6. Transmettez la fiche au fournisseur par votre canal habituel. Kookia
+   n'envoie aucun email et ne marque pas la commande comme transmise.
+7. À la livraison, enregistrez la réception séparément. La commande seule ne
    crédite pas le stock.
-7. Dans **Commandes enregistrées**, ouvrez « Rapprocher une facture et une
+8. Dans **Commandes enregistrées**, ouvrez « Rapprocher une facture et une
    livraison ». Choisissez une facture brouillon du même fournisseur, vérifiez
    les correspondances, indiquez référence/date du bon de livraison et quantité
    réellement arrivée. Une réception partielle laisse le reliquat visible ; un

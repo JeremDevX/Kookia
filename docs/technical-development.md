@@ -63,6 +63,10 @@ pour permettre la suppression en cascade d’un compte sans casser ses référen
 La fiche `Product` porte une révision pour détecter les modifications concurrentes ;
 la mise à jour ne change pas l'unité. Les lignes validées de `PurchaseOrderLine`
 gardent leur nom, fournisseur, unité et prix snapshotés lors de la commande.
+L'historique ne propose une fiche imprimable que pour une commande opérationnelle
+au statut `validated` ; les lignes sont regroupées par identifiant fournisseur
+depuis ces snapshots. Chaque impression reste locale, ne modifie aucun statut et
+n'appelle aucun service d'envoi ; les taxes et frais ne sont pas calculés.
 `StockCount` conserve séparément quantité comptée, quantité théorique observée,
 écart, unité, date et acteur ; un écart accepté ajoute un `StockMovement` lié.
 `PurchaseReceipt` et `PurchaseReceiptLine` rapprochent une commande, un brouillon
