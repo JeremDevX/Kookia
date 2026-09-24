@@ -29,7 +29,7 @@ export default function SupplierSettings() {
       <Input id="supplier-name" label="Nom" required value={editing.name} disabled={saving} onChange={(event) => setEditing({ ...editing, name: event.target.value })} />
       <Input id="supplier-email" label="Email" type="email" required value={editing.email} disabled={saving} onChange={(event) => setEditing({ ...editing, email: event.target.value })} />
       <Input id="supplier-phone" label="Téléphone" type="tel" value={editing.phone} disabled={saving} onChange={(event) => setEditing({ ...editing, phone: event.target.value })} />
-      <div className="flex gap-sm"><Button type="submit" disabled={saving}>Enregistrer</Button><Button variant="outline" disabled={saving} onClick={() => setEditing(null)}>Annuler</Button></div>
+      <div className="flex gap-sm"><Button type="submit" disabled={saving}>Enregistrer</Button><Button type="button" variant="outline" disabled={saving} onClick={() => setEditing(null)}>Annuler</Button></div>
     </form>}
   </Card>;
 }
