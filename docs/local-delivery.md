@@ -16,7 +16,7 @@ Navigateur → Vite :5173 -- /api proxy (développement seulement) → Express :
 ```
 
 - Le client appelle les chemins relatifs `/api` avec `credentials: "include"`.
-  En développement, `vite.config.ts` les proxifie vers `http://localhost:3001`.
+  En développement, `vite.config.ts` les proxifie vers `http://127.0.0.1:3001`.
 - Express écoute `PORT` (3001 par défaut), expose `/api/*` et utilise Prisma via
   `DATABASE_URL`. `compose.yaml` fournit PostgreSQL 16 local sur `127.0.0.1:5432`
   avec un volume nommé persistant. `npm run db:down` arrête Compose sans supprimer

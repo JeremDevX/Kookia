@@ -17,17 +17,20 @@ export function parseLoopbackPort(output) {
   return port;
 }
 
-export function buildDisposablePostgresArgs(containerName, password) {
+export function buildDisposablePostgresArgs(containerName, password, { database = "kookia_test", scope = "disposable-local-delivery" } = {}) {
+  if (!["kookia_test", "kookia_demo"].includes(database) || !/^[a-z-]+$/.test(scope)) {
+    throw new Error("Configuration de base temporaire inattendue.");
+  }
   return [
     "run", "--detach", "--name", containerName,
-    "--label", "kookia.scope=disposable-local-delivery",
+    "--label", `kookia.scope=${scope}`,
     "--publish", "127.0.0.1::5432/tcp",
     "--tmpfs", "/var/lib/postgresql/data:rw,noexec,nosuid,size=2g",
     "--tmpfs", "/tmp:rw,noexec,nosuid,size=512m",
-    "--env", "POSTGRES_DB=kookia_test",
+    "--env", `POSTGRES_DB=${database}`,
     "--env", "POSTGRES_USER=kookia",
     "--env", `POSTGRES_PASSWORD=${password}`,
-    "--health-cmd", "pg_isready -U kookia -d kookia_test",
+    "--health-cmd", `pg_isready -U kookia -d ${database}`,
     "--health-interval", "1s", "--health-timeout", "2s", "--health-retries", "60",
     "postgres:16-alpine",
   ];
@@ -36,6 +39,11 @@ export function buildDisposablePostgresArgs(containerName, password) {
 export function integrationDatabaseUrl(port, password, database = "kookia_test") {
   if (!["kookia_test", "kookia_restore"].includes(database)) throw new Error("Base locale inattendue.");
   return `postgresql://kookia:${encodeURIComponent(password)}@127.0.0.1:${port}/${database}`;
+}
+
+export function localDemoDatabaseUrl(port, password) {
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("Port PostgreSQL temporaire invalide.");
+  return `postgresql://kookia:${encodeURIComponent(password)}@127.0.0.1:${port}/kookia_demo`;
 }
 
 function run(command, args, { env = process.env, capture = false } = {}) {

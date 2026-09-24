@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 import { app } from "./app.js";
+import { env } from "../config/env.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
 const email = `integration-${randomUUID()}@example.com`;
@@ -23,7 +24,10 @@ describe("authentication HTTP flow", () => {
 
   it("registers, authenticates, updates account, rotates password and deletes account", async () => {
     const agent = request.agent(app);
-    const registration = await agent.post("/api/auth/register").send({ displayName: "Integration User", email: ` ${email.toUpperCase()} `, password: firstPassword }).expect(201);
+    await request(app).post("/api/auth/register").set("Origin", "https://attacker.example")
+      .send({ displayName: "Rejected", email: `rejected-${email}`, password: firstPassword }).expect(403);
+    const registration = await agent.post("/api/auth/register").set("Origin", env.APP_ORIGIN)
+      .send({ displayName: "Integration User", email: ` ${email.toUpperCase()} `, password: firstPassword }).expect(201);
     createdIds.push(registration.body.user.id);
     expect(registration.body.user.passwordHash).toBeUndefined();
     expect(registration.headers["set-cookie"]).toHaveLength(1);

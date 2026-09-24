@@ -4,10 +4,8 @@ import request from "supertest";
 import { afterAll, expect, it } from "vitest";
 import { app } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
-import { applyRestaurantSimulation } from "../scripts/restaurantSimulationStorage.js";
-import { buildRecipePlan } from "../scripts/restaurantSimulationSupport.js";
 import { createAnonymizedSourceInvoices } from "../scripts/fixtures/anonymizedSourceInvoices.js";
-import { buildRestaurantSimulation } from "../scripts/restaurantSimulationPlan.js";
+import { seedLocalDemoScenario } from "../scripts/localDemoScenario.js";
 
 const users: string[] = [];
 
@@ -87,30 +85,13 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   const archiveOwner = await account("scenario-archive");
   const replayOwner = await account("scenario-replay");
   const invoices = createAnonymizedSourceInvoices();
-  const products = await prisma.product.findMany({ where: { restaurantId: scenarioOwner.restaurantId } });
-  const plan = buildRestaurantSimulation(invoices, products.map((product) => ({
-    id: product.id, name: product.name, unit: product.unit, currentStock: Number(product.currentStock),
-    minThreshold: Number(product.minThreshold), pricePerUnit: Number(product.pricePerUnit),
-    supplierId: product.supplierId, category: product.category,
-  })));
-  const recipes = await prisma.recipe.findMany({
-    where: { restaurantId: scenarioOwner.restaurantId }, include: { ingredients: true },
-  });
-  const recipeSnapshots = recipes.map((recipe) => ({ ...recipe,
-    ingredients: recipe.ingredients.map((ingredient) => ({ ...ingredient, quantity: Number(ingredient.quantity) })) }));
-  const plannedRecipes = buildRecipePlan(recipeSnapshots, plan.productions);
-  const suppliers = await prisma.supplier.findMany({ where: { restaurantId: scenarioOwner.restaurantId }, select: { id: true } });
-  await applyRestaurantSimulation(scenarioOwner.restaurantId, plan, plannedRecipes, [], [], new Set(suppliers.map(({ id }) => id)));
+  const { plan } = await seedLocalDemoScenario(scenarioOwner.userId);
   const scenarioProductions = await prisma.production.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
     operationId: { startsWith: "restaurant-simulation-v1:" } }, include: { recipeVersion: true } });
   expect(scenarioProductions).toHaveLength(plan.productions.length);
   expect(scenarioProductions.every((production) => production.recipeVersionId && production.recipeVersion?.actorId === "restaurant-simulation:v1" &&
     production.recipeVersion?.effectiveFrom?.toISOString().slice(0, 10) === plan.startDate)).toBe(true);
-  await prisma.workspaceDocument.createMany({ data: invoices.map((invoice) => ({
-    restaurantId: scenarioOwner.restaurantId,
-    kind: `source-invoice:${invoice.id}`,
-    data: sourceDocument(invoice),
-  })) });
+  expect((await prisma.restaurant.findUniqueOrThrow({ where: { id: scenarioOwner.restaurantId } })).mode).toBe("demo");
 
   const received = plan.receipts[0];
   const simulationOperationId = `restaurant-simulation-v1:invoice:${received.invoiceId}:${received.productId}`;
@@ -196,7 +177,7 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   expect(archiveTimeline.body.events.every((event: object) => !("content" in event) && !("stockLines" in event))).toBe(true);
 
   const earlyVersion = await prisma.recipeVersion.findFirstOrThrow({ where: {
-    restaurantId: scenarioOwner.restaurantId, recipeId: plannedRecipes[0].id,
+    restaurantId: scenarioOwner.restaurantId, recipeId: plan.productions[0].recipeId,
   }, orderBy: { version: "desc" } });
   const lateVersion = await prisma.recipeVersion.create({ data: {
     restaurantId: scenarioOwner.restaurantId, recipeId: earlyVersion.recipeId, version: earlyVersion.version + 1,

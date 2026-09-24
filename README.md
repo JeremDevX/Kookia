@@ -21,6 +21,13 @@ son espace au premier accès métier. La reprise est idempotente et ne remplace 
 les données déjà modifiées. Ne pas utiliser `prisma migrate reset` sur une base
 contenant des données à conserver.
 
+Pour parcourir le récit 2023–2026 sans utiliser une base conservée, lancer
+`npm run demo:local` : la commande crée une base PostgreSQL temporaire sur tmpfs,
+un compte et un scénario entièrement synthétiques, puis démarre l’application
+sur loopback. Les identifiants sont écrits dans un fichier privé temporaire ;
+Ctrl-C arrête les serveurs et supprime la base et le fichier. Voir
+[la démo locale jetable](docs/local-demo.md) pour les limites et prérequis.
+
 ## Fonctionnement actuel
 
 Les données métier sont persistées dans un espace isolé par compte : restaurant,
