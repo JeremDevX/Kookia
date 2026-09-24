@@ -10,5 +10,6 @@ export interface Product {
   minThreshold: number;
   supplierId: string;
   pricePerUnit: number;
+  revision: number;
   lastDelivery?: string;
 }

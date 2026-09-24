@@ -9,6 +9,7 @@ import {
   History,
   Phone,
   ShoppingCart,
+  Pencil,
 } from "lucide-react";
 import type { Product, Supplier } from "../../types";
 import { useToast } from "../../context/ToastContext";
@@ -18,7 +19,8 @@ import {
   getSuggestedOrderQuantity,
 } from "../../domain/inventory/product.policies";
 
-import { getStockMovements, type StockMovement } from "../../services/productService";
+import { getStockMovements, type StockMovement, type ProductEdit } from "../../services/productService";
+import EditProductModal from "./EditProductModal";
 import { useCart } from "../../context/useCart";
 import { Link, useNavigate } from "react-router-dom";
 import "./ProductDetail.css";
@@ -27,6 +29,7 @@ interface ProductDetailProps {
   product: Product | null;
   onClose: () => void;
   onAdjustStock: (productId: string, delta: number, reason?: "adjustment" | "loss") => Promise<void>;
+  onUpdateProduct: (productId: string, edit: ProductEdit) => Promise<Product>;
   suppliers: Supplier[];
 }
 
@@ -42,6 +45,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   product,
   onClose,
   onAdjustStock,
+  onUpdateProduct,
   suppliers,
 }) => {
   const { addToast } = useToast();
@@ -53,6 +57,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [adjustReason, setAdjustReason] = useState<"adjustment" | "loss">("adjustment");
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [adjustAmount, setAdjustAmount] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeFromKeyboard = useEffectEvent(() => onClose());
   const productId = product?.id;
@@ -159,9 +164,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </section>
 
           <section className="drawer-section">
-            <h3 className="section-heading">
+            <div className="flex items-center justify-between gap-3"><h3 className="section-heading">
               <Package size={18} /> Quantités et prix
-            </h3>
+            </h3><Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setShowEditModal(true)}>Modifier la fiche</Button></div>
             <div className="info-grid">
               <div className="info-item">
                 <span className="label">Catégorie</span>
@@ -270,6 +275,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </Button>
         </footer>
       </div>
+      <EditProductModal product={product} suppliers={suppliers} isOpen={showEditModal} onClose={() => setShowEditModal(false)} onSave={onUpdateProduct} />
     </>
   );
 };

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Product } from "../types";
-import { getProducts, getProductStatus, createProduct, adjustProductStock } from "../services/productService";
+import type { NewProduct } from "../types/callbacks";
+import { getProducts, getProductStatus, createProduct, editProduct, adjustProductStock, type ProductEdit } from "../services/productService";
 import type { ProductStatus } from "../types";
 
 interface UseProductsReturn {
@@ -68,9 +69,15 @@ export const useProductsWithMutations = () => {
     return operation;
   }, []);
 
-  const addProduct = useCallback(async (product: Product) => {
+  const addProduct = useCallback(async (product: NewProduct) => {
     const created = await createProduct(product);
     setProducts((prev) => [...prev, created]);
+  }, []);
+
+  const updateProduct = useCallback(async (id: string, data: ProductEdit) => {
+    const updated = await editProduct(id, data);
+    setProducts((prev) => prev.map((product) => product.id === id ? updated : product));
+    return updated;
   }, []);
 
   return {
@@ -79,6 +86,7 @@ export const useProductsWithMutations = () => {
     error,
     refetch,
     updateStock,
+    updateProduct,
     addProduct,
     getStatus: getProductStatus,
   };

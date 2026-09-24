@@ -28,7 +28,7 @@ describe("persistent catalog HTTP", () => {
     const initial = await first.get("/api/workspace/catalog").expect(200);
     expect(initial.body.products).toHaveLength(catalog.products.length);
     for (const expected of catalog.products) {
-      expect(initial.body.products.find((item: { id: string }) => item.id === expected.id)).toEqual(expected);
+      expect(initial.body.products.find((item: { id: string }) => item.id === expected.id)).toEqual({ ...expected, revision: 1 });
     }
     expect(initial.body.suppliers).toEqual(catalog.suppliers);
     const product = initial.body.products[0];
@@ -37,6 +37,31 @@ describe("persistent catalog HTTP", () => {
       unit: "kg", minThreshold: 2, pricePerUnit: 1.25, supplierId: product.supplierId,
     }).expect(201);
     const id = created.body.id;
+    const original = { productName: created.body.name, supplierName: initial.body.suppliers.find((supplier: { id: string }) => supplier.id === created.body.supplierId).name,
+      unit: created.body.unit, pricePerUnit: created.body.pricePerUnit };
+    await first.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{ productId: id, quantity: 2 }] }).expect(201);
+    const localSupplierId = randomUUID();
+    await first.post("/api/workspace/suppliers").send({ id: localSupplierId, name: "Fournisseur révisé", email: "reviewed@example.com", phone: "" }).expect(201);
+    const edits = [
+      { expectedRevision: 1, name: "Fiche revue", category: "Frais", minThreshold: 2.5, supplierId: localSupplierId, pricePerUnit: 12.3456 },
+      { expectedRevision: 1, name: "Modification concurrente", category: "Autre", minThreshold: 3, supplierId: localSupplierId, pricePerUnit: 9.8765 },
+    ];
+    const editResults = await Promise.all(edits.map((edit) => first.patch(`/api/workspace/products/${id}`).send(edit)));
+    expect(editResults.map((response) => response.status).sort()).toEqual([200, 409]);
+    const winnerIndex = editResults.findIndex((response) => response.status === 200);
+    expect(editResults[winnerIndex].body.revision).toBe(2);
+    expect(editResults[winnerIndex].body).toMatchObject({ name: edits[winnerIndex].name, category: edits[winnerIndex].category,
+      minThreshold: edits[winnerIndex].minThreshold, supplierId: localSupplierId, pricePerUnit: edits[winnerIndex].pricePerUnit });
+    expect(editResults[winnerIndex].body.currentStock).toBe(created.body.currentStock);
+    expect(editResults[winnerIndex].body.unit).toBe(created.body.unit);
+    const orders = await first.get("/api/workspace/orders").expect(200);
+    expect(orders.body[0].lines[0]).toMatchObject(original);
+    await first.patch(`/api/workspace/products/${id}`).send(edits[0]).expect(409);
+    const foreignSupplierId = randomUUID();
+    await second.post("/api/workspace/suppliers").send({ id: foreignSupplierId, name: "Fournisseur isolé", email: "isolated@example.com", phone: "" }).expect(201);
+    await first.patch(`/api/workspace/products/${id}`).send({ ...edits[0], expectedRevision: 2, supplierId: foreignSupplierId }).expect(400);
+    await second.patch(`/api/workspace/products/${id}`).send({ ...edits[0], expectedRevision: 1, supplierId: foreignSupplierId }).expect(404);
+    await first.patch(`/api/workspace/products/${id}`).send({ ...edits[0], expectedRevision: 2, unit: "L" }).expect(400);
     const operationId = randomUUID();
     await first.post(`/api/workspace/products/${id}/stock`).send({ operationId, delta: -2.5 }).expect(200);
     const repeated = await first.post(`/api/workspace/products/${id}/stock`).send({ operationId, delta: -2.5 }).expect(200);

@@ -9,6 +9,7 @@ export const productDto = (product: Awaited<ReturnType<typeof prisma.product.fin
   id: product.id, name: product.name, category: product.category, unit: product.unit,
   currentStock: Number(product.currentStock), minThreshold: Number(product.minThreshold),
   supplierId: product.supplierId, pricePerUnit: Number(product.pricePerUnit),
+  revision: product.revision,
   ...(product.lastDelivery ? { lastDelivery: product.lastDelivery.toISOString().slice(0, 10) } : {}),
 });
 
@@ -34,6 +35,31 @@ export async function createProduct(restaurantId: string, actorId: string, data:
     const product = await tx.product.create({ data: { ...data, id: operationId, restaurantId } });
     await tx.stockMovement.create({ data: { restaurantId, productId: product.id, actorId, operationId, delta: data.currentStock, reason: "initial" } });
     return productDto(product);
+  });
+}
+
+interface EditProductInput {
+  expectedRevision: number; name: string; category: string;
+  minThreshold: number; supplierId: string; pricePerUnit: number;
+}
+
+export async function editProduct(restaurantId: string, productId: string, data: EditProductInput) {
+  return prisma.$transaction(async (tx) => {
+    const supplier = await tx.supplier.findUnique({ where: { restaurantId_id: { restaurantId, id: data.supplierId } } });
+    if (!supplier) throw new WorkspaceError(400, "INVALID_SUPPLIER", "Fournisseur introuvable dans votre espace.");
+    const updated = await tx.product.updateMany({
+      where: { restaurantId, id: productId, revision: data.expectedRevision },
+      data: {
+        name: data.name, category: data.category, minThreshold: data.minThreshold,
+        supplierId: data.supplierId, pricePerUnit: data.pricePerUnit, revision: { increment: 1 },
+      },
+    });
+    if (!updated.count) {
+      const exists = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: productId } }, select: { id: true } });
+      if (!exists) throw new WorkspaceError(404, "NOT_FOUND", "Produit introuvable.");
+      throw new WorkspaceError(409, "REVISION_CONFLICT", "La fiche produit a changé. Rechargez-la avant de réessayer.");
+    }
+    return productDto(await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: productId } } }));
   });
 }
 

@@ -13,7 +13,7 @@ import { useProductsWithMutations } from "../hooks";
 import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
 import type { Product } from "../types";
-import type { StockFilters } from "../types/callbacks";
+import type { NewProduct, StockFilters } from "../types/callbacks";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { getProductStatusLabel, getSuggestedOrderQuantity } from "../domain/inventory/product.policies";
 import "./Stocks.css";
@@ -23,7 +23,7 @@ const Stocks: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { addToCart, loading: cartLoading } = useCart();
-  const { products, updateStock, addProduct, getStatus, loading, error, refetch } =
+  const { products, updateStock, updateProduct, addProduct, getStatus, loading, error, refetch } =
     useProductsWithMutations();
   const { suppliers } = useInventoryCatalog();
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,7 +83,7 @@ const Stocks: React.FC = () => {
     await updateStock(productId, delta, reason);
   };
 
-  const handleAddProduct = async (newProduct: Product) => {
+  const handleAddProduct = async (newProduct: NewProduct) => {
     await addProduct(newProduct);
     addToast(
       "success",
@@ -231,6 +231,7 @@ const Stocks: React.FC = () => {
         product={selectedProduct}
         onClose={() => setSelectedProductId(null)}
         onAdjustStock={handleDrawerAdjustStock}
+        onUpdateProduct={updateProduct}
         suppliers={suppliers}
       />}
 

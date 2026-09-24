@@ -85,6 +85,7 @@ model Product {
   supplier     Supplier @relation(fields: [restaurantId, supplierId], references: [restaurantId, id], onDelete: NoAction)
   pricePerUnit Decimal @db.Decimal(14, 4)
   lastDelivery DateTime? @db.Date
+  revision     Int @default(1)
   ingredients  RecipeIngredient[]
   movements    StockMovement[]
   predictions  Prediction[]

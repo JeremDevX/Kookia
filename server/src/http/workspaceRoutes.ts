@@ -13,7 +13,7 @@ import { z } from "zod";
 import { sessionCookieName } from "../config/env.js";
 import { getUserBySessionToken } from "../application/auth/authService.js";
 import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
-import { adjustStock, createProduct, getCatalog, WorkspaceError } from "../application/workspace/catalogService.js";
+import { adjustStock, createProduct, editProduct, getCatalog, WorkspaceError } from "../application/workspace/catalogService.js";
 import { getRecipes, recordProduction } from "../application/workspace/recipeService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
@@ -52,6 +52,12 @@ const stockSchema = z.object({
   operationId: z.uuid(), delta: z.number().finite().min(-1_000_000).max(1_000_000).multipleOf(0.001).refine((value) => value !== 0),
   reason: z.enum(["adjustment", "loss"]).default("adjustment"),
 }).strict().refine((data) => data.reason !== "loss" || data.delta < 0);
+const editProductSchema = z.object({
+  expectedRevision: z.number().int().positive(), name: z.string().trim().min(1).max(120),
+  category: z.string().trim().min(1).max(80), minThreshold: quantity,
+  supplierId: z.string().min(1).max(100),
+  pricePerUnit: z.number().finite().min(0).max(1_000_000).multipleOf(0.0001),
+}).strict();
 
 workspaceRoutes.get("/catalog", async (_req, res, next) => {
   try { res.json(await getCatalog(context(res).restaurantId)); } catch (error) { next(error); }
@@ -61,6 +67,12 @@ workspaceRoutes.post("/products", async (req, res, next) => {
     const { operationId, ...data } = newProductSchema.parse(req.body);
     const { restaurantId, actorId } = context(res);
     res.status(201).json(await createProduct(restaurantId, actorId, data, operationId));
+  } catch (error) { next(error); }
+});
+workspaceRoutes.patch("/products/:id", async (req, res, next) => {
+  try {
+    const data = editProductSchema.parse(req.body);
+    res.json(await editProduct(context(res).restaurantId, String(req.params.id), data));
   } catch (error) { next(error); }
 });
 workspaceRoutes.post("/products/:id/stock", async (req, res, next) => {
