@@ -48,7 +48,7 @@ UI React → hooks/features → client API → API Express → domaine → Postg
 ```
 
 La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
-`Product`, `Recipe`, `RecipeIngredient`, `StockMovement`,
+`Product`, `Recipe`, `RecipeIngredient`, `StockMovement`, `StockCount`,
 `InvoiceDraftRevision`, `Production`, `Prediction`, `SaleItem`, `DailySale`,
 `SaleImport`, `PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
 et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics,
@@ -58,6 +58,10 @@ pour permettre la suppression en cascade d’un compte sans casser ses référen
 La fiche `Product` porte une révision pour détecter les modifications concurrentes ;
 la mise à jour ne change pas l'unité. Les lignes validées de `PurchaseOrderLine`
 gardent leur nom, fournisseur, unité et prix snapshotés lors de la commande.
+`StockCount` conserve séparément quantité comptée, quantité théorique observée,
+écart, unité, date et acteur ; un écart accepté ajoute un `StockMovement` lié.
+La révision de stock évolue avec chaque entrée/sortie et permet d'étiqueter un
+comptage comme « à vérifier » après tout mouvement ultérieur.
 
 Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` initialise
 les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au
