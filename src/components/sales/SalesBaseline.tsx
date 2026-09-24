@@ -30,9 +30,11 @@ export default function SalesBaseline() {
             <p><strong>Résultats expérimentaux, non validés sur un jeu de données terrain indépendant.</strong> {baseline.items.length} article(s) sur {baseline.observedItemCount} disposent de l’historique requis ; {baseline.observedItemCount - baseline.items.length} article(s) observé(s) ne sont pas estimés faute de {baseline.requiredConsecutiveDays} jours complets. Une ligne absente sur ces journées complètes représente zéro vente observé. Les deux méthodes sont comparées sur les mêmes {baseline.evaluationDays} dates, sans utiliser la vente du jour à prédire : moyenne des sept jours précédents et vente du même jour de semaine précédent (J−7). L’estimation affichée pour demain reste la moyenne mobile ; aucun gagnant n’est sélectionné automatiquement. EAM en unités et WAPE résument les erreurs rétrospectives : ce ne sont ni un score de confiance ni une garantie de fiabilité.</p>
             <div className="sales-table-wrap" role="region" aria-label="Baseline expérimentale par article" tabIndex={0}><table className="sales-table"><thead><tr>
               <th>Article vendu</th><th>Estimation pour le {baseline.forecastDate}</th>
-              <th>EAM · moyenne 7 j</th><th>EAM · même jour J−7</th><th>WAPE · moyenne 7 j</th><th>WAPE · même jour J−7</th><th>Projection recette datée</th>
+              <th>Volume observé · {baseline.evaluationDays} j</th><th>EAM · moyenne 7 j</th><th>EAM · même jour J−7</th>
+              <th>WAPE · moyenne 7 j</th><th>WAPE · même jour J−7</th><th>Projection recette datée</th>
             </tr></thead><tbody>{baseline.items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((item) => <tr key={item.saleItemId}>
               <td>{item.saleItemName}</td><td>{item.forecastQuantity} unités</td>
+              <td>{item.backtest.observedQuantity} unités</td>
               <td>{item.backtest.rollingMean7.meanAbsoluteError} unités</td>
               <td>{item.backtest.previousWeekday.meanAbsoluteError} unités</td>
               <td>{item.backtest.rollingMean7.weightedAbsolutePercentageError === null ? "Non calculable" : `${item.backtest.rollingMean7.weightedAbsolutePercentageError} %`}</td>

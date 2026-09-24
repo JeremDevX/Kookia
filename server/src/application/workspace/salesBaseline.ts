@@ -154,7 +154,7 @@ export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: Baseli
     return [{ saleItemId: item.saleItemId, saleItemName: item.saleItemName,
       forecastQuantity: mean(quantities.slice(-LOOKBACK_DAYS)),
       backtest: { from: dates[HISTORY_DAYS - EVALUATION_DAYS], to: asOfDate,
-        days: EVALUATION_DAYS,
+        days: EVALUATION_DAYS, observedQuantity: evaluationActuals.reduce((sum, value) => sum + value, 0),
         rollingMean7: errorMetrics(rollingMeanErrors, evaluationActuals),
         previousWeekday: errorMetrics(previousWeekdayErrors, evaluationActuals) },
       recipeProjection: recipeProjection(item.saleItemId, day(asOfDate, 1), day(asOfDate, 1),

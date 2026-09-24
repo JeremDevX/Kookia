@@ -82,7 +82,8 @@ calendaires complets.
 Le backtest prédit séparément chacun des sept derniers jours à partir de ses
 sept jours **antérieurs**, puis compare cette moyenne à la vente du même jour de
 semaine précédent (J−7), sur les mêmes dates figées. L'EAM (en unités) et le
-WAPE sont affichés séparément pour les deux références. L'estimation de demain
+WAPE sont affichés séparément pour les deux références, avec le volume réellement
+servi sur cette fenêtre d'évaluation. L'estimation de demain
 reste la moyenne mobile ; cette comparaison ne sélectionne pas automatiquement
 un nouveau modèle. Les articles incomplets ne reçoivent pas d'estimation. Ce
 test rétrospectif interne ne constitue ni une confiance

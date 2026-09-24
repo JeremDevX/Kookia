@@ -69,7 +69,7 @@ export interface SalesBaseline {
   observedItemCount: number; excludedSimulationRows: number; mixedSourceWindow: boolean;
   items: {
     saleItemId: string; saleItemName: string; forecastQuantity: number;
-    backtest: { from: string; to: string; days: number;
+    backtest: { from: string; to: string; days: number; observedQuantity: number;
       rollingMean7: { meanAbsoluteError: number; weightedAbsolutePercentageError: number | null };
       previousWeekday: { meanAbsoluteError: number; weightedAbsolutePercentageError: number | null } };
     recipeProjection:
