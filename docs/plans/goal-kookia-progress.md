@@ -69,11 +69,17 @@ Après les corrections ci-dessous, le trajet complet Aujourd'hui→Ventes→Stoc
 a été rejoué à 320×750 au clavier (Tab/Entrée) ; les états vides, les quantités
 à vérifier et les simulations sont clairement annoncés, sans débordement
 horizontal visible.
-Le rejeu reste à 432 pièces. Dans le bac tmpfs actuel, l'essai a aussi créé un
-brouillon synthétique lié à la fixture publique ; aucun produit n'a été choisi,
-aucune réception n'a eu lieu et aucun mouvement de stock n'a été ajouté. À
-320×750, l'AXTree a révélé un libellé de quantité vide lorsqu'aucun produit
-n'était rapproché ; le fallback affiche désormais « unité du produit ». Le
+Le rejeu reste à 432 pièces. À l'ouverture du bac tmpfs, l'essai avait créé un
+brouillon synthétique lié à la fixture publique, sans produit rapproché ni
+mouvement. La suite a repris ce brouillon : après vérification du type et de la
+date de démonstration, la ligne fictive « Tomates rondes » a été rapprochée de
+« Tomates (kg) » et réceptionnée pour 2 kg à 3,50 €. Après rechargement, la
+facture garde un seul mouvement lié, affiché en lecture seule ; le stock
+théorique de Tomates est passé de 12 à 14 kg et reste à 14 kg. L'opération
+reste dans le bac PostgreSQL tmpfs synthétique, sans achat réel ni message
+fournisseur. À 320×750, l'AXTree avait révélé un libellé de quantité vide
+lorsqu'aucun produit n'était rapproché ; le fallback affiche désormais
+« unité du produit ». Le
 parcours clavier Entrée→Échap a révélé une perte de focus, causée par la
 désactivation native temporaire du déclencheur pendant l'ouverture asynchrone.
 `aria-disabled` conserve ce bouton focalisable, avec le garde `opening` existant ;
@@ -223,6 +229,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-24 | Q2 — Ventes mobile | — (vérification) | Chrome natif sur `/sales` à 390 et 320 px : en-tête visible depuis le haut, état vide (« absence de donnée » distincte de zéro), actions et formulaire de vente empilés avec libellés visibles ; Tab affiche un focus net sur « Importer un CSV Kookia ». Le tableau du calendrier garde un défilement horizontal interne : plusieurs valeurs/colonnes sont tronquées avant balayage, sans débordement de page visible. Aucune action métier ni donnée modifiée. | Rendu observé en émulation responsive dans Chrome. Aucun lecteur d'écran ni parcours clavier complet des contrôles du calendrier. Après passage au zoom Chrome 200 %, CUA renvoie `cgWindowNotFound` bien que `getState()` indique Chrome actif ; fenêtre/zoom/emulation n'ont pas pu être restaurés via CUA. | Reprendre le contrôle natif, restaurer zoom 90 % et 1440×750 ; décider si le tableau mobile doit être remplacé par des cartes ou si son défilement est suffisamment découvrable, puis continuer les routes/états restants de Q2. |
 | 2026-09-24 | Q2 — tiroir Stocks, navigation et calendrier Ventes mobile | — (vérification + correctifs) | À 320 px, la fiche Tomates affichait « Stock théorique » au mauvais corps car `block`/`text-xs` n'existent pas dans le catalogue CSS ; remplacement par un label sémantique avec style local et empilement de la bannière au petit écran. Le rendu natif montre le libellé réduit et `12 kg` entier ; Tab focalise « Compter », Échap ferme le dialogue et rend le focus à « Voir la fiche ». Stocks/Ventes testés à 200 % sans coupe des contenus observés. Défaut séparé reproduit : après défilement Stocks, Ventes s'ouvrait au milieu du calendrier ; `Layout` remet maintenant le conteneur principal en haut et garde les ancres (`#sales-entry-title` testé depuis Ventes et Aujourd'hui). Le tableau calendrier reste défilable horizontalement, mais une consigne mobile explicite ce geste ; Tab focalise la région et la flèche droite révèle les colonnes suivantes. Aucune action métier ni donnée modifiée. | `npm run lint`, `npm run build`, `npm test` (24 fichiers/102 Vitest + 33 Node/CSS), `git diff --check`. Chrome natif, zoom réel 200 %, responsive 320×750, clavier Tab/flèche droite/Échap ; zoom revenu à 90 % et largeur responsive restaurée à 1440×750. | Pas de tablette 768 px sur ces routes, de technologie d'assistance réelle ni d'états non nominaux. | Continuer les routes et états Q2 manquants avant clôture. |
 | 2026-09-24 | Q2 — parcours natif au clavier, 320/768 px | — (vérification) | Chrome natif sur le bac `demo:local` tmpfs, zoom 90 %. À 320×750, Aujourd'hui → Ventes → Stocks → Achats parcouru avec le menu, Tab et Entrée ; captures et AXTree confirment les états vides, les actions et les libellés. Le calendrier Ventes annonce son défilement horizontal interne ; cartes Stocks et Achats restent en colonne, sans débordement horizontal de page visible. À 768×750, Aujourd'hui et Achats observés : cartes de mise en route en deux colonnes, commande conservant une largeur utile ; aucun débordement visible. Aucune fixture lancée, vente, commande ou autre donnée modifiée. | CUA conserve `browsers: []`, mais `getApp("com.google.Chrome")` a contrôlé l'onglet natif. Largeur responsive restaurée à 1440×750 et zoom laissé à 90 %. | 768 px reste à parcourir sur les autres routes ; zoom 200 % sur les autres routes, états de chargement/erreur/conflit/long et lecteur d'écran réel restent à vérifier ; Q2 reste ouvert. |
+| 2026-09-24 | Q2 — réception simulée persistée | — (vérification) | Dans le bac `demo:local` tmpfs, brouillon de `Facture DEMO-2026-09-01` repris après relevé du stock initial de Tomates (12 kg). Type facture et date de démonstration 2026-09-20 confirmés ; ligne fictive rapprochée de `Tomates (kg)`, 2 kg à 3,50 €, puis réception simulée enregistrée. Après navigation et rechargement, le stock reste à 14 kg et l'archive indique exactement `1 mouvement(s)` lié ; « Voir la réception » présente les champs en lecture seule et prévient qu'aucun second crédit n'a lieu. | Contrôle Chrome natif sur `127.0.0.1:52790` ; aucun fournisseur réel, achat réel ni message envoyé. État limité aux données synthétiques en tmpfs. | Q2 reste ouvert pour les routes/états, largeurs et vérifications AT restant listés ci-dessus. |
 
 ## Portes externes
 
