@@ -24,7 +24,7 @@ function RecordedOperations({ bucket, currency }: { bucket: ImpactBucket; curren
   return <>
     <p>{bucket.menuItemUnits} unité(s) d’articles vendues · {bucket.serviceDays.complete} jour(s) complet(s), {bucket.serviceDays.partial} partiel(s), {bucket.serviceDays.coverageMissing} sans couverture déclarée, {bucket.serviceDays.closed} fermé(s), {bucket.serviceDays.unregistered} sans fiche de service.</p>
     <h3>Pertes déclarées</h3>
-    {bucket.lossesByProduct.length ? <div className="sales-table-wrap" role="region" aria-label="Pertes déclarées par produit" tabIndex={0}>
+    {bucket.lossesByProduct.length ? <div className="sales-table-wrap" role="region" aria-label="Pertes déclarées par produit" aria-describedby="impact-table-scroll-hint" tabIndex={0}>
       <table className="sales-table"><thead><tr><th>Produit</th><th>Quantité déclarée perdue</th><th>Coût connu</th><th>Traçabilité</th></tr></thead><tbody>
         {bucket.lossesByProduct.map((item) => <tr key={`${item.productId}:${item.unit}`}>
           <td>{item.productName}</td><td>{formatQuantity(item.quantity)} {item.unit}</td>
@@ -34,7 +34,7 @@ function RecordedOperations({ bucket, currency }: { bucket: ImpactBucket; curren
       </tbody></table></div> : <p>Aucun mouvement de perte déclarée dans les données mesurables de cette période.</p>}
     <p>Coût connu des pertes : <strong>{formatMoney(bucket.knownLossCost, currency)}</strong> · {bucket.unpricedLossMovementCount} mouvement(s) de perte sans valorisation historique.</p>
     <h3>Réceptions confirmées</h3>
-    {bucket.receiptsByProduct.length ? <div className="sales-table-wrap" role="region" aria-label="Achats réellement réceptionnés par produit" tabIndex={0}>
+    {bucket.receiptsByProduct.length ? <div className="sales-table-wrap" role="region" aria-label="Achats réellement réceptionnés par produit" aria-describedby="impact-table-scroll-hint" tabIndex={0}>
       <table className="sales-table"><thead><tr><th>Produit</th><th>Quantité reçue</th><th>Coût constaté</th><th>Traçabilité</th></tr></thead><tbody>
         {bucket.receiptsByProduct.map((item) => <tr key={`${item.productId}:${item.unit}`}>
           <td>{item.productName}</td><td>{formatQuantity(item.receivedQuantity)} {item.unit}</td>
@@ -90,7 +90,8 @@ export default function ImpactSummary({ from, to }: Props) {
       <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryReport}>Recharger le bilan</Button>
     </div> : report && <>
       <p>Période actuelle : {periodRange(report.current)} · précédente : {periodRange(report.prior)}.</p>
-      <div className="sales-table-wrap" role="region" aria-label="Comparaison des périodes" tabIndex={0}>
+      <p id="impact-table-scroll-hint" className="sales-table-hint">Sur petit écran, faites défiler horizontalement les tableaux pour voir toutes les colonnes.</p>
+      <div className="sales-table-wrap" role="region" aria-label="Comparaison des périodes" aria-describedby="impact-table-scroll-hint" tabIndex={0}>
         <table className="sales-table"><thead><tr><th>Indicateur observé</th><th>Période actuelle</th><th>Période précédente</th></tr></thead><tbody>
           <tr><th scope="row">Unités d’articles vendues (pas des couverts)</th><td>{recordedValue(report.current, report.current.recorded.menuItemUnits)}</td><td>{recordedValue(report.prior, report.prior.recorded.menuItemUnits)}</td></tr>
           <tr><th scope="row">Coût connu des pertes déclarées</th><td>{recordedValue(report.current, formatMoney(report.current.recorded.knownLossCost, report.currency))}</td><td>{recordedValue(report.prior, formatMoney(report.prior.recorded.knownLossCost, report.currency))}</td></tr>
