@@ -27,10 +27,14 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
   const selected = days.find((day) => day.serviceDate === selectedDate) ?? null;
   const calendarDates = useMemo(() => dateRange(from, to), [from, to]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<string | null> => {
     setLoading(true); setError("");
-    try { setDays(await getServiceDays(from, to)); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "Calendrier indisponible."); }
+    try { setDays(await getServiceDays(from, to)); return null; }
+    catch (cause) {
+      const failure = cause instanceof Error ? cause.message : "Calendrier indisponible.";
+      setError(failure);
+      return failure;
+    }
     finally { setLoading(false); }
   }, [from, to]);
   useEffect(() => { void load(); }, [load]);
@@ -49,8 +53,11 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
       setMessage(`État du ${selectedDate} enregistré. Attribution conservée.`);
       await onChanged();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "État du service non enregistré.");
-      await load();
+      const failure = cause instanceof Error ? cause.message : "État du service non enregistré.";
+      const reloadFailure = await load();
+      setError(reloadFailure
+        ? `${failure} Le rechargement du calendrier a également échoué : ${reloadFailure}`
+        : `${failure} Le calendrier a été rechargé ; vos changements non enregistrés ont été abandonnés. Vérifiez l’état avant de réessayer.`);
     } finally { setSaving(false); }
   };
 
