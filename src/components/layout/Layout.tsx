@@ -23,7 +23,11 @@ const Layout: React.FC = () => {
   }, [location.key, location.hash]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
+  const closeSidebar = useCallback(() => {
+    setIsSidebarOpen(false);
+    if (window.matchMedia("(min-width: 769px)").matches) return;
+    menuButtonRef.current?.focus();
+  }, [menuButtonRef]);
 
   return (
     <div className="layout-container">
