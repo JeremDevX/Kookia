@@ -1,5 +1,5 @@
-/* Shared visual language for the three operational workspaces. */
-.workspace-page:is(.stocks-container, .predictions-container, .recipes-container, .orders-container, .analytics-container, .settings-container, .more-page) {
+/* Shared visual language for workspace pages. */
+.workspace-page:is(.stocks-container, .predictions-container, .recipes-container, .orders-container, .analytics-container, .settings-container, .more-page, .timeline-page) {
   background: var(--color-bg);
   min-height: var(--unit-100percent);
   padding: var(--size-36) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)) var(--spacing-2xl);
