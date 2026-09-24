@@ -15,7 +15,7 @@ import { useToast } from "../context/ToastContext";
 import type { Product } from "../types";
 import type { NewProduct, StockFilters } from "../types/callbacks";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
-import { getProductStatusLabel, getSuggestedOrderQuantity } from "../domain/inventory/product.policies";
+import { getProductStatusLabel, getSuggestedOrderQuantity, needsStockReview } from "../domain/inventory/product.policies";
 import { getStockVerificationStatus } from "../domain/inventory/stockCount.policies";
 import "./Stocks.css";
 import "../styles/Workspace.css";
@@ -44,7 +44,7 @@ const Stocks: React.FC = () => {
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? null;
   const categories = Array.from(new Set(products.map((product) => product.category))).sort((a, b) => a.localeCompare(b, "fr"));
-  const productsToReview = products.filter((product) => getStatus(product) !== "optimal")
+  const productsToReview = products.filter(needsStockReview)
     .sort((a, b) => getStatus(a) === getStatus(b) ? 0 : getStatus(a) === "urgent" ? -1 : 1);
 
   const filteredProducts = products.filter((p) => {
@@ -136,7 +136,7 @@ const Stocks: React.FC = () => {
         <Button size="sm" aria-pressed={view === "all"} onClick={() => setView("all")}>Tout l'inventaire ({products.length})</Button>
       </div>
 
-      {view === "review" ? <section aria-labelledby="stock-review-title"><div className="workspace-section-heading"><h2 id="stock-review-title">Produits au seuil ou en dessous</h2></div>
+      {view === "review" ? <section aria-labelledby="stock-review-title"><div className="workspace-section-heading"><h2 id="stock-review-title">Stocks à vérifier ou sous le seuil</h2></div>
         {!loading && !error && <StockReview products={productsToReview} suppliers={suppliers} selecting={cartLoading} onInspect={setSelectedProductId} onSelect={(product) => void handleSelectForOrder(product)} />}
       </section> : <>
 

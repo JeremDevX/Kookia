@@ -1,4 +1,5 @@
 import type { Product, ProductStatus } from "./product.types";
+import { getStockVerificationStatus } from "./stockCount.policies";
 
 export const getStatusColor = (status: ProductStatus): string => {
   switch (status) {
@@ -14,9 +15,16 @@ export const getStatusColor = (status: ProductStatus): string => {
 };
 
 export const getProductStatus = (product: Product): ProductStatus => {
-  if (product.currentStock <= product.minThreshold * 0.7) return "urgent";
+  if (getStockVerificationStatus(product) !== "counted") return "neutral";
+  if (product.currentStock <= 0) return "urgent";
   if (product.currentStock <= product.minThreshold) return "moderate";
   return "optimal";
+};
+
+export const needsStockReview = (product: Product): boolean => {
+  const status = getProductStatus(product);
+  return status === "urgent" || status === "moderate" ||
+    (status === "neutral" && product.currentStock <= product.minThreshold);
 };
 
 export const getSuggestedOrderQuantity = (product: Product): number =>
@@ -25,12 +33,12 @@ export const getSuggestedOrderQuantity = (product: Product): number =>
 export const getProductStatusLabel = (status: ProductStatus): string => {
   switch (status) {
     case "urgent":
-      return "Critique";
+      return "Rupture confirmée";
     case "moderate":
       return "À surveiller";
     case "optimal":
       return "Bon";
     default:
-      return "Neutre";
+      return "À vérifier";
   }
 };

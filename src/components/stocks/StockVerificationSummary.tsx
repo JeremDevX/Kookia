@@ -12,7 +12,7 @@ export default function StockVerificationSummary({ product, onCount }: StockVeri
   const threshold = getProductStatus(product);
   return <section className="drawer-section">
     <div className="status-banner">
-      <Badge label={`Seuil : ${getProductStatusLabel(threshold)}`} status={threshold} />
+      <Badge label={verification === "counted" ? `Seuil : ${getProductStatusLabel(threshold)}` : "Seuil indicatif"} status={threshold} />
       <span className="stock-big">
         <small className="stock-label">Stock théorique</small>
         {product.currentStock} <span className="unit">{product.unit}</span>
@@ -25,6 +25,6 @@ export default function StockVerificationSummary({ product, onCount }: StockVeri
       </div>
       <Button size="sm" variant="outline" icon={<ClipboardCheck size={14} />} onClick={onCount}>Compter</Button>
     </div>
-    <small className="drawer-source">Le niveau d’alerte est calculé sur le stock théorique ; il ne confirme pas la quantité physique.</small>
+    <small className="drawer-source">{verification === "counted" ? "Aucun mouvement n’a été enregistré depuis ce comptage." : "Sans comptage à jour, le seuil reste indicatif : comptez le stock avant de décider d’un réassort."}</small>
   </section>;
 }

@@ -54,9 +54,10 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
             }
           >
             <option value="all">Tous les états</option>
+            <option value="neutral">À vérifier</option>
             <option value="optimal">Bon</option>
             <option value="moderate">À surveiller</option>
-            <option value="urgent">Critique</option>
+            <option value="urgent">Rupture confirmée</option>
           </select>
         </div>
 

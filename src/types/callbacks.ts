@@ -19,7 +19,7 @@ export interface AnalyticsSettings {
  * Stock filter options
  */
 export interface StockFilters {
-  status: "all" | "optimal" | "moderate" | "urgent";
+  status: "all" | "neutral" | "optimal" | "moderate" | "urgent";
   supplier: string;
   stockLevel: "all" | "low" | "medium" | "high";
 }

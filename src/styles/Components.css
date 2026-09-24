@@ -230,3 +230,9 @@
   color: var(--color-optimal);
   border: var(--size-1) solid rgba(var(--rgb-color-optimal), var(--number-0_2));
 }
+
+.badge-neutral {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  border: var(--size-1) solid var(--color-border);
+}

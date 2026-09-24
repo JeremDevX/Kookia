@@ -13,7 +13,7 @@ interface StockReviewProps {
 }
 
 export default function StockReview({ products, suppliers, selecting, onInspect, onSelect }: StockReviewProps) {
-  if (products.length === 0) return <div className="workspace-empty">Aucun produit au seuil bas dans l'inventaire enregistré. Vérifiez les quantités si le catalogue vient d'être créé.</div>;
+  if (products.length === 0) return <div className="workspace-empty">Aucun produit au seuil bas dans l'inventaire théorique. Les quantités non comptées restent visibles dans Tout l'inventaire.</div>;
 
   return <div className="stock-review-list">{products.map((product) => {
     const supplier = suppliers.find((item) => item.id === product.supplierId);

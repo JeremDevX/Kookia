@@ -7,7 +7,7 @@ import Modal from "../components/common/Modal";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
-import { getProductStatus } from "../domain/inventory/product.policies";
+import { getProductStatus, needsStockReview } from "../domain/inventory/product.policies";
 import { describeServiceSources } from "../features/sales/salesPresentation";
 import { useProducts } from "../hooks";
 import { getLatestService, type LatestService } from "../services/salesService";
@@ -27,8 +27,8 @@ export default function Dashboard() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [restaurantError, setRestaurantError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-  const stockToReview = products.filter((product) => getProductStatus(product) !== "optimal");
-  const criticalStockCount = stockToReview.filter((product) => getProductStatus(product) === "urgent").length;
+  const stockToReview = products.filter(needsStockReview);
+  const confirmedStockoutCount = stockToReview.filter((product) => getProductStatus(product) === "urgent").length;
   const hasExampleItem = cartItems.some((item) => !!item.predictionId);
   const isFirstRun = latestService === null;
   const showSalesStartActions = isFirstRun && !cartLoading && !cartError && cartItems.length === 0 && !salesError;
@@ -71,7 +71,7 @@ export default function Dashboard() {
                 : productsLoading
                   ? { title: "Retrouvez vos données", detail: "L'inventaire est en cours de chargement.", to: "/stocks", action: "Ouvrir les stocks" }
                   : stockToReview.length > 0
-                    ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} au seuil ou en dessous. Les produits initiaux sont des exemples à confirmer.`, to: "/stocks", action: "Voir les stocks" }
+                    ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique. Les produits initiaux sont des exemples à confirmer.`, to: "/stocks", action: "Voir les stocks" }
                     : { title: "Aucune alerte de stock enregistrée", detail: "Vérifiez les ventes du dernier service ou préparez vos prochains achats.", to: "/orders", action: "Ouvrir les achats" };
 
   return <div className="dashboard-container">
@@ -99,8 +99,8 @@ export default function Dashboard() {
     <div className="today-grid">
       <section className="today-card" aria-labelledby="today-stock-title"><h2 id="today-stock-title">Stocks</h2>
         {productsLoading ? <p role="status">Chargement du stock…</p> : productsError ? <div role="alert"><p>Stock indisponible.</p><Button variant="outline" onClick={() => void refreshProducts()}>Réessayer</Button></div> :
-          <p>{stockToReview.length === 0 ? "Aucun produit au seuil bas dans l'inventaire enregistré." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier dans l'inventaire enregistré.`}</p>}
-        {!productsLoading && !productsError && criticalStockCount > 0 && <Badge label={`${criticalStockCount} critique${criticalStockCount > 1 ? "s" : ""} selon le seuil`} status="urgent" />}
+          <p>{stockToReview.length === 0 ? "Aucun produit sous le seuil théorique." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique.`}</p>}
+        {!productsLoading && !productsError && confirmedStockoutCount > 0 && <Badge label={`${confirmedStockoutCount} rupture${confirmedStockoutCount > 1 ? "s" : ""} confirmée${confirmedStockoutCount > 1 ? "s" : ""}`} status="urgent" />}
         <small>{latestService?.sources.includes("demo_simulation")
           ? "Ce scénario contient des stocks, réceptions, productions et pertes simulés, à ne pas confondre avec un inventaire réel."
           : "Les seuils sont des exemples à confirmer ; vérifiez la provenance des quantités et mouvements avant vos décisions."}</small>
