@@ -339,6 +339,10 @@ Rendu headless/CDP du composant React réel via un harnais Vite temporaire et un
 
 Le rendu d’erreur/reprise est prouvé sur fixture synthétique, pas sur écran natif ni au lecteur d’écran. La matrice Q2 et le Goal restent ouverts.
 
+`0fe225a` renforce la preuve API : le plafond de 48 mois est exercé avec les deux mois de bord partiels (15–31 janvier 2020, 17 jours ; 1–15 décembre 2023, 15 jours), et le parcours C3 vérifie la réception simulée non nulle dans son mois (compte 1, coût rapproché du prix × quantité). `npm run verify:local-delivery` repasse sur PostgreSQL tmpfs : lint, builds web/API, 18 migrations, 33 contrôles Node/CSS, 107 tests Vitest, 25 fichiers/37 tests d’intégration et dump/restore synthétique. `git diff --check` passe ; aucun tenant conservé touché.
+
+Après confirmation utilisateur que `/login` apparaît sur le port isolé 56819, `cua.getState()` voit Chrome comme application mais garde `browsers: []`, et `getApp("Google Chrome")` échoue encore `cgWindowNotFound`. Cette ouverture ne donne donc pas accès à un onglet contrôlable ; le contrôle natif et lecteur d’écran restent à faire quand CUA répondra. Le rendu headless/CDP et les réponses Impact de test précédents sont synthétiques et ne remplacent pas cette revue. Aucun accès supplémentaire au runner métier n’a été fait.
+
 ## Portes externes
 
 | Sujet | Ce qui est possible sans accès | Preuve requise pour « activé » | État |
