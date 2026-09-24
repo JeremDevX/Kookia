@@ -48,8 +48,10 @@ matière exactes puis journal visible après rechargement. La modale mobile
 est nommée, contenue et clavier-opérable, sans lecteur d'écran réel. La fenêtre
 Chrome native est maintenant visible par CUA, mais le connecteur refuse toujours
 de créer un onglet ; reprendre Aujourd'hui → Ventes → Stocks → Achats, les états
-d'erreur/conflit/chargement, le zoom 200 % et la technologie d'assistance dès
-qu'un onglet contrôlable est disponible. Le parcours « pièces → idées
+d'erreur/conflit/chargement restants, le zoom 200 % et la technologie
+d'assistance dès qu'un onglet contrôlable est disponible. Un conflit de révision
+du calendrier des services ne masque plus silencieusement l'échec après
+rechargement (`53968c6`). Le parcours « pièces → idées
 de recette » reste ouvert : le bac recette ne prouve pas que deux familles
 d'ingrédients du corpus sont défendables.
 Aucun POS/OCR fournisseur n'est activé.
@@ -137,6 +139,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-24 | R0 — arrêt du runner démo | 6570815 | Deux arrêts Ctrl-C précédents avaient laissé conteneurs tmpfs et répertoires d'identifiants ; artefacts exacts vérifiés puis supprimés. Gestionnaires SIGINT/SIGTERM passés de once à on avec garde de répétition. Nouvelle exécution réelle : Ctrl-C, code 130, aucun processus API/Vite, conteneur disposable-local-demo ou dossier d'identifiants restant. npm run lint, npm test (24 fichiers/102 Vitest + 33 Node/CSS) et git diff --check passent. | Test uniquement local, base neuve et données synthétiques ; aucune base conservée, aucun script --write. | Conserver l'arrêt idempotent et vérifier le nettoyage si le runner change. |
 | 2026-09-24 | Q2 — recette → production UI | — (vérification) | Chrome headless sur bac tmpfs neuf : confirmation UI d'1 portion de Pizza Margherita, rendement/version active 1. Farine T55 0,2 kg, tomates 0,1 kg, mozzarella 0,12 kg et huile d'olive 0,02 L déduits exactement ; chaque stockRevision progresse de 1. Après rechargement, le journal affiche « Production réalisée — stock déduit ». L'arrêt Ctrl-C nettoie le bac. | Validation synthétique et sur ce seul parcours ; pas de CUA natif, lecteur d'écran, zoom réel ou états conflit/erreur. Aucun chiffre terrain. | Continuer les autres tâches UI du mandat et le parcours chronologique complet. |
 | 2026-09-24 | Q2 — modale de production mobile | — (vérification) | Chrome headless/CDP à 390×844 : boîte de dialogue 366×799, largeur du contenu égale au viewport (390 px), commandes nommées dans l'AXTree. Focus initial, Tab et Shift-Tab bouclent entre fermer/confirmer ; Échap ferme et rend le focus à « Produire cette recette ». Snapshot de stock avant/après ouverture/fermeture identique : aucune déduction sans confirmation. | Vérification synthétique ; pas de lecteur d'écran réel ni de zoom de navigateur 200 %. Démo tmpfs, profil et captures temporaires nettoyés. | Rejouer avec Chrome natif/technologie d'assistance lorsque l'onglet contrôlable est disponible. |
+| 2026-09-24 | Q2 — conflit du calendrier des services | `53968c6` | Après un 409 de `saveServiceDay`, l'erreur était immédiatement effacée par `load()` et l'état serveur réinitialisait les choix sans explication. Le rechargement retourne maintenant son résultat ; l'alerte reste visible avec l'échec initial et indique si l'état a été rechargé (changements non enregistrés abandonnés) ou si ce rechargement a aussi échoué. | `npm run lint`, `npm run build`, `npm test` (24 fichiers/102 tests Vitest + 33 Node/CSS), `git diff --check`. Le test d'intégration existant couvre le 409 serveur. Pas de harnais de test composant installé ; revue UI native impossible à ce stade. | Rejouer le conflit depuis le formulaire, vérifier le focus/annonce et la conservation des données affichées avec Chrome/AT quand un onglet contrôlable sera disponible. |
 
 ## Portes externes
 
