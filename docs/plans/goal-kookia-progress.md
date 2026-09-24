@@ -14,6 +14,9 @@ la page et retrouvé leurs états ainsi que la recette active ; quantité, révi
 et nombre de mouvements de stock restent identiques. Le contrôle CUA reste
 indisponible (`browsers: []`, `cgWindowNotFound`) ; autres routes/états, lecteur
 d'écran et vrai zoom page restent à vérifier.
+Un autre parcours UI confirme une production de Pizza Margherita : les quatre
+déductions suivent exactement les quantités/version de recette et le journal
+« Production réalisée — stock déduit » persiste après rechargement.
 Le seed exécutable est réservé à ce runner, qui crée lui-même sa base tmpfs
 neuve (`3dddd2e`) ; aucun utilitaire séparé ne cible une base locale par nom.
 Le gestionnaire d'arrêt du runner est maintenant répétable (`6570815`) et une
@@ -35,7 +38,9 @@ actif ni comparaison visuelle à l'original. Q2 reste en cours : la matrice
 headless couvre sept routes/cinq largeurs et le focus du menu ; cette reprise
 ajoute la fiche candidate à 1440/390 px et vérifie création, correction,
 confirmation, attente et persistance dans l'UI sans effet stock, mais pas le
-parcours complet. Reprendre Aujourd'hui → Ventes → Stocks → Achats, les états
+parcours complet. Une production a aussi été confirmée dans l'UI : déductions
+matière exactes puis journal visible après rechargement. Reprendre Aujourd'hui
+→ Ventes → Stocks → Achats, les états
 d'erreur/conflit/chargement, le zoom 200 % et la technologie d'assistance
 lorsque le navigateur CUA sera réellement listé. Le parcours « pièces → idées
 de recette » reste ouvert : le bac recette ne prouve pas que deux familles
@@ -123,6 +128,8 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-24 | Q2 — page Recettes candidate | 13f1010 | Chrome headless, profil temporaire, bac isolé : 1440×1000 et 390×844 ; aucun descendant plus large que son conteneur après correction des onglets mobiles. Espace ouvre la fiche, le titre reçoit le focus, Tab atteint « Annuler », puis Espace annule et rend le focus à « Nouvelle candidate ». Aucun formulaire n'a été enregistré. | Ce sous-parcours seulement ; le connecteur CUA reste browsers: [] / cgWindowNotFound. Autres routes/états, lecteur d'écran et vrai zoom 200 % non couverts. | Réexposer Chrome au contrôle CUA puis compléter le parcours et les états Q2. |
 | 2026-09-24 | Pièces → candidate — parcours UI | 13f1010 | Chrome headless sur un bac tmpfs neuf : deux hypothèses créées depuis deux factures tomates synthétiques ; quantité de la première corrigée de 0,1 à 0,2, puis confirmée comme recette active ; seconde conservée en attente. Après rechargement, états et recette active visibles dans l'interface. Snapshot tomate avant/après identique : 25,2 kg, révision 2, 3 525 mouvements. | Parcours technique seulement ; les deux pièces sont synthétiques et de même famille tomate. Ne prouve pas les deux familles réclamées par le corpus. | Obtenir une fixture multi-familles anonymisée autorisée avant d'affirmer la couverture métier. |
 | 2026-09-24 | R0 — arrêt du runner démo | 6570815 | Deux arrêts Ctrl-C précédents avaient laissé conteneurs tmpfs et répertoires d'identifiants ; artefacts exacts vérifiés puis supprimés. Gestionnaires SIGINT/SIGTERM passés de once à on avec garde de répétition. Nouvelle exécution réelle : Ctrl-C, code 130, aucun processus API/Vite, conteneur disposable-local-demo ou dossier d'identifiants restant. npm run lint, npm test (24 fichiers/102 Vitest + 33 Node/CSS) et git diff --check passent. | Test uniquement local, base neuve et données synthétiques ; aucune base conservée, aucun script --write. | Conserver l'arrêt idempotent et vérifier le nettoyage si le runner change. |
+| 2026-09-24 | Q2 — recette → production UI | — (vérification) | Chrome headless sur bac tmpfs neuf : confirmation UI d'1 portion de Pizza Margherita, rendement/version active 1. Farine T55 0,2 kg, tomates 0,1 kg, mozzarella 0,12 kg et huile d'olive 0,02 L déduits exactement ; chaque stockRevision progresse de 1. Après rechargement, le journal affiche « Production réalisée — stock déduit ». L'arrêt Ctrl-C nettoie le bac. | Validation synthétique et sur ce seul parcours ; pas de CUA natif, lecteur d'écran, zoom réel ou états conflit/erreur. Aucun chiffre terrain. | Continuer les autres tâches UI du mandat et le parcours chronologique complet. |
+
 ## Portes externes
 
 | Sujet | Ce qui est possible sans accès | Preuve requise pour « activé » | État |
