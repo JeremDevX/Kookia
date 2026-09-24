@@ -333,6 +333,12 @@ Rendu headless/CDP du composant React réel via un harnais Vite temporaire et un
 
 **Limite d’outil / périmètre :** CUA native expose toujours `browsers: []` et `getApp("Google Chrome")` échoue `cgWindowNotFound` ; le port isolé 56819 annoncé visible n’avait pas de listener lors du contrôle en lecture seule. Un essai headless a aussi ciblé par erreur le port 52790, précédemment écarté comme non isolé : l’authentification a été rejetée et est restée sur `/login` ; aucune session métier ni écriture n’a eu lieu, ce port n’a pas été réutilisé, et le runner 53038 est resté intact. Le contrôle natif/CUA, le lecteur d’écran réel et les autres états non nominaux restent ouverts ; poursuivre Q2 sans clore le Goal.
 
+### Q2 — reprise du Bilan, erreur et chargement (2026-09-25)
+
+`bd3b91e` porte le bouton « Recharger le bilan » à 44 px minimum. Rendu headless/CDP à 320 px sur `ImpactSummary` réel avec un GET 503 puis un GET réussi **synthétiques** : l’alerte d’erreur reste distincte du chargement et du vide, Tab atteint le bouton (44 px, contour 3 px), Espace relance le GET, l’état « Calcul de l’impact… » apparaît, puis le focus revient au titre après succès. `documentElement.scrollWidth` reste à 320 px. Captures inspectées : [erreur](evidence/q2-impact-retry/impact-error-320.png), [chargement](evidence/q2-impact-retry/impact-retry-loading-320.png), [succès et focus rendu](evidence/q2-impact-retry/impact-retry-success-320.png). Le harnais intercepte uniquement la route Impact ; aucun tenant ni backend n’est consulté. `npm run lint`, `npm run build` et `git diff --check` passent.
+
+Le rendu d’erreur/reprise est prouvé sur fixture synthétique, pas sur écran natif ni au lecteur d’écran. La matrice Q2 et le Goal restent ouverts.
+
 ## Portes externes
 
 | Sujet | Ce qui est possible sans accès | Preuve requise pour « activé » | État |
