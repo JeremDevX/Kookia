@@ -19,7 +19,7 @@ import "./Orders.css";
 export default function Orders() {
   const [searchParams] = useSearchParams();
   const { cartItems, loading: cartLoading, loadError: cartError, removeFromCart, refreshCart } = useCart();
-  const { products, loading: catalogLoading, error: catalogError, refetch } = useInventoryCatalog();
+  const { products, suppliers, loading: catalogLoading, error: catalogError, refetch } = useInventoryCatalog();
   const { addToast } = useToast();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [historyRevision, setHistoryRevision] = useState(0);
@@ -82,7 +82,9 @@ export default function Orders() {
     </section>
 
     <Modal isOpen={reviewOpen} onClose={() => setReviewOpen(false)} title="Revoir les quantités" width="lg">
-      <OrderGenerator recommendations={recommendations} onClose={() => setReviewOpen(false)}
+      <OrderGenerator recommendations={recommendations} products={products} suppliers={suppliers}
+        catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
+        onClose={() => setReviewOpen(false)}
         onValidated={() => { void refreshCart(); setHistoryRevision((value) => value + 1); setSuggestionsRevision((value) => value + 1); }} />
     </Modal>
     <Modal isOpen={invoiceOpen} onClose={() => setInvoiceOpen(false)} title="Revoir une facture" width="lg">

@@ -1,27 +1,48 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { CheckCircle, Package } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 import type { OrderRecommendation } from "../../features/orders/orderRecommendations";
 import { validateOrder, type PurchaseOrder } from "../../services/orderService";
 import { isValidOrderQuantity } from "../../domain/orders/orderQuantity";
+import type { Product, Supplier } from "../../types";
 
 interface OrderGeneratorProps {
   recommendations: OrderRecommendation[];
+  products: Product[];
+  suppliers: Supplier[];
+  catalogLoading: boolean;
+  catalogError: Error | null;
+  onRetryCatalog: () => Promise<void>;
   onClose: () => void;
   onValidated?: () => void;
 }
 
-export default function OrderGenerator({ recommendations, onClose, onValidated }: OrderGeneratorProps) {
-  const { products, suppliers, loading, error } = useInventoryCatalog();
+export default function OrderGenerator({ recommendations, products, suppliers, catalogLoading, catalogError,
+  onRetryCatalog, onClose, onValidated }: OrderGeneratorProps) {
   const [quantities, setQuantities] = useState(() => recommendations.map((item) => String(item.quantity)));
   const [operationId] = useState(() => crypto.randomUUID());
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [order, setOrder] = useState<PurchaseOrder | null>(null);
+  const retryButtonRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const retryFocusPending = useRef(false);
   const valid = recommendations.length > 0 && quantities.every(isValidOrderQuantity);
   const total = recommendations.reduce((sum, item, index) => sum + (products.find((product) => product.id === item.productId)?.pricePerUnit ?? 0) * (Number(quantities[index]) || 0), 0);
+
+  useEffect(() => {
+    if (catalogLoading || !retryFocusPending.current) return;
+    retryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (catalogError) retryButtonRef.current?.focus();
+    else formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }, [catalogError, catalogLoading, products]);
+
+  const retryCatalog = () => {
+    retryFocusPending.current = document.activeElement === retryButtonRef.current;
+    void onRetryCatalog();
+  };
 
   const handleValidate = async () => {
     if (saving || !valid) return;
@@ -48,14 +69,16 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
     <Button onClick={onClose}>Fermer</Button>
   </div>;
 
-  return <div className="flex flex-col gap-lg">
+  return <div ref={formRef} className="flex flex-col gap-lg">
     <h3><Package size={20} aria-hidden="true" /> Quantités à commander</h3>
     <p>Vérifiez les quantités et le fournisseur. La validation n’envoie rien et ne modifie pas le stock.</p>
     {recommendations.some((item) => item.predictionId) && <p role="alert">Écartez les scénarios d'exemple avant de valider.</p>}
     {recommendations.length === 0 && <p role="alert">Aucun article à commander.</p>}
     {quantities.some((value) => value.trim() && !isValidOrderQuantity(value)) && <p role="alert">Chaque quantité doit être comprise entre 0,001 et 1 000 000, avec au plus 3 décimales.</p>}
-    {loading && <p role="status">Chargement du catalogue…</p>}
-    {(error || saveError) && <p role="alert">{saveError || error?.message}</p>}
+    {catalogLoading && <p role="status">Chargement du catalogue…</p>}
+    {(catalogError || saveError) && <div role="alert"><p>{saveError || catalogError?.message}</p>
+      {catalogError && <Button ref={retryButtonRef} type="button" variant="outline" disabled={catalogLoading} onClick={retryCatalog}>Réessayer</Button>}
+    </div>}
     {recommendations.map((item, index) => {
       const product = products.find((candidate) => candidate.id === item.productId);
       const supplier = suppliers.find((candidate) => candidate.id === product?.supplierId);
@@ -70,7 +93,7 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
     <strong>Montant estimé : {total.toFixed(2)} €</strong>
     <div className="flex gap-sm">
       <Button variant="outline" onClick={onClose} disabled={saving}>Annuler</Button>
-      <Button onClick={handleValidate} disabled={saving || loading || !!error || !valid || recommendations.some((item) => item.predictionId)}>{saving ? "Enregistrement…" : "Valider la commande"}</Button>
+      <Button onClick={handleValidate} disabled={saving || catalogLoading || !!catalogError || !valid || recommendations.some((item) => item.predictionId)}>{saving ? "Enregistrement…" : "Valider la commande"}</Button>
     </div>
   </div>;
 }
