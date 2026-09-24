@@ -117,16 +117,25 @@ ingrédients, choisir des portions, puis valider une production. Lire ensuite
 le journal et les mouvements des ingrédients.
 
 Le [service recette](../server/src/application/workspace/recipeService.ts)
-charge `Recipe`/`RecipeIngredient`, vérifie une recette liée avec quantités
-positives, puis déduit chaque ingrédient et écrit ses mouvements dans **une
+charge `RecipeVersion` et son instantané d'ingrédients applicable à la date de
+production. Les recettes peuvent être créées ou éditées dans le panneau de
+maintenance : rendement du lot, ingrédients liés à des produits du même espace,
+date d'effet, auteur et révision sont contrôlés côté serveur. Une nouvelle
+version ne modifie pas les instantanés existants. La production multiplie la
+quantité de lot par les portions demandées puis la divise par le rendement ; le
+serveur redéduit chaque ingrédient et écrit ses mouvements dans **une
 transaction**. Un stock insuffisant annule tout. Une déclaration libre de
 préparation reste un journal, sans inventer de déduction d'ingrédients ; un
-refus est également historisé. Les recettes initiales viennent du seed et ne
-sont pas encore éditables dans l'interface.
+refus est également historisé. Les recettes initiales sont versionnées au seed.
+Pour l'historique antérieur à cette migration, la version de base porte une date
+d'effet inconnue et les productions ne sont pas liées artificiellement à une
+version.
 
-**À vérifier :** disponibilité selon portions, erreur sans mouvement partiel,
-rejeu du même `operationId`, refus et préparation libre sans crédit/débit
-fictif, autre restaurant isolé.
+**Contrôles vérifiés sur PostgreSQL isolé :** disponibilité selon portions et
+rendement (y compris pièces entières), absence de mouvement partiel, rejeu du
+même `operationId`, refus et préparation libre sans crédit/débit fictif,
+production antérieure conservée sur sa version et autre restaurant isolé. Le
+rendu et le parcours clavier restent à contrôler dans un navigateur accessible.
 
 ## 6. Revue et validation de commande
 

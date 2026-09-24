@@ -50,7 +50,7 @@ UI React → hooks/features → client API → API Express → domaine → Postg
 
 La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
 `Product`, `Recipe`, `RecipeIngredient`, `StockMovement`, `StockCount`,
-`InvoiceDraftRevision`, `Production`, `Prediction`, `SaleItem`, `DailySale`,
+`RecipeVersion`, `RecipeVersionIngredient`, `InvoiceDraftRevision`, `Production`, `Prediction`, `SaleItem`, `DailySale`,
 `SaleImport`, `SaleContribution`, `SaleContributionEvent`, `ServiceDay`,
 `PurchaseOrder`, `PurchaseOrderLine`, `RecommendationDecision`
 et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics,
@@ -70,6 +70,13 @@ vente manuelle ou CSV ouvre un service partiel ; seul un jour explicitement
 complet qualifie les absences de lignes comme zéro observé. La migration classe
 les dates historiques avec ventes comme ouvertes/partielles, sans inventer une
 complétude rétrospective.
+`Recipe` expose un rendement et une révision optimiste. Chaque création ou
+édition ajoute un instantané `RecipeVersion` daté et attribué, avec ses
+ingrédients, quantités, noms et unités ; les anciennes productions restent
+liées à leur version et leurs déductions ne sont pas recalculées après édition.
+Le backfill attribue une version 1 aux recettes préexistantes avec date d'effet
+inconnue et laisse les productions historiques sans lien de version lorsqu'il
+est impossible de reconstruire cette information.
 
 Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` initialise
 les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au

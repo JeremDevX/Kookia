@@ -136,6 +136,34 @@ supprime pas d'historique ; elle ne fournit pas de migration descendante qui
 effacerait le journal. En cas de retour applicatif après de nouvelles décisions,
 restaurer une sauvegarde vérifiée plutôt que supprimer les contributions.
 
+### Incrément D3 — versions de recette (2026-09-24)
+
+La migration additive `20260924050000_recipe_versions` ajoute le rendement et
+la révision de `Recipe`, les tables `RecipeVersion`/
+`RecipeVersionIngredient`, et le lien nullable de `Production` vers la version
+utilisée. Chaque recette existante reçoit une version de base avec date d'effet
+`NULL` (date historique inconnue), auteur de migration et copie de ses
+ingrédients, noms et unités. Les productions antérieures restent non liées : la
+migration ne déduit pas une version à partir de la recette mutable actuelle.
+Un lien direct tenant→version permet de supprimer tout l'espace de façon
+cascadée sans laisser les snapshots bloquer la suppression des produits.
+
+Preuve locale D3 : PostgreSQL 16 jetable sans volume ; les 11 migrations
+précédentes ont été appliquées, puis une recette, un ingrédient et une
+production synthétiques ont été insérés avant D3. Après la 12e migration, la
+recette possède la version 1 (`effectiveFrom = NULL`), l'ingrédient conserve
+`Legacy product`, `kg`, `0.375`, et la production conserve
+`recipeVersionId = NULL`. `migrate deploy` annonce 12/12 migrations à jour.
+Les 15 fichiers/25 scénarios d'intégration passent sur la base jetable ; le
+scénario de fixture relie chaque production synthétique à une version datée.
+Le diff Prisma/base ne relève aucun nouvel écart D3 ; il conserve les trois
+écarts historiques non liés à ce lot déjà consignés sous D5.
+La migration ne supprime pas de données. Les nouvelles opérations écrivent
+uniquement une version ; les quantités `pcs` doivent être entières et un lot
+fractionnaire bloque avant tout mouvement. Les productions et leurs déductions
+passées ne sont pas recalculées. D3 ne fournit pas de migration descendante
+destructive.
+
 - Cartographie initiale : inspection des services, hooks, fixtures, modèles Prisma,
   composants métiers et handlers de confirmation. Auth déjà en base confirmée.
 - Implémentation et validation des lots suivants : à renseigner au fil des commits.
