@@ -33,13 +33,14 @@ const invoiceLineSchema = z.object({
 
 export const invoiceDraftSchema = z.object({
   reference: z.string().trim().min(1).max(120), date: z.union([z.iso.date(), z.literal("")]),
+  supplierId: z.string().trim().min(1).max(100).optional(),
   lines: z.array(invoiceLineSchema).max(100), sourceTypeConfirmed: z.boolean().optional(), sourceDateConfirmed: z.boolean().optional(),
 }).strict().refine((draft) => {
   const sourceLineNumbers = draft.lines.flatMap((line) => line.sourceLineNumber === undefined ? [] : [line.sourceLineNumber]);
   return new Set(sourceLineNumbers).size === sourceLineNumbers.length;
 });
 
-const invoiceSchema = invoiceDraftSchema.extend({
+export const invoiceSchema = invoiceDraftSchema.extend({
   id: z.string(), status: z.enum(["draft", "received"]), source: z.enum(["demo", "manual", "source_document"]),
   receivedAt: z.iso.datetime().optional(), receivedBy: z.string().optional(),
   sourceDocumentId: z.string().regex(/^[a-f0-9]{24}$/).optional(), sourceContentHash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
@@ -160,12 +161,23 @@ export async function getInvoices(restaurantId: string) {
   const invoices = documents.map((document) => ({ ...invoiceSchema.parse(document.data), revision: document.revision }));
   const sourceIds = invoices.flatMap((invoice) => invoice.sourceDocumentId ? [invoice.sourceDocumentId] : []);
   const workflow = await getSourceInvoiceWorkflowStates(restaurantId, sourceIds);
-  return invoices.map((invoice) => invoice.sourceDocumentId ? { ...invoice,
-    alreadyCreditedBySimulation: workflow.get(invoice.sourceDocumentId)?.alreadyCreditedBySimulation ?? false } : invoice);
+  const invoiceIds = invoices.map((invoice) => invoice.id);
+  const receipts = invoiceIds.length ? await prisma.purchaseReceipt.findMany({ where: { restaurantId, invoiceDocumentId: { in: invoiceIds } },
+    select: { invoiceDocumentId: true, lines: { select: { invoiceLineIndex: true, orderLineId: true, receivedQuantity: true } } } }) : [];
+  const progressByInvoice = new Map<string, Array<{ invoiceLineIndex: number; orderLineId: string; receivedQuantity: number }>>();
+  for (const receipt of receipts) progressByInvoice.set(receipt.invoiceDocumentId,
+    [...(progressByInvoice.get(receipt.invoiceDocumentId) ?? []), ...receipt.lines.map((line) => ({ ...line,
+      receivedQuantity: Number(line.receivedQuantity) }))]);
+  return invoices.map((invoice) => ({ ...invoice,
+    ...(invoice.sourceDocumentId ? { alreadyCreditedBySimulation:
+      workflow.get(invoice.sourceDocumentId)?.alreadyCreditedBySimulation ?? false } : {}),
+    ...(progressByInvoice.has(invoice.id) ? { receiptProgress: progressByInvoice.get(invoice.id) } : {}),
+  }));
 }
 
 function sameDraft(prior: z.infer<typeof invoiceSchema>, draft: z.infer<typeof invoiceDraftSchema>) {
   return prior.reference === draft.reference && prior.date === draft.date &&
+    prior.supplierId === draft.supplierId &&
     prior.sourceTypeConfirmed === draft.sourceTypeConfirmed && prior.sourceDateConfirmed === draft.sourceDateConfirmed &&
     prior.lines.length === draft.lines.length && prior.lines.every((line, index) => {
       const candidate = draft.lines[index];
@@ -175,7 +187,7 @@ function sameDraft(prior: z.infer<typeof invoiceSchema>, draft: z.infer<typeof i
     });
 }
 
-function validateSourceReview(source: z.infer<typeof sourceInvoiceDocumentSchema>, draft: z.infer<typeof invoiceDraftSchema>) {
+export function validateSourceReview(source: z.infer<typeof sourceInvoiceDocumentSchema>, draft: z.infer<typeof invoiceDraftSchema>) {
   if (source.type !== "invoice") throw new WorkspaceError(409, "SOURCE_TYPE_NOT_RECEIVABLE", "Un avoir ou un bon de livraison ne peut pas créditer le stock par ce flux.");
   if (source.stockLines.length === 0) throw new WorkspaceError(409, "SOURCE_NO_LINES", "Aucune ligne de stock exploitable : consultez la pièce sans créer de réception.");
   if (!draft.sourceTypeConfirmed) throw new WorkspaceError(409, "SOURCE_TYPE_REVIEW_REQUIRED", "Confirmez d’abord que la pièce est bien une facture.");
@@ -221,6 +233,13 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
       throw new WorkspaceError(409, "ALREADY_RECEIVED", "Cette facture a déjà été réceptionnée et ne peut plus être modifiée.");
     }
     if ((existing?.revision ?? 0) !== revision) throw new WorkspaceError(409, "REVISION_CONFLICT", "Cette facture a changé. Rechargez-la avant de poursuivre.");
+    const priorReceipt = await tx.purchaseReceipt.findFirst({ where: { restaurantId, invoiceDocumentId: id }, select: { id: true } });
+    if (priorReceipt) {
+      if (!receive && prior && sameDraft(prior, draft)) return { ...prior, revision: existing!.revision };
+      throw new WorkspaceError(409, "INVOICE_PARTIALLY_RECONCILED", "Cette facture a commencé à être rapprochée d’une commande; poursuivez dans l’écran de réception.");
+    }
+    if (draft.supplierId && !await tx.supplier.findUnique({ where: { restaurantId_id: { restaurantId, id: draft.supplierId } }, select: { id: true } }))
+      throw new WorkspaceError(400, "INVALID_SUPPLIER", "Le fournisseur de la facture est absent de votre espace.");
     if (receive && !draft.date) throw new WorkspaceError(400, "INVALID_INVOICE_DATE", "Indiquez la date de l’opération avant réception.");
     if (receive && !linkedSourceId && !draft.lines.length) throw new WorkspaceError(400, "INVALID_INVOICE_LINE", "Ajoutez au moins une ligne avant réception.");
     if (!linkedSourceId && receive && draft.lines.some((line) => !line.productId || !line.quantity)) {
@@ -271,6 +290,7 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
         await tx.stockMovement.create({ data: { restaurantId, productId: product.id, delta: line.quantity,
           reason: source ? "invoice_import_demo" : "receipt", operationId, actorId,
           productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: product.supplier.name,
+          unitPriceSnapshot: new Prisma.Decimal(line.unitPrice),
           invoiceDocumentId: id, invoiceRevision: nextRevision,
           ...(source ? { sourceDocumentId: linkedSourceId, sourceContentHash, sourceDocumentRevision } : {}),
         } });

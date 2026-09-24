@@ -41,10 +41,10 @@ export default function OrderGenerator({ recommendations, onClose, onValidated }
 
   if (order) return <div className="flex flex-col gap-lg" role="status">
     <CheckCircle size={40} aria-hidden="true" />
-    <h3>{order.status === "simulated" ? "Commande de démonstration enregistrée" : "Commande enregistrée"}</h3>
-    <p>{order.status === "simulated" ? "Cette opération reste simulée : aucun achat réel, aucun email et aucun mouvement de stock." : "À transmettre au fournisseur : aucun email n’a été envoyé et le stock n’a pas changé."}</p>
+    <h3>{order.status.startsWith("simulated") ? "Commande de démonstration enregistrée" : "Commande enregistrée"}</h3>
+    <p>{order.status.startsWith("simulated") ? "Cette opération reste simulée : aucun achat réel, aucun email et aucun mouvement de stock." : "À transmettre au fournisseur : aucun email n’a été envoyé et le stock n’a pas changé."}</p>
     <p>Référence : {order.id}</p>
-    <Link to="/orders#to-transmit" onClick={onClose}>{order.status === "simulated" ? "Voir la commande simulée" : "Voir la commande à transmettre"}</Link>
+    <Link to="/orders#to-transmit" onClick={onClose}>{order.status.startsWith("simulated") ? "Voir la commande simulée" : "Voir la commande à transmettre"}</Link>
     <Button onClick={onClose}>Fermer</Button>
   </div>;
 

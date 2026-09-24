@@ -64,7 +64,9 @@ export default function Orders() {
       onCreateManual={openManualInvoice}
       onOpenDraft={(invoice) => { setInvoiceDraft(invoice); setInvoiceOpen(true); }} />
 
-    <OrderHistory key={historyRevision} />
+    <OrderHistory key={historyRevision} onReceiptSaved={() => {
+      setHistoryRevision((value) => value + 1); setInvoiceRefresh((value) => value + 1);
+    }} />
 
     <section className="orders-examples" aria-labelledby="orders-examples-title">
       <h2 id="orders-examples-title">Pour aller plus loin</h2>

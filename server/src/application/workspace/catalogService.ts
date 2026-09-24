@@ -39,7 +39,8 @@ export async function createProduct(restaurantId: string, actorId: string, data:
     if (!supplier) throw new WorkspaceError(400, "INVALID_SUPPLIER", "Fournisseur introuvable dans votre espace.");
     const product = await tx.product.create({ data: { ...data, id: operationId, restaurantId } });
     await tx.stockMovement.create({ data: { restaurantId, productId: product.id, actorId, operationId, delta: data.currentStock,
-      reason: "initial", productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: supplier.name } });
+      reason: "initial", productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: supplier.name,
+      unitPriceSnapshot: product.pricePerUnit } });
     return productDto(product);
   });
 }
@@ -83,7 +84,8 @@ export async function adjustStock(restaurantId: string, actorId: string, product
       const product = await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: productId } },
         include: { supplier: { select: { name: true } } } });
       await tx.stockMovement.create({ data: { restaurantId, productId, delta, reason, operationId, actorId,
-        productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: product.supplier.name } });
+        productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: product.supplier.name,
+        unitPriceSnapshot: product.pricePerUnit } });
     } else if (!prior.delta.equals(delta) || prior.reason !== reason) {
       throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération a déjà été utilisée avec d’autres valeurs.");
     }

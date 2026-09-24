@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { orderDto, validateOrder } from "../application/workspace/orderService.js";
 import { getPurchaseSuggestions, recordPurchaseSuggestionDecision } from "../application/workspace/purchaseSuggestionService.js";
+import { listPurchaseOrders, purchaseReceiptSchema, recordPurchaseReceipt } from "../application/workspace/purchaseReceiptService.js";
 
 export const orderRoutes = Router();
 const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
@@ -26,16 +27,21 @@ orderRoutes.post("/orders/suggestions/:productId/decision", async (req, res, nex
   } catch (error) { next(error); }
 });
 orderRoutes.get("/orders", async (_req, res, next) => {
-  try {
-    const orders = await prisma.purchaseOrder.findMany({ where: { restaurantId: context(res).restaurantId }, include: { lines: true }, orderBy: { createdAt: "desc" } });
-    res.json(orders.map(orderDto));
-  } catch (error) { next(error); }
+  try { res.json(await listPurchaseOrders(context(res).restaurantId)); } catch (error) { next(error); }
 });
 orderRoutes.post("/orders", async (req, res, next) => {
   try {
     const input = orderSchema.parse(req.body);
     const { restaurantId, actorId } = context(res);
     res.status(201).json(orderDto(await validateOrder(restaurantId, actorId, input)));
+  } catch (error) { next(error); }
+});
+orderRoutes.post("/orders/:orderId/receipts", async (req, res, next) => {
+  try {
+    const orderId = z.string().trim().min(1).max(100).parse(req.params.orderId);
+    const input = purchaseReceiptSchema.parse(req.body);
+    const { restaurantId, actorId } = context(res);
+    res.status(201).json(await recordPurchaseReceipt(restaurantId, actorId, orderId, input));
   } catch (error) { next(error); }
 });
 orderRoutes.get("/decisions", async (_req, res, next) => {

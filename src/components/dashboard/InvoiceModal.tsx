@@ -20,7 +20,7 @@ const exclusionLabels: Record<NonNullable<InvoiceLine["exclusionReason"]>, strin
 };
 
 export default function InvoiceModal({ initialInvoice, onValidate, onPersist, onClose }: InvoiceModalProps) {
-  const { products, loading: catalogLoading, error: catalogError } = useInventoryCatalog();
+  const { products, suppliers, loading: catalogLoading, error: catalogError } = useInventoryCatalog();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoice, setInvoice] = useState<Invoice | null>(initialInvoice ?? null);
   const [loading, setLoading] = useState(true);
@@ -116,6 +116,14 @@ export default function InvoiceModal({ initialInvoice, onValidate, onPersist, on
         </section>}
         {received && <p role="status">{sourceLinked ? "Réception de démonstration" : "Réception"} enregistrée le {invoice.receivedAt ? new Date(invoice.receivedAt).toLocaleString("fr-FR") : "—"}.
           Le stock ne sera pas crédité une seconde fois.</p>}
+        {!received && <>
+          <label htmlFor="invoice-supplier">Fournisseur</label>
+          <select className="input-field" id="invoice-supplier" value={invoice.supplierId ?? ""} disabled={disabled}
+            onChange={(event) => setInvoice({ ...invoice, supplierId: event.target.value || undefined })}>
+            <option value="">Non renseigné</option>
+            {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
+          </select>
+        </>}
         <label htmlFor="invoice-reference">Référence</label>
         <input className="input-field" id="invoice-reference" value={invoice.reference} disabled={disabled || received}
           onChange={(event) => setInvoice({ ...invoice, reference: event.target.value })} />

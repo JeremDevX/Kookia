@@ -2,7 +2,13 @@ import { apiRequest } from "../config/api";
 export interface OrderLineInput { productId: string; quantity: number; predictionId?: string; cartId?: string; }
 export interface PurchaseOrder {
   id: string; status: string; createdAt: string;
-  lines: { productId: string; productName: string; supplierName: string; quantity: number; unit: string; pricePerUnit: number }[];
+  lines: { id: string; productId: string; productName: string; supplierId: string; supplierName: string;
+    quantity: number; receivedQuantity: number; remainingQuantity: number; unit: string; pricePerUnit: number }[];
+  receipts: Array<{ id: string; invoiceReference: string; invoiceDocumentId: string; deliveryReference: string;
+    deliveryDate: string; simulated: boolean; provenance: string; invoiceComplete: boolean;
+    lines: Array<{ id: string; orderLineId: string; productId: string; productName: string;
+      invoiceQuantity: number; receivedQuantity: number; quantityDifference: number; unit: string;
+      orderedUnitPrice: number; invoiceUnitPrice: number; priceDifferenceReason?: string }> }>;
 }
 
 export interface PurchaseSuggestion {
@@ -36,6 +42,15 @@ export interface PurchaseSuggestions {
   assumptions: string[];
 }
 
+export interface PurchaseReceiptInput {
+  operationId: string;
+  invoiceDocumentId: string;
+  invoiceDocumentRevision: number;
+  deliveryReference: string;
+  deliveryDate: string;
+  lines: Array<{ invoiceLineIndex: number; orderLineId: string; receivedQuantity: number; priceDifferenceReason?: string }>;
+}
+
 export const getOrders = () => apiRequest<PurchaseOrder[]>("/workspace/orders");
 export const validateOrder = (operationId: string, lines: OrderLineInput[]) => apiRequest<PurchaseOrder>("/workspace/orders", {
   method: "POST", body: JSON.stringify({ operationId, lines }),
@@ -47,3 +62,7 @@ export const recordPurchaseSuggestionDecision = (productId: string, input: {
   `/workspace/orders/suggestions/${encodeURIComponent(productId)}/decision`, {
     method: "POST", body: JSON.stringify(input),
   });
+export const reconcilePurchaseReceipt = (orderId: string, input: PurchaseReceiptInput) => apiRequest<{
+  id: string; orderId: string; invoiceReference: string; invoiceDocumentId: string; deliveryReference: string;
+  deliveryDate: string; simulated: boolean; provenance: string; invoiceComplete: boolean; replayed: boolean;
+}>(`/workspace/orders/${encodeURIComponent(orderId)}/receipts`, { method: "POST", body: JSON.stringify(input) });

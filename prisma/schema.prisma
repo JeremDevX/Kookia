@@ -102,6 +102,7 @@ model Restaurant {
   invoiceDraftRevisions InvoiceDraftRevision[]
   productions  Production[]
   orders       PurchaseOrder[]
+  receipts     PurchaseReceipt[]
   decisions    RecommendationDecision[]
   documents    WorkspaceDocument[]
   sales        DailySale[]
@@ -122,6 +123,7 @@ model Supplier {
   email        String
   phone        String
   products     Product[]
+  receipts     PurchaseReceipt[]
   @@id([restaurantId, id])
 }
 
@@ -144,6 +146,7 @@ model Product {
   recipeVersionIngredients RecipeVersionIngredient[]
   movements    StockMovement[]
   stockCounts  StockCount[]
+  receiptLines PurchaseReceiptLine[]
   predictions  Prediction[]
   @@id([restaurantId, id])
 }
@@ -232,8 +235,12 @@ model StockMovement {
   productNameSnapshot    String?
   productUnitSnapshot    String?
   supplierNameSnapshot   String?
+  unitPriceSnapshot      Decimal? @db.Decimal(14, 4)
+  purchaseReceiptLineId  String?
+  purchaseReceiptLine    PurchaseReceiptLine? @relation(fields: [restaurantId, purchaseReceiptLineId], references: [restaurantId, id], onDelete: NoAction)
   createdAt    DateTime @default(now())
   @@unique([restaurantId, operationId, productId])
+  @@unique([restaurantId, purchaseReceiptLineId])
   @@index([restaurantId, productId, createdAt])
   @@index([restaurantId, sourceDocumentId])
 }
@@ -462,13 +469,16 @@ model PurchaseOrder {
   status       String @default("validated")
   createdAt    DateTime @default(now())
   lines        PurchaseOrderLine[]
+  receipts     PurchaseReceipt[]
   @@unique([restaurantId, operationId])
+  @@unique([restaurantId, id])
 }
 
 model PurchaseOrderLine {
   id           String @id @default(uuid())
+  restaurantId String
   orderId      String
-  order        PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order        PurchaseOrder @relation(fields: [restaurantId, orderId], references: [restaurantId, id], onDelete: Cascade)
   productId    String
   productName  String
   supplierId   String
@@ -478,6 +488,66 @@ model PurchaseOrderLine {
   pricePerUnit Decimal @db.Decimal(14, 4)
   suggestionDecisionId String? @unique
   suggestionDecision RecommendationDecision? @relation(fields: [suggestionDecisionId], references: [id], onDelete: SetNull)
+  receiptLines PurchaseReceiptLine[]
+  @@unique([restaurantId, id])
+}
+
+model PurchaseReceipt {
+  id                         String @id @default(uuid())
+  restaurantId               String
+  restaurant                 Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orderId                    String
+  order                      PurchaseOrder @relation(fields: [restaurantId, orderId], references: [restaurantId, id], onDelete: Cascade)
+  supplierId                 String
+  supplier                   Supplier @relation(fields: [restaurantId, supplierId], references: [restaurantId, id], onDelete: NoAction)
+  actorId                    String
+  operationId                String
+  invoiceReference           String
+  invoiceReferenceNormalized String
+  invoiceDocumentId          String
+  invoiceDocumentRevision    Int
+  deliveryReference          String
+  deliveryDate               DateTime @db.Date
+  sourceDocumentId            String?
+  sourceContentHash           String?
+  simulated                  Boolean @default(false)
+  provenance                 String @default("recorded")
+  invoiceComplete            Boolean @default(false)
+  requestSnapshot            Json
+  createdAt                  DateTime @default(now())
+  lines                      PurchaseReceiptLine[]
+
+  @@unique([restaurantId, operationId])
+  @@unique([restaurantId, supplierId, invoiceReferenceNormalized, deliveryReference])
+  @@unique([restaurantId, invoiceDocumentId, deliveryReference])
+  @@unique([restaurantId, id])
+  @@index([restaurantId, deliveryDate])
+}
+
+model PurchaseReceiptLine {
+  id                    String @id @default(uuid())
+  restaurantId          String
+  receiptId             String
+  receipt               PurchaseReceipt @relation(fields: [restaurantId, receiptId], references: [restaurantId, id], onDelete: Cascade)
+  orderLineId           String
+  orderLine             PurchaseOrderLine @relation(fields: [restaurantId, orderLineId], references: [restaurantId, id], onDelete: NoAction)
+  productId             String
+  product               Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
+  productName           String
+  invoiceLineIndex      Int
+  invoiceQuantity       Decimal @db.Decimal(14, 3)
+  receivedQuantity      Decimal @db.Decimal(14, 3)
+  quantityDifference   Decimal @db.Decimal(14, 3)
+  unit                  String
+  orderedQuantity       Decimal @db.Decimal(14, 3)
+  orderedUnitPrice      Decimal @db.Decimal(14, 4)
+  invoiceUnitPrice      Decimal @db.Decimal(14, 4)
+  priceDifferenceReason String?
+  movement              StockMovement?
+  createdAt             DateTime @default(now())
+
+  @@unique([restaurantId, id])
+  @@unique([restaurantId, receiptId, orderLineId])
 }
 
 model RecommendationDecision {

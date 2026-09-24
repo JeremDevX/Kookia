@@ -93,7 +93,9 @@ export async function validateOrder(restaurantId: string, actorId: string, input
 
 export const orderDto = (order: Awaited<ReturnType<typeof validateOrder>>) => ({
   id: order.id, status: order.status, createdAt: order.createdAt.toISOString(),
-  lines: order.lines.map(({ productId, productName, supplierName, quantity, unit, pricePerUnit }) => ({
-    productId, productName, supplierName, quantity: Number(quantity), unit, pricePerUnit: Number(pricePerUnit),
+  lines: order.lines.map(({ id, productId, productName, supplierId, supplierName, quantity, unit, pricePerUnit }) => ({
+    id, productId, productName, supplierId, supplierName, quantity: Number(quantity), receivedQuantity: 0,
+    remainingQuantity: Number(quantity), unit, pricePerUnit: Number(pricePerUnit),
   })),
+  receipts: [],
 });

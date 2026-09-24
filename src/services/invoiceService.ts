@@ -7,7 +7,8 @@ export interface InvoiceLine {
   sourceUnitPrice?: number; sourcePriceBasis?: string; sourceTaxBasis?: "HT" | "TTC" | "unknown"; sourceCode?: string;
 }
 export interface InvoiceDraft {
-  reference: string; date: string; lines: InvoiceLine[]; sourceTypeConfirmed?: boolean; sourceDateConfirmed?: boolean;
+  reference: string; date: string; supplierId?: string; lines: InvoiceLine[];
+  sourceTypeConfirmed?: boolean; sourceDateConfirmed?: boolean;
 }
 export interface Invoice extends InvoiceDraft {
   id: string; revision: number; source: "demo" | "manual" | "source_document"; status: "draft" | "received";
@@ -16,6 +17,7 @@ export interface Invoice extends InvoiceDraft {
   sourceType?: "invoice" | "credit" | "delivery"; sourceStatus?: string;
   sourceDemoDate?: string | null; sourceOriginalDate?: string | null; sourceLineCount?: number;
   provenance?: "demo_simulation"; alreadyCreditedBySimulation?: boolean;
+  receiptProgress?: Array<{ invoiceLineIndex: number; orderLineId: string; receivedQuantity: number }>;
 }
 export const getInvoices = () => apiRequest<Invoice[]>("/workspace/invoices");
 export interface SourceInvoiceSummary {
@@ -37,6 +39,7 @@ export const createInvoiceDraftFromSource = (id: string) => apiRequest<Invoice>(
 export const saveInvoice = (invoice: Invoice, receive: boolean) => apiRequest<Invoice>(`/workspace/invoices/${encodeURIComponent(invoice.id)}`, {
   method: "POST", body: JSON.stringify({ revision: invoice.revision, receive, draft: {
     reference: invoice.reference, date: invoice.date, lines: invoice.lines,
+    ...(invoice.supplierId ? { supplierId: invoice.supplierId } : {}),
     ...(invoice.sourceTypeConfirmed !== undefined ? { sourceTypeConfirmed: invoice.sourceTypeConfirmed } : {}),
     ...(invoice.sourceDateConfirmed !== undefined ? { sourceDateConfirmed: invoice.sourceDateConfirmed } : {}),
   } }),

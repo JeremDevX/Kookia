@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Button from "../components/common/Button";
 import ExportReportModal from "../components/analytics/ExportReportModal";
 import SalesMetrics from "../components/sales/SalesMetrics";
+import ImpactSummary from "../components/analytics/ImpactSummary";
 import { formatLocalISODate } from "../utils/date";
 import DemoAnalytics from "./DemoAnalytics";
 import "./Analytics.css";
@@ -26,7 +27,8 @@ export default function Analytics() {
     <div className="bilan-period"><label>Du <input type="date" value={from} max={to || today()} onChange={(event) => setFrom(event.target.value)} /></label>
       <label>Au <input type="date" value={to} min={from} max={today()} onChange={(event) => setTo(event.target.value)} /></label></div>
     {!validRange ? <p role="alert">Choisissez une période valide pour consulter le bilan.</p> :
-      <SalesMetrics key={`${from}:${to}`} from={from} to={to} />}
+      <><SalesMetrics key={`sales:${from}:${to}`} from={from} to={to} />
+        <ImpactSummary key={`impact:${from}:${to}`} from={from} to={to} /></>}
     <p className="bilan-next"><Link to="/sales">Ajouter ou corriger des ventes</Link> · <Link to="/stocks">Vérifier les stocks</Link></p>
     <details className="bilan-demo" onToggle={(event) => setShowDemo(event.currentTarget.open)}><summary>Voir les graphiques de démonstration</summary>
       {showDemo && <DemoAnalytics />}
