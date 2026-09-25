@@ -1006,3 +1006,5 @@ sans volume ; le conteneur, Vite, Chrome headless, le harnais et le profil ont
 `browsers: []` / `cgWindowNotFound` et le lecteur d’écran réel n’a pas été
 employé ; ces captures ne constituent pas un zoom Chrome natif ni une preuve
 assistive. Q2/C3 et le Goal restent ouverts.
+
+Commit local : `6c00fc4` ; aucun push.
