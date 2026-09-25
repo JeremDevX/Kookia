@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Button from "../common/Button";
 import { getServiceDays, saveServiceDay, type ServiceCoverage, type ServiceDay, type ServiceStatus } from "../../services/salesService";
+import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 
 const coverageLabels: Record<ServiceCoverage, string> = {
   complete: "Complète", partial: "Partielle", missing: "Manquante",
@@ -94,8 +95,8 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
       <Button ref={saveButton} type="submit" disabled={saving || loading || !!error || !calendarDates.includes(selectedDate)}>{saving ? "Enregistrement…" : "Enregistrer l’état du service"}</Button>
     </form>
     {error && <div role="alert"><p>{error}</p><Button ref={retryButton} type="button" variant="outline" onClick={retryLoad} disabled={loading || saving}>Réessayer</Button></div>}{message && <p role="status">{message}</p>}
-    <p className="sales-table-hint">Sur petit écran, faites défiler le tableau horizontalement pour voir les autres colonnes.</p>
-    <div className="sales-table-wrap" role="region" aria-label="Jours de service sur la période" tabIndex={0}>
+    <p className="sales-table-hint" id="service-calendar-table-scroll-hint">Sur petit écran, faites défiler le tableau horizontalement. Au clavier, placez le focus sur le tableau puis utilisez ← et →.</p>
+    <div className="sales-table-wrap" role="region" aria-label="Jours de service sur la période" aria-describedby="service-calendar-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
       <table className="sales-table"><thead><tr><th>Date</th><th>État du restaurant</th><th>Couverture</th><th>Ventes enregistrées</th></tr></thead>
         <tbody>{calendarDates.slice().reverse().map((date) => {
           const day = days.find((item) => item.serviceDate === date);

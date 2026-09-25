@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { getImpactReport, type ImpactBucket, type ImpactMonthlyPeriod, type ImpactPeriod, type ImpactReport } from "../../services/impactService";
+import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 
 interface Props { from: string; to: string }
 const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
@@ -13,18 +14,6 @@ const monthCount = (from: string, to: string) => Number(to.slice(0, 4)) * 12 + N
 const displayMonth = (value: string) => new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" })
   .format(new Date(`${value}-01T00:00:00.000Z`));
 const hasActivity = (bucket: ImpactBucket) => bucket.menuItemUnits > 0 || bucket.lossMovementCount > 0 || bucket.receiptCount > 0;
-
-function scrollTableWithArrows(event: ReactKeyboardEvent<HTMLDivElement>) {
-  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-  const region = event.currentTarget;
-  const maximum = Math.max(0, region.scrollWidth - region.clientWidth);
-  const direction = event.key === "ArrowRight" ? 1 : -1;
-  const step = Math.max(48, Math.floor(region.clientWidth * 0.75));
-  const next = Math.min(maximum, Math.max(0, region.scrollLeft + direction * step));
-  if (next === region.scrollLeft) return;
-  event.preventDefault();
-  region.scrollLeft = next;
-}
 
 function periodRange(period: ImpactPeriod) {
   return `${displayDate(period.from)} – ${displayDate(period.to)} (${period.calendarDays} jours calendaires)`;
@@ -40,7 +29,7 @@ function RecordedOperations({ bucket, currency }: { bucket: ImpactBucket; curren
   return <>
     <p>{bucket.menuItemUnits} unité(s) d’articles vendues · {bucket.serviceDays.complete} jour(s) complet(s), {bucket.serviceDays.partial} partiel(s), {bucket.serviceDays.coverageMissing} sans couverture déclarée, {bucket.serviceDays.closed} fermé(s), {bucket.serviceDays.unregistered} sans fiche de service.</p>
     <h3>Pertes déclarées</h3>
-    {bucket.lossesByProduct.length ? <div className="sales-table-wrap" role="region" aria-label="Pertes déclarées par produit" aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollTableWithArrows}>
+    {bucket.lossesByProduct.length ? <div className="sales-table-wrap" role="region" aria-label="Pertes déclarées par produit" aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
       <table className="sales-table"><thead><tr><th>Produit</th><th>Quantité déclarée perdue</th><th>Coût connu</th><th>Traçabilité</th></tr></thead><tbody>
         {bucket.lossesByProduct.map((item) => <tr key={`${item.productId}:${item.unit}`}>
           <td>{item.productName}</td><td>{formatQuantity(item.quantity)} {item.unit}</td>
@@ -50,7 +39,7 @@ function RecordedOperations({ bucket, currency }: { bucket: ImpactBucket; curren
       </tbody></table></div> : <p>Aucun mouvement de perte déclarée dans les données mesurables de cette période.</p>}
     <p>Coût connu des pertes : <strong>{formatMoney(bucket.knownLossCost, currency)}</strong> · {bucket.unpricedLossMovementCount} mouvement(s) de perte sans valorisation historique.</p>
     <h3>Réceptions confirmées</h3>
-    {bucket.receiptsByProduct.length ? <div className="sales-table-wrap" role="region" aria-label="Achats réellement réceptionnés par produit" aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollTableWithArrows}>
+    {bucket.receiptsByProduct.length ? <div className="sales-table-wrap" role="region" aria-label="Achats réellement réceptionnés par produit" aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
       <table className="sales-table"><thead><tr><th>Produit</th><th>Quantité reçue</th><th>Coût constaté</th><th>Traçabilité</th></tr></thead><tbody>
         {bucket.receiptsByProduct.map((item) => <tr key={`${item.productId}:${item.unit}`}>
           <td>{item.productName}</td><td>{formatQuantity(item.receivedQuantity)} {item.unit}</td>
@@ -87,7 +76,7 @@ function MonthlyReconciliation({ periods, currency }: { periods: ImpactMonthlyPe
     <summary>Réconciliation mensuelle ({periods.length} mois)</summary>
     <p>Les périodes partielles reprennent uniquement les dates sélectionnées. Les ventes sont des unités d’articles ; un zéro n’est confirmé que par un service complet. Les pertes sont des mouvements déclarés, pas une quantité invendue ; simulations et unités incompatibles restent distinctes ou écartées.</p>
     <div className="sales-table-wrap" role="region" aria-label="Réconciliation mensuelle des indicateurs opérationnels"
-      aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollTableWithArrows}>
+      aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
       <table className="sales-table impact-monthly-table" aria-label="Détails mensuels des ventes, services, pertes et réceptions"><thead><tr>
         <th scope="col">Mois et période</th><th scope="col">Ventes (unités)</th><th scope="col">Services renseignés</th>
         <th scope="col">Pertes déclarées</th><th scope="col">Réceptions confirmées</th>
@@ -147,7 +136,7 @@ export default function ImpactSummary({ from, to }: Props) {
     </div> : report && <>
       <p>Période actuelle : {periodRange(report.current)} · précédente : {periodRange(report.prior)}.</p>
       <p id="impact-table-scroll-hint" className="sales-table-hint">Sur petit écran, faites défiler les tableaux horizontalement. Au clavier, placez le focus sur un tableau puis utilisez ← et →.</p>
-      <div className="sales-table-wrap" role="region" aria-label="Comparaison des périodes" aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollTableWithArrows}>
+      <div className="sales-table-wrap" role="region" aria-label="Comparaison des périodes" aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
         <table className="sales-table"><thead><tr><th>Indicateur observé</th><th>Période actuelle</th><th>Période précédente</th></tr></thead><tbody>
           <tr><th scope="row">Unités d’articles vendues (pas des couverts)</th><td>{recordedValue(report.current, report.current.recorded.menuItemUnits)}</td><td>{recordedValue(report.prior, report.prior.recorded.menuItemUnits)}</td></tr>
           <tr><th scope="row">Coût connu des pertes déclarées</th><td>{recordedValue(report.current, formatMoney(report.current.recorded.knownLossCost, report.currency))}</td><td>{recordedValue(report.prior, formatMoney(report.prior.recorded.knownLossCost, report.currency))}</td></tr>
