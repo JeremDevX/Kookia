@@ -504,3 +504,15 @@ plus quand la liste ou l'alerte remplace l'état précédent. Validation code :
 `npm run lint`, `npm run build`, `npm test` (107 tests) et `git diff --check`
 passent. L'inspection de la page rendue et le parcours clavier réel restent
 non vérifiés, CUA ne pouvant toujours pas s'attacher à Chrome.
+
+### Candidate confirmée — retour vers la pièce source
+
+La fiche candidate confirmée reste conservée avec son hash, sa révision et ses
+lignes de preuve. Son résumé recette propose maintenant un lien explicite vers
+Achats, qui ouvre la pièce et sa section d'archive ; la régression d'intégration
+vérifie que ces éléments source restent exposés après confirmation. La recette
+`npm run verify:local-delivery` a réussi sur nouveau PostgreSQL tmpfs : 107 tests
+unitaires, 37 tests d'intégration et sauvegarde/restauration synthétique. Une
+première passe avait eu un `socket hang up` isolé dans SalesMetrics ; la
+répétition complète a passé. Le rendu du lien n'a pas été observé faute d'accès
+browser CUA.

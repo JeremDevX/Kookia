@@ -130,6 +130,10 @@ it("keeps recipe candidates hypothetical until an atomic, stock-neutral confirma
   const candidates = await demo.agent.get("/api/workspace/recipe-candidates").expect(200);
   expect(candidates.body.candidates.map((item: { id: string; status: string }) => [item.id, item.status]))
     .toEqual(expect.arrayContaining([[first.body.id, "confirmed"], [second.body.id, "pending"]]));
+  const confirmedCandidate = candidates.body.candidates.find((item: { id: string }) => item.id === first.body.id);
+  expect(confirmedCandidate).toMatchObject({ status: "confirmed", recipeId: confirmed.body.recipeId,
+    ingredients: [{ evidence: { sourceDocumentId: mushroomSource.id, sourceDocumentRevision: 0,
+      sourceContentHash: mushroomSource.contentHash, sourceLineNumber: 4, sourceName: "Champignons" } }] });
   const today = todayParis();
   const timeline = await demo.agent.get(`/api/workspace/timeline?from=${today}&to=${today}&asOf=${today}`).expect(200);
   const candidateEvents = timeline.body.events.filter((event: { kind: string; detail: string }) =>

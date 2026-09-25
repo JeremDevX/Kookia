@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { getSourceInvoice, getSourceInvoices, type SourceInvoiceDetail, type SourceInvoiceSummary } from "../../services/invoiceService";
 import { createRecipeCandidate, decideRecipeCandidate, getRecipeCandidates, updateRecipeCandidate,
@@ -173,9 +174,10 @@ export default function RecipeCandidates({ products, onRecipeConfirmed }: Props)
         <div className="recipe-candidate-title"><h3>{candidate.recipe.name}</h3><span>{statusLabel[candidate.status]}</span></div>
         <p>{candidate.recipe.category} · hypothèse pour {candidate.recipe.yieldPortions} portions · {candidate.recipe.prepTime} min · effet proposé {candidate.recipe.effectiveFrom}</p>
         <ul>{candidate.ingredients.map((ingredient) => <li key={ingredient.productId}>
-          {ingredient.productName} — {ingredient.quantity} {ingredient.unit} par lot · source : {ingredient.evidence.sourceTitle},
-          {ingredient.evidence.sourceDate ?? "date inconnue"} · ligne {ingredient.evidence.sourceLineNumber}, {ingredient.evidence.sourceName}
-          ({ingredient.evidence.sourceQuantityText})
+          {ingredient.productName} — {ingredient.quantity} {ingredient.unit} par lot · <Link
+            to={`/orders?source=${encodeURIComponent(ingredient.evidence.sourceDocumentId)}#invoices`}>
+            Pièce source : {ingredient.evidence.sourceTitle}, {ingredient.evidence.sourceDate ?? "date inconnue"} · ligne {ingredient.evidence.sourceLineNumber}, {ingredient.evidence.sourceName} ({ingredient.evidence.sourceQuantityText})
+          </Link>
         </li>)}</ul>
         {candidate.recipeId && <p>Recette active créée ; aucune production n’est déclarée par cette confirmation.</p>}
         {candidate.status === "pending" && <div className="recipe-candidate-actions">
