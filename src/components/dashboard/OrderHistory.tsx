@@ -15,6 +15,7 @@ export default function OrderHistory({ refreshKey = 0, onReceiptSaved }: OrderHi
   const requestKey = `${refreshKey}:${reload}`;
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [error, setError] = useState("");
+  const [receiptNotice, setReceiptNotice] = useState("");
   const [loadedRequestKey, setLoadedRequestKey] = useState("");
   const loading = loadedRequestKey !== requestKey;
   const currentError = loading ? "" : error;
@@ -51,6 +52,7 @@ export default function OrderHistory({ refreshKey = 0, onReceiptSaved }: OrderHi
 
   return <section id="to-transmit" className="orders-history" aria-labelledby="orders-history-title">
     <div className="workspace-section-heading"><h2 ref={headingRef} id="orders-history-title" tabIndex={-1}>Commandes enregistrées</h2><span>{!loading && !currentError && `${orders.length} commande${orders.length > 1 ? "s" : ""}`}</span></div>
+    {receiptNotice && <p role="status">{receiptNotice}</p>}
     {loading && <p role="status">{orders.length > 0 ? "Actualisation des commandes…" : "Chargement des commandes…"}</p>}
     {currentError && <div role="alert"><p>{currentError}</p>
       {orders.length > 0 && <p>Les commandes déjà chargées restent visibles ; leur réception est suspendue jusqu’à une lecture réussie.</p>}
@@ -75,7 +77,7 @@ export default function OrderHistory({ refreshKey = 0, onReceiptSaved }: OrderHi
           </article>)}
         </section>}
         {order.status !== "received" && order.status !== "simulated_received" && <PurchaseReceiptReview order={order}
-          orderStateCurrent={!loading && !currentError} onSaved={refreshAfterReceipt} />}
+          orderStateCurrent={!loading && !currentError} onSaved={refreshAfterReceipt} onNotice={setReceiptNotice} />}
       </div>
     </details>)}
   </section>;

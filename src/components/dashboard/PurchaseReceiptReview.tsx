@@ -4,7 +4,7 @@ import { getInvoices, type Invoice } from "../../services/invoiceService";
 import { reconcilePurchaseReceipt, type PurchaseOrder, type PurchaseReceiptInput } from "../../services/orderService";
 import "./PurchaseReceiptReview.css";
 
-interface PurchaseReceiptReviewProps { order: PurchaseOrder; orderStateCurrent: boolean; onSaved: () => void; }
+interface PurchaseReceiptReviewProps { order: PurchaseOrder; orderStateCurrent: boolean; onSaved: () => void; onNotice: (notice: string) => void; }
 interface ReceiptLineDraft { orderLineId: string; receivedQuantity: string; priceDifferenceReason: string; }
 
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
@@ -13,7 +13,7 @@ const validQuantity = (value: string) => /^\d+(?:\.\d{1,3})?$/.test(value.trim()
   Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 1_000_000;
 const equalPrice = (left: number, right: number) => Math.round(left * 10_000) === Math.round(right * 10_000);
 
-export default function PurchaseReceiptReview({ order, orderStateCurrent, onSaved }: PurchaseReceiptReviewProps) {
+export default function PurchaseReceiptReview({ order, orderStateCurrent, onSaved, onNotice }: PurchaseReceiptReviewProps) {
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -25,7 +25,6 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [invoiceLoadError, setInvoiceLoadError] = useState("");
-  const [notice, setNotice] = useState("");
   const operation = useRef<{ signature: string; id: string } | null>(null);
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const invoiceSelectRef = useRef<HTMLSelectElement>(null);
@@ -67,7 +66,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
 
   const chooseInvoice = (id: string) => {
     const selected = invoices.find((candidate) => candidate.id === id);
-    setInvoiceId(id); setError(""); setNotice(""); setDeliveryReference("");
+    setInvoiceId(id); setError(""); onNotice(""); setDeliveryReference("");
     setDeliveryDate(selected?.date ?? parisToday());
     if (!selected) { setLines({}); return; }
     const nextLines: Record<number, ReceiptLineDraft> = {};
@@ -121,10 +120,10 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
     const signature = JSON.stringify(payload);
     if (!operation.current || operation.current.signature !== signature)
       operation.current = { signature, id: crypto.randomUUID() };
-    setSaving(true); setError(""); setNotice("");
+    setSaving(true); setError(""); onNotice("");
     try {
       const saved = await reconcilePurchaseReceipt(order.id, { ...payload, operationId: operation.current.id });
-      setNotice(saved.simulated
+      onNotice(saved.simulated
         ? `Réception simulée enregistrée${saved.invoiceComplete ? "; facture rapprochée" : "; facture encore à compléter"}. Aucun stock réel n’a changé.`
         : `Réception enregistrée${saved.invoiceComplete ? "; facture rapprochée" : "; rapprochement partiel, facture conservée en brouillon"}.`);
       operation.current = null;
@@ -154,7 +153,6 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
         <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryInvoices}>Recharger les factures</Button>
       </div>}
       {error && <p role="alert">{error}</p>}
-      {notice && <p role="status">{notice}</p>}
       {!loading && !invoiceLoadError && eligibleInvoices.length === 0 && !invoice &&
         <p>Aucune facture brouillon avec fournisseur vérifié et lignes correspondant au reliquat de cette commande.</p>}
       {eligibleInvoices.length > 0 && <>
