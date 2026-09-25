@@ -240,7 +240,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 
 | ID / parcours | Preuve locale | Activation externe | Preuve (tests, rendu, données, fichier) | Limite / suite |
 | --- | --- | --- | --- | --- |
-| Q1 — garde et base d'intégration isolée | Prouvé localement | Non applicable | Garde URL fail-closed ; migration et 13 fichiers/21 tests sur PostgreSQL jetable ; lint, builds et tests unitaires passent. | Workflow CI ajouté mais non exécuté sur GitHub ; aucune base conservée utilisée. |
+| Q1 — garde et base d'intégration isolée | Prouvé localement | Non applicable | Garde URL fail-closed ; `verify:local-delivery` frais : migrations 18/18, diff Prisma vide, lint, builds web/API, 33 tests Node/CSS, 119 tests unitaires, 40 tests d'intégration (26 fichiers) et restauration synthétique passent. Conteneur PostgreSQL tmpfs supprimé. | Workflow CI ajouté mais non exécuté sur GitHub ; aucune base conservée utilisée. |
 | Q1b — bac de scénario jetable | Prouvé localement (fixture seulement) | Non applicable | Fixture synthétique 431 pièces ; plan quatre ans déterministe ; test PostgreSQL crée l'archive et le ledger dans un tenant, une pièce sans mouvement dans un second, et rejoue une réception avec delta unique dans un troisième ; vérifie isolation et suppression en cascade. `npm run demo:fixtures` amorce aussi une base tmpfs pour la revue UI sans lire les transcriptions locales ; preuve GET réelle plus bas. | Le rejeu est un helper de fixture, pas une garantie de C1 en production. La revue visuelle native reste indisponible (CUA). CI GitHub non déclenchée ; exclusion sparse-checkout configurée mais non observée à distance. |
 | C1 — pièce fournisseur actionnable | Prouvé localement sur fixture synthétique | Non applicable | Revue dans Achats, brouillon lié/historisé, contrôle serveur hash/révision, réception simulée unique et source exposée dans l'historique produit ; preuves PostgreSQL jetables ci-dessous. Revue Q2 du détail et de la modale brouillon à 320 px, focus visible/piégé et Échap ; capture ci-dessous. | La revue Q2 utilise Chrome headless/CDP ; CUA garde `browsers: []`, aucun lecteur d'écran ni zoom réel n'a été testé. Source explicitement fictive, brouillon sans réception/mouvement dans cette passe. Pas d'OCR général, d'envoi fournisseur ni de rapprochement commande/livraison O2. |
 | D1 — fiche produit | Prouvé localement | Non applicable | Édition serveur avec révision optimiste, fournisseur du tenant, unité non modifiable et snapshots de lignes de commande préservés ; migrations/intégration PostgreSQL jetables ci-dessous. À 320 px, l'UI permet de modifier le seuil ; Entrée soumet un `PATCH` 200, puis une autre fiche restée à l'ancienne révision reçoit un `PATCH` 409 avec alerte. Après rechargement, seul le seuil gagnant persiste ; preuves/captures Q2 ci-dessous. | Unité immuable avec explication visible ; une conversion éventuelle reste séparée. Entrée envoyée après focus programmatique ; Tab depuis le document, CUA native et lecteur d'écran non vérifiés. |
@@ -1681,3 +1681,16 @@ partielle utilise le seed `demo:fixtures`, pas la fixture narrative dédiée de
 `demoStory.integration.test.ts` ; elle ne démontre pas encore correction,
 recette/production, service, impact et rejeu dans une chaîne C3 unique. Chrome
 natif/CUA, lecteur d’écran et zoom natif à 200 % restent hors vérification.
+
+### R0 — recette locale et lot d’intégration complet (2026-09-25)
+
+`npm run verify:local-delivery` passe au complet sur un PostgreSQL 16 neuf,
+loopback + tmpfs sans volume : lint, build web, build API, 18 migrations
+fraîches, diff Prisma/migrations sans différence, `npm test` (33 contrôles
+Node/CSS et 119 tests Vitest), puis `npm run test:integration` (26 fichiers,
+40 tests, dont `scenarioFixture` et `demoStory`). La table témoin synthétique
+survit au dump/restore et Prisma confirme les migrations sur la copie restaurée.
+Les deux erreurs isolées précédemment notées (`socket hang up`, puis 404) ne se
+reproduisent pas ; aucune correction de code n’était justifiée par cette passe.
+Le conteneur exact a été supprimé (inspect : objet absent) et aucun conteneur
+avec le label de la recette ne reste. La CI GitHub n’a pas été déclenchée.
