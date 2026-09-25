@@ -138,8 +138,10 @@ export default function MenuIdeasModal({ onValidate, onClose }: MenuIdeasModalPr
       {([['starter', 'Entrée'], ['main', 'Plat'], ['dessert', 'Dessert']] as const).map(([field, label]) => <Input key={field} id={`menu-${field}`} label={label} value={menu[field]} disabled={saving} onChange={(event) => { setMenu({ ...menu, [field]: event.target.value }); setDirty(true); }} />)}
       <p>{menu.status === "validated" && !dirty ? `Validé le ${new Date(menu.validatedAt!).toLocaleString("fr-FR")}` : "Brouillon non validé"}</p>
       <div className="flex gap-sm">
-        <Button variant="outline" onClick={() => void persist(false)} disabled={saving}>Enregistrer le brouillon</Button>
-        <Button onClick={() => void persist(true)} disabled={saving}>{saving ? "Enregistrement…" : "Valider le menu"}</Button>
+        <Button variant="outline" onClick={() => void persist(false)} aria-disabled={saving}>
+          {saving ? "Enregistrement…" : "Enregistrer le brouillon"}
+        </Button>
+        <Button onClick={() => void persist(true)} aria-disabled={saving}>{saving ? "Enregistrement…" : "Valider le menu"}</Button>
         <Button variant="outline" onClick={print} disabled={dirty || menu.status !== "validated" || saving}>Imprimer</Button>
       </div>
     </>}
