@@ -1417,3 +1417,27 @@ l'écran avec un navigateur réellement contrôlable reste à obtenir.
 `npm run lint`, `npm run build` et `git diff --check` passent. Toutes les
 données utilisées viennent du nouveau bac de fixtures tmpfs ; aucune écriture
 sur un tenant conservé n'a été effectuée.
+
+### Q2 — Ventes, soumission et persistance du service (2026-09-25)
+
+Sur un bac neuf `demo:fixtures`/PostgreSQL tmpfs, le formulaire réel `/sales`
+est sélectionné sur le jour courant `2026-09-25`, état ouvert et couverture
+complète. Une invocation de harnais `form.requestSubmit(button)` — **pas** une
+action clavier ou un geste manuel — passe par le `onSubmit` React : un unique
+`PUT` avec révision attendue 0, `open/complete`, un message de succès apparaît,
+et le `GET` renvoie `recorded`, révision 1, zéro vente. Après navigation complète
+et rechargement des données, le formulaire garde `open/complete` et la ligne
+affiche « Ouvert », « Complète · provenance enregistrée » et « 0 observé ».
+Capture inspectée :
+[service confirmé et persistant à 390 px](evidence/q2-service-calendar/service-calendar-persisted-390.png).
+
+Les largeurs 320/390/768/1280 px restent sans débordement de document ; à
+320/390 px, le tableau de 401 px défile dans sa région de 223/293 px. Le pilote
+Chrome headless reçoit `Tab` (`defaultPrevented: false`), mais le focus reste sur
+la date ; le parcours d'édition/enregistrement au clavier n'est donc pas prouvé.
+`requestSubmit()` prouve le traitement du formulaire et l'aller-retour serveur,
+pas l'activation humaine demandée par la matrice Q2. CUA doit encore fournir une
+fenêtre réellement contrôlable ; cette séparation reste explicite.
+
+Le bac tmpfs, son compte, Chrome headless, le profil et les harnais temporaires
+ont été arrêtés/nettoyés. Aucun corpus conservé ou autre tenant n'a été utilisé.
