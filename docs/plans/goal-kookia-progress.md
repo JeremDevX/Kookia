@@ -80,20 +80,18 @@ modifications déjà présentes.
 
 ## Prochaine action démontrable
 
-La reprise Q2 du 2026-09-25 complète les états non nominaux de l’Histoire dans
-Chrome headless : chargement, 503, reprise au clavier, troncature et recherche
-sans résultat. L’alerte est désormais assertive dans l’AXTree (`b94da3f`). La
-modale facture reprend aussi son chargement et propose une relecture explicite
-après conflit de révision (`c5ac66c`). Le refus serveur `SOURCE_ALREADY_CREDITED`
-bloque maintenant tout second crédit dans l’UI et rafraîchit l’archive
-(`309a5c9`). `SOURCE_CHANGED`/`SOURCE_LINE_CHANGED` sont désormais couverts côté
-API (`1dc4493`), et l’UI bloque les nouvelles tentatives sur la pièce périmée
-(`5e9b3c8`). `SourceInvoiceArchive` rend maintenant aussi le conflit 409 source
-sur fixture synthétique : Tab atteint la reprise, Entrée soumet une seule fois,
-le détail source est relu, le bouton est réellement désactivé et le focus
-revient au titre. Captures inspectées ci-dessous à 320/768/1280 px. Zoom 200 %
-de cet état, états longs/erreur et revue native restent à faire. Tranche code +
-captures : `fe0ba74`.
+F2 est prouvé localement : contrat de sources contextuelles horodatées,
+fraîcheur/couverture, repli F1 conditionnel et aucun ajustement ni gain annoncé
+(`efd1308`). Son état non connecté est rendu en français ; Chrome headless/CDP
+confirme le texte AX, Tab sur la région nommée, et aucune sortie horizontale à
+320/768/1280 px (correction `1a92545`, captures ci-dessous).
+
+**Prochaine preuve Q2 :** revoir `SOURCE_CHANGED` en zoom natif 200 % et avec une
+technologie d’assistance réelle, puis parcourir les états longs/erreur. L’utilisateur
+confirme que la page login s’affiche dans Chrome, mais le connecteur reste à
+`browsers: []` et `getApp` échoue `cgWindowNotFound` ; aucun contrôle natif n’est
+donc revendiqué. Les captures CDP restent des preuves synthétiques, pas une
+validation de l’espace de démonstration ouvert par l’utilisateur.
 
 C2/C3, I1–I4, F1, M2–M3, O1 et R0 sont prouvés localement ; l'extraction de
 facture reste limitée à la fixture PDF publique en `demo:local`, sans OCR
@@ -225,7 +223,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | D5 — réconciliation des ventes | Prouvé localement | Non activé (aucun POS/Ticket Z connecté) | `SaleContribution` conserve chaque ligne CSV (rejet/conflit compris) sans le CSV brut ; choix explicite remplacer/garder, corrections motivées, annulation distincte du remboursement. Revue UI tmpfs à 320 px : mappage explicite, création d’un article fictif, 2 ventes acceptées, 1 conflit et 2 rejets tracés. La vente existante de 24 reste intacte après « Garder » par Espace ; motif et événements persistés. Tableau défilant pilotable par ←/→ ; captures ci-dessous. | Aucun adaptateur POS/Ticket Z/OCR. Des trois écarts historiques initiaux de parité, l’index `StockCount` figure déjà au modèle ; `ServiceDay.updatedAt` et le nom physique de l’index `InvoiceDraftRevision` ont été alignés (`35c7a09`). Diff complet migrations/modèle non relancé. Revue headless/CDP ; CUA natif et lecteur d’écran indisponibles. |
 | D6 — article vendu ↔ recette | Prouvé localement | Non applicable | `SaleItemRecipeMapping` append-only, tenant-scopé, daté et validé explicitement ; nom snapshoté, facteur portions/article, proposition par nom strictement identique. UI tmpfs : suggestion Pizza Margherita après retrait du suffixe démo, confirmation explicite par Espace, `POST` 201 et mapping actif révision 1 au 25/09/2026 (1 portion/article). À 320/768/1440 px sans débordement de page ; captures Q2 ci-dessous. | Aucun stock ni production déclenchés par l’association. Les correspondances historiques absentes ne sont pas rétro-inférées ; les versions recette legacy sans date restent inconnues. Revue headless/CDP ; CUA natif, lecteur d’écran et zoom réel non vérifiés. |
 | F1 — baseline qualifiée | Prouvé localement (fenêtre fixe, baseline comparée) | Non activé / aucune précision terrain affirmée | Fenêtre déterministe de 28 jours complets ; backtest walk-forward sur les mêmes 7 dates pour moyenne mobile 7 jours et même jour J−7 ; EAM/WAPE, volume observé par article, horizon et exclusions publiés, absence de fuite vérifiée. Les exclusions/calendrier et l'étiquette de simulation sont conservés ; l'estimation reste expérimentale et aucun modèle n'est sélectionné automatiquement. Commits `3f59b00`, `66d9387`. | Vérification finale : PostgreSQL 16 tmpfs, migration fraîche 18/18, intégration 23 fichiers/33 tests, `npm test` 22 fichiers/96 tests + 30 Node/CSS, lint, build web/API, diff-check. Aucun jeu terrain qualifié, aucune précision affichée comme fiable ; rendu mobile/clavier non observé. |
-| F2 — contexte facultatif | Prouvé localement (contrat fixture + repli) | Non activé (aucune position/source réelle ; droits et rétention à cadrer) | L’API baseline publie l’état position/météo/événements/émissions et la source retenue. Un contexte fixture étiqueté vérifie coordonnées, timestamps et périodes couvertes ; source contextuelle absente/périmée ⇒ F1 seulement si sa baseline est expérimentale et non vide, sinon aucune prévision. Même contexte valide : aucune modification de quantité ni gain revendiqué. Intégration F2 et tests unitaires dédiés. Commit `efd1308`. | Aucun fournisseur, position réelle ou jeu d’émissions n’est connecté ; pas de mesure hors échantillon terrain. La revue visuelle de ce libellé reste limitée par l’absence de fenêtre CUA contrôlable. |
+| F2 — contexte facultatif | Prouvé localement (contrat fixture + repli) | Non activé (aucune position/source réelle ; droits et rétention à cadrer) | L’API baseline publie l’état position/météo/événements/émissions et la source retenue. Un contexte fixture étiqueté vérifie coordonnées, timestamps et périodes couvertes ; source contextuelle absente/périmée ⇒ F1 seulement si sa baseline est expérimentale et non vide, sinon aucune prévision. Même contexte valide : aucune modification de quantité ni gain revendiqué. Intégration F2 et tests unitaires dédiés. Commit `efd1308`. Rendu headless/CDP après localisation `1a92545` ; captures ci-dessous. | Aucun fournisseur, position réelle ou jeu d’émissions n’est connecté ; pas de mesure hors échantillon terrain. Pas de zoom natif ni lecteur d’écran réel (CUA non disponible). |
 | C2 — chronologie continue | Prouvé localement (fixture synthétique) | Non applicable | `GET /workspace/timeline` en lecture seule, période/service sur 31 jours, coupe « connu au », provenance, pièces source sans contenu brut, état partiel, décisions et liens vers les espaces actuels ; snapshot stock optionnel, aucun backfill historique. Le backtest D6 exclut aussi mappings/versions antidatés mais saisis après chaque service. `scenarioFixture` vérifie maintenant version Carbonara effective au 2025-06-16, anciennes/nouvelles productions liées, surstock compté, perte explicite, refus sans sortie de stock, stocks jamais négatifs et M2 sur comptage actuel. Commits `290d354`, `818b1d5`. | Épisodes 2025 synthétiques, non observés. Les états antérieurs des documents mutables sans journal restent inconnus ; rendu/clavier complet de C3 encore incomplet (voir Q2). |
 | F3/F4 — besoin matière et achat suggéré | Prouvé localement (fixtures synthétiques) | Non activé / évaluation terrain en attente | Baseline de 28 services enregistrés complets projetée par mappings/versions datés ; stock retranché seulement après comptage courant ; suggestion explicable, écart/modification et décision serveur immuable ; commande simulée dans le tenant démo. Voir `b2bcfed` et la preuve finale ci-dessous. | Un service à venir seulement ; aucun délai fournisseur ni précision terrain évaluée, prix indicatif. Recette/unité/historique incomplets dégradent le résultat. CUA sans navigateur ; aucune suggestion `demo_simulation` ne devient achat réel. |
 | O1 — fiche fournisseur non envoyée | Prouvé localement (commande opérationnelle validée) | Non activé (aucun envoi au fournisseur) | L'historique Achats propose une fiche imprimable distincte par identifiant fournisseur, limitée au statut `validated` et alimentée par les snapshots article/fournisseur/quantité/unité/prix. Total indicatif, taxes/frais non calculés ; impression locale sans mutation d'état. Test du groupement et `npm test` 24 Vitest/101 + 30 Node/CSS, lint, build web et diff-check. Commit `2c3a553`. | Aucun courriel, contact externe, état transmis/échec ni reprise ; le chef utilise son canal habituel. CUA sans navigateur : aperçu d'impression, rendu responsive et parcours clavier non observés. |
@@ -867,6 +865,17 @@ seulement avec une baseline `experimental` non vide, sinon `none`. Même avec un
 fixture valide, la quantité F1 reste inchangée : aucun modèle contextuel,
 fournisseur ou gain de précision n’est introduit. L’écran Ventes explique ce
 repli.
+
+Rendu de l’état par défaut sur la fixture synthétique Ventes :
+[320 px](evidence/q2-f2-context/f2-context-320.png),
+[768 px](evidence/q2-f2-context/f2-context-768.png) et
+[1280 px](evidence/q2-f2-context/f2-context-1280.png). Les mesures CDP sont
+respectivement `320/320`, `753/768` (barre de défilement verticale), et
+`1280/1280` pour largeur document/viewport, sans débordement horizontal. Le
+texte n’expose aucun enum brut ; `Tab` focalise la région « Baseline
+expérimentale par article » et l’AXTree contient le résumé F2. La capture à
+320 px est limitée à la hauteur du viewport ; le contenu continue par
+défilement vertical normal.
 
 Tests dédiés : fixture valide, météo périmée avec et sans entrées F1, source
 événementielle absente et position hors limites. La vérification locale complète
