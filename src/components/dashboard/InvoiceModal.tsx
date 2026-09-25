@@ -36,6 +36,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [reloadConflictInvoice, setReloadConflictInvoice] = useState(false);
+  const [sourceConflictInvoiceId, setSourceConflictInvoiceId] = useState<string | null>(null);
   const [invoiceLoadError, setInvoiceLoadError] = useState("");
   const [notice, setNotice] = useState("");
   const invoiceHistorySelectRef = useRef<HTMLSelectElement>(null);
@@ -43,13 +44,15 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
   const catalogRetryButtonRef = useRef<HTMLButtonElement>(null);
   const saveDraftButtonRef = useRef<HTMLButtonElement>(null);
   const receiveButtonRef = useRef<HTMLButtonElement>(null);
+  const sourceConflictCloseButtonRef = useRef<HTMLButtonElement>(null);
   const firstProductSelectRef = useRef<HTMLSelectElement>(null);
   const historyRetryFocusPending = useRef(false);
-  const persistFocusPending = useRef<"draft" | "receive" | null>(null);
+  const persistFocusPending = useRef<"draft" | "receive" | "source-conflict" | null>(null);
   const preferLatestHistoryInvoice = useRef(false);
   const catalogRetryFocusPending = useRef(false);
   const currentInvoiceLoadError = loading ? "" : invoiceLoadError;
   const sourceLinked = invoice?.source === "source_document";
+  const sourceConflict = invoice?.id === sourceConflictInvoiceId;
   const persistenceBlocked = !!invoice && !sourceLinked && (loading || !!currentInvoiceLoadError);
 
   useEffect(() => { invoiceIdRef.current = invoice?.id; }, [invoice]);
@@ -107,7 +110,8 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
     const target = persistFocusPending.current;
     persistFocusPending.current = null;
     if (document.activeElement !== document.body) return;
-    if (target === "receive") invoiceHistorySelectRef.current?.focus();
+    if (target === "source-conflict") sourceConflictCloseButtonRef.current?.focus();
+    else if (target === "receive") invoiceHistorySelectRef.current?.focus();
     else saveDraftButtonRef.current?.focus();
   }, [error, invoice, saving]);
 
@@ -126,12 +130,12 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
     ? { ...current, lines: current.lines.map((line, lineIndex) => lineIndex === index ? { ...line, ...change } : line) }
     : current);
   const createDraft = () => {
-    setNotice(""); setError(""); setReloadConflictInvoice(false);
+    setNotice(""); setError(""); setReloadConflictInvoice(false); setSourceConflictInvoiceId(null);
     setInvoice({ id: crypto.randomUUID(), reference: "", date: formatLocalISODate(new Date()), lines: [],
       status: "draft", source: "manual", revision: 0 });
   };
   const persist = async (receive: boolean) => {
-    if (!invoice || saving || persistenceBlocked || catalogLoading || catalogError) return;
+    if (!invoice || saving || sourceConflict || persistenceBlocked || catalogLoading || catalogError) return;
     const actionButton = receive ? receiveButtonRef.current : saveDraftButtonRef.current;
     persistFocusPending.current = document.activeElement === actionButton ? (receive ? "receive" : "draft") : null;
     setSaving(true); setError(""); setNotice("");
@@ -140,6 +144,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
       setInvoice(saved);
       setInvoices((previous) => [saved, ...previous.filter((item) => item.id !== saved.id)]);
       setReloadConflictInvoice(false);
+      setSourceConflictInvoiceId((conflictedId) => conflictedId === saved.id ? null : conflictedId);
       setNotice(receive
         ? invoice.source === "source_document"
           ? "Réception de démonstration enregistrée. Aucun achat réel ni envoi fournisseur n’a été créé."
@@ -156,6 +161,12 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
         setReloadConflictInvoice(false);
         setError("");
         onInvoiceDataChanged();
+      } else if (cause instanceof ApiError && ["SOURCE_CHANGED", "SOURCE_LINE_CHANGED"].includes(cause.details.code) && invoice.source === "source_document") {
+        setSourceConflictInvoiceId(invoice.id);
+        setReloadConflictInvoice(false);
+        setError(cause.message);
+        if (persistFocusPending.current) persistFocusPending.current = "source-conflict";
+        onInvoiceDataChanged();
       } else {
         setReloadConflictInvoice(cause instanceof ApiError && ["REVISION_CONFLICT", "ALREADY_RECEIVED", "INVOICE_PARTIALLY_RECONCILED"]
           .includes(cause.details.code));
@@ -165,7 +176,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
   };
 
   const received = invoice?.status === "received";
-  const disabled = saving || catalogLoading || !!catalogError;
+  const disabled = saving || sourceConflict || catalogLoading || !!catalogError;
   const canReceive = !!invoice && !received && !!invoice.reference.trim() && !!invoice.date && invoice.lines.length > 0 &&
     (sourceLinked
       ? invoice.sourceType === "invoice" && invoice.sourceTypeConfirmed === true && invoice.sourceDateConfirmed === true &&
@@ -185,6 +196,10 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
         : "Brouillon lié à une pièce transcrite : vérifiez le type, la date et chaque ligne. L’enregistrement du brouillon ne modifie pas le stock."
       : "Saisie manuelle sans lecture automatique. Vérifiez les quantités et les produits avant tout ajout au stock."}</p>
     {error && <div role="alert"><p>{error}</p>
+      {sourceConflict && <>
+        <p>Les changements non enregistrés restent visibles tant que ce formulaire reste ouvert ; fermer la modale les abandonnera. Retournez à l’archive pour consulter la pièce à jour.</p>
+        <Button ref={sourceConflictCloseButtonRef} type="button" variant="outline" onClick={onClose}>Fermer et consulter la pièce source</Button>
+      </>}
       {reloadConflictInvoice && <>
         <p>Charger la version enregistrée remplacera les modifications non enregistrées du formulaire.</p>
         <Button ref={historyRetryButtonRef} type="button" variant="outline" onClick={retryHistory}>Charger la version enregistrée</Button>
@@ -211,7 +226,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
           {item.reference} · {item.status === "received" ? "Réceptionnée" : "Brouillon"}
         </option>)}
       </select>
-      <Button variant="outline" onClick={createDraft} disabled={saving}>Nouvelle facture manuelle</Button>
+      <Button variant="outline" onClick={createDraft} disabled={saving || sourceConflict}>Nouvelle facture manuelle</Button>
       {invoice && <>
         {invoice.source === "demo" && <p>Facture d’exemple du 09/12/2024, sans document scanné.</p>}
         {sourceLinked && <section className="invoice-source-note" aria-label="Provenance de la pièce source">
