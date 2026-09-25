@@ -887,6 +887,7 @@ PostgreSQL tmpfs et son label ont été vérifiés absents après nettoyage. CUA
 indisponible (`browsers: []`, `getApp` → `cgWindowNotFound`), donc le nouveau
 libellé n’a pas été observé dans Chrome natif.
 
-Après l’ajout du cas « événements absents », `npm test` et `npm run lint` ont
-été rejoués : 33 contrôles Node/CSS, 28 fichiers/114 tests Vitest et 36 feuilles
-CSS contrôlées ; `git diff --check` passe aussi.
+Après l’ajout du cas « événements absents » et la localisation des états source,
+`npm test`, `npm run lint` et `npm run build` ont été rejoués : 33 contrôles
+Node/CSS, 28 fichiers/114 tests Vitest, 36 feuilles CSS contrôlées et build web
+réussi ; `git diff --check` passe aussi.
