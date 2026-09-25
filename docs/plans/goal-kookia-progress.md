@@ -403,6 +403,8 @@ Dans le tenant `demo:local` PostgreSQL tmpfs, l'archive Achats expose la pièce 
 
 La même modale avait été mesurée à 720 px dans le viewport de 768 px et 800 px dans celui de 1440 px, sans débordement horizontal de page. Revue réalisée par Chrome headless/CDP, car le connecteur CUA continue de retourner `browsers: []` malgré la page native signalée visible. Pas de lecteur d'écran réel ni de zoom natif ; le contrôle de sortie de focus a utilisé un focus extérieur posé par script avant Tab. Fixture entièrement synthétique/tmpfs, brouillon non reçu et aucun tenant conservé touché.
 
+L’échec réseau simulé des GET liste/détail à 320 px affiche deux alertes de lecture et ne se transforme pas en archive vide (`documentElement.scrollWidth` reste à 320 px). « Recharger les pièces » reçoit le focus visible après placement programmatique ; Entrée émet un nouveau GET, laisse l’erreur visible et conserve le bouton de reprise. Une fois l’interception retirée, l’archive recharge 434 pièces et le brouillon lié reste visible. Capture inspectée : [alertes archive/détail avec focus sur la reprise à 320 px](evidence/q2-invoice-recovery/archive-error-mobile-320.png). Le Tab naturel jusqu’au bouton d’erreur n’a pas été démontré dans cette passe.
+
 `npm run lint`, `npm run build`, `npm test` (26 fichiers/107 tests Vitest + 33 contrôles Node/CSS) et `git diff --check` passent après le correctif du focus initial et du piège clavier de `Modal`.
 
 ### Q2 — original PDF I4 ouvert depuis Achats (2026-09-25)
