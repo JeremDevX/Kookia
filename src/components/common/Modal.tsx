@@ -1,4 +1,4 @@
-import React, { useEffect, useEffectEvent, useId, useRef } from "react";
+import React, { useEffectEvent, useId, useLayoutEffect, useRef } from "react";
 import { X } from "lucide-react";
 import "./Modal.css";
 
@@ -45,7 +45,7 @@ const Modal: React.FC<ModalProps> = ({
   const titleId = useId();
   const closeFromKeyboard = useEffectEvent(() => onClose());
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isOpen) return;
 
     const getFocusableElements = () => {
@@ -99,7 +99,10 @@ const Modal: React.FC<ModalProps> = ({
       const lastFocusableElement = focusableElements[focusableElements.length - 1];
       const activeElement = document.activeElement;
 
-      if (!e.shiftKey && activeElement === lastFocusableElement) {
+      if (!modalRef.current?.contains(activeElement)) {
+        e.preventDefault();
+        (e.shiftKey ? lastFocusableElement : firstFocusableElement).focus();
+      } else if (!e.shiftKey && activeElement === lastFocusableElement) {
         e.preventDefault();
         firstFocusableElement.focus();
       } else if (e.shiftKey && activeElement === firstFocusableElement) {
@@ -110,11 +113,10 @@ const Modal: React.FC<ModalProps> = ({
 
     document.addEventListener("keydown", handleKeyDown);
     lockBodyScroll();
-    const focusFrame = requestAnimationFrame(focusInitialElement);
+    focusInitialElement();
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      cancelAnimationFrame(focusFrame);
       unlockBodyScroll();
       previouslyFocusedElementRef.current?.focus();
     };
