@@ -27,6 +27,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   const [query, setQuery] = useState("");
   const [loadedRequestKey, setLoadedRequestKey] = useState("");
   const loading = loadedRequestKey !== requestKey;
+  const initialLoading = loading && loadedRequestKey === "";
   const [detailLoading, setDetailLoading] = useState(false);
   const [opening, setOpening] = useState(false);
   const [sourceConflictId, setSourceConflictId] = useState<string | null>(null);
@@ -129,7 +130,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   }, [open, sourceId]);
 
   const resume = async () => {
-    if (!selected || opening) return;
+    if (!selected || opening || sourceConflict) return;
     setOpening(true);
     setError("");
     try { onOpenDraft(await createInvoiceDraftFromSource(selected.id)); }
@@ -174,7 +175,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
       <h2 ref={archiveHeadingRef} id="source-invoice-title" tabIndex={-1}>Factures et pièces fournisseurs</h2>
       <p>Les transcriptions sont des sources à confirmer. Les lignes ci-dessous sont des candidates, pas des mouvements de stock.</p>
     </div><div className="source-invoice-heading-actions">
-      <span>{loading ? "Chargement…" : currentArchiveError ? "Indisponible" : `${invoices.length} pièce${invoices.length === 1 ? "" : "s"}`}</span>
+      <span role="status" aria-busy={loading}>{loading ? "Chargement…" : currentArchiveError ? "Indisponible" : `${invoices.length} pièce${invoices.length === 1 ? "" : "s"}`}</span>
       {extractionMode === "demo_fixture" && <Button variant="outline" onClick={() => void tryFixtureExtraction()} aria-disabled={extracting}>
         {extracting ? "Lecture de la fixture…" : "Essayer la fixture fictive"}
       </Button>}
@@ -195,8 +196,9 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
     {detailError && <div role="alert"><p>Lecture de la pièce impossible : {detailError}</p>
       <Button ref={detailRetryButtonRef} type="button" variant="outline" onClick={retryDetail}>Réessayer cette pièce</Button>
     </div>}
-    {loading ? <p role="status">Chargement des pièces…</p> : currentArchiveError ? null : invoices.length === 0 ?
-      <p>Aucune pièce importée dans cet espace. Vous pouvez saisir une facture manuellement.</p> : <div className="source-invoice-controls">
+    {initialLoading ? <p role="status">Chargement des pièces…</p> : currentArchiveError ? null : invoices.length === 0 ?
+      loading ? <p role="status">Actualisation des pièces…</p> :
+        <p>Aucune pièce importée dans cet espace. Vous pouvez saisir une facture manuellement.</p> : <div className="source-invoice-controls">
         <label htmlFor="source-invoice-search">Rechercher une pièce</label>
         <input className="input-field" id="source-invoice-search" type="search" value={query}
           onChange={(event) => { setQuery(event.target.value); void open(""); }} />
@@ -225,7 +227,8 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
             </li>)}
           </ul>}
           <details><summary>Lire la transcription source</summary><pre className="source-invoice-content">{selected.content}</pre></details>
-          <button ref={resumeButtonRef} type="button" className="btn btn-primary" onClick={() => void resume()} disabled={opening || sourceConflict}>
+          <button ref={resumeButtonRef} type="button" className="btn btn-primary" onClick={() => void resume()}
+            disabled={sourceConflict} aria-disabled={opening || sourceConflict} aria-busy={opening}>
             {opening ? "Ouverture…" : sourceConflict ? "Brouillon périmé" : selected.invoiceStatus === "draft" ? "Reprendre le brouillon" : selected.invoiceStatus === "received" ? "Voir la réception" :
               selected.type === "invoice" ? "Créer un brouillon corrigible" : "Consulter et classer la pièce"}
           </button>

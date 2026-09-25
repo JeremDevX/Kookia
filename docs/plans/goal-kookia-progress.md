@@ -769,6 +769,7 @@ minimal, pas une revue du vrai écran Factures. Captures inspectées :
 [Histoire avec dates](evidence/q2-history-return/timeline-return-initial-320.png),
 [rejeu isolé](evidence/q2-history-return/timeline-replay-320.png),
 [retour avec brouillon conservé](evidence/q2-history-return/timeline-return-search-320.png).
+Correctif commité localement dans e828b82 ; aucun push.
 
 ### Q2 — erreur et conflit dans la modale facture (2026-09-25)
 
@@ -834,6 +835,44 @@ PostgreSQL ou donnée conservée n’a été utilisé ; serveur Vite, Chrome hea
 harnais et profil ont été arrêtés/supprimés. CUA reste à `browsers: []` ; la
 revue native et le lecteur d’écran restent à faire. Le contrôle API des conflits
 est décrit ci-dessous ; leur rendu et le reste de Q2/C3 demeurent ouverts.
+
+### Q2/C1 — parcours visuel continu de la pièce à la réception (2026-09-25)
+
+Les vrais composants SourceInvoiceArchive, Modal et InvoiceModal ont été
+montés dans une page Vite temporaire avec une seule facture fictive d’une ligne.
+Seul fetch était intercepté : création/reprise du brouillon, historique,
+actualisation de l’archive et réception ont tous répondu depuis cette fixture ;
+ni l’API, ni le backend, ni PostgreSQL, ni les transcriptions conservées n’ont
+été lus ou touchés. Le scénario mappe la ligne tomate sur un produit fictif,
+confirme type/date, corrige la quantité à 2,5 kg et le prix à 3,20 €, enregistre
+le brouillon, ferme avec Échap, puis le reprend avec Entrée. Les deux corrections
+sont restaurées. La réception explicite avec Entrée enregistre une seule
+conséquence synthétique de 2,5 kg ; la vue reçue devient lecture seule, masque
+l’action de réception et annonce qu’aucun second crédit ne sera appliqué.
+
+Le premier rendu a révélé que la pièce/action de reprise était démontée pendant
+le GET de rafraîchissement et que le bouton natif désactivé durant l’ouverture
+perdait le focus. SourceInvoiceArchive garde maintenant l’archive déjà chargée
+montée pendant son actualisation ; l’action reste focalisable, signale l’attente
+avec aria-disabled/aria-busy et ignore les activations concurrentes.
+Échap rend désormais le focus au bouton source, avant comme après sauvegarde et
+rafraîchissement. Tab atteint l’action, Entrée ouvre/sauvegarde/reprend/reçoit,
+Espace confirme les deux champs de revue, et Échap ferme. La sélection de la
+pièce et les corrections de champs ont utilisé les setters DOM natifs suivis
+d’événements React input/change, car CDP n’a pas piloté ces contrôles natifs
+de façon fiable.
+
+scrollWidth est exactement 320, 768 et 1280 px dans les vues mesurées ; les
+captures inspectées montrent l’archive, la revue brouillon, sa reprise et l’état
+reçu : [archive 320](evidence/q2-invoice-workflow/archive-320.png),
+[revue 320](evidence/q2-invoice-workflow/modal-review-320.png),
+[brouillon repris 320](evidence/q2-invoice-workflow/draft-resumed-320.png),
+[réception 320](evidence/q2-invoice-workflow/received-320.png),
+[réception 768](evidence/q2-invoice-workflow/received-768.png),
+[réception 1280](evidence/q2-invoice-workflow/received-1280.png).
+Le mock vérifie une seule réception de démonstration ; il ne prouve ni un
+mouvement PostgreSQL/UI réel ni un crédit de stock hors de la fixture. Headless
+CDP seulement : fenêtre native CUA et lecteur d’écran toujours indisponibles.
 
 ### Q2 — conflits de pièce source périmée (2026-09-25)
 
