@@ -79,6 +79,10 @@ it("records, reads and corrects only sales of owner-created items", async () => 
     .send({ expectedRevision: 0, status: "open", coverage: "complete" }).expect(200);
   expect((await owner.get("/api/workspace/sales/service-days?from=" + dstDate + "&to=" + dstDate).expect(200)).body)
     .toMatchObject([{ serviceDate: dstDate, status: "open", coverage: "complete", salesCount: 0 }]);
+  const impact = await owner.get("/api/workspace/impact").query({ from: dstDate, to: dstDate }).expect(200);
+  expect(impact.body.current).toMatchObject({ calendarDays: 1, hasRecordedData: true, hasSimulationData: false,
+    recorded: { menuItemUnits: 0, serviceDays: { complete: 1, unregistered: 0 } },
+    simulation: { menuItemUnits: 0, serviceDays: { complete: 0, unregistered: 1 } } });
   await owner.put("/api/workspace/sales/service-days/2099-01-01")
     .send({ expectedRevision: 0, status: "closed", coverage: "complete" }).expect(400);
 });

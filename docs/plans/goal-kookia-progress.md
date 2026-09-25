@@ -1441,3 +1441,22 @@ fenêtre réellement contrôlable ; cette séparation reste explicite.
 
 Le bac tmpfs, son compte, Chrome headless, le profil et les harnais temporaires
 ont été arrêtés/nettoyés. Aucun corpus conservé ou autre tenant n'a été utilisé.
+
+### D4 → M1 — contrat service confirmé vers KPI (2026-09-25)
+
+`sales.integration.test.ts` vérifie maintenant qu'après l'enregistrement API d'un
+service ouvert/complet à zéro vente, le Bilan renvoie un jour calendaire,
+`recorded.serviceDays.complete = 1`, `unregistered = 0`, zéro unité, et aucune
+complétude dans le bucket simulation. Cette assertion relie le statut revu au
+KPI sans transformer un jour absent en zéro.
+
+Deux `npm run verify:local-delivery` complets ont passé lint, builds web/API,
+18 migrations fraîches avec parité Prisma, puis `npm test` (29 fichiers/119
+tests Vitest et 33 contrôles Node/CSS). Le test `sales.integration.test.ts`
+ajouté passe dans les deux runs. Les suites d'intégration ont chacune eu 38/39
+tests et 25/26 fichiers : première coupure `socket hang up` dans
+`workspace.integration.test.ts`, seconde dans `scenarioFixture.integration.test.ts`.
+L'échec change de suite, donc le gate intégration complet n'est pas déclaré vert ;
+la dernière recette locale complète déjà consignée précédemment reste la preuve
+R0. Les conteneurs R0 jetables ont été retirés, aucune base conservée n'a été
+utilisée, et `git diff --check` passe.
