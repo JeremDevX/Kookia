@@ -108,7 +108,8 @@ export default function MenuIdeasModal({ onValidate, onClose }: MenuIdeasModalPr
                 value={surplusQuantity} onChange={(event) => { setSurplusQuantity(event.target.value); setIdeas(null); }} />
               <p>Comptage du {new Date(selectedOption.countedAt).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })} :
                 {" "}{selectedOption.countedQuantity} {selectedOption.unit} maximum.</p>
-              <Button variant="outline" onClick={() => void generateIdeas()} disabled={generating || !surplusQuantity}>
+              <Button variant="outline" onClick={() => void generateIdeas()} disabled={!surplusQuantity}
+                aria-disabled={generating || !surplusQuantity}>
                 {generating ? "Calcul des idées…" : "Calculer les idées"}
               </Button>
             </>}
