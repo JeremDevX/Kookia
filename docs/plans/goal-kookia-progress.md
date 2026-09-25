@@ -86,9 +86,10 @@ sans résultat. L’alerte est désormais assertive dans l’AXTree (`b94da3f`).
 modale facture reprend aussi son chargement et propose une relecture explicite
 après conflit de révision (`c5ac66c`). Le refus serveur `SOURCE_ALREADY_CREDITED`
 bloque maintenant tout second crédit dans l’UI et rafraîchit l’archive
-(`309a5c9`). Prochaine tranche : vérifier `SOURCE_CHANGED`/`SOURCE_LINE_CHANGED`
-et les vues restantes à 200 % ; la fenêtre native reste inaccessible à CUA et
-ces preuves headless ne remplacent pas un lecteur d’écran.
+(`309a5c9`). `SOURCE_CHANGED`/`SOURCE_LINE_CHANGED` sont désormais couverts côté
+API (`1dc4493`), et l’UI bloque les nouvelles tentatives sur la pièce périmée
+(`5e9b3c8`). Prochaine tranche : rendre cet état de conflit et vérifier les vues
+restantes à 200 % ; la fenêtre native reste inaccessible à CUA.
 
 C2/C3, I1–I4, F1, M2–M3, O1 et R0 sont prouvés localement ; l'extraction de
 facture reste limitée à la fixture PDF publique en `demo:local`, sans OCR
@@ -762,5 +763,43 @@ restent dans la largeur (`scrollWidth` = 320). Captures inspectées :
 Vitest + 33 contrôles Node/CSS) et `git diff --check` passent. Aucun backend,
 PostgreSQL ou donnée conservée n’a été utilisé ; serveur Vite, Chrome headless,
 harnais et profil ont été arrêtés/supprimés. CUA reste à `browsers: []` ; la
-revue native et le lecteur d’écran restent à faire. `SOURCE_CHANGED`,
-`SOURCE_LINE_CHANGED` et le reste de Q2/C3 demeurent ouverts (`309a5c9`).
+revue native et le lecteur d’écran restent à faire. Le contrôle API des conflits
+est décrit ci-dessous ; leur rendu et le reste de Q2/C3 demeurent ouverts.
+
+### Q2 — conflits de pièce source périmée (2026-09-25)
+
+Les intégrations sur PostgreSQL tmpfs vérifient les deux gardes. Un brouillon
+révisé puis une pièce synthétique dont hash/révision changent donnent 409
+`SOURCE_CHANGED` à la reprise depuis l’archive et à l’enregistrement ; un numéro
+de ligne absent donne 409 `SOURCE_LINE_CHANGED`. Dans les deux cas, la révision
+du brouillon sauvegardé et son historique restent inchangés, sans mouvement de
+stock. Si la pièce change après réception, reprise et nouvel envoi sont refusés
+aussi : stock et mouvement unique restent inchangés. Tests renforcés dans
+`1dc4493`.
+
+Dans `5e9b3c8`, `InvoiceModal` traite ces réponses comme un conflit terminal
+pour cette pièce ouverte : la saisie reste visible mais immuable, save/receive
+et nouvelle facture manuelle sont désactivés, l’archive est rafraîchie, et un
+bouton explicite permet de la consulter. Après activation clavier du geste
+refusé, le code cible le focus sur cette action ; le comportement reste à
+vérifier dans le navigateur. Le conflit reste mémorisé si la personne change
+puis re-sélectionne une autre facture dans la modale. Aucun contrat serveur ni
+règle de stock n’a changé.
+
+`npm run verify:local-delivery` a réussi une exécution complète après les tests
+API : lint, builds web/API, 18 migrations fraîches, 33 contrôles Node/CSS, 27
+fichiers/110 tests Vitest, 25 fichiers/38 intégrations et sauvegarde/restauration
+synthétique ; PostgreSQL et son tmpfs ont été supprimés. Après le correctif UI,
+lint, builds et tests unitaires restent verts ; deux nouvelles exécutions ont
+chacune rencontré un échec HTTP isolé et différent dans une intégration sans
+lien avec les factures (GET panier 401, puis socket hang up sur un accès compte
+non authentifié). `sourceInvoiceWorkflow` (3 tests) passe à chaque exécution ;
+ces échecs de suite complète restent à diagnostiquer, et ne sont pas masqués.
+
+Revue visuelle/clavier de ce nouveau rendu non acquise : CUA renvoie toujours
+`browsers: []`, `getApp("Google Chrome")` échoue `cgWindowNotFound`. Vite a servi
+le harnais synthétique en loopback, mais le CDP headless a cessé de répondre
+avant l’alerte après Entrée ; aucune capture n’a été produite. Vite, Chrome et
+profils/captures temporaires ont été arrêtés/supprimés. Tester encore à
+320/768/1280 px et au zoom 200 %, puis refaire le parcours clavier et l’AXTree
+quand le navigateur sera contrôlable ; aucun lecteur d’écran réel n’a été utilisé.
