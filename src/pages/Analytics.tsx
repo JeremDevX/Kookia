@@ -5,7 +5,6 @@ import ExportReportModal from "../components/analytics/ExportReportModal";
 import SalesMetrics from "../components/sales/SalesMetrics";
 import ImpactSummary from "../components/analytics/ImpactSummary";
 import { formatLocalISODate } from "../utils/date";
-import DemoAnalytics from "./DemoAnalytics";
 import "./Analytics.css";
 import "./Sales.css";
 import "../styles/Workspace.css";
@@ -17,11 +16,10 @@ export default function Analytics() {
   const [from, setFrom] = useState(monthAgo);
   const [to, setTo] = useState(today);
   const [exportOpen, setExportOpen] = useState(false);
-  const [showDemo, setShowDemo] = useState(false);
   const validRange = !!from && !!to && from <= to;
 
   return <div className="analytics-container workspace-page">
-    <header className="workspace-header"><div><h1>Bilan</h1><p className="workspace-subtitle">Vos ventes enregistrées et un rapport de vos opérations, séparés des exemples.</p></div>
+    <header className="workspace-header"><div><h1>Bilan</h1><p className="workspace-subtitle">Ventes enregistrées, pertes déclarées et achats réceptionnés sur la période.</p></div>
       <Button onClick={() => setExportOpen(true)} disabled={!validRange}>Exporter un rapport</Button>
     </header>
     <div className="bilan-period"><label>Du <input type="date" value={from} max={to || today()} onChange={(event) => setFrom(event.target.value)} /></label>
@@ -30,9 +28,6 @@ export default function Analytics() {
       <><SalesMetrics key={`sales:${from}:${to}`} from={from} to={to} />
         <ImpactSummary key={`impact:${from}:${to}`} from={from} to={to} /></>}
     <p className="bilan-next"><Link to="/sales">Ajouter ou corriger des ventes</Link> · <Link to="/stocks">Vérifier les stocks</Link></p>
-    <details className="bilan-demo" onToggle={(event) => setShowDemo(event.currentTarget.open)}><summary>Voir les graphiques de démonstration</summary>
-      {showDemo && <DemoAnalytics />}
-    </details>
     <ExportReportModal key={`${from}:${to}`} isOpen={exportOpen} onClose={() => setExportOpen(false)} initialFrom={from} initialTo={to} />
   </div>;
 }

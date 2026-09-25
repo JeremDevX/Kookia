@@ -146,8 +146,9 @@ démonstration ; la date de la pièce d'origine reste consultable.
   prix snapshoté ; un prix absent est marqué non valorisé et une unité
   incompatible apparaît à vérifier, hors total. L'export exclut les simulations
   et rappelle que ruptures et invendus ne sont pas mesurés. Ce n'est pas une
-  attestation AGEC. Les graphiques de démonstration repliés ne mesurent pas votre
-  activité.
+  attestation AGEC. Le Bilan ne mélange pas de graphiques d'exemple aux données
+  de votre activité ; les sorties non confirmées ne sont pas des ventes ou pertes
+  observées.
 
 Un rapport Kookia n'est pas, par son seul titre, une attestation réglementaire
 ou une mesure de pertes évitées. Gardez les justificatifs originaux nécessaires

@@ -29,6 +29,21 @@ fenêtre existante vers un autre espace n'a pas été utilisée. Aucun compte ou
 stock conservé n'a été consulté ou modifié. La génération d'estimations et la
 revue rendue restent à faire.
 
+**Suite Q2/Bilan :** le Bilan opérationnel ne propose plus la disclosure de
+graphiques d'exemple figés ni ne charge leur ancienne vue ; le CSS correspondant
+est retiré et le guide restaurateur décrit maintenant le bilan sourcé. `npm run
+lint`, `npm test` (29 fichiers/117 tests), `npm run build`, `npm run build:api`
+et `git diff --check` passent. Aucun rendu n'a été capturé pour cette révision :
+CUA reste sans navigateur contrôlable ; les preuves de captures déjà commitées
+restent historiques/QA et ne sont pas revendiquées pour le Bilan actuel.
+
+**Recette d'intégration relancée :** `npm run verify:local-delivery` a ensuite
+passé sur PostgreSQL 16 tmpfs : lint, build web/API, 18/18 migrations, diff
+Prisma vide, 29 fichiers/117 tests unitaires, 25 fichiers/39 tests
+d'intégration et sauvegarde/restauration synthétique. Le processus s'est terminé
+avec succès et a supprimé son conteneur. Aucun compte ou donnée Kookia n'a été
+utilisé ; l'absence de rendu navigateur reste inchangée.
+
 Audit Prisma/SQL hors D5 : un PostgreSQL 16 neuf sur tmpfs a appliqué 18/18
 migrations, puis un diff direct vers `prisma/schema.prisma` a révélé cinq
 écarts d'index restants après l'audit partiel `35c7a09` : deux index absents
