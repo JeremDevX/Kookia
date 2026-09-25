@@ -9,7 +9,7 @@ import SalesReconciliation from "../components/sales/SalesReconciliation";
 import SalesRecipeMappings from "../components/sales/SalesRecipeMappings";
 import { correctSale, createSale, createSaleItem, getLatestService, getSaleItems, getSales, recordSaleOutcome,
   type DailySale, type LatestService, type SaleItem, type SaleValues } from "../services/salesService";
-import { describeServiceSources } from "../features/sales/salesPresentation";
+import { describeServiceCoverage, describeServiceSources } from "../features/sales/salesPresentation";
 import "../styles/Workspace.css";
 import "./Sales.css";
 
@@ -137,7 +137,7 @@ export default function Sales() {
       <h2 id="sales-start-title" ref={startHeading} tabIndex={-1}>Vos ventes enregistrées</h2>
       {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <div role="alert"><p>{loadError}</p>
         <Button type="button" variant="outline" onClick={retryLoad}>Réessayer</Button></div> : latestService ?
-        <p>Dernière date de service renseignée : {new Date(`${latestService.serviceDate}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })} · {latestService.status === "open" ? "restaurant ouvert" : "restaurant fermé"} · couverture {latestService.coverage}.
+        <p>Dernière date de service renseignée : {new Date(`${latestService.serviceDate}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })} · {latestService.status === "open" ? "restaurant ouvert" : "restaurant fermé"} · couverture {describeServiceCoverage(latestService.coverage).toLocaleLowerCase("fr-FR")}.
           {latestService.status === "closed" ? " Aucune activité n’était prévue." : latestService.coverage === "complete" && latestService.salesCount === 0 ? " Zéro vente observé après revue complète." : latestService.coverage !== "complete" ? " " + latestService.salesCount + " ligne(s) enregistrée(s) ; les absences restent inconnues." : " " + latestService.salesCount + " ligne(s) enregistrée(s)."}
           {latestService.salesCount > 0 ? ` Sources : ${describeServiceSources(latestService.sources)}.` : ""}</p> :
         <p>Aucun jour de service renseigné. Une absence de donnée n'est ni un jour fermé ni zéro vente.</p>}

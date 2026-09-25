@@ -223,11 +223,10 @@ composant réel a été rendu avec un GET synthétique, puis inspecté au clavie
 maintenant prouvés à 320 px ci-dessous. Le premier aller-retour Histoire → objet
 lié → Histoire et l'accès au bac de rejeu gardent maintenant la période et les
 recherches, preuve synthétique ci-dessous. **Prochaine action démontrable :**
-rendre un épisode recette/service C3 synthétique et traverser ses liens avec la
-chronologie, sans lire ni importer le corpus conservé. Puis reprendre les portes
-Q2 de zoom natif et technologie d’assistance si CUA redevient contrôlable ; le
-lecteur d’écran réel demeure indisponible. Le corpus de pièces conservé n’a pas
-été lu pour cette reprise.
+poursuivre les états hors nominaux Q2 des routes restantes en rendu/clavier
+headless, sans déclarer de vérification par navigateur natif. Reprendre le zoom
+200 % et la technologie d’assistance réelle si CUA redevient contrôlable. Le
+corpus de pièces conservé n’a pas été lu pour cette reprise.
 
 ## Registre des incréments
 
@@ -828,6 +827,53 @@ setter DOM natif et les événements React input/change, mais chaque changement 
 observées étaient GET, sans backend, base, corpus, POST métier ni mutation.
 Orders était monté sans Layout/sidebar et le mouvement 2026 est une fixture,
 non une preuve de stock réel. CUA natif et lecteur d’écran restent indisponibles.
+
+### Q2/C3 — version de recette et service partiel vers leurs pages actuelles (2026-09-25)
+
+Un troisième harnais Vite temporaire a rendu Timeline, Recipes et Sales réels
+sur un épisode fictif daté du 16/06/2025 : version 2 d’une hypothèse de recette,
+puis service ouvert à couverture partielle et deux lignes simulées. Recherche
+appliquée « démo » et brouillon distinct « démo en cours » ; Tab/Entrée depuis
+chaque événement ouvre la page actuelle Recettes ou Ventes. Les retours par
+historique CDP restaurent dates, coupe « Connu au » et recherches ; dans Ventes,
+les filtres ont été posés sur le service daté et la table expose les deux ventes
+de démonstration ainsi que « Partielle · provenance simulée ». Le focus du
+tableau nommé a ensuite reçu Flèche droite : défilement interne 0 → 138 px.
+
+Cette inspection a révélé dans le résumé Ventes la fuite du code brut
+`partial`. Le libellé français (complète/partielle/manquante) est maintenant
+partagé entre le résumé et le calendrier ; la capture après correction affiche
+« couverture partielle ». Aux viewports 320/768/1280 px, `scrollWidth` et
+`clientWidth` sont égaux sur Histoire, Recettes et Ventes. À 320, la page
+défilante garde un scrollbar vertical de 15 px dans le viewport headless ; le
+calendrier de service reste défilable à part. Captures inspectées :
+[Histoire](evidence/q2-history-recipe-service/q2-c3-recipe-service-history-320.png),
+[Recettes](evidence/q2-history-recipe-service/q2-c3-recipe-service-recipes-320.png),
+[Ventes avec dernier service](evidence/q2-history-recipe-service/q2-c3-recipe-service-sales-latest-320.png),
+[table de service 320](evidence/q2-history-recipe-service/q2-c3-recipe-service-sales-service-320.png),
+[table après Flèche droite](evidence/q2-history-recipe-service/q2-c3-recipe-service-sales-service-keyboard-320.png),
+[Ventes 768](evidence/q2-history-recipe-service/q2-c3-recipe-service-sales-service-768.png),
+[Ventes 1280](evidence/q2-history-recipe-service/q2-c3-recipe-service-sales-service-1280.png),
+[retour Histoire](evidence/q2-history-recipe-service/q2-c3-recipe-service-history-return-320.png).
+
+Seul `fetch` était intercepté ; toutes les requêtes enregistrées sont des GET,
+sans API, base, corpus, POST métier ni mutation. La recette et les deux ventes
+sont des mocks synthétiques ; la page de destination est le catalogue actuel et
+non un rejeu historique. Les retours ont utilisé `Page.navigateToHistoryEntry`
+et les dates de Ventes ont été posées via setters DOM natifs suivis d’événements
+React ; le tableau a reçu un focus programmatique avant Flèche droite. Chrome
+headless/CDP seulement, sans CUA natif ni lecteur d’écran réel.
+
+La coupe « Connu au » a également été rejouée dans Timeline avec une réponse
+synthétique filtrée par `knownAt` : au 15/06/2025, les deux événements du 16/06
+sont masqués avec l’état vide ; au 20/06, version de recette et service partiel
+réapparaissent. Le retour 15 → 20 → 15 → 20 répète la transition, en gardant
+from/to, `q=démo` et `qDraft=démo en cours` dans l’URL. Tous les appels observés
+sont des GET mockés ; aucun backend n’est utilisé. `scrollWidth === clientWidth`
+aux largeurs 320/768/1280 px. [Connu au avant saisie, 320](evidence/q2-history-recipe-service/q2-c3-asof-before-320.png),
+[après saisie, 320](evidence/q2-history-recipe-service/q2-c3-asof-visible-320.png).
+Le changement du champ a utilisé le setter DOM natif et les événements React
+input/change ; pas de clavier natif, CUA ni lecteur d’écran réel.
 
 ### Q2 — erreur et conflit dans la modale facture (2026-09-25)
 

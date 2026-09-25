@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Button from "../common/Button";
 import { getServiceDays, saveServiceDay, type ServiceCoverage, type ServiceDay, type ServiceStatus } from "../../services/salesService";
+import { describeServiceCoverage } from "../../features/sales/salesPresentation";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 
-const coverageLabels: Record<ServiceCoverage, string> = {
-  complete: "Complète", partial: "Partielle", missing: "Manquante",
-};
 const statusLabels: Record<ServiceStatus, string> = { open: "Ouvert", closed: "Fermé" };
 const sourceLabels: Record<ServiceDay["source"], string> = { recorded: "enregistrée", demo_simulation: "simulée", mixed: "mixte" };
 const dateRange = (from: string, to: string) => {
@@ -102,7 +100,7 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
           const day = days.find((item) => item.serviceDate === date);
           return <tr key={date} aria-current={selectedDate === date ? "date" : undefined}>
             <td>{date}</td><td>{day ? statusLabels[day.status as ServiceStatus] : "Non renseigné"}</td>
-            <td>{day ? `${coverageLabels[day.coverage as ServiceCoverage]} · provenance ${sourceLabels[day.source]}` : "Manquante"}</td>
+            <td>{day ? `${describeServiceCoverage(day.coverage)} · provenance ${sourceLabels[day.source]}` : "Manquante"}</td>
             <td>{!day ? "Inconnu" : day.status === "closed" ? "Pas de service" : day.coverage === "complete" && day.salesCount === 0 ? "0 observé" : `${day.salesCount} ligne(s)`}</td>
           </tr>;
         })}</tbody>
