@@ -14,6 +14,8 @@ async function account() {
   ids.push(result.body.user.id);
   return agent;
 }
+const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
+  month: "2-digit", day: "2-digit" }).format(new Date());
 
 it("records, reads and corrects only sales of owner-created items", async () => {
   const owner = await account();
@@ -78,11 +80,34 @@ it("records, reads and corrects only sales of owner-created items", async () => 
   await owner.put("/api/workspace/sales/service-days/" + dstDate)
     .send({ expectedRevision: 0, status: "open", coverage: "complete" }).expect(200);
   expect((await owner.get("/api/workspace/sales/service-days?from=" + dstDate + "&to=" + dstDate).expect(200)).body)
-    .toMatchObject([{ serviceDate: dstDate, status: "open", coverage: "complete", salesCount: 0 }]);
+    .toMatchObject([{ serviceDate: dstDate, status: "open", coverage: "complete", source: "recorded", salesCount: 0 }]);
   const impact = await owner.get("/api/workspace/impact").query({ from: dstDate, to: dstDate }).expect(200);
   expect(impact.body.current).toMatchObject({ calendarDays: 1, hasRecordedData: true, hasSimulationData: false,
     recorded: { menuItemUnits: 0, serviceDays: { complete: 1, unregistered: 0 } },
     simulation: { menuItemUnits: 0, serviceDays: { complete: 0, unregistered: 1 } } });
   await owner.put("/api/workspace/sales/service-days/2099-01-01")
     .send({ expectedRevision: 0, status: "closed", coverage: "complete" }).expect(400);
+});
+
+it("keeps service calendar edits simulated in demo workspaces", async () => {
+  const owner = request.agent(app);
+  const registration = await owner.post("/api/auth/register").send({ displayName: "Demo sales test",
+    email: `demo-sales-${randomUUID()}@example.com`, password: "demo sales test password" }).expect(201);
+  const userId = registration.body.user.id as string;
+  ids.push(userId);
+  await owner.get("/api/workspace/catalog").expect(200);
+  const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: userId } });
+  await prisma.restaurant.update({ where: { id: restaurant.id }, data: { mode: "demo" } });
+
+  const today = parisToday();
+  const yesterday = new Date(Date.parse(today) - 86_400_000).toISOString().slice(0, 10);
+  await prisma.serviceDay.create({ data: { restaurantId: restaurant.id, serviceDate: new Date(`${yesterday}T00:00:00.000Z`),
+    status: "open", coverage: "partial", source: "recorded", actorId: userId } });
+  const updated = await owner.put(`/api/workspace/sales/service-days/${yesterday}`)
+    .send({ expectedRevision: 0, status: "open", coverage: "complete" }).expect(200);
+  expect(updated.body).toMatchObject({ serviceDate: yesterday, source: "demo_simulation", revision: 1 });
+
+  const created = await owner.put(`/api/workspace/sales/service-days/${today}`)
+    .send({ expectedRevision: 0, status: "open", coverage: "complete" }).expect(200);
+  expect(created.body).toMatchObject({ serviceDate: today, source: "demo_simulation", revision: 1 });
 });

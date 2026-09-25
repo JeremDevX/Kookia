@@ -29,8 +29,10 @@ export async function saveServiceDay(restaurantId: string, actorId: string, serv
   expectedRevision: number, status: "open" | "closed", coverage: "complete" | "partial" | "missing") {
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
+    const restaurant = await tx.restaurant.findUniqueOrThrow({ where: { id: restaurantId }, select: { mode: true } });
     const where = serviceDayWhere(restaurantId, serviceDate);
     const current = await tx.serviceDay.findUnique({ where });
+    const source = restaurant.mode === "demo" ? "demo_simulation" : current?.source ?? "recorded";
     const salesCount = await tx.dailySale.count({ where: { restaurantId, serviceDate: date(serviceDate) } });
     if (current ? current.revision !== expectedRevision : expectedRevision !== 0) {
       throw new WorkspaceError(409, "REVISION_CONFLICT", "L’état de ce service a changé. Rechargez le calendrier.");
@@ -41,9 +43,9 @@ export async function saveServiceDay(restaurantId: string, actorId: string, serv
     }
     if (status === "closed" && coverage !== "complete") throw new WorkspaceError(400, "INVALID_SERVICE_DAY", "Un jour fermé doit être confirmé comme complet.");
     if (current) {
-      await tx.serviceDay.update({ where, data: { status, coverage, actorId, revision: { increment: 1 } } });
+      await tx.serviceDay.update({ where, data: { status, coverage, source, actorId, revision: { increment: 1 } } });
     } else {
-      await tx.serviceDay.create({ data: { restaurantId, serviceDate: date(serviceDate), status, coverage, actorId, revision: 1 } });
+      await tx.serviceDay.create({ data: { restaurantId, serviceDate: date(serviceDate), status, coverage, source, actorId, revision: 1 } });
     }
     return serviceDayDto(await tx.serviceDay.findUniqueOrThrow({ where, include: { _count: { select: { sales: true } } } }));
   });
