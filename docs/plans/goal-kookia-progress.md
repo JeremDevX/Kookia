@@ -405,6 +405,14 @@ La même modale avait été mesurée à 720 px dans le viewport de 768 px et 800
 
 `npm run lint`, `npm run build`, `npm test` (26 fichiers/107 tests Vitest + 33 contrôles Node/CSS) et `git diff --check` passent après le correctif du focus initial et du piège clavier de `Modal`.
 
+### Q2 — original PDF I4 ouvert depuis Achats (2026-09-25)
+
+Dans le même runner `demo:local` tmpfs, le bouton « Essayer la fixture fictive » relit le PDF public synthétique et l’archive atteint 434 pièces. La candidate « Facture DEMO-2026-09-01 » reste marquée comme démonstration, avec une seule ligne et zéro mouvement lié ; aucun brouillon n’a été reçu. À 320 px, la page Achats ne déborde pas horizontalement. Tab atteint le lien nommé « Consulter l’original fictif (PDF) » avec focus visible ; Entrée l’ouvre dans un onglet `blob:` séparé. Captures : [archive et lien à 320 px](evidence/q2-invoice-original/invoice-archive-original-link-320.png), [PDF à 320 px](evidence/q2-invoice-original/invoice-original-pdf-320.png).
+
+Le visualiseur Chrome natif affiche une page de PDF. À 320 px et 768 px, le réglage initial 100 % montre une barre de défilement horizontal interne ; à 768 px, masquer les vignettes puis réduire à 90 % rend toute la page visible ; à 1440 px, elle tient à 100 %. Captures inspectées : [100 % avec vignettes à 768 px](evidence/q2-invoice-original/invoice-original-pdf-100-768.png), [100 % sans vignettes](evidence/q2-invoice-original/invoice-original-pdf-sidebar-closed-768.png), [90 % ajusté à 768 px](evidence/q2-invoice-original/invoice-original-pdf-zoom-90-768.png), [100 % à 1440 px](evidence/q2-invoice-original/invoice-original-pdf-1440.png).
+
+Cette navigation prouve le lien et son ouverture au clavier, pas les commandes internes du lecteur PDF : l’arbre AX CDP de cet onglet ne renvoie aucun contrôle, CUA ne contrôle toujours aucun onglet, et aucun lecteur d’écran réel n’est disponible pour la passe. La comparaison côte à côte avec les lignes transcrites n’existe pas dans ce parcours (le PDF s’ouvre dans un onglet distinct) et reste à revoir. Le PDF, sa candidate et l’archive appartiennent uniquement au scénario explicitement fictif/tmpfs ; aucune réception ni donnée conservée n’a été créée.
+
 ## Portes externes
 
 | Sujet | Ce qui est possible sans accès | Preuve requise pour « activé » | État |
