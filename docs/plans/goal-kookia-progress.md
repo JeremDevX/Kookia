@@ -1635,3 +1635,15 @@ explicitement quatre pièces 2023–2026 et vérifie le lien commande/réception
 2026. La lecture visuelle des transitions métier à partir de cette fixture
 dédiée reste donc ouverte ; ces captures prouvent seulement les états
 chronologiques rendus sur le seed consulté. Aucun état métier n’a été modifié.
+
+### Q2 — libellé du fil d’Ariane Histoire (2026-09-25)
+
+La revue précédente montrait « Aujourd’hui » dans la barre haute de `/history`.
+`TopNav` ne connaissait pas cette route et utilisait son libellé par défaut ; la
+route Histoire et son sous-parcours `/history/replay/:id` portent maintenant le
+libellé « Histoire ». Après `npm run build`, Chrome headless/CDP confirme le
+libellé sur ces deux chemins à 390×844 ; `/history` reste à 390 px sans
+débordement du document. Capture :
+[Histoire avec fil d’Ariane corrigé](evidence/q2-c3-chapters/history-breadcrumb-390.png).
+Le contrôle est visuel automatisé ; CUA natif et lecteur d’écran ne sont pas
+disponibles dans cette session.

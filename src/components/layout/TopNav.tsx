@@ -22,12 +22,13 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
     "/recipes": "Recettes",
     "/settings": "Réglages",
     "/analytics": "Bilan",
+    "/history": "Histoire",
     "/orders": "Achats",
     "/sales": "Ventes",
     "/more": "Plus",
   };
 
-  const currentPage = pageLabels[pathname] ?? "Aujourd'hui";
+  const currentPage = pageLabels[pathname] ?? (pathname.startsWith("/history/") ? "Histoire" : "Aujourd'hui");
 
   return (
     <header className="top-nav">
