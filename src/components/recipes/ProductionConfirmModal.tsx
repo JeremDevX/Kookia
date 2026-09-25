@@ -82,7 +82,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
           <label htmlFor="production-quantity" className="block text-sm font-semibold text-blue-900 mb-2">
             Portions à produire
           </label>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 production-quantity-row">
             <input
               id="production-quantity"
               aria-invalid={Boolean(visibleQuantityError)}

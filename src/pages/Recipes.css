@@ -319,6 +319,18 @@
 }
 
 @media (--media-phone-small) {
+  .production-quantity-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .production-quantity-row > input {
+    flex: none;
+    width: var(--unit-100percent);
+    min-width: var(--number-0);
+  }
+
   .recipes-container {
     padding: var(--spacing-xs);
   }

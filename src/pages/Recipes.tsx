@@ -162,7 +162,7 @@ const Recipes: React.FC = () => {
           <Button
             aria-pressed={displayedTab === "history"}
             variant={displayedTab === "history" ? "primary" : "outline"}
-            onClick={() => { setSearchParams({}); setActiveTab("history"); }}
+            onClick={() => { if (productId) setSearchParams({}); setActiveTab("history"); }}
             size="sm"
           >
             Produites cette semaine
