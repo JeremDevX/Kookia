@@ -225,6 +225,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | D5 — réconciliation des ventes | Prouvé localement | Non activé (aucun POS/Ticket Z connecté) | `SaleContribution` conserve chaque ligne CSV (rejet/conflit compris) sans le CSV brut ; choix explicite remplacer/garder, corrections motivées, annulation distincte du remboursement. Revue UI tmpfs à 320 px : mappage explicite, création d’un article fictif, 2 ventes acceptées, 1 conflit et 2 rejets tracés. La vente existante de 24 reste intacte après « Garder » par Espace ; motif et événements persistés. Tableau défilant pilotable par ←/→ ; captures ci-dessous. | Aucun adaptateur POS/Ticket Z/OCR. Des trois écarts historiques initiaux de parité, l’index `StockCount` figure déjà au modèle ; `ServiceDay.updatedAt` et le nom physique de l’index `InvoiceDraftRevision` ont été alignés (`35c7a09`). Diff complet migrations/modèle non relancé. Revue headless/CDP ; CUA natif et lecteur d’écran indisponibles. |
 | D6 — article vendu ↔ recette | Prouvé localement | Non applicable | `SaleItemRecipeMapping` append-only, tenant-scopé, daté et validé explicitement ; nom snapshoté, facteur portions/article, proposition par nom strictement identique. UI tmpfs : suggestion Pizza Margherita après retrait du suffixe démo, confirmation explicite par Espace, `POST` 201 et mapping actif révision 1 au 25/09/2026 (1 portion/article). À 320/768/1440 px sans débordement de page ; captures Q2 ci-dessous. | Aucun stock ni production déclenchés par l’association. Les correspondances historiques absentes ne sont pas rétro-inférées ; les versions recette legacy sans date restent inconnues. Revue headless/CDP ; CUA natif, lecteur d’écran et zoom réel non vérifiés. |
 | F1 — baseline qualifiée | Prouvé localement (fenêtre fixe, baseline comparée) | Non activé / aucune précision terrain affirmée | Fenêtre déterministe de 28 jours complets ; backtest walk-forward sur les mêmes 7 dates pour moyenne mobile 7 jours et même jour J−7 ; EAM/WAPE, volume observé par article, horizon et exclusions publiés, absence de fuite vérifiée. Les exclusions/calendrier et l'étiquette de simulation sont conservés ; l'estimation reste expérimentale et aucun modèle n'est sélectionné automatiquement. Commits `3f59b00`, `66d9387`. | Vérification finale : PostgreSQL 16 tmpfs, migration fraîche 18/18, intégration 23 fichiers/33 tests, `npm test` 22 fichiers/96 tests + 30 Node/CSS, lint, build web/API, diff-check. Aucun jeu terrain qualifié, aucune précision affichée comme fiable ; rendu mobile/clavier non observé. |
+| F2 — contexte facultatif | Prouvé localement (contrat fixture + repli) | Non activé (aucune position/source réelle ; droits et rétention à cadrer) | L’API baseline publie l’état position/météo/événements/émissions et la source retenue. Un contexte fixture étiqueté vérifie coordonnées, timestamps et périodes couvertes ; source contextuelle absente/périmée ⇒ F1 seulement si sa baseline est expérimentale et non vide, sinon aucune prévision. Même contexte valide : aucune modification de quantité ni gain revendiqué. Intégration F2 et tests unitaires dédiés. Commit `efd1308`. | Aucun fournisseur, position réelle ou jeu d’émissions n’est connecté ; pas de mesure hors échantillon terrain. La revue visuelle de ce libellé reste limitée par l’absence de fenêtre CUA contrôlable. |
 | C2 — chronologie continue | Prouvé localement (fixture synthétique) | Non applicable | `GET /workspace/timeline` en lecture seule, période/service sur 31 jours, coupe « connu au », provenance, pièces source sans contenu brut, état partiel, décisions et liens vers les espaces actuels ; snapshot stock optionnel, aucun backfill historique. Le backtest D6 exclut aussi mappings/versions antidatés mais saisis après chaque service. `scenarioFixture` vérifie maintenant version Carbonara effective au 2025-06-16, anciennes/nouvelles productions liées, surstock compté, perte explicite, refus sans sortie de stock, stocks jamais négatifs et M2 sur comptage actuel. Commits `290d354`, `818b1d5`. | Épisodes 2025 synthétiques, non observés. Les états antérieurs des documents mutables sans journal restent inconnus ; rendu/clavier complet de C3 encore incomplet (voir Q2). |
 | F3/F4 — besoin matière et achat suggéré | Prouvé localement (fixtures synthétiques) | Non activé / évaluation terrain en attente | Baseline de 28 services enregistrés complets projetée par mappings/versions datés ; stock retranché seulement après comptage courant ; suggestion explicable, écart/modification et décision serveur immuable ; commande simulée dans le tenant démo. Voir `b2bcfed` et la preuve finale ci-dessous. | Un service à venir seulement ; aucun délai fournisseur ni précision terrain évaluée, prix indicatif. Recette/unité/historique incomplets dégradent le résultat. CUA sans navigateur ; aucune suggestion `demo_simulation` ne devient achat réel. |
 | O1 — fiche fournisseur non envoyée | Prouvé localement (commande opérationnelle validée) | Non activé (aucun envoi au fournisseur) | L'historique Achats propose une fiche imprimable distincte par identifiant fournisseur, limitée au statut `validated` et alimentée par les snapshots article/fournisseur/quantité/unité/prix. Total indicatif, taxes/frais non calculés ; impression locale sans mutation d'état. Test du groupement et `npm test` 24 Vitest/101 + 30 Node/CSS, lint, build web et diff-check. Commit `2c3a553`. | Aucun courriel, contact externe, état transmis/échec ni reprise ; le chef utilise son canal habituel. CUA sans navigateur : aperçu d'impression, rendu responsive et parcours clavier non observés. |
@@ -849,6 +850,34 @@ lint/builds, 33 contrôles Node/CSS, 27 fichiers/110 tests Vitest, les 25 fichie
 exécution intermédiaire a exposé `salesRecipeMapping` en 404 et une coupure de
 socket facture ; l’exécution isolée suivante a passé les 38 intégrations. Le
 conteneur tmpfs et son label ont été vérifiés absents après nettoyage. La page
-`127.0.0.1:56819/login` ne répond plus ; CUA n’offre toujours ni Chrome ni IAB
-contrôlable. Le rendu de conflit de cette reprise a toutefois été effectué en
-Chrome headless/CDP, sans réutiliser ce bac.
+`127.0.0.1:56819/login` ne répondait pas au contrôle shell précédent ; depuis,
+l’utilisateur confirme voir la page de connexion dans Chrome, mais CUA n’offre
+toujours ni navigateur ni IAB contrôlable. Le rendu de conflit de cette reprise
+a toutefois été effectué en Chrome headless/CDP, sans réutiliser ce bac.
+
+## F2 — contrat de contexte facultatif (2026-09-25)
+
+La baseline `/workspace/sales/baseline` renvoie maintenant l’état de la position,
+de la météo, des événements et des émissions historiques. En production locale,
+aucune position ni source n’étant configurée, ces états restent explicitement
+`unverified`/`not_connected`. Le calcul pur accepte une fixture uniquement
+étiquetée, rejette une position hors bornes ou future, compare les horodatages
+aux fenêtres visées et marque les données absentes/périmées ; il sélectionne F1
+seulement avec une baseline `experimental` non vide, sinon `none`. Même avec une
+fixture valide, la quantité F1 reste inchangée : aucun modèle contextuel,
+fournisseur ou gain de précision n’est introduit. L’écran Ventes explique ce
+repli.
+
+Tests dédiés : fixture valide, météo périmée avec et sans entrées F1, source
+événementielle absente et position hors limites. La vérification locale complète
+est passée : 18 migrations fraîches, lint et builds web/API, 33 contrôles
+Node/CSS, 28 fichiers/113 tests Vitest, 25 fichiers/38 tests d’intégration,
+sauvegarde/restauration synthétique. Le premier run a subi un `socket hang up`
+dans un test ventes indépendant de F2 ; le rerun complet passe. Le conteneur
+PostgreSQL tmpfs et son label ont été vérifiés absents après nettoyage. CUA reste
+indisponible (`browsers: []`, `getApp` → `cgWindowNotFound`), donc le nouveau
+libellé n’a pas été observé dans Chrome natif.
+
+Après l’ajout du cas « événements absents », `npm test` et `npm run lint` ont
+été rejoués : 33 contrôles Node/CSS, 28 fichiers/114 tests Vitest et 36 feuilles
+CSS contrôlées ; `git diff --check` passe aussi.
