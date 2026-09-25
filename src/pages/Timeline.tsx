@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/common/Button";
-import { getTimeline, type TimelineEvent, type TimelineProvenance, type TimelineResult } from "../services/timelineService";
+import { createTimelineReplay, getTimeline, type TimelineEvent, type TimelineProvenance, type TimelineResult } from "../services/timelineService";
 import { formatLocalISODate } from "../utils/date";
 import { filterTimelineEvents, TIMELINE_VISIBLE_BATCH_SIZE } from "./timelineSelectors";
 import "../styles/Workspace.css";
@@ -43,6 +43,7 @@ function eventTime(event: TimelineEvent) {
 }
 
 export default function Timeline() {
+  const navigate = useNavigate();
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(today);
   const [asOf, setAsOf] = useState(today);
@@ -56,6 +57,7 @@ export default function Timeline() {
   const loadMoreFocusPending = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const retryFocusPending = useRef(false);
+  const [replayRequest, setReplayRequest] = useState<{ decisionId: string; loading: boolean; error?: string } | null>(null);
   const rangeDays = (Date.parse(to) - Date.parse(from)) / 86_400_000;
   const validRequest = /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to) &&
     /^\d{4}-\d{2}-\d{2}$/.test(asOf) && from >= historyStart && asOf >= historyStart && from <= to && rangeDays <= 30 &&
@@ -139,6 +141,17 @@ export default function Timeline() {
     setVisibleCount(nextCount);
   };
 
+  const replayDecision = async (decisionId: string) => {
+    setReplayRequest({ decisionId, loading: true });
+    try {
+      const replay = await createTimelineReplay(decisionId);
+      navigate(`/history/replay/${replay.id}`);
+    } catch (cause) {
+      setReplayRequest({ decisionId, loading: false,
+        error: cause instanceof Error ? cause.message : "Le bac de rejeu est indisponible." });
+    }
+  };
+
   return <div className="workspace-page timeline-page">
     <header className="workspace-header"><div>
       <p className="workspace-eyebrow">Historique consultable</p>
@@ -209,6 +222,16 @@ export default function Timeline() {
                   </p>
                   {event.qualifier && <p className="timeline-qualifier">{event.qualifier}</p>}
                   {event.href && <Link to={event.href} aria-label={`Ouvrir ${event.label} dans l’espace actuel`}>Ouvrir la rubrique actuelle</Link>}
+                  {event.replayDecisionId && <>
+                    <Button type="button" variant="outline" size="sm" disabled={replayRequest?.loading === true}
+                      aria-label={`Rejouer dans un bac isolé : ${event.label}`}
+                      onClick={() => void replayDecision(event.replayDecisionId!)}>
+                      {replayRequest?.decisionId === event.replayDecisionId && replayRequest.loading
+                        ? "Ouverture du bac…" : "Rejouer ce geste"}
+                    </Button>
+                    {replayRequest?.decisionId === event.replayDecisionId && replayRequest.error &&
+                      <p className="timeline-replay-feedback" role="alert">{replayRequest.error}</p>}
+                  </>}
                 </article>
               </li>)}
             </ol>
@@ -221,6 +244,6 @@ export default function Timeline() {
         </div>}
       </>}
     </>}
-    <p className="timeline-read-only">Lecture seule : les liens ouvrent les espaces actuels. Ils ne rejouent pas les événements et ne modifient pas le stock historique. Les documents n’ont pas de journal de versions; leur première saisie et leurs états antérieurs restent inconnus.</p>
+    <p className="timeline-read-only">Lecture seule : les liens ouvrent les espaces actuels. « Rejouer ce geste » ouvre un bac séparé à partir d’une décision d’achat conservée ; aucun ordre, réception ou mouvement de stock n’est créé dans l’espace courant. Les documents n’ont pas de journal de versions ; leur première saisie et leurs états antérieurs restent inconnus.</p>
   </div>;
 }

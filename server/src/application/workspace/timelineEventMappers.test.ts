@@ -20,10 +20,32 @@ it("labels demo recipe decisions and versions as hypothetical, never as producti
     provenance: "simulation", href: "/recipes",
     qualifier: expect.stringContaining("aucune cuisson n’est déclarée"),
   });
+  expect(decisionEvent(candidateDecision("recipe_candidate_confirmed"))).not.toHaveProperty("replayDecisionId");
 
   const version: RecipeVersion = { id: "version-id", restaurantId: "restaurant-id", recipeId: "recipe-id",
     version: 1, effectiveFrom: createdAt, operationId: "recipe-operation", actorId: "owner-id",
     name: "Hypothèse — pizza jambon et champignons", category: "Plat", prepTime: 20, yieldPortions: 4, createdAt };
   expect(versionEvent(version, "demo")).toMatchObject({ kind: "recipe", provenance: "simulation",
     qualifier: expect.stringContaining("n’atteste pas une recette réellement pratiquée") });
+});
+
+it("marks only complete purchase suggestion snapshots as replayable", () => {
+  const decision: RecommendationDecision = {
+    id: "849cb419-d2fd-4f8e-9835-686d11ebdf0c", restaurantId: "restaurant-id", actorId: "owner-id",
+    predictionId: null, operationId: "purchase-operation", decision: "purchase_suggestion_added", createdAt,
+    snapshot: {
+      suggestionKey: "a".repeat(64), productId: "p1", quantity: 2,
+      provenance: "demo_simulation", workspaceMode: "demo", model: "baseline-v1",
+      asOfDate: "2026-09-23", forecastDate: "2026-09-25",
+      suggestion: {
+        suggestionKey: "a".repeat(64), productId: "p1", productName: "Farine T55", unit: "kg",
+        status: "ready", canAdd: true,
+        forecastNeed: 2, countedStock: 0, countDate: "2026-09-23", estimatedQuantity: 2,
+        currentUnitPrice: 3.25, estimatedCost: 6.5, reason: "Besoin du prochain service.",
+      },
+    },
+  };
+  expect(decisionEvent(decision)).toMatchObject({ replayDecisionId: decision.id, provenance: "simulation" });
+  expect(decisionEvent({ ...decision, snapshot: { ...decision.snapshot as object, suggestion: { productName: "Incomplete" } } }))
+    .not.toHaveProperty("replayDecisionId");
 });

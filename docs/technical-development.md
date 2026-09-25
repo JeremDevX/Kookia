@@ -186,7 +186,15 @@ leur date disponible est la dernière mise à jour ; les états antérieurs rest
 inconnus et les entrées modifiées après `asOf` sont masquées. Les mouvements
 legacy sans snapshots gardent un libellé historique inconnu. Les liens ouvrent
 les vues actuelles (un mouvement peut ouvrir la fiche produit) sans rejouer
-l'opération ni modifier le solde.
+l'opération ni modifier le solde. Une décision `purchase_suggestion_added` ou
+`purchase_suggestion_excluded` n'expose « Rejouer ce geste » que si son
+instantané satisfait le contrat de suggestion ; le clic ouvre
+`/history/replay/:id` et le serveur recopie cet instantané dans un document
+`timeline-replay:v1:<decisionId>` tenant-scopé, distinct des objets métier.
+Le rendu du bac est calculé depuis l'instantané conservé, sans relire le stock
+courant. Il montre une ligne hypothétique ou une exclusion ; aucune commande,
+réception, transmission fournisseur ni mouvement n'est créé. Un même geste
+ne conserve qu'un bac, et les répétitions concurrentes sont idempotentes.
 
 La chronologie inclut aussi la création des commandes internes, les décisions
 de suggestion et les réceptions rapprochées. Une commande n'est pas présentée
