@@ -80,6 +80,13 @@ modifications déjà présentes.
 
 ## Prochaine action démontrable
 
+La reprise Q2 du 2026-09-25 complète les états non nominaux de l’Histoire dans
+Chrome headless : chargement, 503, reprise au clavier, troncature et recherche
+sans résultat. L’alerte est désormais assertive dans l’AXTree (`b94da3f`).
+Prochaine tranche UI : poursuivre les erreurs/conflits de la modale d’historique
+des factures et sa reprise clavier ; la fenêtre native reste inaccessible à
+CUA et ces preuves headless ne remplacent pas un lecteur d’écran.
+
 C2/C3, I1–I4, F1, M2–M3, O1 et R0 sont prouvés localement ; l'extraction de
 facture reste limitée à la fixture PDF publique en `demo:local`, sans OCR
 général ni fournisseur. L'original peut être ouvert depuis Achats ; comparaison
@@ -219,7 +226,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | Pièces → idées de recette | Flux de démonstration prouvé sur données explicitement fictives | Non applicable | Le seed `demo:local` crée deux candidates hypothétiques en attente, éditables et reliées aux lignes de deux exemples archivés (« EXEMPLE FICTIF » — champignons 8 kg et crème 6 L), sans les injecter dans le plan de simulation. L'intégration corrige puis confirme l'une et garde l'autre en attente ; tenant, ligne/unité, rejeu et neutralité stock/production sont vérifiés. La chronologie rend leurs décisions et la version comme simulées, sans prétendre qu'une cuisson a eu lieu. | Les seules 431 pièces de simulation restent le corpus tomate ; l'archive démo contient 433 documents. Les exemples n'attestent ni achat, ni recette, ni production réelle et ne justifient aucune candidate métier terrain. M2 part d'un surplus compté, pas des pièces. Pas de nouvelle revue visuelle/clavier lors de cette reprise : le CUA n'expose pas la fenêtre malgré la page de connexion visible côté utilisateur. |
 | M3 — export des pertes déclarées | Prouvé localement (export opérationnel) | Non activé / aucune revendication AGEC | L'export existant ajoute les mouvements négatifs `loss` comme pertes séparées, quantité absolue, `createdAt` UTC, identifiant source, coût seulement si prix snapshoté. Nombre sans prix, unités incompatibles (lignes « à vérifier », hors total), simulations exclues et métriques indisponibles stockouts/invendus sont visibles dans CSV/Excel/PDF. Les tests antérieurs couvrent operation IDs, prix manquant, unité incompatible, simulation, tenant croisé et formats protégés. La fixture C2 ajoute un mouvement explicite de 10 kg `loss`, distinct des invendus estimés ; sa chronologie qualifie la perte de synthétique/non observée. | Ne mesure que les pertes explicitement déclarées ; pas de ledger de rupture/invendu, pas de causalité d'économie ni d'attestation réglementaire. Aucun événement du bac démo ne constitue une mesure terrain. |
 | C3 — chaîne métier complète | Prouvé localement (API / fixture synthétique) | Non applicable | `timelineEventMappers` expose décisions, commandes internes et réceptions rapprochées avec provenance simulation, identifiant/source liée et coupe `asOf`; les archives ouvrent la pièce dans Achats. `demoStory.integration.test.ts` rejoue quatre chapitres, 2023 sans réception source, ventes simulées datées + comptage → suggestion → décision → commande démo → réception de pièce synthétique → `/impact` calculé depuis les opérations, stock inchangé. Le fixture C2 vérifie aussi en 2025 la version effective, comptages, perte explicite et refus sans déduction. Commits `290d354`, `818b1d5`. | La chaîne API/DB est prouvée, et l’Histoire a des revues UI ciblées (pièce liée et liste dense, voir Q2) ; le parcours visuel complet de chaque chapitre reste à établir. Q2 reste en cours. Aucune précision terrain ni aucun KPI seedé ; aucun envoi n'est déclenché. |
-| UX Histoire dense (Q2/C3) | Prouvé localement sur composant réel + réponse synthétique | Non applicable | Recherche dans libellés/détails/précisions (casse/accents ignorés), 20 événements au départ puis lots progressifs ; Tab/Entrée, focus visible, annonce de résultats et focus transféré au statut au dernier lot. Champ nommé dans l’AX, contrôles tactiles de 44 px, 320/768/1280 px sans débordement. `efa944b`; captures ci-dessous. | La réponse est mockée et entièrement fictive ; aucun backend ni espace de restaurant n’est lu dans cette tranche. CUA natif et lecteur d’écran réel toujours non vérifiés. |
+| UX Histoire dense (Q2/C3) | Prouvé localement sur composant réel + réponses synthétiques | Non applicable | Recherche libellés/détails/précisions (casse/accents ignorés), 20 événements au départ puis lots progressifs ; Tab/Entrée, focus et transfert au statut au dernier lot. Chargement/503/reprise, troncature, recherche vide ; AXTree confirme `role=alert` assertif après correction. 320/360/768/1280 px sans débordement. `efa944b`, `b94da3f`; captures ci-dessous. | Réponses entièrement fictives ; aucun backend ni espace de restaurant n’est lu. CUA natif et lecteur d’écran réel toujours non vérifiés. |
 | I1 — statuts des sources | Prouvé localement | Non activé (aucun adaptateur/fournisseur configuré) | `GET /workspace/sources` authentifié renvoie les cinq types en `not_connected` et `lastSuccessAt: null`; deux sessions isolées, tentative de `restaurantId` client ignorée, session absente refusée. Page Connexions avec état de chargement/erreur, replis CSV/saisie/Achats, sans appel fournisseur ni fausse synchronisation. Commit `095d547`. | La page et son parcours clavier/mobile restent non rendus ; aucun POS, OCR, géocodage, météo ou événements connecté. |
 | I2 — POS générique | Prouvé localement sur fixture | Non activé (aucun fournisseur/droit pilote) | `PosAdapter` validé à sa frontière, fenêtre max 31 jours, curseur tenant/fournisseur lié à la fenêtre partielle, lots/contributions idempotents et événementiels ; mapping POS → article seulement à la revue, remboursement sans quantité négative, source fixture `demo_simulation` conservée. Jour POS reste partiel jusqu'à confirmation explicite ; routes ne connectent rien et Connexions reste `not_connected`. Commit `acd7702`. | PostgreSQL tmpfs jetable, sans volume ; 17 migrations fraîches, intégration 21 fichiers/31 tests, unitaires 19 fichiers/88 tests + 30 Node/CSS, lint, builds web/API, Prisma et diff-check. Aucun adaptateur réel ; rendu de la revue non observé (CUA sans navigateur). |
 | I3 — Ticket Z candidat | Prouvé localement (transcription manuelle, sans OCR) | Non activé (aucun OCR/fournisseur configuré) | Upload PDF/JPEG/PNG borné à 4 Mio ; signature, dimensions d'image et métadonnées validées. Les octets ne sont pas persistés ni envoyés ; hash et transcription le sont. Une contribution attend revue, exige un article et ne devient vente qu'après décision ; ligne sans détail = aucune vente. Test API couvre auth/deux tenants, hash/rejeu, date ISO/FR, signatures/limites, suppression brouillon, conflits CSV/POS, projection KPI et absence de pièce brute. | PostgreSQL 16 tmpfs jetable sans volume : migration fraîche 18/18 ; intégration 22 fichiers/32 tests (un premier run frais a eu une coupure `socket hang up` dans le test CSV existant, non reproduite au run complet suivant) ; `npm test` 20 Vitest/90 + 30 Node/CSS ; lint, builds web/API, Prisma et diff-check. Aucun OCR réel ; nombre de pages PDF/décodage complet non contrôlés. Hash/transcription conservés jusqu'à suppression tenant, sans TTL ; rendu/responsive/clavier non prouvés (CUA sans navigateur contrôlable). |
@@ -661,3 +668,31 @@ toujours pas d’atteindre la fenêtre visible côté utilisateur ; aucun lecteu
 d’écran réel n’a été utilisé. Cette tranche réduit la charge de la première
 vue, mais ne prouve pas le parcours C3 complet ni les périodes au-delà du plafond
 API ; Q2 et le Goal restent ouverts.
+
+### Q2 — états hors nominaux de l’Histoire (2026-09-25)
+
+Le composant React `Timeline` a été monté dans un petit harnais Vite temporaire
+qui interceptait uniquement `/api/workspace/timeline` : premier GET retardé de
+450 ms puis 503 synthétique, reprise clavier suivie de 21 événements fictifs
+avec `count: 5000` et `truncated: true`. Chrome headless a montré le statut de
+chargement, l’alerte et son bouton. Tab atteint « Réessayer » et Entrée relance
+la lecture ; la réussite rend le focus au titre, expose l’avertissement de
+troncature, les 20 cartes initiales et le bouton du lot restant. La saisie
+clavier `AUCUN-MATCH` annonce le zéro résultat et garde l’action « Effacer ».
+
+L’AXTree exposait auparavant `role=alert` avec `aria-live="polite"`. Le composant
+utilise maintenant `assertive` pour l’erreur et garde `polite` pour les statuts
+ordinaires (`b94da3f`). À 360 px, `scrollWidth` vaut 360 px ; captures inspectées :
+[chargement](evidence/q2-history-states/timeline-loading.png),
+[erreur 503](evidence/q2-history-states/timeline-error.png),
+[troncature](evidence/q2-history-states/timeline-truncated.png),
+[aucun résultat](evidence/q2-history-states/timeline-no-results.png),
+[mobile](evidence/q2-history-states/timeline-mobile.png).
+
+`npm run lint`, `npm run build`, `npm test -- --run` (27 fichiers/110 tests
+Vitest + 33 contrôles Node/CSS) et `git diff --check` passent. Le mock n’a fait
+appel ni au backend ni à PostgreSQL ; serveur Vite, Chrome headless et fichiers
+temporaires ont été arrêtés/supprimés. CUA voit toujours `browsers: []` et
+`getApp("Google Chrome")` échoue `cgWindowNotFound`, même si `/login` est visible
+côté utilisateur ; pas de revue dans la fenêtre native ni de lecteur d’écran.
+Q2 et le Goal restent ouverts.
