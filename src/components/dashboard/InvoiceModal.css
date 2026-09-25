@@ -27,6 +27,27 @@
   gap: var(--spacing-sm);
 }
 
+.source-invoice-conflict {
+  border-inline-start: var(--size-3) solid var(--color-moderate);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-soft);
+  color: var(--color-text-primary);
+  padding: var(--spacing-md);
+}
+
+.source-invoice-conflict p {
+  margin: var(--number-0);
+}
+
+.source-invoice-conflict p + p {
+  margin-top: var(--spacing-xs);
+}
+
+.source-invoice-conflict strong {
+  color: var(--color-moderate-text);
+  font-weight: var(--font-weight-semibold);
+}
+
 .source-invoice-archive details {
   border: var(--size-1) solid var(--color-border);
   border-radius: var(--radius-md);

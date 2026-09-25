@@ -185,8 +185,8 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
       {extractionMode === "demo_fixture" && " L’essai utilise uniquement une pièce PDF publique et fictive; l’original reste dans le navigateur et n’est pas conservé par l’API."}</p>
     {fixturePreviewUrl && <p><a href={fixturePreviewUrl} target="_blank" rel="noreferrer">Consulter l’original fictif (PDF)</a></p>}
     {error && <p role="alert">{error}</p>}
-    {sourceConflict && <div role="alert">
-      <p>La pièce source a changé depuis la création du brouillon.</p>
+    {sourceConflict && <div className="source-invoice-conflict" role="alert">
+      <p><strong>La pièce source a changé depuis la création du brouillon.</strong></p>
       <p>Le brouillon sauvegardé reste intact et aucune réception n’a été créée. La pièce actuelle est rechargée ci-dessous ; ce brouillon ne peut pas être repris tant que la différence n’a pas été traitée.</p>
     </div>}
     {currentArchiveError && <div role="alert"><p>Archive des pièces indisponible : {currentArchiveError}</p>
