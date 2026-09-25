@@ -4,6 +4,7 @@ import Button from "../components/common/Button";
 import ExportReportModal from "../components/analytics/ExportReportModal";
 import SalesMetrics from "../components/sales/SalesMetrics";
 import ImpactSummary from "../components/analytics/ImpactSummary";
+import EstimatedOutflows from "../components/analytics/EstimatedOutflows";
 import { formatLocalISODate } from "../utils/date";
 import "./Analytics.css";
 import "./Sales.css";
@@ -26,7 +27,8 @@ export default function Analytics() {
       <label>Au <input type="date" value={to} min={from} max={today()} onChange={(event) => setTo(event.target.value)} /></label></div>
     {!validRange ? <p role="alert">Choisissez une période valide pour consulter le bilan.</p> :
       <><SalesMetrics key={`sales:${from}:${to}`} from={from} to={to} />
-        <ImpactSummary key={`impact:${from}:${to}`} from={from} to={to} /></>}
+        <ImpactSummary key={`impact:${from}:${to}`} from={from} to={to} />
+        <EstimatedOutflows key={`estimated-outflows:${from}:${to}`} from={from} to={to} /></>}
     <p className="bilan-next"><Link to="/sales">Ajouter ou corriger des ventes</Link> · <Link to="/stocks">Vérifier les stocks</Link></p>
     <ExportReportModal key={`${from}:${to}`} isOpen={exportOpen} onClose={() => setExportOpen(false)} initialFrom={from} initialTo={to} />
   </div>;

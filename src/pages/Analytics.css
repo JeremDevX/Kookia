@@ -10,7 +10,9 @@
 .bilan-period label { display: flex; align-items: center; gap: var(--spacing-sm); font-size: var(--font-size-sm); }
 .bilan-period input { min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
 .impact-summary .sales-table { min-width: var(--size-600); }
+.estimated-outflows .sales-table { min-width: var(--size-1000); }
 .analytics-container .impact-summary .btn { min-height: var(--size-44); }
+.analytics-container .estimated-outflows .btn { min-height: var(--size-44); }
 .impact-summary .impact-monthly-table { min-width: var(--size-1000); }
 .impact-monthly-summary { margin-block: var(--spacing-lg); }
 .impact-monthly-summary > summary { cursor: pointer; font-weight: var(--font-weight-medium); }

@@ -26,8 +26,8 @@ build web, build API et `git diff --check` passent. `verify:local-delivery` n'a
 pas pu démarrer : accès Docker refusé au socket avant création du conteneur ;
 nettoyage non vérifiable pour la même raison. CUA annonce `browsers: []` ; la
 fenêtre existante vers un autre espace n'a pas été utilisée. Aucun compte ou
-stock conservé n'a été consulté ou modifié. La génération d'estimations et la
-revue rendue restent à faire.
+stock conservé n'a été consulté ou modifié. Le calcul des sorties estimées
+est implémenté plus bas ; le rendu de cette révision reste à contrôler.
 
 **Suite Q2/Bilan :** le Bilan opérationnel ne propose plus la disclosure de
 graphiques d'exemple figés ni ne charge leur ancienne vue ; le CSS correspondant
@@ -43,6 +43,27 @@ Prisma vide, 29 fichiers/117 tests unitaires, 25 fichiers/39 tests
 d'intégration et sauvegarde/restauration synthétique. Le processus s'est terminé
 avec succès et a supprimé son conteneur. Aucun compte ou donnée Kookia n'a été
 utilisé ; l'absence de rendu navigateur reste inchangée.
+
+**Q2 — sorties estimées par recette (2026-09-25) :** le Bilan dispose maintenant
+d'un endpoint GET et d'un panneau séparés des mesures observées. Le calcul lit
+uniquement les réceptions positives avec `simulated=false` et provenance
+`recorded`, puis associe la version de recette datée la plus récente à la date
+de livraison, avec correspondance exacte produit/unité. Il expose rendement,
+quantités de vente/perte estimées selon l'hypothèse initiale 90/10 et ingrédients
+non contrôlés ; les recettes concurrentes sont des alternatives non additives.
+L'endpoint ne crée aucune vente, perte ou mouvement. Un test demande une période
+de cinq ans et vérifie l'isolation restaurant, l'exclusion d'une réception
+simulée et l'absence d'écritures ventes/stock. Validation complète réussie :
+lint, build web/API, 18/18 migrations, parité Prisma, 30 fichiers/119 tests
+unitaires, 26 fichiers/40 tests d'intégration, sauvegarde/restauration
+syntétique (recette exécutée une fois sans échec avant le dernier affichage
+dynamique du même ratio). Sur les exécutions finales, lint/build/tests unitaires
+et le test de cette nouvelle route passent ; des tests d'intégration
+préexistants échouent ponctuellement ailleurs (`socket hang up` ou `401`) sans
+échec du test de sorties estimées. Le PostgreSQL tmpfs a été supprimé après
+chaque exécution. CUA annonce toujours
+`browsers: []` et `getApp("Google Chrome")` échoue (`cgWindowNotFound`) ; le
+rendu responsive du Bilan modifié reste à contrôler dans un navigateur.
 
 Audit Prisma/SQL hors D5 : un PostgreSQL 16 neuf sur tmpfs a appliqué 18/18
 migrations, puis un diff direct vers `prisma/schema.prisma` a révélé cinq

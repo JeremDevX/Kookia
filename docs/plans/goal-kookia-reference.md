@@ -101,6 +101,18 @@ uniquement à vérifier le comportement technique en environnement isolé ; elle
 ne sont jamais injectées dans le compte Kookia ni décrites comme activité
 enregistrée du restaurant.
 
+Le premier calcul opérationnel est en lecture seule : seules les lignes de
+réception positives, non simulées et de provenance enregistrée constituent ses
+entrées ; une pièce d'achat seule ne suffit pas. À la date de livraison, il
+retient la dernière version de recette datée et effective qui contient le même
+produit dans la même unité. Il expose la quantité reçue, le rendement possible
+et une hypothèse initiale explicite de 90 % d'utilisation en ventes estimées et
+10 % en pertes estimées. Ce ratio est une hypothèse de développement à valider,
+pas une mesure du restaurant. Les autres ingrédients ne sont pas réputés
+disponibles ; plusieurs recettes compatibles pour la même réception sont des
+alternatives, jamais des quantités à additionner. Aucun résultat ne crée une
+vente, une perte, une production, un mouvement, ni n'alimente un KPI mesuré.
+
 Les dates effectiveAt, knownAt et recordedAt restent distinctes. Une vue
 « Connu au » ne révèle aucune donnée connue après cette date. Les trous de
 couverture demeurent visibles et expliquent pourquoi une chaîne métier ou un
