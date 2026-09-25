@@ -51,15 +51,38 @@ uniquement les réceptions positives avec `simulated=false` et provenance
 de livraison, avec correspondance exacte produit/unité. Il expose rendement,
 quantités de vente/perte estimées selon l'hypothèse initiale 90/10 et ingrédients
 non contrôlés ; les recettes concurrentes sont des alternatives non additives.
-L'endpoint ne crée aucune vente, perte ou mouvement. Un test demande une période
-de cinq ans et vérifie l'isolation restaurant, l'exclusion d'une réception
-simulée et l'absence d'écritures ventes/stock. Avant l'extension récente du
+L'endpoint ne crée aucune vente, perte ou mouvement. Le test utilise la plage
+2022–2026 uniquement comme fenêtre de requête ; les dates 2021 et 2027 sont
+estimables dans leurs périodes propres, sans borne d'historique produit. Il
+vérifie aussi l'isolation restaurant, l'exclusion d'une réception simulée et
+l'absence d'écritures ventes/stock. Avant l'extension récente du
 parcours O2, une exécution complète R0 a réussi : lint, build web/API, 18/18
 migrations, parité Prisma, 30 fichiers/119 tests unitaires, 26 fichiers/40
 tests d'intégration, sauvegarde/restauration synthétique. Les tests
 d'intégration préexistants ont aussi échoué ponctuellement ailleurs (`socket
 hang up` ou `401`) sur d'autres exécutions. Le PostgreSQL tmpfs a été supprimé
 après chaque exécution.
+
+**Couverture des entrées sans recette compatible (2026-09-25) :** le contrat
+retourne maintenant séparément `unestimatedReceipts` lorsqu'une réception
+enregistrée n'a aucune version de recette datée compatible produit/unité à sa
+date ; le Bilan affiche l'entrée, explique qu'aucune sortie n'est imputée et
+propose d'ouvrir Recettes. L'intégration couvre quatre sorties estimées et une
+entrée non couverte, sans vente, mouvement, production ni variation de stock ;
+le test de politique couvre aussi recette future et unité incompatible. Test
+ciblé unitaire 3/3, test API 1/1 dans deux R0, 120 Vitest + 33 Node/CSS,
+lint/build web/API et migrations/parité Prisma passent. Les deux R0 complets
+restent rouges sur des intégrations préexistantes variables : premier 38/40
+(401 dans `purchaseSuggestions`, socket coupée dans `sourceInvoiceWorkflow`),
+puis 39/40 (401 dans `scenarioFixture`), sans échec du test concerné ; aucune
+cause commune n'est établie et les conteneurs tmpfs sont supprimés.
+Chrome headless/CDP rend le bloc et son lien à 320/768/1280 px sans
+débordement ; Tab atteint la région puis le lien avec focus visible, et AX
+expose titre/lien. Captures : [320](evidence/q2-estimated-outflows/estimated-outflows-unmatched-320.png),
+[320 — détail et focus](evidence/q2-estimated-outflows/estimated-outflows-unmatched-detail-320.png),
+[768](evidence/q2-estimated-outflows/estimated-outflows-unmatched-768.png),
+[1280](evidence/q2-estimated-outflows/estimated-outflows-unmatched-1280.png).
+CUA natif reste indisponible ; aucun compte ni corpus conservé n'a été utilisé.
 
 **QA rendu/clavier Q2 (2026-09-25) :** Chrome headless isolé, compte de fixtures
 et réponse estimative interceptée en mémoire ; aucune donnée persistante Kookia
@@ -528,6 +551,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-25 | O2 — sorties estimées depuis réceptions partielles | `d56fa89` | `purchaseSuggestions.integration.test.ts` vérifie les reçus de 2 puis 1 kg, la recette compatible et les estimations 90/10 distinctes ; ventes/mouvements restent inchangés et le reçu simulé n'est pas estimé. `restaurantSimulationPlan.test.ts` vérifie la couverture de chaque mois et des jours de service 2023–2026. | Intégration O2 ciblée 1/1 sur PostgreSQL tmpfs ; tests purs 2/2 ; lint, builds web/API, npm test (119 + 33) passent. Le R0 antérieur a échoué à 37/40 ; le suivant a passé 40/40 et restauré la base synthétique. | Poursuivre les parcours Q2 encore ouverts ; garder visible que les montants sont estimés et non observés. |
 | 2026-09-25 | Sorties estimées — recette multi-ingrédients | `4b84685`, `6a403dc` | `ingredientOutflowEstimate.integration.test.ts` relie farine, tomates, mozzarella et huile reçues séparément à Pizza Margherita datée ; quatre attentes numériques fixes vérifient portions et quantités estimées. Une réception simulée est exclue ; les reçus du 31/12/2021 et du 01/01/2027 sont estimables dans leur propre fenêtre et exclus de la requête 2022–2026, qui est une borne de test, pas une limite produit. Isolation par compte vérifiée ; ventes, mouvements, productions et niveaux de stock restent inchangés. | Dernier R0 vert sur PostgreSQL 16 tmpfs : lint, builds web/API, migrations 18/18, diff Prisma vide, 119 Vitest + 33 Node/CSS, 26 fichiers/40 intégrations et sauvegarde/restauration ; suppression auto du conteneur. | Continuer les parcours C3/Q2 encore ouverts ; conserver les estimations à part des opérations enregistrées. |
 | 2026-09-25 | Q2 — explication des estimations recouvrantes | `6a403dc` | Le panneau du Bilan précise que les portions estimées séparément par ingrédient peuvent se recouvrir pour une même recette, ne s'additionnent pas, et ne vérifient pas les autres ingrédients ni le stock déjà présent. | `npm run lint`, `npm run build`, `git diff --check` passent. La revue CUA native reste indisponible (`browsers: []`, `cgWindowNotFound`) ; le texte ne change pas le calcul. | Poursuivre les parcours Q2 encore ouverts et rejouer le panneau dans un navigateur contrôlable s'il devient disponible. |
+| 2026-09-25 | Q2 — couverture des réceptions sans recette | `776edb8` | L'API expose les réceptions enregistrées sans recette datée compatible séparément des estimations ; le Bilan les liste et relie à Recettes sans leur imputer de sortie. | Politique 3/3 ; API ciblée 1/1 dans deux R0 ; npm test 120 Vitest + 33 Node/CSS ; lint, builds web/API, migrations/parité. Deux R0 complets échouent ailleurs (38/40 puis 39/40, erreurs 401/socket variables). Chrome headless : 320/768/1280 sans débordement ; Tab, focus visible, AX. Captures [320](evidence/q2-estimated-outflows/estimated-outflows-unmatched-320.png), [détail 320](evidence/q2-estimated-outflows/estimated-outflows-unmatched-detail-320.png), [768](evidence/q2-estimated-outflows/estimated-outflows-unmatched-768.png), [1280](evidence/q2-estimated-outflows/estimated-outflows-unmatched-1280.png). | Identifier séparément les échecs intermittents Q1/R0 sans désactiver les assertions ; poursuivre C3/Q2. |
 
 ### Q2 — Réconciliation mensuelle du Bilan (2026-09-25)
 
