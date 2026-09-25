@@ -103,7 +103,57 @@ it("links a source draft once, preserves corrections, and receives exactly one s
   });
   await prisma.workspaceDocument.update({ where: { restaurantId_kind: { restaurantId: owner.restaurantId, kind: storedSource.kind } },
     data: { data: { ...(storedSource.data as Prisma.InputJsonObject), contentHash: "b".repeat(64) }, revision: { increment: 1 } } });
-  await owner.agent.post(`/api/workspace/invoices/${pending.id}`).send(receivePayload).expect(409);
+  await owner.agent.post(`/api/workspace/invoices/from-source/${source.id}`).send({}).expect(409)
+    .expect(({ body }) => expect(body.error.code).toBe("SOURCE_CHANGED"));
+  await owner.agent.post(`/api/workspace/invoices/${pending.id}`).send(receivePayload).expect(409)
+    .expect(({ body }) => expect(body.error.code).toBe("SOURCE_CHANGED"));
+  expect(await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId, sourceDocumentId: source.id } })).toBe(1);
+  expect((await owner.agent.get("/api/workspace/catalog").expect(200)).body.products
+    .find((item: { id: string }) => item.id === product.id).currentStock).toBe(product.currentStock + 5.5);
+});
+
+it("rejects stale source lines and snapshots without changing a reviewed draft or stock", async () => {
+  const owner = await account("source-stale");
+  const source = sourceDocument();
+  await storeSource(owner.restaurantId, source);
+  const pending = (await owner.agent.post(`/api/workspace/invoices/from-source/${source.id}`).send({}).expect(200)).body;
+  const draft = { reference: `${pending.reference} corrigée`, date: pending.date, sourceTypeConfirmed: false,
+    sourceDateConfirmed: false, lines: pending.lines };
+  const saved = await owner.agent.post(`/api/workspace/invoices/${pending.id}`).send({ draft, revision: pending.revision, receive: false }).expect(200);
+  expect(saved.body.revision).toBe(2);
+
+  const invalidLineDraft = { ...draft, lines: draft.lines.map((line: { sourceLineNumber: number }) => ({
+    ...line, sourceLineNumber: line.sourceLineNumber + 1,
+  })) };
+  await owner.agent.post(`/api/workspace/invoices/${pending.id}`).send({ draft: invalidLineDraft, revision: saved.body.revision, receive: false })
+    .expect(409).expect(({ body }) => expect(body.error.code).toBe("SOURCE_LINE_CHANGED"));
+
+  const invoiceKind = `invoice:source:${source.id}`;
+  const storedInvoice = await prisma.workspaceDocument.findUniqueOrThrow({
+    where: { restaurantId_kind: { restaurantId: owner.restaurantId, kind: invoiceKind } },
+  });
+  expect(storedInvoice.revision).toBe(2);
+  expect((storedInvoice.data as { reference: string }).reference).toBe(draft.reference);
+  expect((storedInvoice.data as { lines: Array<{ sourceLineNumber: number }> }).lines[0].sourceLineNumber)
+    .toBe(source.stockLines[0].sourceLineNumber);
+
+  const storedSource = await prisma.workspaceDocument.findUniqueOrThrow({
+    where: { restaurantId_kind: { restaurantId: owner.restaurantId, kind: `source-invoice:${source.id}` } },
+  });
+  await prisma.workspaceDocument.update({ where: { restaurantId_kind: { restaurantId: owner.restaurantId, kind: storedSource.kind } },
+    data: { data: { ...(storedSource.data as Prisma.InputJsonObject), contentHash: "c".repeat(64) }, revision: { increment: 1 } } });
+  await owner.agent.post(`/api/workspace/invoices/from-source/${source.id}`).send({}).expect(409)
+    .expect(({ body }) => expect(body.error.code).toBe("SOURCE_CHANGED"));
+  await owner.agent.post(`/api/workspace/invoices/${pending.id}`).send({ draft, revision: saved.body.revision, receive: false }).expect(409)
+    .expect(({ body }) => expect(body.error.code).toBe("SOURCE_CHANGED"));
+
+  const afterSourceConflict = await prisma.workspaceDocument.findUniqueOrThrow({
+    where: { restaurantId_kind: { restaurantId: owner.restaurantId, kind: invoiceKind } },
+  });
+  expect(afterSourceConflict.revision).toBe(2);
+  expect((await prisma.invoiceDraftRevision.findMany({ where: { restaurantId: owner.restaurantId, invoiceDocumentId: pending.id } }))
+    .map((item) => item.revision).sort()).toEqual([1, 2]);
+  expect(await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId, sourceDocumentId: source.id } })).toBe(0);
 });
 
 it("blocks simulated duplicates, partial/unreviewed sources and non-invoice types without partial stock changes", async () => {
