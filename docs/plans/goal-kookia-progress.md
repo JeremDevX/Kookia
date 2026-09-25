@@ -118,6 +118,21 @@ bac tmpfs `127.0.0.1:56819`. Dans l’environnement de revue, CUA retourne encor
 reste donc à faire. Le port 52790 déjà identifié comme non isolé n’a pas été
 consulté.
 
+Reprise Q2 — connexion (2026-09-25) : un runner `demo:local` tmpfs neuf a servi
+`/login` sur `127.0.0.1:59889`, puis son conteneur, ses ports et ses identifiants
+temporaires ont été supprimés ; les anciens runners sont restés intacts. Chrome
+154 headless/CDP, après le splash, a rendu 320×750, 390×844, 768×900, 1280×900
+et 1440×1000 sans débordement horizontal ni contrôle hors viewport. À 320 px,
+« Créer un compte » se coupait en deux ; `.auth-footer a { white-space: nowrap; }`
+conserve maintenant le libellé entier sans réduire la carte. L’AXTree expose le
+titre « Connexion », les champs « Email »/« Mot de passe », le bouton « Se
+connecter » et le lien « Créer un compte ». Tab atteint ces quatre contrôles
+dans cet ordre avec un contour visible de 3 px. Captures du seul écran de
+connexion : [320 px](evidence/q2-login/login-320.png) et
+[1440 px](evidence/q2-login/login-1440.png). CUA reste inaccessible (`browsers:
+[]`, `cgWindowNotFound`, IAB indisponible) ; zoom natif 200 % et lecteur d’écran
+réel ne sont pas vérifiés sur cet écran.
+
 C2/C3, I1–I4, F1, M2–M3, O1 et R0 sont prouvés localement ; l'extraction de
 facture reste limitée à la fixture PDF publique en `demo:local`, sans OCR
 général ni fournisseur. L'original peut être ouvert depuis Achats ; comparaison
@@ -384,6 +399,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-25 | Audit schéma/migrations | `53ff478`, `adf5efe` | PostgreSQL 16 tmpfs neuf, migrations 18/18, puis `prisma migrate diff --from-url <base-jetable> --to-schema-datamodel prisma/schema.prisma --exit-code` et `prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url <shadow-tmpfs> --exit-code` : ajout des index déjà créés par les migrations (`StockMovement`/`SaleContribution`), mappage de trois noms tronqués et verrou fournisseur PostgreSQL. Les deux comparaisons finales sont vides. `npx prisma validate`, `npm run build:api`, `git diff --check`. | Aucun SQL de migration modifié ; les bases jetables ont été supprimées. | Reprendre le premier manque local non bloqué dans la matrice. |
 | 2026-09-25 | R0 — parité Prisma intégrée à la recette | `0baebe6` | `npm run verify:local-delivery` : lint (37 CSS), builds web/API, migrations fraîches 18/18, diff Prisma/base (`No difference detected`), `npm test` (33 Node/CSS + 29 fichiers/119 Vitest), intégration PostgreSQL (26 fichiers/39 tests), dump/restauration synthétique et `migrate status` à jour. | PostgreSQL 16 loopback/tmpfs sans volume ; conteneur supprimé. Aucun compte, corpus ou service conservé utilisé. | Continuer Q2 rendu/clavier et garder natif/200 %/technologie d’assistance non revendiqués tant que la fenêtre CUA manque. |
 | 2026-09-25 | Q1b/C3 — runner UI sans corpus | `bd8d60f`, `5435eb5` | `npm run demo:fixtures` amorce les seules fixtures synthétiques dans le PostgreSQL tmpfs ; `demo:local` reste inchangé. Un compte, 437 pièces/sources, 946 journées et 5 026 ventes simulées. Frontend React + API réels rendus dans Chrome headless/CDP à 390×844 : en juin 2023/24/25/26, 1 366/1 347/1 305/1 329 événements, 20 cartes initiales et source/production étiquetées ; largeur document = viewport. Bilan : 45 mois, aucune donnée enregistrée, 100 431 unités simulées, 5 026 ventes simulées exclues ; table interne 1 000 px dans une région de 293 px, sans débordement de page. | Captures inspectées : [2023](evidence/c3-fixture-ui/history-2023-390.png), [2024](evidence/c3-fixture-ui/history-2024-390.png), [2025](evidence/c3-fixture-ui/history-2025-390.png), [2026](evidence/c3-fixture-ui/history-2026-390.png), [Bilan — mai 2023](evidence/c3-fixture-ui/impact-may-2023-390.png). Lint, build web, 29 fichiers/119 tests Vitest + 33 contrôles Node/CSS, diff-check passent. Conteneur, ports, profil Chrome et mot de passe temporaire supprimés ; aucun autre bac touché. | Aucune transcription locale lue. CUA `browsers: []`/`cgWindowNotFound` persiste ; captures headless, non Chrome natif/lecteur d’écran. Parcours métier intégré en lecture seule ; les mutations restent couvertes par les tests API et preuves clavier distinctes. | Continuer uniquement les parcours UI encore manquants ; garder l’écran natif/technologie d’assistance comme limites ouvertes. |
+| 2026-09-25 | Q2 — connexion responsive et clavier | `a5ee418`, `17aadfd` | Sur `/login`, le pied de formulaire coupait le lien à 320 px → lien maintenu entier ; le test narratif C3 aligne maintenant chaque ligne source 2024–26 sur son mouvement simulé lié, sans ligne/mouvement 2023. | Chrome 154 headless/CDP après splash : 320/390/768/1280/1440 px, document/body sans débordement, contrôles dans le viewport ; AX noms/roles corrects ; Tab Email → Mot de passe → Se connecter → Créer un compte, contour visible 3 px. Captures : [320](evidence/q2-login/login-320.png), [1440](evidence/q2-login/login-1440.png). `npm run lint` et `npm run verify:local-delivery` passent (18 migrations, diff Prisma vide, 33 Node/CSS, 119 tests, 26 fichiers/40 intégrations, dump/restore) ; `demoStory` passe. | Connexion seulement ; aucun essai d’identifiants ni mutation. CUA natif/IAB indisponibles ; pas de zoom natif à 200 % ni lecteur d’écran réel sur `/login`. Conteneurs et identifiants de cette passe tmpfs supprimés ; aucun autre runner touché. | Poursuivre les états Q2 hors nominaux et les parcours encore absents ; réserver le rendu natif/AT aux fenêtres effectivement contrôlables. |
 
 ### Q2 — Réconciliation mensuelle du Bilan (2026-09-25)
 
@@ -1694,3 +1710,7 @@ Les deux erreurs isolées précédemment notées (`socket hang up`, puis 404) ne
 reproduisent pas ; aucune correction de code n’était justifiée par cette passe.
 Le conteneur exact a été supprimé (inspect : objet absent) et aucun conteneur
 avec le label de la recette ne reste. La CI GitHub n’a pas été déclenchée.
+
+Nouvelle passe après `17aadfd` (fixture narrative C3 cohérente) et `a5ee418`
+(lien d'inscription mobile) : la même recette tmpfs repasse, avec `demoStory`
+et les 40 intégrations au vert ; le conteneur exact est absent après nettoyage.
