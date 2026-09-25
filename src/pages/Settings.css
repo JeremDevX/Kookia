@@ -141,21 +141,20 @@
   }
 
   .settings-nav {
-    flex-direction: row;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(var(--number-4), var(--unit-1fr));
     gap: var(--spacing-xs);
   }
 
   .nav-tab {
-    flex: var(--number-1);
-    min-width: fit-content;
+    min-width: var(--number-0);
     padding: var(--spacing-sm);
-    justify-content: center;
+    justify-content: flex-start;
     font-size: var(--font-size-sm);
   }
 
   .nav-tab span {
-    display: none;
+    display: inline;
   }
 
   .nav-tab svg {
@@ -181,6 +180,10 @@
   .settings-container {
     padding: var(--spacing-sm);
     gap: var(--spacing-sm);
+  }
+
+  .settings-nav {
+    grid-template-columns: repeat(var(--number-2), var(--unit-1fr));
   }
 
   .nav-tab {
