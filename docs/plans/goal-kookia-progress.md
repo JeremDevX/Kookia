@@ -1647,3 +1647,37 @@ débordement du document. Capture :
 [Histoire avec fil d’Ariane corrigé](evidence/q2-c3-chapters/history-breadcrumb-390.png).
 Le contrôle est visuel automatisé ; CUA natif et lecteur d’écran ne sont pas
 disponibles dans cette session.
+
+### C3 — source d’archive Histoire → Achats, responsive/clavier (2026-09-25)
+
+Sur un nouveau bac `demo:fixtures` (PostgreSQL tmpfs), quatre fenêtres ont été
+rendues à 390×900 avec « Connu au » au 25/09/2026 : 02–31/05/2023,
+01–31/01/2024, 01–30/06/2025 et 01–25/09/2026. L’API des pièces fournit,
+pour ces fenêtres, respectivement 3, 15, 30 et 29 factures de type `invoice`,
+dont 0, 5, 10 et 14 avec lignes transcrites. Les pièces retenues sont datées
+du 05/05/2023 (aucune ligne), du 30/01/2024, du 29/06/2025 et du 22/09/2026.
+Les trois dernières ont chacune une ligne et un mouvement source de simulation
+déjà lié ; elles affichent « déjà crédité par simulation », tout en indiquant
+qu’aucun brouillon ni réception n’est lié. L’archive et Histoire qualifient
+explicitement une transcription comme source, pas comme preuve de livraison.
+
+À 390 px, les quatre pages Histoire et leurs détails Achats gardent le
+`scrollWidth` du document et du body à 390 px. Depuis la recherche, trois Tab
+atteignent le lien source avec `:focus-visible`; Entrée ouvre la pièce dans
+Achats. Le retour navigateur par raccourci n’a pas pu être vérifié : les
+événements Meta+← et Alt+← envoyés à Chrome headless ne restaurent pas la page,
+et CUA ne fournit toujours aucun navigateur contrôlable. Aucune pièce n’a été
+ouverte en brouillon et aucune mutation métier n’a été faite.
+
+Captures inspectées : Histoire [2023-05](evidence/q2-c3-chapters/source-2023-05-history-390.png),
+[2024-01](evidence/q2-c3-chapters/source-2024-01-history-390.png),
+[2025-06](evidence/q2-c3-chapters/source-2025-06-history-390.png),
+[2026-09](evidence/q2-c3-chapters/source-2026-09-history-390.png) ; détail
+Achats [2023-05](evidence/q2-c3-chapters/source-2023-05-piece-390.png),
+[2024-01](evidence/q2-c3-chapters/source-2024-01-piece-390.png),
+[2025-06](evidence/q2-c3-chapters/source-2025-06-piece-390.png),
+[2026-09](evidence/q2-c3-chapters/source-2026-09-piece-390.png). Cette trace
+partielle utilise le seed `demo:fixtures`, pas la fixture narrative dédiée de
+`demoStory.integration.test.ts` ; elle ne démontre pas encore correction,
+recette/production, service, impact et rejeu dans une chaîne C3 unique. Chrome
+natif/CUA, lecteur d’écran et zoom natif à 200 % restent hors vérification.
