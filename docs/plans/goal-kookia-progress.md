@@ -223,9 +223,9 @@ composant réel a été rendu avec un GET synthétique, puis inspecté au clavie
 maintenant prouvés à 320 px ci-dessous. Le premier aller-retour Histoire → objet
 lié → Histoire et l'accès au bac de rejeu gardent maintenant la période et les
 recherches, preuve synthétique ci-dessous. **Prochaine action démontrable :**
-terminer le parcours visuel C3 sur une fixture synthétique isolée, depuis une
-opération datée jusqu’à sa conséquence métier et son retour au bilan, sans lire
-ni importer le corpus conservé. Puis reprendre les portes Q2 de zoom natif et
+rendre un second épisode C3 sur fixture synthétique, en couvrant le cas 2023
+sans réception source puis un épisode recette/service daté, et traverser ces
+transitions sans lire ni importer le corpus conservé. Puis reprendre les portes Q2 de zoom natif et
 technologie d’assistance si CUA redevient contrôlable ; le lecteur d’écran réel
 demeure indisponible. Le corpus de pièces conservé n’a pas été lu pour cette
 reprise.
@@ -771,6 +771,34 @@ minimal, pas une revue du vrai écran Factures. Captures inspectées :
 [retour avec brouillon conservé](evidence/q2-history-return/timeline-return-search-320.png).
 Correctif commité localement dans e828b82 ; aucun push.
 
+### Q2/C3 — événement de réception vers Achats et retour aux filtres (2026-09-25)
+
+Les vrais composants Timeline et Orders ont été rendus dans un harnais Vite
+temporaire avec un routeur HashRouter, un événement de réception du 12/06/2026
+et une pièce source C3 entièrement fictifs. La query Histoire distingue le
+filtre appliqué « Tomates » du brouillon non soumis « Tomates en cours ». Tab
+atteint le lien de réception ; Entrée ouvre l’écran Achats réel sur la section
+Factures de la pièce liée. Achats montre la réception de démonstration, un
+mouvement de source existant et le refus d’un second crédit. Tous les GET
+nécessaires (Histoire, panier, catalogue, propositions, commandes, archive,
+détail source et mode de lecture) ont été servis par le mock ; aucun POST,
+backend, base ni corpus conservé n’a été atteint.
+
+Les raccourcis Alt+← et Meta+[ ne déclenchent pas l’historique navigateur dans
+ce Chrome headless ; le retour a donc utilisé l’entrée précédente via CDP.
+Histoire revient avec from=2026-06-01, to=2026-06-30,
+asOf=2026-06-20, le filtre appliqué et le brouillon distinct restaurés.
+scrollWidth égale clientWidth à 320, 768 et 1280 px (le viewport headless
+réserve 15 px à la barre de défilement). Captures inspectées :
+[Histoire 320](evidence/q2-history-object-return/history-320.png),
+[Achats et pièce liée 320](evidence/q2-history-object-return/orders-source-320.png),
+[Achats 768](evidence/q2-history-object-return/orders-source-768.png),
+[Achats 1280](evidence/q2-history-object-return/orders-source-1280.png),
+[retour Histoire 320](evidence/q2-history-object-return/history-return-320.png).
+La destination utilise le composant Orders sans Layout/sidebar et la quantité
+de mouvement affichée vient du fixture ; ce n’est pas une preuve d’écriture
+PostgreSQL ni de stock réel. CUA natif et lecteur d’écran restent indisponibles.
+
 ### Q2 — erreur et conflit dans la modale facture (2026-09-25)
 
 `Modal` et `InvoiceModal` ont été montés dans Chrome headless avec uniquement
@@ -856,7 +884,8 @@ perdait le focus. SourceInvoiceArchive garde maintenant l’archive déjà charg
 montée pendant son actualisation ; l’action reste focalisable, signale l’attente
 avec aria-disabled/aria-busy et ignore les activations concurrentes.
 Échap rend désormais le focus au bouton source, avant comme après sauvegarde et
-rafraîchissement. Tab atteint l’action, Entrée ouvre/sauvegarde/reprend/reçoit,
+rafraîchissement. Correction committée localement dans 04a4551 ; aucun push.
+Tab atteint l’action, Entrée ouvre/sauvegarde/reprend/reçoit,
 Espace confirme les deux champs de revue, et Échap ferme. La sélection de la
 pièce et les corrections de champs ont utilisé les setters DOM natifs suivis
 d’événements React input/change, car CDP n’a pas piloté ces contrôles natifs
