@@ -122,6 +122,11 @@ async function main() {
     }
     console.log("\n==> Migrations fraîches");
     await run("npm", ["run", "db:migrate"], { env: testEnv });
+    console.log("\n==> Parité schéma Prisma/migrations");
+    await run("npm", ["exec", "--", "prisma", "migrate", "diff",
+      "--from-url", databaseUrl,
+      "--to-schema-datamodel", "prisma/schema.prisma",
+      "--exit-code"], { env: testEnv });
     console.log("\n==> npm test");
     await run("npm", ["test"], { env: testEnv });
     console.log("\n==> npm run test:integration");

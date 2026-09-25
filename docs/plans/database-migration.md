@@ -143,14 +143,34 @@ l'index `SaleContribution(restaurantId, ticketBatchId)` lui aussi absent,
 ainsi que trois noms physiques tronqués (deux contraintes uniques
 `PurchaseReceipt` et un index
 `SaleItemRecipeMapping`). Les annotations/index Prisma ont été alignés sur le
-DDL existant, sans modifier de migration ; `prisma migrate diff --from-url
-<base-jetable> --to-schema-datamodel prisma/schema.prisma --exit-code` ne détecte
-maintenant aucune différence. La base jetable a été supprimée. Suite
-API/intégration et rejeu simulation isolé consignés dans
+DDL existant, sans modifier de migration. Le diff depuis une base tmpfs où les
+18 migrations ont été appliquées et celui depuis l'historique avec un shadow DB
+tmpfs distinct sont tous deux vides ; ces conteneurs ont été supprimés. Le
+dossier inclut maintenant `prisma/migrations/migration_lock.toml`
+(`provider = "postgresql"`). `verify:local-delivery` répète désormais le
+contrôle base→modèle après migrations fraîches. Suite API/intégration et rejeu
+simulation isolé consignés dans
 [`goal-kookia-progress.md`](goal-kookia-progress.md). Cette migration ne
 supprime pas d'historique ; elle ne fournit pas de migration descendante qui
 effacerait le journal. En cas de retour applicatif après de nouvelles décisions,
 restaurer une sauvegarde vérifiée plutôt que supprimer les contributions.
+
+Pour reproduire les deux diff, définir `DATABASE_URL` sur une base tmpfs fraîche
+après migrations, et `SHADOW_DATABASE_URL` sur une base vide tmpfs distincte
+(Prisma y rejoue les migrations) :
+
+```bash
+npm exec -- prisma migrate diff \
+  --from-url "$DATABASE_URL" \
+  --to-schema-datamodel prisma/schema.prisma \
+  --exit-code
+
+npm exec -- prisma migrate diff \
+  --from-migrations prisma/migrations \
+  --to-schema-datamodel prisma/schema.prisma \
+  --shadow-database-url "$SHADOW_DATABASE_URL" \
+  --exit-code
+```
 
 ### Incrément D3 — versions de recette (2026-09-24)
 

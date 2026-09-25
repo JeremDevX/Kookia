@@ -49,8 +49,9 @@ Navigateur → Vite :5173 -- /api proxy (développement seulement) → Express :
 ## Migrations et sauvegarde/restauration
 
 - `npm run db:migrate` exécute `prisma migrate deploy`. La recette R0 applique
-  toutes les migrations sur une base fraîche avant les tests. La CI suit aussi
-  cette séquence sur son service PostgreSQL propre au job.
+  toutes les migrations sur une base fraîche puis compare le schéma obtenu au
+  datamodel Prisma ; un écart arrête la recette. La CI suit aussi l'application
+  des migrations sur son service PostgreSQL propre au job.
 - `npm run test:integration` exige une base `kookia_test` sur loopback ; cette
   garde de nom/hôte évite de viser par erreur la base de développement, mais ne
   rend pas elle-même les données jetables. Pour une recette sûre et répétable,
@@ -59,8 +60,9 @@ Navigateur → Vite :5173 -- /api proxy (développement seulement) → Express :
   port éphémère uniquement sur `127.0.0.1`, monte les données PostgreSQL sur un
   tmpfs de 2 Gio et le répertoire temporaire sur un tmpfs de 512 Mio, sans volume
   Docker. Elle utilise un mot de passe généré pour cette exécution, applique les
-  migrations, lance `lint`, les builds web/API, les tests unitaires et toute
-  l'intégration, puis supprime le conteneur même en cas d'échec ou d'interruption.
+  migrations, vérifie leur parité avec Prisma, lance `lint`, les builds web/API,
+  les tests unitaires et toute l'intégration, puis supprime le conteneur même en
+  cas d'échec ou d'interruption.
 - La fin de recette crée un témoin synthétique, produit un dump PostgreSQL au
   format custom dans le tmpfs, le restaure dans une seconde base temporaire et
   vérifie le témoin et l'état des migrations. Aucun dump n'est exporté ni gardé
