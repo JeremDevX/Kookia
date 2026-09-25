@@ -3,6 +3,9 @@ import Button from "../common/Button";
 import { getSalesBaseline, type SalesBaseline as Baseline } from "../../services/salesService";
 
 const PAGE_SIZE = 50;
+const contextSourceLabel = (status: Baseline["contextualForecast"]["weather"]) =>
+  status === "not_connected" ? "sans connexion" : status === "unavailable" ? "indisponible"
+    : status === "stale" ? "périmée" : "à jour";
 
 export default function SalesBaseline() {
   const [refreshRevision, setRefreshRevision] = useState(0);
@@ -47,7 +50,7 @@ export default function SalesBaseline() {
         <p><strong>Contexte facultatif F2 :</strong> {baseline.contextualForecast.status === "not_connected" ? "aucune source contextuelle n’est connectée" :
           baseline.contextualForecast.status === "fixture_ready" ? "contexte synthétique disponible pour vérification du contrat uniquement" :
             baseline.contextualForecast.status === "stale" ? "au moins une source contextuelle ne couvre pas la période visée" : "position ou données contextuelles indisponibles"}.
-          {` Position : ${baseline.contextualForecast.position === "fixture_position" ? "fixture étiquetée" : "non confirmée"} ; météo : ${baseline.contextualForecast.weather} ; événements : ${baseline.contextualForecast.events} ; émissions historiques : ${baseline.contextualForecast.historicalEmissions}. `}
+          {` Position : ${baseline.contextualForecast.position === "fixture_position" ? "fixture étiquetée" : "non confirmée"} ; météo : ${contextSourceLabel(baseline.contextualForecast.weather)} ; événements : ${contextSourceLabel(baseline.contextualForecast.events)} ; émissions historiques : ${contextSourceLabel(baseline.contextualForecast.historicalEmissions)}. `}
           {baseline.contextualForecast.forecastSource === "f1" ? "La baseline F1 seule reste retenue." : "Aucune prévision n’est retenue faute d’entrées F1 valides."} Aucun ajustement F2 n’est appliqué et aucun gain n’est revendiqué.</p>
         {baseline.status === "no_data" ? <p>Historique insuffisant : aucune vente enregistrée dans cette fenêtre. Aucune estimation affichée.</p> :
           baseline.status === "insufficient_history" ? <p>{baseline.mixedSourceWindow ? "Sources simulées et enregistrées mélangées : les simulations sont exclues, mais le calendrier ne distingue pas la complétude par source. Aucune estimation ni erreur de backtest n’est publiée." : `Historique insuffisant : les ${baseline.requiredConsecutiveDays} jours doivent être marqués complets (ouverts ou fermés confirmés). ${baseline.incompleteDates.length} date(s) restent inconnues ou partielles. Aucune estimation affichée ; ces jours ne sont jamais convertis en zéro vente.`}</p> : <>
