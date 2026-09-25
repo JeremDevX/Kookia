@@ -19,11 +19,13 @@ async function account(name: string) {
 }
 
 async function addReceipt(tenant: Awaited<ReturnType<typeof account>>, product: { id: string; name: string; unit: string;
-  supplierId: string; pricePerUnit: number }, deliveryDate: string, simulated = false) {
+  supplierId: string; pricePerUnit: number }, deliveryDate: string,
+  options: { simulated?: boolean; receivedQuantity?: number } = {}) {
+  const { simulated = false, receivedQuantity = 10 } = options;
   const order = await prisma.purchaseOrder.create({ data: { restaurantId: tenant.restaurantId, actorId: tenant.actorId,
     operationId: randomUUID(), status: simulated ? "simulated_received" : "received",
     lines: { create: { productId: product.id, productName: product.name,
-      supplierId: product.supplierId, supplierName: "Fournisseur", quantity: 20, unit: product.unit,
+      supplierId: product.supplierId, supplierName: "Fournisseur", quantity: receivedQuantity, unit: product.unit,
       pricePerUnit: product.pricePerUnit } } }, include: { lines: true } });
   const receiptId = randomUUID();
   await prisma.purchaseReceipt.create({ data: { id: receiptId, restaurantId: tenant.restaurantId, orderId: order.id,
@@ -33,8 +35,8 @@ async function addReceipt(tenant: Awaited<ReturnType<typeof account>>, product: 
     deliveryDate: new Date(`${deliveryDate}T00:00:00.000Z`), simulated,
     provenance: simulated ? "demo_simulation" : "recorded", invoiceComplete: true, requestSnapshot: {},
     lines: { create: { orderLineId: order.lines[0].id, productId: product.id,
-      productName: product.name, invoiceLineIndex: 0, invoiceQuantity: 10, receivedQuantity: 10,
-      quantityDifference: 0, unit: product.unit, orderedQuantity: 20, orderedUnitPrice: product.pricePerUnit,
+      productName: product.name, invoiceLineIndex: 0, invoiceQuantity: receivedQuantity, receivedQuantity,
+      quantityDifference: 0, unit: product.unit, orderedQuantity: receivedQuantity, orderedUnitPrice: product.pricePerUnit,
       invoiceUnitPrice: product.pricePerUnit } } } });
 }
 
@@ -43,15 +45,27 @@ it("estimates only dated recipes from recorded in-scope receipts without creatin
   const owner = await account("Estimate owner");
   const other = await account("Estimate other");
   const ownerCatalog = (await owner.agent.get("/api/workspace/catalog").expect(200)).body;
-  const product = ownerCatalog.products.find((item: { unit: string }) => item.unit === "kg");
-  expect(product).toBeDefined();
-  await owner.agent.post("/api/workspace/recipes").send({ operationId: randomUUID(), name: "Pâtes aux tomates",
+  type CatalogProduct = { id: string; name: string; unit: string; supplierId: string; pricePerUnit: number };
+  const catalogProducts = ownerCatalog.products as CatalogProduct[];
+  const products = new Map<string, CatalogProduct>(catalogProducts.map((item) => [item.name, item]));
+  const recipeIngredients = [
+    { name: "Farine T55", quantity: 0.8, receivedQuantity: 8 },
+    { name: "Tomates", quantity: 0.4, receivedQuantity: 8 },
+    { name: "Mozzarella", quantity: 0.48, receivedQuantity: 4 },
+    { name: "Huile d'olive", quantity: 0.08, receivedQuantity: 1 },
+  ].map((ingredient) => ({ ...ingredient, product: products.get(ingredient.name) }));
+  expect(recipeIngredients.every((ingredient) => ingredient.product)).toBe(true);
+  await owner.agent.post("/api/workspace/recipes").send({ operationId: randomUUID(), name: "Pizza Margherita",
     category: "Plat", prepTime: 25, yieldPortions: 4, effectiveFrom: "2026-01-01",
-    ingredients: [{ productId: product.id, quantity: 2 }] }).expect(201);
+    ingredients: recipeIngredients.map((ingredient) => ({ productId: ingredient.product!.id,
+      quantity: ingredient.quantity })) }).expect(201);
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit",
     day: "2-digit" }).format(new Date());
-  await addReceipt(owner, product, today);
-  await addReceipt(owner, product, today, true);
+  for (const ingredient of recipeIngredients) {
+    await addReceipt(owner, ingredient.product!, today, { receivedQuantity: ingredient.receivedQuantity });
+  }
+  const tomato = recipeIngredients.find((ingredient) => ingredient.name === "Tomates")!;
+  await addReceipt(owner, tomato.product!, today, { simulated: true, receivedQuantity: 10 });
 
   const otherCatalog = (await other.agent.get("/api/workspace/catalog").expect(200)).body;
   const otherProduct = otherCatalog.products.find((item: { unit: string }) => item.unit === "kg");
@@ -65,10 +79,18 @@ it("estimates only dated recipes from recorded in-scope receipts without creatin
   const response = await owner.agent.get("/api/workspace/ingredient-outflow-estimates")
     .query({ from: "2022-01-01", to: "2026-12-31" }).expect(200);
   expect(response.body).toMatchObject({ assumptions: { estimatedSalesShare: 0.9, estimatedLossShare: 0.1 } });
-  expect(response.body.estimates).toHaveLength(1);
-  expect(response.body.estimates[0]).toMatchObject({ productId: product.id, receivedQuantity: 10,
-    recipeName: "Pâtes aux tomates", recipeVersion: 1, possiblePortions: 20, estimatedSoldPortions: 18,
-    estimatedLossPortions: 2, estimatedSoldQuantity: 9, estimatedLossQuantity: 1 });
+  expect(response.body.estimates).toHaveLength(recipeIngredients.length);
+  for (const ingredient of recipeIngredients) {
+    const estimate = response.body.estimates.find((item: { productId: string }) => item.productId === ingredient.product!.id);
+    const round = (value: number) => Math.round((value + Number.EPSILON) * 1000) / 1000;
+    const possiblePortions = round(ingredient.receivedQuantity / (ingredient.quantity / 4));
+    expect(estimate).toMatchObject({ productId: ingredient.product!.id,
+      receivedQuantity: ingredient.receivedQuantity, recipeName: "Pizza Margherita", recipeVersion: 1,
+      possiblePortions, estimatedSoldPortions: round(possiblePortions * 0.9),
+      estimatedLossPortions: round(possiblePortions * 0.1),
+      estimatedSoldQuantity: round(ingredient.receivedQuantity * 0.9),
+      estimatedLossQuantity: round(ingredient.receivedQuantity * 0.1) });
+  }
   expect((await other.agent.get("/api/workspace/ingredient-outflow-estimates")
     .query({ from: "2022-01-01", to: "2026-12-31" }).expect(200)).body.estimates).toHaveLength(1);
   await owner.agent.get("/api/workspace/ingredient-outflow-estimates").query({ from: "2026-12-31", to: "2026-01-01" }).expect(400);
