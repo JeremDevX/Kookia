@@ -88,8 +88,12 @@ après conflit de révision (`c5ac66c`). Le refus serveur `SOURCE_ALREADY_CREDIT
 bloque maintenant tout second crédit dans l’UI et rafraîchit l’archive
 (`309a5c9`). `SOURCE_CHANGED`/`SOURCE_LINE_CHANGED` sont désormais couverts côté
 API (`1dc4493`), et l’UI bloque les nouvelles tentatives sur la pièce périmée
-(`5e9b3c8`). Prochaine tranche : rendre cet état de conflit et vérifier les vues
-restantes à 200 % ; la fenêtre native reste inaccessible à CUA.
+(`5e9b3c8`). `SourceInvoiceArchive` rend maintenant aussi le conflit 409 source
+sur fixture synthétique : Tab atteint la reprise, Entrée soumet une seule fois,
+le détail source est relu, le bouton est réellement désactivé et le focus
+revient au titre. Captures inspectées ci-dessous à 320/768/1280 px. Zoom 200 %
+de cet état, états longs/erreur et revue native restent à faire. Tranche code +
+captures : `fe0ba74`.
 
 C2/C3, I1–I4, F1, M2–M3, O1 et R0 sont prouvés localement ; l'extraction de
 facture reste limitée à la fixture PDF publique en `demo:local`, sans OCR
@@ -803,13 +807,26 @@ fichiers/110 tests Vitest, 25 fichiers/38 intégrations et sauvegarde/restaurati
 synthétique. Le runner supprime le conteneur tmpfs ; `docker ps` confirme qu’il
 ne reste aucun conteneur portant son label.
 
-Revue visuelle/clavier de ce nouveau rendu non acquise : CUA renvoie toujours
-`browsers: []`, `getApp("Google Chrome")` échoue `cgWindowNotFound`. Vite a servi
-le harnais synthétique en loopback, mais le CDP headless a cessé de répondre
-avant l’alerte après Entrée ; aucune capture n’a été produite. Vite, Chrome et
-profils/captures temporaires ont été arrêtés/supprimés. Tester encore à
-320/768/1280 px et au zoom 200 %, puis refaire le parcours clavier et l’AXTree
-quand le navigateur sera contrôlable ; aucun lecteur d’écran réel n’a été utilisé.
+Revue rendue du 409 périmé : le vrai `SourceInvoiceArchive` a été monté dans
+Chrome headless/CDP avec fetch simulé uniquement, aucune API, base ou session
+KookIA. Le sélecteur source a dû être changé synthétiquement car `ArrowDown`
+n’a pas sélectionné l’option native dans cette session ; la reprise, elle, a été
+atteinte par Tab puis soumise par Entrée réelle. Une tentative POST 409 entraîne
+deux lectures du détail, prix synthétique mis à jour 3,50 → 3,65 €, bouton natif
+désactivé, titre rechargé focalisé, aucun second POST. L’AXTree expose une alerte
+et son texte descendant ainsi que le bouton disabled. Aucun lecteur d’écran.
+
+À 1280/768/320 px, `document/body.scrollWidth` = 1280/753/305 face à
+`innerWidth` = 1280/768/320 (15 px de barre de défilement verticale aux deux
+petites largeurs), sans débordement horizontal. Le rendu chargé de `App`/Achats
+montre le conflit en encart ambre, le focus visible et la reprise grisée ;
+captures inspectées :
+[conflit 1280](evidence/q2-source-changed/source-changed-1280.png),
+[768](evidence/q2-source-changed/source-changed-768.png),
+[320](evidence/q2-source-changed/source-changed-320.png).
+Le zoom page natif 200 % et la technologie d’assistance restent à vérifier pour
+cet état. Le harnais source, Vite, Chrome et le profil temporaire ont été
+supprimés ; seules les captures fictives sont conservées.
 
 Complément d’archive : `SourceInvoiceArchive` traite aussi le 409
 `SOURCE_CHANGED` de reprise : recharge le détail courant, garde le brouillon
@@ -819,8 +836,9 @@ clavier, le focus rejoint le titre de la pièce rechargée. Ce rendu n’a pas e
 été vérifié visuellement/clavier ; CUA renvoie toujours `browsers: []` et
 `getApp("Google Chrome")` échoue `cgWindowNotFound`. Après ce complément,
 `npm run lint`, `npm run build`, `npm test` (33 contrôles Node/CSS et 27
-fichiers/110 tests Vitest) ainsi que `git diff --check` passent ; les tests
-d’intégration HTTP n’ont pas été relancés.
+fichiers/110 tests Vitest) ainsi que `git diff --check` passent après style et
+captures ; les intégrations API n’ont pas été relancées après ce seul changement
+visuel.
 
 Revalidation complète : l’appel sans privilège au runner R0 a échoué avant
 création de base (`docker.sock` refusé), et la vérification du seul nom de
@@ -832,4 +850,5 @@ exécution intermédiaire a exposé `salesRecipeMapping` en 404 et une coupure d
 socket facture ; l’exécution isolée suivante a passé les 38 intégrations. Le
 conteneur tmpfs et son label ont été vérifiés absents après nettoyage. La page
 `127.0.0.1:56819/login` ne répond plus ; CUA n’offre toujours ni Chrome ni IAB
-contrôlable, donc la revue rendue de ce conflit reste à faire.
+contrôlable. Le rendu de conflit de cette reprise a toutefois été effectué en
+Chrome headless/CDP, sans réutiliser ce bac.
