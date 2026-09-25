@@ -47,7 +47,8 @@ it("requires an explicit tenant-scoped dated mapping and preserves menu history"
     name: `Autre ${itemName}`, ingredients: [{ productId: (await other.get("/api/workspace/catalog").expect(200)).body.products[0].id, quantity: 1 }] }).expect(201);
   await owner.post("/api/workspace/sales/recipe-mappings").send({ ...first, recipeId: foreignRecipe.body.id }).expect(400);
 
-  const saved = await owner.post("/api/workspace/sales/recipe-mappings").send(first).expect(201);
+  const saved = await owner.post("/api/workspace/sales/recipe-mappings").send(first);
+  expect(saved.status, JSON.stringify(saved.body)).toBe(201);
   expect(saved.body).toMatchObject({ saleItemId: saleItem.body.id, recipeId: recipe.body.id, revision: 1,
     effectiveFrom: first.effectiveFrom, portionsPerItem: 1.5, actorId: expect.any(String), replayed: false });
   expect((await owner.post("/api/workspace/sales/recipe-mappings").send(first).expect(201)).body)
