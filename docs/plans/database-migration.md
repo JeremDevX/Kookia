@@ -127,14 +127,26 @@ simulation) ajoutées avant D5. La 11e migration a lié chacune à une contribut
 acceptée et à un événement d'audit ; les deux jours ressortent respectivement
 `recorded` et `demo_simulation`, aucune vente ne reste non liée. `migrate status`
 annonce 11/11 à jour. Le diff de parité schéma/base a aussi signalé trois écarts
-historiques hors D5 (index stock-count absent du modèle Prisma, défaut SQL de
-`ServiceDay.updatedAt`, nom tronqué d'index `InvoiceDraftRevision`) ; ils restent
+historiques hors D5 (index `StockMovement(restaurantId, stockCountId)` absent
+du modèle Prisma, défaut SQL de `ServiceDay.updatedAt`, nom tronqué d'index
+`InvoiceDraftRevision`) ; ils restent
 à traiter séparément, sans élargir cette migration. Un audit de suivi du
-24 septembre 2026 confirme que l'index de `StockCount` est présent dans le
-modèle Prisma actuel ; le défaut SQL de `ServiceDay.updatedAt` et le nom
+24 septembre 2026 confirme que l'index propre à `StockCount` est présent dans
+le modèle Prisma actuel, mais n'avait pas contrôlé l'index relationnel distinct
+sur `StockMovement` ; le défaut SQL de `ServiceDay.updatedAt` et le nom
 physique tronqué de l'index `InvoiceDraftRevision` sont désormais reflétés dans
-le schéma Prisma sans nouvelle migration. Suite API/intégration et
-rejeu simulation isolé consignés dans
+le schéma Prisma sans nouvelle migration. Le contrôle direct suivant, sur
+PostgreSQL tmpfs neuf le 25 septembre et après application des 18 migrations,
+a toutefois confirmé que l'index relationnel
+`StockMovement(restaurantId, stockCountId)` restait absent du modèle et relevé
+l'index `SaleContribution(restaurantId, ticketBatchId)` lui aussi absent,
+ainsi que trois noms physiques tronqués (deux contraintes uniques
+`PurchaseReceipt` et un index
+`SaleItemRecipeMapping`). Les annotations/index Prisma ont été alignés sur le
+DDL existant, sans modifier de migration ; `prisma migrate diff --from-url
+<base-jetable> --to-schema-datamodel prisma/schema.prisma --exit-code` ne détecte
+maintenant aucune différence. La base jetable a été supprimée. Suite
+API/intégration et rejeu simulation isolé consignés dans
 [`goal-kookia-progress.md`](goal-kookia-progress.md). Cette migration ne
 supprime pas d'historique ; elle ne fournit pas de migration descendante qui
 effacerait le journal. En cas de retour applicatif après de nouvelles décisions,
