@@ -219,12 +219,16 @@ Depuis cette revue, `efa944b` réduit la première charge de l’Histoire à
 20 événements, ajoute la recherche locale accent-insensible et conserve les
 filtres de dates/provenance sans changer le contrat ni sa limite API. Le
 composant réel a été rendu avec un GET synthétique, puis inspecté au clavier et
-à 320/768/1280 px. **Prochaine action démontrable :** sur `Timeline`, vérifier
-en rendu les états GET lent/503/reprise et les messages « aucun résultat » et
-« période tronquée », à petit viewport et au clavier. Ensuite, poursuivre le
-parcours visuel complet de C3 et les portes d’accessibilité restantes ; CUA et
-lecteur d’écran réel demeurent indisponibles. Le corpus de pièces conservé
-n’a pas été lu pour cette reprise.
+à 320/768/1280 px. Les états hors nominaux et leurs parcours clavier sont
+maintenant prouvés à 320 px ci-dessous. Le premier aller-retour Histoire → objet
+lié → Histoire et l'accès au bac de rejeu gardent maintenant la période et les
+recherches, preuve synthétique ci-dessous. **Prochaine action démontrable :**
+terminer le parcours visuel C3 sur une fixture synthétique isolée, depuis une
+opération datée jusqu’à sa conséquence métier et son retour au bilan, sans lire
+ni importer le corpus conservé. Puis reprendre les portes Q2 de zoom natif et
+technologie d’assistance si CUA redevient contrôlable ; le lecteur d’écran réel
+demeure indisponible. Le corpus de pièces conservé n’a pas été lu pour cette
+reprise.
 
 ## Registre des incréments
 
@@ -721,6 +725,22 @@ ordinaires (`b94da3f`). À 360 px, `scrollWidth` vaut 360 px ; captures inspect�
 [aucun résultat](evidence/q2-history-states/timeline-no-results.png),
 [mobile](evidence/q2-history-states/timeline-mobile.png).
 
+Revue complémentaire du composant réel à 320 × 900 avec `fetch` intercepté
+uniquement dans Chrome headless : premier GET retardé de 600 ms puis 503,
+seconde activation clavier suivie d’un GET retardé de 350 ms puis 21 événements
+fictifs (`count: 5000`, `truncated: true`). Tab atteint « Réessayer », Entrée
+relance la lecture ; le chargement est annoncé et le focus revient au titre.
+L’avertissement de période dense précède 20 cartes visibles et le bouton du
+dernier événement restant. La recherche clavier `AUCUN-MATCH` annonce l’absence
+de résultats, garde le focus dans le champ et offre « Effacer ». `scrollWidth`
+vaut 320 px durant chargement, erreur, reprise, troncature et zéro résultat.
+Captures inspectées : [chargement](evidence/q2-history-states/timeline-loading-320.png),
+[erreur et focus](evidence/q2-history-states/timeline-error-320.png),
+[chargement de reprise](evidence/q2-history-states/timeline-retry-loading-320.png),
+[période tronquée](evidence/q2-history-states/timeline-truncated-320.png),
+[aucun résultat](evidence/q2-history-states/timeline-no-results-320.png).
+Le mock réseau n’a appelé ni API, ni backend, ni base.
+
 `npm run lint`, `npm run build`, `npm test -- --run` (27 fichiers/110 tests
 Vitest + 33 contrôles Node/CSS) et `git diff --check` passent. Le mock n’a fait
 appel ni au backend ni à PostgreSQL ; serveur Vite, Chrome headless et fichiers
@@ -728,6 +748,27 @@ temporaires ont été arrêtés/supprimés. CUA voit toujours `browsers: []` et
 `getApp("Google Chrome")` échoue `cgWindowNotFound`, même si `/login` est visible
 côté utilisateur ; pas de revue dans la fenêtre native ni de lecteur d’écran.
 Q2 et le Goal restent ouverts.
+
+### Q2/C3 — retour depuis un objet lié et le bac de rejeu (2026-09-25)
+
+Les filtres Histoire (`from`, `to`, `asOf`), le filtre appliqué (`q`) et le
+brouillon de recherche (`qDraft`) sont maintenant portés par la query URL ; les
+changements de dates et de brouillon remplacent l’entrée courante. Le vrai
+composant `Timeline` a été traversé au clavier à 320 × 900 avec un seul GET
+fictif : Entrée ouvre le lien d’objet `/orders?source=synthetic-source#invoices`,
+puis le retour navigateur restaure les trois dates, le filtre appliqué et le
+brouillon non soumis. Entrée sur « Rejouer ce geste » conserve la même query sur
+`TimelineReplay` ; son lien retour conserve également la query, et Entrée
+restaure de nouveau l’Histoire. `scrollWidth` reste 320 px dans l’Histoire,
+l’objet synthétique et le bac de rejeu.
+
+Le bac n’a intercepté que `fetch` : trois GET de chronologie, un POST de rejeu
+et un GET de rejeu entièrement synthétiques ; aucune API réelle, base ou mutation
+de stock n’a été atteinte. La route Achats du harnais est un écran de destination
+minimal, pas une revue du vrai écran Factures. Captures inspectées :
+[Histoire avec dates](evidence/q2-history-return/timeline-return-initial-320.png),
+[rejeu isolé](evidence/q2-history-return/timeline-replay-320.png),
+[retour avec brouillon conservé](evidence/q2-history-return/timeline-return-search-320.png).
 
 ### Q2 — erreur et conflit dans la modale facture (2026-09-25)
 

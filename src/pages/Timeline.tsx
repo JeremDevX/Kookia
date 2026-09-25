@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import { createTimelineReplay, getTimeline, type TimelineEvent, type TimelineProvenance, type TimelineResult } from "../services/timelineService";
 import { formatLocalISODate } from "../utils/date";
@@ -23,15 +23,28 @@ const provenanceLabels: Record<TimelineProvenance, string> = {
 function displayDate(value: string | null, includeTime = false) {
   if (!value) return "Date inconnue";
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (dateOnly && !isCalendarDate(value)) return "Date inconnue";
   const parsed = new Date(dateOnly ? `${value}T12:00:00.000Z` : value);
+  if (Number.isNaN(parsed.getTime())) return "Date inconnue";
   return new Intl.DateTimeFormat("fr-FR", {
     timeZone: "Europe/Paris", dateStyle: "medium", ...(includeTime ? { timeStyle: "short" as const } : {}),
   }).format(parsed);
 }
 
+function isCalendarDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function dateParam(params: URLSearchParams, key: string, fallback: string) {
+  return params.has(key) ? params.get(key) ?? "" : fallback;
+}
+
 function dayKey(value: string | null) {
   if (!value) return "unknown";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return isCalendarDate(value) ? value : "unknown";
+  if (Number.isNaN(new Date(value).getTime())) return "unknown";
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
   }).format(new Date(value));
@@ -44,12 +57,14 @@ function eventTime(event: TimelineEvent) {
 
 export default function Timeline() {
   const navigate = useNavigate();
-  const [from, setFrom] = useState(initialFrom);
-  const [to, setTo] = useState(today);
-  const [asOf, setAsOf] = useState(today);
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [from, setFrom] = useState(() => dateParam(searchParams, "from", initialFrom));
+  const [to, setTo] = useState(() => dateParam(searchParams, "to", today));
+  const [asOf, setAsOf] = useState(() => dateParam(searchParams, "asOf", today));
   const [requestAttempt, setRequestAttempt] = useState(0);
-  const [searchDraft, setSearchDraft] = useState("");
-  const [search, setSearch] = useState("");
+  const [searchDraft, setSearchDraft] = useState(() => searchParams.get("qDraft") ?? searchParams.get("q") ?? "");
+  const [search, setSearch] = useState(() => searchParams.get("q")?.trim() ?? "");
   const [visibleCount, setVisibleCount] = useState(TIMELINE_VISIBLE_BATCH_SIZE);
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -58,9 +73,19 @@ export default function Timeline() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const retryFocusPending = useRef(false);
   const [replayRequest, setReplayRequest] = useState<{ decisionId: string; loading: boolean; error?: string } | null>(null);
+  const updateSearchParams = (changes: Record<string, string | null>) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      for (const [key, value] of Object.entries(changes)) {
+        if (value === null) next.delete(key);
+        else next.set(key, value);
+      }
+      return next;
+    }, { replace: true });
+  };
   const rangeDays = (Date.parse(to) - Date.parse(from)) / 86_400_000;
-  const validRequest = /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to) &&
-    /^\d{4}-\d{2}-\d{2}$/.test(asOf) && from >= historyStart && asOf >= historyStart && from <= to && rangeDays <= 30 &&
+  const validRequest = isCalendarDate(from) && isCalendarDate(to) && isCalendarDate(asOf) &&
+    from >= historyStart && asOf >= historyStart && from <= to && rangeDays <= 30 &&
     to <= today && asOf <= today;
   const requestKey = validRequest ? `${from}:${to}:${asOf}:${requestAttempt}` : "";
   const [requestState, setRequestState] = useState<{ key: string; result?: TimelineResult; error?: string } | null>(null);
@@ -124,13 +149,16 @@ export default function Timeline() {
 
   const applySearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSearch(searchDraft.trim());
+    const query = searchDraft.trim();
+    setSearch(query);
+    updateSearchParams({ q: query || null, qDraft: query || null });
     setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE);
   };
 
   const clearSearch = () => {
     setSearchDraft("");
     setSearch("");
+    updateSearchParams({ q: null, qDraft: null });
     setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE);
     searchInputRef.current?.focus();
   };
@@ -145,7 +173,7 @@ export default function Timeline() {
     setReplayRequest({ decisionId, loading: true });
     try {
       const replay = await createTimelineReplay(decisionId);
-      navigate(`/history/replay/${replay.id}`);
+      navigate(`/history/replay/${replay.id}${location.search}`);
     } catch (cause) {
       setReplayRequest({ decisionId, loading: false,
         error: cause instanceof Error ? cause.message : "Le bac de rejeu est indisponible." });
@@ -162,15 +190,15 @@ export default function Timeline() {
     <section className="timeline-controls" aria-label="Filtres de chronologie">
       <label htmlFor="timeline-from">Du (service ou effet)
         <input id="timeline-from" type="date" min={historyStart} max={today} value={from}
-          onChange={(event) => { setFrom(event.target.value); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
+          onChange={(event) => { setFrom(event.target.value); updateSearchParams({ from: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
       </label>
       <label htmlFor="timeline-to">Au
         <input id="timeline-to" type="date" min={historyStart} max={today} value={to}
-          onChange={(event) => { setTo(event.target.value); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
+          onChange={(event) => { setTo(event.target.value); updateSearchParams({ to: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
       </label>
       <label htmlFor="timeline-as-of">Connu au
         <input id="timeline-as-of" type="date" min={historyStart} max={today} value={asOf}
-          onChange={(event) => { setAsOf(event.target.value); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
+          onChange={(event) => { setAsOf(event.target.value); updateSearchParams({ asOf: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
       </label>
       <p>La période couvre {displayDate(from)} – {displayDate(to)} (31 jours maximum). L’état est filtré par « Connu au »; une pièce modifiée ensuite est masquée plutôt que réécrite dans le passé.</p>
     </section>
@@ -195,7 +223,7 @@ export default function Timeline() {
         <label htmlFor="timeline-search">Rechercher dans l’historique</label>
         <div className="timeline-search-actions">
           <input ref={searchInputRef} id="timeline-search" type="search" value={searchDraft}
-            onChange={(event) => setSearchDraft(event.target.value)} aria-describedby="timeline-search-help" />
+            onChange={(event) => { setSearchDraft(event.target.value); updateSearchParams({ qDraft: event.target.value }); }} aria-describedby="timeline-search-help" />
           <Button type="submit" variant="outline">Rechercher</Button>
           {(search || searchDraft) && <Button type="button" variant="outline" onClick={clearSearch}>Effacer</Button>}
         </div>

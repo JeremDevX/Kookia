@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import { getTimelineReplay, type TimelineReplay } from "../services/timelineService";
 import "../styles/Workspace.css";
@@ -31,6 +31,7 @@ function provenanceLabel(replay: TimelineReplay) {
 
 export default function TimelineReplay() {
   const { id = "" } = useParams();
+  const location = useLocation();
   const [attempt, setAttempt] = useState(0);
   const [requestState, setRequestState] = useState<{ key: string; result?: TimelineReplay; error?: string } | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -60,7 +61,7 @@ export default function TimelineReplay() {
   }, [error, loading, replay]);
 
   return <div className="workspace-page timeline-replay-page">
-    <Link className="timeline-replay-back" to="/history">← Retour à l’historique</Link>
+    <Link className="timeline-replay-back" to={`/history${location.search}`}>← Retour à l’historique</Link>
     <h1 ref={headingRef} tabIndex={-1}>Bac de rejeu isolé</h1>
     <p className="timeline-replay-boundary" role="note">
       Cette copie rejoue uniquement la décision enregistrée. Elle ne crée pas de commande dans l’espace courant,
