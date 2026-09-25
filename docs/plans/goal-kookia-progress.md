@@ -1497,3 +1497,4 @@ visuellement sur ce runner `demo:fixtures`. Les captures headless valident un
 rendu, pas une activation clavier native, un lecteur d’écran ou le zoom à
 200 % ; ces preuves Q2 restent ouvertes tant que CUA ne donne pas de fenêtre
 contrôlable. Aucun état métier du runner n’a été modifié pendant cette revue.
+Commit local des captures et de cette preuve : `ba20204`.
