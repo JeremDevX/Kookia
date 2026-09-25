@@ -169,7 +169,7 @@ export default function Timeline() {
     </section>
 
     <div className="timeline-status">
-      <span role={error ? "alert" : "status"} aria-live="polite">
+      <span role={error ? "alert" : "status"} aria-live={error ? "assertive" : "polite"}>
         {loading ? "Chargement de l’historique…" : error || timelineStatus}
       </span>
       {currentState?.error && <Button ref={retryButtonRef} type="button" variant="outline" size="sm"
