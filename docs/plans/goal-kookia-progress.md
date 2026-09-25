@@ -1862,3 +1862,31 @@ CUA natif reste indisponible (`browsers: []`), donc lecteur d’écran natif et
 zoom Chrome réel à 200 % non vérifiés. Cette preuve améliore le rendu des
 chapitres par année, mais ne constitue pas encore un unique parcours UI allant
 de la correction d’une pièce à l’impact ; C3 demeure partiel.
+
+### Complément Q2/C3 — réception rapprochée et navigation clavier du Bilan (2026-09-25)
+
+Dans le bac local isolé `demo:fixtures` sur PostgreSQL tmpfs, la réception déjà
+soumise a été vérifiée en lecture seule : la commande passe à
+`simulated_received`, sa ligne de 1 L est entièrement reçue et reliée au brouillon
+source, dont l’état devient `received`. La réception porte la provenance
+`demo_simulation`. Le stock d’huile reste à 0,35 L, révision 2, et aucun mouvement
+de stock n’est créé au 25/09. Aucun compte Kookia persistant n’a été consulté ou
+modifié ; aucune seconde soumission n’a été tentée. Cela prouve le rapprochement
+dans le bac QA, pas une activité restaurant.
+
+La revue Chrome/CDP du Bilan a révélé que les deux tableaux de `SalesMetrics`
+étaient tabulables, mais que celui par date et article ne répondait pas à ←/→.
+Les deux régions réutilisent maintenant le gestionnaire de défilement clavier et
+un texte d’aide accessible. À 390 px, la zone du tableau passe de `scrollLeft`
+0 à 71 après ArrowRight, sans débordement du document (`document` et `body`
+restent à 390 px). À 320 px, Tab atteint « Ventes par date et article » avec un
+focus visible de 3 px ; la page reste à 320 px et la capture QA est
+[conservée ici](evidence/q2-analytics-keyboard/sales-date-region-keyboard-320.png).
+Le rendu a aussi été inspecté à 1280 px. Ces données d’écran restent une preuve
+QA technique, sans valeur métier.
+
+Vérifications : `npm run lint`, `npm run build`, les deux tests ciblés de
+simulation (4 tests) et `git diff --check` passent. La soumission C3 n’a pas été
+rejouée au clavier et l’impact ultérieur n’a pas été vérifié dans ce même parcours ;
+C3 demeure partiel. CUA natif (`browsers: []`), lecteur d’écran et zoom natif
+200 % restent indisponibles/non vérifiés.

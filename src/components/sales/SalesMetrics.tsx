@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { Link } from "react-router-dom";
 import { getSalesMetrics, type SalesMetrics as Metrics } from "../../services/salesService";
+import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 
 interface Props { from: string; to: string }
 const PAGE_SIZE = 50;
@@ -61,8 +62,9 @@ export default function SalesMetrics({ from, to }: Props) {
         {metrics.status === "insufficient_history" ?
           <p role="status">Comparaison indisponible : {metrics.observedDays} services ouverts complets sur cette période et {metrics.previousObservedDays} sur la précédente. Il faut au moins {metrics.minimumObservedDays} jours complets ouverts dans chacune ; les jours fermés ne sont pas divisés comme jours de service.</p> :
           <p>Moyenne par service ouvert complet : {metrics.averagePerObservedDay} unités, contre {metrics.previousAveragePerObservedDay} sur la période précédente ({metrics.previousObservedDays} services ouverts complets). {metrics.changePercent === null ? "Évolution non calculable (moyenne précédente nulle)." : "Évolution : " + (metrics.changePercent > 0 ? "+" : "") + metrics.changePercent + " %."}</p>}
+        <p id="sales-metrics-table-hint" className="sales-table-hint">Sur petit écran, faites défiler le tableau horizontalement. Au clavier, placez le focus sur la zone puis utilisez ← et →.</p>
         <h3>Par article vendu</h3>
-        <div className="sales-table-wrap" role="region" aria-label="Ventes par article" tabIndex={0}><table className="sales-table"><thead><tr><th>Article vendu</th><th>Unités enregistrées</th></tr></thead><tbody>
+        <div className="sales-table-wrap" role="region" aria-label="Ventes par article" aria-describedby="sales-metrics-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="sales-table"><thead><tr><th>Article vendu</th><th>Unités enregistrées</th></tr></thead><tbody>
           {metrics.items.slice(itemPage * PAGE_SIZE, (itemPage + 1) * PAGE_SIZE).map((item) =>
             <tr key={item.saleItemId}><td>{item.saleItemName}</td><td>{item.quantity}</td></tr>)}
         </tbody></table></div>
@@ -72,7 +74,7 @@ export default function SalesMetrics({ from, to }: Props) {
           <Button type="button" variant="outline" disabled={(itemPage + 1) * PAGE_SIZE >= metrics.items.length} onClick={() => setItemPage((page) => page + 1)}>Articles suivants</Button>
         </div>}
         <h3>Par date de service et article</h3>
-        <div className="sales-table-wrap" role="region" aria-label="Ventes par date et article" tabIndex={0}><table className="sales-table"><thead><tr><th>Date</th><th>Article vendu</th><th>Unités enregistrées</th></tr></thead><tbody>
+        <div className="sales-table-wrap" role="region" aria-label="Ventes par date et article" aria-describedby="sales-metrics-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="sales-table"><thead><tr><th>Date</th><th>Article vendu</th><th>Unités enregistrées</th></tr></thead><tbody>
           {metrics.dailyItems.slice(dayPage * PAGE_SIZE, (dayPage + 1) * PAGE_SIZE).map((row) =>
             <tr key={`${row.serviceDate}:${row.saleItemId}`}><td>{displayDate(row.serviceDate)}</td><td>{row.saleItemName}</td><td>{row.quantity}</td></tr>)}
         </tbody></table></div>

@@ -31,6 +31,7 @@ const definitions: RecipeIdeaDefinition[] = [
       { productKey: "mozzarella", quantity: 0.1 },
       { productKey: "ham", quantity: 0.06 },
       { productKey: "mushrooms", quantity: 0.05 },
+      { productKey: "olive-oil", quantity: 0.02 },
     ] },
   { key: "ham-mushroom-omelette", name: "Hypothèse — omelette aux champignons et jambon", prepTime: 15,
     yieldPortions: 4, ingredients: [

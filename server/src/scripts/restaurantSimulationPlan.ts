@@ -10,7 +10,8 @@ import { buildScenarioRecipeVersions, recipeVersionForDate } from "./restaurantS
 
 export const SIMULATION_VERSION = "restaurant-simulation-v1";
 export const SIMULATION_FROM = "2023-05-03";
-export const SIMULATION_TO = "2026-09-23";
+export const SIMULATION_INPUTS_TO = "2026-09-23";
+export const SIMULATION_TO = "2026-09-24";
 export const SIMULATION_MARKER = "restaurant-simulation:v1";
 
 export interface ExistingProductSnapshot {
@@ -98,7 +99,7 @@ function roundOrderQuantity(product: ScenarioProduct, amount: number) {
 export function buildRestaurantSimulation(invoices: SourceInvoice[], existingProducts: ExistingProductSnapshot[], includeDemoStory = false) {
   if (invoices.length !== 431) throw new Error(`Nombre de fiches source inattendu : ${invoices.length}.`);
   const dates = invoices.map((invoice) => invoice.date).filter((date): date is string => !!date).sort();
-  if (dates[0] !== SIMULATION_FROM || dates.at(-1) !== SIMULATION_TO) throw new Error("La période des fiches ne correspond pas au scénario attendu.");
+  if (dates[0] !== SIMULATION_FROM || dates.at(-1) !== SIMULATION_INPUTS_TO) throw new Error("La période des fiches ne correspond pas au scénario attendu.");
   const years = new Set(invoices.map((invoice) => invoice.date?.slice(0, 4) ?? "sans-date"));
   const coverage = new Map<string, Record<string, number>>();
   for (const year of years) coverage.set(year, { documents: 0, invoices: 0, credits: 0, deliveries: 0, parsedLines: 0,

@@ -7,6 +7,7 @@ const examples = [
   { key: "ham", date: "2026-09-22", supplier: "Fournisseur fictif — charcuterie", name: "Jambon cru", quantity: "2 kg", price: 10 },
   { key: "mushrooms", date: "2026-09-23", supplier: "Fournisseur fictif — légumes", name: "Champignons", quantity: "5 kg", price: 3 },
   { key: "eggs", date: "2026-09-24", supplier: "Fournisseur fictif — produits frais", name: "Oeufs", quantity: "30 pcs", price: 0.2 },
+  { key: "olive-oil", date: "2026-09-24", supplier: "Franck Légumes", name: "Huile d'olive", quantity: "1 L", price: 12 },
 ];
 
 export function createDemoRecipeIdeaSourceInvoices(): SourceInvoice[] {

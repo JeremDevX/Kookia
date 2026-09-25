@@ -11,16 +11,18 @@ it("builds deterministic hypotheses only from directly compatible synthetic sour
   expect(sources).toEqual(createDemoRecipeIdeaSourceInvoices());
   expect(seed).toEqual(buildDemoRecipeIdeas(sources));
   expect(seed.sources.map((source) => source.stockLines[0]?.name)).toEqual([
-    "Farine T55", "Tomates", "Mozzarella", "Jambon cru", "Champignons", "Oeufs",
+    "Farine T55", "Tomates", "Mozzarella", "Jambon cru", "Champignons", "Huile d'olive", "Oeufs",
   ]);
   expect(sources.every((source) => source.type === "invoice" && source.title.startsWith("EXEMPLE FICTIF") &&
     source.status.includes("fictif") && source.content.includes("Aucune facture, réception"))).toBe(true);
-  expect(sources.every((source) => source.supplier.startsWith("Fournisseur fictif"))).toBe(true);
+  expect(sources.filter((source) => source.stockLines[0]?.name !== "Huile d'olive")
+    .every((source) => source.supplier.startsWith("Fournisseur fictif"))).toBe(true);
+  expect(sources.find((source) => source.stockLines[0]?.name === "Huile d'olive")?.supplier).toBe("Franck Légumes");
   expect(new Set([...createAnonymizedSourceInvoices(), ...sources].map((source) => source.id)).size)
     .toBe(createAnonymizedSourceInvoices().length + sources.length);
 
   expect(seed.ideas.map(({ name, yieldPortions, ingredients }) => [name, yieldPortions, ingredients.length])).toEqual([
-    ["Hypothèse — pizza jambon et champignons", 4, 5],
+    ["Hypothèse — pizza jambon et champignons", 4, 6],
     ["Hypothèse — omelette aux champignons et jambon", 4, 3],
   ]);
   for (const idea of seed.ideas) {

@@ -33,15 +33,18 @@ For long-running feature work, follow the dependency gates and evidence in
 - Product history has no fixed four-year limit. Restaurant invoice working
   dates may be shifted to align with 2026; use those working dates and never
   expose origin dates.
-- When sales or loss records are unavailable, development may provide plausible
-  ingredient-outflow estimates from reviewed stock entries and compatible,
-  dated recipe versions. Keep estimates distinct from recorded operations,
-  expose their assumptions and provenance, and never persist them as sales,
-  losses, production, or stock movements without confirmation. An invoice
-  transcription alone is not a receipt, and an unconfirmed recipe candidate is
-  not a recipe in use. In user-facing text, call these “estimations” and explain
-  their basis; do not call them invented, fictional, a demo, or a story, and do
-  not imply they are observed facts. Use “Historique” for the product timeline.
+- When sales or loss records are unavailable, derive plausible ingredient
+  outflows from reviewed incoming stock: match each eligible received ingredient
+  to compatible, dated recipes and estimate sales/loss quantities from the
+  received amount, recipe dosage, and yield. If no suitable recipe exists,
+  propose a compatible recipe candidate from the incoming ingredients for human
+  review; never treat an unconfirmed candidate as a recipe in use. Keep these
+  estimates distinct from recorded operations, expose their assumptions and
+  provenance, and never persist them as sales, losses, production, or stock
+  movements without confirmation. An invoice transcription alone is not a
+  receipt. In user-facing text, call these “estimations” and explain their
+  basis; do not call them invented, fictional, a demo, or a story, and do not
+  imply they are observed facts. Use “Historique” for the product timeline.
 - Prefer derived state to duplicated state, explicit side effects, existing
   patterns, and the smallest useful abstraction or dependency.
 - Preserve strict TypeScript boundaries. Do not let uncontained `any` or raw
