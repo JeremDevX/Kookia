@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
+import { ApiError } from "../../config/api";
 import { createInvoiceDraftFromSource, getSourceInvoice, getSourceInvoices, type Invoice,
   extractInvoiceFixture, getInvoiceExtractionMode, type InvoiceExtractionMode, type SourceInvoiceDetail,
   type SourceInvoiceSummary } from "../../services/invoiceService";
@@ -28,6 +29,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   const loading = loadedRequestKey !== requestKey;
   const [detailLoading, setDetailLoading] = useState(false);
   const [opening, setOpening] = useState(false);
+  const [sourceConflictId, setSourceConflictId] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [extractionMode, setExtractionMode] = useState<InvoiceExtractionMode>("manual");
   const [fixturePreviewUrl, setFixturePreviewUrl] = useState<string | null>(null);
@@ -40,6 +42,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   const archiveHeadingRef = useRef<HTMLHeadingElement>(null);
   const detailRetryButtonRef = useRef<HTMLButtonElement>(null);
   const detailHeadingRef = useRef<HTMLHeadingElement>(null);
+  const resumeButtonRef = useRef<HTMLButtonElement>(null);
   const archiveRetryFocusPending = useRef(false);
   const detailRetryFocusPending = useRef(false);
 
@@ -130,7 +133,13 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
     setOpening(true);
     setError("");
     try { onOpenDraft(await createInvoiceDraftFromSource(selected.id)); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "Brouillon indisponible."); }
+    catch (cause) {
+      if (cause instanceof ApiError && cause.details.code === "SOURCE_CHANGED") {
+        setSourceConflictId(selected.id);
+        detailRetryFocusPending.current = document.activeElement === resumeButtonRef.current;
+        void open(selected.id);
+      } else setError(cause instanceof Error ? cause.message : "Brouillon indisponible.");
+    }
     finally { setOpening(false); }
   };
 
@@ -155,6 +164,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   const filtered = invoices.filter((invoice) => `${invoice.title} ${invoice.supplier} ${invoice.date ?? ""}`
     .toLocaleLowerCase("fr").includes(query.toLocaleLowerCase("fr")));
   const currentArchiveError = loading ? "" : archiveError;
+  const sourceConflict = !!selectedId && selectedId === sourceConflictId;
   const linkedStatus = selected?.invoiceStatus === "received" ? "Réception simulée enregistrée"
     : selected?.invoiceStatus === "draft" ? "Brouillon lié à cette pièce"
       : "Aucun brouillon ni réception liée";
@@ -175,6 +185,10 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
       {extractionMode === "demo_fixture" && " L’essai utilise uniquement une pièce PDF publique et fictive; l’original reste dans le navigateur et n’est pas conservé par l’API."}</p>
     {fixturePreviewUrl && <p><a href={fixturePreviewUrl} target="_blank" rel="noreferrer">Consulter l’original fictif (PDF)</a></p>}
     {error && <p role="alert">{error}</p>}
+    {sourceConflict && <div role="alert">
+      <p>La pièce source a changé depuis la création du brouillon.</p>
+      <p>Le brouillon sauvegardé reste intact et aucune réception n’a été créée. La pièce actuelle est rechargée ci-dessous ; ce brouillon ne peut pas être repris tant que la différence n’a pas été traitée.</p>
+    </div>}
     {currentArchiveError && <div role="alert"><p>Archive des pièces indisponible : {currentArchiveError}</p>
       <Button ref={archiveRetryButtonRef} type="button" variant="outline" onClick={retryArchive}>Recharger les pièces</Button>
     </div>}
@@ -211,8 +225,8 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
             </li>)}
           </ul>}
           <details><summary>Lire la transcription source</summary><pre className="source-invoice-content">{selected.content}</pre></details>
-          <button type="button" className="btn btn-primary" onClick={() => void resume()} aria-disabled={opening}>
-            {opening ? "Ouverture…" : selected.invoiceStatus === "draft" ? "Reprendre le brouillon" : selected.invoiceStatus === "received" ? "Voir la réception" :
+          <button ref={resumeButtonRef} type="button" className="btn btn-primary" onClick={() => void resume()} disabled={opening || sourceConflict}>
+            {opening ? "Ouverture…" : sourceConflict ? "Brouillon périmé" : selected.invoiceStatus === "draft" ? "Reprendre le brouillon" : selected.invoiceStatus === "received" ? "Voir la réception" :
               selected.type === "invoice" ? "Créer un brouillon corrigible" : "Consulter et classer la pièce"}
           </button>
         </section>}

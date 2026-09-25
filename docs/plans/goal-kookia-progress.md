@@ -803,3 +803,14 @@ avant l’alerte après Entrée ; aucune capture n’a été produite. Vite, Chr
 profils/captures temporaires ont été arrêtés/supprimés. Tester encore à
 320/768/1280 px et au zoom 200 %, puis refaire le parcours clavier et l’AXTree
 quand le navigateur sera contrôlable ; aucun lecteur d’écran réel n’a été utilisé.
+
+Complément d’archive : `SourceInvoiceArchive` traite aussi le 409
+`SOURCE_CHANGED` de reprise : recharge le détail courant, garde le brouillon
+enregistré intact, annonce qu’aucune réception n’a été créée et désactive
+réellement le bouton de reprise pour cette pièce. Si la tentative venait du
+clavier, le focus rejoint le titre de la pièce rechargée. Ce rendu n’a pas encore
+été vérifié visuellement/clavier ; CUA renvoie toujours `browsers: []` et
+`getApp("Google Chrome")` échoue `cgWindowNotFound`. Après ce complément,
+`npm run lint`, `npm run build`, `npm test` (33 contrôles Node/CSS et 27
+fichiers/110 tests Vitest) ainsi que `git diff --check` passent ; les tests
+d’intégration HTTP n’ont pas été relancés.
