@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type RefObject } from "react";
 import type { Product, Recipe } from "../../types";
+import type { RecipeSuggestion } from "../../domain/recipes/recipeSuggestionPolicy";
 import { createRecipe, updateRecipe, type RecipeMutation } from "../../services/recipeService";
 import Button from "../common/Button";
 
@@ -13,8 +14,9 @@ const today = () => new Intl.DateTimeFormat("en-CA", {
 const blankDraft = (): RecipeDraft => ({ name: "", category: "Plat", prepTime: 15, yieldPortions: 1,
   effectiveFrom: today(), ingredients: [{ productId: "", quantity: 0.1 }] });
 
-export default function RecipeEditor({ open, recipe, products, headingRef, onCreate, onClose, onSaved }: {
+export default function RecipeEditor({ open, recipe, products, headingRef, initialSuggestion, onCreate, onClose, onSaved }: {
   open: boolean; recipe: Recipe | null; products: Product[]; headingRef: RefObject<HTMLHeadingElement | null>;
+  initialSuggestion: RecipeSuggestion | null;
   onCreate: (trigger: HTMLButtonElement) => void; onClose: () => void; onSaved: () => Promise<void>;
 }) {
   const [draft, setDraft] = useState<RecipeDraft>(blankDraft);
@@ -25,10 +27,15 @@ export default function RecipeEditor({ open, recipe, products, headingRef, onCre
     if (!open) return;
     setDraft(recipe ? { name: recipe.name, category: recipe.category, prepTime: recipe.prepTime,
       yieldPortions: recipe.yieldPortions, effectiveFrom: today(),
-      ingredients: recipe.ingredients.map(({ productId, quantity }) => ({ productId, quantity })) } : blankDraft());
+      ingredients: recipe.ingredients.map(({ productId, quantity }) => ({ productId, quantity })) }
+      : initialSuggestion ? { name: initialSuggestion.name, category: initialSuggestion.category,
+        prepTime: initialSuggestion.prepTime, yieldPortions: initialSuggestion.yieldPortions,
+        effectiveFrom: initialSuggestion.effectiveFrom,
+        ingredients: initialSuggestion.ingredients.map(({ productId, quantity }) => ({ productId, quantity })) }
+        : blankDraft());
     setOperationId(crypto.randomUUID()); setError("");
     requestAnimationFrame(() => headingRef.current?.focus());
-  }, [open, recipe, headingRef]);
+  }, [open, recipe, initialSuggestion, headingRef]);
 
   const setIngredient = (index: number, next: Partial<RecipeDraft["ingredients"][number]>) =>
     setDraft((current) => ({ ...current, ingredients: current.ingredients.map((row, rowIndex) =>
@@ -36,7 +43,8 @@ export default function RecipeEditor({ open, recipe, products, headingRef, onCre
 
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setSaving(true); setError("");
-    const input: RecipeMutation = { ...draft, operationId };
+    const input: RecipeMutation = { ...draft, operationId,
+      ...(initialSuggestion?.sourceReceipt ? { sourceReceiptLineId: initialSuggestion.sourceReceipt.receiptLineId } : {}) };
     try {
       if (recipe) await updateRecipe(recipe.id, recipe.revision, input);
       else await createRecipe(input);
@@ -51,7 +59,9 @@ export default function RecipeEditor({ open, recipe, products, headingRef, onCre
       {!open && <Button type="button" onClick={(event) => onCreate(event.currentTarget)}>Créer une recette</Button>}
     </div>
     {open && <form className="recipe-editor-form" onSubmit={(event) => void submit(event)}>
-      <h3 id="recipe-editor-title" ref={headingRef} tabIndex={-1}>{recipe ? `Modifier ${recipe.name}` : "Nouvelle recette"}</h3>
+      <h3 id="recipe-editor-title" ref={headingRef} tabIndex={-1}>{recipe ? `Modifier ${recipe.name}` : initialSuggestion ? "Revoir la proposition" : "Nouvelle recette"}</h3>
+      {initialSuggestion && <p>Cette proposition part de « {initialSuggestion.sourceProductName} »{initialSuggestion.sourceReceipt
+        ? ` — livraison ${initialSuggestion.sourceReceipt.reference}.` : "."} Corrigez les ingrédients, les quantités, le rendement et la date. La créer l’ajoute au catalogue pour alimenter les estimations ; aucune vente, perte ou sortie de stock n’est enregistrée.</p>}
       {recipe && <p>Version actuelle : {recipe.version} · rendement {recipe.yieldPortions} portions · date d’effet {recipe.effectiveFrom ?? "historique antérieur, date inconnue"}.</p>}
       <div className="recipe-editor-fields">
         <label>Nom de la recette<input required maxLength={120} value={draft.name}
@@ -71,8 +81,10 @@ export default function RecipeEditor({ open, recipe, products, headingRef, onCre
         <p>La quantité est exprimée dans l’unité du produit ; elle sera divisée par le rendement pour calculer une portion.</p>
         {draft.ingredients.map((ingredient, index) => {
           const selectedProduct = products.find((product) => product.id === ingredient.productId);
+          const sourceProduct = initialSuggestion?.sourceReceipt && ingredient.productId === initialSuggestion.sourceProductId;
           return <div className="recipe-editor-ingredient" key={index}>
-            <label>Produit {index + 1}<select required value={ingredient.productId}
+            <label>Produit {index + 1}{sourceProduct ? " (entrée reçue)" : ""}<select required value={ingredient.productId}
+              disabled={sourceProduct}
               onChange={(event) => {
                 const productId = event.target.value;
                 const product = products.find((candidate) => candidate.id === productId);
@@ -87,9 +99,9 @@ export default function RecipeEditor({ open, recipe, products, headingRef, onCre
             <label>Quantité ({selectedProduct?.unit ?? "unité"})<input type="number" required min={selectedProduct?.unit === "pcs" ? 1 : 0.001}
               max="1000000" step={selectedProduct?.unit === "pcs" ? 1 : 0.001}
               value={ingredient.quantity} onChange={(event) => setIngredient(index, { quantity: Number(event.target.value) })} /></label>
-            <Button type="button" size="sm" variant="outline" disabled={draft.ingredients.length === 1}
+            {!sourceProduct && <Button type="button" size="sm" variant="outline" disabled={draft.ingredients.length === 1}
               aria-label={`Retirer le produit ${index + 1}`} onClick={() => setDraft((current) => ({ ...current,
-                ingredients: current.ingredients.filter((_, rowIndex) => rowIndex !== index) }))}>Retirer</Button>
+                ingredients: current.ingredients.filter((_, rowIndex) => rowIndex !== index) }))}>Retirer</Button>}
           </div>;
         })}
         <Button type="button" size="sm" variant="outline" onClick={() => setDraft((current) => ({ ...current,

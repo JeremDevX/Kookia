@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
@@ -116,10 +117,56 @@ export async function createRecipeInTransaction(tx: Prisma.TransactionClient, re
   return recipeDto(await tx.recipe.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id } }, include: recipeInclude }));
 }
 
-export async function createRecipe(restaurantId: string, actorId: string, operationId: string, input: RecipeValues) {
+async function incomingReceiptEvidence(tx: Prisma.TransactionClient, restaurantId: string, sourceReceiptLineId: string,
+  input: RecipeValues) {
+  const line = await tx.purchaseReceiptLine.findFirst({ where: { restaurantId, id: sourceReceiptLineId },
+    include: { receipt: { select: { id: true, deliveryReference: true, deliveryDate: true, simulated: true, provenance: true } },
+      product: { select: { unit: true } } } });
+  if (!line) throw new WorkspaceError(404, "RECEIPT_LINE_NOT_FOUND", "Ligne de réception introuvable dans cet espace.");
+  if (line.receipt.simulated || line.receipt.provenance !== "recorded")
+    throw new WorkspaceError(409, "SIMULATED_RECEIPT_NOT_ELIGIBLE", "Une réception simulée ne peut pas fonder une proposition opérationnelle.");
+  if (!line.receivedQuantity.greaterThan(0))
+    throw new WorkspaceError(409, "EMPTY_RECEIPT_LINE", "La ligne de réception ne contient aucune quantité positive.");
+  if (line.unit !== line.product.unit)
+    throw new WorkspaceError(409, "RECEIPT_PRODUCT_UNIT_CHANGED", "L’unité du produit ne correspond plus à celle de la réception.");
+  if (!input.ingredients.some((ingredient) => ingredient.productId === line.productId))
+    throw new WorkspaceError(409, "SOURCE_PRODUCT_NOT_IN_RECIPE", "La recette doit contenir le produit de la ligne source.");
+  const deliveryDate = dateOnly(line.receipt.deliveryDate);
+  if (input.effectiveFrom < deliveryDate)
+    throw new WorkspaceError(409, "RECIPE_PRECEDES_RECEIPT", "La date d’effet ne peut pas précéder la réception qui fonde la proposition.");
+  return { receiptLineId: line.id, receiptId: line.receipt.id, reference: line.receipt.deliveryReference,
+    deliveryDate, productId: line.productId, productName: line.productName,
+    receivedQuantity: Number(line.receivedQuantity), unit: line.unit };
+}
+
+const dateOnly = (value: Date) => value.toISOString().slice(0, 10);
+
+export async function createRecipe(restaurantId: string, actorId: string, operationId: string, input: RecipeValues,
+  sourceReceiptLineId?: string) {
   return prisma.$transaction(async (tx) => {
     await lockWorkspace(tx, restaurantId);
-    return createRecipeInTransaction(tx, restaurantId, actorId, operationId, input);
+    if (!sourceReceiptLineId) {
+      const priorDecision = await tx.recommendationDecision.findFirst({ where: { restaurantId, operationId,
+        decision: "recipe_created_from_receipt_estimate" }, select: { id: true } });
+      if (priorDecision) throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération de recette doit conserver sa ligne de réception source.");
+      return createRecipeInTransaction(tx, restaurantId, actorId, operationId, input);
+    }
+
+    const source = await incomingReceiptEvidence(tx, restaurantId, sourceReceiptLineId, input);
+    const snapshot = JSON.parse(JSON.stringify({ source, recipe: input })) as Prisma.InputJsonValue;
+    const priorDecision = await tx.recommendationDecision.findFirst({ where: { restaurantId, operationId } });
+    const priorVersion = await tx.recipeVersion.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } },
+      select: { id: true } });
+    if (priorDecision && (priorDecision.decision !== "recipe_created_from_receipt_estimate" ||
+        !isDeepStrictEqual(priorDecision.snapshot, snapshot)))
+      throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération a déjà été utilisée avec une autre décision ou une autre ligne source.");
+    if (priorVersion && !priorDecision)
+      throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération a déjà créé une recette sans cette preuve source.");
+
+    const recipe = await createRecipeInTransaction(tx, restaurantId, actorId, operationId, input);
+    if (!priorDecision) await tx.recommendationDecision.create({ data: { restaurantId, actorId, operationId,
+      decision: "recipe_created_from_receipt_estimate", snapshot } });
+    return recipe;
   });
 }
 

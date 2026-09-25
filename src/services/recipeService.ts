@@ -5,6 +5,7 @@ export const getRecipes = () => apiRequest<Recipe[]>("/workspace/recipes");
 export interface RecipeMutation {
   operationId: string; name: string; category: Recipe["category"]; prepTime: number;
   yieldPortions: number; effectiveFrom: string; ingredients: Array<Pick<RecipeIngredient, "productId" | "quantity">>;
+  sourceReceiptLineId?: string;
 }
 export const createRecipe = (data: RecipeMutation) => apiRequest<Recipe>("/workspace/recipes", {
   method: "POST", body: JSON.stringify(data),

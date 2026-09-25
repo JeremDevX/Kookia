@@ -184,10 +184,18 @@ vente, perte, production, mouvement ni stock. Les recettes alternatives et les
 lignes de plusieurs ingrédients d'une même recette ne s'additionnent pas ; les
 autres ingrédients et le stock déjà présent ne sont pas vérifiés. La réponse
 sépare aussi `unestimatedReceipts` : l'API identifie chaque entrée sans version
-datée compatible et l'interface l'affiche à part, avec un lien vers
-**Recettes** ; aucune sortie n'est imputée avant qu'une recette applicable
-existe. La fenêtre de requête reste choisie par l'utilisateur et ne fixe pas
-de limite produit à l'historique.
+datée compatible et l'interface l'affiche à part. Son lien ouvre **Recettes**
+avec une proposition datée construite depuis le produit reçu et les autres
+produits du même catalogue. Le restaurateur peut corriger les ingrédients, les
+quantités, le rendement et la date ; les autres stocks ne sont pas réputés
+disponibles. Cette proposition n'est ni persistée ni prise en compte par les
+estimations avant sa création explicite. Une association non reconnue conserve
+le parcours de création manuelle. Lors de la création depuis une réception, le
+serveur vérifie le tenant, la ligne enregistrée, l'unité, le produit inclus et
+la date d'effet, puis conserve la provenance dans la décision consultable. La
+création enregistre une recette versionnée, pas une vente, perte, production ou
+sortie de stock. La fenêtre de requête reste choisie par l'utilisateur et ne
+fixe pas de limite produit à l'historique.
 
 La page **Plus → Historique** (/history) appelle la route tenant-scopée
 de lecture seule GET /api/workspace/timeline, sur toute période consultable,

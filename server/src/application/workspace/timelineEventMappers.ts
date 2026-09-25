@@ -202,28 +202,44 @@ export function decisionEvent(decision: DecisionRow): TimelineEvent {
     ? snapshot.result as Prisma.JsonObject : null;
   const candidateRecipe = candidate?.recipe && typeof candidate.recipe === "object" && !Array.isArray(candidate.recipe)
     ? candidate.recipe as Prisma.JsonObject : null;
+  const receiptSource = snapshot?.source && typeof snapshot.source === "object" && !Array.isArray(snapshot.source)
+    ? snapshot.source as Prisma.JsonObject : null;
+  const createdRecipe = snapshot?.recipe && typeof snapshot.recipe === "object" && !Array.isArray(snapshot.recipe)
+    ? snapshot.recipe as Prisma.JsonObject : null;
   const candidateDecisionLabel = recipeCandidateDecisionLabels[decision.decision];
   const isRecipeCandidateDecision = candidateDecisionLabel !== undefined;
+  const isReceiptLinkedRecipe = decision.decision === "recipe_created_from_receipt_estimate";
   const candidateName = typeof candidateRecipe?.name === "string" ? safeText(candidateRecipe.name) : "";
   const candidateStatus = typeof candidate?.status === "string" ? safeText(candidate.status) : "";
+  const createdRecipeName = typeof createdRecipe?.name === "string" ? safeText(createdRecipe.name) : "";
+  const receiptProductName = typeof receiptSource?.productName === "string" ? safeText(receiptSource.productName) : "";
+  const receiptReference = typeof receiptSource?.reference === "string" ? safeText(receiptSource.reference) : "";
+  const receiptQuantity = typeof receiptSource?.receivedQuantity === "number"
+    ? receiptSource.receivedQuantity.toLocaleString("fr-FR", { maximumFractionDigits: 3 }) : "";
+  const receiptUnit = typeof receiptSource?.unit === "string" ? safeText(receiptSource.unit, 24) : "";
   const simulated = isRecipeCandidateDecision || snapshot?.workspaceMode === "demo" || snapshot?.provenance === "demo_simulation" ||
     decision.decision.includes("simulated") || suggestion?.provenance === "demo_simulation";
   const productName = typeof suggestion?.productName === "string" ? safeText(suggestion.productName) : "";
   const quantityValue = typeof snapshot?.quantity === "number" ? snapshot.quantity : null;
   const detail = isRecipeCandidateDecision
     ? `${candidateName ? `« ${candidateName} »` : "Fiche candidate"}${candidateStatus ? ` · état : ${candidateStatus}` : ""}`
+    : isReceiptLinkedRecipe
+      ? `${createdRecipeName ? `« ${createdRecipeName} »` : "Recette"}${receiptProductName ? ` · ${receiptProductName}` : ""}` +
+        `${receiptReference ? ` · livraison ${receiptReference}` : ""}${receiptQuantity ? ` · ${receiptQuantity} ${receiptUnit}` : ""}`
     : decision.decision.startsWith("purchase_suggestion_") && productName
       ? `${productName}${quantityValue === null ? "" : ` · quantité retenue ${quantityValue.toLocaleString("fr-FR", { maximumFractionDigits: 3 })}`}`
       : "La décision est conservée séparément des recommandations actuelles.";
   return {
     id: `decision:${decision.id}`, kind: "decision", effectiveAt: decision.createdAt.toISOString(),
     knownAt: decision.createdAt.toISOString(), recordedAt: decision.createdAt.toISOString(),
-    label: candidateDecisionLabel ?? `Décision enregistrée : ${safeText(decision.decision, 80)}`, detail,
+    label: candidateDecisionLabel ?? (isReceiptLinkedRecipe ? "Recette créée après revue d’une entrée reçue"
+      : `Décision enregistrée : ${safeText(decision.decision, 80)}`), detail,
     provenance: simulated ? "simulation" : "recorded",
     ...(isRecipeCandidateDecision
       ? { qualifier: "Hypothèse de recette du bac de démonstration ; aucune cuisson n’est déclarée." }
+      : isReceiptLinkedRecipe ? { qualifier: "La recette a été créée après revue de la réception ; aucune vente, perte ou sortie de stock n’est enregistrée." }
       : simulated ? { qualifier: "Décision liée à des données ou à un espace simulé ; elle ne vaut pas achat réel." } : {}),
-    href: isRecipeCandidateDecision ? "/recipes"
+    href: isRecipeCandidateDecision || isReceiptLinkedRecipe ? "/recipes"
       : decision.decision.startsWith("purchase_suggestion_") || decision.decision.startsWith("order_")
         ? "/orders#selection" : "/predictions",
   };

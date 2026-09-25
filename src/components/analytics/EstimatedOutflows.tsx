@@ -73,7 +73,11 @@ export default function EstimatedOutflows({ from, to }: Props) {
         <ul>{report.unestimatedReceipts.map((entry) => <li key={entry.id}>
           <strong>{displayDate(entry.deliveryDate)} · {entry.receiptReference}</strong>
           <p>{entry.productName} : {formatQuantity(entry.receivedQuantity)} {entry.unit} · aucune version de recette compatible à cette date.</p>
-          <Link to="/recipes">Ouvrir les recettes pour définir une version datée</Link>
+          <Link to={`/recipes?${new URLSearchParams({ incomingProductId: entry.productId, incomingDate: entry.deliveryDate,
+            incomingReceiptLineId: entry.id, incomingReceiptReference: entry.receiptReference,
+            incomingQuantity: String(entry.receivedQuantity), incomingUnit: entry.unit })}`}>
+            Voir une proposition de recette à vérifier
+          </Link>
         </li>)}</ul>
       </section>}
     </>}

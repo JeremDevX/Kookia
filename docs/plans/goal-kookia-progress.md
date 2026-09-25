@@ -1962,3 +1962,30 @@ simulation (4 tests) et `git diff --check` passent. La soumission C3 n’a pas �
 rejouée au clavier et l’impact ultérieur n’a pas été vérifié dans ce même parcours ;
 C3 demeure partiel. CUA natif (`browsers: []`), lecteur d’écran et zoom natif
 200 % restent indisponibles/non vérifiés.
+
+### Q2 — proposition de recette depuis une entrée reçue (2026-09-26)
+
+Une ligne de réception sans recette datée compatible ouvre maintenant une
+proposition culinaire préremplie à partir du produit reçu et du catalogue du
+même espace : ingrédients associés, quantités, rendement, catégorie et date
+d’effet modifiables. Les autres produits du catalogue ne sont pas supposés en
+stock. Le formulaire conserve le produit exact et le lien de la réception ; le
+serveur contrôle l’espace, le statut enregistré/non simulé, la quantité positive,
+l’unité et la date, puis journalise la source et les valeurs soumises de façon
+idempotente. Sans validation humaine, aucune recette n’alimente les estimations ;
+après création, la recette peut contribuer aux estimations 90/10, sans créer de
+vente, perte, production ou mouvement de stock.
+
+Vérification UI Chrome headless à 320/768/1280 px : aucune largeur de document
+supérieure au viewport ; Tab montre le focus sur « Revoir la proposition »,
+Entrée ouvre le formulaire et place le focus sur son titre. Captures conservées
+dans [les preuves QA techniques](evidence/q2-recipe-suggestion/), sans valeur
+métier. Aucun compte ni corpus Kookia conservé n’a été consulté ou modifié ;
+CUA navigateur natif reste indisponible.
+
+Les builds et tests ciblés ainsi que lint passent. `verify:local-delivery` a
+validé 18 migrations, la parité Prisma, 124 tests unitaires et le test
+d’intégration modifié ; deux intégrations préexistantes ont échoué de façon
+intermittente (401 dans `menuIdeas`, socket hang-up dans `reconnect`), soit
+38/40 tests d’intégration. Un passage complet antérieur avait passé 40/40.
+Q2/C3 et le Goal restent en cours.

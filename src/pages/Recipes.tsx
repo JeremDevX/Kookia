@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
@@ -7,12 +7,14 @@ import ProductionConfirmModal from "../components/recipes/ProductionConfirmModal
 import ReportRefusalModal from "../components/recipes/ReportRefusalModal";
 import RecipeEditor from "../components/recipes/RecipeEditor";
 import RecipeCandidates from "../components/recipes/RecipeCandidates";
+import RecipeSuggestionPanel from "../components/recipes/RecipeSuggestionPanel";
 import { Clock, ChefHat, CheckCircle, Leaf, AlertTriangle } from "lucide-react";
 import { format, parseISO, isSameWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "../context/ToastContext";
 import { useRecipes } from "../hooks";
 import type { Recipe } from "../types";
+import { suggestRecipeFromIncomingProduct, type RecipeSuggestion } from "../domain/recipes/recipeSuggestionPolicy";
 import { getProductions, recordProduction, type Production } from "../services/recipeService";
 import { formatLocalISODate } from "../utils/date";
 import type { ProductionRecord } from "../types/callbacks";
@@ -21,9 +23,21 @@ import { Link, useSearchParams } from "react-router-dom";
 import "./Recipes.css";
 import "../styles/Workspace.css";
 
+const isIsoDate = (value: string | null): value is string => {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+};
+
 const Recipes: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const productId = searchParams.get("product");
+  const incomingProductId = searchParams.get("incomingProductId");
+  const incomingDate = searchParams.get("incomingDate");
+  const incomingReceiptLineId = searchParams.get("incomingReceiptLineId");
+  const incomingReceiptReference = searchParams.get("incomingReceiptReference");
+  const incomingQuantityText = searchParams.get("incomingQuantity");
+  const incomingUnit = searchParams.get("incomingUnit");
   const { addToast } = useToast();
   const {
     recipes, products, loading, error, refetch,
@@ -42,9 +56,24 @@ const Recipes: React.FC = () => {
   const [productionError, setProductionError] = useState("");
   const [recipeEditorOpen, setRecipeEditorOpen] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+  const [recipePrefill, setRecipePrefill] = useState<RecipeSuggestion | null>(null);
   const recipeEditorHeading = React.useRef<HTMLHeadingElement>(null);
   const recipeEditOrigin = React.useRef<HTMLButtonElement | null>(null);
   const today = formatLocalISODate(new Date());
+  const suggestedEffectiveDate = isIsoDate(incomingDate) && incomingDate <= today
+    ? incomingDate : today;
+  const incomingReceipt = useMemo(() => {
+    const receivedQuantity = Number(incomingQuantityText);
+    if (!incomingReceiptLineId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(incomingReceiptLineId) ||
+        !incomingReceiptReference || !incomingUnit || !["kg", "L", "dz", "pcs"].includes(incomingUnit) ||
+        !Number.isFinite(receivedQuantity) || receivedQuantity <= 0) return undefined;
+    return { receiptLineId: incomingReceiptLineId, reference: incomingReceiptReference.slice(0, 80), receivedQuantity,
+      unit: incomingUnit };
+  }, [incomingReceiptLineId, incomingReceiptReference, incomingQuantityText, incomingUnit]);
+  const incomingSuggestion = useMemo(() => {
+    const product = incomingProductId ? products.find((item) => item.id === incomingProductId) : undefined;
+    return product ? suggestRecipeFromIncomingProduct(product, products, suggestedEffectiveDate, incomingReceipt) : null;
+  }, [incomingProductId, incomingReceipt, products, suggestedEffectiveDate]);
   const refreshProductions = useCallback(async () => {
     try { setProductions(await getProductions()); setProductionError(""); }
     catch { setProductionError("Historique de production indisponible."); }
@@ -64,14 +93,29 @@ const Recipes: React.FC = () => {
     return cost === null ? "Indisponible" : `${cost.toFixed(2)} €`;
   };
 
-  const openRecipeEditor = (recipe: Recipe | null, trigger: HTMLButtonElement) => {
+  const openRecipeEditor = (recipe: Recipe | null, trigger: HTMLButtonElement, suggestion: RecipeSuggestion | null = null) => {
     recipeEditOrigin.current = trigger;
-    setEditingRecipe(recipe); setRecipeEditorOpen(true);
+    setEditingRecipe(recipe); setRecipePrefill(suggestion); setRecipeEditorOpen(true);
     requestAnimationFrame(() => document.getElementById("recipe-editor-section-title")?.scrollIntoView({ block: "nearest" }));
   };
   const closeRecipeEditor = () => {
-    setRecipeEditorOpen(false); setEditingRecipe(null);
+    setRecipeEditorOpen(false); setEditingRecipe(null); setRecipePrefill(null);
     requestAnimationFrame(() => { if (recipeEditOrigin.current?.isConnected) recipeEditOrigin.current.focus(); });
+  };
+  const handleRecipeSaved = async () => {
+    await refetch();
+    if (!recipePrefill) return;
+    setRecipePrefill(null);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.delete("incomingProductId");
+      next.delete("incomingDate");
+      next.delete("incomingReceiptLineId");
+      next.delete("incomingReceiptReference");
+      next.delete("incomingQuantity");
+      next.delete("incomingUnit");
+      return next;
+    });
   };
 
 
@@ -151,9 +195,15 @@ const Recipes: React.FC = () => {
         {!productId && <Button icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>}
       </header>
 
+      {incomingProductId && !loading && !error && incomingSuggestion && <RecipeSuggestionPanel suggestion={incomingSuggestion}
+        onReview={(trigger) => openRecipeEditor(null, trigger, incomingSuggestion)} />}
+      {incomingProductId && !loading && !error && !incomingSuggestion && <p role="status">
+        Aucune proposition de recette automatique n’est disponible pour ce produit. Vous pouvez créer une recette depuis le catalogue.
+      </p>}
       <RecipeEditor open={recipeEditorOpen} recipe={editingRecipe} products={products} headingRef={recipeEditorHeading}
-        onCreate={(trigger) => openRecipeEditor(null, trigger)} onClose={closeRecipeEditor} onSaved={refetch} />
-      {!productId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
+        initialSuggestion={recipePrefill} onCreate={(trigger) => openRecipeEditor(null, trigger)}
+        onClose={closeRecipeEditor} onSaved={handleRecipeSaved} />
+      {!productId && !incomingProductId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
 
       {!productId && <div className="workspace-summary"><div><span>Catalogue</span><strong>{recipes.length} recettes</strong></div></div>}
       {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to="/recipes" onClick={() => setActiveTab("anti-waste")}>Voir toutes les recettes</Link></p>}

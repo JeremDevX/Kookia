@@ -46,3 +46,19 @@ it("keeps purchase decisions navigable without replaying them", () => {
   expect(decisionEvent(decision)).toMatchObject({ provenance: "simulation", href: "/orders#selection" });
   expect(decisionEvent(decision)).not.toHaveProperty("replayDecisionId");
 });
+
+it("keeps the reviewed incoming-stock source on a newly created recipe decision", () => {
+  const decision: RecommendationDecision = {
+    id: "recipe-source-decision", restaurantId: "restaurant-id", actorId: "owner-id", predictionId: null,
+    operationId: "recipe-source-operation", decision: "recipe_created_from_receipt_estimate", createdAt,
+    snapshot: { source: { receiptLineId: "receipt-line-id", receiptId: "receipt-id", reference: "BL-2026-09",
+      deliveryDate: "2026-09-24", productId: "product-id", productName: "Crème fraîche", receivedQuantity: 3, unit: "L" },
+      recipe: { name: "Sauce à la crème", effectiveFrom: "2026-09-24" } },
+  };
+  expect(decisionEvent(decision)).toMatchObject({
+    label: "Recette créée après revue d’une entrée reçue",
+    detail: "« Sauce à la crème » · Crème fraîche · livraison BL-2026-09 · 3 L",
+    provenance: "recorded", href: "/recipes",
+    qualifier: expect.stringContaining("aucune vente, perte ou sortie de stock"),
+  });
+});

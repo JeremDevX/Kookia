@@ -133,15 +133,16 @@ const recipeValuesSchema = z.object({
   effectiveFrom: z.iso.date(), ingredients: z.array(recipeIngredientSchema).min(1).max(100),
 }).strict();
 const recipeMutationSchema = recipeValuesSchema.extend({ operationId: z.uuid() });
+const recipeCreateSchema = recipeMutationSchema.extend({ sourceReceiptLineId: z.uuid().optional() });
 const recipeCandidateInputSchema = recipeValuesSchema.extend({ ingredients: z.array(z.object({
   productId: z.string().trim().min(1).max(100), quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001),
   sourceDocumentId: z.string().regex(/^[a-f0-9]{24}$/), sourceLineNumber: z.number().int().positive(),
 }).strict()).min(1).max(100) }).strict();
 workspaceRoutes.post("/recipes", async (req, res, next) => {
   try {
-    const { operationId, ...input } = recipeMutationSchema.parse(req.body);
+    const { operationId, sourceReceiptLineId, ...input } = recipeCreateSchema.parse(req.body);
     const { restaurantId, actorId } = context(res);
-    res.status(201).json(await createRecipe(restaurantId, actorId, operationId, input));
+    res.status(201).json(await createRecipe(restaurantId, actorId, operationId, input, sourceReceiptLineId));
   } catch (error) { next(error); }
 });
 workspaceRoutes.patch("/recipes/:id", async (req, res, next) => {

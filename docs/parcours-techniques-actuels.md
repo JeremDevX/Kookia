@@ -205,10 +205,15 @@ calculées à part depuis les réceptions positives enregistrées, non simulées
 les recettes datées compatibles à la date de livraison. Le calcul retient le
 même produit et la même unité, puis expose les portions possibles et l'hypothèse
 90/10 (ventes/pertes estimées). Il n'écrit aucune opération. Une entrée sans
-recette datée compatible apparaît séparément avec un lien vers **Recettes** ;
-aucune sortie n'est imputée pour elle. Les recettes alternatives ne
-s'additionnent pas, et les autres ingrédients ainsi que le stock déjà présent
-ne sont pas vérifiés. Voir le [référentiel technique](technical-development.md)
+recette datée compatible apparaît séparément. Le lien vers **Recettes** ouvre
+une proposition datée et préremplie depuis le produit entrant et le catalogue
+de l'espace ; relisez et ajustez ses ingrédients, quantités et rendement.
+L'enregistrer ajoute une recette versionnée, sans créer de vente, perte,
+production ou mouvement ; depuis cette proposition, la ligne de réception
+source et sa référence restent consultables dans la décision de recette.
+Tant que vous ne la créez pas, aucune sortie n'est imputée. Les recettes
+alternatives ne s'additionnent pas ; les autres ingrédients et le stock déjà
+présent ne sont pas vérifiés. Voir le [référentiel technique](technical-development.md)
 pour le contrat et ses limites.
 
 Les pièces source ne renvoient que des métadonnées et un nombre de lignes, sans

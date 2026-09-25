@@ -1,0 +1,37 @@
+.recipe-suggestion {
+  display: grid;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border: var(--size-1) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.recipe-suggestion h2,
+.recipe-suggestion h3 {
+  margin: var(--number-0);
+  color: var(--color-text-primary);
+}
+
+.recipe-suggestion p,
+.recipe-suggestion li {
+  color: var(--color-text-secondary);
+  line-height: var(--number-1_5);
+}
+
+.recipe-suggestion p {
+  margin: var(--spacing-xs) var(--number-0) var(--number-0);
+}
+
+.recipe-suggestion-summary {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.recipe-suggestion-summary ul {
+  display: grid;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--number-0);
+  padding-left: var(--spacing-lg);
+}
