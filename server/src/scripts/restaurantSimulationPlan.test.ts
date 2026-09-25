@@ -10,6 +10,7 @@ it("builds a complete, deterministic multi-year service and inventory ledger", (
   const plan = buildRestaurantSimulation(invoices, products);
   const replay = buildRestaurantSimulation(createAnonymizedSourceInvoices(), products);
   expect(plan.counts.invoiceDocuments).toBe(431);
+  expect(replay).toEqual(plan);
   expect(plan.sourceDigest).toBe(replay.sourceDigest);
   expect(plan.movements).toEqual(replay.movements);
   expect(plan.counts.serviceDays).toBeGreaterThan(900);
