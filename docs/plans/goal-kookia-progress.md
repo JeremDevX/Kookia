@@ -84,10 +84,11 @@ La reprise Q2 du 2026-09-25 complète les états non nominaux de l’Histoire da
 Chrome headless : chargement, 503, reprise au clavier, troncature et recherche
 sans résultat. L’alerte est désormais assertive dans l’AXTree (`b94da3f`). La
 modale facture reprend aussi son chargement et propose une relecture explicite
-après conflit de révision (`c5ac66c`). Prochaine tranche : vérifier les autres
-conflits propres aux pièces sources et les vues restantes à 200 % ; la fenêtre
-native reste inaccessible à CUA et ces preuves headless ne remplacent pas un
-lecteur d’écran.
+après conflit de révision (`c5ac66c`). Le refus serveur `SOURCE_ALREADY_CREDITED`
+bloque maintenant tout second crédit dans l’UI et rafraîchit l’archive
+(`309a5c9`). Prochaine tranche : vérifier `SOURCE_CHANGED`/`SOURCE_LINE_CHANGED`
+et les vues restantes à 200 % ; la fenêtre native reste inaccessible à CUA et
+ces preuves headless ne remplacent pas un lecteur d’écran.
 
 C2/C3, I1–I4, F1, M2–M3, O1 et R0 sont prouvés localement ; l'extraction de
 facture reste limitée à la fixture PDF publique en `demo:local`, sans OCR
@@ -736,3 +737,30 @@ harnais et profil temporaires ont été arrêtés/supprimés. CUA continue de
 renvoyer `browsers: []` et `cgWindowNotFound` malgré `/login` visible côté
 utilisateur ; aucun lecteur d’écran réel n’a été employé. Les conflits
 spécifiques aux pièces source et Q2 restent ouverts (`c5ac66c`).
+
+### Q2 — refus de second crédit d’une pièce source (2026-09-25)
+
+`Modal`, `InvoiceModal` et `SourceInvoiceArchive` ont été montés ensemble dans
+Chrome headless, avec réponses synthétiques uniquement : un brouillon source
+confirmé et complet, puis un POST simulé refusé en 409
+`SOURCE_ALREADY_CREDITED`. Avant correction, ce refus laissait « Réceptionner
+dans le scénario » activé, et l’archive restait périmée. Tab atteint le bouton,
+Entrée reçoit le refus ; le nouveau rendu désactive la réception, conserve le
+brouillon consultable, rend le focus au sélecteur de factures et recharge liste
+et détail source via `onInvoiceDataChanged`. Échap ferme la modale ; l’archive
+affiche alors le mouvement déjà existant et « Brouillon lié à cette pièce ».
+
+L’AXTree n’expose plus deux alertes assertives derrière/sous la modale : le
+refus reste `role=alert` dans la modale, tandis que l’état persistant de l’archive
+est un `role=status` poli. À 320 px, le conflit et l’archive après fermeture
+restent dans la largeur (`scrollWidth` = 320). Captures inspectées :
+[conflit bureau](evidence/q2-source-credit-conflict/source-credit-conflict-1280.png),
+[conflit mobile](evidence/q2-source-credit-conflict/source-credit-conflict-320.png),
+[archive rafraîchie](evidence/q2-source-credit-conflict/source-credit-archive-320.png).
+
+`npm run lint`, `npm run build`, `npm test -- --run` (27 fichiers/110 tests
+Vitest + 33 contrôles Node/CSS) et `git diff --check` passent. Aucun backend,
+PostgreSQL ou donnée conservée n’a été utilisé ; serveur Vite, Chrome headless,
+harnais et profil ont été arrêtés/supprimés. CUA reste à `browsers: []` ; la
+revue native et le lecteur d’écran restent à faire. `SOURCE_CHANGED`,
+`SOURCE_LINE_CHANGED` et le reste de Q2/C3 demeurent ouverts (`309a5c9`).
