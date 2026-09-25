@@ -1498,3 +1498,41 @@ rendu, pas une activation clavier native, un lecteur d’écran ou le zoom à
 200 % ; ces preuves Q2 restent ouvertes tant que CUA ne donne pas de fenêtre
 contrôlable. Aucun état métier du runner n’a été modifié pendant cette revue.
 Commit local des captures et de cette preuve : `ba20204`.
+
+### Q2 — Reprise clavier/rendu headless et provenance calendrier (2026-09-25)
+
+La page native signalée sur `127.0.0.1:56819` n’était plus servie et CUA
+continue de retourner `browsers: []`. Un bac neuf `demo:fixtures` (PostgreSQL
+tmpfs) a été contrôlé dans Chrome headless/CDP temporaire. À 320×750, le vrai
+formulaire Connexion s’affiche après le splash ; Tab atteint le mot de passe,
+puis le bouton, et Entrée ouvre la session. Sur `/sales`, les rendus à
+320×750, 768×900 et 1280×900 ont été inspectés visuellement : aucun
+débordement horizontal du document (`scrollWidth` égal à la largeur viewport)
+et les états/provenances synthétiques restent lisibles. Les huit premiers
+arrêts Tab sur la route Ventes sont visibles et ont un `:focus-visible` avec
+contour solide. Captures : [Connexion 320](evidence/c3-fixture-ui/q2-login-320.png),
+[Ventes 320](evidence/c3-fixture-ui/q2-sales-320.png),
+[Ventes 768](evidence/c3-fixture-ui/q2-sales-768.png),
+[Ventes 1280](evidence/c3-fixture-ui/q2-sales-1280.png). C’est une revue
+rendu/clavier automatisée, pas une interaction humaine dans Chrome natif ; le
+zoom natif à 200 % et un vrai lecteur d’écran restent ouverts.
+
+Cette revue a aussi révélé que `PUT /sales/service-days/:date` laissait le
+défaut Prisma `recorded` sur une journée saisie en mode démo. `saveServiceDay`
+lit maintenant le mode de l’espace côté serveur dans la transaction verrouillée,
+étiquette les créations/éditions démo `demo_simulation`, conserve la source des
+journées opérationnelles existantes et garde `recorded` pour une nouvelle
+journée opérationnelle. Le test HTTP vérifie création démo, correction d’une
+ancienne journée mal étiquetée et régression opérationnelle. Commit :
+`470d57c`.
+
+`npm run verify:local-delivery` a été relancé deux fois après ce changement :
+lint, builds web/API, migrations fraîches, parité Prisma et les 119 tests
+unitaires plus 33 contrôles Node/CSS passent à chaque fois ;
+`sales.integration.test.ts` passe (2 tests). Chaque lot global d’intégration
+avait 39/40 tests passants, avec un échec différent et non lié à ce patch :
+`app.integration.test.ts` (`socket hang up`), puis `scenarioFixture.integration.test.ts`
+(`404` sur `/api/workspace/catalog` pour son compte de rejeu). Le signal CI
+intégration complet reste donc non vert après cette modification. Le bac
+`demo:fixtures` exact a ensuite été arrêté ; son conteneur tmpfs et ses
+identifiants temporaires ont été supprimés, et le port web 64620 est fermé.
