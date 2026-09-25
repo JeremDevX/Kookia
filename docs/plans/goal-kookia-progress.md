@@ -1393,3 +1393,27 @@ le calcul, l’application, le focus pendant le chargement et la fermeture sont
 vérifiés ; cette passe ne prouve pas l’usage clavier natif du popup, un lecteur
 d’écran réel ni le zoom Chrome natif. Tout le réseau API était mocké, sans base,
 compte ni tenant consulté ; CUA restait indisponible.
+
+### Q2 — calendrier Ventes, espacement responsive (2026-09-25)
+
+La capture mobile a révélé que l’aide au défilement du tableau commençait au
+bord du bouton de sauvegarde. La marge supérieure mobile de `.sales-table-hint`
+est maintenant de `var(--spacing-sm)`. Capture inspectée à 390×844 :
+[calendrier service ouvert/complet](evidence/q2-service-calendar/service-calendar-open-complete-390.png).
+
+Le vrai écran React `/sales`, authentifié dans un bac `demo:fixtures` à
+PostgreSQL tmpfs, a été rendu à 320/390/768/1280 px. Le document ne déborde pas
+à ces quatre largeurs ; à 320/390 px, la table de 401 px reste dans son
+conteneur défilant de 223/293 px. Le contour de focus est visible sur la capture,
+mais le focus a été posé par script et ne constitue pas une preuve clavier.
+Limite clavier : CDP rapporte Tab non empêché mais ne déplace pas le focus de la
+date au select ; Entrée et les commandes souris CDP n'émettent aucun clic DOM,
+aucun PUT n'est envoyé et aucune complétion n'a donc été persistée dans cette
+passe. `cua.getState()` retourne toujours `browsers: []` et
+`getApp("Google Chrome")` échoue `cgWindowNotFound`. Les tests API existants
+couvrent la persistance, la révision et l'isolation ; la confirmation depuis
+l'écran avec un navigateur réellement contrôlable reste à obtenir.
+
+`npm run lint`, `npm run build` et `git diff --check` passent. Toutes les
+données utilisées viennent du nouveau bac de fixtures tmpfs ; aucune écriture
+sur un tenant conservé n'a été effectuée.
