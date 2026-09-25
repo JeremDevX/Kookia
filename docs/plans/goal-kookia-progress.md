@@ -1187,12 +1187,23 @@ de résultats et les commandes nommées.
 À 320/768/1280 px, le document correspond au viewport ; la modale mesure
 304/736/600 px (x=8/16/340). À 320 px, son contenu de 2 020 px défile dans
 497 px utiles. Capture inspectée : [modale M2 à 320 px](evidence/q2-menu-ideas/menu-ideas-320.png).
-`npm run lint` (37 CSS), `npm run build`, `npm test` (33 contrôles Node/CSS
-et 29 fichiers/119 tests Vitest) et `git diff --check` passent.
+
+Dans Chrome headless/CDP, une panne 503 synthétique de
+`GET /workspace/menu/surplus-options` ne bloque plus le GET du menu : le
+brouillon enregistré et ses champs restent visibles.
+Entrée sur « Réessayer » garde le focus pendant la requête (`aria-disabled`,
+non désactivé nativement) ; après réponse 200, les comptages réapparaissent,
+Tab poursuit vers le premier champ du menu et Échap rend le focus au déclencheur.
+Le document reste à 320/768/1280 px sans débordement horizontal. Captures :
+[erreur à 320 px](evidence/q2-menu-recovery/menu-recovery-error-320.png),
+[reprise à 320 px](evidence/q2-menu-recovery/menu-recovery-restored-320.png).
+Après correction, `npm run lint` (37 CSS), `npm run build`, `npm test`
+(33 contrôles Node/CSS et 29 fichiers/119 tests Vitest) et
+`git diff --check` passent.
 
 Limite : l’option `<select>` native a été sélectionnée par DOM ; les flèches
 CDP ne pilotaient pas son popup dans Chrome headless. Le clavier sur le champ,
 le calcul, l’application, le focus pendant le chargement et la fermeture sont
 vérifiés ; cette passe ne prouve pas l’usage clavier natif du popup, un lecteur
 d’écran réel ni le zoom Chrome natif. Tout le réseau API était mocké, sans base,
-compte ni tenant consulté.
+compte ni tenant consulté ; CUA restait indisponible.
