@@ -114,9 +114,16 @@ Le test dédié relie aussi quatre réceptions distinctes (farine, tomates,
 mozzarella et huile d'olive) à la recette datée Pizza Margherita. Chaque
 ingrédient reçu obtient ses portions possibles et ses quantités de ventes/pertes
 estimées selon dosage, rendement et hypothèse 90/10 ; la réception simulée
-reste exclue. L'intégration vérifie également qu'aucune ligne de vente ou de
-mouvement n'est créée. La recette R0 complète passe après cet ajout et supprime
-son PostgreSQL tmpfs.
+reste exclue. Des valeurs attendues fixes couvrent les quatre ingrédients ; les
+réceptions du 31/12/2021 et du 01/01/2027 sont exclues de la requête 2022–2026,
+mais estimables dans leurs fenêtres d'une journée. Ce sont des bornes de
+requête du test, pas une limite d'historique produit. L'intégration vérifie
+l'isolation par compte et qu'aucune vente, mouvement, production ni variation
+de stock n'est créée. Le panneau indique que les portions estimées par
+ingrédient peuvent se recouvrir et ne s'additionnent pas, et que les stocks déjà
+présents ne sont pas vérifiés. La recette R0 complète passe après le test et
+supprime son PostgreSQL tmpfs ; après la correction de texte, lint/build web et
+`git diff --check` passent.
 
 Audit Prisma/SQL hors D5 : un PostgreSQL 16 neuf sur tmpfs a appliqué 18/18
 migrations, puis un diff direct vers `prisma/schema.prisma` a révélé cinq
@@ -519,7 +526,8 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-25 | Q2 — connexion responsive et clavier | `a5ee418`, `17aadfd` | Sur `/login`, le pied de formulaire coupait le lien à 320 px → lien maintenu entier ; le test narratif C3 aligne maintenant chaque ligne source 2024–26 sur son mouvement simulé lié, sans ligne/mouvement 2023. | Chrome 154 headless/CDP après splash : 320/390/768/1280/1440 px, document/body sans débordement, contrôles dans le viewport ; AX noms/roles corrects ; Tab Email → Mot de passe → Se connecter → Créer un compte, contour visible 3 px. Captures : [320](evidence/q2-login/login-320.png), [1440](evidence/q2-login/login-1440.png). `npm run lint` et `npm run verify:local-delivery` passent (18 migrations, diff Prisma vide, 33 Node/CSS, 119 tests, 26 fichiers/40 intégrations, dump/restore) ; `demoStory` passe. | Connexion seulement ; aucun essai d’identifiants ni mutation. CUA natif/IAB indisponibles ; pas de zoom natif à 200 % ni lecteur d’écran réel sur `/login`. Conteneurs et identifiants de cette passe tmpfs supprimés ; aucun autre runner touché. | Poursuivre les états Q2 hors nominaux et les parcours encore absents ; réserver le rendu natif/AT aux fenêtres effectivement contrôlables. |
 
 | 2026-09-25 | O2 — sorties estimées depuis réceptions partielles | `d56fa89` | `purchaseSuggestions.integration.test.ts` vérifie les reçus de 2 puis 1 kg, la recette compatible et les estimations 90/10 distinctes ; ventes/mouvements restent inchangés et le reçu simulé n'est pas estimé. `restaurantSimulationPlan.test.ts` vérifie la couverture de chaque mois et des jours de service 2023–2026. | Intégration O2 ciblée 1/1 sur PostgreSQL tmpfs ; tests purs 2/2 ; lint, builds web/API, npm test (119 + 33) passent. Le R0 antérieur a échoué à 37/40 ; le suivant a passé 40/40 et restauré la base synthétique. | Poursuivre les parcours Q2 encore ouverts ; garder visible que les montants sont estimés et non observés. |
-| 2026-09-25 | Sorties estimées — recette multi-ingrédients | `4b84685` | `ingredientOutflowEstimate.integration.test.ts` relie farine, tomates, mozzarella et huile reçues séparément à Pizza Margherita datée ; chaque entrée donne une ligne d'estimation selon le dosage/rendement. Une réception simulée n'est pas estimée, aucune vente/mouvement n'est créé, l'isolation par compte et la fenêtre cinq ans restent vérifiées. | R0 vert sur PostgreSQL 16 tmpfs : lint, builds web/API, migrations 18/18, diff Prisma vide, 119 Vitest + 33 Node/CSS, 26 fichiers/40 intégrations et sauvegarde/restauration ; suppression auto du conteneur. | Continuer les parcours C3/Q2 encore ouverts ; conserver les estimations à part des opérations enregistrées. |
+| 2026-09-25 | Sorties estimées — recette multi-ingrédients | `4b84685` puis correctif local | `ingredientOutflowEstimate.integration.test.ts` relie farine, tomates, mozzarella et huile reçues séparément à Pizza Margherita datée ; quatre attentes numériques fixes vérifient portions et quantités estimées. Une réception simulée est exclue ; les reçus du 31/12/2021 et du 01/01/2027 sont estimables dans leur propre fenêtre et exclus de la requête 2022–2026, qui est une borne de test, pas une limite produit. Isolation par compte vérifiée ; ventes, mouvements, productions et niveaux de stock restent inchangés. | Dernier R0 vert sur PostgreSQL 16 tmpfs : lint, builds web/API, migrations 18/18, diff Prisma vide, 119 Vitest + 33 Node/CSS, 26 fichiers/40 intégrations et sauvegarde/restauration ; suppression auto du conteneur. | Continuer les parcours C3/Q2 encore ouverts ; conserver les estimations à part des opérations enregistrées. |
+| 2026-09-25 | Q2 — explication des estimations recouvrantes | correctif local | Le panneau du Bilan précise que les portions estimées séparément par ingrédient peuvent se recouvrir pour une même recette, ne s'additionnent pas, et ne vérifient pas les autres ingrédients ni le stock déjà présent. | `npm run lint`, `npm run build`, `git diff --check` passent. La revue CUA native reste indisponible (`browsers: []`, `cgWindowNotFound`) ; le texte ne change pas le calcul. | Poursuivre les parcours Q2 encore ouverts et rejouer le panneau dans un navigateur contrôlable s'il devient disponible. |
 
 ### Q2 — Réconciliation mensuelle du Bilan (2026-09-25)
 

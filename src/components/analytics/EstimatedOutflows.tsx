@@ -45,7 +45,7 @@ export default function EstimatedOutflows({ from, to }: Props) {
   return <section className="sales-panel estimated-outflows" aria-labelledby="estimated-outflows-title">
     <h2 ref={headingRef} id="estimated-outflows-title" tabIndex={-1}>Sorties estimées par recette</h2>
     <p>À partir des réceptions réelles, chaque recette datée utilisant l’ingrédient reçu est présentée avec ses sorties estimées. Les quantités sont calculées selon le dosage de l’ingrédient et le rendement de la recette. Ce calcul n’enregistre aucune vente, perte ou sortie de stock.</p>
-    <p>Les recettes d’une même réception sont des alternatives : ne les additionnez pas. Les autres ingrédients de la recette ne sont pas contrôlés dans ce calcul.</p>
+    <p>Les portions sont estimées séparément pour chaque ingrédient reçu. Si une recette utilise plusieurs de ces ingrédients, les lignes se recouvrent et ne s’additionnent pas ; les recettes différentes pour une même réception sont aussi des alternatives. Les autres ingrédients et les stocks déjà présents ne sont pas vérifiés.</p>
     {loading ? <p role="status">Calcul des sorties estimées…</p> : error ? <div role="alert"><p>Estimations indisponibles : {error}</p>
       <Button ref={retryButtonRef} type="button" variant="outline" onClick={retry}>Recharger les estimations</Button>
     </div> : report && <>
