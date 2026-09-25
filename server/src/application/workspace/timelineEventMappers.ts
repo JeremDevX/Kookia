@@ -31,6 +31,9 @@ export interface TimelineDocumentRow {
 
 type StockMovementRow = StockMovement;
 type RecipeVersionRow = RecipeVersion;
+type ProductionRow = Prisma.ProductionGetPayload<{ include: { recipeVersion: {
+  select: { version: true; effectiveFrom: true };
+} } }>;
 type PurchaseOrderRow = Prisma.PurchaseOrderGetPayload<{ include: { lines: true } }>;
 type PurchaseReceiptRow = Prisma.PurchaseReceiptGetPayload<{ include: {
   supplier: { select: { name: true } }; lines: true;
@@ -69,8 +72,8 @@ export function documentEvent(row: TimelineDocumentRow): TimelineEvent {
   };
 }
 
-export function stockEvent(movement: StockMovementRow): TimelineEvent {
-  const simulation = movement.actorId === SIMULATION_ACTOR;
+export function stockEvent(movement: StockMovementRow, workspaceMode: "operational" | "demo" = "operational"): TimelineEvent {
+  const simulation = workspaceMode === "demo" || movement.actorId === SIMULATION_ACTOR;
   const assumed = ["simulation_opening", "simulation_restock", "simulation_loss"].includes(movement.reason);
   const labels: Record<string, string> = {
     simulation_opening: "Stock d’ouverture fictif",
@@ -95,7 +98,9 @@ export function stockEvent(movement: StockMovementRow): TimelineEvent {
   const qualifiers = [
     !movement.productNameSnapshot ? "Le nom historique du produit est inconnu." : "",
     assumed ? "Hypothèse du scénario, non observée." : "",
-    simulation && movement.reason === "stock_count" ? "Comptage du scénario simulé, non observé." : "",
+    workspaceMode === "demo" && movement.reason === "stock_count" ? "Comptage simulé dans le bac de démonstration, non observé." : "",
+    workspaceMode === "demo" && movement.reason !== "stock_count" ? "Mouvement du bac de démonstration ; il ne constitue pas un stock réel." : "",
+    workspaceMode !== "demo" && simulation && movement.reason === "stock_count" ? "Comptage du scénario simulé, non observé." : "",
     simulation && movement.reason === "loss" ? "Perte explicite du scénario, synthétique et non observée." : "",
     movement.reason === "invoice_import_demo" ? "Crédit de stock simulé ; la transcription source n’est pas une livraison vérifiée." : "",
   ].filter(Boolean);
@@ -108,6 +113,26 @@ export function stockEvent(movement: StockMovementRow): TimelineEvent {
     provenance: assumed ? "assumption" : simulation ? "simulation" : "recorded",
     ...(qualifiers.length ? { qualifier: qualifiers.join(" ") } : {}),
     href: `/stocks?product=${encodeURIComponent(movement.productId)}`,
+  };
+}
+
+export function productionEvent(production: ProductionRow, workspaceMode: "operational" | "demo" = "operational"): TimelineEvent {
+  const simulated = workspaceMode === "demo" || production.actorId === SIMULATION_ACTOR;
+  const demo = workspaceMode === "demo";
+  return {
+    id: `production:${production.id}`, kind: "production", effectiveAt: isoDate(production.date),
+    knownAt: production.createdAt.toISOString(), recordedAt: production.createdAt.toISOString(),
+    label: production.kind === "refusal" ? (demo ? "Production refusée (démo)" : "Production refusée")
+      : demo ? "Production déclarée (démo)" : "Production enregistrée",
+    detail: `${safeText(production.recipeName)} · ${production.kind === "refusal"
+      ? `${production.portions} portion(s) demandée(s), aucune sortie de stock`
+      : `${production.portions} portion(s) préparée(s)`}${production.recipeVersion
+      ? ` · recette v${production.recipeVersion.version}${production.recipeVersion.effectiveFrom
+        ? ` (effet ${isoDate(production.recipeVersion.effectiveFrom)})` : " (effet inconnu)"}` : " · version non liée"}`,
+    provenance: simulated ? "simulation" : "recorded",
+    ...(demo ? { qualifier: "Déclaration du bac de démonstration ; elle n’atteste pas une production réelle." }
+      : production.actorId === SIMULATION_ACTOR ? { qualifier: "Production de démonstration, non observée." } : {}),
+    href: "/recipes",
   };
 }
 

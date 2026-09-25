@@ -175,4 +175,24 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
     .query({ from: `${today.slice(0, 7)}-01`, to: today, asOf }).expect(200);
   expect(historic.body.events.some((event: { id: string }) => event.id === `purchase-order:${order.body.id}`)).toBe(false);
   expect(historic.body.events.some((event: { id: string }) => event.id === `purchase-receipt:${receipt.body.id}`)).toBe(false);
+
+  const adjustmentOperationId = randomUUID();
+  await owner.agent.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: adjustmentOperationId,
+    delta: 0.001, reason: "adjustment" }).expect(200);
+  const adjustment = await prisma.stockMovement.findUniqueOrThrow({ where: { restaurantId_operationId_productId: {
+    restaurantId: owner.restaurantId, operationId: adjustmentOperationId, productId: product.id,
+  } } });
+  const manualProduction = await owner.agent.post("/api/workspace/productions").send({ operationId: randomUUID(),
+    recipeName: "Déclaration synthétique C3", portions: 2, prepTime: 10, notes: "Fixture uniquement",
+    date: today, kind: "record" }).expect(201);
+  const updatedStory = await owner.agent.get("/api/workspace/timeline")
+    .query({ from: `${today.slice(0, 7)}-01`, to: today, asOf: today }).expect(200);
+  const updatedEvents = updatedStory.body.events as Array<{ id: string; label: string; provenance: string; qualifier?: string }>;
+  expect(updatedEvents.find((event) => event.id === `stock:${adjustment.id}`)).toMatchObject({
+    provenance: "simulation", qualifier: expect.stringContaining("bac de démonstration"),
+  });
+  expect(updatedEvents.find((event) => event.id === `production:${manualProduction.body.id}`)).toMatchObject({
+    label: "Production déclarée (démo)", provenance: "simulation",
+    qualifier: expect.stringContaining("n’atteste pas une production réelle"),
+  });
 }, 120_000);

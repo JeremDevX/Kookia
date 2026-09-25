@@ -207,7 +207,7 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   expect(juneTimeline.body.events.some((event: { label: string; provenance: string; qualifier?: string }) =>
     event.label === "Perte enregistrée — scénario simulé" && event.provenance === "simulation" && event.qualifier?.includes("non observée"))).toBe(true);
   expect(decemberTimeline.body.events.some((event: { label: string; detail: string }) =>
-    event.label === "Production refusée" && event.detail.includes("aucune sortie de stock"))).toBe(true);
+    event.label === "Production refusée (démo)" && event.detail.includes("aucune sortie de stock"))).toBe(true);
 
   const received = plan.receipts[0];
   const simulationOperationId = `restaurant-simulation-v1:invoice:${received.invoiceId}:${received.productId}`;

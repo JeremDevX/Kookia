@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { decisionEvent, documentEvent, purchaseOrderEvent, purchaseReceiptEvent, stockEvent, versionEvent,
+import { decisionEvent, documentEvent, productionEvent, purchaseOrderEvent, purchaseReceiptEvent, stockEvent, versionEvent,
   type TimelineDocumentRow, type TimelineEvent } from "./timelineEventMappers.js";
 
 export type { TimelineEvent, TimelineKind, TimelineProvenance } from "./timelineEventMappers.js";
@@ -97,22 +97,11 @@ export async function listTimeline(restaurantId: string, from: string, to: strin
       orderBy: [{ deliveryDate: "asc" }, { createdAt: "asc" }, { id: "asc" }], take: QUERY_LIMIT }),
   ]);
 
+  const workspaceMode = restaurant?.mode === "demo" ? "demo" : "operational";
   const events: TimelineEvent[] = [
     ...documents.map(documentEvent),
-    ...movements.map(stockEvent),
-    ...productions.map((production): TimelineEvent => ({
-      id: `production:${production.id}`, kind: "production", effectiveAt: isoDate(production.date),
-      knownAt: production.createdAt.toISOString(), recordedAt: production.createdAt.toISOString(),
-      label: production.kind === "refusal" ? "Production refusée" : "Production enregistrée",
-      detail: `${safeText(production.recipeName)} · ${production.kind === "refusal"
-        ? `${production.portions} portion(s) demandée(s), aucune sortie de stock`
-        : `${production.portions} portion(s) préparée(s)`}${production.recipeVersion
-        ? ` · recette v${production.recipeVersion.version}${production.recipeVersion.effectiveFrom
-          ? ` (effet ${isoDate(production.recipeVersion.effectiveFrom)})` : " (effet inconnu)"}` : " · version non liée"}`,
-      provenance: production.actorId === SIMULATION_ACTOR ? "simulation" : "recorded",
-      ...(production.actorId === SIMULATION_ACTOR ? { qualifier: "Production de démonstration, non observée." } : {}),
-      href: "/recipes",
-    })),
+    ...movements.map((movement) => stockEvent(movement, workspaceMode)),
+    ...productions.map((production) => productionEvent(production, workspaceMode)),
     ...sales.map((sale): TimelineEvent => ({
       id: `sale:${sale.id}`, kind: "sale", effectiveAt: isoDate(sale.serviceDate),
       knownAt: sale.updatedAt.toISOString(), recordedAt: sale.createdAt.toISOString(),

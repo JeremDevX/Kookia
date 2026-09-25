@@ -469,3 +469,28 @@ restent distincts des défauts locaux corrigeables.
   séquentiel et concurrent) et un libellé exact. Il ne prouve pas l'idempotence
   de production C1. L'exécution GitHub n'a pas été déclenchée ; le résultat
   local ne prouve pas le comportement du runner distant.
+
+## Avancée technique — provenance du bac démo (2026-09-25)
+
+La lecture de la chronologie classait encore comme « enregistrés » les
+mouvements de stock et déclarations de production créés par le restaurateur
+dans un espace `demo`, car ces écritures portent son identité et non l'acteur de
+simulation du seed. Le mapper reçoit maintenant le mode du workspace : ces
+événements sont explicitement simulés, et leurs libellés/qualificatifs indiquent
+qu'ils ne décrivent pas une production ou un stock réel. Le comportement
+opérationnel reste inchangé ; le comptage simulé garde la précision « non
+observé ».
+
+La régression C3 couvre un ajustement manuel et une déclaration de production
+dans un tenant démo isolé. Vérification finale : `npm run verify:local-delivery`
+réussit (lint, build web/API, migrations fraîches, 107 tests unitaires, 37 tests
+d'intégration, sauvegarde/restauration synthétique) dans PostgreSQL jetable en
+tmpfs, supprimé à la fin. Une première passe a détecté puis conduit à préserver
+les libellés précis du comptage et du refus synthétiques ; la suite complète a
+ensuite passé. Aucun tenant conservé ni document source réel n'a été utilisé.
+
+Q2 Connexions reste ouvert : l'utilisateur a confirmé voir la page login
+locale, mais CUA continue de retourner `browsers: []` ; `getApp("Google
+Chrome")` échoue `cgWindowNotFound` et `createBrowserTab("chrome", …)` répond
+`Browser is not available`. Aucun rendu, responsive ou parcours clavier de
+Connexions n'a été observé dans cette reprise.
