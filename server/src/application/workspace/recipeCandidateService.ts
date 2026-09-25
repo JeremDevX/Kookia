@@ -20,6 +20,7 @@ export interface RecipeCandidateInput extends Omit<RecipeValues, "ingredients"> 
 const evidenceSchema = z.object({
   sourceDocumentId: z.string().regex(/^[a-f0-9]{24}$/), sourceDocumentRevision: z.number().int().nonnegative(),
   sourceContentHash: z.string().regex(/^[a-f0-9]{64}$/), sourceTitle: z.string(), sourceDate: z.iso.date().nullable(),
+  sourceOriginalDate: z.iso.date().nullable().optional(),
   sourceLineNumber: z.number().int().positive(), sourceName: z.string(), sourceQuantityText: z.string(),
   sourceQuantity: z.number().positive(), sourceUnit: z.enum(["kg", "L", "pcs"]),
   sourceUnitPrice: z.number().nonnegative(), sourcePriceBasis: z.enum(["stated_unit_price", "derived_from_line_amount_ht", "derived_from_line_amount_ttc"]),
@@ -105,6 +106,7 @@ async function candidateDataFromInput(tx: Prisma.TransactionClient, restaurantId
     return { productId: product.id, productName: product.name, unit: product.unit, quantity: ingredient.quantity,
       evidence: { sourceDocumentId: entry.source.id, sourceDocumentRevision: entry.revision,
         sourceContentHash: entry.source.contentHash, sourceTitle: entry.source.title, sourceDate: entry.source.date,
+        sourceOriginalDate: entry.source.originalDate,
         sourceLineNumber: line.sourceLineNumber, sourceName: line.name, sourceQuantityText: line.sourceQuantityText,
         sourceQuantity: line.quantity, sourceUnit: line.unit, sourceUnitPrice: line.unitPrice,
         sourcePriceBasis: line.priceBasis, sourceTaxBasis: line.priceTaxBasis } };

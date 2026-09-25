@@ -105,8 +105,12 @@ Chaque ingrédient référence une pièce source du même espace et sa ligne ; h
 révision et unité doivent toujours correspondre, sans conversion implicite.
 Une pièce modifiée rend la candidate périmée. Le chef peut corriger, confirmer
 ou écarter l'hypothèse ; confirmer crée une `Recipe` versionnée mais aucun
-mouvement de stock ni production. Les deux exemples actuellement seedés dans
-`demo:local` s'appuient sur des lignes fictives, pas sur des lignes du corpus.
+mouvement de stock ni production. `demo:local` sélectionne maintenant deux
+hypothèses depuis les 431 transcriptions Markdown locales en exigeant une
+correspondance catalogue directe d'unité pour chaque ligne ; dates d'origine et
+de démonstration sont séparées dans leur preuve. Les quantités et rendements
+restent des hypothèses. Le runner charge les sources uniquement dans sa base
+tmpfs ; les tests et captures utilisent toujours des lignes synthétiques.
 
 Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` initialise
 les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au

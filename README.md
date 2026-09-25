@@ -23,9 +23,10 @@ contenant des données à conserver.
 
 Pour parcourir le récit 2023–2026 sans utiliser une base conservée, lancer
 `npm run demo:local` : la commande crée une base PostgreSQL temporaire sur tmpfs,
-un compte et un scénario entièrement synthétiques, puis démarre l’application
-sur loopback. Les identifiants sont écrits dans un fichier privé temporaire ;
-Ctrl-C arrête les serveurs et supprime la base et le fichier. Voir
+un compte et un scénario d’opérations simulées à partir des 431 transcriptions
+locales du dépôt, puis démarre l’application sur loopback. Les identifiants sont
+écrits dans un fichier privé temporaire ; Ctrl-C arrête les serveurs et supprime
+la base et le fichier. Voir
 [la démo locale jetable](docs/local-demo.md) pour les limites et prérequis.
 
 ## Fonctionnement actuel

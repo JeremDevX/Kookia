@@ -141,19 +141,16 @@ dans l’archive source.
   n’envoient aucun message fournisseur. Le bon de commande et la décision déjà
   présents sont laissés intacts.
 - Le seed `demo:local` contient maintenant deux fiches candidates
-  multi-ingrédients (quiche au poulet, gratin de pâtes au fromage), aux
+  multi-ingrédients (pizza jambon-champignons, omelette champignons-jambon), aux
   quantités/rendements éditables et marqués hypothétiques. Une confirmation
   crée une recette versionnée dans le bac démo mais ne touche ni stock ni
   production ; l'autre candidate peut rester en attente ou être écartée.
-  `demoRecipeIdeaSourceInvoices` fournit six lignes **entièrement fictives**
-  pour ce seul parcours. La fixture générale `anonymizedSourceInvoices` conserve
-  son petit sous-ensemble de lignes tomates pour le ledger de simulation.
-- Ces candidates ne référencent pas encore de ligne parmi les 431 transcriptions
-  du corpus : leurs liens d'archive aboutissent aux exemples fictifs, pas à une
-  facture d'origine. Un comptage local des familles par le parseur/catalogue
-  aide à proposer des hypothèses, mais ne prouve ni unité compatible sur une
-  pièce précise, ni recette effectivement préparée. N'en déduire aucun plat
-  observé ; la liaison pseudonymisée à des lignes source autorisées et l'audit
-  de sensibilité/droit d'usage avant partage restent ouverts dans le
-  [journal du Goal](goal-kookia-progress.md). Les idées M2 partent toujours d'un
-  surplus explicitement compté, non de factures.
+  Le runner local choisit des lignes à unité catalogue directement compatible
+  parmi les 431 transcriptions et ouvre leur archive ; les quantités et recettes
+  restent hypothétiques, une transcription n'est pas vérifiée sur l'original et
+  les effets associés sont simulés. Les tests/CI utilisent seulement la fixture
+  synthétique `demoRecipeIdeaSourceInvoices`. Le corpus ne quitte pas le dépôt
+  et son chargement runtime reste limité au tmpfs local ; audit de sensibilité
+  et droits avant partage restent ouverts dans le
+  [journal du Goal](goal-kookia-progress.md). Les idées M2 partent toujours
+  d'un surplus explicitement compté, non de factures.

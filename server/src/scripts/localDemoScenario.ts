@@ -2,13 +2,14 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { createRecipeCandidate } from "../application/workspace/recipeCandidateService.js";
-import { createAnonymizedSourceInvoices } from "./fixtures/anonymizedSourceInvoices.js";
-import { createDemoRecipeIdeaSourceInvoices } from "./fixtures/demoRecipeIdeaSourceInvoices.js";
+import { scenarioProducts } from "./restaurantSimulationCatalog.js";
+import type { SourceInvoice } from "./sourceInvoices.js";
+import type { DemoRecipeIdeaSeed } from "./demoRecipeIdeas.js";
 import { applyRestaurantSimulation } from "./restaurantSimulationStorage.js";
 import { assertSeedSnapshot, buildRecipePlan } from "./restaurantSimulationSupport.js";
 import { buildRestaurantSimulation } from "./restaurantSimulationPlan.js";
 
-function sourceDocument(invoice: ReturnType<typeof createAnonymizedSourceInvoices>[number]): Prisma.InputJsonObject {
+function sourceDocument(invoice: SourceInvoice): Prisma.InputJsonObject {
   const stockLines: Prisma.InputJsonValue[] = invoice.stockLines.map((line) => ({
     name: line.name, quantity: line.quantity, unit: line.unit, unitPrice: line.unitPrice,
     sourceQuantityText: line.sourceQuantityText, sourceLineNumber: line.sourceLineNumber,
@@ -51,11 +52,11 @@ async function assertFreshWorkspace(restaurantId: string) {
   return { productSnapshots, recipeSnapshots };
 }
 
-export async function seedLocalDemoScenario(ownerId: string) {
+export async function seedLocalDemoScenario(ownerId: string, sources: { invoices: SourceInvoice[]; recipeIdeas: DemoRecipeIdeaSeed }) {
   const restaurant = await ensureWorkspace(ownerId);
   const { productSnapshots, recipeSnapshots } = await assertFreshWorkspace(restaurant.id);
-  const invoices = createAnonymizedSourceInvoices();
-  const recipeIdeaSources = createDemoRecipeIdeaSourceInvoices();
+  const { invoices, recipeIdeas } = sources;
+  const recipeIdeaSources = recipeIdeas.sources;
   const plan = buildRestaurantSimulation(invoices, productSnapshots.map((product) => ({
     id: product.id, name: product.name, unit: product.unit, currentStock: product.currentStock,
     minThreshold: product.minThreshold, pricePerUnit: product.pricePerUnit,
@@ -64,7 +65,14 @@ export async function seedLocalDemoScenario(ownerId: string) {
   const plannedRecipes = buildRecipePlan(recipeSnapshots, plan.productions, plan.recipeVersions);
   const suppliers = await prisma.supplier.findMany({ where: { restaurantId: restaurant.id }, select: { id: true } });
 
-  await prisma.workspaceDocument.createMany({ data: [...invoices, ...recipeIdeaSources].map((invoice) => ({
+  const sourceInvoicesById = new Map<string, SourceInvoice>();
+  for (const invoice of [...invoices, ...recipeIdeaSources]) {
+    const existing = sourceInvoicesById.get(invoice.id);
+    if (existing && existing.contentHash !== invoice.contentHash)
+      throw new Error("Une référence de pièce source est ambiguë dans le bac de démonstration.");
+    sourceInvoicesById.set(invoice.id, invoice);
+  }
+  await prisma.workspaceDocument.createMany({ data: [...sourceInvoicesById.values()].map((invoice) => ({
     restaurantId: restaurant.id, kind: `source-invoice:${invoice.id}`, data: sourceDocument(invoice),
   })) });
   await applyRestaurantSimulation(restaurant.id, plan, plannedRecipes, [], [], new Set(suppliers.map(({ id }) => id)));
@@ -74,37 +82,24 @@ export async function seedLocalDemoScenario(ownerId: string) {
   } });
   const effectiveFrom = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
     month: "2-digit", day: "2-digit" }).format(new Date());
-  const recipeIdeas = [
-    { key: "chicken-quiche", name: "Hypothèse — quiche au poulet", prepTime: 35, yieldPortions: 4,
-      ingredients: [
-        { sourceName: "Farine T55", quantity: 0.25 },
-        { sourceName: "Oeufs", quantity: 4 },
-        { sourceName: "Poulet Fermier", quantity: 0.15 },
-        { sourceName: "Crème Fraîche", quantity: 0.2 },
-      ] },
-    { key: "pasta-gratin", name: "Hypothèse — gratin de pâtes au fromage", prepTime: 35, yieldPortions: 4,
-      ingredients: [
-        { sourceName: "Pâtes sèches", quantity: 0.12 },
-        { sourceName: "Oeufs", quantity: 2 },
-        { sourceName: "Crème Fraîche", quantity: 0.15 },
-        { sourceName: "Mozzarella", quantity: 0.08 },
-      ] },
-  ] as const;
-  const recipeProductNames = [...new Set(recipeIdeas.flatMap((idea) => idea.ingredients.map(({ sourceName }) => sourceName)))];
+  const recipeProductIds = [...new Set(recipeIdeas.ideas.flatMap((idea) => idea.ingredients.map(({ productKey }) => {
+    const product = scenarioProducts.find((candidate) => candidate.key === productKey);
+    if (!product) throw new Error(`Famille produit inconnue dans une hypothèse de recette : ${productKey}.`);
+    return product.id;
+  })))];
   const recipeProducts = await prisma.product.findMany({ where: { restaurantId: restaurant.id,
-    name: { in: recipeProductNames } }, select: { id: true, name: true } });
-  const recipeProductByName = new Map(recipeProducts.map((product) => [product.name, product]));
+    id: { in: recipeProductIds } }, select: { id: true } });
+  const recipeProductIdsFound = new Set(recipeProducts.map((product) => product.id));
   const recipeCandidates: Awaited<ReturnType<typeof createRecipeCandidate>>[] = [];
-  for (const idea of recipeIdeas) {
-    const ingredients = idea.ingredients.map(({ sourceName, quantity }) => {
-      const source = recipeIdeaSources.find((invoice) => invoice.stockLines.some((line) => line.name === sourceName));
-      const line = source?.stockLines.find((stockLine) => stockLine.name === sourceName);
-      const product = recipeProductByName.get(sourceName);
-      if (!source || !line || !product) throw new Error(`Source ou produit de démonstration manquant : ${sourceName}.`);
-      return { productId: product.id, quantity, sourceDocumentId: source.id, sourceLineNumber: line.sourceLineNumber };
+  for (const idea of recipeIdeas.ideas) {
+    const ingredients = idea.ingredients.map(({ productKey, quantity, sourceDocumentId, sourceLineNumber }) => {
+      const product = scenarioProducts.find((candidate) => candidate.key === productKey);
+      if (!product || !recipeProductIdsFound.has(product.id))
+        throw new Error(`Produit de catalogue absent pour la famille source ${productKey}.`);
+      return { productId: product.id, quantity, sourceDocumentId, sourceLineNumber };
     });
-    recipeCandidates.push(await createRecipeCandidate(restaurant.id, "demo-seed:recipe-ideas:v2",
-      `demo-seed:recipe-candidate:${idea.key}:v2`, { name: idea.name, category: "Plat", prepTime: idea.prepTime,
+    recipeCandidates.push(await createRecipeCandidate(restaurant.id, "demo-seed:recipe-ideas:v3",
+      `demo-seed:recipe-candidate:${idea.key}:v3`, { name: idea.name, category: "Plat", prepTime: idea.prepTime,
         yieldPortions: idea.yieldPortions, effectiveFrom, ingredients }));
   }
   return { invoices, recipeIdeaSources, recipeCandidates, plan };

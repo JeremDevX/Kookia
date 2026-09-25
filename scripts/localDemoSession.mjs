@@ -15,6 +15,8 @@ let resolveStop;
 const stopRequested = new Promise((resolve) => { resolveStop = resolve; });
 const seedWorkspaceSource = `
 import { prisma } from "./server/src/infrastructure/database/prisma.ts";
+import { readSourceInvoices } from "./server/src/scripts/sourceInvoices.ts";
+import { buildDemoRecipeIdeas } from "./server/src/scripts/demoRecipeIdeas.ts";
 import { seedLocalDemoScenario } from "./server/src/scripts/localDemoScenario.ts";
 
 const ownerId = process.env.LOCAL_DEMO_USER_ID;
@@ -24,9 +26,17 @@ try {
   if (users.length !== 1 || users[0].id !== ownerId) {
     throw new Error("Le bac démo doit contenir uniquement le compte local créé pour cette session.");
   }
-  const { plan, recipeIdeaSources, recipeCandidates } = await seedLocalDemoScenario(ownerId);
+  let invoices;
+  try {
+    invoices = readSourceInvoices();
+  } catch {
+    throw new Error("Lecture du corpus transcrit impossible ; aucune source n’a été chargée.");
+  }
+  const recipeIdeas = buildDemoRecipeIdeas(invoices);
+  const { plan, recipeIdeaSources, recipeCandidates } = await seedLocalDemoScenario(ownerId, { invoices, recipeIdeas });
   console.info(JSON.stringify({ mode: "demo", counts: plan.counts, yearCoverage: plan.yearCoverage,
-    fictitiousRecipeIdeaSources: recipeIdeaSources.length,
+    recipeIdeaSourceDocuments: recipeIdeaSources.length,
+    recipeIdeaEvidence: "transcriptions locales, non vérifiées sur les originaux",
     pendingRecipeCandidates: recipeCandidates.filter((candidate) => candidate.status === "pending").length }, null, 2));
 } finally {
   await prisma.$disconnect();
