@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { ApiError } from "../../config/api";
 import { createInvoiceDraftFromSource, getSourceInvoice, getSourceInvoices, type Invoice,
@@ -46,6 +46,8 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   const resumeButtonRef = useRef<HTMLButtonElement>(null);
   const archiveRetryFocusPending = useRef(false);
   const detailRetryFocusPending = useRef(false);
+  const sourceFocusPending = useRef(false);
+  const sourceFocusBeforeNavigation = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -115,6 +117,21 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
     else detailHeadingRef.current?.focus();
   }, [detailError, detailLoading, selected]);
 
+  useLayoutEffect(() => {
+    if (detailLoading || !sourceFocusPending.current || !selected) return;
+    const heading = detailHeadingRef.current;
+    if (!heading) return;
+    sourceFocusPending.current = false;
+    const currentFocus = document.activeElement;
+    const previousFocus = sourceFocusBeforeNavigation.current;
+    sourceFocusBeforeNavigation.current = null;
+    const shouldFocus = currentFocus === null || currentFocus === document.body || currentFocus === previousFocus || !currentFocus.isConnected;
+    if (shouldFocus) {
+      heading.focus({ preventScroll: true });
+      heading.scrollIntoView({ block: "center" });
+    }
+  }, [detailLoading, invoices, loading, selected]);
+
   const retryArchive = () => {
     archiveRetryFocusPending.current = document.activeElement === archiveRetryButtonRef.current;
     setRetryRevision((value) => value + 1);
@@ -126,7 +143,10 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   };
 
   useEffect(() => {
-    if (sourceId) void open(sourceId);
+    if (!sourceId) return;
+    sourceFocusPending.current = true;
+    sourceFocusBeforeNavigation.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    void open(sourceId);
   }, [open, sourceId]);
 
   const resume = async () => {
