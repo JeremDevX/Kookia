@@ -67,21 +67,19 @@ Le seed exécutable est réservé à ce runner, qui crée lui-même sa base tmpf
 neuve (`3dddd2e`) ; aucun utilitaire séparé ne cible une base locale par nom.
 Le gestionnaire d'arrêt du runner est maintenant répétable (`6570815`) et une
 nouvelle smoke test confirme que Ctrl-C retire serveurs, conteneur et identifiants.
-Le seed `demo:local` propose maintenant deux candidates multi-ingrédients
-(quiche au poulet, gratin de pâtes), avec rendements et quantités explicitement
-hypothétiques. Un audit local agrégé des 431 transcriptions suivies, sans lire
-les originaux ni conserver de lignes brutes, trouve des familles mappées au
-catalogue en nombre suffisant pour explorer ces pistes : volaille 31 pièces,
-œufs 25, crème 16, farine 12, mozzarella 8 et pâtes 6. Il s'agit de comptages
-heuristiques du parseur/catalogue, pas d'une validation manuelle de chaque
-pièce ou d'une preuve qu'un plat a été préparé ; noms détaillés, fournisseurs,
-dates et prix ne sont pas consignés. Les 6 pièces d'appui du seed restent
-entièrement fictives : aucune candidate ne référence encore une ligne réelle
-du corpus. L'intégration confirme l'édition de 0,25 à 0,30 kg de farine, la
-confirmation de la quiche et le maintien du gratin en attente, sans delta de
-stock, mouvement ni production. Cette preuve sur fixtures n'achève donc pas le
-parcours « famille du corpus → ligne d'origine → candidate » ni l'audit de
-sensibilité/droit d'usage avant tout partage.
+Mise à jour C2/Q2 (2026-09-25) : `demo:local` charge les 431 transcriptions
+suivies seulement dans son PostgreSQL tmpfs. Deux candidates hypothétiques
+(pizza jambon-champignons, omelette champignons-jambon) référencent huit lignes
+issues de six pièces retenues du corpus, toutes directement compatibles avec
+l'unité catalogue. Les quantités et rendements restent éditables/hypothétiques ;
+la date d'origine est séparée de la date décalée de démonstration. Les tests et
+captures conservent uniquement des sources fictives. L'intégration corrige une
+quantité hypothétique, confirme la pizza et laisse l'omelette en attente, sans
+delta de stock/révision, mouvement ou production. Un rendu du vrai composant
+avec données synthétiques couvre 320/768/1280 px et le focus clavier visible,
+sans débordement horizontal. Aucun détail du corpus n'est consigné ici, dans
+les logs ou les captures. La lecture des originaux, la validation métier et
+l'audit de sensibilité/droit d'usage avant partage restent ouverts.
 Ce fichier n'est pas une preuve que
 les fonctionnalités cibles complètes sont livrées. À chaque reprise, relever
 date, branche, `git status`, migrations et tests disponibles sans effacer les
@@ -95,20 +93,17 @@ fraîcheur/couverture, repli F1 conditionnel et aucun ajustement ni gain annonc�
 confirme le texte AX, Tab sur la région nommée, et aucune sortie horizontale à
 320/768/1280 px (correction `1a92545`, captures ci-dessous).
 
-**Prochaine preuve Q2 (si une fenêtre CUA redevient pilotable) :** revoir
-`SOURCE_CHANGED` en vrai zoom Chrome 200 % et avec une technologie d’assistance
-réelle. `cua.getState()` voit Chrome ouvert, mais `browsers: []` persiste et
-`getApp("Google Chrome")` échoue `cgWindowNotFound` ; la page de connexion
-visible côté utilisateur ne donne pas d'accès à l'onglet. Les états 503/reprise et le tableau
-mensuel de 48 périodes du Bilan et la reprise `SOURCE_CHANGED` de l’archive
-Achats ont maintenant des preuves headless/clavier à largeur étroite. Le Bilan
-est éprouvé dans une mise en page de 640 CSS px avec DPR 2 (largeur utile
-équivalente à 200 % sur 1280 px, pas le zoom natif) ; l’archive l’est à 640 et
-320 CSS px. L’utilisateur confirme la page de connexion visible, mais CUA
-retourne `browsers: []` et aucun zoom natif ou lecteur d’écran réel n’est
-revendiqué. En parallèle, poursuivre la liaison pseudonymisée de familles
-validées à des lignes réellement présentes en bac isolé ; les captures de
-candidates ajoutées ci-dessous sont faites sur seules réponses fictives.
+**Prochaine preuve Q2 :** reprendre, dès qu'une fenêtre devient contrôlable,
+le zoom Chrome natif à 200 % et une vérification avec technologie
+d'assistance. La revue actuelle rend le vrai composant `RecipeCandidates` avec
+réponses synthétiques à 320/768/1280 px et vérifie le focus clavier ; elle ne
+remplace pas une revue native. L’utilisateur voit la page de connexion, mais
+`cua.getState()` retourne encore `browsers: []` et `getApp("Google Chrome")`
+échoue `cgWindowNotFound`. Le parcours de liaison corpus → ligne → candidate
+est maintenant exercé uniquement dans le bac tmpfs ; aucune donnée source
+n'apparaît dans les preuves rendues. Poursuivre aussi les états C3 non encore
+revus, sans présenter les transcriptions ou les plats hypothétiques comme
+validés. L'audit de sensibilité et des droits reste requis avant partage.
 
 C2/C3, I1–I4, F1, M2–M3, O1 et R0 sont prouvés localement ; l'extraction de
 facture reste limitée à la fixture PDF publique en `demo:local`, sans OCR
@@ -247,7 +242,7 @@ transmettent leurs preuves sans écrire ici simultanément.
 | O2 — réception rapprochée | Prouvé localement (fixtures synthétiques) | Non activé sur pilote | Facture brouillon, fournisseur, commande et référence/date de livraison liés par clés tenant ; réception partielle, écart de prix expliqué, snapshot prix/provenance, idempotence concurrente ; stock crédité uniquement en mode opérationnel et simulé sans mouvement dans le tenant démo. Revue UI `demo:local` : 3 kg commandés, facture manuelle liée, 2 kg puis 1 kg reçus ; commande/facture terminales, stock et mouvements inchangés. Rendu 320 px sans débordement, Tab/Entrée sur les actions, captures Q2. Corrige le masquage de `simulated_partially_received`. Commits `5c76e31`, `ca1a0a4`. | Aucun envoi fournisseur ni pilote réel ; champs préremplis par CDP, donc pas de preuve de saisie complète au clavier. Pas de CUA natif, zoom 200 % ni lecteur d'écran réel. L'ancien chemin de réception non liée reste disponible. |
 | M1 — impact opérationnel | Prouvé localement (fixtures synthétiques) | Non activé / mesure terrain en attente | Comparaison de périodes de même durée ; pertes explicites et réceptions confirmées liées à leurs opérations, coût calculé depuis prix snapshotés ; unités incohérentes et simulation exclues des totaux enregistrés, espace démo séparé. Nouvelle réconciliation API mensuelle de janvier 2023 à décembre 2026 depuis les ventes, jours de service et pertes persistés ; elle a révélé puis corrigé le compteur des jours complets simulés. Voir `5c76e31` et la preuve du 2026-09-25 ci-dessous. | Ruptures et invendus ne sont pas enregistrés dans un ledger dédié et restent non mesurés ; mouvements sans prix historique restent non valorisés. Aucune économie réalisée calculée ; le rendu détaillé du Bilan reste à vérifier. |
 | M2 — surstock et menus | Prouvé localement (bac démo uniquement) | Non activé dans les espaces opérationnels / validation pilote en attente | `GET /menu/surplus-options` n'expose que les comptages positifs encore actuels ; `POST /menu/ideas` exige quantité explicitement désignée, verrouille les produits concernés, vérifie tenant/révision/unité et enregistre une décision rejouable `demo_simulation`. Le fixture C2 fournit aussi un comptage courant final de tomates et prouve sa présence dans les options ; dernière version datée applicable, seuil global ignoré, aucun mouvement/production implicite. Commits `9b474c1`, `818b1d5`. | Chaque recette utilise séparément toute la quantité désignée ; portions maximales non additives. Péremption inconnue, seuil haut opérationnel non introduit, aide indisponible hors démo. Aucun rendu/responsive/clavier complet (Q2 en cours). |
-| Pièces → idées de recette | Prouvé localement sur familles agrégées + fixtures synthétiques | Non applicable | Le parseur/catalogue compte, parmi les transcriptions locales, des pièces contenant volaille (31), œufs (25), crème (16), farine (12), mozzarella (8), pâtes (6) ; 1 064 lignes parsées au total, 173 mappées. Le seed `demo:local` contient 6 pièces entièrement fictives et deux candidates de 4 ingrédients chacune, aux unités du catalogue. Dans `scenarioFixture.integration.test.ts`, la quiche est corrigée (farine 0,25 → 0,30 kg) puis confirmée ; le gratin reste pending ; bilan de stock, mouvements et productions inchangés. `verify:local-delivery` passe sur tmpfs. Le vrai composant `RecipeCandidates` est rendu avec réponses interceptées : captures [320](evidence/q2-recipe-candidates/recipe-candidates-320.png), [focus clavier](evidence/q2-recipe-candidates/recipe-candidates-320-focus.png), [768](evidence/q2-recipe-candidates/recipe-candidates-768.png), [1280](evidence/q2-recipe-candidates/recipe-candidates-1280.png) ; Tab focalise « Nouvelle candidate », AX nomme liens/actions. | Les comptages sont heuristiques, ne prouvent pas une recette ni une unité compatible par ligne. Les candidates pointent encore vers des pièces synthétiques, pas des lignes du corpus ; aucun original n'a été lu et l'audit de sensibilité/droit d'usage avant partage reste à faire. Chrome natif/lecteur d'écran réel non vérifiés. M2 part toujours du comptage courant, non des factures. |
+| Pièces → idées de recette | Prouvé localement dans le bac `demo:local` tmpfs | Non applicable | Le runner lit 431 transcriptions ; deux candidates hypothétiques référencent 8 lignes de 6 pièces retenues, avec unités catalogue directement compatibles. L’intégration corrige une quantité hypothétique, confirme la pizza et garde l’omelette en attente ; aucun delta de stock/révision, mouvement ou production. Tests/CI et captures utilisent uniquement des sources fictives. Rendu du composant réel à 320/768/1280 px, sans débordement horizontal ; Tab focalise « Nouvelle candidate », focus visible, AX nomme boutons et liens et distingue dates d’origine/démo. Captures [320](evidence/q2-recipe-candidates/recipe-candidates-320.png), [focus clavier](evidence/q2-recipe-candidates/recipe-candidates-320-focus.png), [768](evidence/q2-recipe-candidates/recipe-candidates-768.png), [1280](evidence/q2-recipe-candidates/recipe-candidates-1280.png). | Transcriptions non vérifiées sur originaux ; idées, quantités et rendements hypothétiques, sans preuve qu’un plat a été préparé. CUA `browsers: []`/`cgWindowNotFound` empêche zoom natif/lecteur d’écran réel. Droits et sensibilité avant partage à auditer. M2 part toujours d’un comptage courant, non des factures. |
 | M3 — export des pertes déclarées | Prouvé localement (export opérationnel) | Non activé / aucune revendication AGEC | L'export existant ajoute les mouvements négatifs `loss` comme pertes séparées, quantité absolue, `createdAt` UTC, identifiant source, coût seulement si prix snapshoté. Nombre sans prix, unités incompatibles (lignes « à vérifier », hors total), simulations exclues et métriques indisponibles stockouts/invendus sont visibles dans CSV/Excel/PDF. Les tests antérieurs couvrent operation IDs, prix manquant, unité incompatible, simulation, tenant croisé et formats protégés. La fixture C2 ajoute un mouvement explicite de 10 kg `loss`, distinct des invendus estimés ; sa chronologie qualifie la perte de synthétique/non observée. | Ne mesure que les pertes explicitement déclarées ; pas de ledger de rupture/invendu, pas de causalité d'économie ni d'attestation réglementaire. Aucun événement du bac démo ne constitue une mesure terrain. |
 | C3 — chaîne métier complète | Prouvé localement (API / fixture synthétique) | Non applicable | `timelineEventMappers` expose décisions, commandes internes et réceptions rapprochées avec provenance simulation, identifiant/source liée et coupe `asOf`; les archives ouvrent la pièce dans Achats. `demoStory.integration.test.ts` rejoue quatre chapitres, 2023 sans réception source, ventes simulées datées + comptage → suggestion → décision → commande démo → réception de pièce synthétique → `/impact` calculé depuis les opérations, stock inchangé. Le fixture C2 vérifie aussi en 2025 la version effective, comptages, perte explicite et refus sans déduction. Commits `290d354`, `818b1d5`. | La chaîne API/DB est prouvée, et l’Histoire a des revues UI ciblées (pièce liée et liste dense, voir Q2) ; le parcours visuel complet de chaque chapitre reste à établir. Q2 reste en cours. Aucune précision terrain ni aucun KPI seedé ; aucun envoi n'est déclenché. |
 | UX Histoire dense (Q2/C3) | Prouvé localement sur composant réel + réponses synthétiques | Non applicable | Recherche libellés/détails/précisions (casse/accents ignorés), 20 événements au départ puis lots progressifs ; Tab/Entrée, focus et transfert au statut au dernier lot. Chargement/503/reprise, troncature, recherche vide ; AXTree confirme `role=alert` assertif après correction. 320/360/768/1280 px sans débordement. `efa944b`, `b94da3f`; captures ci-dessous. | Réponses entièrement fictives ; aucun backend ni espace de restaurant n’est lu. CUA natif et lecteur d’écran réel toujours non vérifiés. |
@@ -1008,3 +1003,46 @@ employé ; ces captures ne constituent pas un zoom Chrome natif ni une preuve
 assistive. Q2/C3 et le Goal restent ouverts.
 
 Commit local : `6c00fc4` ; aucun push.
+
+### Reprise C2/Q2 — candidates reliées aux transcriptions locales (2026-09-25)
+
+Le parseur existant a lu en mémoire les 431 transcriptions Markdown suivies ;
+les PDF et images originaux n'ont pas été ouverts. Le runner sélectionne une
+ligne par ingrédient uniquement si elle se mappe directement à une unité du
+catalogue, sans conversion implicite. Deux idées hypothétiques sont construites :
+pizza jambon-champignons (5 ingrédients : farine, tomate, mozzarella, jambon,
+champignon) et omelette champignons-jambon (3 : œuf, champignon, jambon). Les
+huit références viennent de six pièces distinctes. Le choix est déterministe ;
+si une famille/unité manque, le seed échoue avec un message générique. Les
+quantités facturées ne sont pas reprises comme quantités de recette. Dates
+d'origine et dates décalées du scénario restent explicitement séparées.
+
+Seul `demo:local` lit le corpus et l'insère dans un PostgreSQL neuf sur tmpfs ;
+le runner a été vérifié à 431 documents source et 2 candidates, puis arrêté et
+supprimé. Tests et CI utilisent des lignes entièrement synthétiques.
+L'intégration corrige la quantité hypothétique de farine de 0,20 à 0,30 kg,
+confirme la pizza et laisse l'omelette pending ; aucun delta de stock/révision,
+aucun mouvement ni production. Cette édition ne prétend pas qu'une recette a
+été préparée ou validée.
+
+Dans le harnais isolé, seules des réponses API synthétiques alimentent le vrai
+composant `RecipeCandidates`. Les viewports 320, 768 et 1280 px gardent la
+largeur de document égale au viewport. AX nomme commandes et liens ; Tab met en
+évidence « Nouvelle candidate » (contour 3 px). Les liens affichent séparément
+date d'origine et date de démo. Captures inspectées : [320](evidence/q2-recipe-candidates/recipe-candidates-320.png),
+[focus](evidence/q2-recipe-candidates/recipe-candidates-320-focus.png),
+[768](evidence/q2-recipe-candidates/recipe-candidates-768.png),
+[1280](evidence/q2-recipe-candidates/recipe-candidates-1280.png). CUA voit
+Chrome comme application mais ne trouve pas la fenêtre (`cgWindowNotFound`) ;
+zoom natif et lecteur d'écran réel ne sont pas revendiqués. Aucun détail du
+corpus n'est inclus dans les captures, le harnais ou les logs.
+
+`npm run verify:local-delivery` passe après les changements : lint, builds
+web/API, 18 migrations fraîches, 33 contrôles Node/CSS, 28 fichiers Vitest
+(115 tests), 25 fichiers d'intégration (38 tests) et dump/restauration
+synthétiques. Le premier run a eu une coupure `socket hang up` dans le test de
+reconnexion ; la recette complète suivante passe, y compris ce test.
+`git diff --check` passe. Limites restantes :
+transcriptions non vérifiées sur leurs originaux, recettes non validées et
+droits d'usage/sensibilité à auditer avant tout partage. Commit local du code :
+`1f12c0a` ; aucun push.
