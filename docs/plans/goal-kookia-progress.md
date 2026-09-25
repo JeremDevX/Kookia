@@ -53,15 +53,13 @@ quantités de vente/perte estimées selon l'hypothèse initiale 90/10 et ingréd
 non contrôlés ; les recettes concurrentes sont des alternatives non additives.
 L'endpoint ne crée aucune vente, perte ou mouvement. Un test demande une période
 de cinq ans et vérifie l'isolation restaurant, l'exclusion d'une réception
-simulée et l'absence d'écritures ventes/stock. Validation complète réussie :
-lint, build web/API, 18/18 migrations, parité Prisma, 30 fichiers/119 tests
-unitaires, 26 fichiers/40 tests d'intégration, sauvegarde/restauration
-syntétique (recette exécutée une fois sans échec avant le dernier affichage
-dynamique du même ratio). Sur les exécutions finales, lint/build/tests unitaires
-et le test de cette nouvelle route passent ; des tests d'intégration
-préexistants échouent ponctuellement ailleurs (`socket hang up` ou `401`) sans
-échec du test de sorties estimées. Le PostgreSQL tmpfs a été supprimé après
-chaque exécution.
+simulée et l'absence d'écritures ventes/stock. Avant l'extension récente du
+parcours O2, une exécution complète R0 a réussi : lint, build web/API, 18/18
+migrations, parité Prisma, 30 fichiers/119 tests unitaires, 26 fichiers/40
+tests d'intégration, sauvegarde/restauration synthétique. Les tests
+d'intégration préexistants ont aussi échoué ponctuellement ailleurs (`socket
+hang up` ou `401`) sur d'autres exécutions. Le PostgreSQL tmpfs a été supprimé
+après chaque exécution.
 
 **QA rendu/clavier Q2 (2026-09-25) :** Chrome headless isolé, compte de fixtures
 et réponse estimative interceptée en mémoire ; aucune donnée persistante Kookia
@@ -87,14 +85,27 @@ ligne source. `ingredientOutflowEstimate.integration.test.ts` vérifie le chemin
 positif réception enregistrée → recette datée compatible → quantités de vente
 et perte estimées, tout en excluant une réception simulée et en prouvant
 l'absence d'écriture ventes/stock ; `demoStory.integration.test.ts` vérifie
-qu'une réception simulée ne produit aucune estimation. `npm test` passe
-(119 tests), comme lint, builds web/API et `git diff --check`. La dernière
-recette PostgreSQL tmpfs passe migrations/parité/builds/tests unitaires ;
-l'intégration est à 39/40 (25/26 fichiers), avec un 401 dans
-`scenarioFixture.integration.test.ts` lors d'une requête d'impact, tandis que
-les deux tests ci-dessus passent. Ce run n'est donc pas déclaré vert ; le
-conteneur tmpfs a été confirmé supprimé. Aucun compte Kookia persistant n'a été
-utilisé.
+qu'une réception simulée ne produit aucune estimation. Une exécution
+intermédiaire a obtenu 39/40 intégrations, avec un 401 dans
+`scenarioFixture.integration.test.ts` ; un R0 complet antérieur était vert.
+Le dernier R0 après l'extension O2 est à 37/40 : trois échecs variables dans
+`demoStory`, `posSalesSync` et `sales.integration` (`socket hang up`/`401`). Le
+test d'estimations n'est pas en échec ; sa version ciblée passe séparément
+(1/1). Ce dernier R0 n'est pas déclaré vert. Le conteneur tmpfs a été confirmé
+supprimé. Aucun compte Kookia persistant n'a été utilisé.
+
+**O2 — réception → sorties estimées (2026-09-25) :** le parcours d'intégration
+de commande validée, facture liée et réceptions partielles (2 puis 1 kg)
+vérifie maintenant une estimation distincte pour chaque entrée, rattachée à la
+recette datée compatible, avec portions et quantités de vente/perte calculées
+selon l'hypothèse 90/10. Le test compare aussi les nombres de ventes et de
+mouvements avant/après pour prouver l'absence d'écriture ; une réception
+simulée reste exclue. `purchaseSuggestions.integration.test.ts` passe seul
+(1/1) sur PostgreSQL tmpfs. Le test pur `restaurantSimulationPlan` vérifie
+également chaque mois de la période et la présence de jours de service en
+2023–2026 (2/2). Lint, build web/API, `npm test` (119 Vitest + 33 Node/CSS) et
+`git diff --check` passent ; aucune donnée du compte Kookia n'a été lue ni
+modifiée.
 
 Audit Prisma/SQL hors D5 : un PostgreSQL 16 neuf sur tmpfs a appliqué 18/18
 migrations, puis un diff direct vers `prisma/schema.prisma` a révélé cinq
@@ -495,6 +506,8 @@ transmettent leurs preuves sans écrire ici simultanément.
 | 2026-09-25 | R0 — parité Prisma intégrée à la recette | `0baebe6` | `npm run verify:local-delivery` : lint (37 CSS), builds web/API, migrations fraîches 18/18, diff Prisma/base (`No difference detected`), `npm test` (33 Node/CSS + 29 fichiers/119 Vitest), intégration PostgreSQL (26 fichiers/39 tests), dump/restauration synthétique et `migrate status` à jour. | PostgreSQL 16 loopback/tmpfs sans volume ; conteneur supprimé. Aucun compte, corpus ou service conservé utilisé. | Continuer Q2 rendu/clavier et garder natif/200 %/technologie d’assistance non revendiqués tant que la fenêtre CUA manque. |
 | 2026-09-25 | Q1b/C3 — runner UI sans corpus | `bd8d60f`, `5435eb5` | `npm run demo:fixtures` amorce les seules fixtures synthétiques dans le PostgreSQL tmpfs ; `demo:local` reste inchangé. Un compte, 437 pièces/sources, 946 journées et 5 026 ventes simulées. Frontend React + API réels rendus dans Chrome headless/CDP à 390×844 : en juin 2023/24/25/26, 1 366/1 347/1 305/1 329 événements, 20 cartes initiales et source/production étiquetées ; largeur document = viewport. Bilan : 45 mois, aucune donnée enregistrée, 100 431 unités simulées, 5 026 ventes simulées exclues ; table interne 1 000 px dans une région de 293 px, sans débordement de page. | Captures inspectées : [2023](evidence/c3-fixture-ui/history-2023-390.png), [2024](evidence/c3-fixture-ui/history-2024-390.png), [2025](evidence/c3-fixture-ui/history-2025-390.png), [2026](evidence/c3-fixture-ui/history-2026-390.png), [Bilan — mai 2023](evidence/c3-fixture-ui/impact-may-2023-390.png). Lint, build web, 29 fichiers/119 tests Vitest + 33 contrôles Node/CSS, diff-check passent. Conteneur, ports, profil Chrome et mot de passe temporaire supprimés ; aucun autre bac touché. | Aucune transcription locale lue. CUA `browsers: []`/`cgWindowNotFound` persiste ; captures headless, non Chrome natif/lecteur d’écran. Parcours métier intégré en lecture seule ; les mutations restent couvertes par les tests API et preuves clavier distinctes. | Continuer uniquement les parcours UI encore manquants ; garder l’écran natif/technologie d’assistance comme limites ouvertes. |
 | 2026-09-25 | Q2 — connexion responsive et clavier | `a5ee418`, `17aadfd` | Sur `/login`, le pied de formulaire coupait le lien à 320 px → lien maintenu entier ; le test narratif C3 aligne maintenant chaque ligne source 2024–26 sur son mouvement simulé lié, sans ligne/mouvement 2023. | Chrome 154 headless/CDP après splash : 320/390/768/1280/1440 px, document/body sans débordement, contrôles dans le viewport ; AX noms/roles corrects ; Tab Email → Mot de passe → Se connecter → Créer un compte, contour visible 3 px. Captures : [320](evidence/q2-login/login-320.png), [1440](evidence/q2-login/login-1440.png). `npm run lint` et `npm run verify:local-delivery` passent (18 migrations, diff Prisma vide, 33 Node/CSS, 119 tests, 26 fichiers/40 intégrations, dump/restore) ; `demoStory` passe. | Connexion seulement ; aucun essai d’identifiants ni mutation. CUA natif/IAB indisponibles ; pas de zoom natif à 200 % ni lecteur d’écran réel sur `/login`. Conteneurs et identifiants de cette passe tmpfs supprimés ; aucun autre runner touché. | Poursuivre les états Q2 hors nominaux et les parcours encore absents ; réserver le rendu natif/AT aux fenêtres effectivement contrôlables. |
+
+| 2026-09-25 | O2 — sorties estimées depuis réceptions partielles | — (tests et preuves locales) | `purchaseSuggestions.integration.test.ts` vérifie les reçus de 2 puis 1 kg, la recette compatible et les estimations 90/10 distinctes ; ventes/mouvements restent inchangés et le reçu simulé n'est pas estimé. `restaurantSimulationPlan.test.ts` vérifie la couverture de chaque mois et des jours de service 2023–2026. | Intégration O2 ciblée 1/1 sur PostgreSQL tmpfs ; tests purs 2/2 ; lint, builds web/API, npm test (119 + 33) passent. Le dernier R0 complet reste à 37/40 avec trois échecs variables d'autres tests (`socket hang up`/`401`) ; tmpfs supprimé. | Reproduire le R0 complet en isolant les diagnostics des 3 échecs variables ; poursuivre les parcours Q2 encore ouverts. |
 
 ### Q2 — Réconciliation mensuelle du Bilan (2026-09-25)
 

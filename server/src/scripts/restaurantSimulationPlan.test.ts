@@ -19,6 +19,16 @@ it("builds a complete, deterministic multi-year service and inventory ledger", (
   expect(plan.counts.serviceDays).toBeGreaterThan(900);
   expect(plan.serviceDays).toHaveLength(plan.counts.serviceDays);
   expect(plan.serviceDays.every((date) => plan.sales.some((sale) => sale.date === date))).toBe(true);
+  const firstServiceMonth = plan.startDate.slice(0, 7);
+  const lastServiceMonth = plan.endDate.slice(0, 7);
+  const expectedServiceMonths: string[] = [];
+  for (let year = Number(firstServiceMonth.slice(0, 4)); year <= Number(lastServiceMonth.slice(0, 4)); year++) {
+    for (let month = 1; month <= 12; month++) {
+      const key = `${year}-${String(month).padStart(2, "0")}`;
+      if (key >= firstServiceMonth && key <= lastServiceMonth) expectedServiceMonths.push(key);
+    }
+  }
+  expect([...new Set(plan.serviceDays.map((date) => date.slice(0, 7)))].sort()).toEqual(expectedServiceMonths);
   expect(plan.sales).toHaveLength(plan.productions.length);
   expect(plan.sales.every((sale) => sale.portionsPrepared === sale.quantity + sale.estimatedUnsold)).toBe(true);
   expect(plan.counts.estimatedUnsoldPortions / plan.counts.soldPortions).toBeCloseTo(0.015, 2);
@@ -34,9 +44,9 @@ it("builds a complete, deterministic multi-year service and inventory ledger", (
     "2026": { documents: 186 },
     "sans-date": { documents: 1 },
   });
-  for (const year of ["2024", "2025", "2026"] as const) {
+  for (const year of ["2023", "2024", "2025", "2026"] as const) {
     expect(plan.yearCoverage[year].serviceDays).toBeGreaterThan(0);
-    expect(plan.yearCoverage[year].invoiceReceipts).toBeGreaterThan(0);
+    if (year !== "2023") expect(plan.yearCoverage[year].invoiceReceipts).toBeGreaterThan(0);
   }
   expect(plan.counts.invoiceReceipts).toBeGreaterThan(0);
   expect(invoices.filter((invoice) => invoice.type === "invoice")).toHaveLength(415);

@@ -146,6 +146,23 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
   expect(realImpact.body.current.recorded).toMatchObject({ receivedCost: invoicePrice * 3, receiptCount: 2 });
   expect(realImpact.body.current.recorded.receiptsByProduct).toMatchObject([{ productId: product.id,
     receivedQuantity: 3, cost: invoicePrice * 3, receiptIds: expect.arrayContaining([firstReceipt.body.id, secondReceipt.body.id]) }]);
+  const [salesBeforeOutflowEstimate, movementsBeforeOutflowEstimate] = await Promise.all([
+    prisma.dailySale.count({ where: { restaurantId: owner.restaurantId } }),
+    prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId } }),
+  ]);
+  const outflowEstimate = await owner.agent.get("/api/workspace/ingredient-outflow-estimates")
+    .query({ from: parisToday(), to: parisToday() }).expect(200);
+  expect(outflowEstimate.body).toMatchObject({ assumptions: { estimatedSalesShare: 0.9, estimatedLossShare: 0.1 } });
+  expect(outflowEstimate.body.estimates).toEqual(expect.arrayContaining([
+    expect.objectContaining({ receiptReference: "BL-O2-1", productId: product.id, receivedQuantity: 2,
+      recipeName: "Recette suivie", possiblePortions: 4, estimatedSoldPortions: 3.6, estimatedLossPortions: 0.4,
+      estimatedSoldQuantity: 1.8, estimatedLossQuantity: 0.2 }),
+    expect.objectContaining({ receiptReference: "BL-O2-2", productId: product.id, receivedQuantity: 1,
+      recipeName: "Recette suivie", possiblePortions: 2, estimatedSoldPortions: 1.8, estimatedLossPortions: 0.2,
+      estimatedSoldQuantity: 0.9, estimatedLossQuantity: 0.1 }),
+  ]));
+  expect(await prisma.dailySale.count({ where: { restaurantId: owner.restaurantId } })).toBe(salesBeforeOutflowEstimate);
+  expect(await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId } })).toBe(movementsBeforeOutflowEstimate);
   expect(Number((await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: {
     restaurantId: owner.restaurantId, id: product.id } } })).currentStock)).toBe(stockBeforeOrder + 3);
   await owner.agent.post(`/api/workspace/orders/${order.body.id}/receipts`).send({ ...secondReceiptInput,
@@ -191,6 +208,8 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
   expect(demoReceipt.body).toMatchObject({ simulated: true, invoiceComplete: true });
   expect(Number((await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: {
     restaurantId: demo.restaurantId, id: demoProduct.id } } })).currentStock)).toBe(2);
+  expect((await demo.agent.get("/api/workspace/ingredient-outflow-estimates")
+    .query({ from: parisToday(), to: parisToday() }).expect(200)).body.estimates).toEqual([]);
   expect(await prisma.stockMovement.count({ where: { restaurantId: demo.restaurantId,
     reason: "purchase_receipt" } })).toBe(0);
   const demoImpact = await demo.agent.get(`/api/workspace/impact?from=${parisToday()}&to=${parisToday()}`).expect(200);
