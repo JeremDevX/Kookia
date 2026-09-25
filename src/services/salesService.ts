@@ -68,6 +68,15 @@ export interface SalesBaseline {
   completeServiceDays: number; openServiceDays: number; incompleteDates: string[];
   status: "no_data" | "insufficient_history" | "experimental";
   observedItemCount: number; excludedSimulationRows: number; mixedSourceWindow: boolean;
+  contextualForecast: {
+    status: "not_connected" | "unavailable" | "stale" | "fixture_ready";
+    position: "unverified" | "fixture_position";
+    weather: "not_connected" | "unavailable" | "stale" | "fresh";
+    events: "not_connected" | "unavailable" | "stale" | "fresh";
+    historicalEmissions: "not_connected" | "unavailable" | "stale" | "fresh";
+    forecastSource: "f1" | "none";
+    contextualAdjustmentApplied: false;
+  };
   items: {
     saleItemId: string; saleItemName: string; forecastQuantity: number;
     backtest: { from: string; to: string; days: number; observedQuantity: number;

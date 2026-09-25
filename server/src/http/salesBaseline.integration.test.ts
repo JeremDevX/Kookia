@@ -50,7 +50,10 @@ it("requires complete calendar coverage and treats absent item rows as zero only
   expect(recipeRevision.body.version).toBe(2);
   const response = await owner.agent.get("/api/workspace/sales/baseline").expect(200);
   expect(response.body).toMatchObject({ provenance: "recorded_sales", status: "experimental",
-    model: "rolling_mean_7_v1", asOfDate: asOf, forecastDate: today, observedItemCount: 2 });
+    model: "rolling_mean_7_v1", asOfDate: asOf, forecastDate: today, observedItemCount: 2,
+    contextualForecast: { status: "not_connected", position: "unverified", weather: "not_connected",
+      events: "not_connected", historicalEmissions: "not_connected", forecastSource: "f1",
+      contextualAdjustmentApplied: false } });
   expect(response.body.items.map((item: { saleItemId: string; forecastQuantity: number }) =>
     [item.saleItemId, item.forecastQuantity])).toEqual([[complete.body.id, 10], [incomplete.body.id, 2]]);
   const pizzaBaseline = response.body.items.find((item: { saleItemId: string }) => item.saleItemId === complete.body.id);
@@ -66,8 +69,10 @@ it("requires complete calendar coverage and treats absent item rows as zero only
     restaurantId: owner.restaurantId, serviceDate: date(10),
   } }, data: { coverage: "partial" } });
   expect((await owner.agent.get("/api/workspace/sales/baseline").expect(200)).body)
-    .toMatchObject({ status: "insufficient_history", completeServiceDays: 27, items: [] });
+    .toMatchObject({ status: "insufficient_history", completeServiceDays: 27, items: [],
+      contextualForecast: { forecastSource: "none", contextualAdjustmentApplied: false } });
   expect((await other.agent.get("/api/workspace/sales/baseline").expect(200)).body)
-    .toMatchObject({ status: "no_data", items: [], completeServiceDays: 0, incompleteDates: expect.any(Array) });
+    .toMatchObject({ status: "no_data", items: [], completeServiceDays: 0, incompleteDates: expect.any(Array),
+      contextualForecast: { forecastSource: "none", contextualAdjustmentApplied: false } });
   await request(app).get("/api/workspace/sales/baseline").expect(401);
 });

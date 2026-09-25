@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { evaluateSalesBaseline } from "./salesBaseline.js";
+import { evaluateSalesForecastContext } from "./salesForecastContext.js";
 
 type BaselineDatabase = PrismaClient | Prisma.TransactionClient;
 
@@ -27,7 +28,7 @@ export async function getSalesBaseline(restaurantId: string, asOfDate = previous
   const versions = recipeIds.length ? await db.recipeVersion.findMany({
     where: { restaurantId, recipeId: { in: recipeIds } }, include: { ingredients: true },
   }) : [];
-  return evaluateSalesBaseline(rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
+  const baseline = evaluateSalesBaseline(rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
     saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity,
     source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : row.source === "pos" ? "pos" as const : row.source === "ticket_z" ? "ticket_z" as const : "manual" as const })),
   serviceDays.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
@@ -41,4 +42,5 @@ export async function getSalesBaseline(restaurantId: string, asOfDate = previous
       productId: ingredient.productId, productName: ingredient.productName, unit: ingredient.productUnit,
       quantity: Number(ingredient.quantity),
     })) })));
+  return { ...baseline, contextualForecast: evaluateSalesForecastContext(baseline, null, new Date()) };
 }
