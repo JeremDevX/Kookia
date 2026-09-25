@@ -143,6 +143,10 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
   expect(afterReceipt.currentStock.toString()).toBe(beforeReceipt.currentStock.toString());
   expect(await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId,
     purchaseReceiptLine: { receiptId: receipt.body.id } } })).toBe(0);
+  const outflowEstimates = await owner.agent.get("/api/workspace/ingredient-outflow-estimates")
+    .query({ from: today, to: today }).expect(200);
+  expect(outflowEstimates.body).toMatchObject({ from: today, to: today,
+    assumptions: { estimatedSalesShare: 0.9, estimatedLossShare: 0.1 }, estimates: [] });
 
   const yesterday = new Date(Date.parse(today) - 86_400_000).toISOString().slice(0, 10);
   const impact = await owner.agent.get("/api/workspace/impact").query({ from: yesterday, to: today, monthly: "true" }).expect(200);

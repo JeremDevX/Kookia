@@ -181,8 +181,10 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
         evidence: expect.objectContaining({ ...sourceEvidence("Jambon cru"), sourceUnit: "kg" }) }),
       expect.objectContaining({ productName: "Champignons", quantity: 0.05, unit: "kg",
         evidence: expect.objectContaining({ ...sourceEvidence("Champignons"), sourceUnit: "kg" }) }),
+      expect.objectContaining({ productName: "Huile d'olive", quantity: 0.02, unit: "L",
+        evidence: expect.objectContaining({ ...sourceEvidence("Huile d'olive"), sourceUnit: "L" }) }),
     ]) });
-  expect(pizza.ingredients).toHaveLength(5);
+  expect(pizza.ingredients).toHaveLength(6);
   const omelette = candidatesByName.get("Hypothèse — omelette aux champignons et jambon");
   if (!omelette) throw new Error("La candidate hypothétique d’omelette manque.");
   expect(omelette).toMatchObject({ status: "pending", recipeId: null,
