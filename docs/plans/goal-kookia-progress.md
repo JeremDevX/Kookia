@@ -1450,13 +1450,12 @@ service ouvert/complet à zéro vente, le Bilan renvoie un jour calendaire,
 complétude dans le bucket simulation. Cette assertion relie le statut revu au
 KPI sans transformer un jour absent en zéro.
 
-Deux `npm run verify:local-delivery` complets ont passé lint, builds web/API,
-18 migrations fraîches avec parité Prisma, puis `npm test` (29 fichiers/119
-tests Vitest et 33 contrôles Node/CSS). Le test `sales.integration.test.ts`
-ajouté passe dans les deux runs. Les suites d'intégration ont chacune eu 38/39
-tests et 25/26 fichiers : première coupure `socket hang up` dans
-`workspace.integration.test.ts`, seconde dans `scenarioFixture.integration.test.ts`.
-L'échec change de suite, donc le gate intégration complet n'est pas déclaré vert ;
-la dernière recette locale complète déjà consignée précédemment reste la preuve
-R0. Les conteneurs R0 jetables ont été retirés, aucune base conservée n'a été
-utilisée, et `git diff --check` passe.
+Les deux premières exécutions de `npm run verify:local-delivery` ont eu chacune
+38/39 intégrations et 25/26 fichiers : coupure `socket hang up` dans
+`workspace.integration.test.ts`, puis dans `scenarioFixture.integration.test.ts`.
+Le test `sales.integration.test.ts` ajouté passait dans les deux. Un troisième
+passage complet a ensuite réussi : lint, builds web/API, 18 migrations fraîches,
+diff Prisma vide, `npm test` (29 fichiers/119 Vitest et 33 contrôles Node/CSS),
+intégrations (26 fichiers/39 tests) et restauration synthétique vérifiée, puis
+`migrate status` à jour. `git diff --check` passe. Le conteneur PostgreSQL tmpfs
+a été supprimé ; aucune base conservée ni donnée Camille n'a été utilisée.
