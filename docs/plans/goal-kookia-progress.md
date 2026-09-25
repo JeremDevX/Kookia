@@ -516,3 +516,37 @@ unitaires, 37 tests d'intégration et sauvegarde/restauration synthétique. Une
 première passe avait eu un `socket hang up` isolé dans SalesMetrics ; la
 répétition complète a passé. Le rendu du lien n'a pas été observé faute d'accès
 browser CUA.
+
+### Q2 — Connexions : rendu, responsive et clavier (2026-09-25)
+
+Dans un nouveau `demo:local` (PostgreSQL tmpfs, loopback, profil Chromium privé),
+`/settings?section=connections` a été rendu après disparition du splash. À
+320/375/640/768/1280 px, `documentElement` et `body` restent exactement à la
+largeur du viewport ; les quatre onglets gardent leur libellé, les cinq sources
+synthétiques sont présentes et affichées « Non connecté ». Captures inspectées :
+[320 px](evidence/q2-connections/connections-320.png),
+[375 px](evidence/q2-connections/connections-375.png),
+[640 CSS px](evidence/q2-connections/connections-640-css-viewport.png),
+[768 px](evidence/q2-connections/connections-768.png) et
+[1280 px](evidence/q2-connections/connections-1280.png). La largeur de 640 CSS
+px est un contrôle de reflow seulement, pas un zoom navigateur à 200 %.
+
+Depuis Restaurant (focus placé au démarrage du test), Tab atteint
+Fournisseurs, Connexions, Compte puis « Actualiser l’état » ; les cibles
+exposent `:focus-visible` et le focus se voit sur la capture
+[clavier à 320 px](evidence/q2-connections/connections-keyboard-focus-320.png).
+Entrée lance un seul GET de sources malgré une seconde activation durant le
+chargement ; le bouton reste focalisé et annonce `aria-disabled=true`.
+Une réponse 503 ciblée sur ce GET expose une alerte et « Réessayer », en gardant
+le focus ; après retrait de l’interception, Entrée relance le GET et l’état
+« à jour » revient. Captures des états
+[chargement](evidence/q2-connections/connections-loading-320.png) et
+[erreur/reprise](evidence/q2-connections/connections-error-320.png). L’AXTree
+expose neuf boutons/liens nommés ; le rôle `status` est également présent.
+
+Aucune écriture métier : authentification de démonstration uniquement, GET des
+sources et un GET intercepté en 503 ; le runner et ses identifiants tmpfs ont
+été supprimés après la revue. CUA continue de lister `browsers: []`, malgré la
+page visible dans Chrome côté utilisateur : ces observations sont headless/CDP,
+pas une revue dans la fenêtre native. Le zoom navigateur natif à 200 % et un
+lecteur d’écran réel restent à faire ; Q2 et le Goal restent ouverts.
