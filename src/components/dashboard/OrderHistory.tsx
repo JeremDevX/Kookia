@@ -74,7 +74,7 @@ export default function OrderHistory({ refreshKey = 0, onReceiptSaved }: OrderHi
             </li>)}</ul>
           </article>)}
         </section>}
-        {!order.status.endsWith("received") && <PurchaseReceiptReview order={order}
+        {order.status !== "received" && order.status !== "simulated_received" && <PurchaseReceiptReview order={order}
           orderStateCurrent={!loading && !currentError} onSaved={refreshAfterReceipt} />}
       </div>
     </details>)}

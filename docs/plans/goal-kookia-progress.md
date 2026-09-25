@@ -550,3 +550,31 @@ sources et un GET intercepté en 503 ; le runner et ses identifiants tmpfs ont
 page visible dans Chrome côté utilisateur : ces observations sont headless/CDP,
 pas une revue dans la fenêtre native. Le zoom navigateur natif à 200 % et un
 lecteur d’écran réel restent à faire ; Q2 et le Goal restent ouverts.
+
+### Q2 / O2 — réception partielle en UI (2026-09-25)
+
+Dans le bac `demo:local` PostgreSQL tmpfs, l'UI a créé une commande simulée de
+3 kg, un brouillon de facture manuelle lié (3 kg, 2,50 €/kg contre 2,25 €/kg
+commandé), puis rapproché une première livraison de 2 kg avec motif explicite
+d'écart. Ce premier rendu a révélé que `status.endsWith("received")` retirait
+aussi le formulaire pour `simulated_partially_received`, empêchant la seconde
+livraison. `OrderHistory` ne masque maintenant le formulaire que pour les deux
+états terminaux exacts (`received`, `simulated_received`). Le rejeu depuis ce
+reliquat a ensuite enregistré le dernier kilogramme : commande
+`simulated_received`, facture `received`, deux bons de livraison distincts et
+reliquat nul. Le stock est resté à 25,2 kg et l'historique des mouvements à
+3 525 avant/après le second enregistrement ; le contrôle du premier partiel
+avait également confirmé stock et mouvements inchangés.
+
+À 320×840 CSS px, les captures montrent le premier rapprochement, le formulaire
+du reliquat et l'état final ([formulaire partiel](evidence/q2-partial-receipt/receipt-partial-review-320.png),
+[après 2 kg](evidence/q2-partial-receipt/receipt-partial-saved-320.png),
+[reliquat 1 kg](evidence/q2-partial-receipt/receipt-final-review-320.png),
+[terminé](evidence/q2-partial-receipt/receipt-complete-320.png)). Le document
+et le body font 320 px, sans débordement horizontal. Tab atteint chacun des
+boutons de validation (22 étapes sur le second rapprochement), avec
+`:focus-visible`, puis Entrée enregistre ; les champs de formulaire ont été
+préremplis par le harnais, donc la saisie complète exclusivement clavier
+n'est pas revendiquée. Vérification visuelle headless/CDP uniquement : CUA
+reste indisponible, sans revue native à 200 % ni lecteur d'écran réel. Runner,
+session navigateur et identifiants tmpfs supprimés après la revue.
