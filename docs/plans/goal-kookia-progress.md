@@ -351,6 +351,14 @@ Un `npm run demo:local` neuf a créé son compte synthétique, sa base PostgreSQ
 
 **Limite de preuve :** dates sélectionnées par script DOM, et focus posé programmatiquement avant Espace/flèche ; le déplacement Tab depuis le document n’est donc pas prouvé dans cette passe. Pas d’écran Chrome natif, de lecteur d’écran réel, de mutation métier ou de données terrain. La session headless, le runner temporaire, son conteneur, ses identifiants et son port DevTools ont été arrêtés/supprimés ; les ports/runner préexistants n’ont pas été utilisés.
 
+### Q2 — vérification du comptage de stock sur `demo:local` isolé (2026-09-25)
+
+Dans un nouveau runner `demo:local` PostgreSQL tmpfs, l’interface `/stocks` a chargé 18 produits. La fiche Parmesan (5.04 kg théoriques, aucun comptage) rappelle que le seuil est indicatif et qu’il faut compter avant de décider d’un réassort. À 320 px, la boîte nommée « Compter Parmesan » expose le stock théorique, une date serveur Europe/Paris, le label de quantité, et les bornes 0–1 000 000 avec pas 0,001. Un comptage égal à 5.04 kg a reçu HTTP 201 ; après rechargement, la carte affiche « Compté : 5.04 kg », la fiche « Compté · inchangé depuis » et aucun mouvement depuis le comptage. Le stock théorique n’a pas changé. Échap ferme la modale sans enregistrer ; Entrée depuis le champ de quantité focalisé valide un second comptage identique, toujours sans mouvement.
+
+Aux viewports 320/768/1440 px, `documentElement.scrollWidth === innerWidth` ; cartes visibles à 320/768, table à 1440. La modale fait 294 px dans le viewport 320 px. Captures inspectées : [fiche avant comptage](evidence/q2-stock-verification/stock-verification-drawer-320.png), [modale](evidence/q2-stock-verification/stock-count-modal-320.png), [carte persistée après rechargement](evidence/q2-stock-verification/stock-counted-card-320.png).
+
+**Limite de preuve :** compte et données synthétiques dans un bac jetable, quantité volontairement identique au théorique ; aucun mouvement ni tenant conservé touché. Chrome 154 headless/CDP utilisé car CUA expose encore `browsers: []` malgré la page native annoncée visible sur 56819 ; ni cette page ni le runner 53038 n’ont été utilisés. Le focus a été posé programmatiquement avant Entrée ; Tab depuis le document, lecteur d’écran et contrôle Chrome natif restent à vérifier. Runner, conteneur, ports, identifiants et profil temporaire ont été supprimés après la revue.
+
 ## Portes externes
 
 | Sujet | Ce qui est possible sans accès | Preuve requise pour « activé » | État |
