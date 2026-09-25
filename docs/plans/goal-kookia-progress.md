@@ -1459,3 +1459,41 @@ diff Prisma vide, `npm test` (29 fichiers/119 Vitest et 33 contrôles Node/CSS),
 intégrations (26 fichiers/39 tests) et restauration synthétique vérifiée, puis
 `migrate status` à jour. `git diff --check` passe. Le conteneur PostgreSQL tmpfs
 a été supprimé ; aucune base conservée ni donnée Camille n'a été utilisée.
+
+### C3 — rendu des chapitres et état incomplet des achats (2026-09-25)
+
+L’URL de connexion annoncée visible par l’utilisateur (`127.0.0.1:56819`) ne
+répondait plus à la reprise. CUA renvoie toujours `browsers: []`, l’IAB est
+indisponible et `getApp("Google Chrome")` échoue `cgWindowNotFound`. Un nouveau
+`demo:fixtures` sur PostgreSQL tmpfs (fixtures uniquement, sans `demo:local`)
+a donc été rendu dans un profil Chrome headless/CDP temporaire ; aucun secret
+ou donnée conservée n’est inclus dans les preuves.
+
+Dans Histoire, chaque plage du 1er au 30 juin 2023, 2024, 2025 et 2026 affiche
+20 cartes initiales sur respectivement 1 366, 1 347, 1 305 et 1 329 événements.
+Les rendus à 390×844 n’ont pas de débordement horizontal. Les cartes rendent la
+provenance Simulation ou Archive source et rappellent qu’une transcription ne
+prouve pas une livraison. Captures inspectées :
+[2023](evidence/c3-fixture-ui/history-2023-390.png),
+[2024](evidence/c3-fixture-ui/history-2024-390.png),
+[2025](evidence/c3-fixture-ui/history-2025-390.png),
+[2026](evidence/c3-fixture-ui/history-2026-390.png).
+
+Dans Achats, le vrai composant `/orders` rend « Pas de quantité fiable »,
+« Complétez les 28 jours de services… » et la note « toute commande validée
+reste simulée, sans envoi ni mouvement de stock » ; le jour manquant du
+2026-09-24 est donc bloqué, pas transformé en achat. À 390×844 le document ne
+déborde pas : [état incomplet](evidence/c3-fixture-ui/orders-insufficient-history-390.png).
+Dans Bilan, le bucket opérationnel reste « Aucune donnée » ; la revue expose
+168 ventes simulées et 215 mouvements de perte simulés comme exclus, puis
+3 328 unités et 215 pertes sous « opérations de démonstration » ; aucune
+réception simulée n’existe dans ce runner. Le document reste contenu à 390 px :
+[détail de simulation](evidence/c3-fixture-ui/impact-simulation-390.png).
+
+Cette passe n’a effectué aucun geste de confirmation dans le parcours Achats.
+Le parcours décision → commande → réception → Impact demeure prouvé par le
+test d’intégration `demoStory.integration.test.ts`, mais pas encore rejoué
+visuellement sur ce runner `demo:fixtures`. Les captures headless valident un
+rendu, pas une activation clavier native, un lecteur d’écran ou le zoom à
+200 % ; ces preuves Q2 restent ouvertes tant que CUA ne donne pas de fenêtre
+contrôlable. Aucun état métier du runner n’a été modifié pendant cette revue.
