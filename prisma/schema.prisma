@@ -272,6 +272,7 @@ model StockMovement {
   @@unique([restaurantId, purchaseReceiptLineId])
   @@index([restaurantId, productId, createdAt])
   @@index([restaurantId, sourceDocumentId])
+  @@index([restaurantId, stockCountId])
 }
 
 model StockCount {
@@ -370,7 +371,7 @@ model SaleItemRecipeMapping {
   @@unique([restaurantId, operationId])
   @@unique([restaurantId, saleItemId, revision])
   @@unique([restaurantId, saleItemId, effectiveFrom])
-  @@index([restaurantId, saleItemId, effectiveFrom, revision])
+  @@index([restaurantId, saleItemId, effectiveFrom, revision], map: "SaleItemRecipeMapping_restaurantId_saleItemId_effectiveFrom_rev")
 }
 
 model ServiceDay {
@@ -553,6 +554,7 @@ model SaleContribution {
   @@unique([restaurantId, sourceKey])
   @@index([restaurantId, status, createdAt])
   @@index([restaurantId, serviceDate, saleItemId])
+  @@index([restaurantId, ticketBatchId])
 }
 
 model SaleContributionEvent {
@@ -631,8 +633,8 @@ model PurchaseReceipt {
   lines                      PurchaseReceiptLine[]
 
   @@unique([restaurantId, operationId])
-  @@unique([restaurantId, supplierId, invoiceReferenceNormalized, deliveryReference])
-  @@unique([restaurantId, invoiceDocumentId, deliveryReference])
+  @@unique([restaurantId, supplierId, invoiceReferenceNormalized, deliveryReference], map: "PurchaseReceipt_restaurantId_supplierId_invoiceReferenceNormali")
+  @@unique([restaurantId, invoiceDocumentId, deliveryReference], map: "PurchaseReceipt_restaurantId_invoiceDocumentId_deliveryReferenc")
   @@unique([restaurantId, id])
   @@index([restaurantId, deliveryDate])
 }
