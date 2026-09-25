@@ -91,6 +91,15 @@ Prérequis : Node.js et Docker Desktop démarré (Docker peut tirer l'image
 npm run verify:local-delivery
 ```
 
+Pour une revue UI avec un espace réellement isolé et **sans lecture du corpus
+local de pièces**, utiliser `npm run demo:fixtures`. Ce mode lance les mêmes
+serveurs sur un PostgreSQL neuf au tmpfs, mais amorce uniquement les factures et
+sources de recettes synthétiques de `server/src/scripts/fixtures/`. Le runner
+crée un compte temporaire, affiche l'URL de connexion et supprime le conteneur et
+ses identifiants temporaires à l'interruption. `npm run demo:local` reste le mode
+historique dont l'amorçage lit les transcriptions locales ; ne pas le lancer pour
+des captures ou essais qui doivent exclure ces sources.
+
 La recette n'appelle aucun connecteur externe de données métier, n'utilise ni
 compte de restaurant ni volume Compose existant et ne fait aucun déploiement.
 `vercel.json` reste un hébergement frontend SPA uniquement. La publication,

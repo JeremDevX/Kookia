@@ -42,6 +42,30 @@ try {
   await prisma.$disconnect();
 }
 `.trim();
+const seedFixtureWorkspaceSource = `
+import { prisma } from "./server/src/infrastructure/database/prisma.ts";
+import { createAnonymizedSourceInvoices } from "./server/src/scripts/fixtures/anonymizedSourceInvoices.ts";
+import { createDemoRecipeIdeaSourceInvoices } from "./server/src/scripts/fixtures/demoRecipeIdeaSourceInvoices.ts";
+import { buildDemoRecipeIdeas } from "./server/src/scripts/demoRecipeIdeas.ts";
+import { seedLocalDemoScenario } from "./server/src/scripts/localDemoScenario.ts";
+
+const ownerId = process.env.LOCAL_DEMO_USER_ID;
+if (!ownerId) throw new Error("Compte de démonstration manquant.");
+try {
+  const users = await prisma.user.findMany({ select: { id: true } });
+  if (users.length !== 1 || users[0].id !== ownerId) {
+    throw new Error("Le bac démo doit contenir uniquement le compte local créé pour cette session.");
+  }
+  const invoices = createAnonymizedSourceInvoices();
+  const recipeIdeas = buildDemoRecipeIdeas(createDemoRecipeIdeaSourceInvoices());
+  const { plan, recipeIdeaSources, recipeCandidates } = await seedLocalDemoScenario(ownerId, { invoices, recipeIdeas });
+  console.info(JSON.stringify({ mode: "synthetic-fixtures", counts: plan.counts, yearCoverage: plan.yearCoverage,
+    recipeIdeaSourceDocuments: recipeIdeaSources.length,
+    pendingRecipeCandidates: recipeCandidates.filter((candidate) => candidate.status === "pending").length }, null, 2));
+} finally {
+  await prisma.$disconnect();
+}
+`.trim();
 
 function spawnTask(command, args, { env = process.env, capture = false } = {}) {
   if (interruptedSignal) return Promise.reject(new Error("Démo locale interrompue."));
@@ -154,7 +178,10 @@ async function stopServers() {
 }
 
 async function main() {
-  if (process.argv.length > 2) throw new Error("La démo locale ne prend aucun argument.");
+  const fixtureOnly = process.argv[2] === "--fixtures";
+  if (process.argv.length > (fixtureOnly ? 3 : 2) || (process.argv.length > 2 && !fixtureOnly)) {
+    throw new Error("Usage : node scripts/localDemoSession.mjs [--fixtures].");
+  }
   const containerName = `kookia-demo-${randomUUID().slice(0, 12)}`;
   const dbPassword = randomBytes(24).toString("hex");
   const demoPassword = randomBytes(24).toString("base64url");
@@ -190,7 +217,8 @@ async function main() {
     await waitForHttp(`${webOrigin}/login`, [api, web]);
     const ownerId = await registerDemoAccount(demoPassword, webOrigin);
     await spawnTask(process.execPath, ["--import", "tsx", "server/src/scripts/seedWorkspaces.ts"], { env: demoEnv });
-    await spawnTask(process.execPath, ["--import", "tsx", "--input-type=module", "-e", seedWorkspaceSource], {
+    await spawnTask(process.execPath, ["--import", "tsx", "--input-type=module", "-e",
+      fixtureOnly ? seedFixtureWorkspaceSource : seedWorkspaceSource], {
       env: { ...demoEnv, LOCAL_DEMO_USER_ID: ownerId },
     });
 
@@ -200,7 +228,7 @@ async function main() {
     await writeFile(credentialPath, `Email : demo@kookia.local\nMot de passe : ${demoPassword}\n`, { mode: 0o600, flag: "wx" });
     await chmod(credentialPath, 0o600);
 
-    console.log(`\nDémo locale prête : ${webOrigin}/login`);
+    console.log(`\nDémo ${fixtureOnly ? "à fixtures synthétiques" : "locale"} prête : ${webOrigin}/login`);
     console.log("Compte : demo@kookia.local");
     console.log(`Mot de passe dans le fichier privé temporaire : ${credentialPath}`);
     console.log("Ctrl-C arrête les serveurs et supprime le compte, la base tmpfs et le fichier d’identifiants.");

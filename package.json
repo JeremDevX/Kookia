@@ -17,6 +17,7 @@
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
     "demo:local": "node scripts/localDemoSession.mjs",
+    "demo:fixtures": "node scripts/localDemoSession.mjs --fixtures",
     "verify:local-delivery": "node scripts/localDeliveryRecipe.mjs",
     "preview": "vite preview",
     "test": "npm run test:css && vitest run",
