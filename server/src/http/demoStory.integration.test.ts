@@ -31,6 +31,10 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
   const supplier = await prisma.supplier.findUniqueOrThrow({ where: { restaurantId_id: {
     restaurantId: owner.restaurantId, id: product.supplierId,
   } } });
+  const sourceUnit = product.unit;
+  if (sourceUnit !== "kg" && sourceUnit !== "L" && sourceUnit !== "pcs") {
+    throw new Error("The C3 fixture requires a source-compatible catalog unit.");
+  }
   const today = parisToday();
   const asOf = new Date(Date.parse(today) - 86_400_000).toISOString().slice(0, 10);
   const historyFrom = new Date(Date.parse(asOf) - 27 * 86_400_000).toISOString().slice(0, 10);
@@ -56,9 +60,14 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
     const id = sourceIdFor();
     chapterDocuments.set(year, id);
     const content = `Fixture entièrement fictive ${year}.`;
-    const data: Prisma.InputJsonObject = { id, contentHash: createHash("sha256").update(content).digest("hex"),
+    const contentHash = createHash("sha256").update(content).digest("hex");
+    const data: Prisma.InputJsonObject = { id, contentHash,
       title: `Pièce synthétique ${year}`, date, originalDate: null, supplier: supplier.name,
-      type: "invoice", status: "Archive synthétique", content, stockLines: [] };
+      type: "invoice", status: "Archive synthétique", content, stockLines: year === "2023" ? [] : [{
+        name: product.name, quantity: 1, unit: sourceUnit, unitPrice: product.pricePerUnit,
+        sourceQuantityText: `1 ${sourceUnit}`, sourceLineNumber: 1,
+        priceBasis: "stated_unit_price", priceTaxBasis: "unknown",
+      }] };
     await prisma.workspaceDocument.create({ data: { restaurantId: owner.restaurantId, kind: `source-invoice:${id}`, data } });
     await prisma.serviceDay.create({ data: { restaurantId: owner.restaurantId,
       serviceDate: new Date(`${date}T00:00:00.000Z`), status: "open", coverage: "complete",
@@ -68,7 +77,8 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
       createdBy: "restaurant-simulation:v1", updatedBy: "restaurant-simulation:v1" } });
     if (year !== "2023") await prisma.stockMovement.create({ data: { restaurantId: owner.restaurantId,
       productId: product.id, delta: 1, reason: "invoice_import_demo",
-      operationId: `restaurant-simulation-v1:invoice:${id}:${product.id}`, actorId: "restaurant-simulation:v1",
+      operationId: `restaurant-simulation-v1:invoice:${id}:1:${product.id}`, actorId: "restaurant-simulation:v1",
+      sourceDocumentId: id, sourceContentHash: contentHash, sourceDocumentRevision: 1,
       createdAt: new Date(`${date}T08:00:00.000Z`), productNameSnapshot: product.name,
       productUnitSnapshot: product.unit, supplierNameSnapshot: supplier.name } });
   }
@@ -151,6 +161,13 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
     expect(chapter.body.events.some((event: { provenance: string }) => event.provenance === "simulation")).toBe(true);
     expect(chapter.body.events.every((event: object) => !("content" in event) && !("stockLines" in event))).toBe(true);
     const sourceDocId = chapterDocuments.get(year)!;
+    const sourceDetail = await owner.agent.get(`/api/workspace/source-invoices/${sourceDocId}`).expect(200);
+    expect(sourceDetail.body.sourceMovementCount).toBe(year === "2023" ? 0 : 1);
+    expect(sourceDetail.body.alreadyCreditedBySimulation).toBe(year !== "2023");
+    expect(sourceDetail.body.stockLines).toHaveLength(year === "2023" ? 0 : 1);
+    if (year !== "2023") expect(sourceDetail.body.stockLines[0]).toMatchObject({
+      name: product.name, quantity: 1, unit: sourceUnit, sourceLineNumber: 1,
+    });
     expect(chapter.body.events.some((event: { id: string }) => event.id === `document:source-invoice:${sourceDocId}`)).toBe(true);
     if (year === "2023") {
       expect(chapter.body.events.some((event: { kind: string; detail: string }) =>
