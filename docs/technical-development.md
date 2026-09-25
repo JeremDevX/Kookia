@@ -99,6 +99,14 @@ liées à leur version et leurs déductions ne sont pas recalculées après édi
 Le backfill attribue une version 1 aux recettes préexistantes avec date d'effet
 inconnue et laisse les productions historiques sans lien de version lorsqu'il
 est impossible de reconstruire cette information.
+Les fiches candidates sont réservées aux espaces `demo`, stockées comme
+documents de travail révisés et accompagnées d'une `RecommendationDecision`.
+Chaque ingrédient référence une pièce source du même espace et sa ligne ; hash,
+révision et unité doivent toujours correspondre, sans conversion implicite.
+Une pièce modifiée rend la candidate périmée. Le chef peut corriger, confirmer
+ou écarter l'hypothèse ; confirmer crée une `Recipe` versionnée mais aucun
+mouvement de stock ni production. Les deux exemples actuellement seedés dans
+`demo:local` s'appuient sur des lignes fictives, pas sur des lignes du corpus.
 
 Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` initialise
 les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au

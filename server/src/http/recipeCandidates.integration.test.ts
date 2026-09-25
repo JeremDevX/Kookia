@@ -4,8 +4,6 @@ import request from "supertest";
 import { afterAll, expect, it } from "vitest";
 import { app } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
-import { createDemoRecipeIdeaSourceInvoices } from "../scripts/fixtures/demoRecipeIdeaSourceInvoices.js";
-import type { SourceInvoice } from "../scripts/sourceInvoices.js";
 
 const users: string[] = [];
 type Agent = ReturnType<typeof request.agent>;
@@ -42,18 +40,6 @@ async function sourceInvoice(restaurantId: string, name: string, unit: "kg" | "L
   return { id, contentHash };
 }
 
-async function persistSourceInvoice(restaurantId: string, source: SourceInvoice) {
-  const data: Prisma.InputJsonObject = { id: source.id, contentHash: source.contentHash, title: source.title,
-    date: source.date, originalDate: source.originalDate, supplier: source.supplier, type: source.type,
-    status: source.status, content: source.content, stockLines: source.stockLines.map((line) => ({
-      name: line.name, quantity: line.quantity, unit: line.unit, unitPrice: line.unitPrice,
-      sourceQuantityText: line.sourceQuantityText, sourceLineNumber: line.sourceLineNumber,
-      priceBasis: line.priceBasis, priceTaxBasis: line.priceTaxBasis,
-    })) };
-  await prisma.workspaceDocument.create({ data: { restaurantId, kind: `source-invoice:${source.id}`, data } });
-  return { id: source.id, contentHash: source.contentHash };
-}
-
 const todayParis = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
   month: "2-digit", day: "2-digit" }).format(new Date());
 function candidate(name: string, productId: string, sourceDocumentId: string, unit: string, sourceLineNumber = 4) {
@@ -68,12 +54,8 @@ it("keeps recipe candidates hypothetical until an atomic, stock-neutral confirma
   await prisma.restaurant.update({ where: { id: other.restaurantId }, data: { mode: "demo" } });
   const mushrooms = await product(demo.agent, demo.supplierId, "Champignons", "kg");
   const cream = await product(demo.agent, demo.supplierId, "Crème Fraîche", "L");
-  const ideaSources = createDemoRecipeIdeaSourceInvoices();
-  const mushroomInvoice = ideaSources.find((source) => source.stockLines[0]?.name === "Champignons");
-  const creamInvoice = ideaSources.find((source) => source.stockLines[0]?.name === "Crème Fraîche");
-  if (!mushroomInvoice || !creamInvoice) throw new Error("Les deux familles synthétiques de recette sont requises.");
-  const mushroomSource = await persistSourceInvoice(demo.restaurantId, mushroomInvoice);
-  const creamSource = await persistSourceInvoice(demo.restaurantId, creamInvoice);
+  const mushroomSource = await sourceInvoice(demo.restaurantId, "Champignons", "kg");
+  const creamSource = await sourceInvoice(demo.restaurantId, "Crème Fraîche", "L");
   const creditSource = await sourceInvoice(demo.restaurantId, "Avoir champignons", "kg", "credit");
 
   expect(await other.agent.get("/api/workspace/recipe-candidates").expect(200).then((response) => response.body))
@@ -84,16 +66,16 @@ it("keeps recipe candidates hypothetical until an atomic, stock-neutral confirma
   const productionCountBefore = await prisma.production.count({ where: { restaurantId: demo.restaurantId } });
 
   const first = await demo.agent.post("/api/workspace/recipe-candidates").send({ ...candidate("Poêlée hypothétique",
-    mushrooms.id, mushroomSource.id, "kg", mushroomInvoice.stockLines[0].sourceLineNumber), operationId: randomUUID() }).expect(201);
+    mushrooms.id, mushroomSource.id, "kg"), operationId: randomUUID() }).expect(201);
   const second = await demo.agent.post("/api/workspace/recipe-candidates").send({ ...candidate("Sauce hypothétique",
-    cream.id, creamSource.id, "L", creamInvoice.stockLines[0].sourceLineNumber), operationId: randomUUID() }).expect(201);
+    cream.id, creamSource.id, "L"), operationId: randomUUID() }).expect(201);
   expect(first.body).toMatchObject({ status: "pending", revision: 1, recipeId: null,
     ingredients: [{ productId: mushrooms.id, evidence: { sourceDocumentId: mushroomSource.id,
       sourceDocumentRevision: 0, sourceLineNumber: 4, sourceName: "Champignons", sourceUnit: "kg" } }] });
   expect(second.body).toMatchObject({ status: "pending", recipeId: null,
     recipe: { yieldPortions: 4 },
     ingredients: [{ productId: cream.id, evidence: { sourceDocumentId: creamSource.id,
-      sourceLineNumber: 5, sourceName: "Crème Fraîche", sourceUnit: "L" } }] });
+      sourceLineNumber: 4, sourceName: "Crème Fraîche", sourceUnit: "L" } }] });
 
   await demo.agent.post("/api/workspace/recipe-candidates").send({ ...candidate("Avoir non recevable",
     mushrooms.id, creditSource.id, "kg"), operationId: randomUUID() }).expect(409)

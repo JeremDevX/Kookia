@@ -151,17 +151,78 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   }
   const seededCandidates = await scenarioOwner.agent.get("/api/workspace/recipe-candidates").expect(200);
   expect(seededCandidates.body.available).toBe(true);
-  expect(seededCandidates.body.candidates.map((candidate: { status: string; recipeId: string | null;
-    recipe: { name: string }; ingredients: Array<{ evidence: { sourceDocumentId: string; sourceName: string } }> }) => ({
-    status: candidate.status, recipeId: candidate.recipeId, name: candidate.recipe.name,
-    sourceDocumentId: candidate.ingredients[0]?.evidence.sourceDocumentId,
-    sourceName: candidate.ingredients[0]?.evidence.sourceName,
-  }))).toEqual(expect.arrayContaining([
-    { status: "pending", recipeId: null, name: "Hypothèse — poêlée de champignons",
-      sourceDocumentId: recipeIdeaSources[0].id, sourceName: "Champignons" },
-    { status: "pending", recipeId: null, name: "Hypothèse — sauce à la crème",
-      sourceDocumentId: recipeIdeaSources[1].id, sourceName: "Crème Fraîche" },
-  ]));
+  type SeededCandidate = { id: string; revision: number; status: string; recipeId: string | null;
+    recipe: { name: string; category: string; prepTime: number; yieldPortions: number; effectiveFrom: string };
+    ingredients: Array<{ productId: string; productName: string; quantity: number; unit: string;
+      evidence: { sourceDocumentId: string; sourceName: string; sourceLineNumber: number; sourceUnit: string } }> };
+  const candidates = seededCandidates.body.candidates as SeededCandidate[];
+  const candidatesByName = new Map(candidates.map((candidate) => [candidate.recipe.name, candidate]));
+  const sourceEvidence = (name: string) => {
+    const source = recipeIdeaSources.find((invoice) => invoice.stockLines.some((line) => line.name === name));
+    const line = source?.stockLines.find((stockLine) => stockLine.name === name);
+    if (!source || !line) throw new Error(`Fixture fictive manquante pour ${name}.`);
+    return { sourceDocumentId: source.id, sourceName: line.name, sourceLineNumber: line.sourceLineNumber };
+  };
+  const quiche = candidatesByName.get("Hypothèse — quiche au poulet");
+  if (!quiche) throw new Error("La candidate hypothétique de quiche au poulet manque.");
+  expect(quiche).toMatchObject({ status: "pending", recipeId: null,
+    recipe: { name: "Hypothèse — quiche au poulet", yieldPortions: 4 },
+    ingredients: expect.arrayContaining([
+      expect.objectContaining({ productName: "Farine T55", quantity: 0.25, unit: "kg",
+        evidence: expect.objectContaining({ ...sourceEvidence("Farine T55"), sourceUnit: "kg" }) }),
+      expect.objectContaining({ productName: "Oeufs", quantity: 4, unit: "pcs",
+        evidence: expect.objectContaining({ ...sourceEvidence("Oeufs"), sourceUnit: "pcs" }) }),
+      expect.objectContaining({ productName: "Poulet Fermier", quantity: 0.15, unit: "kg",
+        evidence: expect.objectContaining({ ...sourceEvidence("Poulet Fermier"), sourceUnit: "kg" }) }),
+      expect.objectContaining({ productName: "Crème Fraîche", quantity: 0.2, unit: "L",
+        evidence: expect.objectContaining({ ...sourceEvidence("Crème Fraîche"), sourceUnit: "L" }) }),
+    ]) });
+  expect(quiche.ingredients).toHaveLength(4);
+  const gratin = candidatesByName.get("Hypothèse — gratin de pâtes au fromage");
+  if (!gratin) throw new Error("La candidate hypothétique de gratin de pâtes manque.");
+  expect(gratin).toMatchObject({ status: "pending", recipeId: null,
+    recipe: { name: "Hypothèse — gratin de pâtes au fromage", yieldPortions: 4 },
+    ingredients: expect.arrayContaining([
+      expect.objectContaining({ productName: "Pâtes sèches", quantity: 0.12, unit: "kg",
+        evidence: expect.objectContaining({ ...sourceEvidence("Pâtes sèches"), sourceUnit: "kg" }) }),
+      expect.objectContaining({ productName: "Oeufs", quantity: 2, unit: "pcs",
+        evidence: expect.objectContaining({ ...sourceEvidence("Oeufs"), sourceUnit: "pcs" }) }),
+      expect.objectContaining({ productName: "Crème Fraîche", quantity: 0.15, unit: "L",
+        evidence: expect.objectContaining({ ...sourceEvidence("Crème Fraîche"), sourceUnit: "L" }) }),
+      expect.objectContaining({ productName: "Mozzarella", quantity: 0.08, unit: "kg",
+        evidence: expect.objectContaining({ ...sourceEvidence("Mozzarella"), sourceUnit: "kg" }) }),
+    ]) });
+  expect(gratin.ingredients).toHaveLength(4);
+  const stockState = async () => (await prisma.product.findMany({ where: { restaurantId: scenarioOwner.restaurantId },
+    select: { id: true, currentStock: true, stockRevision: true } }))
+    .map((product) => ({ id: product.id, currentStock: product.currentStock.toString(), stockRevision: product.stockRevision }))
+    .sort((left, right) => left.id.localeCompare(right.id));
+  const candidateStockBefore = await stockState();
+  const candidateMovementsBefore = await prisma.stockMovement.count({ where: { restaurantId: scenarioOwner.restaurantId } });
+  const candidateProductionsBefore = await prisma.production.count({ where: { restaurantId: scenarioOwner.restaurantId } });
+  const correctedIngredients = quiche.ingredients.map((ingredient, index) => ({ productId: ingredient.productId,
+    quantity: index === 0 ? 0.3 : ingredient.quantity,
+    sourceDocumentId: ingredient.evidence.sourceDocumentId, sourceLineNumber: ingredient.evidence.sourceLineNumber }));
+  const correctedQuiche = await scenarioOwner.agent.patch(`/api/workspace/recipe-candidates/${quiche.id}`).send({
+    name: quiche.recipe.name, category: quiche.recipe.category, prepTime: quiche.recipe.prepTime,
+    yieldPortions: quiche.recipe.yieldPortions, effectiveFrom: quiche.recipe.effectiveFrom,
+    ingredients: correctedIngredients, expectedRevision: quiche.revision, operationId: randomUUID(),
+  }).expect(200);
+  expect(correctedQuiche.body).toMatchObject({ status: "pending", revision: 2,
+    ingredients: expect.arrayContaining([expect.objectContaining({ productName: "Farine T55", quantity: 0.3 })]) });
+  const confirmedQuiche = await scenarioOwner.agent.post(`/api/workspace/recipe-candidates/${quiche.id}/decision`).send({
+    operationId: randomUUID(), expectedRevision: correctedQuiche.body.revision, action: "confirm",
+  }).expect(200);
+  expect(confirmedQuiche.body).toMatchObject({ status: "confirmed", revision: 3, recipeId: expect.any(String),
+    ingredients: expect.arrayContaining([expect.objectContaining({ productName: "Farine T55", quantity: 0.3 })]) });
+  const candidateStates = await scenarioOwner.agent.get("/api/workspace/recipe-candidates").expect(200);
+  expect(candidateStates.body.candidates.map((candidate: { id: string; status: string }) => [candidate.id, candidate.status]))
+    .toEqual(expect.arrayContaining([[quiche.id, "confirmed"], [gratin.id, "pending"]]));
+  expect(await stockState()).toEqual(candidateStockBefore);
+  expect(await prisma.stockMovement.count({ where: { restaurantId: scenarioOwner.restaurantId } }))
+    .toBe(candidateMovementsBefore);
+  expect(await prisma.production.count({ where: { restaurantId: scenarioOwner.restaurantId } }))
+    .toBe(candidateProductionsBefore);
   const scenarioProductions = await prisma.production.findMany({ where: { restaurantId: scenarioOwner.restaurantId,
     operationId: { startsWith: "restaurant-simulation-v1:" } }, include: { recipeVersion: true } });
   expect(scenarioProductions).toHaveLength(plan.productions.length);

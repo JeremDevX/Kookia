@@ -140,12 +140,20 @@ dans l’archive source.
 - Les achats synthétiques n’ajoutent rien au panier, ne valident rien et
   n’envoient aucun message fournisseur. Le bon de commande et la décision déjà
   présents sont laissés intacts.
-- Le parcours « pièce → recette candidate » n'est pas fourni par ce scénario.
-  La fixture anonymisée d'intégration ne contient que des lignes synthétiques
-  de tomates ; elle ne suffit pas à justifier deux fiches reliées à des familles
-  d'ingrédients traçables. Les six recettes ci-dessus restent des hypothèses de
-  démonstration, et les idées M2 partent d'un surplus compté, non de factures.
-  Aucun plat candidat ni plat cuisiné ne doit en être déduit. Reprendre ce
-  parcours seulement avec une fixture source autorisée et assez riche pour
-  étayer deux candidates ; la limite est aussi suivie dans le
-  [journal du Goal](goal-kookia-progress.md).
+- Le seed `demo:local` contient maintenant deux fiches candidates
+  multi-ingrédients (quiche au poulet, gratin de pâtes au fromage), aux
+  quantités/rendements éditables et marqués hypothétiques. Une confirmation
+  crée une recette versionnée dans le bac démo mais ne touche ni stock ni
+  production ; l'autre candidate peut rester en attente ou être écartée.
+  `demoRecipeIdeaSourceInvoices` fournit six lignes **entièrement fictives**
+  pour ce seul parcours. La fixture générale `anonymizedSourceInvoices` conserve
+  son petit sous-ensemble de lignes tomates pour le ledger de simulation.
+- Ces candidates ne référencent pas encore de ligne parmi les 431 transcriptions
+  du corpus : leurs liens d'archive aboutissent aux exemples fictifs, pas à une
+  facture d'origine. Un comptage local des familles par le parseur/catalogue
+  aide à proposer des hypothèses, mais ne prouve ni unité compatible sur une
+  pièce précise, ni recette effectivement préparée. N'en déduire aucun plat
+  observé ; la liaison pseudonymisée à des lignes source autorisées et l'audit
+  de sensibilité/droit d'usage avant partage restent ouverts dans le
+  [journal du Goal](goal-kookia-progress.md). Les idées M2 partent toujours d'un
+  surplus explicitement compté, non de factures.

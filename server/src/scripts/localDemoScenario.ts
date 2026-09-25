@@ -75,21 +75,37 @@ export async function seedLocalDemoScenario(ownerId: string) {
   const effectiveFrom = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
     month: "2-digit", day: "2-digit" }).format(new Date());
   const recipeIdeas = [
-    { key: "mushrooms", sourceName: "Champignons", productName: "Champignons",
-      name: "Hypothèse — poêlée de champignons", quantity: 0.6 },
-    { key: "cream", sourceName: "Crème Fraîche", productName: "Crème Fraîche",
-      name: "Hypothèse — sauce à la crème", quantity: 0.4 },
+    { key: "chicken-quiche", name: "Hypothèse — quiche au poulet", prepTime: 35, yieldPortions: 4,
+      ingredients: [
+        { sourceName: "Farine T55", quantity: 0.25 },
+        { sourceName: "Oeufs", quantity: 4 },
+        { sourceName: "Poulet Fermier", quantity: 0.15 },
+        { sourceName: "Crème Fraîche", quantity: 0.2 },
+      ] },
+    { key: "pasta-gratin", name: "Hypothèse — gratin de pâtes au fromage", prepTime: 35, yieldPortions: 4,
+      ingredients: [
+        { sourceName: "Pâtes sèches", quantity: 0.12 },
+        { sourceName: "Oeufs", quantity: 2 },
+        { sourceName: "Crème Fraîche", quantity: 0.15 },
+        { sourceName: "Mozzarella", quantity: 0.08 },
+      ] },
   ] as const;
+  const recipeProductNames = [...new Set(recipeIdeas.flatMap((idea) => idea.ingredients.map(({ sourceName }) => sourceName)))];
+  const recipeProducts = await prisma.product.findMany({ where: { restaurantId: restaurant.id,
+    name: { in: recipeProductNames } }, select: { id: true, name: true } });
+  const recipeProductByName = new Map(recipeProducts.map((product) => [product.name, product]));
   const recipeCandidates: Awaited<ReturnType<typeof createRecipeCandidate>>[] = [];
   for (const idea of recipeIdeas) {
-    const source = recipeIdeaSources.find((invoice) => invoice.stockLines.some((line) => line.name === idea.sourceName));
-    const line = source?.stockLines.find((stockLine) => stockLine.name === idea.sourceName);
-    const product = productSnapshots.find((item) => item.name === idea.productName);
-    if (!source || !line || !product) throw new Error(`Source ou produit de démonstration manquant : ${idea.sourceName}.`);
-    recipeCandidates.push(await createRecipeCandidate(restaurant.id, "demo-seed:recipe-ideas:v1",
-      `demo-seed:recipe-candidate:${idea.key}:v1`, { name: idea.name, category: "Plat", prepTime: 20,
-        yieldPortions: 4, effectiveFrom, ingredients: [{ productId: product.id, quantity: idea.quantity,
-          sourceDocumentId: source.id, sourceLineNumber: line.sourceLineNumber }] }));
+    const ingredients = idea.ingredients.map(({ sourceName, quantity }) => {
+      const source = recipeIdeaSources.find((invoice) => invoice.stockLines.some((line) => line.name === sourceName));
+      const line = source?.stockLines.find((stockLine) => stockLine.name === sourceName);
+      const product = recipeProductByName.get(sourceName);
+      if (!source || !line || !product) throw new Error(`Source ou produit de démonstration manquant : ${sourceName}.`);
+      return { productId: product.id, quantity, sourceDocumentId: source.id, sourceLineNumber: line.sourceLineNumber };
+    });
+    recipeCandidates.push(await createRecipeCandidate(restaurant.id, "demo-seed:recipe-ideas:v2",
+      `demo-seed:recipe-candidate:${idea.key}:v2`, { name: idea.name, category: "Plat", prepTime: idea.prepTime,
+        yieldPortions: idea.yieldPortions, effectiveFrom, ingredients }));
   }
   return { invoices, recipeIdeaSources, recipeCandidates, plan };
 }
