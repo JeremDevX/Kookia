@@ -142,7 +142,7 @@
 
   .settings-nav {
     display: grid;
-    grid-template-columns: repeat(var(--number-4), var(--unit-1fr));
+    grid-template-columns: repeat(var(--number-2), var(--unit-1fr));
     gap: var(--spacing-xs);
   }
 
@@ -188,6 +188,14 @@
 
   .nav-tab {
     padding: var(--spacing-xs) var(--spacing-sm);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+  }
+
+  .nav-tab svg {
+    flex-shrink: var(--number-0);
   }
 
   .form-grid {
