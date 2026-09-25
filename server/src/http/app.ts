@@ -7,12 +7,14 @@ import { changeEmail, changePassword, deleteAccount, getUserBySessionToken, logi
 import { changeEmailSchema, changePasswordSchema, deleteAccountSchema, loginSchema, profileSchema, registerSchema } from "./schemas.js";
 import { rateLimit } from "./rateLimit.js";
 import { unconfiguredInvoiceExtractionAdapter, type InvoiceExtractionAdapter } from "../integrations/invoiceExtractionAdapter.js";
+import { prisma } from "../infrastructure/database/prisma.js";
 
 import { workspaceRoutes } from "./workspaceRoutes.js";
 
 const publicUserResponse = (user: Awaited<ReturnType<typeof getUserBySessionToken>>) => ({ user });
 const setSessionCookie = (res: Response, token: string, expiresAt: Date) => res.cookie(sessionCookieName, token, { httpOnly: true, sameSite: "strict", secure: env.NODE_ENV === "production", path: "/", expires: expiresAt });
 const clearSessionCookie = (res: Response) => res.clearCookie(sessionCookieName, { httpOnly: true, sameSite: "strict", secure: env.NODE_ENV === "production", path: "/" });
+const checkDatabaseReadiness = async (): Promise<void> => { await prisma.$queryRaw`SELECT 1`; };
 const parseBody = <T>(schema: z.ZodType<T>, req: Request, res: Response): T | undefined => {
   const result = schema.safeParse(req.body);
   if (!result.success) { const fields: Record<string, string> = {}; result.error.issues.forEach((issue) => { const field = issue.path[0]; if (typeof field === "string" && !fields[field]) fields[field] = issue.message; }); res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données fournies sont invalides.", fields } }); return undefined; }
@@ -20,7 +22,8 @@ const parseBody = <T>(schema: z.ZodType<T>, req: Request, res: Response): T | un
 };
 const requireUser = async (req: Request) => getUserBySessionToken(req.cookies[sessionCookieName]);
 
-export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = unconfiguredInvoiceExtractionAdapter) {
+export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = unconfiguredInvoiceExtractionAdapter,
+  databaseReadinessProbe: () => Promise<void> = checkDatabaseReadiness) {
   const app = express();
   app.disable("x-powered-by");
   const allowedOrigins = env.APP_ORIGIN === "http://127.0.0.1:5173"
@@ -41,6 +44,14 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   });
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+  app.get("/api/ready", async (_req, res) => {
+    try {
+      await databaseReadinessProbe();
+      res.json({ status: "ready" });
+    } catch {
+      res.status(503).json({ status: "not_ready" });
+    }
+  });
 
   app.post("/api/auth/register", rateLimit(8, 60_000), async (req, res, next) => {
     try { const body = parseBody(registerSchema, req, res); if (!body) return; const result = await registerUser(body.displayName, body.email, body.password); setSessionCookie(res, result.token, result.expiresAt); res.status(201).json(publicUserResponse(result.user)); } catch (error) { next(error); }

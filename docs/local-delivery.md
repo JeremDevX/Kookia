@@ -75,12 +75,14 @@ Navigateur → Vite :5173 -- /api proxy (développement seulement) → Express :
 
 ## Santé et observabilité
 
-`GET /api/health` répond `{ "status": "ok" }` et son contrat est testé. C'est
-un **liveness check seulement** : il ne vérifie pas PostgreSQL, les migrations,
-ni la capacité d'une requête métier. Le démarrage écrit une ligne console ; les
-erreurs non gérées sont réduites à un message générique. Il n'y a pas de journal
-structuré avec corrélation, métriques, traces, alertes ou dashboard d'exploitation
-configurés. Ne pas utiliser ce endpoint seul comme readiness ou SLO.
+`GET /api/health` répond `{ "status": "ok" }` et vérifie seulement que le
+processus API répond. `GET /api/ready` exécute `SELECT 1` via Prisma et répond
+`{ "status": "ready" }` si PostgreSQL accepte une requête, sinon HTTP 503 avec
+`{ "status": "not_ready" }` sans exposer le détail d'erreur. Il ne vérifie pas
+les migrations ni la capacité d'une requête métier. Le démarrage écrit une
+ligne console ; les erreurs non gérées sont réduites à un message générique. Il
+n'y a pas de journal structuré avec corrélation, métriques, traces, alertes ou
+dashboard d'exploitation configurés. Ces endpoints ne constituent pas un SLO.
 
 ## Vérification locale
 

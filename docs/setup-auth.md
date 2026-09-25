@@ -25,7 +25,8 @@ npm run dev
 
 L’application est disponible sur <http://localhost:5173>.
 L’API est disponible sur <http://localhost:3001>.
-Le health check est disponible sur <http://localhost:3001/api/health>.
+Le liveness check est disponible sur <http://localhost:3001/api/health> ; la
+disponibilité PostgreSQL sur <http://localhost:3001/api/ready>.
 
 ## Parcours de test
 

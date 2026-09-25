@@ -2,7 +2,7 @@ import "dotenv/config";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
-import { app } from "./app.js";
+import { app, createApp } from "./app.js";
 import { env } from "../config/env.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
@@ -20,6 +20,15 @@ describe("authentication HTTP flow", () => {
 
   it("returns the API liveness status", async () => {
     await request(app).get("/api/health").expect(200, { status: "ok" });
+  });
+
+  it("reports database readiness separately and hides probe errors", async () => {
+    await request(app).get("/api/ready").expect(200, { status: "ready" });
+    const unavailableApp = createApp(undefined, async () => {
+      throw new Error("database details must stay private");
+    });
+    await request(unavailableApp).get("/api/ready").expect(503, { status: "not_ready" });
+    await request(unavailableApp).get("/api/health").expect(200, { status: "ok" });
   });
 
   it("registers, authenticates, updates account, rotates password and deletes account", async () => {
