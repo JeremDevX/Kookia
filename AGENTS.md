@@ -39,8 +39,9 @@ For long-running feature work, follow the dependency gates and evidence in
   expose their assumptions and provenance, and never persist them as sales,
   losses, production, or stock movements without confirmation. An invoice
   transcription alone is not a receipt, and an unconfirmed recipe candidate is
-  not a recipe in use. Use “Historique” for the product timeline; do not present
-  estimates as observed facts.
+  not a recipe in use. In user-facing text, call these “estimations” and explain
+  their basis; do not call them invented, fictional, a demo, or a story, and do
+  not imply they are observed facts. Use “Historique” for the product timeline.
 - Prefer derived state to duplicated state, explicit side effects, existing
   patterns, and the smallest useful abstraction or dependency.
 - Preserve strict TypeScript boundaries. Do not let uncontained `any` or raw

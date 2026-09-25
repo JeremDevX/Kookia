@@ -11,12 +11,13 @@ après compaction ou reprise, puis confronter chaque affirmation au code courant
 L'objectif autonome est une application **utilisable de bout en bout par un
 restaurateur**, avec un historique consultable sans limite produit de quatre
 ans. Une période de données disponible ou fournie n'est pas une limite de la
-chronologie. Les opérations absentes des sources ne doivent pas être inventées
-ni présentées comme enregistrées : ventes, productions, pertes et services non
-documentés restent inconnus. « Prête » signifie parcours et contrôles vérifiés,
-pas services externes inventés, lancement commercial, conformité ou économies
-prouvées. La préproduction privée est une activation séparée, seulement si
-environnement et autorisation existent.
+chronologie. Les opérations absentes des sources ne doivent pas être ajoutées
+comme des faits réellement observés ou enregistrés. Des estimations plausibles
+de sorties sont permises selon les règles de la section 3, séparées des
+opérations confirmées. « Prête » signifie parcours et contrôles vérifiés, pas
+services externes, lancement commercial, conformité ou économies prouvées. La
+préproduction privée est une activation séparée, seulement si environnement et
+autorisation existent.
 Préserver `AGENTS.md`, les données existantes et les modifications de travail
 non commitées. Les fixtures synthétiques sont réservées à la QA isolée ; elles
 ne sont jamais des faits métier ni une source de données du compte Kookia.
@@ -99,7 +100,10 @@ confirmée. Une mesure issue d'une source revue garde l'identité de cette sourc
 et la décision humaine qui l'a confirmée. Les fixtures synthétiques servent
 uniquement à vérifier le comportement technique en environnement isolé ; elles
 ne sont jamais injectées dans le compte Kookia ni décrites comme activité
-enregistrée du restaurant.
+enregistrée du restaurant. Dans l'interface, employer le vocabulaire
+d'« estimation » et expliquer simplement sa base ; ne pas les qualifier de
+données inventées, fictives, de démo ou d'histoire, et ne pas les présenter
+comme des sorties réellement enregistrées.
 
 Le premier calcul opérationnel est en lecture seule : seules les lignes de
 réception positives, non simulées et de provenance enregistrée constituent ses

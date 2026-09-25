@@ -61,9 +61,25 @@ dynamique du même ratio). Sur les exécutions finales, lint/build/tests unitair
 et le test de cette nouvelle route passent ; des tests d'intégration
 préexistants échouent ponctuellement ailleurs (`socket hang up` ou `401`) sans
 échec du test de sorties estimées. Le PostgreSQL tmpfs a été supprimé après
-chaque exécution. CUA annonce toujours
-`browsers: []` et `getApp("Google Chrome")` échoue (`cgWindowNotFound`) ; le
-rendu responsive du Bilan modifié reste à contrôler dans un navigateur.
+chaque exécution.
+
+**QA rendu/clavier Q2 (2026-09-25) :** Chrome headless isolé, compte de fixtures
+et réponse estimative interceptée en mémoire ; aucune donnée persistante Kookia
+ou écriture métier utilisée. Les rendus 320/768/1280 px n'ont pas de
+débordement du document ; le tableau défile dans sa région nommée avec Tab puis
+←/→ et conserve un focus visible. Les états chargement/vide/erreur sont rendus ;
+Entrée sur « Recharger les estimations » récupère la ligne et rend le focus au
+titre. Les captures [320 px](evidence/q2-estimated-outflows/estimated-outflows-320.png),
+[768 px](evidence/q2-estimated-outflows/estimated-outflows-768.png),
+[1280 px](evidence/q2-estimated-outflows/estimated-outflows-1280.png),
+[chargement](evidence/q2-estimated-outflows/estimated-outflows-loading-320.png),
+[vide](evidence/q2-estimated-outflows/estimated-outflows-empty-320.png),
+[erreur](evidence/q2-estimated-outflows/estimated-outflows-error-320.png) et
+[reprise](evidence/q2-estimated-outflows/estimated-outflows-recovered-320.png)
+sont conservées comme preuves QA strictement techniques, sans valeur métier.
+CUA natif annonce toujours `browsers: []` et `getApp("Google Chrome")` échoue
+(`cgWindowNotFound`) ; le contrôle navigateur headless remplace ce point pour
+le rendu et les interactions de ce panneau seulement.
 
 Audit Prisma/SQL hors D5 : un PostgreSQL 16 neuf sur tmpfs a appliqué 18/18
 migrations, puis un diff direct vers `prisma/schema.prisma` a révélé cinq
