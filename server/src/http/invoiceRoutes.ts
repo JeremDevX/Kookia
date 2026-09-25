@@ -5,13 +5,20 @@ import { describeInvoiceFile, unconfiguredInvoiceExtractionAdapter, type Invoice
 import { inspectInvoiceExtractionUpload } from "../integrations/invoiceExtractionUpload.js";
 import { extractInvoiceCandidate } from "../application/workspace/invoiceExtractionService.js";
 import { createInvoiceDraftFromSource, getInvoices, getSourceInvoiceWorkflowStates,
-  invoiceDraftSchema, saveInvoice, sourceInvoiceDocumentSchema } from "../application/workspace/invoiceService.js";
+  invoiceDraftSchema, saveInvoice, sourceInvoiceContentForWorkspace, sourceInvoiceDocumentSchema } from "../application/workspace/invoiceService.js";
 export const invoiceRoutes = Router();
 const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const extractionAdapter = (res: Response) =>
   (res.locals.invoiceExtractionAdapter as InvoiceExtractionAdapter | undefined) ?? unconfiguredInvoiceExtractionAdapter;
 const extractionUnavailable = (res: Response) => res.status(503).json({ error: { code: "EXTRACTION_UNAVAILABLE",
   message: "La lecture automatique n’est pas disponible pour cette pièce. Vous pouvez la saisir manuellement." } });
+
+function invoiceResponse<T extends { sourceDemoDate?: string | null; sourceOriginalDate?: string | null }>(invoice: T) {
+  const response = { ...invoice, ...(invoice.sourceDemoDate !== undefined ? { sourceDate: invoice.sourceDemoDate } : {}) };
+  Reflect.deleteProperty(response, "sourceDemoDate");
+  Reflect.deleteProperty(response, "sourceOriginalDate");
+  return response;
+}
 
 invoiceRoutes.get("/invoice-extraction/status", (_req, res) => {
   const mode = extractionAdapter(res).provider === "local_demo_fixture" ? "demo_fixture" : "manual";
@@ -49,7 +56,7 @@ invoiceRoutes.get("/source-invoices", async (_req, res, next) => {
     const invoices = documents.map(({ data }) => sourceInvoiceDocumentSchema.parse(data));
     const workflow = await getSourceInvoiceWorkflowStates(restaurantId, invoices.map((invoice) => invoice.id));
     res.json(invoices.map((invoice) => {
-      return { id: invoice.id, title: invoice.title, date: invoice.date, originalDate: invoice.originalDate,
+      return { id: invoice.id, title: invoice.title, date: invoice.date,
         supplier: invoice.supplier, type: invoice.type, status: invoice.status, stockLineCount: invoice.stockLines.length,
         ...workflow.get(invoice.id) };
     }).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.title.localeCompare(b.title)));
@@ -63,19 +70,20 @@ invoiceRoutes.get("/source-invoices/:id", async (req, res, next) => {
     if (!document) { res.status(404).json({ error: { code: "NOT_FOUND", message: "Pièce introuvable." } }); return; }
     const invoice = sourceInvoiceDocumentSchema.parse(document.data);
     const workflow = await getSourceInvoiceWorkflowStates(restaurantId, [invoice.id]);
-    res.json({ id: invoice.id, title: invoice.title, date: invoice.date, originalDate: invoice.originalDate,
-      supplier: invoice.supplier, type: invoice.type, status: invoice.status, content: invoice.content,
+    res.json({ id: invoice.id, title: invoice.title, date: invoice.date,
+      supplier: invoice.supplier, type: invoice.type, status: invoice.status,
+      content: sourceInvoiceContentForWorkspace(invoice.content, invoice.date),
       stockLines: invoice.stockLines, ...workflow.get(invoice.id) });
   } catch (error) { next(error); }
 });
 invoiceRoutes.get("/invoices", async (_req, res, next) => {
-  try { res.json(await getInvoices(context(res).restaurantId)); } catch (error) { next(error); }
+  try { res.json((await getInvoices(context(res).restaurantId)).map(invoiceResponse)); } catch (error) { next(error); }
 });
 invoiceRoutes.post("/invoices/from-source/:id", async (req, res, next) => {
   try {
     const sourceDocumentId = z.string().regex(/^[a-f0-9]{24}$/).parse(req.params.id);
     const { restaurantId, actorId } = context(res);
-    res.json(await createInvoiceDraftFromSource(restaurantId, actorId, sourceDocumentId));
+    res.json(invoiceResponse(await createInvoiceDraftFromSource(restaurantId, actorId, sourceDocumentId)));
   } catch (error) { next(error); }
 });
 invoiceRoutes.post("/invoices/:id", async (req, res, next) => {
@@ -83,6 +91,6 @@ invoiceRoutes.post("/invoices/:id", async (req, res, next) => {
     const id = z.union([z.literal("demo"), z.uuid(), z.string().regex(/^source:[a-f0-9]{24}$/)]).parse(req.params.id);
     const { draft, revision, receive } = z.object({ draft: invoiceDraftSchema, revision: z.number().int().nonnegative(), receive: z.boolean() }).strict().parse(req.body);
     const { restaurantId, actorId } = context(res);
-    res.json(await saveInvoice(restaurantId, actorId, id, revision, draft, receive));
+    res.json(invoiceResponse(await saveInvoice(restaurantId, actorId, id, revision, draft, receive)));
   } catch (error) { next(error); }
 });

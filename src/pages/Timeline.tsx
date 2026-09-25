@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
-import { createTimelineReplay, getTimeline, type TimelineEvent, type TimelineProvenance, type TimelineResult } from "../services/timelineService";
+import { getTimeline, type TimelineEvent, type TimelineProvenance, type TimelineResult } from "../services/timelineService";
 import { formatLocalISODate } from "../utils/date";
 import { filterTimelineEvents, TIMELINE_VISIBLE_BATCH_SIZE } from "./timelineSelectors";
 import "../styles/Workspace.css";
 import "./Timeline.css";
 
 const today = formatLocalISODate(new Date());
-const historyStart = "2023-05-02";
 const initialFrom = `${today.slice(0, 7)}-01`;
 
 const provenanceLabels: Record<TimelineProvenance, string> = {
@@ -56,8 +55,6 @@ function eventTime(event: TimelineEvent) {
 }
 
 export default function Timeline() {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [from, setFrom] = useState(() => dateParam(searchParams, "from", initialFrom));
   const [to, setTo] = useState(() => dateParam(searchParams, "to", today));
@@ -72,7 +69,6 @@ export default function Timeline() {
   const loadMoreFocusPending = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const retryFocusPending = useRef(false);
-  const [replayRequest, setReplayRequest] = useState<{ decisionId: string; loading: boolean; error?: string } | null>(null);
   const updateSearchParams = (changes: Record<string, string | null>) => {
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
@@ -85,7 +81,7 @@ export default function Timeline() {
   };
   const rangeDays = (Date.parse(to) - Date.parse(from)) / 86_400_000;
   const validRequest = isCalendarDate(from) && isCalendarDate(to) && isCalendarDate(asOf) &&
-    from >= historyStart && asOf >= historyStart && from <= to && rangeDays <= 30 &&
+    from <= to && rangeDays <= 30 &&
     to <= today && asOf <= today;
   const requestKey = validRequest ? `${from}:${to}:${asOf}:${requestAttempt}` : "";
   const [requestState, setRequestState] = useState<{ key: string; result?: TimelineResult; error?: string } | null>(null);
@@ -169,35 +165,24 @@ export default function Timeline() {
     setVisibleCount(nextCount);
   };
 
-  const replayDecision = async (decisionId: string) => {
-    setReplayRequest({ decisionId, loading: true });
-    try {
-      const replay = await createTimelineReplay(decisionId);
-      navigate(`/history/replay/${replay.id}${location.search}`);
-    } catch (cause) {
-      setReplayRequest({ decisionId, loading: false,
-        error: cause instanceof Error ? cause.message : "Le bac de rejeu est indisponible." });
-    }
-  };
-
   return <div className="workspace-page timeline-page">
     <header className="workspace-header"><div>
       <p className="workspace-eyebrow">Historique consultable</p>
-      <h1 ref={headingRef} tabIndex={-1}>Histoire sur quatre années</h1>
+      <h1 ref={headingRef} tabIndex={-1}>Historique</h1>
       <p className="workspace-subtitle">Parcourez les pièces, le stock, les recettes, les services et les décisions sans modifier les données actuelles.</p>
     </div></header>
 
     <section className="timeline-controls" aria-label="Filtres de chronologie">
       <label htmlFor="timeline-from">Du (service ou effet)
-        <input id="timeline-from" type="date" min={historyStart} max={today} value={from}
+        <input id="timeline-from" type="date" max={today} value={from}
           onChange={(event) => { setFrom(event.target.value); updateSearchParams({ from: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
       </label>
       <label htmlFor="timeline-to">Au
-        <input id="timeline-to" type="date" min={historyStart} max={today} value={to}
+        <input id="timeline-to" type="date" max={today} value={to}
           onChange={(event) => { setTo(event.target.value); updateSearchParams({ to: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
       </label>
       <label htmlFor="timeline-as-of">Connu au
-        <input id="timeline-as-of" type="date" min={historyStart} max={today} value={asOf}
+        <input id="timeline-as-of" type="date" max={today} value={asOf}
           onChange={(event) => { setAsOf(event.target.value); updateSearchParams({ asOf: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
       </label>
       <p>La période couvre {displayDate(from)} – {displayDate(to)} (31 jours maximum). L’état est filtré par « Connu au »; une pièce modifiée ensuite est masquée plutôt que réécrite dans le passé.</p>
@@ -250,16 +235,6 @@ export default function Timeline() {
                   </p>
                   {event.qualifier && <p className="timeline-qualifier">{event.qualifier}</p>}
                   {event.href && <Link to={event.href} aria-label={`Ouvrir ${event.label} dans l’espace actuel`}>Ouvrir la rubrique actuelle</Link>}
-                  {event.replayDecisionId && <>
-                    <Button type="button" variant="outline" size="sm" disabled={replayRequest?.loading === true}
-                      aria-label={`Rejouer dans un bac isolé : ${event.label}`}
-                      onClick={() => void replayDecision(event.replayDecisionId!)}>
-                      {replayRequest?.decisionId === event.replayDecisionId && replayRequest.loading
-                        ? "Ouverture du bac…" : "Rejouer ce geste"}
-                    </Button>
-                    {replayRequest?.decisionId === event.replayDecisionId && replayRequest.error &&
-                      <p className="timeline-replay-feedback" role="alert">{replayRequest.error}</p>}
-                  </>}
                 </article>
               </li>)}
             </ol>
@@ -272,6 +247,6 @@ export default function Timeline() {
         </div>}
       </>}
     </>}
-    <p className="timeline-read-only">Lecture seule : les liens ouvrent les espaces actuels. « Rejouer ce geste » ouvre un bac séparé à partir d’une décision d’achat conservée ; aucun ordre, réception ou mouvement de stock n’est créé dans l’espace courant. Les documents n’ont pas de journal de versions ; leur première saisie et leurs états antérieurs restent inconnus.</p>
+    <p className="timeline-read-only">Lecture seule : les liens ouvrent les espaces actuels sans rejouer une décision ni modifier les données. Les documents n’ont pas de journal de versions ; leur première saisie et leurs états antérieurs restent inconnus.</p>
   </div>;
 }

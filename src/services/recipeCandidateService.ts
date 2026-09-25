@@ -12,7 +12,6 @@ export interface RecipeCandidateIngredient {
     sourceContentHash: string;
     sourceTitle: string;
     sourceDate: string | null;
-    sourceOriginalDate?: string | null;
     sourceLineNumber: number;
     sourceName: string;
     sourceQuantityText: string;

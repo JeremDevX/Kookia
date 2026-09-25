@@ -174,38 +174,29 @@ source. Il compte les coûts non valorisés et les incompatibilités d'unité,
 signale les métriques non mesurées et exclut les simulations. Il ne constitue
 pas une attestation AGEC.
 
-La page **Plus → Histoire sur quatre années** (`/history`) appelle la route
-tenant-scopée de lecture seule `GET /api/workspace/timeline`, sur une période
-de 31 jours au maximum et une coupe `asOf`. Chaque événement sépare date
-d'effet, date à laquelle son état est connu et date d'enregistrement ; les
-provenances affichées sont archive source, saisie, simulation, hypothèse ou
-inconnue. Les pièces sont réduites côté SQL à des métadonnées (aucun texte de
-transcription ni ligne brute), et les prix actuels ne sont pas injectés dans
-l'historique. Les lignes `WorkspaceDocument` n'ayant pas de journal de versions,
-leur date disponible est la dernière mise à jour ; les états antérieurs restent
-inconnus et les entrées modifiées après `asOf` sont masquées. Les mouvements
-legacy sans snapshots gardent un libellé historique inconnu. Les liens ouvrent
-les vues actuelles (un mouvement peut ouvrir la fiche produit) sans rejouer
-l'opération ni modifier le solde. Une décision `purchase_suggestion_added` ou
-`purchase_suggestion_excluded` n'expose « Rejouer ce geste » que si son
-instantané satisfait le contrat de suggestion ; le clic ouvre
-`/history/replay/:id` et le serveur recopie cet instantané dans un document
-`timeline-replay:v1:<decisionId>` tenant-scopé, distinct des objets métier.
-Le rendu du bac est calculé depuis l'instantané conservé, sans relire le stock
-courant. Il montre une ligne hypothétique ou une exclusion ; aucune commande,
-réception, transmission fournisseur ni mouvement n'est créé. Un même geste
-ne conserve qu'un bac, et les répétitions concurrentes sont idempotentes.
+La page **Plus → Historique** (/history) appelle la route tenant-scopée
+de lecture seule GET /api/workspace/timeline, sur toute période consultable,
+avec des fenêtres de requête de 31 jours au maximum et une coupe « Connu au ».
+Chaque événement sépare date d'effet, date à laquelle son état est connu et
+date d'enregistrement ; les provenances affichées sont archive source, saisie,
+simulation, hypothèse ou inconnue. Les pièces sont réduites côté SQL à des
+métadonnées (aucun texte de transcription ni ligne brute), et les prix actuels
+ne sont pas injectés dans l'historique. Les lignes WorkspaceDocument n'ayant
+pas de journal de versions, leur date disponible est la dernière mise à jour ;
+les états antérieurs restent inconnus et les entrées modifiées après la coupe
+sont masquées. Les mouvements legacy sans snapshots gardent un libellé
+historique inconnu. Les liens ouvrent les vues actuelles (un mouvement peut
+ouvrir la fiche produit) ; aucune action ne rejoue une décision ni ne modifie
+le solde depuis l'historique.
 
 La chronologie inclut aussi la création des commandes internes, les décisions
 de suggestion et les réceptions rapprochées. Une commande n'est pas présentée
 comme envoyée et son état mutable n'est pas rejoué rétroactivement ; une
 réception distingue sa date de livraison de sa date d'enregistrement. Les
-commandes/réceptions et décisions du tenant démo portent la provenance
-simulation ; une pièce source liée est ouvrable depuis Achats. Pour les crédits
-de stock synthétiques historiques, l'identifiant source est repris de
-l'opération idempotente et reste explicitement qualifié de simulation, jamais
-de preuve de livraison. Ces projections exposent des snapshots bornés, pas le
-contenu des pièces ni leurs lignes OCR brutes.
+enregistrements de fixtures gardent leur provenance de QA et ne sont jamais
+utilisés comme opérations du compte Kookia. Les dates de travail des pièces
+sont celles utilisées par l'interface ; les dates d'origine ne sont pas
+exposées par les API du workspace.
 
 Le [plan de migration](plans/database-migration.md) contient la cartographie et les
 preuves de validation et les limites explicites de cette migration.

@@ -20,6 +20,15 @@ export const sourceInvoiceDocumentSchema = z.object({
   content: z.string(), stockLines: z.array(sourceLineSchema).max(100),
 });
 
+export function sourceInvoiceContentForWorkspace(content: string, workingDate: string | null) {
+  return content.split(/\r?\n/).flatMap((line) => {
+    if (/^- Date[^\n]*\(pièce d’origine\)\s*:/i.test(line)) return [];
+    if (/^- Date décalée de la pièce \(démonstration\)\s*:/i.test(line))
+      return [`- Date de travail : ${workingDate ?? "inconnue"}`];
+    return [line];
+  }).join("\n");
+}
+
 const invoiceLineSchema = z.object({
   productId: z.string().max(100), quantity: z.number().finite().min(0).max(1_000_000).multipleOf(0.001),
   unitPrice: z.number().finite().min(0).max(1_000_000).multipleOf(0.0001), unit: z.union([unitSchema, z.literal("")]).optional(),
@@ -155,8 +164,6 @@ export async function createInvoiceDraftFromSource(restaurantId: string, actorId
 }
 
 export async function getInvoices(restaurantId: string) {
-  await prisma.workspaceDocument.upsert({ where: { restaurantId_kind: { restaurantId, kind: "invoice:demo" } },
-    create: { restaurantId, kind: "invoice:demo", data: initialInvoice }, update: {} });
   const documents = await prisma.workspaceDocument.findMany({ where: { restaurantId, kind: { startsWith: "invoice:" } }, orderBy: { updatedAt: "desc" } });
   const invoices = documents.map((document) => ({ ...invoiceSchema.parse(document.data), revision: document.revision }));
   const sourceIds = invoices.flatMap((invoice) => invoice.sourceDocumentId ? [invoice.sourceDocumentId] : []);

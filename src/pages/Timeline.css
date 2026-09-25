@@ -30,7 +30,6 @@
 .timeline-event p { margin: var(--number-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_8); }
 .timeline-event-times { display: flex; flex-wrap: wrap; gap: var(--spacing-md); font-size: var(--font-size-xs) !important; }
 .timeline-event .timeline-qualifier { color: var(--color-text-primary); }
-.timeline-event .timeline-replay-feedback { color: var(--palette-rose-9); }
 .timeline-event .btn { align-self: flex-start; min-height: var(--size-44); height: auto; }
 .timeline-event a { align-self: flex-start; color: var(--color-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
 .timeline-read-only { padding-top: var(--spacing-sm); border-top: var(--size-1) solid var(--color-border); }

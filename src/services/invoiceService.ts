@@ -15,13 +15,13 @@ export interface Invoice extends InvoiceDraft {
   receivedAt?: string; receivedBy?: string; sourceDocumentId?: string; sourceContentHash?: string;
   sourceDocumentRevision?: number; sourceTitle?: string; sourceSupplier?: string;
   sourceType?: "invoice" | "credit" | "delivery"; sourceStatus?: string;
-  sourceDemoDate?: string | null; sourceOriginalDate?: string | null; sourceLineCount?: number;
+  sourceDate?: string | null; sourceLineCount?: number;
   provenance?: "demo_simulation"; alreadyCreditedBySimulation?: boolean;
   receiptProgress?: Array<{ invoiceLineIndex: number; orderLineId: string; receivedQuantity: number }>;
 }
 export const getInvoices = () => apiRequest<Invoice[]>("/workspace/invoices");
 export interface SourceInvoiceSummary {
-  id: string; title: string; date: string | null; originalDate: string | null;
+  id: string; title: string; date: string | null;
   supplier: string; type: "invoice" | "credit" | "delivery"; status: string; stockLineCount: number;
   invoiceId?: string; invoiceStatus?: "draft" | "received"; receivedAt?: string;
   alreadyCreditedBySimulation: boolean; sourceMovementCount: number;

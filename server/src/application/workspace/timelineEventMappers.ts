@@ -1,5 +1,4 @@
 import { Prisma, type RecommendationDecision, type RecipeVersion, type StockMovement } from "@prisma/client";
-import { buildTimelineReplay } from "./timelineReplayContract.js";
 
 export type TimelineProvenance = "source" | "recorded" | "simulation" | "assumption" | "unknown";
 export type TimelineKind = "document" | "stock" | "loss" | "recipe" | "mapping" | "production" | "sale" | "service" |
@@ -16,7 +15,6 @@ export interface TimelineEvent {
   provenance: TimelineProvenance;
   qualifier?: string;
   href?: string;
-  replayDecisionId?: string;
 }
 
 export interface TimelineDocumentRow {
@@ -206,8 +204,6 @@ export function decisionEvent(decision: DecisionRow): TimelineEvent {
     ? candidate.recipe as Prisma.JsonObject : null;
   const candidateDecisionLabel = recipeCandidateDecisionLabels[decision.decision];
   const isRecipeCandidateDecision = candidateDecisionLabel !== undefined;
-  const replayableDecision = buildTimelineReplay({ id: decision.id, decisionId: decision.id,
-    decision: decision.decision, createdAt: decision.createdAt, snapshot: decision.snapshot });
   const candidateName = typeof candidateRecipe?.name === "string" ? safeText(candidateRecipe.name) : "";
   const candidateStatus = typeof candidate?.status === "string" ? safeText(candidate.status) : "";
   const simulated = isRecipeCandidateDecision || snapshot?.workspaceMode === "demo" || snapshot?.provenance === "demo_simulation" ||
@@ -230,6 +226,5 @@ export function decisionEvent(decision: DecisionRow): TimelineEvent {
     href: isRecipeCandidateDecision ? "/recipes"
       : decision.decision.startsWith("purchase_suggestion_") || decision.decision.startsWith("order_")
         ? "/orders#selection" : "/predictions",
-    ...(replayableDecision ? { replayDecisionId: decision.id } : {}),
   };
 }

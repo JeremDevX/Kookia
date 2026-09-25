@@ -1,5 +1,11 @@
 # Démonstration locale jetable
 
+> Outil technique hérité : ne pas lancer ce scénario pour la revue du compte
+> Kookia et ne jamais traiter ses ventes, pertes ou productions comme des
+> opérations du restaurant. Il utilise un compte et une base tmpfs séparés.
+> Les exigences produit courantes figurent dans le
+> [référentiel du Goal](plans/goal-kookia-reference.md).
+
 `npm run demo:local` démarre une session complète de démonstration sans utiliser
 la base Compose ni un espace existant :
 

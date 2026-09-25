@@ -30,6 +30,17 @@ For long-running feature work, follow the dependency gates and evidence in
 - Treat recommendations as suggestions. Do not present uncertain data,
   predictions, or regulatory claims as certain; preserve human confirmation for
   consequential external actions.
+- Product history has no fixed four-year limit. Restaurant invoice working
+  dates may be shifted to align with 2026; use those working dates and never
+  expose origin dates.
+- When sales or loss records are unavailable, development may provide plausible
+  ingredient-outflow estimates from reviewed stock entries and compatible,
+  dated recipe versions. Keep estimates distinct from recorded operations,
+  expose their assumptions and provenance, and never persist them as sales,
+  losses, production, or stock movements without confirmation. An invoice
+  transcription alone is not a receipt, and an unconfirmed recipe candidate is
+  not a recipe in use. Use “Historique” for the product timeline; do not present
+  estimates as observed facts.
 - Prefer derived state to duplicated state, explicit side effects, existing
   patterns, and the smallest useful abstraction or dependency.
 - Preserve strict TypeScript boundaries. Do not let uncontained `any` or raw

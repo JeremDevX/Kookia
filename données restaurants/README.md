@@ -2,9 +2,13 @@
 
 Le tri des **990 fichiers** de `factures fournisseurs/` est terminé. Ce dossier contient **431 fiches de pièces d’achat utiles** (factures, tickets, avoirs ou bons de livraison identifiés séparément), **un devis** conservé comme référence de prix et **32 index fournisseurs**. Ce sont des transcriptions de travail, pas des écritures comptables ni des réceptions de stock validées.
 
-## Dates décalées pour démonstration
+## Dates de travail alignées sur 2026
 
-Les dates figurant dans les noms des fiches et dans les index sont **fictives** : un décalage identique de **1 728 jours** place la dernière facture datée du lot, initialement du 30 décembre 2021, au **23 septembre 2026**. Toutes les autres pièces datées, y compris le devis, conservent ainsi leur ordre chronologique et leurs écarts exacts ; les index fournisseurs les présentent de la plus récente à la plus ancienne. La date réellement lue sur chaque pièce reste indiquée dans sa fiche avec la mention « pièce d’origine ». L’unique scan sans date fiable n’a pas reçu de date inventée. Les PDF et images sources n’ont pas été modifiés. Ces dates de démonstration ne doivent pas être utilisées comme dates comptables.
+Les dates fournies avec les fiches et index sont les dates de travail à utiliser
+dans l'espace Kookia ; elles ont été décalées pour s'aligner sur l'année 2026.
+L'application ne doit pas exposer les dates d'origine. Les PDF et images source
+ne sont pas modifiés. Ce décalage n'ajoute aucune date absente et ne transforme
+pas une transcription en réception, vente ou autre opération métier.
 
 ## Lire les fiches
 
@@ -12,11 +16,20 @@ Chaque fiche indique sa source et, lorsqu’elle est disponible, son empreinte S
 
 Les coordonnées privées, numéros de carte et coordonnées bancaires ne sont pas recopiés. Ces informations privées ne sont pas importées dans Kookia. Une personne doit confronter chaque fiche à l’original avant toute utilisation opérationnelle des stocks ou des prix.
 
-## Jeu de données Kookia
+## Usage dans Kookia
 
-Après démarrage de PostgreSQL et application des migrations, `npm run import:invoices` vérifie ces 431 fiches et affiche un aperçu en lecture seule. `npm run import:invoices -- --write` ajoute uniquement les fiches documentaires absentes dans l’espace Camille, résolu par une empreinte source unique ; il ne crée ni produit ni mouvement de stock. Les fiches sont consultables depuis « Factures ». Le script peut être relancé : il refuse une fiche modifiée et ne duplique pas les documents existants. Les PDF et images d’origine restent exclus de Git.
+Les 431 fiches sont des transcriptions d'achats, pas des écritures comptables
+ni des réceptions confirmées. Le parseur et le script d'aperçu servent à lire
+les entrées et à mesurer leur couverture. Ne pas lancer d'import avec écriture
+ou de script de simulation sur le compte Kookia. Les sorties absentes peuvent
+être estimées séparément à partir d'entrées revues et de recettes compatibles,
+avec hypothèses et provenance visibles ; elles ne deviennent jamais des ventes,
+services, productions ou pertes enregistrés. Sans source suffisante, les
+opérations restent inconnues plutôt que remplacées par des zéros.
 
-La simulation de l’activité s’effectue séparément avec `npm run simulate:restaurant` (aperçu) puis `npm run simulate:restaurant -- --write` (écriture locale avec sauvegarde privée). Elle convertit les seules lignes alimentaires exploitables selon le catalogue et les hypothèses tracées, puis relie réceptions source, réapprovisionnements synthétiques, recettes, productions, ventes et mouvements de stock. Les pièces et lignes non reconstructibles restent consultables sans effet sur le stock. Les avoirs et bons de livraison ne sont pas présentés comme des factures reçues ; les réapprovisionnements synthétiques ne sont pas des factures ou commandes. Les ventes et consommations sont des données de démonstration, pas des écritures réelles. Les dates décalées ne sont pas des dates comptables. Voir le [modèle et les limites de simulation](../docs/plans/restaurant-simulation.md).
+Les scripts d'import et de simulation déjà présents sont des outils techniques
+hérités ; leur option d'écriture ne fait pas partie de la revue du compte
+Kookia. Les fixtures synthétiques restent réservées à la QA isolée.
 
 ## Index par fournisseur
 

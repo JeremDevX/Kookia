@@ -14,8 +14,7 @@ it("persists corrected drafts, isolates accounts and receives invoices exactly o
   const agent = await account(); const other = await account();
   await request(app).get("/api/workspace/invoices").expect(401);
   const originals = await agent.get("/api/workspace/invoices").expect(200);
-  expect(originals.body[0].reference).toBe("Rungis-2024-12-09");
-  expect(originals.body[0].lines.map((line: { quantity: number }) => line.quantity)).toEqual([12, 5, 3, 10]);
+  expect(originals.body).toEqual([]);
   const catalog = await agent.get("/api/workspace/catalog").expect(200);
   const product = catalog.body.products[0];
   const id = randomUUID();
@@ -52,15 +51,21 @@ it("lists source invoices only within the authenticated restaurant", async () =>
   const userId = (await owner.get("/api/auth/me").expect(200)).body.user.id as string;
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { restaurant: true } });
   const id = "abcdef0123456789abcdef01";
+  const transcript = ["- Date décalée de la pièce (démonstration) : 2026-09-23",
+    "- Date (pièce d’origine) : 2021-12-30", "- Fournisseur : Fournisseur de test"].join("\n");
   await prisma.workspaceDocument.create({ data: { restaurantId: user.restaurant!.id, kind: `source-invoice:${id}`,
     data: { id, contentHash: "a".repeat(64), title: "Pièce de test", date: "2026-09-23", originalDate: "2021-12-30",
-      supplier: "Fournisseur de test", type: "invoice", status: "À vérifier", content: "Transcription de test", stockLines: [] } } });
+      supplier: "Fournisseur de test", type: "invoice", status: "À vérifier", content: transcript, stockLines: [] } } });
 
   await request(app).get("/api/workspace/source-invoices").expect(401);
   const list = await owner.get("/api/workspace/source-invoices").expect(200);
   expect(list.body).toEqual([expect.objectContaining({ id, title: "Pièce de test", stockLineCount: 0 })]);
   expect(list.body[0]).not.toHaveProperty("content");
-  expect((await owner.get(`/api/workspace/source-invoices/${id}`).expect(200)).body.content).toBe("Transcription de test");
+  expect(list.body[0]).not.toHaveProperty("originalDate");
+  const detail = (await owner.get(`/api/workspace/source-invoices/${id}`).expect(200)).body;
+  expect(detail.content).toContain("- Date de travail : 2026-09-23");
+  expect(detail.content).not.toContain("2021-12-30");
+  expect(detail.content).not.toContain("démonstration");
   expect((await other.get("/api/workspace/source-invoices").expect(200)).body).toEqual([]);
   await other.get(`/api/workspace/source-invoices/${id}`).expect(404);
   await owner.get("/api/workspace/source-invoices/invalid-id").expect(400);

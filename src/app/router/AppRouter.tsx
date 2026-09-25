@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Layout from "../../components/layout/Layout";
 import { RequireAuth } from "../../features/auth/components/RequireAuth";
 import { PublicOnly } from "../../features/auth/components/PublicOnly";
@@ -16,7 +16,11 @@ const Analytics = lazy(() => import("../../pages/Analytics"));
 const Sales = lazy(() => import("../../pages/Sales"));
 const More = lazy(() => import("../../pages/More"));
 const Timeline = lazy(() => import("../../pages/Timeline"));
-const TimelineReplay = lazy(() => import("../../pages/TimelineReplay"));
+
+function LegacyTimelineReplayRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/history${location.search}`} replace />;
+}
 
 const AppRouter = () => (
   <Router>
@@ -34,7 +38,7 @@ const AppRouter = () => (
           <Route path="sales" element={<Sales />} />
           <Route path="more" element={<More />} />
           <Route path="history" element={<Timeline />} />
-          <Route path="history/replay/:id" element={<TimelineReplay />} />
+          <Route path="history/replay/:id" element={<LegacyTimelineReplayRedirect />} />
         </Route></Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

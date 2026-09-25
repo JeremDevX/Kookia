@@ -227,7 +227,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
           onChange={(event) => void open(event.target.value)}>
           <option value="">Choisir une pièce</option>
           {filtered.map((invoice) => <option key={invoice.id} value={invoice.id}>
-            {invoice.date ? `${invoice.date} · ` : "Date de démonstration inconnue · "}{invoice.title}
+            {invoice.date ? `${invoice.date} · ` : "Date inconnue · "}{invoice.title}
           </option>)}
         </select>
         {detailLoading && <p role="status">Lecture de la pièce…</p>}
@@ -235,8 +235,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
           <h3 ref={detailHeadingRef} tabIndex={-1}>{selected.title}</h3>
           <p><strong>Fournisseur transcrit :</strong> {selected.supplier}</p>
           <p><strong>Type :</strong> {sourceTypeLabel(selected.type)}. <strong>Statut source :</strong> {selected.status}</p>
-          <p><strong>Date d’origine :</strong> {selected.originalDate ?? "inconnue ou non structurée"}.
-            <strong> Date de démonstration :</strong> {selected.date ?? "inconnue"}.</p>
+          <p><strong>Date de travail :</strong> {selected.date ?? "inconnue"}.</p>
           <p>{selected.stockLines.length} ligne{selected.stockLines.length === 1 ? "" : "s"} transcrite{selected.stockLines.length === 1 ? "" : "s"}, à rapprocher.
             {selected.sourceMovementCount > 0 ? ` ${selected.sourceMovementCount} mouvement(s) de cette pièce existe(nt) déjà.` : " Aucun mouvement de cette pièce n’est lié."}</p>
           {selected.alreadyCreditedBySimulation && <p role="status">Cette pièce a déjà crédité le stock dans la simulation. Aucun nouveau crédit ne sera accepté.</p>}
@@ -246,7 +245,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
               Ligne {line.sourceLineNumber} · {line.name} — {line.sourceQuantityText} · {line.unitPrice.toFixed(2)} € ({line.priceTaxBasis})
             </li>)}
           </ul>}
-          <details><summary>Lire la transcription source</summary><pre className="source-invoice-content">{selected.content}</pre></details>
+          <details><summary>Lire la transcription (date de travail)</summary><pre className="source-invoice-content">{selected.content}</pre></details>
           <button ref={resumeButtonRef} type="button" className="btn btn-primary" onClick={() => void resume()}
             disabled={sourceConflict} aria-disabled={opening || sourceConflict} aria-busy={opening}>
             {opening ? "Ouverture…" : sourceConflict ? "Brouillon périmé" : selected.invoiceStatus === "draft" ? "Reprendre le brouillon" : selected.invoiceStatus === "received" ? "Voir la réception" :

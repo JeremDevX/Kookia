@@ -10,7 +10,7 @@ const destinations = [
   { title: "Connexions", detail: "Consultez l'état des sources automatiques et les replis manuels.", to: "/settings?section=connections" },
   { title: "Mon compte", detail: "Gérez votre profil et votre accès.", to: "/settings?section=account" },
   { title: "Scénarios d'exemple", detail: "Explorez la démonstration, sans la confondre avec vos données.", to: "/predictions" },
-  { title: "Histoire sur quatre années", detail: "Parcourez documents, stock, recettes et services avec leur niveau de preuve.", to: "/history" },
+  { title: "Historique", detail: "Parcourez documents, stock, recettes et services avec leur niveau de preuve.", to: "/history" },
 ];
 
 export default function More() {

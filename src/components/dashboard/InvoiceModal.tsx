@@ -234,8 +234,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
           <p><strong>{invoice.sourceTitle}</strong> · {invoice.sourceSupplier}</p>
           <p>Type transcrit : {invoice.sourceType === "invoice" ? "facture" : invoice.sourceType === "credit" ? "avoir" : "bon de livraison"} — à confirmer.
             Statut source : {invoice.sourceStatus ?? "inconnu"}.</p>
-          <p>Date d’origine : {invoice.sourceOriginalDate ?? "inconnue ou non structurée"}.
-            Date décalée de démonstration : {invoice.sourceDemoDate ?? "inconnue"}.</p>
+          <p>Date de travail de la pièce : {invoice.sourceDate ?? "inconnue"}.</p>
           <p>Hash et révision source conservés côté serveur. Toute réception restera simulée ; aucun achat réel ni message fournisseur ne sera créé.</p>
           {invoice.sourceType !== "invoice" && <p role="alert">Un avoir ou un bon de livraison est consultable, mais ne peut pas créditer le stock dans ce flux.</p>}
           {invoice.alreadyCreditedBySimulation && <p role="alert">Cette pièce a déjà crédité le stock dans le scénario. Ce brouillon ne peut pas ajouter un second crédit.</p>}
@@ -253,7 +252,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
         <label htmlFor="invoice-reference">Référence</label>
         <input className="input-field" id="invoice-reference" value={invoice.reference} disabled={disabled || received}
           onChange={(event) => setInvoice({ ...invoice, reference: event.target.value })} />
-        <label htmlFor="invoice-date">{sourceLinked ? "Date d’opération (date de démonstration)" : "Date de facture"}</label>
+        <label htmlFor="invoice-date">{sourceLinked ? "Date de la pièce" : "Date de facture"}</label>
         <input className="input-field" id="invoice-date" type="date" value={invoice.date} disabled={disabled || received}
           onChange={(event) => setInvoice({ ...invoice, date: event.target.value,
             ...(sourceLinked ? { sourceDateConfirmed: false } : {}) })} />

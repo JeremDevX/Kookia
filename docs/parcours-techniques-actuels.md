@@ -183,30 +183,38 @@ démonstration repliés ne doivent pas être lus comme résultats du restaurant.
 cohérents, dates/unité/source dans le rapport, période vide, export qui ne
 transforme pas une simulation en économie mesurée ou attestation réglementaire.
 
-## Histoire consultable sur quatre années
+## Historique consultable sans limite de période
 
-Dans **Plus → Histoire sur quatre années**, choisir une période et une date
-« Connu au ». La vue lecture seule rassemble pièces d'archive, mouvements et
-pertes de stock, versions de recettes, productions, ventes, jours de service,
-correspondances article-recette et décisions. Les mouvements ouvrent la fiche
-actuelle du produit ; les liens ne rejouent pas l'opération historique.
+Dans **Plus → Historique**, choisir une période et une date « Connu au ». La
+vue en lecture seule rassemble les événements disponibles : pièces d'archive,
+mouvements, pertes enregistrées, versions de recettes, productions, ventes,
+jours de service, correspondances article-recette et décisions. Les liens
+ouvrent les objets actuels ; ils ne rejouent aucune opération historique.
 
-Chaque ligne sépare date d'effet, connaissance et enregistrement, puis porte
-une origine visible : archive source, enregistrée, simulation, hypothèse ou
-inconnue. L'année 2023 ne montre aucune réception fondée sur une pièce source ;
-l'ouverture et les réapprovisionnements fictifs sont explicitement des
-hypothèses. Une transcription d'archive reste consultable mais ne prouve pas
-une livraison. Une journée partielle ou manquante n'est jamais assimilée à un
-service complet ni à zéro vente.
+La chronologie n'a pas de borne produit de quatre ans. Chaque requête reste
+limitée à 31 jours afin de borner la réponse, mais toute date valide peut être
+consultée. Chaque ligne sépare date d'effet, connaissance et enregistrement,
+puis porte une origine visible : archive source, enregistrée, simulation,
+hypothèse ou inconnue. Les dates de travail des pièces sont utilisées dans
+l'interface ; les dates d'origine ne sont pas exposées. Une transcription
+d'archive ne prouve pas une livraison. Une journée partielle ou manquante n'est
+jamais assimilée à un service complet ni à zéro vente.
 
-La fenêtre est bornée à 31 jours. Les pièces source ne renvoient que des
-métadonnées et un nombre de lignes, sans contenu de transcription. Les noms,
-unités et fournisseurs des mouvements récents sont snapshotés ; pour les
-mouvements antérieurs sans snapshot, le libellé historique reste inconnu au
-lieu d'être repris du catalogue actuel. Les documents mutables n'ont pas de
-journal de versions : leur date d'enregistrement disponible est la dernière
-mise à jour, et les états antérieurs ne sont pas reconstruits. La consultation
-n'écrit ni stock, ni vente, ni production.
+À construire côté produit : des sorties estimées calculées à part depuis des
+entrées de stock revues, des recettes compatibles et des hypothèses explicites ;
+elles ne seront pas ajoutées aux opérations enregistrées ni présentées comme
+observées.
+
+Les pièces source ne renvoient que des métadonnées et un nombre de lignes, sans
+contenu brut via la chronologie. Les noms, unités et fournisseurs des mouvements
+récents sont snapshotés ; pour les mouvements antérieurs sans snapshot, le
+libellé historique reste inconnu au lieu d'être repris du catalogue actuel.
+Les documents mutables n'ont pas de journal de versions : leur date
+d'enregistrement disponible est la dernière mise à jour, et les états
+antérieurs ne sont pas reconstruits. La consultation n'écrit ni stock, ni
+vente, ni production ; les sorties sans source sont actuellement inconnues.
+L'estimation distincte des sorties est une cible à construire et restera séparée
+des opérations réelles et des KPI observés.
 
 ## Vérification locale minimale et reprise
 

@@ -10,7 +10,6 @@ import { orderRoutes } from "./orderRoutes.js";
 import { preferencesRoutes } from "./preferencesRoutes.js";
 import { workspaceReadRoutes } from "./workspaceReadRoutes.js";
 import { timelineRoutes } from "./timelineRoutes.js";
-import { timelineReplayRoutes } from "./timelineReplayRoutes.js";
 import { sourceRoutes } from "./sourceRoutes.js";
 import { Router, type Response } from "express";
 import { z } from "zod";
@@ -38,7 +37,6 @@ workspaceRoutes.use(async (req, res, next) => {
 
 workspaceRoutes.use(workspaceReadRoutes);
 workspaceRoutes.use(timelineRoutes);
-workspaceRoutes.use(timelineReplayRoutes);
 workspaceRoutes.use(sourceRoutes);
 workspaceRoutes.use(preferencesRoutes);
 workspaceRoutes.use(orderRoutes);

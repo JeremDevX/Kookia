@@ -176,7 +176,7 @@ export default function RecipeCandidates({ products, onRecipeConfirmed }: Props)
         <ul>{candidate.ingredients.map((ingredient) => <li key={ingredient.productId}>
           {ingredient.productName} — {ingredient.quantity} {ingredient.unit} par lot · <Link
             to={`/orders?source=${encodeURIComponent(ingredient.evidence.sourceDocumentId)}#invoices`}>
-            Pièce source : {ingredient.evidence.sourceTitle} · date d’origine {ingredient.evidence.sourceOriginalDate ?? "inconnue"} · date de démo {ingredient.evidence.sourceDate ?? "inconnue"} · ligne {ingredient.evidence.sourceLineNumber}, {ingredient.evidence.sourceName} ({ingredient.evidence.sourceQuantityText})
+            Pièce source : {ingredient.evidence.sourceTitle} · date de travail {ingredient.evidence.sourceDate ?? "inconnue"} · ligne {ingredient.evidence.sourceLineNumber}, {ingredient.evidence.sourceName} ({ingredient.evidence.sourceQuantityText})
           </Link>
         </li>)}</ul>
         {candidate.recipeId && <p>Recette active créée ; aucune production n’est déclarée par cette confirmation.</p>}

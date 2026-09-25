@@ -1,5 +1,12 @@
 # Scénario local de restaurant — Camille
 
+> Cadrage produit mis à jour le 25/09/2026 : ce scénario est un artefact
+> technique hérité et ne doit pas être chargé dans le compte Kookia ni présenté
+> comme activité du restaurant. Les instructions de ce fichier relatives à
+> `--write` ne s'appliquent pas à ce compte. Voir le
+> [référentiel courant](goal-kookia-reference.md) ; la QA synthétique reste
+> séparée des données métier.
+
 Cette simulation locale sert à explorer les parcours Stocks, Factures, Recettes,
 Ventes, Bilan et Achats. Elle ne décrit pas l’activité réelle du restaurant et
 n’active ni POS, ni moteur IA, ni météo, ni envoi de commande.
