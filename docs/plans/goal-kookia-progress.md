@@ -1808,3 +1808,28 @@ Sur un runner `demo:fixtures` neuf (PostgreSQL tmpfs), la recherche Histoire de 
 Captures inspectées : 2023 — Histoire [320](evidence/q2-c3-chapters/history-2023-keyboard-320.png), [1280](evidence/q2-c3-chapters/history-2023-keyboard-1280.png), archive [320](evidence/q2-c3-chapters/source-2023-focused-320.png), [1280](evidence/q2-c3-chapters/source-2023-focused-1280.png) ; 2025 — Histoire [320](evidence/q2-c3-chapters/history-2025-keyboard-320.png), [1280](evidence/q2-c3-chapters/history-2025-keyboard-1280.png), archive [320](evidence/q2-c3-chapters/source-2025-focused-320.png), [1280](evidence/q2-c3-chapters/source-2025-focused-1280.png) ; 2026 — Histoire [320](evidence/q2-c3-chapters/history-2026-keyboard-320.png), [1280](evidence/q2-c3-chapters/history-2026-keyboard-1280.png), archive [320](evidence/q2-c3-chapters/source-2026-focused-320.png), [1280](evidence/q2-c3-chapters/source-2026-focused-1280.png).
 
 Il s’agit du seed UI synthétique `demo:fixtures`, pas de la fixture narrative `demoStory.integration.test.ts` : cette preuve couvre la découverte et l’ouverture clavier des pièces par année, pas la chaîne complète suggestion → décision → commande → réception → KPI/rejeu. Aucun état métier n’a été écrit. L’utilisateur confirme que la page de connexion apparaît, mais le contrôle natif échoue encore (`browsers: []`, `getApp("Google Chrome")` → `cgWindowNotFound`). Zoom natif à 200 % et lecteur d’écran réel restent non vérifiés.
+
+### Q2/C3 — confirmation de réception conservée après actualisation (2026-09-25)
+
+La revue C3 précédente n'exposait pas son annonce de succès après réception :
+`PurchaseReceiptReview` la stockait localement, puis disparaissait quand
+`OrderHistory` rechargeait une commande arrivée au statut terminal. La notice
+est maintenant conservée et rendue avec `role="status"` par l'historique parent.
+
+Sur un `demo:fixtures` neuf à PostgreSQL tmpfs, une commande et sa facture de
+fixture ont été préparées dans le seul compte jetable. Dans Chrome headless à
+390×1000, la notice « Réception simulée enregistrée; facture rapprochée. Aucun
+stock réel n’a changé. » reste visible après démontage du formulaire et lecture
+actualisée : la commande est `simulated_received`, avec une seule réception
+simulée. Le stock et sa révision sont identiques avant/après ; `document` et
+`body` restent à 390 px ; le focus revient au résumé de la commande. Entrée a
+soumis la réception depuis le vrai bouton. Sélection de facture et référence
+de livraison ont été posées par le harnais DOM : ce n'est pas une preuve de
+saisie complète au clavier. Capture inspectée :
+[confirmation après réception](evidence/c3-receipt-success/receipt-success-390.png).
+
+`npm run lint`, `npm run build`, `npm test` (33 contrôles Node/CSS, 119 tests
+Vitest) et `git diff --check` passent. Le runner, ses identifiants temporaires,
+son profil Chrome et ses ports ont été supprimés/fermés ; aucune donnée
+persistante Kookia n'a été utilisée. CUA natif, lecteur d'écran réel et zoom
+natif 200 % restent non vérifiés. Commit local `2af8b44`, sans push.
