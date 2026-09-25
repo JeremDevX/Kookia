@@ -419,6 +419,12 @@ Le visualiseur Chrome natif affiche une page de PDF. À 320 px et 768 px, le ré
 
 Cette navigation prouve le lien et son ouverture au clavier, pas les commandes internes du lecteur PDF : l’arbre AX CDP de cet onglet ne renvoie aucun contrôle, CUA ne contrôle toujours aucun onglet, et aucun lecteur d’écran réel n’est disponible pour la passe. La comparaison côte à côte avec les lignes transcrites n’existe pas dans ce parcours (le PDF s’ouvre dans un onglet distinct) et reste à revoir. Le PDF, sa candidate et l’archive appartiennent uniquement au scénario explicitement fictif/tmpfs ; aucune réception ni donnée conservée n’a été créée.
 
+### Q2 — tentative de rendu Connexions (2026-09-25)
+
+Reprise sur `main`, arbre propre à `7b75bab`, sans migration ni changement de code. L’utilisateur a confirmé voir une page de connexion locale, sans rattachement observable de cet onglet à notre session ; de notre côté, le runner isolé courant sert `/login` sur `127.0.0.1:57615`. Le connecteur CUA retourne toujours `browsers: []`, `getApp("Google Chrome")` et `getApp("com.google.Chrome")` échouent `cgWindowNotFound`, et l’IAB répond « Browser is not available ». Le port CDP isolé `57800` accepte la connexion TCP mais ne répond pas à `GET /json/list` avant expiration. Aucune capture, mesure de largeur, inspection AX ou interaction clavier de Connexions n’a donc été réalisée dans cette reprise ; la page et son parcours restent non prouvés. Aucun geste métier, fichier de données ou tenant conservé n’a été touché.
+
+**Suite :** rétablir un onglet contrôlable du bac isolé puis refaire Connexions à 320/768/1440 px et au clavier. Ne pas clore Q2 sur le seul rendu statique ou la page de connexion visible côté utilisateur.
+
 ## Portes externes
 
 | Sujet | Ce qui est possible sans accès | Preuve requise pour « activé » | État |
