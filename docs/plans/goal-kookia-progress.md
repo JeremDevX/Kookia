@@ -223,12 +223,11 @@ composant réel a été rendu avec un GET synthétique, puis inspecté au clavie
 maintenant prouvés à 320 px ci-dessous. Le premier aller-retour Histoire → objet
 lié → Histoire et l'accès au bac de rejeu gardent maintenant la période et les
 recherches, preuve synthétique ci-dessous. **Prochaine action démontrable :**
-rendre un second épisode C3 sur fixture synthétique, en couvrant le cas 2023
-sans réception source puis un épisode recette/service daté, et traverser ces
-transitions sans lire ni importer le corpus conservé. Puis reprendre les portes Q2 de zoom natif et
-technologie d’assistance si CUA redevient contrôlable ; le lecteur d’écran réel
-demeure indisponible. Le corpus de pièces conservé n’a pas été lu pour cette
-reprise.
+rendre un épisode recette/service C3 synthétique et traverser ses liens avec la
+chronologie, sans lire ni importer le corpus conservé. Puis reprendre les portes
+Q2 de zoom natif et technologie d’assistance si CUA redevient contrôlable ; le
+lecteur d’écran réel demeure indisponible. Le corpus de pièces conservé n’a pas
+été lu pour cette reprise.
 
 ## Registre des incréments
 
@@ -797,7 +796,38 @@ réserve 15 px à la barre de défilement). Captures inspectées :
 [retour Histoire 320](evidence/q2-history-object-return/history-return-320.png).
 La destination utilise le composant Orders sans Layout/sidebar et la quantité
 de mouvement affichée vient du fixture ; ce n’est pas une preuve d’écriture
-PostgreSQL ni de stock réel. CUA natif et lecteur d’écran restent indisponibles.
+PostgreSQL ni de stock réel. Preuve locale committée dans `78a2be1` ; aucun
+push. CUA natif et lecteur d’écran restent indisponibles.
+
+### Q2/C3 — pièce d’archive 2023 sans réception, transition vers 2026 (2026-09-25)
+
+Les vrais composants Timeline et Orders ont été montés dans un second harnais
+Vite temporaire, avec uniquement des réponses GET synthétiques. La période
+2023 montre une pièce consultée, zéro ligne exploitable, zéro mouvement et
+« Aucun brouillon ni réception liée » ; elle ne la présente pas comme une
+livraison. Tab atteint son lien et Entrée ouvre sa pièce dans Achats. Le retour
+par historique CDP restaure les trois dates, la recherche appliquée et le
+brouillon de recherche distinct. En changeant séparément les filtres Du, Au et
+Connu au, la chronologie passe ensuite à l’épisode 2026 ; Tab/Entrée ouvre la
+réception synthétique déjà liée à un mouvement et affiche le blocage d’un
+second crédit.
+
+Les mesures `scrollWidth === clientWidth` ne montrent aucun débordement à
+320/768/1280 px ; le viewport headless réserve 15 px au scrollbar vertical
+lorsque la page défile. Captures inspectées : [Histoire 2023 320](evidence/q2-history-2023/q2-c3-2023-history-320.png),
+[Achats, archive sans réception 320](evidence/q2-history-2023/q2-c3-2023-archive-320.png),
+[Achats 768](evidence/q2-history-2023/q2-c3-2023-archive-768.png),
+[Achats 1280](evidence/q2-history-2023/q2-c3-2023-archive-1280.png),
+[Histoire 2026 320](evidence/q2-history-2023/q2-c3-2023-history-2026-320.png),
+[Achats, réception déjà liée 320](evidence/q2-history-2023/q2-c3-2023-archive-2026-320.png).
+
+Le retour a été conduit avec `Page.navigateToHistoryEntry`, les raccourcis de
+retour n’étant pas fiables en headless ; les champs date ont été changés via le
+setter DOM natif et les événements React input/change, mais chaque changement a
+été laissé finir avant le suivant. Seul `fetch` était intercepté ; les requêtes
+observées étaient GET, sans backend, base, corpus, POST métier ni mutation.
+Orders était monté sans Layout/sidebar et le mouvement 2026 est une fixture,
+non une preuve de stock réel. CUA natif et lecteur d’écran restent indisponibles.
 
 ### Q2 — erreur et conflit dans la modale facture (2026-09-25)
 
