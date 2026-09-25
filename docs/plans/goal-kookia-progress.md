@@ -793,8 +793,15 @@ synthétique ; PostgreSQL et son tmpfs ont été supprimés. Après le correctif
 lint, builds et tests unitaires restent verts ; deux nouvelles exécutions ont
 chacune rencontré un échec HTTP isolé et différent dans une intégration sans
 lien avec les factures (GET panier 401, puis socket hang up sur un accès compte
-non authentifié). `sourceInvoiceWorkflow` (3 tests) passe à chaque exécution ;
-ces échecs de suite complète restent à diagnostiquer, et ne sont pas masqués.
+non authentifié). La reprise du 2026-09-25 a reproduit deux échecs différents
+sur le premier run isolé (`salesRecipeMapping` : 404, `sourceInvoiceWorkflow` :
+socket hang up). L’assertion du mapping affiche maintenant le corps HTTP en cas
+d’échec (`4f618c7`) ; le run tmpfs suivant passe intégralement, y compris ces deux
+fichiers.
+Le résultat complet est 18 migrations fraîches, 33 contrôles Node/CSS, 27
+fichiers/110 tests Vitest, 25 fichiers/38 intégrations et sauvegarde/restauration
+synthétique. Le runner supprime le conteneur tmpfs ; `docker ps` confirme qu’il
+ne reste aucun conteneur portant son label.
 
 Revue visuelle/clavier de ce nouveau rendu non acquise : CUA renvoie toujours
 `browsers: []`, `getApp("Google Chrome")` échoue `cgWindowNotFound`. Vite a servi
@@ -814,3 +821,15 @@ clavier, le focus rejoint le titre de la pièce rechargée. Ce rendu n’a pas e
 `npm run lint`, `npm run build`, `npm test` (33 contrôles Node/CSS et 27
 fichiers/110 tests Vitest) ainsi que `git diff --check` passent ; les tests
 d’intégration HTTP n’ont pas été relancés.
+
+Revalidation complète : l’appel sans privilège au runner R0 a échoué avant
+création de base (`docker.sock` refusé), et la vérification du seul nom de
+conteneur n’a rien trouvé. Avec l’accès local temporaire approuvé, la recette a
+créé un bac PostgreSQL 16 en tmpfs, appliqué les 18 migrations fraîches, passé
+lint/builds, 33 contrôles Node/CSS, 27 fichiers/110 tests Vitest, les 25 fichiers/
+38 tests d’intégration, puis une sauvegarde/restauration synthétique. Une
+exécution intermédiaire a exposé `salesRecipeMapping` en 404 et une coupure de
+socket facture ; l’exécution isolée suivante a passé les 38 intégrations. Le
+conteneur tmpfs et son label ont été vérifiés absents après nettoyage. La page
+`127.0.0.1:56819/login` ne répond plus ; CUA n’offre toujours ni Chrome ni IAB
+contrôlable, donc la revue rendue de ce conflit reste à faire.
