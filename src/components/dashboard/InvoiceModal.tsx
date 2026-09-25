@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
+import { ApiError } from "../../config/api";
 import { getInvoices, saveInvoice, type Invoice, type InvoiceLine, type SourceLineDisposition } from "../../services/invoiceService";
 import type { Product, Supplier } from "../../types";
 import { formatLocalISODate } from "../../utils/date";
@@ -31,26 +32,47 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
   const loading = loadedHistoryRetryRevision !== historyRetryRevision;
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoice, setInvoice] = useState<Invoice | null>(initialInvoice ?? null);
+  const invoiceIdRef = useRef(invoice?.id);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [reloadConflictInvoice, setReloadConflictInvoice] = useState(false);
   const [invoiceLoadError, setInvoiceLoadError] = useState("");
   const [notice, setNotice] = useState("");
   const invoiceHistorySelectRef = useRef<HTMLSelectElement>(null);
   const historyRetryButtonRef = useRef<HTMLButtonElement>(null);
   const catalogRetryButtonRef = useRef<HTMLButtonElement>(null);
+  const saveDraftButtonRef = useRef<HTMLButtonElement>(null);
+  const receiveButtonRef = useRef<HTMLButtonElement>(null);
   const firstProductSelectRef = useRef<HTMLSelectElement>(null);
   const historyRetryFocusPending = useRef(false);
+  const persistFocusPending = useRef<"draft" | "receive" | null>(null);
+  const preferLatestHistoryInvoice = useRef(false);
   const catalogRetryFocusPending = useRef(false);
   const currentInvoiceLoadError = loading ? "" : invoiceLoadError;
   const sourceLinked = invoice?.source === "source_document";
   const persistenceBlocked = !!invoice && !sourceLinked && (loading || !!currentInvoiceLoadError);
+
+  useEffect(() => { invoiceIdRef.current = invoice?.id; }, [invoice]);
 
   useEffect(() => {
     let active = true;
     getInvoices().then((data) => {
       if (active) {
         setInvoices(data);
-        setInvoice((current) => current ?? initialInvoice ?? data[0] ?? null);
+        if (preferLatestHistoryInvoice.current) {
+          preferLatestHistoryInvoice.current = false;
+          const latestInvoice = invoiceIdRef.current ? data.find((item) => item.id === invoiceIdRef.current) : data[0];
+          if (latestInvoice) {
+            setInvoice(latestInvoice);
+            setError("");
+            setReloadConflictInvoice(false);
+          } else {
+            setError("Cette facture n’est plus présente dans l’historique rechargé. Votre brouillon local est conservé.");
+            setReloadConflictInvoice(false);
+          }
+        } else {
+          setInvoice((current) => current ?? initialInvoice ?? data[0] ?? null);
+        }
         setInvoiceLoadError("");
         setLoadedHistoryRetryRevision(historyRetryRevision);
       }
@@ -80,8 +102,18 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
     else invoiceHistorySelectRef.current?.focus();
   }, [catalogError, catalogLoading, invoice]);
 
+  useEffect(() => {
+    if (saving || !persistFocusPending.current) return;
+    const target = persistFocusPending.current;
+    persistFocusPending.current = null;
+    if (document.activeElement !== document.body) return;
+    if (target === "receive") invoiceHistorySelectRef.current?.focus();
+    else saveDraftButtonRef.current?.focus();
+  }, [error, invoice, saving]);
+
   const retryHistory = () => {
     historyRetryFocusPending.current = document.activeElement === historyRetryButtonRef.current;
+    preferLatestHistoryInvoice.current = reloadConflictInvoice && !!invoice;
     setHistoryRetryRevision((value) => value + 1);
   };
 
@@ -94,17 +126,20 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
     ? { ...current, lines: current.lines.map((line, lineIndex) => lineIndex === index ? { ...line, ...change } : line) }
     : current);
   const createDraft = () => {
-    setNotice(""); setError("");
+    setNotice(""); setError(""); setReloadConflictInvoice(false);
     setInvoice({ id: crypto.randomUUID(), reference: "", date: formatLocalISODate(new Date()), lines: [],
       status: "draft", source: "manual", revision: 0 });
   };
   const persist = async (receive: boolean) => {
     if (!invoice || saving || persistenceBlocked || catalogLoading || catalogError) return;
+    const actionButton = receive ? receiveButtonRef.current : saveDraftButtonRef.current;
+    persistFocusPending.current = document.activeElement === actionButton ? (receive ? "receive" : "draft") : null;
     setSaving(true); setError(""); setNotice("");
     try {
       const saved = await saveInvoice(invoice, receive);
       setInvoice(saved);
       setInvoices((previous) => [saved, ...previous.filter((item) => item.id !== saved.id)]);
+      setReloadConflictInvoice(false);
       setNotice(receive
         ? invoice.source === "source_document"
           ? "Réception de démonstration enregistrée. Aucun achat réel ni envoi fournisseur n’a été créé."
@@ -113,6 +148,8 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
       onPersist();
       if (receive) onValidate(saved);
     } catch (cause) {
+      setReloadConflictInvoice(cause instanceof ApiError && ["REVISION_CONFLICT", "ALREADY_RECEIVED", "INVOICE_PARTIALLY_RECONCILED"]
+        .includes(cause.details.code));
       setError(cause instanceof Error ? cause.message : "Enregistrement impossible.");
     } finally { setSaving(false); }
   };
@@ -137,7 +174,12 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
         ? "Réception de démonstration liée à une pièce transcrite. Les lignes sont en lecture seule et ne créditeront pas le stock une seconde fois."
         : "Brouillon lié à une pièce transcrite : vérifiez le type, la date et chaque ligne. L’enregistrement du brouillon ne modifie pas le stock."
       : "Saisie manuelle sans lecture automatique. Vérifiez les quantités et les produits avant tout ajout au stock."}</p>
-    {error && <p role="alert">{error}</p>}
+    {error && <div role="alert"><p>{error}</p>
+      {reloadConflictInvoice && <>
+        <p>Charger la version enregistrée remplacera les modifications non enregistrées du formulaire.</p>
+        <Button ref={historyRetryButtonRef} type="button" variant="outline" onClick={retryHistory}>Charger la version enregistrée</Button>
+      </>}
+    </div>}
     {catalogError && <div role="alert"><p>Catalogue indisponible : {catalogError.message}</p>
       <Button ref={catalogRetryButtonRef} type="button" variant="outline" disabled={catalogLoading} onClick={retryCatalog}>Réessayer le catalogue</Button>
     </div>}
@@ -152,7 +194,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
         value={invoice && invoices.some((item) => item.id === invoice.id) ? invoice.id : ""}
         onChange={(event) => {
           setInvoice(invoices.find((item) => item.id === event.target.value) ?? null);
-          setError(""); setNotice("");
+          setError(""); setReloadConflictInvoice(false); setNotice("");
         }}>
         <option value="" disabled>Nouveau brouillon</option>
         {invoices.map((item) => <option key={item.id} value={item.id}>
@@ -259,9 +301,9 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
           ? <p>Total indicatif des lignes incluses : {total.toFixed(2)} €. Les bases HT/TTC de la transcription peuvent différer ; ce n’est pas un montant comptable.</p>
           : <strong>Total : {total.toFixed(2)} €</strong>}
         {!received && <div className="invoice-actions">
-          <Button variant="outline" onClick={() => void persist(false)}
+          <Button ref={saveDraftButtonRef} variant="outline" onClick={() => void persist(false)}
             disabled={disabled || persistenceBlocked || !invoice.reference.trim()}>Enregistrer le brouillon</Button>
-          <Button onClick={() => void persist(true)} disabled={disabled || persistenceBlocked || !canReceive}>
+          <Button ref={receiveButtonRef} onClick={() => void persist(true)} disabled={disabled || persistenceBlocked || !canReceive}>
             {sourceLinked ? "Réceptionner dans le scénario" : "Réceptionner et ajouter au stock"}
           </Button>
         </div>}
