@@ -165,7 +165,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
       <p>Les transcriptions sont des sources à confirmer. Les lignes ci-dessous sont des candidates, pas des mouvements de stock.</p>
     </div><div className="source-invoice-heading-actions">
       <span>{loading ? "Chargement…" : currentArchiveError ? "Indisponible" : `${invoices.length} pièce${invoices.length === 1 ? "" : "s"}`}</span>
-      {extractionMode === "demo_fixture" && <Button variant="outline" onClick={() => void tryFixtureExtraction()} disabled={extracting}>
+      {extractionMode === "demo_fixture" && <Button variant="outline" onClick={() => void tryFixtureExtraction()} aria-disabled={extracting}>
         {extracting ? "Lecture de la fixture…" : "Essayer la fixture fictive"}
       </Button>}
       <Button variant="outline" onClick={onCreateManual}>Saisir manuellement</Button>

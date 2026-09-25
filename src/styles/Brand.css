@@ -19,7 +19,9 @@ body .btn-outline {
   color: var(--palette-sage-11);
 }
 body .btn:disabled,
-body .btn:disabled:hover {
+body .btn:disabled:hover,
+body .btn[aria-disabled="true"],
+body .btn[aria-disabled="true"]:hover {
   background: var(--color-surface-hover);
   border-color: var(--color-border);
   color: var(--color-text-secondary);
