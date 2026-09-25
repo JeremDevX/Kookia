@@ -1537,3 +1537,51 @@ intégration complet reste donc non vert après cette modification. Le bac
 `demo:fixtures` exact a ensuite été arrêté ; son conteneur tmpfs et ses
 identifiants temporaires ont été supprimés, et le port web 64620 est fermé.
 Commit des captures et de cette entrée de reprise : `a9e27ca`.
+
+### C3 — décision → commande → réception → Bilan sur fixture (2026-09-25)
+
+Sur le runner `demo:fixtures` actif (PostgreSQL tmpfs, fixtures synthétiques
+seulement), la journée de service manquante du 24/09/2026 a été explicitement
+marquée ouverte et complète en provenance de démonstration. Six associations
+ventes-recettes ont été revues dans l’UI. Un comptage de scénario de mozzarella
+à 0,5 kg (au lieu de 3,63 kg théoriques) a permis de revoir une proposition de
+5,555 kg à 47,22 €, puis une commande simulée. Ces valeurs ne sont pas des
+observations de restaurant.
+
+L’archive visible contient 437 pièces synthétiques, sans facture associée à
+Fromages Dupont. Le parcours a donc utilisé la saisie manuelle, clairement
+marquée comme telle : brouillon `SIM-C3-2026-09-25`, Fromages Dupont, Mozzarella,
+5,555 kg à 8,50 €. Le brouillon a été enregistré depuis le formulaire réel.
+Après revue de la correspondance facture/commande et de la référence de
+livraison synthétique `LIVRAISON-SIM-C3-2026-09-25`, la réception est
+`simulated_received`, facture rapprochée et ligne reçue complète (5,555 kg).
+Le serveur confirme `provenance=demo_simulation`, un stock mozzarella inchangé
+à 0,5 kg (révision 3) et aucun achat/envoi/mouvement réel.
+
+Pour le 24–25/09/2026, l’API Impact renvoie le ledger enregistré à 0,00 € et
+0 réception ; la simulation séparée contient 1 réception à 47,2175 € et
+`excluded.simulatedReceiptLines=1` (47,22 € à l’affichage). À 390×844, les
+pages Achats, détail de commande et Bilan ont une largeur de document égale à
+390 px. Le tableau Impact (600 px dans une région de 308 px) défile sans
+débordement de page ; le focus clavier puis `→` déplace la région à 231/292 px.
+Dans les formulaires, Tab atteint le bouton de brouillon puis le bouton de
+réception simulée avec `:focus-visible`; Entrée a enregistré ces deux actions.
+Les valeurs de facture et de livraison ont été entrées par setters DOM dans le
+navigateur headless ; la preuve clavier porte sur la navigation et la
+confirmation, pas sur une saisie humaine complète.
+Captures inspectées : [proposition](evidence/c3-fixture-ui/suggestion-review-390.png),
+[commande](evidence/c3-fixture-ui/order-review-390.png),
+[brouillon et focus clavier](evidence/c3-fixture-ui/invoice-draft-review-390.png),
+[revue de réception](evidence/c3-fixture-ui/receipt-review-keyboard-390.png),
+[commande réceptionnée](evidence/c3-fixture-ui/order-simulated-received-390.png),
+[tableau Impact au clavier](evidence/c3-fixture-ui/impact-table-arrowkey-390.png),
+[détail Impact de simulation](evidence/c3-fixture-ui/impact-simulation-receipt-390.png).
+
+L’UI n’a pas exposé le message de succès de réception attendu dans la session
+CDP après Entrée ; aucune nouvelle tentative n’a été faite avant réconciliation.
+Les lectures API et l’historique UI montrent une réception unique complète et
+le stock inchangé. Chrome natif/CUA reste indisponible (`browsers: []`,
+`cgWindowNotFound`) ; ces captures et interactions sont headless, pas une
+revue humaine dans Chrome, VoiceOver/lecteur d’écran ou zoom natif à 200 %.
+Aucun code applicatif n’a changé ; ces vérifications ciblées remplacent ici une
+relance des tests applicatifs.
