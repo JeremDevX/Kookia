@@ -107,6 +107,13 @@ rendues. Poursuivre aussi les états C3 non encore revus, sans présenter les
 transcriptions ou les plats hypothétiques comme validés. L'audit de sensibilité
 et des droits reste requis avant partage.
 
+Reprise Q2 (2026-09-25) : l’utilisateur confirme que `/login` apparaît sur le
+bac tmpfs `127.0.0.1:56819`. Dans l’environnement de revue, CUA retourne encore
+`browsers: []` et `getApp("Google Chrome")` échoue `cgWindowNotFound` ; le port
+56819 ne répond plus non plus. La revue native 200 %/technologie d’assistance
+reste donc à faire. Le port 52790 déjà identifié comme non isolé n’a pas été
+consulté.
+
 C2/C3, I1–I4, F1, M2–M3, O1 et R0 sont prouvés localement ; l'extraction de
 facture reste limitée à la fixture PDF publique en `demo:local`, sans OCR
 général ni fournisseur. L'original peut être ouvert depuis Achats ; comparaison
