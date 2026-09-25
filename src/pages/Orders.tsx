@@ -90,7 +90,7 @@ export default function Orders() {
     <Modal isOpen={invoiceOpen} onClose={() => setInvoiceOpen(false)} title="Revoir une facture" width="lg">
       <InvoiceModal initialInvoice={invoiceDraft} products={products} suppliers={suppliers}
         catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
-        onPersist={() => setInvoiceRefresh((value) => value + 1)}
+        onInvoiceDataChanged={() => setInvoiceRefresh((value) => value + 1)}
         onValidate={(invoice) => {
           addToast("success", invoice.source === "source_document" ? "Réception simulée enregistrée" : "Réception enregistrée",
             invoice.source === "source_document" ? "Le scénario de stock a été mis à jour. Aucun achat réel n'a été créé." : "Le stock a été mis à jour.");

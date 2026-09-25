@@ -14,7 +14,7 @@ interface InvoiceModalProps {
   catalogError: Error | null;
   onRetryCatalog: () => Promise<void>;
   onValidate: (invoice: Invoice) => void;
-  onPersist: () => void;
+  onInvoiceDataChanged: () => void;
   onClose: () => void;
 }
 
@@ -26,7 +26,7 @@ const exclusionLabels: Record<NonNullable<InvoiceLine["exclusionReason"]>, strin
 };
 
 export default function InvoiceModal({ initialInvoice, products, suppliers, catalogLoading, catalogError,
-  onRetryCatalog, onValidate, onPersist, onClose }: InvoiceModalProps) {
+  onRetryCatalog, onValidate, onInvoiceDataChanged, onClose }: InvoiceModalProps) {
   const [historyRetryRevision, setHistoryRetryRevision] = useState(0);
   const [loadedHistoryRetryRevision, setLoadedHistoryRetryRevision] = useState(-1);
   const loading = loadedHistoryRetryRevision !== historyRetryRevision;
@@ -145,12 +145,22 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
           ? "Réception de démonstration enregistrée. Aucun achat réel ni envoi fournisseur n’a été créé."
           : "Réception enregistrée. Les quantités ont été ajoutées au stock."
         : "Brouillon enregistré.");
-      onPersist();
+      onInvoiceDataChanged();
       if (receive) onValidate(saved);
     } catch (cause) {
-      setReloadConflictInvoice(cause instanceof ApiError && ["REVISION_CONFLICT", "ALREADY_RECEIVED", "INVOICE_PARTIALLY_RECONCILED"]
-        .includes(cause.details.code));
-      setError(cause instanceof Error ? cause.message : "Enregistrement impossible.");
+      if (cause instanceof ApiError && cause.details.code === "SOURCE_ALREADY_CREDITED" && invoice.source === "source_document") {
+        const markCredited = (candidate: Invoice) => candidate.id === invoice.id
+          ? { ...candidate, alreadyCreditedBySimulation: true } : candidate;
+        setInvoice((current) => current ? markCredited(current) : current);
+        setInvoices((previous) => previous.map(markCredited));
+        setReloadConflictInvoice(false);
+        setError("");
+        onInvoiceDataChanged();
+      } else {
+        setReloadConflictInvoice(cause instanceof ApiError && ["REVISION_CONFLICT", "ALREADY_RECEIVED", "INVOICE_PARTIALLY_RECONCILED"]
+          .includes(cause.details.code));
+        setError(cause instanceof Error ? cause.message : "Enregistrement impossible.");
+      }
     } finally { setSaving(false); }
   };
 

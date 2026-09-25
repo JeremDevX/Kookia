@@ -203,7 +203,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
             <strong> Date de démonstration :</strong> {selected.date ?? "inconnue"}.</p>
           <p>{selected.stockLines.length} ligne{selected.stockLines.length === 1 ? "" : "s"} transcrite{selected.stockLines.length === 1 ? "" : "s"}, à rapprocher.
             {selected.sourceMovementCount > 0 ? ` ${selected.sourceMovementCount} mouvement(s) de cette pièce existe(nt) déjà.` : " Aucun mouvement de cette pièce n’est lié."}</p>
-          {selected.alreadyCreditedBySimulation && <p role="alert">Cette pièce a déjà crédité le stock dans la simulation. Aucun nouveau crédit ne sera accepté.</p>}
+          {selected.alreadyCreditedBySimulation && <p role="status">Cette pièce a déjà crédité le stock dans la simulation. Aucun nouveau crédit ne sera accepté.</p>}
           <p role="status">{linkedStatus}</p>
           {selected.stockLines.length > 0 && <ul className="source-line-list">
             {selected.stockLines.map((line) => <li key={line.sourceLineNumber}>
