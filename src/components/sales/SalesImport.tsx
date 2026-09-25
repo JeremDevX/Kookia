@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import Button from "../common/Button";
 import { commitSalesImport, createSaleItem, getSaleItems, previewSalesImport, type SaleItem, type SalesImportPreview } from "../../services/salesService";
+import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 
 const errorMessage = (cause: unknown) => cause instanceof Error ? cause.message : "Réessayez.";
 const statusLabel = { ready: "Prête", invalid: "Invalide", unmapped: "Sans correspondance", duplicate: "Doublon dans le fichier", existing: "Conflit à réconcilier", closed: "Service fermé" };
@@ -115,7 +116,8 @@ export default function SalesImport({ items, onImported, onItemsCreated }: {
       {pageCount > 1 && <div className="sales-actions"><Button type="button" variant="outline" disabled={page === 0} onClick={() => setPage((value) => value - 1)}>Page précédente</Button>
         <span role="status">Page {page + 1} sur {pageCount}</span>
         <Button type="button" variant="outline" disabled={page >= pageCount - 1} onClick={() => setPage((value) => value + 1)}>Page suivante</Button></div>}
-      <div className="sales-table-wrap" role="region" aria-label="Aperçu des lignes CSV" tabIndex={0}>
+      <p className="sales-table-hint" id="sales-import-table-scroll-hint">Sur petit écran, faites défiler le tableau horizontalement. Au clavier, placez le focus sur le tableau puis utilisez ← et →.</p>
+      <div className="sales-table-wrap" role="region" aria-label="Aperçu des lignes CSV" aria-describedby="sales-import-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
         <table className="sales-table"><thead><tr><th>Ligne</th><th>Date</th><th>Article du fichier</th><th>Quantité</th><th>Correspondance</th><th>État</th></tr></thead>
           <tbody>{visibleRows.map((row) => <tr key={row.line}>
             <td>{row.line}</td><td>{row.serviceDate}</td><td>{row.itemName}</td><td>{Number.isFinite(row.quantity) ? row.quantity : "—"}</td>
