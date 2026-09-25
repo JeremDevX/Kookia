@@ -174,6 +174,21 @@ source. Il compte les coûts non valorisés et les incompatibilités d'unité,
 signale les métriques non mesurées et exclut les simulations. Il ne constitue
 pas une attestation AGEC.
 
+Le panneau distinct **Sorties estimées par recette** appelle
+`GET /api/workspace/ingredient-outflow-estimates`. L'API ne lit que les lignes
+positives de réceptions enregistrées et non simulées, tenant-scopées ; pour
+chaque entrée, elle utilise la dernière version datée effective à la livraison
+qui contient le même produit dans la même unité. Elle expose portions possibles
+et quantités estimées en ventes/pertes selon l'hypothèse 90/10, sans écrire de
+vente, perte, production, mouvement ni stock. Les recettes alternatives et les
+lignes de plusieurs ingrédients d'une même recette ne s'additionnent pas ; les
+autres ingrédients et le stock déjà présent ne sont pas vérifiés. La réponse
+sépare aussi `unestimatedReceipts` : l'API identifie chaque entrée sans version
+datée compatible et l'interface l'affiche à part, avec un lien vers
+**Recettes** ; aucune sortie n'est imputée avant qu'une recette applicable
+existe. La fenêtre de requête reste choisie par l'utilisateur et ne fixe pas
+de limite produit à l'historique.
+
 La page **Plus → Historique** (/history) appelle la route tenant-scopée
 de lecture seule GET /api/workspace/timeline, sur toute période consultable,
 avec des fenêtres de requête de 31 jours au maximum et une coupe « Connu au ».

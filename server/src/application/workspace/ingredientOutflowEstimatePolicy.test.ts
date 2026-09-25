@@ -13,9 +13,10 @@ describe("ingredient outflow estimate policy", () => {
   it("uses the latest effective recipe version and keeps sales/loss estimates separate", () => {
     const result = estimateIngredientOutflows([receipt], [recipe(1, "2026-01-01", 2), recipe(2, "2026-04-01", 4),
       recipe(3, "2026-05-01", 8)]);
-    expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ recipeVersion: 2, possiblePortions: 10, estimatedSoldPortions: 9,
+    expect(result.estimates).toHaveLength(1);
+    expect(result.estimates[0]).toMatchObject({ recipeVersion: 2, possiblePortions: 10, estimatedSoldPortions: 9,
       estimatedLossPortions: 1, estimatedSoldQuantity: 9, estimatedLossQuantity: 1, otherIngredientCount: 1 });
+    expect(result.unestimatedReceipts).toEqual([]);
   });
 
   it("keeps compatible recipes as alternatives and ignores incompatible units or undated recipes", () => {
@@ -23,7 +24,17 @@ describe("ingredient outflow estimate policy", () => {
     const incompatible = { ...recipe(1, "2026-01-01", 2, "Sauce en litres"), recipeId: "recipe-3",
       ingredients: [{ productId: "tomato", productName: "Tomate", unit: "L", quantity: 2 }] };
     const future = { ...recipe(1, "2026-05-01", 2, "Future recipe"), recipeId: "recipe-4" };
-    expect(estimateIngredientOutflows([receipt], [recipe(1, "2026-01-01", 2), alternatives, incompatible, future]))
-      .toHaveLength(2);
+    const result = estimateIngredientOutflows([receipt], [recipe(1, "2026-01-01", 2), alternatives, incompatible, future]);
+    expect(result.estimates).toHaveLength(2);
+    expect(result.unestimatedReceipts).toEqual([]);
+  });
+
+  it("returns an explicit coverage gap when no dated recipe matches the received ingredient and unit", () => {
+    const incompatible = { ...recipe(1, "2026-01-01", 2, "Sauce en litres"), recipeId: "recipe-3",
+      ingredients: [{ productId: "tomato", productName: "Tomate", unit: "L", quantity: 2 }] };
+    const future = { ...recipe(1, "2026-05-01", 2, "Future recipe"), recipeId: "recipe-4" };
+    const result = estimateIngredientOutflows([receipt], [incompatible, future]);
+    expect(result.estimates).toEqual([]);
+    expect(result.unestimatedReceipts).toEqual([{ ...receipt, reason: "no_dated_compatible_recipe" }]);
   });
 });

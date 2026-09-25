@@ -200,10 +200,16 @@ l'interface ; les dates d'origine ne sont pas exposées. Une transcription
 d'archive ne prouve pas une livraison. Une journée partielle ou manquante n'est
 jamais assimilée à un service complet ni à zéro vente.
 
-À construire côté produit : des sorties estimées calculées à part depuis des
-entrées de stock revues, des recettes compatibles et des hypothèses explicites ;
-elles ne seront pas ajoutées aux opérations enregistrées ni présentées comme
-observées.
+Dans le **Bilan → Sorties estimées par recette**, les quantités de sortie sont
+calculées à part depuis les réceptions positives enregistrées, non simulées, et
+les recettes datées compatibles à la date de livraison. Le calcul retient le
+même produit et la même unité, puis expose les portions possibles et l'hypothèse
+90/10 (ventes/pertes estimées). Il n'écrit aucune opération. Une entrée sans
+recette datée compatible apparaît séparément avec un lien vers **Recettes** ;
+aucune sortie n'est imputée pour elle. Les recettes alternatives ne
+s'additionnent pas, et les autres ingrédients ainsi que le stock déjà présent
+ne sont pas vérifiés. Voir le [référentiel technique](technical-development.md)
+pour le contrat et ses limites.
 
 Les pièces source ne renvoient que des métadonnées et un nombre de lignes, sans
 contenu brut via la chronologie. Les noms, unités et fournisseurs des mouvements
@@ -212,9 +218,10 @@ libellé historique reste inconnu au lieu d'être repris du catalogue actuel.
 Les documents mutables n'ont pas de journal de versions : leur date
 d'enregistrement disponible est la dernière mise à jour, et les états
 antérieurs ne sont pas reconstruits. La consultation n'écrit ni stock, ni
-vente, ni production ; les sorties sans source sont actuellement inconnues.
-L'estimation distincte des sorties est une cible à construire et restera séparée
-des opérations réelles et des KPI observés.
+vente, ni production ; une sortie sans source n'est pas transformée en vente ou
+perte observée. Le Bilan expose désormais une estimation séparée lorsque la
+réception enregistrée et une recette datée compatible sont disponibles, et
+signale les entrées sans recette pour garder cette couverture visible.
 
 ## Vérification locale minimale et reprise
 

@@ -27,6 +27,8 @@ export interface IngredientOutflowEstimateReport {
   to: string;
   assumptions: { estimatedSalesShare: number; estimatedLossShare: number };
   estimates: IngredientOutflowEstimate[];
+  unestimatedReceipts: Array<Pick<IngredientOutflowEstimate, "id" | "receiptId" | "receiptReference" | "deliveryDate" |
+    "productId" | "productName" | "unit" | "receivedQuantity"> & { reason: "no_dated_compatible_recipe" }>;
 }
 
 export const getIngredientOutflowEstimates = (from: string, to: string) => {

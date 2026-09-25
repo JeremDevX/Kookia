@@ -43,6 +43,10 @@ export interface IngredientOutflowEstimate {
   otherIngredientCount: number;
 }
 
+export interface UnestimatedReceivedIngredient extends ReceivedIngredient {
+  reason: "no_dated_compatible_recipe";
+}
+
 const roundQuantity = (value: number) => Math.round((value + Number.EPSILON) * 1000) / 1000;
 
 function latestVersionsForDate(versions: DatedRecipeVersion[], deliveryDate: string) {
@@ -59,13 +63,15 @@ function latestVersionsForDate(versions: DatedRecipeVersion[], deliveryDate: str
 
 export function estimateIngredientOutflows(receipts: ReceivedIngredient[], versions: DatedRecipeVersion[]) {
   const estimates: IngredientOutflowEstimate[] = [];
+  const unestimatedReceipts: UnestimatedReceivedIngredient[] = [];
   for (const receipt of receipts) {
+    const receiptEstimates: IngredientOutflowEstimate[] = [];
     for (const recipe of latestVersionsForDate(versions, receipt.deliveryDate)) {
       const ingredient = recipe.ingredients.find((item) => item.productId === receipt.productId && item.unit === receipt.unit);
       if (!ingredient || ingredient.quantity <= 0) continue;
       const quantityPerPortion = ingredient.quantity / recipe.yieldPortions;
       const possiblePortions = receipt.receivedQuantity / quantityPerPortion;
-      estimates.push({
+      receiptEstimates.push({
         id: `${receipt.id}:${recipe.recipeId}:${recipe.version}`,
         receiptId: receipt.receiptId,
         receiptReference: receipt.receiptReference,
@@ -87,8 +93,15 @@ export function estimateIngredientOutflows(receipts: ReceivedIngredient[], versi
         otherIngredientCount: recipe.ingredients.length - 1,
       });
     }
+    if (receiptEstimates.length === 0) {
+      unestimatedReceipts.push({ ...receipt, reason: "no_dated_compatible_recipe" });
+    } else estimates.push(...receiptEstimates);
   }
-  return estimates.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate) ||
-    a.productName.localeCompare(b.productName, "fr") || a.recipeName.localeCompare(b.recipeName, "fr") ||
-    a.receiptId.localeCompare(b.receiptId));
+  const byDateProductReference = (a: ReceivedIngredient, b: ReceivedIngredient) =>
+    a.deliveryDate.localeCompare(b.deliveryDate) ||
+    a.productName.localeCompare(b.productName, "fr") || a.receiptId.localeCompare(b.receiptId);
+  return {
+    estimates: estimates.sort((a, b) => byDateProductReference(a, b) || a.recipeName.localeCompare(b.recipeName, "fr")),
+    unestimatedReceipts: unestimatedReceipts.sort(byDateProductReference),
+  };
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { getIngredientOutflowEstimates, type IngredientOutflowEstimateReport } from "../../services/ingredientOutflowEstimateService";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
@@ -44,7 +45,7 @@ export default function EstimatedOutflows({ from, to }: Props) {
 
   return <section className="sales-panel estimated-outflows" aria-labelledby="estimated-outflows-title">
     <h2 ref={headingRef} id="estimated-outflows-title" tabIndex={-1}>Sorties estimées par recette</h2>
-    <p>À partir des réceptions réelles, chaque recette datée utilisant l’ingrédient reçu est présentée avec ses sorties estimées. Les quantités sont calculées selon le dosage de l’ingrédient et le rendement de la recette. Ce calcul n’enregistre aucune vente, perte ou sortie de stock.</p>
+    <p>À partir des réceptions enregistrées, chaque recette datée compatible est présentée avec ses sorties estimées. Les quantités sont calculées selon le dosage de l’ingrédient et le rendement de la recette. Ce calcul n’enregistre aucune vente, perte ou sortie de stock.</p>
     <p>Les portions sont estimées séparément pour chaque ingrédient reçu. Si une recette utilise plusieurs de ces ingrédients, les lignes se recouvrent et ne s’additionnent pas ; les recettes différentes pour une même réception sont aussi des alternatives. Les autres ingrédients et les stocks déjà présents ne sont pas vérifiés.</p>
     {loading ? <p role="status">Calcul des sorties estimées…</p> : error ? <div role="alert"><p>Estimations indisponibles : {error}</p>
       <Button ref={retryButtonRef} type="button" variant="outline" onClick={retry}>Recharger les estimations</Button>
@@ -65,7 +66,16 @@ export default function EstimatedOutflows({ from, to }: Props) {
           </tr>)}
         </tbody></table>
       </div>
-      </> : <p role="status">Aucune réception réelle associée à une recette datée compatible sur la période.</p>}
+      </> : report.unestimatedReceipts.length === 0 && <p role="status">Aucune réception enregistrée positive sur la période.</p>}
+      {report.unestimatedReceipts.length > 0 && <section aria-labelledby="estimated-outflows-unmatched-title">
+        <h3 id="estimated-outflows-unmatched-title">Entrées sans recette datée compatible</h3>
+        <p>Ces ingrédients restent sans sortie estimée jusqu’à ce qu’une recette datée utilisant le même produit et la même unité soit définie. Aucune vente ni perte n’est déduite pour ces entrées.</p>
+        <ul>{report.unestimatedReceipts.map((entry) => <li key={entry.id}>
+          <strong>{displayDate(entry.deliveryDate)} · {entry.receiptReference}</strong>
+          <p>{entry.productName} : {formatQuantity(entry.receivedQuantity)} {entry.unit} · aucune version de recette compatible à cette date.</p>
+          <Link to="/recipes">Ouvrir les recettes pour définir une version datée</Link>
+        </li>)}</ul>
+      </section>}
     </>}
   </section>;
 }

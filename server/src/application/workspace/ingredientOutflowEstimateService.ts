@@ -22,7 +22,7 @@ export async function getIngredientOutflowEstimates(restaurantId: string, from: 
         ingredients: { select: { productId: true, productName: true, productUnit: true, quantity: true } } } }),
   ]);
 
-  const estimates = estimateIngredientOutflows(receiptLines.map((line) => ({
+  const { estimates, unestimatedReceipts } = estimateIngredientOutflows(receiptLines.map((line) => ({
     id: line.id, receiptId: line.receipt.id, receiptReference: line.receipt.deliveryReference,
     deliveryDate: dateOnly(line.receipt.deliveryDate), productId: line.productId, productName: line.productName,
     unit: line.unit, receivedQuantity: Number(line.receivedQuantity),
@@ -34,5 +34,5 @@ export async function getIngredientOutflowEstimates(restaurantId: string, from: 
   }] : []));
 
   return { from, to, assumptions: { estimatedSalesShare: ESTIMATED_SALES_SHARE,
-    estimatedLossShare: ESTIMATED_LOSS_SHARE }, estimates };
+    estimatedLossShare: ESTIMATED_LOSS_SHARE }, estimates, unestimatedReceipts };
 }

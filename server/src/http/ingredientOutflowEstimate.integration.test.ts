@@ -28,16 +28,18 @@ async function addReceipt(tenant: Awaited<ReturnType<typeof account>>, product: 
       supplierId: product.supplierId, supplierName: "Fournisseur", quantity: receivedQuantity, unit: product.unit,
       pricePerUnit: product.pricePerUnit } } }, include: { lines: true } });
   const receiptId = randomUUID();
-  await prisma.purchaseReceipt.create({ data: { id: receiptId, restaurantId: tenant.restaurantId, orderId: order.id,
+  const deliveryReference = `BL-${receiptId}`;
+  const receipt = await prisma.purchaseReceipt.create({ data: { id: receiptId, restaurantId: tenant.restaurantId, orderId: order.id,
     supplierId: product.supplierId, actorId: tenant.actorId, operationId: randomUUID(),
     invoiceReference: `FACT-${receiptId}`, invoiceReferenceNormalized: `FACT-${receiptId}`,
-    invoiceDocumentId: randomUUID(), invoiceDocumentRevision: 1, deliveryReference: `BL-${receiptId}`,
+    invoiceDocumentId: randomUUID(), invoiceDocumentRevision: 1, deliveryReference,
     deliveryDate: new Date(`${deliveryDate}T00:00:00.000Z`), simulated,
     provenance: simulated ? "demo_simulation" : "recorded", invoiceComplete: true, requestSnapshot: {},
     lines: { create: { orderLineId: order.lines[0].id, productId: product.id,
       productName: product.name, invoiceLineIndex: 0, invoiceQuantity: receivedQuantity, receivedQuantity,
       quantityDifference: 0, unit: product.unit, orderedQuantity: receivedQuantity, orderedUnitPrice: product.pricePerUnit,
-      invoiceUnitPrice: product.pricePerUnit } } } });
+      invoiceUnitPrice: product.pricePerUnit } } }, include: { lines: true } });
+  return { id: receipt.id, lineId: receipt.lines[0].id, deliveryReference };
 }
 
 it("estimates only dated recipes from recorded in-scope receipts without creating operational rows", async () => {
@@ -67,11 +69,15 @@ it("estimates only dated recipes from recorded in-scope receipts without creatin
     category: "Plat", prepTime: 25, yieldPortions: 4, effectiveFrom: "2020-01-01",
     ingredients: recipeIngredients.map((ingredient) => ({ productId: ingredient.product!.id,
       quantity: ingredient.quantity })) }).expect(201);
+  const unmatchedProduct = (await owner.agent.post("/api/workspace/products").send({ operationId: randomUUID(),
+    name: "Crème fleurette sans recette", category: "Fixture", currentStock: 0, minThreshold: 0, unit: "L",
+    pricePerUnit: 3, supplierId: recipeIngredients[0].product!.supplierId }).expect(201)).body as CatalogProduct;
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit",
     day: "2-digit" }).format(new Date());
   for (const ingredient of recipeIngredients) {
     await addReceipt(owner, ingredient.product!, today, { receivedQuantity: ingredient.receivedQuantity });
   }
+  const unmatchedReceipt = await addReceipt(owner, unmatchedProduct, today, { receivedQuantity: 3 });
   const tomato = recipeIngredients.find((ingredient) => ingredient.name === "Tomates")!;
   await addReceipt(owner, tomato.product!, today, { simulated: true, receivedQuantity: 10 });
   await addReceipt(owner, tomato.product!, "2021-12-31", { receivedQuantity: 2 });
@@ -88,7 +94,8 @@ it("estimates only dated recipes from recorded in-scope receipts without creatin
   const movementsBefore = await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId } });
   const productionsBefore = await prisma.production.count({ where: { restaurantId: owner.restaurantId } });
   const readStock = async () => (await prisma.product.findMany({
-    where: { restaurantId: owner.restaurantId, id: { in: recipeIngredients.map((ingredient) => ingredient.product!.id) } },
+    where: { restaurantId: owner.restaurantId,
+      id: { in: [...recipeIngredients.map((ingredient) => ingredient.product!.id), unmatchedProduct.id] } },
     orderBy: { id: "asc" }, select: { id: true, currentStock: true },
   })).map(({ id, currentStock }) => ({ id, currentStock: Number(currentStock) }));
   const stockBefore = await readStock();
@@ -96,6 +103,11 @@ it("estimates only dated recipes from recorded in-scope receipts without creatin
     .query({ from: "2022-01-01", to: "2026-12-31" }).expect(200);
   expect(response.body).toMatchObject({ assumptions: { estimatedSalesShare: 0.9, estimatedLossShare: 0.1 } });
   expect(response.body.estimates).toHaveLength(recipeIngredients.length);
+  expect(response.body.unestimatedReceipts).toEqual([{
+    id: unmatchedReceipt.lineId, receiptId: unmatchedReceipt.id, receiptReference: unmatchedReceipt.deliveryReference,
+    deliveryDate: today, productId: unmatchedProduct.id, productName: unmatchedProduct.name,
+    unit: "L", receivedQuantity: 3, reason: "no_dated_compatible_recipe",
+  }]);
   for (const ingredient of recipeIngredients) {
     const estimate = response.body.estimates.find((item: { productId: string }) => item.productId === ingredient.product!.id);
     expect(estimate).toMatchObject({ productId: ingredient.product!.id,
