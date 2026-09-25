@@ -494,3 +494,13 @@ locale, mais CUA continue de retourner `browsers: []` ; `getApp("Google
 Chrome")` échoue `cgWindowNotFound` et `createBrowserTab("chrome", …)` répond
 `Browser is not available`. Aucun rendu, responsive ou parcours clavier de
 Connexions n'a été observé dans cette reprise.
+
+### Reprise de Connexions — état de nouvelle tentative
+
+Le bouton de reprise reste maintenant monté pendant les chargements, expose
+l'état occupé et protège contre un second déclenchement ; une région `status`
+annonce le chargement puis le résultat. Ainsi, le focus clavier ne disparaît
+plus quand la liste ou l'alerte remplace l'état précédent. Validation code :
+`npm run lint`, `npm run build`, `npm test` (107 tests) et `git diff --check`
+passent. L'inspection de la page rendue et le parcours clavier réel restent
+non vérifiés, CUA ne pouvant toujours pas s'attacher à Chrome.

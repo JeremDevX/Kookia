@@ -18,6 +18,13 @@ const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeSty
 export default function ConnectionsSettings() {
   const [result, setResult] = useState<{ state: "loading" } | { state: "error"; message: string } | { state: "loaded"; sources: SourceHealth[] }>({ state: "loading" });
   const [reload, setReload] = useState(0);
+  const loading = result.state === "loading";
+
+  const retry = () => {
+    if (loading) return;
+    setResult({ state: "loading" });
+    setReload((value) => value + 1);
+  };
 
   useEffect(() => {
     let active = true;
@@ -31,8 +38,13 @@ export default function ConnectionsSettings() {
 
   return <Card title="Sources de données">
     <p className="settings-section-intro">Aucune source automatique n'est configurée. Les imports et corrections manuels restent disponibles.</p>
-    {result.state === "error" && <div role="alert"><p>{result.message}</p><Button type="button" onClick={() => setReload((value) => value + 1)}>Réessayer</Button></div>}
-    {result.state === "loading" && <p role="status">Chargement de l'état des sources…</p>}
+    <p id="connections-status" role="status">
+      {result.state === "loading" ? "Chargement de l'état des sources…" : result.state === "loaded" ? "État des sources à jour." : ""}
+    </p>
+    {result.state === "error" && <div role="alert"><p>{result.message}</p></div>}
+    <Button type="button" variant="outline" aria-describedby="connections-status" aria-disabled={loading} onClick={retry}>
+      {loading ? "Actualisation…" : result.state === "error" ? "Réessayer" : "Actualiser l’état"}
+    </Button>
     {result.state === "loaded" && <ul className="connection-list" aria-label="État des sources">
       {result.sources.map((source) => <li className="integration-item" key={source.kind}>
         <div>
