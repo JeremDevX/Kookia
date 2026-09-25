@@ -1536,3 +1536,4 @@ avait 39/40 tests passants, avec un échec différent et non lié à ce patch :
 intégration complet reste donc non vert après cette modification. Le bac
 `demo:fixtures` exact a ensuite été arrêté ; son conteneur tmpfs et ses
 identifiants temporaires ont été supprimés, et le port web 64620 est fermé.
+Commit des captures et de cette entrée de reprise : `a9e27ca`.
