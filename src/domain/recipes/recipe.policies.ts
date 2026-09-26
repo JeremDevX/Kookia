@@ -14,7 +14,8 @@ export const calculateMaxYieldFromInventory = (
     if (!product || ingredient.quantity <= 0) return 0;
     const ingredientUnits = Math.round(ingredient.quantity * 1000);
     if (ingredientUnits === 0) return 0;
-    return Math.floor(Math.round(product.currentStock * 1000) * recipe.yieldPortions / ingredientUnits);
+    const available = product.availableForProduction === undefined ? product.currentStock : product.availableForProduction ?? 0;
+    return Math.floor(Math.round(available * 1000) * recipe.yieldPortions / ingredientUnits);
   });
 
   const maxYield = Math.min(10_000, ...yields);

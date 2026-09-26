@@ -15,6 +15,7 @@ interface ProductionConfirmModalProps {
   onClose: () => void;
   recipe: Recipe | null;
   maxYield: number;
+  availabilityWarnings?: string[];
   costPerPortion: number | null;
   getProductName: (productId: string) => string;
   getProductUnit: (productId: string) => string;
@@ -26,6 +27,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   onClose,
   recipe,
   maxYield,
+  availabilityWarnings = [],
   costPerPortion,
   getProductName,
   getProductUnit,
@@ -100,7 +102,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
               className="flex-1 px-4 py-2 text-2xl font-bold border-2 border-blue-300 rounded-md text-center"
             />
             <div className="text-sm text-blue-700">
-              <div>Maximum avec le stock :</div>
+              <div>Maximum avec les lots proposés :</div>
               <div className="font-bold text-lg">{safeMaxYield} portions</div>
             </div>
           </div>
@@ -108,6 +110,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
             <span id="production-quantity-error" role="alert" className="text-sm text-red-600 mt-2 block">{visibleQuantityError}</span>
           )}
         </div>
+        {availabilityWarnings.length > 0 && <ul>{availabilityWarnings.map(warning => <li key={warning}>{warning}</li>)}</ul>}
 
         {/* Economics */}
         <div className="grid grid-cols-1 gap-4">

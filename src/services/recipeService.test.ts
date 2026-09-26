@@ -18,6 +18,18 @@ describe("recipeService", () => {
   it("calculates max yield based on limiting ingredient", () => {
     expect(calculateMaxYield(makeRecipe({ ingredients: [ingredient("p1", 3), ingredient("p2", 2)] }), products)).toBe(4);
   });
+  it("uses usable lots rather than the physical stock that still contains expired quantities", () => {
+    expect(calculateMaxYield(makeRecipe({ ingredients: [ingredient("p1", 3)] }),
+      [{ ...products[0], currentStock: 12, availableForProduction: 3, expiredStock: 9 }])).toBe(1);
+  });
+  it("blocks a lot/physical stock mismatch instead of falling back to physical stock", () => {
+    expect(calculateMaxYield(makeRecipe({ ingredients: [ingredient("p1", 3)] }),
+      [{ ...products[0], availableForProduction: null, lotStockMismatch: true }])).toBe(0);
+  });
+  it("keeps unknown expiry availability conditional without inventing an expiry or zero stock", () => {
+    expect(calculateMaxYield(makeRecipe({ ingredients: [ingredient("p1", 3)] }),
+      [{ ...products[0], availableForProduction: 12, unknownExpiryStock: 12 }])).toBe(4);
+  });
 
   it("limits piece-based production to whole-piece portion increments", () => {
     const recipe = makeRecipe({ yieldPortions: 3, ingredients: [ingredient("eggs", 2)] });

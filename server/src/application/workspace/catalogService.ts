@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { recordLotMovement } from "./lotService.js";
 import { stockCountDto } from "./stockCountDto.js";
+import { purchaseAvailability } from "./purchaseAvailability.js";
 
 export class WorkspaceError extends Error {
   constructor(public readonly status: number, public readonly code: string, message: string) { super(message); }
@@ -16,15 +17,23 @@ export const productDto = (product: Awaited<ReturnType<typeof prisma.product.fin
 });
 
 export async function getCatalog(restaurantId: string) {
+  const availabilityDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const [products, suppliers] = await prisma.$transaction([
     prisma.product.findMany({ where: { restaurantId }, orderBy: { id: "asc" }, include: {
       stockCounts: { orderBy: [{ countedAt: "desc" }, { id: "desc" }], take: 1 },
+      stockLots: { where: { remainingQuantity: { gt: 0 } }, select: { remainingQuantity: true, expiresAt: true } },
     } }),
     prisma.supplier.findMany({ where: { restaurantId }, orderBy: { id: "asc" } }),
   ]);
-  return { products: products.map(({ stockCounts, ...product }) => ({
-    ...productDto(product), latestCount: stockCounts[0] ? stockCountDto(stockCounts[0]) : null,
-  })), suppliers: suppliers.map(({ id, name, email, phone, deliveryWeekdays, leadTimeDays, orderCutoffTime }) => ({ id, name, email, phone, deliveryWeekdays, leadTimeDays, orderCutoffTime })) };
+  return { products: products.map(({ stockCounts, stockLots, ...product }) => {
+    const availability = purchaseAvailability(Number(product.currentStock), stockLots.map(lot => ({
+      quantity: Number(lot.remainingQuantity), expiresAt: lot.expiresAt?.toISOString().slice(0, 10) ?? null,
+    })), [], [], availabilityDate, availabilityDate);
+    return { ...productDto(product), latestCount: stockCounts[0] ? stockCountDto(stockCounts[0]) : null,
+      availableForProduction: availability.lotMismatch ? null : availability.usableStock,
+      expiredStock: availability.expiredQuantity, unknownExpiryStock: availability.unknownExpiryQuantity,
+      availabilityDate, lotStockMismatch: availability.lotMismatch };
+  }), suppliers: suppliers.map(({ id, name, email, phone, deliveryWeekdays, leadTimeDays, orderCutoffTime }) => ({ id, name, email, phone, deliveryWeekdays, leadTimeDays, orderCutoffTime })) };
 }
 
 interface NewProductInput {

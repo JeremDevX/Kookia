@@ -2,11 +2,12 @@ import { useState } from "react";
 import Modal from "../common/Modal";
 import Button from "../common/Button";
 import type { Recipe } from "../../types";
+import type { ServiceSlot } from "../../../shared/serviceCalendar";
 
 interface ReportRefusalModalProps {
   recipe: Recipe;
   onClose: () => void;
-  onConfirm: (recipe: Recipe, portions: number, operationId: string) => Promise<void>;
+  onConfirm: (recipe: Recipe, portions: number, operationId: string, serviceSlot: ServiceSlot | null) => Promise<void>;
 }
 
 export default function ReportRefusalModal({ recipe, onClose, onConfirm }: ReportRefusalModalProps) {
@@ -14,6 +15,7 @@ export default function ReportRefusalModal({ recipe, onClose, onConfirm }: Repor
   const [operationId] = useState(() => crypto.randomUUID());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [serviceSlot, setServiceSlot] = useState<ServiceSlot | "">("");
   const portions = Number(quantity);
   const valid = /^\d+$/.test(quantity) && portions >= 1 && portions <= 10_000;
 
@@ -22,7 +24,7 @@ export default function ReportRefusalModal({ recipe, onClose, onConfirm }: Repor
     setSaving(true);
     setError("");
     try {
-      await onConfirm(recipe, portions, operationId);
+      await onConfirm(recipe, portions, operationId, serviceSlot || null);
       onClose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Enregistrement impossible.");
@@ -34,6 +36,7 @@ export default function ReportRefusalModal({ recipe, onClose, onConfirm }: Repor
   return <Modal isOpen onClose={() => { if (!saving) onClose(); }} title="Demandes refusées" width="sm">
     <div className="flex flex-col gap-4">
       <p>{recipe.name} · Aucun ingrédient ne sera déduit du stock.</p>
+      <label>Service<select value={serviceSlot} disabled={saving} onChange={(event) => setServiceSlot(event.target.value as ServiceSlot | "")}><option value="">Non ventilé</option><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
       <label htmlFor="refused-portions">Nombre de demandes refusées</label>
       <p id="refusal-hint">Entre 1 et 10 000 demandes.</p>
       <input id="refused-portions" className="input-field" type="number" min="1" max="10000" step="1"

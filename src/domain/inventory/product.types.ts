@@ -21,12 +21,18 @@ export interface Product {
   name: string;
   category: string;
   currentStock: number;
+  availableForProduction?: number | null;
+  expiredStock?: number;
+  unknownExpiryStock?: number;
+  availabilityDate?: string;
+  lotStockMismatch?: boolean;
   unit: Unit;
   minThreshold: number;
   supplierId: string;
   pricePerUnit: number;
   revision: number;
   stockRevision: number;
+  orderPackQuantity?: number | null;
   latestCount?: StockCountSummary | null;
   lastDelivery?: string;
 }

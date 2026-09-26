@@ -16,11 +16,13 @@ import { useRecipes } from "../hooks";
 import type { Recipe } from "../types";
 import { suggestRecipeFromIncomingProduct, type RecipeSuggestion } from "../domain/recipes/recipeSuggestionPolicy";
 import { isScenarioProduction, productionNoteForDisplay } from "../features/recipes/productionPresentation";
+import { recipeStockWarnings } from "../features/recipes/productionAvailability";
 import { getProductions, recordProduction, type Production } from "../services/recipeService";
 import { getPurchaseReceiptLineEvidence, type PurchaseReceiptLineEvidence } from "../services/orderService";
 import { formatLocalISODate } from "../utils/date";
 import type { ProductionRecord } from "../types/callbacks";
 import { ApiError } from "../config/api";
+import type { ServiceSlot } from "../../shared/serviceCalendar";
 import { Link, useSearchParams } from "react-router-dom";
 import "./Recipes.css";
 import "../styles/Workspace.css";
@@ -163,7 +165,7 @@ const Recipes: React.FC = () => {
         await refetch();
         addToast("success", "Production enregistrée", `${quantity} portions de ${selectedRecipe.name} enregistrées. Ingrédients déduits du stock.`);
       } catch (cause) {
-        if (cause instanceof ApiError && cause.details.code === "INSUFFICIENT_STOCK") await refetch();
+        if (cause instanceof ApiError && ["INSUFFICIENT_STOCK", "INSUFFICIENT_LOT_STOCK", "LOT_STOCK_MISMATCH"].includes(cause.details.code)) await refetch();
         throw cause;
       }
     }
@@ -186,11 +188,11 @@ const Recipes: React.FC = () => {
   const unavailableRecipes = matchingRecipes.filter((recipe) => recipe.maxYield === 0 && recipe.ingredients.length > 0);
   const incompleteRecipes = matchingRecipes.filter((recipe) => recipe.ingredients.length === 0);
 
-  const handleReportRefusal = async (recipe: Recipe, portions: number, operationId: string) => {
+  const handleReportRefusal = async (recipe: Recipe, portions: number, operationId: string, serviceSlot: ServiceSlot | null) => {
     const saved = await recordProduction({ operationId, recipeId: recipe.id,
       expectedRecipeRevision: recipe.version,
       recipeName: recipe.name, portions, prepTime: 0, notes: "",
-      date: formatLocalISODate(new Date()), kind: "refusal" });
+      date: formatLocalISODate(new Date()), serviceSlot, kind: "refusal" });
     setProductions((prev) => [saved, ...prev]);
     void refreshProductions();
     addToast("success", "Demandes refusées enregistrées", `${portions} demande${portions > 1 ? "s" : ""} pour ${recipe.name}.`);
@@ -204,7 +206,7 @@ const Recipes: React.FC = () => {
       <header className="workspace-header">
         <div>
           <h1 ref={pageHeadingRef} tabIndex={-1}>{productId ? `Recettes avec ${loading ? "ce produit" : getProductName(productId)}` : "Recettes réalisables"}</h1>
-          <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, réalisables ou non selon l'inventaire enregistré. Aucun surstock n'est déduit automatiquement." : "Faisabilité selon les quantités et recettes enregistrées. La validation d'une production déduit les ingrédients du stock."}</p>
+          <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, selon les lots proposés. Aucun surstock n'est déduit automatiquement." : "Faisabilité selon les lots et recettes enregistrés. Les échéances dépassées sont exclues, les échéances inconnues restent à vérifier par le chef. La validation d'une production déduit les ingrédients du stock."}</p>
         </div>
         {!productId && <Button icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>}
       </header>
@@ -339,7 +341,7 @@ const Recipes: React.FC = () => {
                   <span className="recipe-title text-optimal">
                     {recipe.name}
                   </span>
-                  <Badge label="Faisable" status="optimal" />
+                  <Badge label={recipeStockWarnings(recipe, products).length ? "Faisable sous réserve" : "Faisable"} status="optimal" />
                 </div>
                 <div className="recipe-meta">
                   <span className="recipe-meta-item">
@@ -353,7 +355,7 @@ const Recipes: React.FC = () => {
                 <div className="ingredients-box">
                   <div className="stock-match-badge w-full justify-center mb-2">
                     <CheckCircle size={16} />
-                    Jusqu’à {recipe.maxYield} portions avec le stock actuel
+                    Jusqu’à {recipe.maxYield} portions avec les lots proposés
                   </div>
 
                   {/* Economics Section */}
@@ -373,6 +375,7 @@ const Recipes: React.FC = () => {
                     </div>
                   ))}
                 </div>
+                {recipeStockWarnings(recipe, products).length > 0 && <ul>{recipeStockWarnings(recipe, products).map(warning => <li key={warning}>{warning}</li>)}</ul>}
                 <div className="recipe-actions">
                   <Button
                     size="sm"
@@ -398,6 +401,7 @@ const Recipes: React.FC = () => {
             <p>Stock insuffisant pour une portion. Signalez les demandes refusées si besoin.</p>
             <div className="recipes-grid">{unavailableRecipes.map((recipe) => <Card key={recipe.id} className="recipe-card">
               <strong>{recipe.name}</strong>
+              {recipeStockWarnings(recipe, products).length > 0 && <ul>{recipeStockWarnings(recipe, products).map(warning => <li key={warning}>{warning}</li>)}</ul>}
               <Button size="sm" variant="outline" onClick={() => setRefusalRecipe(recipe)}>Signaler un refus</Button>
               <Button size="sm" variant="outline" onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
             </Card>)}</div>
@@ -434,6 +438,7 @@ const Recipes: React.FC = () => {
         onClose={() => setIsProductionModalOpen(false)}
         recipe={selectedRecipe}
         maxYield={selectedRecipe ? getMaxYield(selectedRecipe) : 0}
+        availabilityWarnings={selectedRecipe ? recipeStockWarnings(selectedRecipe, products) : []}
         costPerPortion={selectedRecipe ? getIngredientCost(selectedRecipe) : null}
         getProductName={getProductName}
         getProductUnit={getProductUnit}

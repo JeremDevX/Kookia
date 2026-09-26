@@ -32,9 +32,13 @@ describe("persistent catalog HTTP", () => {
     const initial = await first.get("/api/workspace/catalog").expect(200);
     expect(initial.body.products).toHaveLength(catalog.products.length);
     for (const expected of catalog.products) {
-      expect(initial.body.products.find((item: { id: string }) => item.id === expected.id)).toEqual({ ...expected, revision: 1, stockRevision: 1, latestCount: null });
+      const availabilityDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+      expect(initial.body.products.find((item: { id: string }) => item.id === expected.id)).toEqual({ ...expected,
+        revision: 1, stockRevision: 1, latestCount: null, orderPackQuantity: null,
+        availableForProduction: expected.currentStock, expiredStock: 0, unknownExpiryStock: expected.currentStock,
+        availabilityDate, lotStockMismatch: false });
     }
-    expect(initial.body.suppliers).toEqual(catalog.suppliers);
+    expect(initial.body.suppliers).toEqual(catalog.suppliers.map((supplier) => ({ ...supplier, deliveryWeekdays: [], leadTimeDays: null, orderCutoffTime: null })));
     const product = initial.body.products[0];
     const created = await first.post("/api/workspace/products").send({
       operationId: randomUUID(), name: "Test product", category: "Légumes", currentStock: 10,
