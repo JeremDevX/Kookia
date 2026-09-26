@@ -8,7 +8,7 @@ import BilanOverview from "./BilanOverview";
 const bucket = (): ImpactBucket => ({
   menuItemUnits: 0, salesByItem: [], serviceDays: { complete: 0, partial: 0, coverageMissing: 0, closed: 0, unregistered: 30 },
   lossesByProduct: [], knownLossCost: 0, unpricedLossMovementCount: 0, lossMovementCount: 0,
-  receivedCost: 0, receiptCount: 0, receiptsByProduct: [],
+  receivedCost: 0, receiptCount: 0, receiptsByProduct: [], declaredWaste: { records: [], totals: [], excludedSimulationCount: 0 },
 });
 function period(recorded: ImpactBucket): ImpactPeriod {
   return { from: "2026-09-01", to: "2026-09-30", calendarDays: 30, recorded, simulation: bucket(),

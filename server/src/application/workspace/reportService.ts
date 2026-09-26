@@ -1,3 +1,5 @@
+import { readDeclaredWaste, summarizeDeclaredWaste } from "./declaredWasteRead.js";
+import { wasteKindLabels } from "../../../../shared/declaredWaste.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { isSimulationStockMovement } from "./stockMovementProvenance.js";
 
@@ -8,7 +10,7 @@ export interface OperationalReportRow {
 export interface DeclaredLossSummary {
   method: string; dateBasis: string; reportedMovementCount: number; unpricedMovementCount: number;
   incompatibleUnitMovementCount: number; excludedSimulationMovementCount: number;
-  unavailableMetrics: ["stockouts", "unsold_quantity"];
+  unavailableMetrics: ["stockouts", "complete_unsold_quantity"];
 }
 
 export async function getOperationalReport(restaurantId: string, from: string, to: string) {
@@ -19,22 +21,25 @@ export async function getOperationalReport(restaurantId: string, from: string, t
     prisma.dailySale.findMany({ where: { restaurantId, serviceDate: { gte: start, lt: end } }, include: {
       saleItem: { select: { name: true } }, serviceDay: { select: { source: true } },
     }, orderBy: { serviceDate: "asc" } }),
-    prisma.stockMovement.findMany({ where: { restaurantId, createdAt: { gte: start, lt: end } }, include: {
-      product: { select: { name: true, unit: true } },
+    prisma.stockMovement.findMany({ where: { restaurantId, OR: [{ wasteRecord: { serviceDate: { gte: start, lt: end } } }, { wasteRecord: null, createdAt: { gte: start, lt: end } }] }, include: {
+      wasteRecord: { select: { id: true } }, product: { select: { name: true, unit: true } },
       purchaseReceiptLine: { select: { receipt: { select: { simulated: true } } } },
     }, orderBy: { createdAt: "asc" } }),
     prisma.production.findMany({ where: { restaurantId, date: { gte: start, lt: end } }, orderBy: { date: "asc" } }),
     prisma.purchaseOrder.findMany({ where: { restaurantId, createdAt: { gte: start, lt: end } }, include: { lines: true }, orderBy: { createdAt: "asc" } }),
   ]);
+  const typedRows = await readDeclaredWaste(prisma, restaurantId, start, end);
+  const declaredWaste = summarizeDeclaredWaste(typedRows, from, to, workspace?.mode ?? "operational");
   const rows: OperationalReportRow[] = [];
   const declaredLosses: DeclaredLossSummary = {
-    method: "Mouvements de stock négatifs explicitement étiquetés « loss » ; quantité = valeur absolue du delta. Coût = quantité × prix unitaire snapshoté uniquement. Aucune inférence depuis les ventes, productions ou seuils.",
-    dateBasis: "Date d’enregistrement du mouvement (createdAt UTC) ; bornes de période incluses.",
+    method: "Mouvements de stock négatifs explicitement étiquetés « loss » ; quantité = valeur absolue du delta. Coût historique des mouvements anciens snapshoté ; déclarations typées : coût des lots connus uniquement. Déchets liés à une préparation sans nouvelle déduction ni extrapolation de coût. Aucune inférence depuis les ventes, productions ou seuils.",
+    dateBasis: "Déclarations typées : jour de service ; anciens mouvements sans déclaration : createdAt UTC (repli explicite). Bornes incluses.",
     reportedMovementCount: 0, unpricedMovementCount: 0, incompatibleUnitMovementCount: 0,
-    excludedSimulationMovementCount: 0, unavailableMetrics: ["stockouts", "unsold_quantity"],
+    excludedSimulationMovementCount: typedRows.filter((row) => row.stockMovement && isSimulationStockMovement(row.stockMovement, workspace?.mode ?? "operational")).length, unavailableMetrics: ["stockouts", "complete_unsold_quantity"],
   };
 
   for (const movement of movements) {
+    if (movement.wasteRecord) continue;
     const explicitLoss = movement.delta.isNegative() && ["loss", "simulation_loss"].includes(movement.reason);
     const simulated = isSimulationStockMovement(movement, workspace?.mode ?? "operational");
     if (explicitLoss && simulated) declaredLosses.excludedSimulationMovementCount++;
@@ -70,6 +75,15 @@ export async function getOperationalReport(restaurantId: string, from: string, t
       value: Number(movement.delta), source: movement.invoiceDocumentId ? "Pièce validée" : "Opération enregistrée" });
   }
 
+  for (const waste of declaredWaste.records) {
+    const service = waste.serviceSlot === "lunch" ? "midi" : waste.serviceSlot === "dinner" ? "soir" : "non ventilé";
+    const source = `Déclaration ${waste.operationId} · service ${service} · ${waste.avoidability === "inedible" ? "non comestible" : "évitable"} · ${waste.stockMovementId ? "sortie matière tracée" : "sans nouvelle déduction matière"}`;
+    rows.push({ section: "Pertes et déchets déclarés par service", date: waste.serviceDate,
+      metric: `${wasteKindLabels[waste.kind] ?? waste.kind} — ${waste.productName ?? waste.preparationName ?? "élément lié"} (${waste.unit})`, value: waste.quantity, source });
+    rows.push({ section: "Pertes et déchets déclarés par service", date: waste.serviceDate,
+      metric: "Coût connu des lots (EUR)", value: waste.knownCost == null ? "Non valorisé" : waste.knownCost.toFixed(2), source });
+    if (waste.stockMovementId) { declaredLosses.reportedMovementCount++; if (waste.knownCost == null) declaredLosses.unpricedMovementCount++; }
+  }
   if (workspace?.mode !== "demo") {
     for (const item of sales) if (item.source !== "demo_simulation" && item.serviceDay.source !== "demo_simulation")
       rows.push({ section: "Ventes enregistrées", date: item.serviceDate.toISOString().slice(0, 10),
@@ -87,5 +101,5 @@ export async function getOperationalReport(restaurantId: string, from: string, t
         value: Number(line.quantity.mul(line.pricePerUnit)), source: "Commande validée à transmettre — valeur indicative EUR" });
   }
 
-  return { from, to, timezone: "UTC", generatedAt: new Date().toISOString(), declaredLosses, rows };
+  return { from, to, timezone: "UTC", generatedAt: new Date().toISOString(), declaredLosses, declaredWaste, rows };
 }

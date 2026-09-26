@@ -1,3 +1,4 @@
+import DeclaredWastePanel from "./DeclaredWastePanel";
 import { Link } from "react-router-dom";
 import type { ImpactReport } from "../../services/impactService";
 
@@ -40,5 +41,6 @@ export default function BilanOverview({ report }: { report: Pick<ImpactReport, "
         <strong>{money(loss.knownCost)}</strong>
       </li>)}</ol>
     </section>}
+    <DeclaredWastePanel summary={current.declaredWaste} />
   </>;
 }

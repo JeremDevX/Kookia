@@ -14,6 +14,7 @@ it("keeps full-period impact totals while projecting one recorded/simulated mont
     product: { id: "tomatoes", name: "Tomates", unit: "kg" }, purchaseReceiptLine: null,
   });
   const db = {
+    wasteRecord: { findMany: vi.fn().mockResolvedValue([]) },
     restaurant: { findUnique: vi.fn().mockResolvedValue({ mode: "operational" }) },
     serviceDay: { findMany: vi.fn().mockResolvedValue([
       { serviceDate: december, status: "open", coverage: "complete", source: "manual" },

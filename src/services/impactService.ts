@@ -1,3 +1,4 @@
+import type { DeclaredWasteSummary } from "../../shared/declaredWaste";
 import { apiRequest } from "../config/api";
 
 export interface ImpactProductLoss {
@@ -15,6 +16,7 @@ export interface ImpactBucket {
   lossesByProduct: ImpactProductLoss[];
   knownLossCost: number; unpricedLossMovementCount: number; lossMovementCount: number;
   receivedCost: number; receiptCount: number; receiptsByProduct: ImpactReceiptProduct[];
+  declaredWaste: DeclaredWasteSummary;
 }
 export interface ImpactPeriod {
   from: string; to: string; calendarDays: number; recorded: ImpactBucket; simulation: ImpactBucket;
@@ -25,9 +27,9 @@ export interface ImpactPeriod {
 export interface ImpactMonthlyPeriod {
   month: string; from: string; to: string; calendarDays: number;
   recorded: Pick<ImpactBucket, "menuItemUnits" | "serviceDays" | "lossMovementCount" | "knownLossCost" |
-    "unpricedLossMovementCount" | "receivedCost" | "receiptCount">;
+    "unpricedLossMovementCount" | "receivedCost" | "receiptCount" | "declaredWaste">;
   simulation: Pick<ImpactBucket, "menuItemUnits" | "serviceDays" | "lossMovementCount" | "knownLossCost" |
-    "unpricedLossMovementCount" | "receivedCost" | "receiptCount">;
+    "unpricedLossMovementCount" | "receivedCost" | "receiptCount" | "declaredWaste">;
   hasRecordedData: boolean; hasSimulationData: boolean;
   excluded: ImpactPeriod["excluded"];
 }

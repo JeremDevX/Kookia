@@ -3,7 +3,8 @@ import { reportCells, reportCsv, reportExcelXml, type Report } from "./reportSer
 const report: Report = { from: "2026-09-01", to: "2026-09-30", timezone: "UTC", generatedAt: "2026-09-11T12:00:00Z",
   declaredLosses: { method: "Mouvements loss négatifs uniquement", dateBasis: "createdAt UTC",
     reportedMovementCount: 2, unpricedMovementCount: 1, incompatibleUnitMovementCount: 1,
-    excludedSimulationMovementCount: 3, unavailableMetrics: ["stockouts", "unsold_quantity"] }, rows: [
+    excludedSimulationMovementCount: 3, unavailableMetrics: ["stockouts", "complete_unsold_quantity"] }, declaredWaste: { records: [], totals: [], excludedSimulationCount: 0 },
+  rows: [
   { section: "Stock", date: "2026-09-11", metric: '=HYPERLINK("bad")', value: -2.5, source: "A&B <test>" },
 ] };
 it("escapes CSV cells and prevents string formula interpretation without changing negative numbers", () => {
@@ -13,14 +14,14 @@ it("escapes CSV cells and prevents string formula interpretation without changin
   expect(csv).toContain("2026-09-01");
   expect(csv).toContain('"Mouvements de perte inclus";"2";"Sans prix snapshoté";"1"');
     expect(csv).toContain('"Pertes hors bilan exclues";"3"');
-  expect(csv).toContain('"Métriques non mesurées";"ruptures de stock ; quantités invendues"');
+  expect(csv).toContain('"Métriques non mesurées";"ruptures de stock ; inventaire complet des invendus (seuls les invendus déclarés sont disponibles)"');
 });
 it("exports typed Excel XML without executable formulas or raw XML markup from data", () => {
   const xml = reportExcelXml(report);
   expect(xml).toContain('ss:Type="Number">-2.5');
   expect(xml).toContain("A&amp;B &lt;test&gt;");
   expect(xml).toContain("Unités incompatibles exclues");
-  expect(xml).toContain("quantités invendues");
+  expect(xml).toContain("inventaire complet des invendus (seuls les invendus déclarés sont disponibles)");
   expect(xml).not.toContain("ss:Formula");
 });
 

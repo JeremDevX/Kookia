@@ -73,7 +73,7 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
     select: { id: true },
   });
   expect(response.body).toMatchObject({ comparison: "same_number_of_calendar_days", timezone: "Europe/Paris",
-    currency: "EUR", unavailableMetrics: ["stockouts", "unsold_quantity"], savingsClaim: "not_measured" });
+    currency: "EUR", unavailableMetrics: ["stockouts", "complete_unsold_quantity"], savingsClaim: "not_measured" });
   expect(response.body.current.calendarDays).toBe(response.body.prior.calendarDays);
   expect(response.body.current.recorded).toMatchObject({ menuItemUnits: 4, serviceDays: { complete: 1 },
     lossMovementCount: 2, knownLossCost: product.pricePerUnit * 0.5, unpricedLossMovementCount: 1 });
@@ -88,7 +88,7 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   expect(exportedReport.body.declaredLosses).toMatchObject({
     dateBasis: expect.stringContaining("UTC"), reportedMovementCount: 2, unpricedMovementCount: 1,
     incompatibleUnitMovementCount: 1, excludedSimulationMovementCount: 1,
-    unavailableMetrics: ["stockouts", "unsold_quantity"],
+    unavailableMetrics: ["stockouts", "complete_unsold_quantity"],
   });
   expect(exportedReport.body.rows).toContainEqual(expect.objectContaining({ section: "Pertes déclarées",
     metric: expect.stringContaining("quantité perdue"), value: 0.5, source: expect.stringContaining(reportedLossOperationId) }));

@@ -1,9 +1,11 @@
+import type { DeclaredWasteSummary } from "../../shared/declaredWaste";
 import { apiRequest } from "../config/api";
 export interface Report {
   from: string; to: string; timezone: string; generatedAt: string;
   declaredLosses: { method: string; dateBasis: string; reportedMovementCount: number; unpricedMovementCount: number;
     incompatibleUnitMovementCount: number; excludedSimulationMovementCount: number;
-    unavailableMetrics: Array<"stockouts" | "unsold_quantity"> };
+    unavailableMetrics: Array<"stockouts" | "complete_unsold_quantity"> };
+  declaredWaste: DeclaredWasteSummary;
   rows: { section: string; date: string; metric: string; value: string | number; source: string }[];
 }
 export const getReport = (from: string, to: string) => apiRequest<Report>(`/workspace/report?${new URLSearchParams({ from, to })}`);
@@ -16,11 +18,11 @@ export const reportCells = (report: Report): (string | number)[][] => {
   return [
     ["Rapport opérationnel KookiA — ne constitue pas une attestation de conformité"],
     ["Du", report.from, "au", report.to, "Fuseau des opérations", report.timezone, "Généré le", report.generatedAt],
-    ["Base des dates", "Ventes : jour de service Europe/Paris ; pertes et autres opérations : date UTC."],
+    ["Base des dates", "Ventes et pertes typées : jour de service Europe/Paris ; anciennes pertes et autres opérations : date UTC."],
     ["Méthode des pertes déclarées", report.declaredLosses.method, "Date", report.declaredLosses.dateBasis],
     lossCounts,
     ["Métriques non mesurées", report.declaredLosses.unavailableMetrics.map((metric) =>
-      metric === "stockouts" ? "ruptures de stock" : "quantités invendues").join(" ; ")],
+      metric === "stockouts" ? "ruptures de stock" : "inventaire complet des invendus (seuls les invendus déclarés sont disponibles)").join(" ; ")],
     ["Section", "Date", "Indicateur", "Valeur", "Source"],
     ...report.rows.map((row) => [row.section, row.date, row.metric, row.value, row.source]),
   ];
