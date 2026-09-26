@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { getOrderView, orderViewHref } from "../features/orders/orderNavigation";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import Modal from "../components/common/Modal";
 import InvoiceModal from "../components/dashboard/InvoiceModal";
@@ -18,13 +19,11 @@ import "../styles/Workspace.css";
 import "./Orders.css";
 
 export default function Orders() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const location = useLocation();
-  const requestedView = searchParams.get("view");
-  const view = searchParams.has("source") || location.hash === "#invoices" ? "invoices"
-    : searchParams.has("receiptId") || location.hash.startsWith("#order-") || location.hash === "#to-transmit" ? "orders"
-      : location.hash === "#selection" ? "prepare" : requestedView === "prepare" || requestedView === "invoices" ? requestedView : "orders";
-  const changeView = (next: string) => setSearchParams({ view: next });
+  const view = getOrderView(searchParams, location.hash);
+  const changeView = (next: string) => navigate(orderViewHref(next));
   const focusReceiptId = searchParams.get("receiptId") ?? undefined;
   const returnFrom = searchParams.get("from");
   const returnTo = searchParams.get("to");
@@ -40,6 +39,10 @@ export default function Orders() {
   const [invoiceDraft, setInvoiceDraft] = useState<Invoice | undefined>();
   const [invoiceRefresh, setInvoiceRefresh] = useState(0);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const selectionHeadingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (view === "prepare" && location.hash === "#selection") selectionHeadingRef.current?.focus();
+  }, [view, location.hash]);
   const recommendations = createOrderRecommendationsFromCartItems(cartItems);
   const missingProduct = !cartError && cartItems.some((item) => !products.some((product) => product.id === item.productId));
   const hasExampleItem = !cartError && cartItems.some((item) => !!item.predictionId);
@@ -59,21 +62,20 @@ export default function Orders() {
 
   return <div className="orders-container workspace-page">
     <header className="workspace-header"><div>
-      <h1 ref={headingRef} tabIndex={-1}>Achats</h1>
-      <p className="workspace-subtitle">Suivez vos commandes, préparez vos achats et retrouvez vos documents fournisseurs.</p>
-    </div><Button onClick={() => changeView("prepare")}>Préparer un achat</Button></header>
+      <h1 ref={headingRef} tabIndex={-1}>{view === "prepare" ? "Préparer mes achats" : "Achats"}</h1>
+      <p className="workspace-subtitle">{view === "prepare" ? "Partez des besoins recommandés, ajustez vos quantités puis vérifiez votre sélection." : "Suivez vos commandes et retrouvez vos documents fournisseurs."}</p>
+    </div>{view !== "prepare" && <Button onClick={() => changeView("prepare")}>Préparer un achat</Button>}</header>
     <nav className="orders-views" aria-label="Vues des achats">
       {([["orders", "Commandes & réceptions"], ["prepare", "Préparer un achat"], ["invoices", "Factures & documents"]] as const).map(([id, label]) =>
         <Button key={id} variant="outline" aria-pressed={view === id} onClick={() => changeView(id)}>{label}</Button>)}
     </nav>
     {view === "prepare" && <>
-    <section className="orders-guide" aria-label="Étapes de préparation">
-      <div><strong>1. Choisir les produits</strong><p>Depuis les stocks ou les besoins proposés.</p></div>
-      <div><strong>2. Ajuster et valider</strong><p>Vérifiez les quantités et les fournisseurs.</p></div>
-      <div><strong>3. Transmettre, puis réceptionner</strong><p>Aucun envoi automatique. Enregistrez ensuite ce qui a été livré.</p></div>
-    </section>
+    <div className="orders-prepare-intro"><span>1 · Choisir et ajuster</span><span>2 · Valider la sélection</span><span>3 · Transmettre aux fournisseurs</span></div>
+    <Link className="orders-selection-shortcut" to="/orders?view=prepare#selection">Voir ma sélection{!cartLoading && !cartError ? ` · ${cartItems.length} article(s)` : ""}</Link>
+    <div className="orders-prepare-layout">
+    <PurchaseSuggestions refreshKey={suggestionsRevision} />
     <section id="selection" className="orders-selection" aria-labelledby="selection-title">
-      <div className="workspace-section-heading"><h2 id="selection-title">Commande en préparation</h2>
+      <div className="workspace-section-heading"><h2 ref={selectionHeadingRef} id="selection-title" tabIndex={-1}>Ma sélection</h2>
         <span role="status" aria-busy={cartLoading}>
           {cartLoading ? "Chargement…" : cartError ? "Indisponible" : `${cartItems.length} article${cartItems.length > 1 ? "s" : ""}`}
         </span>
@@ -84,16 +86,16 @@ export default function Orders() {
       {missingProduct && !catalogLoading && !catalogError && <p role="alert">Un produit de votre sélection n'est plus dans le catalogue. Retirez-le avant de valider.</p>}
       {hasExampleItem && <p role="alert">Les propositions sans source enregistrée ne peuvent pas être validées. Retirez-les de la sélection avant de continuer.</p>}
       {cartLoading || catalogLoading ? <p role="status">Chargement de votre commande…</p> : cartError ? null : cartItems.length === 0 ?
-        <div className="orders-empty"><p>Aucun article sélectionné.</p><Link to="/stocks">Choisir dans les stocks</Link></div> :
+        <div className="orders-empty"><strong>Votre liste de courses commence ici</strong><p>Ajoutez les produits recommandés, ou choisissez un autre produit dans vos stocks.</p><Link to="/stocks">Ajouter un autre produit</Link></div> :
         <ul className="orders-selection-list">{cartItems.map((item) => <li key={item.id}>
-          <div><strong>{item.productName}</strong><span>{item.quantity} {item.unit} · {item.predictionId ? "proposition à retirer" : item.source === "stocks" ? "choisi dans Stocks" : "sélection précédente"}</span></div>
-          <Button type="button" variant="outline" size="sm" aria-label={`Écarter ${item.productName}`} onClick={() => void removeFromCart(item.id)} disabled={cartLoading}>Écarter</Button>
+          <div><strong>{item.productName}</strong><span>{item.quantity} {item.unit} · {item.predictionId ? "proposition à retirer" : item.purchaseSuggestionOperationId ? "issu des recommandations" : item.source === "stocks" ? "choisi dans Stocks" : "sélection précédente"}</span></div>
+          <Button type="button" variant="outline" size="sm" aria-label={`Retirer ${item.productName} de ma sélection`} onClick={() => void removeFromCart(item.id)} disabled={cartLoading}>Retirer</Button>
         </li>)}</ul>}
-      {!cartError && cartItems.length > 0 && <div className="orders-selection-actions"><p>La validation enregistre votre décision. Elle n'envoie rien au fournisseur et ne modifie pas le stock.</p>
-        <Button onClick={() => setReviewOpen(true)} disabled={cartLoading || catalogLoading || !!catalogError || missingProduct || hasExampleItem}>Revoir les quantités</Button></div>}
+      {!cartError && cartItems.length > 0 && <div className="orders-selection-actions"><div className="orders-selection-total"><span>Budget indicatif HT</span><strong>{catalogLoading || catalogError || missingProduct ? "—" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(cartItems.reduce((sum, item) => sum + item.quantity * (products.find((p) => p.id === item.productId)?.pricePerUnit ?? 0), 0))}</strong></div><p>La validation enregistre votre décision. Elle n'envoie rien au fournisseur et ne modifie pas le stock.</p>
+        <Button onClick={() => setReviewOpen(true)} disabled={cartLoading || catalogLoading || !!catalogError || missingProduct || hasExampleItem}>Vérifier et valider ma sélection</Button></div>}
     </section>
 
-    <PurchaseSuggestions refreshKey={suggestionsRevision} />
+    </div>
     </>}
 
     {view === "invoices" && <SourceInvoiceArchive refreshKey={invoiceRefresh} sourceId={searchParams.get("source") ?? undefined}
@@ -107,7 +109,7 @@ export default function Orders() {
 
     <p className="orders-help"><Link to="/stocks">Consulter les stocks</Link> · <Link to="/analytics">Voir le bilan des achats réceptionnés</Link></p>
 
-    <Modal isOpen={reviewOpen} onClose={() => setReviewOpen(false)} title="Revoir les quantités" width="lg">
+    <Modal isOpen={reviewOpen} onClose={() => setReviewOpen(false)} title="Vérifier ma commande" width="lg">
       <OrderGenerator recommendations={recommendations} products={products} suppliers={suppliers}
         catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
         onClose={() => setReviewOpen(false)}

@@ -1,3 +1,4 @@
+import { purchasePreparationHref } from "../../features/orders/orderNavigation";
 import { orderStepLabel } from "../../../shared/orderQuantity.js";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -11,7 +12,7 @@ import "./TodayPurchaseForecast.css";
 const quantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(value);
 const date = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
-const reviewHref = "/orders?view=prepare#purchase-suggestions-title";
+
 
 export default function TodayPurchaseForecast() {
   const { cartItems, loading: cartLoading, loadError: cartError } = useCart();
@@ -77,7 +78,7 @@ export default function TodayPurchaseForecast() {
                   <small>{orderStepLabel(item.orderStep, item.unit)} · arrondi après déduction du stock.</small>
                 </li>)}
               </ul>
-              <div className="today-forecast-actions"><Link className="btn btn-primary" to={reviewHref}>Préparer ma commande<ArrowRight size={17} aria-hidden="true" /></Link>
+              <div className="today-forecast-actions"><Link className="btn btn-primary" to={purchasePreparationHref}>Préparer ma commande<ArrowRight size={17} aria-hidden="true" /></Link>
                 <small>Quantités ajustables, sans envoi automatique.</small></div>
             </>}
             {summary.toReview.length === 0 && summary.needsCheck.length === 0 && summary.handled.length === 0 &&
@@ -93,7 +94,7 @@ export default function TodayPurchaseForecast() {
             </details>}
             {summary.handled.length > 0 && <details><summary>{summary.handled.length} produits déjà traités dans vos commandes</summary>
               <ul>{summary.handled.map((item) => <li key={item.productId}>{item.productName} — {purchaseForecastItemStatus(item)}</li>)}</ul>
-              <Link to={reviewHref}>Reprendre la préparation</Link>
+              <Link to={purchasePreparationHref}>Reprendre la préparation</Link>
             </details>}
           </>}
           <details className="today-forecast-method"><summary>Comment Kookia prépare cette liste ?</summary>

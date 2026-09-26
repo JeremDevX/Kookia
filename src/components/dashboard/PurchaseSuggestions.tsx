@@ -1,10 +1,10 @@
-import { orderStepLabel } from "../../../shared/orderQuantity.js";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
 import { useCart } from "../../context/useCart";
-import { isValidOrderQuantity } from "../../domain/orders/orderQuantity";
-import { getPurchaseSuggestions, recordPurchaseSuggestionDecision, type PurchaseSuggestions as PurchaseSuggestionsDto } from "../../services/orderService";
+import PurchaseSuggestionCard from "./PurchaseSuggestionCard";
+import { summarizePurchaseForecast } from "../../features/orders/purchaseForecastPresentation";
+import { getPurchaseSuggestions, recordPurchaseSuggestionDecision, type PurchaseSuggestion, type PurchaseSuggestions as PurchaseSuggestionsDto } from "../../services/orderService";
 import "./PurchaseSuggestions.css";
 
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
@@ -12,24 +12,23 @@ const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR
 export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number }) {
   const location = useLocation();
   const { cartItems, addToCart } = useCart();
+  const [filter, setFilter] = useState<"toReview" | "needsCheck" | "covered" | "handled">("toReview");
   const [search, setSearch] = useState("");
   const [data, setData] = useState<PurchaseSuggestionsDto | null>(null);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
-  const [decisions, setDecisions] = useState<Record<string, "added" | "excluded">>({});
+  const [decisions, setDecisions] = useState<Record<string, NonNullable<PurchaseSuggestion["decision"]>>>({});
   const [loading, setLoading] = useState(true);
   const [busyProductId, setBusyProductId] = useState("");
   const [error, setError] = useState("");
   const [refreshRevision, setRefreshRevision] = useState(0);
-  const operationIds = useRef<Record<string, string>>({});
+  const attempts = useRef<Record<string, { key: string; operationId: string }>>({});
   const suggestionKeys = useRef<Record<string, string>>({});
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const retryFocusPending = useRef(false);
-  const entryFocused = useRef(false);
 
   useEffect(() => {
-    if (!loading && !entryFocused.current && location.hash === "#purchase-suggestions-title") {
-      entryFocused.current = true;
+    if (!loading && location.hash === "#purchase-suggestions-title") {
       headingRef.current?.focus();
     }
   }, [loading, location.hash]);
@@ -46,7 +45,7 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
           ? [] : [[item.productId, previousKeys[item.productId] === item.suggestionKey
             ? current[item.productId] ?? String(item.estimatedQuantity) : String(item.estimatedQuantity)]])));
         setDecisions({});
-        operationIds.current = {};
+        attempts.current = {};
         suggestionKeys.current = nextKeys;
       }
     }, (cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : "Propositions indisponibles."); })
@@ -67,34 +66,17 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
     setRefreshRevision((value) => value + 1);
   };
 
-  const retryAddition = async (productId: string) => {
-    if (!data || busyProductId) return;
-    const suggestion = data.suggestions.find((item) => item.productId === productId);
-    if (!suggestion) return;
-    const savedDecision = suggestion.decision?.kind === "added" ? suggestion.decision : null;
-    const operationId = savedDecision?.operationId ?? operationIds.current[productId];
-    const quantity = savedDecision?.quantity ?? Number(quantities[productId] ?? "");
-    if (!operationId || !Number.isFinite(quantity) || quantity <= 0) {
-      setError("La décision existe, mais ses quantités ne peuvent pas être reprises. Rechargez les propositions.");
-      return;
-    }
-    setBusyProductId(productId); setError("");
-    try {
-      const added = await addToCart({ id: operationId, productId, productName: suggestion.productName,
-        quantity, unit: suggestion.unit, source: "dashboard", purchaseSuggestionOperationId: operationId });
-      if (!added) { setError("La décision est conservée, mais l’article n’a pas rejoint la commande en préparation. Réessayez."); return; }
-      setDecisions((current) => ({ ...current, [productId]: "added" }));
-    } finally { setBusyProductId(""); }
-  };
-
   const decide = async (productId: string, suggestionKey: string, decision: "added" | "excluded") => {
     if (!data || busyProductId) return;
-    const operationId = operationIds.current[productId] ?? crypto.randomUUID();
-    operationIds.current[productId] = operationId;
+    const quantity = decision === "added" ? Number(quantities[productId]) : undefined;
+    const key = JSON.stringify({ suggestionKey, decision, quantity });
+    const operationId = attempts.current[productId]?.key === key
+      ? attempts.current[productId].operationId : crypto.randomUUID();
+    attempts.current[productId] = { key, operationId };
     setBusyProductId(productId); setError("");
     try {
-      const quantity = decision === "added" ? Number(quantities[productId]) : undefined;
       const saved = await recordPurchaseSuggestionDecision(productId, { operationId, suggestionKey, decision, quantity });
+      setDecisions((current) => ({ ...current, [productId]: { kind: decision, operationId: saved.operationId, quantity: quantity ?? null, orderId: null } }));
       if (decision === "added") {
         const suggestion = data.suggestions.find((item) => item.productId === productId);
         if (!suggestion || quantity === undefined || !await addToCart({ id: operationId, productId,
@@ -103,14 +85,19 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
           throw new Error("Décision conservée, mais la commande en préparation n’a pas été mise à jour. Réessayez.");
         }
       }
-      setDecisions((current) => ({ ...current, [productId]: decision }));
+      delete attempts.current[productId];
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Décision non enregistrée."); }
-    finally { setBusyProductId(""); }
+    finally { setBusyProductId(""); headingRef.current?.focus(); }
   };
 
+  const reviewedData = data ? { ...data, suggestions: data.suggestions.map((item) => ({ ...item,
+    decision: decisions[item.productId] ?? item.decision })) } : null;
+  const summary = reviewedData ? summarizePurchaseForecast(reviewedData, cartItems.map((item) => item.productId)) : null;
+  const visible = summary?.[filter].filter((item) => `${item.productName} ${item.supplierName}`.toLocaleLowerCase("fr").includes(search.trim().toLocaleLowerCase("fr"))) ?? [];
+  const supplierNames = [...new Set(visible.map((item) => item.supplierName))].sort((a, b) => a.localeCompare(b, "fr"));
   return <section className="purchase-suggestions" aria-labelledby="purchase-suggestions-title">
-    <header className="workspace-section-heading"><h2 ref={headingRef} id="purchase-suggestions-title" tabIndex={-1}>Revoir les achats proposés</h2>
-      <span>{loading ? "Calcul…" : data?.status === "ready" ? `${data.suggestions.length} produit${data.suggestions.length === 1 ? "" : "s"}` : "Pas de quantité fiable"}</span>
+    <header className="workspace-section-heading"><h2 ref={headingRef} id="purchase-suggestions-title" tabIndex={-1}>Vos recommandations d’achat</h2>
+      <span>{loading ? "Calcul…" : data?.status === "ready" ? `${summary?.toReview.length ?? 0} à acheter` : "Pas de quantité fiable"}</span>
     </header>
     {loading ? <p role="status">Vérification des services, recettes et comptages…</p> : error && !data
       ? <div role="alert"><p>{error}</p><Button ref={retryButtonRef} type="button" variant="outline" onClick={retrySuggestions}>Recharger les propositions</Button></div> : data && <>
@@ -120,59 +107,32 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
         {data.status === "insufficient_history" && <p>Complétez les 28 jours de services avant d’utiliser une estimation de besoin.</p>}
         {(data.status === "no_data" || data.status === "insufficient_history") && <p><Link to="/sales#sales-start">Compléter les ventes et les jours de service</Link> ou <Link to="/stocks">choisir vos produits dans les stocks</Link>.</p>}
         {data.status === "ready" && <>
-          <p className="purchase-suggestions-period">Ventes jusqu’au {data.asOfDate} · prochain service prévu le {data.forecastDate} · {data.provenance === "demo_simulation" ? "hors bilan" : "ventes enregistrées"}.</p>
+          <p className="purchase-suggestions-period">Pour le service du {new Date(`${data.forecastDate}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} · besoins calculés depuis vos ventes et recettes, stock vérifié déduit.</p>
           {data.blockers.length > 0 && <div className="purchase-suggestions-blockers" role="status">
             <strong>Besoin incomplet — aucune proposition ne peut être ajoutée.</strong>
             <ul>{data.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>
           </div>}
-          {data.suggestions.length > 0 && <div className="orders-toolbar"><label>Rechercher un besoin<input type="search" value={search} placeholder="Produit ou fournisseur" onChange={(event) => setSearch(event.target.value)} /></label></div>}
-          {data.suggestions.length > 0 && !data.suggestions.some((item) => `${item.productName} ${item.supplierName}`.toLocaleLowerCase("fr").includes(search.trim().toLocaleLowerCase("fr"))) && <p role="status">Aucun besoin ne correspond à votre recherche.</p>}
-          {data.suggestions.length === 0 ? <p>Aucun ingrédient projetable à partir des recettes reliées aux ventes.</p> : <ul className="purchase-suggestion-list">
-            {data.suggestions.filter((item) => `${item.productName} ${item.supplierName}`.toLocaleLowerCase("fr").includes(search.trim().toLocaleLowerCase("fr"))).map((item) => {
-              const inCart = cartItems.some((cartItem) => cartItem.productId === item.productId);
-              const localDecision = decisions[item.productId];
-              const decided = localDecision ?? item.decision?.kind;
-              const quantity = Number(quantities[item.productId] ?? "");
-              const validQuantity = isValidOrderQuantity(quantities[item.productId] ?? "", item.orderStep);
-              return <li key={item.productId} className="purchase-suggestion-card">
-                <div className="purchase-suggestion-heading"><h3>{item.productName}</h3><span>{item.supplierName}</span></div>
-                <p>Besoin prévu : {item.forecastNeed} {item.unit} · {item.reason}</p>
-                {item.countedStock === null
-                  ? <p>Stock non déduit — aucun comptage à jour. <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Vérifier le stock</Link></p>
-                  : <p>Dernier comptage {item.countDate} : {item.countedStock} {item.unit}.</p>}
-                <details><summary>Recettes à l’origine du besoin</summary><ul className="purchase-suggestion-sources">{item.sources.map((source, index) => <li key={`${source.recipeName}-${index}`}>
-                  {source.saleItemName} → {source.recipeName} (version {source.recipeVersion}) : {source.quantity} {item.unit}
-                </li>)}</ul></details>
-                {item.netNeed !== null && <p>Besoin net : {item.netNeed} {item.unit}. {orderStepLabel(item.orderStep, item.unit)} — arrondi au pas supérieur, conditionnement fournisseur à vérifier.</p>}
-                {item.estimatedQuantity !== null && <p>Quantité proposée : <strong>{item.estimatedQuantity} {item.unit}</strong> · budget indicatif : {item.estimatedCost === null ? "—" : `${money.format(item.estimatedCost)} HT`}.</p>}
-                {item.decision?.orderId && !localDecision
-                  ? <p role="status">Déjà présente dans une commande enregistrée. <Link to={`/orders#order-${item.decision.orderId}`}>Voir la commande</Link></p>
-                  : inCart
-                  ? <p role="status">Présent dans la commande en préparation. La validation finale reste à faire.</p>
-                  : decided === "excluded" ? <p role="status">Proposition écartée et conservée dans l’historique des décisions.</p>
-                    : decided === "added" ? <div><p role="status">Décision conservée, mais article absent de la commande en préparation.</p>
-                      <Button variant="outline" onClick={() => void retryAddition(item.productId)} disabled={busyProductId !== ""}>
-                        {busyProductId === item.productId ? "Ajout…" : "Remettre dans la commande"}
-                      </Button></div>
-                    : item.canAdd ? <div className="purchase-suggestion-actions">
-                      <label htmlFor={`suggested-quantity-${item.productId}`}>Quantité à commander ({item.unit})</label>
-                      <input className="input-field" id={`suggested-quantity-${item.productId}`} type="number" min={item.orderStep} step={item.orderStep} max={1000000} aria-invalid={!validQuantity} aria-describedby={`suggested-step-${item.productId}`}
-                        value={quantities[item.productId] ?? ""} disabled={busyProductId === item.productId}
-                        onChange={(event) => {
-                          operationIds.current[item.productId] = crypto.randomUUID();
-                          setQuantities((current) => ({ ...current, [item.productId]: event.target.value }));
-                        }} />
-                      <small id={`suggested-step-${item.productId}`}>{orderStepLabel(item.orderStep, item.unit)}.</small>
-                      {validQuantity && <p>Budget de votre sélection : {money.format(quantity * item.currentUnitPrice)} HT.</p>}
-                      {!validQuantity && <p role="alert">Respectez le pas de commande, avec une quantité positive au plus égale à 1 000 000.</p>}
-                      <Button onClick={() => void decide(item.productId, item.suggestionKey, "added")}
-                        disabled={busyProductId !== "" || !validQuantity || !Number.isFinite(quantity)}>Ajouter à la commande</Button>
-                      <Button variant="outline" onClick={() => void decide(item.productId, item.suggestionKey, "excluded")}
-                        disabled={busyProductId !== ""}>Écarter</Button>
-                    </div> : <p>{item.status === "covered" ? "Aucun achat proposé pour ce produit." : "Comptage ou unité à corriger avant toute proposition."}</p>}
-              </li>;
-            })}
-          </ul>}
+          {summary && <>
+            <div className="purchase-overview"><div><span>Achats recommandés restants</span><strong>{summary.toReview.length} produit{summary.toReview.length > 1 ? "s" : ""}</strong></div>
+              <div><span>Budget proposé HT</span><strong>{summary.estimatedCost === null ? "—" : money.format(summary.estimatedCost)}</strong></div>
+            </div>
+            <div className="purchase-filters" aria-label="Filtrer les recommandations">{([
+              ["toReview", "À acheter"], ["needsCheck", "À vérifier"], ["covered", "Stock suffisant"], ["handled", "Déjà traités"],
+            ] as const).map(([key, label]) => <Button key={key} variant="outline" size="sm" aria-pressed={filter === key}
+              onClick={() => setFilter(key)}>{label} · {summary[key].length}</Button>)}</div>
+            <div className="orders-toolbar"><label>Rechercher un produit ou fournisseur<input type="search" value={search} placeholder="Huile, tomates, fournisseur…" onChange={(event) => setSearch(event.target.value)} /></label></div>
+            {visible.length === 0 && <div className="purchase-empty" role="status"><strong>{search ? "Aucun résultat" : filter === "toReview" ? "Aucun achat à ajouter pour le moment" : "Aucun produit dans cette vue"}</strong>
+              <p>{search ? "Essayez un autre nom de produit ou fournisseur." : "Consultez les autres vues ou complétez votre sélection depuis les stocks."}</p><Link to="/stocks">Choisir un autre produit</Link></div>}
+            {supplierNames.map((supplierName) => <section className="purchase-supplier-group" key={supplierName} aria-label={supplierName}>
+              <header><span>FOURNISSEUR</span><h3>{supplierName}</h3></header>
+              <ul className="purchase-suggestion-list">{visible.filter((item) => item.supplierName === supplierName).map((item) => <PurchaseSuggestionCard
+                key={item.productId} item={item} value={quantities[item.productId] ?? ""}
+                inCart={cartItems.some((cartItem) => cartItem.productId === item.productId)}
+                busy={busyProductId !== ""} saving={busyProductId === item.productId}
+                onChange={(value) => { setQuantities((current) => ({ ...current, [item.productId]: value })); }}
+                onDecide={(decision) => void decide(item.productId, item.suggestionKey, decision)} />)}</ul>
+            </section>)}
+          </>}
           <details><summary>Comprendre les hypothèses</summary><ul className="purchase-suggestions-assumptions">{data.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}</ul></details>
         </>}
       </>}
