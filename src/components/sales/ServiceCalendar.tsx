@@ -5,7 +5,7 @@ import { describeServiceCoverage } from "../../features/sales/salesPresentation"
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 
 const statusLabels: Record<ServiceStatus, string> = { open: "Ouvert", closed: "Fermé" };
-const sourceLabels: Record<ServiceDay["source"], string> = { recorded: "enregistrée", demo_simulation: "simulée", mixed: "mixte" };
+const sourceLabels: Record<ServiceDay["source"], string> = { recorded: "enregistrée", demo_simulation: "hors bilan", mixed: "mixte" };
 const dateRange = (from: string, to: string) => {
   const days: string[] = [];
   for (let value = Date.parse(from); value <= Date.parse(to); value += 86_400_000) days.push(new Date(value).toISOString().slice(0, 10));

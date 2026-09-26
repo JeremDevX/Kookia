@@ -273,14 +273,17 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
   }));
   const juneTimeline = await scenarioOwner.agent.get("/api/workspace/timeline")
     .query({ from: "2025-06-01", to: "2025-06-30", asOf: "2026-09-23" }).expect(200);
+  const longTimeline = await scenarioOwner.agent.get("/api/workspace/timeline")
+    .query({ from: "2022-01-01", to: "2026-09-23", asOf: "2026-09-23" }).expect(200);
+  expect(longTimeline.body.from).toBe("2022-01-01");
   const decemberTimeline = await scenarioOwner.agent.get("/api/workspace/timeline")
     .query({ from: "2025-12-01", to: "2025-12-31", asOf: "2026-09-23" }).expect(200);
   expect(juneTimeline.body.events.some((event: { label: string; provenance: string; qualifier?: string }) =>
-    event.label === "Surstock compté" && event.provenance === "simulation" && event.qualifier?.includes("non observé"))).toBe(true);
+    event.label === "Surstock compté" && event.provenance === "simulation" && event.qualifier?.includes("inventaire"))).toBe(true);
   expect(juneTimeline.body.events.some((event: { label: string; provenance: string; qualifier?: string }) =>
-    event.label === "Perte enregistrée — scénario simulé" && event.provenance === "simulation" && event.qualifier?.includes("non observée"))).toBe(true);
+    event.label === "Perte enregistrée" && event.provenance === "simulation" && event.qualifier?.includes("non rapprochée"))).toBe(true);
   expect(decemberTimeline.body.events.some((event: { label: string; detail: string }) =>
-    event.label === "Production refusée (démo)" && event.detail.includes("aucune sortie de stock"))).toBe(true);
+    event.label === "Production refusée" && event.detail.includes("aucune sortie de stock"))).toBe(true);
 
   const received = plan.receipts[0];
   const simulationOperationId = `restaurant-simulation-v1:invoice:${received.invoiceId}:${received.productId}`;
@@ -349,8 +352,8 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
     .query({ from: archiveMonthFrom, to: archiveMonthTo, asOf: asOfToday }).expect(200);
   expect(archiveTimeline.body.events.some((event: { id: string; provenance: string }) =>
     event.id === `document:source-invoice:${archiveOnly.id}` && event.provenance === "source")).toBe(true);
-  expect(archiveTimeline.body.events.some((event: { label: string }) => event.label === "Stock d’ouverture fictif")).toBe(true);
-  expect(archiveTimeline.body.events.some((event: { label: string }) => event.label === "Réception simulée depuis une pièce source")).toBe(false);
+  expect(archiveTimeline.body.events.some((event: { label: string }) => event.label === "Stock de départ à vérifier")).toBe(true);
+  expect(archiveTimeline.body.events.some((event: { label: string }) => event.label === "Entrée issue d’une transcription")).toBe(false);
   expect(archiveTimeline.body.events.some((event: { provenance: string }) => event.provenance === "simulation")).toBe(true);
   expect(archiveTimeline.body.events.some((event: { provenance: string }) => event.provenance === "assumption")).toBe(true);
   expect(archiveTimeline.body.events.some((event: { provenance: string }) => event.provenance === "unknown")).toBe(true);

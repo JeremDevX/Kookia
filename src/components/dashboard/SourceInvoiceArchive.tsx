@@ -2,15 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import Button from "../common/Button";
 import { ApiError } from "../../config/api";
 import { createInvoiceDraftFromSource, getSourceInvoice, getSourceInvoices, type Invoice,
-  extractInvoiceFixture, getInvoiceExtractionMode, type InvoiceExtractionMode, type SourceInvoiceDetail,
-  type SourceInvoiceSummary } from "../../services/invoiceService";
+  type SourceInvoiceDetail, type SourceInvoiceSummary } from "../../services/invoiceService";
 import "./InvoiceModal.css";
 
 interface SourceInvoiceArchiveProps {
   refreshKey: number;
   sourceId?: string;
   onCreateManual: () => void;
-  onExtractionComplete: () => void;
   onOpenDraft: (invoice: Invoice) => void;
 }
 
@@ -18,7 +16,7 @@ const sourceTypeLabel = (type: SourceInvoiceSummary["type"]) => ({
   invoice: "Facture (type transcrit, à confirmer)", credit: "Avoir — aucune entrée stock", delivery: "Bon de livraison — à rapprocher",
 }[type]);
 
-export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateManual, onExtractionComplete, onOpenDraft }: SourceInvoiceArchiveProps) {
+export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateManual, onOpenDraft }: SourceInvoiceArchiveProps) {
   const [retryRevision, setRetryRevision] = useState(0);
   const requestKey = `${refreshKey}:${retryRevision}`;
   const [invoices, setInvoices] = useState<SourceInvoiceSummary[]>([]);
@@ -31,9 +29,6 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   const [detailLoading, setDetailLoading] = useState(false);
   const [opening, setOpening] = useState(false);
   const [sourceConflictId, setSourceConflictId] = useState<string | null>(null);
-  const [extracting, setExtracting] = useState(false);
-  const [extractionMode, setExtractionMode] = useState<InvoiceExtractionMode>("manual");
-  const [fixturePreviewUrl, setFixturePreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [archiveError, setArchiveError] = useState("");
   const [detailError, setDetailError] = useState("");
@@ -48,16 +43,6 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   const detailRetryFocusPending = useRef(false);
   const sourceFocusPending = useRef(false);
   const sourceFocusBeforeNavigation = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    getInvoiceExtractionMode().then(({ mode }) => { if (active) setExtractionMode(mode); }, () => {
-      if (active) setError("Lecture automatique indisponible. La saisie manuelle reste disponible.");
-    });
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => () => { if (fixturePreviewUrl) URL.revokeObjectURL(fixturePreviewUrl); }, [fixturePreviewUrl]);
 
   useEffect(() => {
     let active = true;
@@ -164,47 +149,23 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
     finally { setOpening(false); }
   };
 
-  const tryFixtureExtraction = async () => {
-    if (extracting) return;
-    setExtracting(true);
-    setError("");
-    try {
-      const response = await fetch("/fixtures/invoice-extraction-demo.pdf", { cache: "no-store" });
-      if (!response.ok) throw new Error("La pièce fictive est indisponible. Vous pouvez saisir la facture manuellement.");
-      const file = await response.blob();
-      const previewUrl = URL.createObjectURL(file);
-      setFixturePreviewUrl(previewUrl);
-      const candidate = await extractInvoiceFixture(file);
-      onExtractionComplete();
-      await open(candidate.id);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Lecture automatique indisponible. Vous pouvez saisir la facture manuellement.");
-    } finally { setExtracting(false); }
-  };
-
   const filtered = invoices.filter((invoice) => `${invoice.title} ${invoice.supplier} ${invoice.date ?? ""}`
     .toLocaleLowerCase("fr").includes(query.toLocaleLowerCase("fr")));
   const currentArchiveError = loading ? "" : archiveError;
   const sourceConflict = !!selectedId && selectedId === sourceConflictId;
-  const linkedStatus = selected?.invoiceStatus === "received" ? "Réception simulée enregistrée"
+  const linkedStatus = selected?.invoiceStatus === "received" ? "Réception rapprochée"
     : selected?.invoiceStatus === "draft" ? "Brouillon lié à cette pièce"
       : "Aucun brouillon ni réception liée";
 
   return <section id="invoices" className="source-invoice-archive" aria-labelledby="source-invoice-title">
     <div className="workspace-section-heading"><div>
       <h2 ref={archiveHeadingRef} id="source-invoice-title" tabIndex={-1}>Factures et pièces fournisseurs</h2>
-      <p>Les transcriptions sont des sources à confirmer. Les lignes ci-dessous sont des candidates, pas des mouvements de stock.</p>
+      <p>Une transcription est une source à confirmer, pas une preuve de livraison. Les lignes n’entrent dans le stock qu’après rapprochement.</p>
     </div><div className="source-invoice-heading-actions">
       <span role="status" aria-busy={loading}>{loading ? "Chargement…" : currentArchiveError ? "Indisponible" : `${invoices.length} pièce${invoices.length === 1 ? "" : "s"}`}</span>
-      {extractionMode === "demo_fixture" && <Button variant="outline" onClick={() => void tryFixtureExtraction()} aria-disabled={extracting}>
-        {extracting ? "Lecture de la fixture…" : "Essayer la fixture fictive"}
-      </Button>}
       <Button variant="outline" onClick={onCreateManual}>Saisir manuellement</Button>
     </div></div>
-    {extracting && <p role="status">Lecture de la pièce fictive en cours…</p>}
-    <p>Les dates affichées peuvent être décalées pour le scénario. Toute réception issue de ces pièces reste simulée : aucun achat ni envoi réel n’est créé.
-      {extractionMode === "demo_fixture" && " L’essai utilise uniquement une pièce PDF publique et fictive; l’original reste dans le navigateur et n’est pas conservé par l’API."}</p>
-    {fixturePreviewUrl && <p><a href={fixturePreviewUrl} target="_blank" rel="noreferrer">Consulter l’original fictif (PDF)</a></p>}
+    <p>Les dates de travail peuvent différer des dates de source. Vérifiez la facture originale avant de confirmer une réception ; aucun fournisseur n’est contacté depuis cette page.</p>
     {error && <p role="alert">{error}</p>}
     {sourceConflict && <div className="source-invoice-conflict" role="alert">
       <p><strong>La pièce source a changé depuis la création du brouillon.</strong></p>
@@ -238,7 +199,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
           <p><strong>Date de travail :</strong> {selected.date ?? "inconnue"}.</p>
           <p>{selected.stockLines.length} ligne{selected.stockLines.length === 1 ? "" : "s"} transcrite{selected.stockLines.length === 1 ? "" : "s"}, à rapprocher.
             {selected.sourceMovementCount > 0 ? ` ${selected.sourceMovementCount} mouvement(s) de cette pièce existe(nt) déjà.` : " Aucun mouvement de cette pièce n’est lié."}</p>
-          {selected.alreadyCreditedBySimulation && <p role="status">Cette pièce a déjà crédité le stock dans la simulation. Aucun nouveau crédit ne sera accepté.</p>}
+          {selected.alreadyCreditedBySimulation && <p role="status">Cette pièce a déjà été rapprochée dans cet espace. Aucun nouveau crédit ne sera accepté.</p>}
           <p role="status">{linkedStatus}</p>
           {selected.stockLines.length > 0 && <ul className="source-line-list">
             {selected.stockLines.map((line) => <li key={line.sourceLineNumber}>

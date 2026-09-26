@@ -42,7 +42,7 @@ export default function RestaurantSettings() {
     finally { setSaving(false); }
   };
   return <Card title="Établissement">
-    <p>À la création, ces champs sont préremplis avec un exemple. Confirmez vos propres informations avant de les utiliser pour vos achats.</p>
+    <p>Vérifiez les informations de l’établissement avant de les utiliser pour vos achats.</p>
     {error && <div role="alert"><p>{error}</p>{!restaurant && <Button ref={retryButtonRef} type="button" variant="outline" disabled={loading} onClick={retryLoad}>Réessayer</Button>}</div>}
     {notice && <p role="status">{notice}</p>}
     {!restaurant ? loading && <p role="status">Chargement du restaurant…</p> : <form ref={formRef} onSubmit={submit} className="form-grid">

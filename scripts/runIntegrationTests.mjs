@@ -13,7 +13,7 @@ try {
 const vitestCli = resolve("node_modules/vitest/vitest.mjs");
 const result = spawnSync(
   process.execPath,
-  [vitestCli, "run", "--config", "vitest.integration.config.ts", "--fileParallelism=false"],
+  [vitestCli, "run", "--config", "vitest.integration.config.ts", "--fileParallelism=false", ...process.argv.slice(2)],
   { stdio: "inherit", env: process.env }
 );
 

@@ -7,6 +7,7 @@ import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegio
 const PAGE_SIZE = 50;
 type BaselineItem = Baseline["items"][number];
 const formatQuantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
+const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
 const contextSourceLabel = (status: Baseline["contextualForecast"]["weather"]) =>
   status === "not_connected" ? "sans connexion" : status === "unavailable" ? "indisponible"
     : status === "stale" ? "périmée" : "à jour";
@@ -62,20 +63,39 @@ export default function SalesBaseline() {
 
   return <section className="sales-panel" aria-labelledby="sales-baseline-title">
     <h2 ref={headingRef} id="sales-baseline-title" tabIndex={-1}>Prévision des ventes</h2>
-    <p>La méthode utilise les ventes enregistrées et un calendrier de service confirmé complet. Elle projette chaque article à partir de la moyenne de ses sept jours précédents ; elle ne tient compte ni de la météo, ni des événements, ni du stock. Les ingrédients sont projetés uniquement avec une correspondance et une version de recette datées. Cette prévision ne crée aucune vente, production, perte, sortie de stock ou commande.</p>
+    <p className="sales-baseline-intro">Cette prévision porte sur les ventes enregistrées. Les réceptions servent aux sorties estimées par recette ci-dessus ; elles ne remplacent pas l’historique de ventes.</p>
     {loading ? <p role="status">Calcul de la prévision…</p> : error ?
       <div role="alert"><p>Prévision indisponible : {error}</p>
         <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryBaseline}>Recharger la prévision</Button>
       </div> : baseline && <>
-        <p>Historique étudié : du {baseline.historyFrom} au {baseline.asOfDate}. Calendrier confirmé complet : {baseline.completeServiceDays}/{baseline.requiredConsecutiveDays} jours, dont {baseline.openServiceDays} services ouverts. Une ligne absente vaut zéro observé seulement pour un jour complet (ou fermé confirmé) ; une date non renseignée, partielle ou manquante reste inconnue. Prévision pour le {baseline.forecastDate}. Méthode : moyenne des {baseline.lookbackDays} derniers jours calendaires complets de ventes de chaque article, présentée au millième d’unité. {baseline.provenance === "demo_simulation" ? "Ces résultats reposent sur des données simulées et ne mesurent pas l’activité réelle." : baseline.provenance === "mixed" ? "L’historique mélange données simulées et ventes enregistrées : ces résultats ne sont pas une mesure terrain." : ""}{baseline.excludedSimulationRows > 0 ? ` ${baseline.excludedSimulationRows} ligne(s) simulée(s) exclue(s) du calcul car des ventes enregistrées sont présentes.` : ""}</p>
-        <p><strong>Contexte facultatif :</strong> {baseline.contextualForecast.status === "not_connected" ? "aucune source contextuelle n’est connectée" :
-          baseline.contextualForecast.status === "fixture_ready" ? "contexte synthétique disponible pour vérification du contrat uniquement" :
-            baseline.contextualForecast.status === "stale" ? "au moins une source contextuelle ne couvre pas la période visée" : "position ou données contextuelles indisponibles"}.
-          {` Position : ${baseline.contextualForecast.position === "fixture_position" ? "fixture étiquetée" : "non confirmée"} ; météo : ${contextSourceLabel(baseline.contextualForecast.weather)} ; événements : ${contextSourceLabel(baseline.contextualForecast.events)} ; émissions historiques : ${contextSourceLabel(baseline.contextualForecast.historicalEmissions)}. `}
-          {baseline.contextualForecast.forecastSource === "f1" ? "La méthode fondée sur les ventes reste retenue." : "Aucune prévision n’est retenue faute d’historique complet."} Aucun ajustement contextuel n’est appliqué et aucun gain n’est revendiqué.</p>
-        {baseline.status === "no_data" ? <p>Historique insuffisant : aucune vente enregistrée dans cette fenêtre. Aucune prévision affichée. <Link to="/sales#sales-start">Ajouter ou importer les ventes</Link>.</p> :
-          baseline.status === "insufficient_history" ? <p>{baseline.mixedSourceWindow ? "Sources simulées et enregistrées mélangées : les simulations sont exclues, mais le calendrier ne distingue pas la complétude par source. Aucune prévision ni erreur de backtest n’est publiée." : `Historique insuffisant : les ${baseline.requiredConsecutiveDays} jours doivent être marqués complets (ouverts ou fermés confirmés). ${baseline.incompleteDates.length} date(s) restent inconnues ou partielles. Aucune prévision affichée ; ces jours ne sont jamais convertis en zéro vente.`} <Link to="/sales#sales-start">Compléter les ventes et le calendrier de service</Link>.</p> : <>
-            <p><strong>Résultats expérimentaux, non validés sur un jeu de données terrain indépendant.</strong> {baseline.items.length} article(s) sur {baseline.observedItemCount} disposent de l’historique requis ; {baseline.observedItemCount - baseline.items.length} article(s) observé(s) ne sont pas estimés faute de {baseline.requiredConsecutiveDays} jours complets. Une ligne absente sur ces journées complètes représente zéro vente observé. Les deux méthodes sont comparées sur les mêmes {baseline.evaluationDays} dates, sans utiliser la vente du jour à prédire : moyenne des sept jours précédents et vente du même jour de semaine précédent (J−7). La prévision publiée utilise la moyenne mobile ; aucune méthode n’est déclarée meilleure sur cette comparaison. EAM en unités et WAPE résument les erreurs rétrospectives : ce ne sont ni un score de confiance ni une garantie de fiabilité.</p>
+        <dl className="sales-baseline-summary">
+          <div><dt>Période étudiée</dt><dd>{displayDate(baseline.historyFrom)} – {displayDate(baseline.asOfDate)}</dd></div>
+          <div><dt>Services complets</dt><dd>{baseline.completeServiceDays} / {baseline.requiredConsecutiveDays} · {baseline.openServiceDays} ouverts</dd></div>
+          <div><dt>Prévision visée</dt><dd>{displayDate(baseline.forecastDate)}</dd></div>
+        </dl>
+        {baseline.provenance === "mixed" && <p className="sales-baseline-note">Certaines lignes ne sont pas retenues parmi les ventes enregistrées et ne complètent pas le calendrier de service.</p>}
+        {baseline.excludedSimulationRows > 0 && <p className="sales-baseline-note">{baseline.excludedSimulationRows} ligne(s) ne sont pas retenues dans le calcul des ventes.</p>}
+        <details className="sales-baseline-method">
+          <summary>Méthode et contexte</summary>
+          <p>Moyenne des {baseline.lookbackDays} derniers jours calendaires complets par article. Les dates inconnues ou partielles restent exclues ; une absence de vente vaut zéro uniquement pour un service complet.</p>
+          <p>La météo, les événements et le stock ne sont pas intégrés. Position : non confirmée ; météo : {contextSourceLabel(baseline.contextualForecast.weather)} ; événements : {contextSourceLabel(baseline.contextualForecast.events)} ; données historiques : {contextSourceLabel(baseline.contextualForecast.historicalEmissions)}. Aucun ajustement contextuel n’est appliqué.</p>
+          <p>Les ingrédients ne sont projetés qu’avec une correspondance confirmée et une version de recette datée. Cette prévision ne crée aucune vente, production, perte, sortie de stock ou commande.</p>
+        </details>
+        {baseline.status === "no_data" ? <div className="sales-baseline-guidance" role="status">
+          <h3>Aucune vente enregistrée dans cette période</h3>
+          <p>Les entrées réceptionnées sont présentées séparément en sorties estimées ; elles ne constituent pas des ventes par article.</p>
+          <Link to="/sales#sales-start">Ajouter ou importer des ventes</Link>
+        </div> :
+          baseline.status === "insufficient_history" ? <div className="sales-baseline-guidance" role="status">
+            <h3>Historique de ventes incomplet</h3>
+            <p>{baseline.completeServiceDays} jour(s) complet(s) sur {baseline.requiredConsecutiveDays} requis ; {baseline.incompleteDates.length} date(s) restent inconnues ou partielles. Aucune prévision n’est affichée et ces jours ne sont pas assimilés à zéro vente.</p>
+            {baseline.mixedSourceWindow && <p>Les lignes et le calendrier ne permettent pas de confirmer une couverture complète.</p>}
+            <Link to="/sales#sales-start">Compléter les ventes et le calendrier de service</Link>
+          </div> : <>
+            <details className="sales-baseline-method">
+              <summary>Évaluation rétrospective</summary>
+              <p>{baseline.items.length} article(s) sur {baseline.observedItemCount} disposent de l’historique requis. La moyenne mobile est comparée au même jour de semaine précédent (J−7) sur {baseline.evaluationDays} dates, sans utiliser la vente du jour évalué. EAM et WAPE décrivent les écarts rétrospectifs ; ils ne garantissent pas les résultats futurs.</p>
+            </details>
             <p id="sales-baseline-table-hint" className="sales-baseline-table-hint">Sur petit écran, les résultats sont présentés en fiches. Sur grand écran, faites défiler le tableau horizontalement ; au clavier, placez le focus sur la zone puis utilisez ← et →.</p>
             <div className="sales-baseline-table"><div className="sales-table-wrap" role="region" aria-label="Prévision des ventes par article" aria-describedby="sales-baseline-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="sales-table">
               <thead><tr>

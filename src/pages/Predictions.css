@@ -7,6 +7,13 @@
   padding-top: var(--spacing-lg);
 }
 
+.predictions-period { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
+.predictions-period h2, .predictions-period p { margin: var(--number-0); }
+.predictions-period p { max-width: var(--size-800); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
+.predictions-period-fields { display: flex; flex-wrap: wrap; gap: var(--spacing-md); }
+.predictions-period-fields label { display: flex; align-items: center; gap: var(--spacing-sm); font-size: var(--font-size-sm); }
+.predictions-period-fields input { min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+
 .sales-baseline-table .sales-table { min-width: var(--size-1000); }
 .sales-baseline-table-hint, .sales-baseline-cards-hint { margin: var(--spacing-sm) var(--number-0); color: var(--color-text-muted); font-size: var(--font-size-caption); }
 .sales-baseline-table-hint { display: block; }
@@ -18,9 +25,24 @@
 .sales-baseline-card dl > div { min-width: var(--number-0); }
 .sales-baseline-card dt { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .sales-baseline-card dd { margin: var(--spacing-xs) var(--number-0) var(--number-0); font-weight: var(--font-weight-medium); overflow-wrap: var(--overflow-wrap-anywhere); }
-.predictions-container :is(summary, a, button):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
+.predictions-container .sales-panel { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.predictions-container .sales-panel h2, .predictions-container .sales-panel h3 { margin-block: var(--number-0); }
+.predictions-container .sales-panel > p { max-width: var(--size-800); line-height: var(--number-1_7); }
+.sales-baseline-summary { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); margin: var(--number-0); }
+.sales-baseline-summary > div { min-width: var(--number-0); padding: var(--spacing-md); background: var(--color-bg); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
+.sales-baseline-summary dt { color: var(--color-text-muted); font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); }
+.sales-baseline-summary dd { margin: var(--spacing-xs) var(--number-0) var(--number-0); color: var(--color-text-primary); font-weight: var(--font-weight-semibold); overflow-wrap: var(--overflow-wrap-anywhere); }
+.sales-baseline-note { margin: var(--number-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.sales-baseline-method > summary { cursor: pointer; font-weight: var(--font-weight-medium); }
+.sales-baseline-method > p { max-width: var(--size-800); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
+.sales-baseline-guidance { display: grid; gap: var(--spacing-sm); padding: var(--spacing-md) var(--spacing-lg); border-inline-start: var(--size-3) solid var(--color-primary); background: var(--color-primary-light); border-radius: var(--radius-md); }
+.sales-baseline-guidance h3, .sales-baseline-guidance p { margin: var(--number-0); }
+.sales-baseline-guidance p { color: var(--color-text-secondary); line-height: var(--number-1_7); }
+.sales-baseline-guidance a { width: fit-content; color: var(--color-primary); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
+.predictions-container :is(summary, a, button, input):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 
 @media (--media-tablet) {
+  .sales-baseline-summary { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); }
   .sales-baseline-table, .sales-baseline-table-hint { display: none; }
   .sales-baseline-cards-hint { display: block; }
   .sales-baseline-cards { display: grid; }
@@ -36,4 +58,5 @@
     gap: var(--spacing-md);
     padding: var(--spacing-md);
   }
+  .predictions-period { padding: var(--spacing-md); }
 }

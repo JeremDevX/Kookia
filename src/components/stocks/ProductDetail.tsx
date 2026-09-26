@@ -37,9 +37,9 @@ interface ProductDetailProps {
 
 const movementLabel = (reason: string) => ({
   loss: "Perte", initial: "Stock initial", receipt: "Réception",
-  invoice_import_demo: "Entrée de facture simulée", simulated_consumption: "Sortie simulée",
-  simulated_unit_rounding: "Correction d’unité simulée", simulation_opening: "Stock de départ simulé",
-  simulation_restock: "Réapprovisionnement simulé", simulation_loss: "Perte simulée (hypothèse)",
+  invoice_import_demo: "Entrée depuis une transcription", simulated_consumption: "Sortie non rapprochée",
+  simulated_unit_rounding: "Correction d’unité non rapprochée", simulation_opening: "Stock de départ à vérifier",
+  simulation_restock: "Réapprovisionnement à vérifier", simulation_loss: "Perte estimée à vérifier",
   production: "Production", stock_count: "Écart de comptage",
 }[reason] ?? "Ajustement");
 

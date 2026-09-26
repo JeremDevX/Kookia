@@ -8,10 +8,11 @@ describe("sales metrics provenance copy", () => {
     expect(describeSalesMetricsTotalSource(12, 0)).toBe("enregistrées");
   });
 
-  it("discloses non-observed sales when demonstration provenance is present", () => {
-    expect(describeSalesMetricsSources("demo_simulation")).toMatch(/ne sont pas des ventes observées/);
+  it("keeps lines outside the recorded sales apart from recorded totals", () => {
+    expect(describeSalesMetricsSources("demo_simulation")).toMatch(/aucune ligne.*vente enregistrée/i);
     expect(describeSalesMetricsSources("mixed")).toMatch(/séparées des ventes enregistrées/);
-    expect(describeSalesMetricsTotalSource(12, 4)).toBe("enregistrées et simulées");
-    expect(describeSalesMetricsTotalSource(12, 12)).toBe("simulées");
+    expect(describeSalesMetricsTotalSource(12, 4)).toBe("enregistrées et hors bilan");
+    expect(describeSalesMetricsTotalSource(12, 12)).toBe("hors bilan");
+    expect(describeSalesMetricsSources("demo_simulation")).not.toMatch(/simul|démonstration/i);
   });
 });

@@ -105,7 +105,7 @@ export default function SalesRecipeMappings({ itemCount }: { itemCount: number }
             {current ? <p>Correspondance active : <strong>{current.recipeName}</strong>, {current.portionsPerItem} portion(s) par article depuis le {current.effectiveFrom}.</p> :
               <p>Aucune correspondance validée active pour cet article vendu.</p>}
             {!current && item.suggestedRecipeId && <p>{item.suggestionBasis === "demo_suffix_ignored"
-              ? "Suggestion par nom après retrait du suffixe de démonstration" : "Suggestion automatique par nom"} : {recipes.find((row) => row.id === item.suggestedRecipeId)?.name}. Vérifiez-la avant validation.</p>}
+              ? "Suggestion par nom après nettoyage du libellé source" : "Suggestion automatique par nom"} : {recipes.find((row) => row.id === item.suggestedRecipeId)?.name}. Vérifiez-la avant validation.</p>}
             {recipeId && !hasDatedVersion && <p role="status">Aucune version datée de cette recette n’est connue au {effectiveFrom}. Datez d’abord la recette dans Recettes.</p>}
             {item.mappings.length > 0 && <details><summary>Historique des correspondances ({item.mappings.length})</summary>
               <ol>{item.mappings.map((mapping) => <li key={mapping.id}>

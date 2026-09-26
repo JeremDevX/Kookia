@@ -67,11 +67,11 @@ export default function Orders() {
         <Button type="button" variant="outline" onClick={retryCart} disabled={cartLoading}>Réessayer</Button></div>}
       {catalogError && <div role="alert"><p>Catalogue indisponible : {catalogError.message}</p><Button variant="outline" onClick={retryCatalog}>Réessayer</Button></div>}
       {missingProduct && !catalogLoading && !catalogError && <p role="alert">Un produit de votre sélection n'est plus dans le catalogue. Retirez-le avant de valider.</p>}
-      {hasExampleItem && <p role="alert">Les scénarios d'exemple ne peuvent pas être validés. Écartez-les de la sélection avant de continuer.</p>}
+      {hasExampleItem && <p role="alert">Les propositions sans source enregistrée ne peuvent pas être validées. Retirez-les de la sélection avant de continuer.</p>}
       {cartLoading || catalogLoading ? <p role="status">Chargement de votre commande…</p> : cartError ? null : cartItems.length === 0 ?
         <div className="orders-empty"><p>Aucun article sélectionné.</p><Link to="/stocks">Choisir dans les stocks</Link></div> :
         <ul className="orders-selection-list">{cartItems.map((item) => <li key={item.id}>
-          <div><strong>{item.productName}</strong><span>{item.quantity} {item.unit} · {item.predictionId ? "scénario d'exemple à écarter" : item.source === "stocks" ? "choisi dans Stocks" : "sélection précédente"}</span></div>
+          <div><strong>{item.productName}</strong><span>{item.quantity} {item.unit} · {item.predictionId ? "proposition à retirer" : item.source === "stocks" ? "choisi dans Stocks" : "sélection précédente"}</span></div>
           <Button type="button" variant="outline" size="sm" onClick={() => void removeFromCart(item.id)} disabled={cartLoading}>Écarter</Button>
         </li>)}</ul>}
       {!cartError && cartItems.length > 0 && <div className="orders-selection-actions"><p>La validation enregistre votre décision. Elle n'envoie rien au fournisseur et ne modifie pas le stock.</p>
@@ -81,7 +81,6 @@ export default function Orders() {
     <PurchaseSuggestions refreshKey={suggestionsRevision} />
 
     <SourceInvoiceArchive refreshKey={invoiceRefresh} sourceId={searchParams.get("source") ?? undefined}
-      onExtractionComplete={() => setInvoiceRefresh((value) => value + 1)}
       onCreateManual={openManualInvoice}
       onOpenDraft={(invoice) => { setInvoiceDraft(invoice); setInvoiceOpen(true); }} />
 
@@ -107,8 +106,8 @@ export default function Orders() {
         catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
         onInvoiceDataChanged={() => setInvoiceRefresh((value) => value + 1)}
         onValidate={(invoice) => {
-          addToast("success", invoice.source === "source_document" ? "Réception simulée enregistrée" : "Réception enregistrée",
-            invoice.source === "source_document" ? "Le scénario de stock a été mis à jour. Aucun achat réel n'a été créé." : "Le stock a été mis à jour.");
+          addToast("success", invoice.source === "source_document" ? "Pièce rapprochée" : "Réception enregistrée",
+            invoice.source === "source_document" ? "La pièce est rapprochée sans créer d'achat ni modifier le stock." : "Le stock a été mis à jour.");
           void refetch();
         }} onClose={() => setInvoiceOpen(false)} />
     </Modal>

@@ -8,7 +8,7 @@ export const describeServiceCoverage = (coverage: LatestService["coverage"]): st
 
 export const describeServiceSources = (sources: LatestService["sources"]): string => {
   const labels = [
-    ...(sources.includes("demo_simulation") ? ["simulation de démonstration"] : []),
+    ...(sources.includes("demo_simulation") ? ["hors bilan"] : []),
     ...(sources.includes("pos") ? ["caisse POS"] : []),
     ...(sources.includes("ticket_z") ? ["ticket de caisse"] : []),
     ...(sources.includes("csv") ? ["import CSV"] : []),
@@ -19,12 +19,12 @@ export const describeServiceSources = (sources: LatestService["sources"]): strin
 };
 
 export const describeSalesMetricsSources = (provenance: SalesMetrics["provenance"]): string => {
-  if (provenance === "demo_simulation") return "Ces données de démonstration ne sont pas des ventes observées.";
-  if (provenance === "mixed") return "Les données de démonstration restent séparées des ventes enregistrées et ne sont pas des ventes observées.";
+  if (provenance === "demo_simulation") return "Aucune ligne de cette période n’est retenue comme vente enregistrée.";
+  if (provenance === "mixed") return "Les lignes hors bilan restent séparées des ventes enregistrées et ne complètent pas l’historique de service.";
   return "Sources : saisies manuelles, imports CSV, tickets de caisse vérifiés ou lignes POS confirmées.";
 };
 
 export const describeSalesMetricsTotalSource = (totalQuantity: number, demoSimulationQuantity: number): string => {
   if (demoSimulationQuantity <= 0) return "enregistrées";
-  return demoSimulationQuantity < totalQuantity ? "enregistrées et simulées" : "simulées";
+  return demoSimulationQuantity < totalQuantity ? "enregistrées et hors bilan" : "hors bilan";
 };

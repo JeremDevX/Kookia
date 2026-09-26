@@ -6,9 +6,15 @@
   padding-top: var(--spacing-lg);
 }
 
-.bilan-period { display: flex; flex-wrap: wrap; gap: var(--spacing-md); }
-.bilan-period label { display: flex; align-items: center; gap: var(--spacing-sm); font-size: var(--font-size-sm); }
+.bilan-period { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-md); padding: var(--spacing-md) var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
+.bilan-period label { display: flex; align-items: center; gap: var(--spacing-sm); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
 .bilan-period input { min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.bilan-period p { flex-basis: var(--unit-100percent); margin: var(--number-0); color: var(--color-text-muted); font-size: var(--font-size-sm); }
+.analytics-container .sales-panel { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.analytics-container .sales-panel h2, .analytics-container .sales-panel h3 { margin-block: var(--number-0); }
+.analytics-container .sales-panel > p { max-width: var(--size-800); line-height: var(--number-1_7); }
+.impact-reading-guide > summary { cursor: pointer; font-weight: var(--font-weight-medium); }
+.impact-reading-guide > p { max-width: var(--size-800); margin-block: var(--spacing-sm) var(--number-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
 .impact-summary .sales-table { min-width: var(--size-600); }
 .estimated-outflows .sales-table { min-width: var(--size-1000); }
 .estimated-outflow-table-hint { display: block; margin: var(--spacing-sm) var(--number-0); color: var(--color-text-muted); font-size: var(--font-size-caption); }
@@ -26,7 +32,7 @@
 .conditional-recipe-outflow h4 { margin-block: var(--number-0) var(--spacing-sm); }
 .conditional-recipe-outflow ul { padding-inline-start: var(--spacing-lg); }
 .analytics-container .impact-summary .btn { min-height: var(--size-44); }
-.analytics-container .estimated-outflows .btn { min-height: var(--size-44); }
+.analytics-container .estimated-outflows .btn, .predictions-container .estimated-outflows .btn { min-height: var(--size-44); }
 .impact-summary .impact-monthly-table { min-width: var(--size-1000); }
 .impact-monthly-summary { margin-block: var(--spacing-lg); }
 .impact-monthly-summary > summary { cursor: pointer; font-weight: var(--font-weight-medium); }
@@ -51,6 +57,9 @@
 
 @media (--media-phone) {
   .analytics-container { padding: var(--spacing-sm); gap: var(--spacing-sm); }
+  .bilan-period { align-items: stretch; flex-direction: column; padding: var(--spacing-md); }
+  .bilan-period label { align-items: flex-start; flex-direction: column; }
+  .bilan-period input { width: var(--unit-100percent); }
   .estimated-outflow-card dl { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-sm); }
   .estimated-outflow-card { padding: var(--spacing-sm); }
 }

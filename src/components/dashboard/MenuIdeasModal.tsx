@@ -118,7 +118,7 @@ export default function MenuIdeasModal({ onValidate, onClose }: MenuIdeasModalPr
         ) : surplusError ? (
           <p role="alert">{surplusError}</p>
         ) : surplus && !surplus.available ? (
-          <p>Cette aide est disponible uniquement dans le bac de démonstration.</p>
+          <p>Cette aide n’est pas disponible dans cet espace.</p>
         ) : surplus?.available ? (
           <>
             <p>Choisissez un comptage encore actuel et indiquez explicitement la quantité à considérer comme surstock. Aucun seuil global n’est utilisé. Chaque idée est évaluée séparément avec cette quantité : les portions ne s’additionnent pas entre recettes. Les dates de péremption ne sont pas renseignées : vérifiez-les avant tout service.</p>
@@ -152,7 +152,7 @@ export default function MenuIdeasModal({ onValidate, onClose }: MenuIdeasModalPr
                 )}
                 {ideas && (
                   <section aria-labelledby="menu-ideas-result-title" className="flex flex-col gap-sm">
-                    <h4 id="menu-ideas-result-title">Idées calculées · {ideas.asOfDate} · bac démo</h4>
+                    <h4 id="menu-ideas-result-title">Idées calculées · {ideas.asOfDate}</h4>
                     <p role="status">Aucune recette ni production n’est créée automatiquement. Les portions maximales sont indicatives et fondées sur les comptages actuels.</p>
                     {ideas.emptyReason && <p>{ideas.emptyReason}</p>}
                     {ideas.ideas.map((idea) => <article key={`${idea.recipeId}-${idea.version}`}>

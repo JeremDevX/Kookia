@@ -42,10 +42,10 @@ type DecisionRow = RecommendationDecision;
 
 const SIMULATION_ACTOR = "restaurant-simulation:v1";
 const recipeCandidateDecisionLabels: Record<string, string> = {
-  recipe_candidate_created: "Hypothèse de recette créée dans le bac de démonstration",
-  recipe_candidate_saved: "Hypothèse de recette corrigée dans le bac de démonstration",
-  recipe_candidate_confirmed: "Candidate confirmée comme recette dans le bac de démonstration",
-  recipe_candidate_rejected: "Candidate écartée dans le bac de démonstration",
+  recipe_candidate_created: "Fiche de recette candidate créée",
+  recipe_candidate_saved: "Fiche de recette candidate corrigée",
+  recipe_candidate_confirmed: "Fiche de recette candidate confirmée",
+  recipe_candidate_rejected: "Fiche de recette candidate écartée",
 };
 const isoDate = (value: Date) => value.toISOString().slice(0, 10);
 const quantity = (value: Prisma.Decimal) => Number(value).toLocaleString("fr-FR", { maximumFractionDigits: 3 });
@@ -76,12 +76,12 @@ export function stockEvent(movement: StockMovementRow, workspaceMode: "operation
   const simulation = workspaceMode === "demo" || movement.actorId === SIMULATION_ACTOR;
   const assumed = ["simulation_opening", "simulation_restock", "simulation_loss"].includes(movement.reason);
   const labels: Record<string, string> = {
-    simulation_opening: "Stock d’ouverture fictif",
-    invoice_import_demo: "Réception simulée depuis une pièce source",
-    simulation_restock: "Réassort synthétique",
+    simulation_opening: "Stock de départ à vérifier",
+    invoice_import_demo: "Entrée issue d’une transcription",
+    simulation_restock: "Réassort à vérifier",
     production: "Matières consommées pour une production",
-    simulation_loss: "Perte invendue estimée",
-    loss: simulation ? "Perte enregistrée — scénario simulé" : "Perte enregistrée",
+    simulation_loss: "Perte à vérifier",
+    loss: "Perte enregistrée",
     receipt: "Réception enregistrée",
     initial: "Stock initial enregistré",
     adjustment: "Ajustement de stock enregistré",
@@ -97,12 +97,12 @@ export function stockEvent(movement: StockMovementRow, workspaceMode: "operation
     ? ` · pièce source ${safeText(sourceId, 32)}` : "";
   const qualifiers = [
     !movement.productNameSnapshot ? "Le nom historique du produit est inconnu." : "",
-    assumed ? "Hypothèse du scénario, non observée." : "",
-    workspaceMode === "demo" && movement.reason === "stock_count" ? "Comptage simulé dans le bac de démonstration, non observé." : "",
-    workspaceMode === "demo" && movement.reason !== "stock_count" ? "Mouvement du bac de démonstration ; il ne constitue pas un stock réel." : "",
-    workspaceMode !== "demo" && simulation && movement.reason === "stock_count" ? "Comptage du scénario simulé, non observé." : "",
-    simulation && movement.reason === "loss" ? "Perte explicite du scénario, synthétique et non observée." : "",
-    movement.reason === "invoice_import_demo" ? "Crédit de stock simulé ; la transcription source n’est pas une livraison vérifiée." : "",
+    assumed ? "Mouvement de référence à confirmer." : "",
+    workspaceMode === "demo" && movement.reason === "stock_count" ? "Comptage à vérifier avant de le retenir comme inventaire." : "",
+    workspaceMode === "demo" && movement.reason !== "stock_count" ? "Opération non retenue dans l’activité enregistrée." : "",
+    workspaceMode !== "demo" && simulation && movement.reason === "stock_count" ? "Comptage non retenu comme inventaire confirmé." : "",
+    simulation && movement.reason === "loss" ? "Perte non rapprochée des opérations enregistrées." : "",
+    movement.reason === "invoice_import_demo" ? "La transcription ne confirme pas une livraison ; le stock enregistré n’a pas été modifié." : "",
   ].filter(Boolean);
   return {
     id: `stock:${movement.id}`, kind: isLoss ? "loss" : "stock",
@@ -122,16 +122,16 @@ export function productionEvent(production: ProductionRow, workspaceMode: "opera
   return {
     id: `production:${production.id}`, kind: "production", effectiveAt: isoDate(production.date),
     knownAt: production.createdAt.toISOString(), recordedAt: production.createdAt.toISOString(),
-    label: production.kind === "refusal" ? (demo ? "Production refusée (démo)" : "Production refusée")
-      : demo ? "Production déclarée (démo)" : "Production enregistrée",
+    label: production.kind === "refusal" ? "Production refusée"
+      : demo ? "Production déclarée" : "Production enregistrée",
     detail: `${safeText(production.recipeName)} · ${production.kind === "refusal"
       ? `${production.portions} portion(s) demandée(s), aucune sortie de stock`
       : `${production.portions} portion(s) préparée(s)`}${production.recipeVersion
       ? ` · recette v${production.recipeVersion.version}${production.recipeVersion.effectiveFrom
         ? ` (effet ${isoDate(production.recipeVersion.effectiveFrom)})` : " (effet inconnu)"}` : " · version non liée"}`,
     provenance: simulated ? "simulation" : "recorded",
-    ...(demo ? { qualifier: "Déclaration du bac de démonstration ; elle n’atteste pas une production réelle." }
-      : production.actorId === SIMULATION_ACTOR ? { qualifier: "Production de démonstration, non observée." } : {}),
+    ...(demo ? { qualifier: "Déclaration à vérifier avant de la retenir comme production enregistrée." }
+      : production.actorId === SIMULATION_ACTOR ? { qualifier: "Production non rapprochée des opérations enregistrées." } : {}),
     href: "/recipes",
   };
 }
@@ -140,15 +140,15 @@ export function versionEvent(version: RecipeVersionRow, workspaceMode: "operatio
   const unknownDate = !version.effectiveFrom;
   const simulated = workspaceMode === "demo" || version.actorId === SIMULATION_ACTOR;
   const qualifier = workspaceMode === "demo"
-    ? "Version du bac de démonstration ; elle n’atteste pas une recette réellement pratiquée."
-    : "Instantané de recette simulé.";
+    ? "Version à confirmer comme recette pratiquée."
+    : "Version de recette à confirmer.";
   return {
     id: `recipe:${version.id}`, kind: "recipe", effectiveAt: version.effectiveFrom ? isoDate(version.effectiveFrom) : null,
     knownAt: version.createdAt.toISOString(), recordedAt: version.createdAt.toISOString(),
     label: `Version ${version.version} de recette`,
     detail: `${safeText(version.name)} · rendement ${version.yieldPortions} portion(s)`,
     provenance: unknownDate ? "unknown" : simulated ? "simulation" : "recorded",
-    ...(unknownDate ? { qualifier: `Date d’effet inconnue${simulated ? " ; version issue de la simulation" : ""}.` }
+    ...(unknownDate ? { qualifier: `Date d’effet inconnue${simulated ? " ; version à confirmer" : ""}.` }
       : simulated ? { qualifier } : {}),
     href: "/recipes",
   };
@@ -165,10 +165,10 @@ export function purchaseOrderEvent(order: PurchaseOrderRow): TimelineEvent {
   return {
     id: `purchase-order:${order.id}`, kind: "purchase_order", effectiveAt: order.createdAt.toISOString(),
     knownAt: order.createdAt.toISOString(), recordedAt: order.createdAt.toISOString(),
-    label: simulated ? "Commande simulée créée" : "Commande interne créée",
+    label: simulated ? "Commande préparée" : "Commande interne créée",
     detail: `${lines.join(" · ")} · fournisseur(s) : ${suppliers.join(", ") || "inconnu"}`,
     provenance: simulated ? "simulation" : "recorded",
-    qualifier: simulated ? "Simulation uniquement : commande non transmise au fournisseur." :
+    qualifier: simulated ? "Commande non transmise au fournisseur." :
       "La validation enregistre la décision ; aucune transmission fournisseur n’est effectuée.",
     href: "/orders#to-transmit",
   };
@@ -184,10 +184,10 @@ export function purchaseReceiptEvent(receipt: PurchaseReceiptRow): TimelineEvent
   return {
     id: `purchase-receipt:${receipt.id}`, kind: "purchase_receipt", effectiveAt: isoDate(receipt.deliveryDate),
     knownAt: receipt.createdAt.toISOString(), recordedAt: receipt.createdAt.toISOString(),
-    label: simulated ? "Réception simulée rapprochée" : "Réception rapprochée",
+    label: simulated ? "Réception à rapprocher" : "Réception rapprochée",
     detail: `${detailLines.join(" · ")} · fournisseur : ${safeText(receipt.supplier.name)}${source}`,
     provenance: simulated ? "simulation" : "recorded",
-    qualifier: simulated ? "Quantité déclarée dans le scénario ; aucun stock réel n’a été modifié." :
+    qualifier: simulated ? "Cette entrée n’a pas modifié le stock enregistré." :
       "Quantité rapprochée à la livraison et ajoutée au stock enregistré.",
     href: receipt.sourceDocumentId ? `/orders?source=${encodeURIComponent(receipt.sourceDocumentId)}#invoices` : "/orders",
   };
@@ -236,9 +236,11 @@ export function decisionEvent(decision: DecisionRow): TimelineEvent {
       : `Décision enregistrée : ${safeText(decision.decision, 80)}`), detail,
     provenance: simulated ? "simulation" : "recorded",
     ...(isRecipeCandidateDecision
-      ? { qualifier: "Hypothèse de recette du bac de démonstration ; aucune cuisson n’est déclarée." }
+      ? { qualifier: `${candidateStatus === "confirmed" ? "Fiche de recette confirmée"
+        : candidateStatus === "rejected" ? "Proposition de recette écartée"
+          : "Proposition de recette à valider"} ; aucune cuisson n’est déclarée.` }
       : isReceiptLinkedRecipe ? { qualifier: "La recette a été créée après revue de la réception ; aucune vente, perte ou sortie de stock n’est enregistrée." }
-      : simulated ? { qualifier: "Décision liée à des données ou à un espace simulé ; elle ne vaut pas achat réel." } : {}),
+      : simulated ? { qualifier: "Décision liée à des éléments hors bilan ; elle ne vaut pas un achat confirmé." } : {}),
     href: isRecipeCandidateDecision || isReceiptLinkedRecipe ? "/recipes"
       : decision.decision.startsWith("purchase_suggestion_") || decision.decision.startsWith("order_")
         ? "/orders#selection" : "/predictions",

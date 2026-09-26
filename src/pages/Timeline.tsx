@@ -9,14 +9,14 @@ import "../styles/Workspace.css";
 import "./Timeline.css";
 
 const today = formatLocalISODate(new Date());
-const initialFrom = `${today.slice(0, 7)}-01`;
+const initialFrom = `${today.slice(0, 4)}-01-01`;
 
 const provenanceLabels: Record<TimelineProvenance, string> = {
-  source: "Archive source",
+  source: "Pièce source",
   recorded: "Enregistré",
-  simulation: "Simulation",
-  assumption: "Hypothèse",
-  unknown: "Inconnu",
+  simulation: "Hors bilan",
+  assumption: "À confirmer",
+  unknown: "Non renseigné",
 };
 
 function displayDate(value: string | null, includeTime = false) {
@@ -79,15 +79,14 @@ export default function Timeline() {
       return next;
     }, { replace: true });
   };
-  const rangeDays = (Date.parse(to) - Date.parse(from)) / 86_400_000;
+  const rangeDays = Math.floor((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1;
   const validRequest = isCalendarDate(from) && isCalendarDate(to) && isCalendarDate(asOf) &&
-    from <= to && rangeDays <= 30 &&
-    to <= today && asOf <= today;
+    from <= to && to <= today && asOf <= today;
   const requestKey = validRequest ? `${from}:${to}:${asOf}:${requestAttempt}` : "";
   const [requestState, setRequestState] = useState<{ key: string; result?: TimelineResult; error?: string } | null>(null);
   const currentState = requestState?.key === requestKey ? requestState : null;
   const timeline = currentState?.result ?? null;
-  const error = validRequest ? currentState?.error ?? "" : "Choisissez une période et une date de connaissance valides.";
+  const error = validRequest ? currentState?.error ?? "" : "Choisissez une plage de dates et une date de connaissance valides.";
   const loading = validRequest && !currentState;
   const filteredEvents = useMemo(() => filterTimelineEvents(timeline?.events ?? [], search), [timeline, search]);
   const visibleEvents = useMemo(() => filteredEvents.slice(0, visibleCount), [filteredEvents, visibleCount]);
@@ -185,13 +184,13 @@ export default function Timeline() {
         <input id="timeline-as-of" type="date" max={today} value={asOf}
           onChange={(event) => { setAsOf(event.target.value); updateSearchParams({ asOf: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
       </label>
-      <p>La période couvre {displayDate(from)} – {displayDate(to)} (31 jours maximum). L’état est filtré par « Connu au »; une pièce modifiée ensuite est masquée plutôt que réécrite dans le passé.</p>
+      <p>{rangeDays.toLocaleString("fr-FR")} jours affichés. La période n’a pas de limite de durée. « Connu au » masque les pièces modifiées après la date choisie.</p>
     </section>
 
     <section className="timeline-key" aria-label="Origine et niveau de preuve">
       {(Object.entries(provenanceLabels) as Array<[TimelineProvenance, string]>).map(([key, label]) =>
         <span className={`timeline-badge provenance-${key}`} key={key}>{label}</span>)}
-      <p>Une transcription d’archive n’établit pas une livraison. Les hypothèses et simulations ne sont pas des observations.</p>
+      <p>Une pièce d’archive ne confirme pas une livraison. Les éléments hors bilan et les hypothèses restent distincts des opérations enregistrées.</p>
     </section>
 
     <div className="timeline-status">

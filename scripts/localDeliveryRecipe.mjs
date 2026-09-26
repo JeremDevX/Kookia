@@ -46,6 +46,10 @@ export function localDemoDatabaseUrl(port, password) {
   return `postgresql://kookia:${encodeURIComponent(password)}@127.0.0.1:${port}/kookia_demo`;
 }
 
+export function integrationTestNpmArgs(extraArgs = []) {
+  return ["run", "test:integration", ...(extraArgs.length ? ["--", ...extraArgs] : [])];
+}
+
 function run(command, args, { env = process.env, capture = false } = {}) {
   if (interruptedSignal) return Promise.reject(new Error("Recette locale interrompue."));
   return new Promise((resolve, reject) => {
@@ -130,7 +134,7 @@ async function main() {
     console.log("\n==> npm test");
     await run("npm", ["test"], { env: testEnv });
     console.log("\n==> npm run test:integration");
-    await run("npm", ["run", "test:integration"], { env: testEnv });
+    await run("npm", integrationTestNpmArgs(process.argv.slice(2)), { env: testEnv });
 
     console.log("\n==> Vérification de sauvegarde/restauration synthétique");
     await dockerExec(containerName, password, ["createdb", "--host", "127.0.0.1", "--username", "kookia", "kookia_restore"]);

@@ -15,16 +15,18 @@ const candidateDecision = (decision: string): RecommendationDecision => ({
 
 it("labels demo recipe decisions and versions as hypothetical, never as production", () => {
   expect(decisionEvent(candidateDecision("recipe_candidate_confirmed"))).toMatchObject({
-    kind: "decision", label: "Candidate confirmée comme recette dans le bac de démonstration",
+    kind: "decision", label: "Fiche de recette candidate confirmée",
     detail: expect.stringContaining("« Hypothèse — pizza jambon et champignons » · état : confirmed"),
     provenance: "simulation", href: "/recipes",
-    qualifier: expect.stringContaining("aucune cuisson n’est déclarée"),
+    qualifier: "Fiche de recette confirmée ; aucune cuisson n’est déclarée.",
   });
+  expect(decisionEvent(candidateDecision("recipe_candidate_saved")).qualifier)
+    .toBe("Proposition de recette à valider ; aucune cuisson n’est déclarée.");
   const version: RecipeVersion = { id: "version-id", restaurantId: "restaurant-id", recipeId: "recipe-id",
     version: 1, effectiveFrom: createdAt, operationId: "recipe-operation", actorId: "owner-id",
     name: "Hypothèse — pizza jambon et champignons", category: "Plat", prepTime: 20, yieldPortions: 4, createdAt };
   expect(versionEvent(version, "demo")).toMatchObject({ kind: "recipe", provenance: "simulation",
-    qualifier: expect.stringContaining("n’atteste pas une recette réellement pratiquée") });
+    qualifier: expect.stringContaining("à confirmer comme recette pratiquée") });
 });
 
 it("keeps purchase decisions navigable without replaying them", () => {

@@ -11,13 +11,13 @@ import "./Sales.css";
 import "../styles/Workspace.css";
 
 const today = () => formatLocalISODate(new Date());
-const monthAgo = () => new Date(Date.parse(today()) - 29 * 86_400_000).toISOString().slice(0, 10);
+const startOfCurrentYear = () => `${today().slice(0, 4)}-01-01`;
 
 export default function Analytics() {
   const [searchParams] = useSearchParams();
   const requestedFrom = searchParams.get("from");
   const requestedTo = searchParams.get("to");
-  const [from, setFrom] = useState(() => isValidISODate(requestedFrom) ? requestedFrom : monthAgo());
+  const [from, setFrom] = useState(() => isValidISODate(requestedFrom) ? requestedFrom : startOfCurrentYear());
   const [to, setTo] = useState(() => isValidISODate(requestedTo) ? requestedTo : today());
   const [exportOpen, setExportOpen] = useState(false);
   const validRange = !!from && !!to && from <= to;
@@ -26,8 +26,11 @@ export default function Analytics() {
     <header className="workspace-header"><div><h1>Bilan</h1><p className="workspace-subtitle">Ventes enregistrées, pertes déclarées et achats réceptionnés sur la période.</p></div>
       <Button onClick={() => setExportOpen(true)} disabled={!validRange}>Exporter un rapport</Button>
     </header>
-    <div className="bilan-period"><label>Du <input type="date" value={from} max={to || today()} onChange={(event) => setFrom(event.target.value)} /></label>
-      <label>Au <input type="date" value={to} min={from} max={today()} onChange={(event) => setTo(event.target.value)} /></label></div>
+    <section className="bilan-period" aria-label="Période du bilan">
+      <label>Du <input type="date" value={from} max={to || today()} onChange={(event) => setFrom(event.target.value)} /></label>
+      <label>Au <input type="date" value={to} min={from} max={today()} onChange={(event) => setTo(event.target.value)} /></label>
+      <p>Par défaut : depuis le début de l’année. Ajustez les dates pour consulter une autre période.</p>
+    </section>
     {!validRange ? <p role="alert">Choisissez une période valide pour consulter le bilan.</p> :
       <><SalesMetrics key={`sales:${from}:${to}`} from={from} to={to} />
         <ImpactSummary key={`impact:${from}:${to}`} from={from} to={to} />

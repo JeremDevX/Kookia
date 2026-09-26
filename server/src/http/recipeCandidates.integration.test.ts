@@ -121,16 +121,16 @@ it("keeps recipe candidates hypothetical until an atomic, stock-neutral confirma
   const candidateEvents = timeline.body.events.filter((event: { kind: string; detail: string }) =>
     event.kind === "decision" && event.detail.includes("Poêlée corrigée"));
   expect(candidateEvents).toEqual(expect.arrayContaining([
-    expect.objectContaining({ label: "Hypothèse de recette corrigée dans le bac de démonstration",
+    expect.objectContaining({ label: "Fiche de recette candidate corrigée",
       provenance: "simulation", href: "/recipes", detail: expect.stringContaining("état : pending"),
       qualifier: expect.stringContaining("aucune cuisson") }),
-    expect.objectContaining({ label: "Candidate confirmée comme recette dans le bac de démonstration",
+    expect.objectContaining({ label: "Fiche de recette candidate confirmée",
       provenance: "simulation", href: "/recipes", detail: expect.stringContaining("état : confirmed"),
       qualifier: expect.stringContaining("aucune cuisson") }),
   ]));
   expect(timeline.body.events.find((event: { kind: string; detail: string }) =>
     event.kind === "recipe" && event.detail.includes("Poêlée corrigée")))
-    .toMatchObject({ provenance: "simulation", qualifier: expect.stringContaining("bac de démonstration") });
+    .toMatchObject({ provenance: "simulation", qualifier: expect.stringContaining("à confirmer comme recette pratiquée") });
   expect(await prisma.product.findMany({ where: { restaurantId: demo.restaurantId },
     select: { id: true, currentStock: true, stockRevision: true } })).toEqual(stockBefore);
   expect(await prisma.stockMovement.count({ where: { restaurantId: demo.restaurantId } })).toBe(movementCountBefore);

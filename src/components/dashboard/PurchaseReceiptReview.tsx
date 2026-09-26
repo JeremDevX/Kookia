@@ -124,7 +124,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
     try {
       const saved = await reconcilePurchaseReceipt(order.id, { ...payload, operationId: operation.current.id });
       onNotice(saved.simulated
-        ? `Réception simulée enregistrée${saved.invoiceComplete ? "; facture rapprochée" : "; facture encore à compléter"}. Aucun stock réel n’a changé.`
+        ? `Rapprochement enregistré${saved.invoiceComplete ? "; facture complète" : "; facture encore à compléter"}. Aucune quantité n’a été ajoutée au stock.`
         : `Réception enregistrée${saved.invoiceComplete ? "; facture rapprochée" : "; rapprochement partiel, facture conservée en brouillon"}.`);
       operation.current = null;
       await loadInvoices();
@@ -147,7 +147,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
   }}>
     <summary ref={summaryRef}>Rapprocher une facture et une livraison</summary>
     {open && <div className="purchase-receipt-form">
-      {demoOrder && <p className="purchase-receipt-note">Espace de démonstration : cette réception restera simulée et ne modifiera pas le stock réel.</p>}
+      {demoOrder && <p className="purchase-receipt-note">Dans cet espace, le rapprochement ne modifie pas le stock. Vérifiez la livraison avant tout ajout de quantité.</p>}
       {loading && <p role="status">Chargement des factures brouillon…</p>}
       {invoiceLoadError && <div role="alert"><p>Factures brouillon indisponibles : {invoiceLoadError}</p>
         <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryInvoices}>Recharger les factures</Button>
@@ -162,7 +162,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
           onChange={(event) => chooseInvoice(event.target.value)}>
           <option value="">Choisir une facture</option>
           {eligibleInvoices.map((item) => <option key={item.id} value={item.id}>
-            {item.reference} · {item.source === "source_document" ? "pièce de démonstration" :
+            {item.reference} · {item.source === "source_document" ? "pièce d’archive" :
               order.lines.find((line) => line.supplierId === item.supplierId)?.supplierName ?? item.sourceSupplier ?? "Fournisseur"} · {item.date || "date à compléter"}
           </option>)}
         </select>
@@ -177,7 +177,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
         <input className="input-field" id={`receipt-delivery-date-${order.id}`} type="date" value={deliveryDate}
           disabled={saving || loading || !!invoiceLoadError || !orderStateCurrent || invoice.status === "received"}
           onChange={(event) => setDeliveryDate(event.target.value)} />
-        {invoice.source === "source_document" && <p>Pièce source simulée · type/date et chaque ligne doivent déjà avoir été vérifiés dans sa facture.</p>}
+        {invoice.source === "source_document" && <p>Pièce d’archive · vérifiez le type, la date et chaque ligne sur la facture avant tout rapprochement.</p>}
         {includedLines.map(({ line, index }) => {
           const draft = lines[index];
           const candidateLines = order.lines.filter((orderLine) => orderLine.supplierId === invoice.supplierId &&
@@ -216,7 +216,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
         {invoice.source === "source_document" && invoice.lines.some((line) => line.disposition === "pending") &&
           <p role="alert">Terminez d’abord la revue des lignes source dans la facture.</p>}
         <Button ref={submitButtonRef} onClick={() => void submit()} disabled={!canSubmit || saving}>
-          {saving ? "Enregistrement…" : demoOrder ? "Enregistrer la réception simulée" : "Rapprocher et ajouter au stock"}
+          {saving ? "Enregistrement…" : demoOrder ? "Enregistrer sans ajout au stock" : "Rapprocher et ajouter au stock"}
         </Button>
       </>}
     </div>}

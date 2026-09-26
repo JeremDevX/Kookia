@@ -15,7 +15,7 @@ fonctionnalité déjà disponible**.
 | Réseau local | Vite proxifie `/api` vers `http://127.0.0.1:3001` par défaut (cible overrideable pour la démo) ; l'API écoute loopback par défaut, `HOST` configure l'écoute et `APP_ORIGIN` l'origine mutatrice locale ; la recette R0 et la démo utilisent PostgreSQL jetable sur loopback | Configurer explicitement l'écoute externe, un routage `/api` de même origine, une origine mutatrice autorisée et TLS selon l'hébergeur choisi |
 | Backend et persistance | API Express/TypeScript et PostgreSQL/Prisma actifs pour comptes et espaces métier isolés | Renforcer les contrats d'ingestion, la provenance et l'évaluation des calculs |
 | Intégrations | Aucun fournisseur POS/OCR/météo actif ; `Plus → Connexions` lit les statuts serveur `not_connected`. POS reste une fixture revue manuellement ; Ticket Z a une transcription manuelle sans OCR ni conservation du fichier ; Achats expose une unique fixture PDF synthétique via upload local en `demo:local`, sans OCR général ni conservation de l'original ; les autres fichiers gardent le repli manuel. | Contrats et adaptateurs fournisseur, extraction contrôlée, correction et repli manuel |
-| Prévision | Prévisions de démonstration persistées ; baseline F1 expérimentale distincte avec provenance ventes enregistrées/simulées ; l'API baseline expose F2 comme non connecté et ne retient F1 que si ses entrées sont qualifiées, sans ajustement contextuel | Position confirmée, fournisseurs météo/événements et historique d'émissions après cadrage des droits/rétention ; mesurer un éventuel gain seulement sur données terrain qualifiées ; moteur IA hors périmètre full-stack initial |
+| Prévision | La page Prévisions sépare la baseline F1 des ventes (28 jours de calendrier complets requis) des estimations d'écoulement d'ingrédients (réceptions enregistrées positives et recettes datées compatibles). F2 contextuel reste non connecté ; aucune de ces estimations ne crée d'opération | Position confirmée, fournisseurs météo/événements et historique d'émissions après cadrage des droits/rétention ; mesurer un éventuel gain seulement sur données terrain qualifiées ; moteur IA hors périmètre full-stack initial |
 
 Les versions et dépendances actives font foi dans [`package.json`](../package.json).
 La [cartographie détaillée des écarts](ecarts-techniques.md) confronte cette cible au code actuel, brique par brique.
@@ -179,7 +179,8 @@ Avec `monthly=true`, la même route renvoie une page de 12 mois et une
 La première page montre les mois les plus récents de la période choisie ; les
 pages plus anciennes restent accessibles sans borne totale de période.
 
-Le panneau distinct **Sorties estimées par recette** appelle
+Les panneaux distincts **Sorties estimées par recette** de **Bilan** et
+**Prévisions** appellent
 `GET /api/workspace/ingredient-outflow-estimates`. L'API ne lit que les lignes
 positives de réceptions enregistrées et non simulées, tenant-scopées ; pour
 chaque entrée, elle utilise la dernière version datée effective à la livraison
@@ -197,7 +198,9 @@ disponibles. Cette proposition n'est ni persistée ni prise en compte par les
 estimations du Bilan avant sa création explicite ; son écran de revue peut
 toutefois montrer un aperçu conditionnel calculé depuis la quantité reçue et
 le dosage/rendement proposés, avec la même hypothèse de répartition 90/10. Cet
-aperçu reste séparé des estimations du Bilan et ne crée aucune écriture. Une
+aperçu reste séparé des ventes mesurées et ne crée aucune écriture. Dans
+**Prévisions**, la période de réception est sélectionnable et peut être élargie
+à tout l'historique ; aucun plafond de quatre ans n'est appliqué. Une
 association non reconnue conserve
 le parcours de création manuelle. Lors de la création depuis une réception, le
 serveur vérifie le tenant, la ligne enregistrée, l'unité, le produit inclus et
@@ -207,12 +210,14 @@ sortie de stock. La fenêtre de requête reste choisie par l'utilisateur et ne
 fixe pas de limite produit à l'historique.
 
 La page **Plus → Historique** (/history) appelle la route tenant-scopée
-de lecture seule GET /api/workspace/timeline, sur toute période consultable,
-avec des fenêtres de requête de 31 jours au maximum et une coupe « Connu au ».
-Chaque événement sépare date d'effet, date à laquelle son état est connu et
-date d'enregistrement ; les provenances affichées sont archive source, saisie,
-simulation, hypothèse ou inconnue. Les pièces sont réduites côté SQL à des
-métadonnées (aucun texte de transcription ni ligne brute), et les prix actuels
+de lecture seule GET /api/workspace/timeline, sans borne de durée et avec une
+coupe « Connu au ». L'API signale les réponses denses et limite chaque type de
+ligne à 1 501 lignes lues, puis la réponse à 5 000 événements ; l'interface
+invite alors à resserrer la période. Chaque événement sépare date d'effet, date à laquelle
+son état est connu et date d'enregistrement ; les provenances affichées sont
+pièce source, saisie, hors bilan, à confirmer ou non renseigné. Les statuts
+techniques de provenance restent internes. Les pièces sont réduites côté SQL
+à des métadonnées (aucun texte de transcription ni ligne brute), et les prix actuels
 ne sont pas injectés dans l'historique. Les lignes WorkspaceDocument n'ayant
 pas de journal de versions, leur date disponible est la dernière mise à jour ;
 les états antérieurs restent inconnus et les entrées modifiées après la coupe

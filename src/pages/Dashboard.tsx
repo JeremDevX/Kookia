@@ -58,7 +58,7 @@ export default function Dashboard() {
     ? { title: "Commande en préparation indisponible", detail: cartError, to: "/orders#selection", action: "Reprendre les achats" }
     : !cartLoading && cartItems.length > 0
       ? hasExampleItem
-        ? { title: "Corrigez votre sélection", detail: "Un ancien scénario d'exemple doit être écarté avant la validation.", to: "/orders#selection", action: "Ouvrir la sélection" }
+        ? { title: "Corrigez votre sélection", detail: "Une proposition sans source enregistrée doit être retirée avant la validation.", to: "/orders#selection", action: "Ouvrir la sélection" }
         : { title: "Une commande attend votre validation", detail: `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`, to: "/orders#selection", action: "Revoir les quantités" }
       : salesError
         ? { title: "Vérifiez vos ventes", detail: "Leur état n'a pas pu être chargé.", to: "/sales", action: "Ouvrir les ventes" }
@@ -73,7 +73,7 @@ export default function Dashboard() {
                 : productsLoading
                   ? { title: "Retrouvez vos données", detail: "L'inventaire est en cours de chargement.", to: "/stocks", action: "Ouvrir les stocks" }
                   : stockToReview.length > 0
-                    ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique. Les produits initiaux sont des exemples à confirmer.`, to: "/stocks", action: "Voir les stocks" }
+                    ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique. Les niveaux de stock initiaux doivent être confirmés.`, to: "/stocks", action: "Voir les stocks" }
                     : { title: "Aucune alerte de stock enregistrée", detail: "Vérifiez les ventes du dernier service ou préparez vos prochains achats.", to: "/orders", action: "Ouvrir les achats" };
 
   return <div className="dashboard-container">
@@ -94,7 +94,7 @@ export default function Dashboard() {
       <h2 id="today-onboarding-title">Votre mise en route</h2>
       <ol><li><strong>Établissement</strong><span>{restaurant ? `${restaurant.name} · informations initiales à confirmer` : restaurantError || "Chargement des informations…"}</span><Link to="/settings">Vérifier l'établissement</Link></li>
         <li><strong>Ventes</strong><span>Aucune vente enregistrée. Choisissez l'import CSV ou la saisie ci-dessus.</span></li>
-        <li><strong>Stocks</strong><span>Les produits initiaux sont des exemples à confirmer avant vos premiers achats.</span><Link to="/stocks">Vérifier les stocks</Link></li></ol>
+        <li><strong>Stocks</strong><span>Vérifiez les quantités et les pièces source avant vos premiers achats.</span><Link to="/stocks">Vérifier les stocks</Link></li></ol>
       <p>Les prévisions et besoins d'achat nécessitent 28 jours de service complets et un comptage de stock récent ; chaque suggestion reste à revoir.</p>
     </section>}
 
@@ -107,8 +107,8 @@ export default function Dashboard() {
           <p>{stockToReview.length === 0 ? "Aucun produit sous le seuil théorique." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique.`}</p>}
         {!productsLoading && !productsError && confirmedStockoutCount > 0 && <Badge label={`${confirmedStockoutCount} rupture${confirmedStockoutCount > 1 ? "s" : ""} confirmée${confirmedStockoutCount > 1 ? "s" : ""}`} status="urgent" />}
         <small>{latestService?.sources.includes("demo_simulation")
-          ? "Ce scénario contient des stocks, réceptions, productions et pertes simulés, à ne pas confondre avec un inventaire réel."
-          : "Les seuils sont des exemples à confirmer ; vérifiez la provenance des quantités et mouvements avant vos décisions."}</small>
+          ? "Certaines opérations du service ne sont pas retenues dans l’inventaire enregistré ; vérifiez les pièces et les mouvements."
+          : "Les seuils actuels restent à confirmer ; vérifiez la provenance des quantités et mouvements avant vos décisions."}</small>
         <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><Link to="/orders#invoices">Revoir les factures</Link></div>
       </section>
       <section className="today-card" aria-labelledby="today-sales-title"><h2 id="today-sales-title" ref={salesHeading} tabIndex={-1}>Ventes</h2>

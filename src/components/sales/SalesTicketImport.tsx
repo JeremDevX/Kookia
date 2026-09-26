@@ -140,7 +140,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
     {!listError && batches.length > 0 && <details className="sales-disclosure"><summary>Tickets et transcriptions récents ({batches.length})</summary>
       <ul className="sales-contribution-history">{batches.map((row) => <li key={row.id}>
         <strong>{row.serviceDate ?? "Date de service à vérifier"} · {statusLabel[row.status]}</strong>
-        <span>{row.recordCount} ligne(s) · {row.provenance === "demo_simulation" ? "simulation" : "donnée transcrite"} · empreinte {row.contentHash.slice(0, 12)}… · original non conservé</span>
+        <span>{row.recordCount} ligne(s) · {row.provenance === "demo_simulation" ? "hors bilan" : "donnée transcrite"} · empreinte {row.contentHash.slice(0, 12)}… · original non conservé</span>
         {(row.status === "uploaded" || row.status === "no_details") && <Button type="button" variant="outline" onClick={() => void removeBatch(row.id)}>Supprimer ce brouillon</Button>}
       </li>)}</ul>
     </details>}

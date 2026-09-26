@@ -9,8 +9,8 @@ const today = () => new Intl.DateTimeFormat("en-CA", {
 }).format(new Date());
 
 const querySchema = z.object({ from: z.iso.date(), to: z.iso.date(), asOf: z.iso.date() }).strict()
-  .refine(({ from, to }) => from <= to && Date.parse(to) - Date.parse(from) <= 30 * 86_400_000,
-    { message: "La période doit être croissante et limitée à 31 jours." })
+  .refine(({ from, to }) => from <= to,
+    { message: "La période doit être croissante." })
   .refine(({ from, to, asOf }) => from <= today() && to <= today() && asOf <= today(),
     { message: "La chronologie ne peut pas inclure de date future." });
 

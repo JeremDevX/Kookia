@@ -35,7 +35,7 @@ const blankDraft = (): CandidateDraft => ({ name: "", category: "Plat", prepTime
 const lineLabel = (line: { name: string; sourceQuantityText: string }) => `ligne : ${line.name} · ${line.sourceQuantityText}`;
 const statusLabel: Record<RecipeCandidate["status"], string> = {
   pending: "À revoir — hypothèse non validée",
-  confirmed: "Confirmée dans le bac de démonstration",
+  confirmed: "Confirmée",
   rejected: "Écartée",
 };
 
@@ -148,7 +148,7 @@ export default function RecipeCandidates({ products, onRecipeConfirmed }: Props)
       setRejectingId("");
       if (action === "confirm") {
         await onRecipeConfirmed();
-        setNotice("Recette confirmée et créée dans le bac de démonstration. Aucun stock n’a été modifié.");
+        setNotice("Recette confirmée dans le compte. Aucun stock n’a été modifié.");
       } else setNotice("Fiche candidate écartée ; aucune recette ni mouvement de stock créé.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Décision non enregistrée."); }
     finally { setSaving(false); }

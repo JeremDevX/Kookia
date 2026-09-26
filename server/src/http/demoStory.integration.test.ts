@@ -191,7 +191,7 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
   expect(events.find((event) => event.id === `purchase-receipt:${receipt.body.id}`))
     .toMatchObject({ kind: "purchase_receipt", provenance: "simulation" });
   expect(events.find((event) => event.id === `purchase-receipt:${receipt.body.id}`)?.detail).toContain(sourceId);
-  expect(events.find((event) => event.id === `purchase-receipt:${receipt.body.id}`)?.qualifier).toContain("aucun stock réel");
+  expect(events.find((event) => event.id === `purchase-receipt:${receipt.body.id}`)?.qualifier).toContain("n’a pas modifié le stock enregistré");
   const historic = await owner.agent.get("/api/workspace/timeline")
     .query({ from: `${today.slice(0, 7)}-01`, to: today, asOf }).expect(200);
   expect(historic.body.events.some((event: { id: string }) => event.id === `purchase-order:${order.body.id}`)).toBe(false);

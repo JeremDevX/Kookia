@@ -4,9 +4,9 @@ import { getSaleContributions, getSales, reviewSaleContribution, type DailySale,
 
 const sourceLabel = (source: SaleContribution["source"] | DailySale["source"], posBatch = false,
   ticketBatch?: SaleContribution["ticketBatch"]) => ticketBatch ?
-  ticketBatch.provenance === "demo_simulation" ? "Ticket Z simulé" : "Ticket Z transcrit" : posBatch ?
-  source === "demo_simulation" ? "Caisse POS simulée" : "Caisse POS" : source === "csv" ? "CSV" :
-  source === "pos" ? "Caisse POS" : source === "demo_simulation" ? "Simulation" : source === "ticket_z" ? "Ticket Z transcrit" : "Saisie manuelle";
+  ticketBatch.provenance === "demo_simulation" ? "Ticket Z hors bilan" : "Ticket Z transcrit" : posBatch ?
+  source === "demo_simulation" ? "Caisse POS hors bilan" : "Caisse POS" : source === "csv" ? "CSV" :
+  source === "pos" ? "Caisse POS" : source === "demo_simulation" ? "Hors bilan" : source === "ticket_z" ? "Ticket Z transcrit" : "Saisie manuelle";
 const statusLabel = (status: SaleContribution["status"]) => ({ pending: "À réconcilier", accepted: "Accepté",
   rejected: "Rejeté", superseded: "Remplacé", voided: "Annulé" })[status];
 const eventLabel: Record<string, string> = { source_received: "Ligne reçue", accepted: "Accepté", conflict_detected: "Conflit détecté", rejected: "Rejeté",
@@ -62,7 +62,7 @@ export default function SalesReconciliation({ from, to, refreshToken, items, tic
         {history.map((row) => <li key={row.id}>
           <strong>{row.serviceDate ?? row.sourceDate} · {row.saleItemName ?? row.sourceItemName} · {row.quantity ?? row.sourceQuantity}</strong>
           <span>{sourceLabel(row.source, Boolean(row.posBatch), row.ticketBatch)} · {statusLabel(row.status)} · source révision {row.sourceRevision}</span>
-          {row.posBatch && <span>Lot {row.posBatch.batchId} · période {row.posBatch.from}–{row.posBatch.to} · {row.posBatch.coverage === "complete" ? "données complètes reçues" : "données partielles reçues"} · {row.posBatch.provenance === "demo_simulation" ? "simulation de fixture" : "source enregistrée"}</span>}
+          {row.posBatch && <span>Lot {row.posBatch.batchId} · période {row.posBatch.from}–{row.posBatch.to} · {row.posBatch.coverage === "complete" ? "données complètes reçues" : "données partielles reçues"} · {row.posBatch.provenance === "demo_simulation" ? "hors bilan" : "source enregistrée"}</span>}
           {row.ticketBatch && <span>Ticket Z · service {row.ticketBatch.serviceDate ?? "à vérifier"} · date lue {row.ticketBatch.sourceDateText || "illisible/non renseignée"} · empreinte {row.ticketBatch.contentHash.slice(0, 12)}… · original non conservé</span>}
           {row.ticketLineNumber !== null && <span>Ligne Ticket Z {row.ticketLineNumber}</span>}
           {row.importLine !== null && <span>Ligne CSV {row.importLine} · empreinte {row.sourceFileHash?.slice(0, 12) ?? "indisponible"}</span>}
@@ -122,7 +122,7 @@ function PendingContribution({ row, items, ticketPreview, onReview }: {
     <h3 id={`contribution-${row.id}`}>{row.sourceRefunded ? "Remboursement à vérifier" : currentSale ? "Vente à rapprocher" : "Vente à vérifier"} · {row.serviceDate ?? row.sourceDate} · {row.saleItemName ?? row.sourceItemName}</h3>
     <p>Apport candidat : {sourceLabel(row.source, Boolean(row.posBatch), row.ticketBatch)}, {row.quantity ?? row.sourceQuantity} unité(s), révision {row.sourceRevision}.
       {row.sourceRecordId ? ` Référence caisse ${row.sourceRecordId}.` : ""}
-      {row.posBatch ? ` Lot ${row.posBatch.batchId}, données ${row.posBatch.coverage === "complete" ? "complètes" : "partielles"}${row.posBatch.provenance === "demo_simulation" ? " (simulation)" : ""}.` : ""}
+      {row.posBatch ? ` Lot ${row.posBatch.batchId}, données ${row.posBatch.coverage === "complete" ? "complètes" : "partielles"}${row.posBatch.provenance === "demo_simulation" ? " (hors bilan)" : ""}.` : ""}
       {row.importLine !== null ? ` Ligne CSV ${row.importLine}.` : ""}
       {row.ticketLineNumber !== null ? ` Ligne Ticket Z ${row.ticketLineNumber}.` : ""}</p>
     {row.ticketBatch && <div className="ticket-review-layout">

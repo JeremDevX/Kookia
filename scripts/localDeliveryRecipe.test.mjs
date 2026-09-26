@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildDisposablePostgresArgs, integrationDatabaseUrl, localDemoDatabaseUrl, parseLoopbackPort } from "./localDeliveryRecipe.mjs";
+import { buildDisposablePostgresArgs, integrationDatabaseUrl, integrationTestNpmArgs, localDemoDatabaseUrl,
+  parseLoopbackPort } from "./localDeliveryRecipe.mjs";
 
 test("publishes only a loopback port and uses volatile database and dump storage", () => {
   const args = buildDisposablePostgresArgs("kookia-r0-test", "temporary-password");
@@ -16,6 +17,12 @@ test("creates only the guarded local integration database URLs", () => {
   assert.equal(integrationDatabaseUrl(55432, "temporary-password"),
     "postgresql://kookia:temporary-password@127.0.0.1:55432/kookia_test");
   assert.throws(() => integrationDatabaseUrl(55432, "temporary-password", "kookia"));
+});
+
+test("forwards focused integration filters through the disposable delivery recipe", () => {
+  assert.deepEqual(integrationTestNpmArgs([]), ["run", "test:integration"]);
+  assert.deepEqual(integrationTestNpmArgs(["--testNamePattern=service calendar", "--disableConsoleIntercept"]),
+    ["run", "test:integration", "--", "--testNamePattern=service calendar", "--disableConsoleIntercept"]);
 });
 
 test("isolates the interactive demo in its own tmpfs-only database", () => {

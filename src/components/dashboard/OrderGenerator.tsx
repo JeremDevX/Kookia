@@ -62,17 +62,17 @@ export default function OrderGenerator({ recommendations, products, suppliers, c
 
   if (order) return <div className="flex flex-col gap-lg" role="status">
     <CheckCircle size={40} aria-hidden="true" />
-    <h3>{order.status.startsWith("simulated") ? "Commande de démonstration enregistrée" : "Commande enregistrée"}</h3>
-    <p>{order.status.startsWith("simulated") ? "Cette opération reste simulée : aucun achat réel, aucun email et aucun mouvement de stock." : "À transmettre au fournisseur : aucun email n’a été envoyé et le stock n’a pas changé."}</p>
+    <h3>{order.status.startsWith("simulated") ? "Commande préparée" : "Commande enregistrée"}</h3>
+    <p>{order.status.startsWith("simulated") ? "La commande n’est pas transmise : aucun achat, message fournisseur ou mouvement de stock n’a été créé." : "À transmettre au fournisseur : aucun email n’a été envoyé et le stock n’a pas changé."}</p>
     <p>Référence : {order.id}</p>
-    <Link to="/orders#to-transmit" onClick={onClose}>{order.status.startsWith("simulated") ? "Voir la commande simulée" : "Voir la commande à transmettre"}</Link>
+    <Link to="/orders#to-transmit" onClick={onClose}>{order.status.startsWith("simulated") ? "Voir la commande préparée" : "Voir la commande à transmettre"}</Link>
     <Button onClick={onClose}>Fermer</Button>
   </div>;
 
   return <div ref={formRef} className="flex flex-col gap-lg">
     <h3><Package size={20} aria-hidden="true" /> Quantités à commander</h3>
     <p>Vérifiez les quantités et le fournisseur. La validation n’envoie rien et ne modifie pas le stock.</p>
-    {recommendations.some((item) => item.predictionId) && <p role="alert">Écartez les scénarios d'exemple avant de valider.</p>}
+    {recommendations.some((item) => item.predictionId) && <p role="alert">Retirez les propositions sans source enregistrée avant de valider.</p>}
     {recommendations.length === 0 && <p role="alert">Aucun article à commander.</p>}
     {quantities.some((value) => value.trim() && !isValidOrderQuantity(value)) && <p role="alert">Chaque quantité doit être comprise entre 0,001 et 1 000 000, avec au plus 3 décimales.</p>}
     {catalogLoading && <p role="status">Chargement du catalogue…</p>}

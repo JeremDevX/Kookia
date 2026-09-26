@@ -147,7 +147,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
       setSourceConflictInvoiceId((conflictedId) => conflictedId === saved.id ? null : conflictedId);
       setNotice(receive
         ? invoice.source === "source_document"
-          ? "Réception de démonstration enregistrée. Aucun achat réel ni envoi fournisseur n’a été créé."
+          ? "Pièce rapprochée. Aucun achat fournisseur ni ajout au stock n’a été créé."
           : "Réception enregistrée. Les quantités ont été ajoutées au stock."
         : "Brouillon enregistré.");
       onInvoiceDataChanged();
@@ -192,7 +192,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
   return <div className="invoice-modal flex flex-col gap-lg">
     <p>{sourceLinked
       ? received
-        ? "Réception de démonstration liée à une pièce transcrite. Les lignes sont en lecture seule et ne créditeront pas le stock une seconde fois."
+        ? "Réception liée à une pièce transcrite. Les lignes sont en lecture seule et ne pourront pas créditer le stock une seconde fois."
         : "Brouillon lié à une pièce transcrite : vérifiez le type, la date et chaque ligne. L’enregistrement du brouillon ne modifie pas le stock."
       : "Saisie manuelle sans lecture automatique. Vérifiez les quantités et les produits avant tout ajout au stock."}</p>
     {error && <div role="alert"><p>{error}</p>
@@ -228,18 +228,18 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
       </select>
       <Button variant="outline" onClick={createDraft} disabled={saving || sourceConflict}>Nouvelle facture manuelle</Button>
       {invoice && <>
-        {invoice.source === "demo" && <p>Facture d’exemple du 09/12/2024, sans document scanné.</p>}
+        {invoice.source === "demo" && <p>Brouillon prérempli à contrôler avant tout rapprochement.</p>}
         {sourceLinked && <section className="invoice-source-note" aria-label="Provenance de la pièce source">
-          <h3>Pièce source liée — scénario de démonstration</h3>
+          <h3>Pièce source liée — transcription</h3>
           <p><strong>{invoice.sourceTitle}</strong> · {invoice.sourceSupplier}</p>
           <p>Type transcrit : {invoice.sourceType === "invoice" ? "facture" : invoice.sourceType === "credit" ? "avoir" : "bon de livraison"} — à confirmer.
             Statut source : {invoice.sourceStatus ?? "inconnu"}.</p>
           <p>Date de travail de la pièce : {invoice.sourceDate ?? "inconnue"}.</p>
-          <p>Hash et révision source conservés côté serveur. Toute réception restera simulée ; aucun achat réel ni message fournisseur ne sera créé.</p>
+          <p>Empreinte et révision source conservées côté serveur. Cette pièce ne confirme pas une livraison et ne met pas à jour le stock.</p>
           {invoice.sourceType !== "invoice" && <p role="alert">Un avoir ou un bon de livraison est consultable, mais ne peut pas créditer le stock dans ce flux.</p>}
-          {invoice.alreadyCreditedBySimulation && <p role="alert">Cette pièce a déjà crédité le stock dans le scénario. Ce brouillon ne peut pas ajouter un second crédit.</p>}
+          {invoice.alreadyCreditedBySimulation && <p role="alert">Cette pièce a déjà été rapprochée dans cet espace. Ce brouillon ne peut pas ajouter une seconde quantité.</p>}
         </section>}
-        {received && <p role="status">{sourceLinked ? "Réception de démonstration" : "Réception"} enregistrée le {invoice.receivedAt ? new Date(invoice.receivedAt).toLocaleString("fr-FR") : "—"}.
+        {received && <p role="status">{sourceLinked ? "Rapprochement de pièce" : "Réception"} enregistré le {invoice.receivedAt ? new Date(invoice.receivedAt).toLocaleString("fr-FR") : "—"}.
           Le stock ne sera pas crédité une seconde fois.</p>}
         {!received && <>
           <label htmlFor="invoice-supplier">Fournisseur</label>
@@ -265,7 +265,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
           <label className="invoice-confirmation">
             <input type="checkbox" checked={invoice.sourceDateConfirmed ?? false} disabled={disabled || !invoice.date}
               onChange={(event) => setInvoice({ ...invoice, sourceDateConfirmed: event.target.checked })} />
-            Je confirme la date utilisée pour cette opération de démonstration.
+            Je confirme la date utilisée pour ce rapprochement.
           </label>
         </>}
         {invoice.lines.map((line, index) => <fieldset key={line.sourceLineNumber ?? index} disabled={disabled || received || line.disposition === "excluded"}
@@ -328,7 +328,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
           <Button ref={saveDraftButtonRef} variant="outline" onClick={() => void persist(false)}
             disabled={disabled || persistenceBlocked || !invoice.reference.trim()}>Enregistrer le brouillon</Button>
           <Button ref={receiveButtonRef} onClick={() => void persist(true)} disabled={disabled || persistenceBlocked || !canReceive}>
-            {sourceLinked ? "Réceptionner dans le scénario" : "Réceptionner et ajouter au stock"}
+            {sourceLinked ? "Rapprocher sans ajout au stock" : "Réceptionner et ajouter au stock"}
           </Button>
         </div>}
       </>}

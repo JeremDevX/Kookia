@@ -12,7 +12,7 @@ it("escapes CSV cells and prevents string formula interpretation without changin
   expect(csv).toContain('"-2.5"');
   expect(csv).toContain("2026-09-01");
   expect(csv).toContain('"Mouvements de perte inclus";"2";"Sans prix snapshoté";"1"');
-  expect(csv).toContain('"Pertes de démonstration exclues";"3"');
+    expect(csv).toContain('"Pertes hors bilan exclues";"3"');
   expect(csv).toContain('"Métriques non mesurées";"ruptures de stock ; quantités invendues"');
 });
 it("exports typed Excel XML without executable formulas or raw XML markup from data", () => {
@@ -26,5 +26,5 @@ it("exports typed Excel XML without executable formulas or raw XML markup from d
 
 it("omits demonstration provenance from operational exports when no such losses were excluded", () => {
   const recordedOnly = { ...report, declaredLosses: { ...report.declaredLosses, excludedSimulationMovementCount: 0 } };
-  expect(reportCells(recordedOnly).flat().join(" ")).not.toMatch(/démonstration|simulée?/i);
+    expect(reportCells(recordedOnly).flat().join(" ")).not.toMatch(/démonstration|simulée?/i);
 });

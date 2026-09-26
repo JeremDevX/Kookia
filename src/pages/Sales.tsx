@@ -192,7 +192,7 @@ export default function Sales() {
           <th>Date de service</th><th>Article vendu</th><th>Quantité</th><th>Provenance</th><th>Dernière modification</th><th>Action</th>
         </tr></thead><tbody>{sales.map((sale) => <tr key={sale.id}>
           <td>{sale.serviceDate}</td><td>{sale.saleItemName}</td><td>{sale.quantity} unités</td>
-          <td>{sale.source === "demo_simulation" ? "Simulation de démonstration" : sale.source === "manual" ? "Saisie manuelle" : sale.source === "pos" ? sale.revision ? "Caisse POS corrigée" : "Caisse POS" : sale.source === "ticket_z" ? "Ticket Z vérifié" : sale.revision ? "Import CSV corrigé manuellement" : "Import CSV"}</td>
+          <td>{sale.source === "demo_simulation" ? "Hors bilan" : sale.source === "manual" ? "Saisie manuelle" : sale.source === "pos" ? sale.revision ? "Caisse POS corrigée" : "Caisse POS" : sale.source === "ticket_z" ? "Ticket Z vérifié" : sale.revision ? "Import CSV corrigé manuellement" : "Import CSV"}</td>
           <td>{new Date(sale.updatedAt).toLocaleString("fr-FR")}</td>
           <td><div className="sales-history-actions"><Button type="button" size="sm" variant="outline" onClick={(event) => { editOrigin.current = event.currentTarget; setEditing(sale); setCorrectionOperationId(crypto.randomUUID()); setValues({ saleItemId: sale.saleItemId, serviceDate: sale.serviceDate, quantity: sale.quantity }); setEditReason(""); setError(""); setStatus(""); document.getElementById("sales-entry-title")?.scrollIntoView(); }}>Corriger</Button>
             <SaleOutcomeActions sale={sale} onUpdated={async (action) => {

@@ -139,7 +139,7 @@ const Stocks: React.FC = () => {
         </Button>
       </header>
 
-      <p className="stocks-source">Certaines quantités peuvent provenir d’exemples ou de simulations : vérifiez les pièces source et les motifs des mouvements. Les seuils enregistrés ne sont pas calculés à partir des ventes ; toute proposition d’achat reste à revoir et n’envoie aucune commande.</p>
+      <p className="stocks-source">Vérifiez les pièces source et les motifs des mouvements avant d’utiliser une quantité comme inventaire confirmé. Les seuils ne sont pas calculés à partir des ventes ; toute proposition d’achat reste à revoir et n’envoie aucune commande.</p>
       <div className="view-toggles" aria-label="Vue des stocks">
         <Button size="sm" aria-pressed={view === "review"} onClick={() => setView("review")}>À vérifier ({productsToReview.length})</Button>
         <Button size="sm" aria-pressed={view === "all"} onClick={() => setView("all")}>Tout l'inventaire ({products.length})</Button>

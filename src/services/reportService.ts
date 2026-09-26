@@ -12,7 +12,7 @@ export const reportCells = (report: Report): (string | number)[][] => {
     "Sans prix snapshoté", report.declaredLosses.unpricedMovementCount,
     "Unités incompatibles exclues", report.declaredLosses.incompatibleUnitMovementCount];
   if (report.declaredLosses.excludedSimulationMovementCount > 0)
-    lossCounts.push("Pertes de démonstration exclues", report.declaredLosses.excludedSimulationMovementCount);
+    lossCounts.push("Pertes hors bilan exclues", report.declaredLosses.excludedSimulationMovementCount);
   return [
     ["Rapport opérationnel KookiA — ne constitue pas une attestation de conformité"],
     ["Du", report.from, "au", report.to, "Fuseau des opérations", report.timezone, "Généré le", report.generatedAt],

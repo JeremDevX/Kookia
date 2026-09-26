@@ -2734,5 +2734,58 @@ restent à investiguer : HTTP 500 sur la lecture des jours de service dans
 utilisée.
 
 La modification de microcopie reste à inspecter rendue. CUA liste VS Code
-lancé mais `getApp` expire toujours ; aucun contrôle Chrome n’a été tenté. Le
+lancé mais `getApp` expire toujours ; aucun contrôle Chrome n'a été tenté. Le
 parcours Q2 dans le navigateur intégré de VS Code reste ouvert.
+
+### Q2 — reprise VS Code et stabilisation R0 (2026-09-26)
+
+La fenêtre VS Code est de nouveau contrôlable par CUA. Son navigateur intégré
+affiche KookiA sur `127.0.0.1:56457/login` et expose les champs de connexion, le
+bouton de validation et le lien d'inscription dans l'arbre d'accessibilité.
+Chrome n'a pas été ouvert. Cette passe s'est arrêtée à l'écran de connexion :
+aucun identifiant n'a été soumis et aucune donnée de compte n'a été consultée.
+Le rendu de la route authentifiée Prévisions, le responsive et le clavier
+restent à vérifier dans le navigateur VS Code.
+
+Le diagnostic des `socket hang up` a montré que `request.agent(app)` laisse
+écouter le serveur HTTP créé par Supertest après les requêtes. La configuration
+d'intégration suit désormais ces serveurs et les ferme au teardown de chaque
+fichier. Deux recettes R0 successives passent après ce correctif, dont la passe
+standard : lint, builds web/API, 18 migrations fraîches, parité Prisma, tests
+unitaires, 26 fichiers/41 tests d'intégration et sauvegarde/restauration. Le
+runner tmpfs a terminé son nettoyage ; aucun compte ou enregistrement
+opérationnel n'a été utilisé.
+
+### Q2 — lisibilité Bilan, Historique et Prévisions (2026-09-26)
+
+À partir de la capture fournie, Prévisions présentait le calcul, son contexte et
+les limites dans de longs paragraphes, puis une seule ligne de ventes sans
+service complet sur 28 jours. Le panneau d'estimations d'écoulement par recette
+est placé avant la baseline de ventes et reste distinct des ventes enregistrées.
+Les filtres et résumés de Bilan, l'Historique et ses limites de lecture ont été
+resserrés ; Historique n'a plus de borne fixe de 31 jours ni de quatre ans, avec
+un avertissement quand la réponse est dense. Les cartes de **Plus** qui
+renvoyaient seulement vers les réglages du compte ont été retirées. Le vocabulaire
+visible décrit la provenance, la vérification et les estimations sans qualifier
+les résultats de démonstration ou de simulation.
+
+La capture indique 0/28 jours complets : la baseline de ventes reste donc
+indisponible tant que cette couverture récente n'est pas complète. Une archive
+de factures sur quatre ans ne suffit pas, à elle seule, à constituer des ventes
+ou un calendrier de service ; les estimations d'ingrédients dépendent des
+réceptions rapprochées et des recettes datées compatibles. Aucun enregistrement
+opérationnel du compte n'a été consulté ni modifié.
+
+Vérification isolée `verify:local-delivery --
+server/src/http/scenarioFixture.integration.test.ts` : lint, builds web/API,
+18 migrations fraîches, parité Prisma, 41 fichiers/156 tests Vitest, 34 tests
+Node/CSS, intégration ciblée (1/1) et vérification de sauvegarde/restauration
+passent sur PostgreSQL tmpfs. Un lancement antérieur de la recette complète
+avait échoué sur un HTTP 401 Ticket Z (40/41 intégrations) ; la suite complète
+n'a pas été relancée après ce changement ciblé.
+
+Le navigateur intégré VS Code contrôlé précédemment pointe toujours vers
+`127.0.0.1:56457/login`, mais aucun serveur n'écoute sur ce port. La capture
+fournie est la seule observation du rendu de cette version ; clavier et
+responsive restent à revoir dans VS Code. Aucun lancement Chrome ni accès au
+compte Kookia n'a été effectué.

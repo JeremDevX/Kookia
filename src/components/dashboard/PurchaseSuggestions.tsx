@@ -103,12 +103,12 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
     </header>
     {loading ? <p role="status">Vérification des services, recettes et comptages…</p> : error && !data
       ? <div role="alert"><p>{error}</p><Button ref={retryButtonRef} type="button" variant="outline" onClick={retrySuggestions}>Recharger les propositions</Button></div> : data && <>
-        {data.workspaceMode === "demo" && <p className="purchase-suggestions-note">Espace de démonstration : toute commande validée reste simulée, sans envoi ni mouvement de stock.</p>}
-        {data.status === "simulation_only" && <p className="purchase-suggestions-note" role="status">Les ventes utilisées sont simulées. Elles ne peuvent pas préparer un achat dans cet espace réel.</p>}
+        {data.workspaceMode === "demo" && <p className="purchase-suggestions-note">Les commandes de cet espace ne sont pas envoyées au fournisseur et ne modifient pas le stock.</p>}
+        {data.status === "simulation_only" && <p className="purchase-suggestions-note" role="status">Les ventes disponibles ne sont pas retenues comme ventes enregistrées et ne permettent pas de préparer un achat.</p>}
         {data.status === "no_data" && <p>Aucune vente complète ne permet encore d’estimer le prochain service.</p>}
         {data.status === "insufficient_history" && <p>Complétez les 28 jours de services avant d’utiliser une estimation de besoin.</p>}
         {data.status === "ready" && <>
-          <p className="purchase-suggestions-period">Ventes jusqu’au {data.asOfDate} · prochain service prévu le {data.forecastDate} · {data.provenance === "demo_simulation" ? "démonstration" : "ventes enregistrées"}.</p>
+          <p className="purchase-suggestions-period">Ventes jusqu’au {data.asOfDate} · prochain service prévu le {data.forecastDate} · {data.provenance === "demo_simulation" ? "hors bilan" : "ventes enregistrées"}.</p>
           {data.blockers.length > 0 && <div className="purchase-suggestions-blockers" role="status">
             <strong>Besoin incomplet — aucune proposition ne peut être ajoutée.</strong>
             <ul>{data.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>
