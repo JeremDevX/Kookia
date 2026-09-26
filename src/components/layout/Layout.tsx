@@ -20,7 +20,7 @@ const Layout: React.FC = () => {
     if (location.hash) {
       document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: "start" });
     }
-  }, [location.key, location.hash]);
+  }, [location.pathname, location.hash]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = useCallback(() => {
@@ -35,7 +35,7 @@ const Layout: React.FC = () => {
       <div className="main-content-wrapper">
         <TopNav onMenuClick={toggleSidebar} isSidebarOpen={isSidebarOpen} menuButtonRef={menuButtonRef} />
         <main ref={mainContentRef} className="main-content" id="main-content" tabIndex={-1}>
-          <RouteErrorBoundary key={location.key}>
+          <RouteErrorBoundary key={location.pathname}>
             <Outlet />
           </RouteErrorBoundary>
         </main>

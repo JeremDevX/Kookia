@@ -453,6 +453,8 @@ transmettent leurs preuves sans écrire ici simultanément.
 | R0 — préparation locale de livraison | Prouvé localement (données jetables) | Non applicable | `npm run verify:local-delivery` automatise lint, builds web/API, 18 migrations fraîches, diff Prisma/base en mode fail-closed, tests unitaires et intégration, puis dump/restore PostgreSQL avec témoin synthétique et statut Prisma. Conteneur au nom aléatoire, port loopback éphémère, data/tmp sur tmpfs, aucun volume ; suppression en fin de recette. `GET /api/health` teste le liveness ; `GET /api/ready` teste PostgreSQL par `SELECT 1`. La réponse 503 générique sur échec est testée. Topologie/proxy/cookies/secrets/migrations/backup/observabilité décrits dans `docs/local-delivery.md`. Commits `d5904d3`, `0baebe6`, `91b6999`. | Le test de sauvegarde porte uniquement sur une base synthétique tmpfs. La readiness ne vérifie pas les migrations ni une requête métier. Aucun hébergeur ni routage API distant n'est configuré. |
 | R1 — activation préproduction | Audit dépôt terminé — non activé localement | Non vérifiée ; aucune action externe engagée | `docs/local-delivery.md` indique qu'aucun environnement de préproduction/production n'est défini ; `vercel.json` ne réécrit que vers la SPA ; le seul workflow versionné est CI et ne contient pas de commande de déploiement. | L'état des fournisseurs/hébergeurs externes n'a pas été consulté. Aucun hôte, domaine, routage API, DB persistante, gestion des secrets, sauvegarde opérationnelle, compte pilote consentant ni accord d'activation établis dans le dépôt ; prérequis à traiter avant R1. |
 
+| Q2 — Historique et recherche au clavier | Prouvé localement (Chrome headless/CDP) | Non applicable | Sur `demo:fixtures` et PostgreSQL tmpfs, la route Historique couvre une période de mai 2023 à 320×844 px : 1 049 événements disponibles, 20 affichés, viewport/document/body à 320 px. Tab atteint les dates nommées et la recherche avec focus visible. La saisie `zzx` lettre par lettre, Entrée sur Rechercher, puis Tab/Entrée sur Effacer conserve le même champ et son focus ; la recherche vide puis le retour aux événements sont annoncés. Les deux requêtes Timeline de StrictMode au montage ne sont pas répétées lors de la recherche ni de l'effacement. Captures QA : `evidence/q2-history-keyboard/`. | Touches injectées par CDP, pas clavier natif/CUA ; calendrier natif et lecteur d'écran réel non vérifiés. Les captures et événements restent QA technique, sans valeur métier. |
+
 ## Journal de preuves (ajouter une ligne par incrément vérifié)
 
 | Date | ID | Commit local | État avant → après | Commande/test ou scénario UI exécuté | Résultat et limite | Prochaine action |
@@ -2533,3 +2535,33 @@ dernier run de capture arrêté par SIGINT ciblé sur le PID Node exact termine 
 aussi en 130 ; son répertoire d'identifiants et ses ports 61743/61744 sont
 absents, et aucun conteneur correspondant à ce run ne subsiste. Les anciens bacs
 Docker restent inchangés.
+
+### Q2 — Historique : recherche et focus préservés (2026-09-26)
+
+La revue à 320×844 px sur la période du 01/05/2023 au 31/05/2023 trouve
+1 049 événements dans le bac `demo:fixtures` isolé (20 affichés par lot), sans
+débordement horizontal. Tab traverse les trois champs de date natifs puis le
+champ de recherche, tous correctement nommés et avec focus visible. Après
+correction d'un défaut du layout commun, la saisie `zzx` caractère par caractère
+conserve le même nœud DOM et son focus ; Entrée applique la
+recherche vide, Tab/Entrée sur « Effacer » restaure les 20 événements et remet le
+focus sur la recherche. Le nombre de requêtes Timeline reste inchangé après le
+montage initial (deux appels sous StrictMode), au lieu de repartir à chaque
+caractère.
+
+Dans `src/components/layout/Layout.tsx`, la boundary d'erreur est réinitialisée
+au changement de route ; le défilement suit la route et l'ancre. Les mutations
+de query string ne démontent plus l'écran ni ne remettent le défilement à zéro,
+ce qui permet aux écrans qui sérialisent leur saisie dans l'URL de garder le
+focus. Les
+captures inspectées — [Historique 2023](evidence/q2-history-keyboard/history-2023-320.png),
+[recherche sans résultat](evidence/q2-history-keyboard/history-search-empty-320.png)
+et [effacement/focus restitué](evidence/q2-history-keyboard/history-search-restored-320.png)
+— sont des preuves QA techniques exclusivement.
+
+Validation après correction : `npm run lint`, `npm run build`, `npm test`
+(39 fichiers/153 tests Vitest et 33 contrôles Node/CSS), `git diff --check` et
+le rendu/parcours Chrome headless/CDP passent. L'Historique 2023 est consultable
+sans limite produit à quatre ans ; la revue ne valide pas le calendrier natif,
+le clavier macOS/CUA ni un lecteur d'écran réel. Le bac tmpfs et ses
+identifiants temporaires restent à nettoyer après la capture.
