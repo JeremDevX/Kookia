@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
 import { useCart } from "../../context/useCart";
 import { isValidOrderQuantity } from "../../domain/orders/orderQuantity";
@@ -9,6 +9,7 @@ import "./PurchaseSuggestions.css";
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 
 export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number }) {
+  const location = useLocation();
   const { cartItems, addToCart } = useCart();
   const [search, setSearch] = useState("");
   const [data, setData] = useState<PurchaseSuggestionsDto | null>(null);
@@ -23,6 +24,14 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const retryFocusPending = useRef(false);
+  const entryFocused = useRef(false);
+
+  useEffect(() => {
+    if (!loading && !entryFocused.current && location.hash === "#purchase-suggestions-title") {
+      entryFocused.current = true;
+      headingRef.current?.focus();
+    }
+  }, [loading, location.hash]);
 
   useEffect(() => {
     let active = true;
@@ -99,7 +108,7 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
   };
 
   return <section className="purchase-suggestions" aria-labelledby="purchase-suggestions-title">
-    <header className="workspace-section-heading"><h2 ref={headingRef} id="purchase-suggestions-title" tabIndex={-1}>Quels produits prévoir ?</h2>
+    <header className="workspace-section-heading"><h2 ref={headingRef} id="purchase-suggestions-title" tabIndex={-1}>Revoir les achats proposés</h2>
       <span>{loading ? "Calcul…" : data?.status === "ready" ? `${data.suggestions.length} produit${data.suggestions.length === 1 ? "" : "s"}` : "Pas de quantité fiable"}</span>
     </header>
     {loading ? <p role="status">Vérification des services, recettes et comptages…</p> : error && !data
@@ -133,7 +142,7 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
                 <details><summary>Recettes à l’origine du besoin</summary><ul className="purchase-suggestion-sources">{item.sources.map((source, index) => <li key={`${source.recipeName}-${index}`}>
                   {source.saleItemName} → {source.recipeName} (version {source.recipeVersion}) : {source.quantity} {item.unit}
                 </li>)}</ul></details>
-                {item.estimatedQuantity !== null && <p>Reste à revoir : <strong>{item.estimatedQuantity} {item.unit}</strong> · estimation au prix actuel du catalogue : {item.estimatedCost === null ? "—" : money.format(item.estimatedCost)}.</p>}
+                {item.estimatedQuantity !== null && <p>Quantité à prévoir : <strong>{item.estimatedQuantity} {item.unit}</strong> · budget indicatif : {item.estimatedCost === null ? "—" : `${money.format(item.estimatedCost)} HT`}.</p>}
                 {item.decision?.orderId && !localDecision
                   ? <p role="status">Déjà présente dans une commande enregistrée. <Link to={`/orders#order-${item.decision.orderId}`}>Voir la commande</Link></p>
                   : inCart

@@ -5,7 +5,7 @@
 .today-focus { background: var(--color-primary-light); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-xl); padding: var(--spacing-xl); display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-md); }
 .today-eyebrow { color: var(--color-primary); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: var(--tracking-0_15); }
 .today-focus h2 { font-size: clamp(var(--font-size-xl), var(--unit-2_3vw), var(--font-size-2xl)); font-weight: var(--font-weight-semibold); }
-.today-focus p, .today-card p, .today-examples p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_8); }
+.today-focus p, .today-card p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_8); }
 .today-focus .btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); min-height: var(--size-44); text-decoration: none; }
 .today-focus-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
 .today-focus-actions .btn-outline { background: var(--color-surface); border: var(--size-1) solid var(--color-border); color: var(--color-primary); }
@@ -22,9 +22,6 @@
 .today-card small { color: var(--color-text-muted); font-size: var(--font-size-caption); }
 .today-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-md); margin-top: auto; padding-top: var(--spacing-sm); }
 .today-card-actions :is(a, button) { color: var(--color-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-decoration: underline; text-underline-offset: var(--size-3); }
-.today-examples { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--spacing-lg); }
-.today-examples summary { cursor: pointer; font-weight: var(--font-weight-medium); }
-.today-examples p { margin-top: var(--spacing-md); }
 .dashboard-container :is(a, button, summary):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 @media (--media-desktop-compact) { .today-grid, .today-onboarding ol { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); } }
 @media (--media-compact) {

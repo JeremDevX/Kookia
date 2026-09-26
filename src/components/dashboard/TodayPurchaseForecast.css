@@ -1,0 +1,36 @@
+.today-forecast { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-lg); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-surface); }
+.today-forecast-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); }
+.today-forecast-heading > svg { color: var(--color-primary); flex-shrink: var(--number-0); }
+.today-forecast h2 { margin-top: var(--spacing-xs); font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); }
+.today-forecast h3 { font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); }
+.today-forecast p, .today-forecast li, .today-forecast summary { font-size: var(--font-size-sm); line-height: var(--number-1_8); }
+.today-forecast-period, .today-forecast small, .today-forecast-products p { color: var(--color-text-secondary); }
+.today-forecast-overview { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-md); border-radius: var(--radius-md); background: var(--color-primary-light); }
+.today-forecast-overview p { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--spacing-xs); }
+.today-forecast-overview strong { color: var(--color-primary); font-size: var(--font-size-base); }
+.today-forecast-overview span { color: var(--color-text-secondary); }
+.today-forecast-products { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-sm); padding: var(--number-0); list-style: none; }
+.today-forecast-products > li { min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border-light); border-radius: var(--radius-md); }
+.today-forecast-quantities { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); align-items: center; gap: var(--spacing-xs); margin-top: var(--spacing-sm); }
+.today-forecast-quantities dt { color: var(--color-text-secondary); font-size: var(--font-size-caption); }
+.today-forecast-quantities dd { margin: var(--number-0); font-weight: var(--font-weight-medium); }
+.today-forecast-to-order { padding: var(--spacing-sm); border-radius: var(--radius-sm); background: var(--color-primary-light); }
+.today-forecast-to-order :is(dt, dd) { color: var(--color-primary); font-weight: var(--font-weight-semibold); }
+.today-forecast-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--spacing-md); }
+.today-forecast a { color: var(--color-primary); text-underline-offset: var(--size-3); }
+.today-forecast .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--spacing-sm); min-height: var(--size-44); text-decoration: none; color: var(--color-surface); }
+.today-forecast summary { cursor: pointer; font-weight: var(--font-weight-medium); }
+.today-forecast details > :not(summary) { margin-top: var(--spacing-sm); }
+.today-forecast details ul, .today-forecast-guidance ul { padding-left: var(--spacing-lg); }
+.today-forecast-guidance { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-sm); padding: var(--spacing-md); background: var(--color-warning-soft); border-radius: var(--radius-md); }
+.today-forecast-guidance a { display: inline-flex; align-items: center; gap: var(--spacing-xs); }
+.today-forecast-method { border-top: var(--size-1) solid var(--color-border-light); padding-top: var(--spacing-sm); }
+@media (--media-desktop-compact) { .today-forecast-products { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); } }
+@media (--media-compact) {
+  .today-forecast { padding: var(--spacing-lg); }
+  .today-forecast-products { grid-template-columns: var(--unit-1fr); }
+  .today-forecast-quantities { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); }
+  .today-forecast-to-order { grid-column: var(--number-1) / var(--number-negative-1); display: flex; justify-content: space-between; gap: var(--spacing-xs); }
+  .today-forecast-actions .btn { width: var(--unit-100percent); }
+  .today-forecast-actions .btn svg { flex-shrink: var(--number-0); }
+}

@@ -5,6 +5,7 @@ import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 import Modal from "../components/common/Modal";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
+import TodayPurchaseForecast from "../components/dashboard/TodayPurchaseForecast";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
 import { getProductStatus, needsStockReview } from "../domain/inventory/product.policies";
@@ -128,10 +129,12 @@ export default function Dashboard() {
       </section>
     </div>
 
-    <details className="today-examples"><summary>Prévisions et idées de menu</summary>
-      <p>La prévision reste expérimentale et n'apparaît qu'avec 28 jours complets de ventes et de service. Les idées de menu sont des propositions à vérifier avant toute production.</p>
-      <div className="today-card-actions"><Link to="/predictions">Consulter les prévisions</Link><button type="button" onClick={() => setMenuOpen(true)}>Voir les idées de menu</button></div>
-    </details>
+    <section className="today-card" aria-labelledby="today-menu-title"><h2 id="today-menu-title">Préparer le menu</h2>
+      <p>Trouvez des idées de recettes pour utiliser les produits disponibles en stock.</p>
+      <div className="today-card-actions"><button type="button" onClick={() => setMenuOpen(true)}>Voir les idées de menu</button></div>
+    </section>
+
+    <TodayPurchaseForecast />
 
     <Modal isOpen={menuOpen} onClose={() => setMenuOpen(false)} title="Préparer le menu" width="md">
       <MenuIdeasModal onValidate={() => addToast("success", "Menu validé", "Le menu est prêt à imprimer.")} onClose={() => setMenuOpen(false)} />
