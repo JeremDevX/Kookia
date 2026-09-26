@@ -14,6 +14,10 @@ réelle n'écrit pas dans le compte.
 
 **État du Goal :** travail en cours ; Q1, Q1b, C1, D1, D2, D3, D4, D5, D6, C2, C3, F1, F3/F4, O1–O2, M1–M3, R0 et I1–I4 sont prouvés localement sur leurs portées et fixtures respectives ; aucun fournisseur OCR n'est activé.
 
+**Lecture du journal :** la matrice de preuves ci-dessous reflète l'état courant ;
+les entrées datées décrivent l'état au moment de chaque vérification et ne sont
+pas réécrites rétroactivement.
+
 **Revalidation du 26/09/2026 :** le code de `188a227` passe `npm run lint`,
 `npm run build`, `npm run build:api` et `npm test` (39 fichiers/153 tests
 Vitest, 33 contrôles Node/CSS). `restaurantSimulationPlan.test.ts` passe 2/2 :
@@ -2436,3 +2440,17 @@ credential du compte Kookia persistant et aucun corpus privé n'ont été utilis
 
 `npm run lint`, `npm run build`, `npm test` (39 fichiers/153 tests Vitest et
 33 contrôles Node/CSS) et `git diff --check` passent.
+
+### Réconciliation documentaire C1 (2026-09-26)
+
+La section 2 du référentiel indiquait encore que le parcours pièce → brouillon
+corrigible → réception était absent, alors qu'il est câblé dans
+`SourceInvoiceArchive` et `InvoiceModal`. Le test
+`sourceInvoiceWorkflow.integration.test.ts` couvre la création idempotente du
+brouillon lié, ses corrections versionnées, la réception simulée unique, le
+rejeu, l'isolation entre espaces et les refus de source périmée ou de réception
+partielle/non recevable. Le référentiel décrit maintenant ce comportement sans
+surinterpréter la source : aucun envoi fournisseur n'a lieu. Les anciennes
+mentions « C3 demeure partiel » restent des constats datés ; la matrice en tête
+porte l'état courant. Aucun test, compte ou bac externe n'a été lancé pour cette
+correction documentaire.

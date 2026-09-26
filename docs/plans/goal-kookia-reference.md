@@ -51,8 +51,13 @@ examiner d'abord est `server/src/scripts/sourceInvoices.ts`,
 `server/src/scripts/restaurantSimulationReceipts.ts`,
 `server/src/application/workspace/invoiceService.ts`,
 `server/src/http/invoiceRoutes.ts`, `src/components/dashboard/InvoiceModal.tsx`
-et `SourceInvoiceArchive.tsx`. Le parcours actuel n'offre pas encore une action
-continue « reprendre cette pièce → corriger ses lignes → réceptionner ».
+et `SourceInvoiceArchive.tsx`. Le parcours actuel propose de sélectionner la
+pièce, créer ou reprendre son brouillon lié, confirmer le type et la date,
+rapprocher ou exclure explicitement chaque ligne, puis réceptionner. Le serveur
+lie le brouillon à l'empreinte et à la révision de la source ; les conflits de
+source, les réceptions partielles et les doublons sont contrôlés, et une
+réception liée à une pièce reste simulée, sans transmission fournisseur. Le
+contrat est couvert par `server/src/http/sourceInvoiceWorkflow.integration.test.ts`.
 
 | Mesure du corpus/scénario actuel | Interprétation obligatoire |
 | --- | --- |
