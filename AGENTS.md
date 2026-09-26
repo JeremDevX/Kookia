@@ -22,6 +22,23 @@ and verification evidence live in
 For long-running feature work, follow the dependency gates and evidence in
 [`docs/plans/plan-execution.md`](docs/plans/plan-execution.md).
 
+## Restaurateur-first interface and wording
+
+Design and write for French-speaking restaurateurs, chefs, and restaurant teams
+with little time, often between services; do not assume software expertise.
+Prefer the simplest understandable path to the task: one clear primary action,
+minimal required input, and secondary details on demand. Use familiar restaurant
+vocabulary and short, useful French copy; omit technical jargon, marketing filler,
+and explanations that do not help the next decision. Simplicity must preserve
+essential quantities, units, uncertainty, and meaningful human confirmation.
+Guide transitions between screens with a clear next step and return path,
+preserving relevant context. Reuse one coherent flow per task rather than
+duplicating screens, information, or data entry without a distinct user need.
+For interface design, review, or product wording (including copy-only changes),
+use the existing [`ui-ux` skill](.agents/skills/ui-ux/SKILL.md). Its reference is
+[`docs/design-system.md`](docs/design-system.md); apply it to the requested scope,
+not as a mandate to redesign unrelated screens.
+
 ## Invariants
 
 - Keep business decisions out of rendering when they belong in a domain policy,
