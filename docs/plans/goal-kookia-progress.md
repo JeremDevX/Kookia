@@ -2652,3 +2652,22 @@ résumés natifs des détails de recette.
 version demeure ouverte : CUA répond toujours `browsers: []`, et les tests
 unitaires du gestionnaire ne remplacent pas une observation réelle du rendu ou
 du focus. Aucun espace ou compte opérationnel n'a été lu ou modifié.
+
+### R0 — revalidation après intégration F1 (2026-09-26)
+
+`npm run verify:local-delivery` passe sur le HEAD courant : lint, builds
+web/API, 18 migrations fraîches, parité schéma/Prisma, `npm test` (41 fichiers,
+153 tests Vitest et 33 contrôles Node/CSS), `npm run test:integration` (26
+fichiers, 41 tests) et vérification du témoin après dump/restauration. La
+requête Docker read-only après recette ne trouve aucun conteneur portant le
+label de nettoyage R0. Une première tentative dans le sandbox a été refusée au
+socket avant démarrage ; son nom exact a été vérifié absent avant le rejeu
+autorisé. Aucun compte, identifiant local ou corpus conservé n'a été utilisé.
+
+La recherche d'une voie de rendu a aussi été menée à terme : `getState()` expose
+Chrome dans les applications mais `browsers: []`, `getApp("com.google.Chrome")`
+échoue `cgWindowNotFound`, et Chrome `--headless` isolé termine par SIGABRT
+(code 134), même sur `about:blank`. Playwright/Puppeteer ne sont pas installés
+dans le runtime Node disponible. Aucun rendu de Prévisions n'est revendiqué ;
+le contrôle responsive/clavier Q2 correspondant attend une surface navigateur
+contrôlable.
