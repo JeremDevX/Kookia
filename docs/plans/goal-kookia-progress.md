@@ -2571,4 +2571,9 @@ n'a pas ouvert son port DevTools. Aucune capture ni preuve clavier n'est
 revendiquée pour ces deux routes. Le runner `demo:fixtures` a été arrêté par
 SIGINT ciblé (code 130) ; son répertoire d'identifiants a disparu, les ports
 52421/52422 refusent la connexion et la vérification Docker en lecture seule ne
-trouve aucun conteneur qui les publie.
+trouve aucun conteneur qui les publie. À la reprise, `cua.getState()` retourne
+encore `browsers: []`, Chrome headless lancé directement termine sur SIGABRT et
+AppleScript ne peut pas joindre sa fenêtre (`-1728`). En parallèle, les quatre
+suites ciblées réception→recette datée→sorties estimées et rendu de la candidate
+passent (13 tests) ; cela valide le calcul et son contenu, pas le rendu ni le
+clavier de ces deux pages.
