@@ -118,6 +118,15 @@ model Restaurant {
   dailyCovers  Int
   mode         WorkspaceMode @default(operational)
   seededAt     DateTime @default(now())
+  serviceSchedules RestaurantServiceSchedule[]
+  serviceSessions RestaurantServiceSession[]
+  serviceAllocations SaleServiceAllocation[]
+  stockLots StockLot[]
+  lotAllocations StockLotAllocation[]
+  wasteRecords WasteRecord[]
+  serviceMenus ServiceMenuVersion[]
+  operationalIncidents OperationalIncident[]
+  purchaseCredits PurchaseCredit[]
   suppliers    Supplier[]
   products     Product[]
   stockCounts  StockCount[]
@@ -151,6 +160,9 @@ model Supplier {
   name         String
   email        String
   phone        String
+  deliveryWeekdays Int[] @default([])
+  leadTimeDays Int?
+  orderCutoffTime String?
   products     Product[]
   receipts     PurchaseReceipt[]
   @@id([restaurantId, id])
@@ -171,6 +183,9 @@ model Product {
   lastDelivery DateTime? @db.Date
   revision     Int @default(1)
   stockRevision Int @default(1)
+  orderPackQuantity Decimal? @db.Decimal(14, 3)
+  stockLots StockLot[]
+  wasteRecords WasteRecord[]
   ingredients  RecipeIngredient[]
   recipeVersionIngredients RecipeVersionIngredient[]
   movements    StockMovement[]
@@ -201,6 +216,7 @@ model RecipeIngredient {
   restaurantId String
   recipeId     String
   productId    String
+  netQuantity Decimal? @db.Decimal(14, 3)
   quantity     Decimal @db.Decimal(14, 3)
   recipe       Recipe @relation(fields: [restaurantId, recipeId], references: [restaurantId, id], onDelete: Cascade)
   product      Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
@@ -237,6 +253,7 @@ model RecipeVersionIngredient {
   productId     String
   productName   String
   productUnit   String
+  netQuantity Decimal? @db.Decimal(14, 3)
   quantity      Decimal @db.Decimal(14, 3)
   recipeVersion RecipeVersion @relation(fields: [restaurantId, recipeVersionId], references: [restaurantId, id], onDelete: Cascade)
   product       Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
@@ -251,6 +268,9 @@ model StockMovement {
   productId    String
   product      Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
   delta        Decimal @db.Decimal(14, 3)
+  serviceSlot String?
+  lotAllocations StockLotAllocation[]
+  wasteRecord WasteRecord?
   reason       String
   operationId  String
   actorId      String
@@ -268,6 +288,7 @@ model StockMovement {
   purchaseReceiptLineId  String?
   purchaseReceiptLine    PurchaseReceiptLine? @relation(fields: [restaurantId, purchaseReceiptLineId], references: [restaurantId, id], onDelete: NoAction)
   createdAt    DateTime @default(now())
+  @@unique([restaurantId, id])
   @@unique([restaurantId, operationId, productId])
   @@unique([restaurantId, purchaseReceiptLineId])
   @@index([restaurantId, productId, createdAt])
@@ -311,6 +332,8 @@ model Production {
   prepTime     Int
   notes        String
   date         DateTime @db.Date
+  serviceSlot String?
+  wasteRecords WasteRecord[]
   kind         String
   actorId      String
   operationId  String
@@ -398,6 +421,7 @@ model DailySale {
   saleItem     SaleItem @relation(fields: [restaurantId, saleItemId], references: [restaurantId, id], onDelete: NoAction)
   serviceDate  DateTime @db.Date
   serviceDay   ServiceDay @relation(fields: [restaurantId, serviceDate], references: [restaurantId, serviceDate], onDelete: NoAction)
+  serviceAllocation SaleServiceAllocation?
   quantity     Int
   source       String   @default("manual")
   operationId  String
@@ -603,6 +627,9 @@ model PurchaseOrderLine {
   pricePerUnit Decimal @db.Decimal(14, 4)
   suggestionDecisionId String? @unique
   suggestionDecision RecommendationDecision? @relation(fields: [suggestionDecisionId], references: [id], onDelete: SetNull)
+  expectedDeliveryDate DateTime? @db.Date
+  deliveryRevision Int @default(0)
+  deliveryNote String?
   receiptLines PurchaseReceiptLine[]
   @@unique([restaurantId, id])
 }
@@ -630,6 +657,7 @@ model PurchaseReceipt {
   invoiceComplete            Boolean @default(false)
   requestSnapshot            Json
   createdAt                  DateTime @default(now())
+  credits PurchaseCredit[]
   lines                      PurchaseReceiptLine[]
 
   @@unique([restaurantId, operationId])
@@ -658,6 +686,7 @@ model PurchaseReceiptLine {
   orderedUnitPrice      Decimal @db.Decimal(14, 4)
   invoiceUnitPrice      Decimal @db.Decimal(14, 4)
   priceDifferenceReason String?
+  stockLot StockLot?
   movement              StockMovement?
   createdAt             DateTime @default(now())
 
@@ -705,4 +734,167 @@ model InvoiceDraftRevision {
 
   @@id([restaurantId, invoiceDocumentId, revision])
   @@index([restaurantId, sourceDocumentId, createdAt], map: "InvoiceDraftRevision_restaurantId_sourceDocumentId_createdAt_id")
+}
+
+// Weekly planning never qualifies observed sales coverage.
+model RestaurantServiceSchedule {
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  weekday Int
+  slot String
+  opensAt String
+  closesAt String
+  revision Int @default(1)
+  actorId String
+  @@id([restaurantId, weekday, slot])
+}
+
+model RestaurantServiceSession {
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  serviceDate DateTime @db.Date
+  slot String
+  plannedOpen Boolean
+  coverage ServiceDayCoverage @default(missing)
+  actualCovers Int?
+  revision Int @default(1)
+  actorId String
+  note String @default("")
+  updatedAt DateTime @default(now()) @updatedAt
+  @@id([restaurantId, serviceDate, slot])
+}
+
+model SaleServiceAllocation {
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  saleId String
+  sale DailySale @relation(fields: [restaurantId, saleId], references: [restaurantId, id], onDelete: Cascade)
+  lunchQuantity Int @default(0)
+  dinnerQuantity Int @default(0)
+  saleRevision Int
+  revision Int @default(1)
+  actorId String
+  updatedAt DateTime @default(now()) @updatedAt
+  @@id([restaurantId, saleId])
+}
+
+model StockLot {
+  id String @id @default(uuid())
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  productId String
+  product Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
+  purchaseReceiptLineId String?
+  purchaseReceiptLine PurchaseReceiptLine? @relation(fields: [restaurantId, purchaseReceiptLineId], references: [restaurantId, id], onDelete: NoAction)
+  receivedAt DateTime? @db.Date
+  expiresAt DateTime? @db.Date
+  quantityReceived Decimal @db.Decimal(14, 3)
+  remainingQuantity Decimal @db.Decimal(14, 3)
+  unitCost Decimal? @db.Decimal(14, 4)
+  source String
+  actorId String
+  createdAt DateTime @default(now())
+  allocations StockLotAllocation[]
+  wasteRecords WasteRecord[]
+  @@unique([restaurantId, id])
+  @@unique([restaurantId, purchaseReceiptLineId])
+  @@index([restaurantId, productId, expiresAt])
+}
+
+model StockLotAllocation {
+  id String @id @default(uuid())
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  lotId String
+  lot StockLot @relation(fields: [restaurantId, lotId], references: [restaurantId, id], onDelete: NoAction)
+  stockMovementId String
+  stockMovement StockMovement @relation(fields: [restaurantId, stockMovementId], references: [restaurantId, id], onDelete: Cascade)
+  quantity Decimal @db.Decimal(14, 3)
+  @@unique([restaurantId, stockMovementId, lotId])
+}
+
+model WasteRecord {
+  id String @id @default(uuid())
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  operationId String
+  actorId String
+  serviceDate DateTime @db.Date
+  serviceSlot String?
+  kind String
+  avoidability String
+  productId String?
+  product Product? @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
+  lotId String?
+  lot StockLot? @relation(fields: [restaurantId, lotId], references: [restaurantId, id], onDelete: NoAction)
+  productionId String?
+  production Production? @relation(fields: [restaurantId, productionId], references: [restaurantId, id], onDelete: NoAction)
+  quantity Decimal @db.Decimal(14, 3)
+  unit String
+  note String
+  stockMovementId String?
+  stockMovement StockMovement? @relation(fields: [restaurantId, stockMovementId], references: [restaurantId, id], onDelete: NoAction)
+  createdAt DateTime @default(now())
+  @@unique([restaurantId, operationId])
+  @@unique([restaurantId, stockMovementId])
+  @@index([restaurantId, serviceDate, serviceSlot])
+}
+
+model ServiceMenuVersion {
+  id String @id @default(uuid())
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  serviceDate DateTime @db.Date
+  slot String
+  revision Int
+  operationId String
+  actorId String
+  entries Json
+  note String
+  createdAt DateTime @default(now())
+  @@unique([restaurantId, serviceDate, slot, revision])
+  @@unique([restaurantId, operationId])
+  @@index([restaurantId, serviceDate, slot])
+}
+
+model OperationalIncident {
+  id String @id @default(uuid())
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  operationId String
+  serviceDate DateTime @db.Date
+  serviceSlot String?
+  kind String
+  status String @default("open")
+  productId String?
+  lotId String?
+  orderLineId String?
+  recipeId String?
+  quantity Decimal? @db.Decimal(14, 3)
+  unit String?
+  note String
+  actionNote String?
+  createdBy String
+  resolvedBy String?
+  createdAt DateTime @default(now())
+  resolvedAt DateTime?
+  revision Int @default(1)
+  @@unique([restaurantId, operationId])
+  @@index([restaurantId, serviceDate, serviceSlot])
+}
+
+model PurchaseCredit {
+  id String @id @default(uuid())
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  operationId String
+  actorId String
+  receiptId String
+  receipt PurchaseReceipt @relation(fields: [restaurantId, receiptId], references: [restaurantId, id], onDelete: NoAction)
+  reference String
+  amount Decimal @db.Decimal(14, 2)
+  reason String
+  createdAt DateTime @default(now())
+  @@unique([restaurantId, operationId])
+  @@unique([restaurantId, receiptId, reference])
 }
