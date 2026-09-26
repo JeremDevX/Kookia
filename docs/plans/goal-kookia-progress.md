@@ -2597,3 +2597,19 @@ Vitest et 33 contrôles Node/CSS), `git diff --check`. Le navigateur n’étant 
 contrôlable, les captures antérieures ne sont pas revendiquées comme rendu
 après cette correction ; l’inspection visuelle et le parcours clavier de ces
 pages restent ouverts.
+
+### Q2 — recette locale de livraison complète (2026-09-26)
+
+`npm run verify:local-delivery` a passé lors d’un rejeu frais : lint, builds
+client/API, 18 migrations neuves, parité Prisma, 158 tests Vitest, 33 contrôles
+Node/CSS et 41 tests d’intégration répartis sur 26 fichiers. Le contrôle de
+sauvegarde/restauration a relu sa donnée témoin, puis confirmé le statut des
+migrations ; le conteneur PostgreSQL loopback/tmpfs a été supprimé. Un premier
+passage frais avait échoué sur deux réponses 404 dans les intégrations
+workspace/activity et sales/recipe-mappings ; le passage suivant est vert, ce
+qui ne suffit pas à conclure que la variabilité antérieure est éliminée. Aucun
+compte opérationnel ni identifiant local n’a été consulté ou modifié.
+
+La revue rendue/clavier du Bilan et des Recettes reste ouverte : CUA ne fournit
+toujours pas de navigateur contrôlable. Aucun nouveau rendu de ces pages n’est
+revendiqué.
