@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import Modal from "../components/common/Modal";
@@ -33,9 +33,18 @@ export default function Orders() {
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceDraft, setInvoiceDraft] = useState<Invoice | undefined>();
   const [invoiceRefresh, setInvoiceRefresh] = useState(0);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const recommendations = createOrderRecommendationsFromCartItems(cartItems);
   const missingProduct = !cartError && cartItems.some((item) => !products.some((product) => product.id === item.productId));
   const hasExampleItem = !cartError && cartItems.some((item) => !!item.predictionId);
+  const retryCart = () => {
+    void refreshCart();
+    requestAnimationFrame(() => headingRef.current?.focus());
+  };
+  const retryCatalog = () => {
+    void refetch();
+    requestAnimationFrame(() => headingRef.current?.focus());
+  };
   const openManualInvoice = () => {
     setInvoiceDraft({ id: crypto.randomUUID(), reference: "", date: formatLocalISODate(new Date()),
       lines: [], status: "draft", source: "manual", revision: 0 });
@@ -44,7 +53,7 @@ export default function Orders() {
 
   return <div className="orders-container workspace-page">
     <header className="workspace-header"><div>
-      <h1>Achats</h1>
+      <h1 ref={headingRef} tabIndex={-1}>Achats</h1>
       <p className="workspace-subtitle">Choisissez vos produits, revoyez les quantités, puis validez votre commande.</p>
     </div></header>
 
@@ -55,8 +64,8 @@ export default function Orders() {
         </span>
       </div>
       {cartError && <div role="alert"><p>La commande en préparation n'a pas pu être chargée : {cartError}</p>
-        <Button type="button" variant="outline" onClick={() => void refreshCart()} disabled={cartLoading}>Réessayer</Button></div>}
-      {catalogError && <div role="alert"><p>Catalogue indisponible : {catalogError.message}</p><Button variant="outline" onClick={() => void refetch()}>Réessayer</Button></div>}
+        <Button type="button" variant="outline" onClick={retryCart} disabled={cartLoading}>Réessayer</Button></div>}
+      {catalogError && <div role="alert"><p>Catalogue indisponible : {catalogError.message}</p><Button variant="outline" onClick={retryCatalog}>Réessayer</Button></div>}
       {missingProduct && !catalogLoading && !catalogError && <p role="alert">Un produit de votre sélection n'est plus dans le catalogue. Retirez-le avant de valider.</p>}
       {hasExampleItem && <p role="alert">Les scénarios d'exemple ne peuvent pas être validés. Écartez-les de la sélection avant de continuer.</p>}
       {cartLoading || catalogLoading ? <p role="status">Chargement de votre commande…</p> : cartError ? null : cartItems.length === 0 ?

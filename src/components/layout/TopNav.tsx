@@ -37,7 +37,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
           ref={menuButtonRef}
           className="hamburger-btn"
           onClick={onMenuClick}
-          aria-label="Ouvrir le menu"
+          aria-label={isSidebarOpen ? "Fermer le menu" : "Ouvrir le menu"}
           aria-expanded={isSidebarOpen}
           aria-controls="main-sidebar"
         >

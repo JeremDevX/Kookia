@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Card from "../components/common/Card";
 import Badge from "../components/common/Badge";
 import Input from "../components/common/Input";
@@ -32,7 +32,8 @@ const Stocks: React.FC = () => {
   const { addToCart, loading: cartLoading } = useCart();
   const { products, updateStock, updateProduct, recordCount, addProduct, getStatus, loading, error, refetch } =
     useProductsWithMutations();
-  const { suppliers } = useInventoryCatalog();
+  const { suppliers, error: catalogError, refetch: refetchCatalog } = useInventoryCatalog();
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     () => searchParams.get("product")
@@ -122,10 +123,13 @@ const Stocks: React.FC = () => {
   return (
     <div className="stocks-container workspace-page">
       {loading && <p role="status">Chargement du stock…</p>}
-      {error && <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>}
+      {(error || catalogError) && <div role="alert"><p>{(error ?? catalogError)?.message}</p><Button onClick={() => {
+        void Promise.all([refetch(), refetchCatalog()]);
+        requestAnimationFrame(() => headingRef.current?.focus());
+      }}>Réessayer</Button></div>}
       <header className="workspace-header">
         <div>
-          <h1>Stocks</h1>
+          <h1 ref={headingRef} tabIndex={-1}>Stocks</h1>
         </div>
         <Button
           icon={<Plus size={18} />}
@@ -142,7 +146,7 @@ const Stocks: React.FC = () => {
       </div>
 
       {view === "review" ? <section aria-labelledby="stock-review-title"><div className="workspace-section-heading"><h2 id="stock-review-title">Stocks à vérifier ou sous le seuil</h2></div>
-        {!loading && !error && <StockReview products={productsToReview} suppliers={suppliers} selecting={cartLoading} onInspect={setSelectedProductId} onSelect={(product) => void handleSelectForOrder(product)} />}
+        {!loading && !error && !catalogError && <StockReview products={productsToReview} suppliers={suppliers} selecting={cartLoading} onInspect={setSelectedProductId} onSelect={(product) => void handleSelectForOrder(product)} />}
       </section> : <>
 
       <Card className="stocks-toolbar">

@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [latestService, setLatestService] = useState<LatestService | null | undefined>(undefined);
   const [salesError, setSalesError] = useState("");
   const [salesReload, setSalesReload] = useState(0);
+  const stockHeading = useRef<HTMLHeadingElement>(null);
   const salesHeading = useRef<HTMLHeadingElement>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [restaurantError, setRestaurantError] = useState("");
@@ -98,8 +99,11 @@ export default function Dashboard() {
     </section>}
 
     <div className="today-grid">
-      <section className="today-card" aria-labelledby="today-stock-title"><h2 id="today-stock-title">Stocks</h2>
-        {productsLoading ? <p role="status">Chargement du stock…</p> : productsError ? <div role="alert"><p>Stock indisponible.</p><Button variant="outline" onClick={() => void refreshProducts()}>Réessayer</Button></div> :
+      <section className="today-card" aria-labelledby="today-stock-title"><h2 id="today-stock-title" ref={stockHeading} tabIndex={-1}>Stocks</h2>
+        {productsLoading ? <p role="status">Chargement du stock…</p> : productsError ? <div role="alert"><p>Stock indisponible.</p><Button variant="outline" onClick={() => {
+          void refreshProducts();
+          requestAnimationFrame(() => stockHeading.current?.focus());
+        }}>Réessayer</Button></div> :
           <p>{stockToReview.length === 0 ? "Aucun produit sous le seuil théorique." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique.`}</p>}
         {!productsLoading && !productsError && confirmedStockoutCount > 0 && <Badge label={`${confirmedStockoutCount} rupture${confirmedStockoutCount > 1 ? "s" : ""} confirmée${confirmedStockoutCount > 1 ? "s" : ""}`} status="urgent" />}
         <small>{latestService?.sources.includes("demo_simulation")

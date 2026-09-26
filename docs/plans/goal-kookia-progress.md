@@ -2388,3 +2388,33 @@ corpus privé n'a été utilisée.
 
 `npm run lint`, `npm run build`, `npm test` (39 fichiers/153 tests Vitest et
 33 contrôles Node/CSS) et `git diff --check` passent.
+
+### Q2 — reprise clavier des erreurs Ventes, Stocks et Achats (2026-09-26)
+
+Le parcours s'est poursuivi sur un nouveau runner `demo:fixtures` isolé en
+tmpfs. Les seules routes perturbées étaient les lectures GET des ventes, du
+catalogue ou du panier, chacune renvoyant temporairement 503 ; les reprises
+retournent aux données de la fixture, sans mutation de vente, de stock ou de
+commande. Les actions `Tab`/`Entrée` atteignent les reprises avec focus visible.
+Après récupération, le focus revient au titre de la section au lieu du document.
+
+La revue a révélé que Stocks ne rafraîchissait que les produits après une panne
+du catalogue : les fournisseurs restaient absents du filtre (1 option visible
+contre 11 fournisseurs servis). Le bouton recharge maintenant produits et
+catalogue fournisseurs. Sur les surfaces Aujourd'hui, Stocks et Achats, les
+reprises gardent aussi le focus sur le titre ; le nom accessible du bouton de
+menu reflète désormais son état ouvert/fermé. Ventes conservait déjà correctement
+le focus après reprise.
+
+À 390×844 et 1280×900 px, les documents mesurés restent à la largeur du viewport
+sur Aujourd'hui, Ventes, Stocks et Achats. Preuves QA techniques uniquement,
+sans valeur métier : [Aujourd'hui](evidence/q2-today-error/), [Ventes](evidence/q2-sales-route/),
+[Stocks](evidence/q2-stocks-route/) et [Achats](evidence/q2-orders-route/).
+Le parcours Aujourd'hui → Ventes → Stocks → Achats a été parcouru par Tab/Entrée,
+y compris le menu mobile et son retour de focus. L'injection est restée dans le
+Chrome headless via CDP ; elle ne remplace pas une vérification avec clavier
+natif/CUA. Lecteur d'écran réel et zoom 200 % restent à faire. Aucune donnée ni
+credential du compte Kookia persistant et aucun corpus privé n'ont été utilisés.
+
+`npm run lint`, `npm run build`, `npm test` (39 fichiers/153 tests Vitest et
+33 contrôles Node/CSS) et `git diff --check` passent.
