@@ -59,7 +59,8 @@ export function createDocuments(scenario: Scenario): Document[] {
     ])]);
     add("menu", "Carte du jour", date, "01", [section("Service du midi", ["Séquence", "Plat", "Prix TTC"], recipes.map(r => [r.category, r.name, money(r.price)]))]);
     for (const supplier of suppliers) {
-      const lines = day.stock.filter(line => ingredients.find(p => p.id === line.id)!.supplier === supplier.id);
+      const lines = day.stock.filter(line => line.ordered > 0 && ingredients.find(p => p.id === line.id)!.supplier === supplier.id);
+      if (!lines.length) continue;
       const reference = `${date.replaceAll("-", "")}-${options.seed}-${supplier.id}`;
       const monetaryRows = lines.map(line => {
         const p = ingredients.find(p => p.id === line.id)!;

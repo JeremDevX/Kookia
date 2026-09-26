@@ -8,6 +8,7 @@ import { displayDate, generateScenario } from "./scenario";
 import type { Options } from "./scenario";
 import { parseSalesCsv } from "../../server/src/application/workspace/salesCsv";
 import { inspectTicketZUpload } from "../../server/src/application/workspace/ticketZService";
+import { getOrderStep, isOrderQuantity } from "../../shared/orderQuantity";
 
 const input: Options = { name: "Maison Sureau", address: "18, passage des Tilleuls", city: "44000 Nantes",
   email: "bonjour@maison-sureau.example", start: "2026-06-01", days: 30, covers: 40, seed: 12, incident: "normal", variationPercent: 20, lossPercent: 2, starterPercent: 65, dessertPercent: 60, incidentEvery: 1 };
@@ -23,8 +24,28 @@ describe("restaurant document workshop", () => {
         expect(line.opening + line.received - line.consumed - line.loss + line.adjustment).toBeCloseTo(line.closing, 3);
         expect(line.ordered - line.shortage).toBeCloseTo(line.received, 3);
         expect(line.closing).toBeGreaterThanOrEqual(0);
-        expect(line.closing).toBe(ingredients[p].threshold + (incident === "stock_gap" && p === 0 ? (index + 1) * 0.25 : 0));
+        const step = getOrderStep(ingredients[p]);
+        expect(line.ordered === 0 || isOrderQuantity(line.ordered, step)).toBe(true);
+        expect(line.closing).toBeGreaterThanOrEqual(ingredients[p].threshold - line.shortage + line.adjustment - 1e-9);
+        expect(line.closing).toBeLessThan(ingredients[p].threshold + step + line.adjustment);
       }
+    }
+  });
+  it("reuses rounding surplus and omits purchases already covered by stock", () => {
+    const scenario = generateScenario({ ...input, covers: 5, variationPercent: 0, lossPercent: 0 });
+    const oil = scenario.days.map(day => day.stock.find(line => line.id === "huile")!);
+    expect(oil[0].ordered).toBe(1);
+    expect(oil[0].consumed).toBe(0.064);
+    expect(oil[1].ordered).toBe(0);
+    expect(oil[1].received).toBe(0);
+    expect(oil[1].closing).toBe(0.872);
+    expect(oil.reduce((total, line) => total + line.ordered, 0)).toBe(2.5);
+    const docs = createDocuments(scenario);
+    for (const day of scenario.days) for (const line of day.stock) {
+      const product = ingredients.find(product => product.id === line.id)!;
+      const order = docs.find(doc => doc.kind === "order" && doc.date === day.date && doc.id.endsWith(product.supplier));
+      const row = order?.sections[0].rows.find(row => row[0] === product.name);
+      expect(!!row).toBe(line.ordered > 0);
     }
   });
   it("is reproducible, varies by dossier, and rejects invalid periods", () => {

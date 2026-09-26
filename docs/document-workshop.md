@@ -36,7 +36,7 @@ Kookia vide `dist` : reconstruire l'atelier après `npm run build` si nécessair
    Chaque couvert prend un plat ; les achats suivent les besoins matière.
 4. Choisir un incident facultatif et sa fréquence : un incident tous les N jours,
    le premier au jour N. Une perte élevée ajoute 10 points au taux habituel ;
-   une livraison incomplète manque de 500 g de tomates ; l'écart d'inventaire
+   une livraison incomplète manque de 500 g de tomates lorsqu'elles sont commandées ; l'écart d'inventaire
    ajoute 250 g ; un remboursement concerne un repas complet. Les autres jours
    restent habituels.
 5. Adapter au besoin l'identité et le numéro de dossier dans le volet dédié.
@@ -58,6 +58,15 @@ Le ZIP contient :
 Télécharger puis décompresser le ZIP une fois. Chaque jour, utiliser le dossier
 correspondant : le générateur peut être fermé. Les stocks de fermeture se
 reportent au jour suivant ; suivre l'ordre chronologique des opérations.
+
+Les commandes utilisent les mêmes pas que Kookia via la règle partagée
+`shared/orderQuantity.ts` : pour ce catalogue, 1 kg pour les fruits, légumes et
+produits secs, 0,5 kg pour le poulet, 0,25 kg pour le beurre et 0,5 L pour l'huile.
+Le besoin (production + pertes + seuil de réserve − stock disponible) est
+arrondi au pas supérieur. Le surplus reste en stock et réduit l'achat suivant.
+Un besoin déjà couvert ne génère aucune ligne d'achat, ni pièce fournisseur vide.
+Les réceptions partielles, consommations, pertes et comptages restent au millième.
+Ces pas sont des conventions d'achat, pas des conditionnements fournisseur vérifiés.
 
 Kookia refuse toujours les ventes et productions futures. Les pièces futures
 sont préparées, mais s'utilisent à partir de leur date. Le bouton **CSV jusqu’à

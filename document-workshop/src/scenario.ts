@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ingredients, quantity, recipes } from "./catalog";
+import { getOrderStep, roundOrderQuantity } from "../../shared/orderQuantity";
 
 export const optionsSchema = z.object({
   name: z.string().trim().min(1).max(80), address: z.string().trim().min(1).max(120),
@@ -54,11 +55,13 @@ export function generateScenario(input: Options): Scenario {
       }, 0));
       const opening = days.at(-1)?.stock[productIndex].closing ?? 0;
       const loss = quantity(consumed * (incident === "high_waste" ? options.lossPercent / 100 + 0.1 : options.lossPercent / 100));
-      const received = quantity(consumed + loss + (index === 0 ? ingredient.threshold : 0));
-      const shortage = incident === "short_delivery" && productIndex === 0 ? 0.5 : 0;
+      const netNeed = quantity(Math.max(0, consumed + loss + ingredient.threshold - opening));
+      const ordered = roundOrderQuantity(netNeed, getOrderStep(ingredient));
+      const shortage = incident === "short_delivery" && productIndex === 0 ? Math.min(0.5, ordered) : 0;
+      const received = quantity(ordered - shortage);
       const adjustment = incident === "stock_gap" && productIndex === 0 ? 0.25 : 0;
       return { id: ingredient.id, opening, consumed, loss, received, shortage, adjustment,
-        ordered: quantity(received + shortage), closing: quantity(opening + received - consumed - loss + adjustment) };
+        ordered, closing: quantity(opening + received - consumed - loss + adjustment) };
     });
     const gross = sales.reduce((total, sold, i) => total + sold * recipes[i].price, 0);
     const refunded = incident === "refund" ? recipes.reduce((sum, recipe) => sum + recipe.price, 0) : 0;
