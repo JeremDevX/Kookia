@@ -2671,3 +2671,20 @@ Chrome dans les applications mais `browsers: []`, `getApp("com.google.Chrome")`
 dans le runtime Node disponible. Aucun rendu de Prévisions n'est revendiqué ;
 le contrôle responsive/clavier Q2 correspondant attend une surface navigateur
 contrôlable.
+
+### Q2 — navigateur intégré VS Code (2026-09-26)
+
+Le menu `Affichage → Navigateur` de VS Code a ouvert le navigateur intégré sur
+`/login` du runner `demo:fixtures`, avec sa base PostgreSQL tmpfs indépendante.
+L’arbre d’accessibilité rend le titre Connexion, les champs Email/Mot de passe,
+le bouton Se connecter et le lien Créer un compte. Depuis Email, Tab passe dans
+cet ordre jusqu’au lien. Aucun identifiant n’a été saisi et aucun espace
+opérationnel n’a été consulté.
+
+Après la revue, le runner a été arrêté ; ses deux ports loopback n’écoutent
+plus. Aucun conteneur de cette session ne subsiste ; les conteneurs plus anciens
+portant le même label ont été laissés intacts. Le dossier d’identifiants de
+cette session a disparu. Cette vérification porte uniquement sur la page de
+connexion : la route authentifiée Prévisions, les largeurs responsive et le
+zoom 200 % restent à vérifier ; le rendu visuel par capture CUA demeure
+indisponible dans cette fenêtre VS Code.
