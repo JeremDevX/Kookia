@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import Modal from "../components/common/Modal";
 import InvoiceModal from "../components/dashboard/InvoiceModal";
@@ -18,7 +18,13 @@ import "../styles/Workspace.css";
 import "./Orders.css";
 
 export default function Orders() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const requestedView = searchParams.get("view");
+  const view = searchParams.has("source") || location.hash === "#invoices" ? "invoices"
+    : searchParams.has("receiptId") || location.hash.startsWith("#order-") || location.hash === "#to-transmit" ? "orders"
+      : location.hash === "#selection" ? "prepare" : requestedView === "prepare" || requestedView === "invoices" ? requestedView : "orders";
+  const changeView = (next: string) => setSearchParams({ view: next });
   const focusReceiptId = searchParams.get("receiptId") ?? undefined;
   const returnFrom = searchParams.get("from");
   const returnTo = searchParams.get("to");
@@ -54,9 +60,18 @@ export default function Orders() {
   return <div className="orders-container workspace-page">
     <header className="workspace-header"><div>
       <h1 ref={headingRef} tabIndex={-1}>Achats</h1>
-      <p className="workspace-subtitle">Choisissez vos produits, revoyez les quantités, puis validez votre commande.</p>
-    </div></header>
-
+      <p className="workspace-subtitle">Suivez vos commandes, préparez vos achats et retrouvez vos documents fournisseurs.</p>
+    </div><Button onClick={() => changeView("prepare")}>Préparer un achat</Button></header>
+    <nav className="orders-views" aria-label="Vues des achats">
+      {([["orders", "Commandes & réceptions"], ["prepare", "Préparer un achat"], ["invoices", "Factures & documents"]] as const).map(([id, label]) =>
+        <Button key={id} variant="outline" aria-pressed={view === id} onClick={() => changeView(id)}>{label}</Button>)}
+    </nav>
+    {view === "prepare" && <>
+    <section className="orders-guide" aria-label="Étapes de préparation">
+      <div><strong>1. Choisir les produits</strong><p>Depuis les stocks ou les besoins proposés.</p></div>
+      <div><strong>2. Ajuster et valider</strong><p>Vérifiez les quantités et les fournisseurs.</p></div>
+      <div><strong>3. Transmettre, puis réceptionner</strong><p>Aucun envoi automatique. Enregistrez ensuite ce qui a été livré.</p></div>
+    </section>
     <section id="selection" className="orders-selection" aria-labelledby="selection-title">
       <div className="workspace-section-heading"><h2 id="selection-title">Commande en préparation</h2>
         <span role="status" aria-busy={cartLoading}>
@@ -72,28 +87,25 @@ export default function Orders() {
         <div className="orders-empty"><p>Aucun article sélectionné.</p><Link to="/stocks">Choisir dans les stocks</Link></div> :
         <ul className="orders-selection-list">{cartItems.map((item) => <li key={item.id}>
           <div><strong>{item.productName}</strong><span>{item.quantity} {item.unit} · {item.predictionId ? "proposition à retirer" : item.source === "stocks" ? "choisi dans Stocks" : "sélection précédente"}</span></div>
-          <Button type="button" variant="outline" size="sm" onClick={() => void removeFromCart(item.id)} disabled={cartLoading}>Écarter</Button>
+          <Button type="button" variant="outline" size="sm" aria-label={`Écarter ${item.productName}`} onClick={() => void removeFromCart(item.id)} disabled={cartLoading}>Écarter</Button>
         </li>)}</ul>}
       {!cartError && cartItems.length > 0 && <div className="orders-selection-actions"><p>La validation enregistre votre décision. Elle n'envoie rien au fournisseur et ne modifie pas le stock.</p>
         <Button onClick={() => setReviewOpen(true)} disabled={cartLoading || catalogLoading || !!catalogError || missingProduct || hasExampleItem}>Revoir les quantités</Button></div>}
     </section>
 
     <PurchaseSuggestions refreshKey={suggestionsRevision} />
+    </>}
 
-    <SourceInvoiceArchive refreshKey={invoiceRefresh} sourceId={searchParams.get("source") ?? undefined}
+    {view === "invoices" && <SourceInvoiceArchive refreshKey={invoiceRefresh} sourceId={searchParams.get("source") ?? undefined}
       onCreateManual={openManualInvoice}
-      onOpenDraft={(invoice) => { setInvoiceDraft(invoice); setInvoiceOpen(true); }} />
+      onOpenDraft={(invoice) => { setInvoiceDraft(invoice); setInvoiceOpen(true); }} /> }
 
-    <OrderHistory refreshKey={historyRevision} focusReceiptId={focusReceiptId} returnHref={returnHref} returnTarget={returnTarget} onReceiptSaved={() => {
+    {view === "orders" && <OrderHistory refreshKey={historyRevision} focusReceiptId={focusReceiptId} returnHref={returnHref} returnTarget={returnTarget} onReceiptSaved={() => {
       setInvoiceRefresh((value) => value + 1);
       setSuggestionsRevision((value) => value + 1);
-    }} />
+    }} />}
 
-    <section className="orders-examples" aria-labelledby="orders-examples-title">
-      <h2 id="orders-examples-title">Pour aller plus loin</h2>
-      <p><Link to="/stocks">Vérifier les stocks</Link> pour choisir un produit réel.</p>
-      <p><Link to="/predictions">Consulter les prévisions de ventes</Link> — elles reposent sur des ventes enregistrées et des jours de service complets, et ne valident pas une commande.</p>
-    </section>
+    <p className="orders-help"><Link to="/stocks">Consulter les stocks</Link> · <Link to="/analytics">Voir le bilan des achats réceptionnés</Link></p>
 
     <Modal isOpen={reviewOpen} onClose={() => setReviewOpen(false)} title="Revoir les quantités" width="lg">
       <OrderGenerator recommendations={recommendations} products={products} suppliers={suppliers}

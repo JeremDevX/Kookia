@@ -10,6 +10,7 @@ const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR
 
 export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number }) {
   const { cartItems, addToCart } = useCart();
+  const [search, setSearch] = useState("");
   const [data, setData] = useState<PurchaseSuggestionsDto | null>(null);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const [decisions, setDecisions] = useState<Record<string, "added" | "excluded">>({});
@@ -98,7 +99,7 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
   };
 
   return <section className="purchase-suggestions" aria-labelledby="purchase-suggestions-title">
-    <header className="workspace-section-heading"><h2 ref={headingRef} id="purchase-suggestions-title" tabIndex={-1}>Besoins à revoir</h2>
+    <header className="workspace-section-heading"><h2 ref={headingRef} id="purchase-suggestions-title" tabIndex={-1}>Quels produits prévoir ?</h2>
       <span>{loading ? "Calcul…" : data?.status === "ready" ? `${data.suggestions.length} produit${data.suggestions.length === 1 ? "" : "s"}` : "Pas de quantité fiable"}</span>
     </header>
     {loading ? <p role="status">Vérification des services, recettes et comptages…</p> : error && !data
@@ -107,14 +108,17 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
         {data.status === "simulation_only" && <p className="purchase-suggestions-note" role="status">Les ventes disponibles ne sont pas retenues comme ventes enregistrées et ne permettent pas de préparer un achat.</p>}
         {data.status === "no_data" && <p>Aucune vente complète ne permet encore d’estimer le prochain service.</p>}
         {data.status === "insufficient_history" && <p>Complétez les 28 jours de services avant d’utiliser une estimation de besoin.</p>}
+        {(data.status === "no_data" || data.status === "insufficient_history") && <p><Link to="/sales#sales-start">Compléter les ventes et les jours de service</Link> ou <Link to="/stocks">choisir vos produits dans les stocks</Link>.</p>}
         {data.status === "ready" && <>
           <p className="purchase-suggestions-period">Ventes jusqu’au {data.asOfDate} · prochain service prévu le {data.forecastDate} · {data.provenance === "demo_simulation" ? "hors bilan" : "ventes enregistrées"}.</p>
           {data.blockers.length > 0 && <div className="purchase-suggestions-blockers" role="status">
             <strong>Besoin incomplet — aucune proposition ne peut être ajoutée.</strong>
             <ul>{data.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>
           </div>}
+          {data.suggestions.length > 0 && <div className="orders-toolbar"><label>Rechercher un besoin<input type="search" value={search} placeholder="Produit ou fournisseur" onChange={(event) => setSearch(event.target.value)} /></label></div>}
+          {data.suggestions.length > 0 && !data.suggestions.some((item) => `${item.productName} ${item.supplierName}`.toLocaleLowerCase("fr").includes(search.trim().toLocaleLowerCase("fr"))) && <p role="status">Aucun besoin ne correspond à votre recherche.</p>}
           {data.suggestions.length === 0 ? <p>Aucun ingrédient projetable à partir des recettes reliées aux ventes.</p> : <ul className="purchase-suggestion-list">
-            {data.suggestions.map((item) => {
+            {data.suggestions.filter((item) => `${item.productName} ${item.supplierName}`.toLocaleLowerCase("fr").includes(search.trim().toLocaleLowerCase("fr"))).map((item) => {
               const inCart = cartItems.some((cartItem) => cartItem.productId === item.productId);
               const localDecision = decisions[item.productId];
               const decided = localDecision ?? item.decision?.kind;
@@ -126,9 +130,9 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
                 {item.countedStock === null
                   ? <p>Stock non déduit — aucun comptage à jour. <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Vérifier le stock</Link></p>
                   : <p>Dernier comptage {item.countDate} : {item.countedStock} {item.unit}.</p>}
-                <ul className="purchase-suggestion-sources">{item.sources.map((source, index) => <li key={`${source.recipeName}-${index}`}>
+                <details><summary>Recettes à l’origine du besoin</summary><ul className="purchase-suggestion-sources">{item.sources.map((source, index) => <li key={`${source.recipeName}-${index}`}>
                   {source.saleItemName} → {source.recipeName} (version {source.recipeVersion}) : {source.quantity} {item.unit}
-                </li>)}</ul>
+                </li>)}</ul></details>
                 {item.estimatedQuantity !== null && <p>Reste à revoir : <strong>{item.estimatedQuantity} {item.unit}</strong> · estimation au prix actuel du catalogue : {item.estimatedCost === null ? "—" : money.format(item.estimatedCost)}.</p>}
                 {item.decision?.orderId && !localDecision
                   ? <p role="status">Déjà présente dans une commande enregistrée. <Link to={`/orders#order-${item.decision.orderId}`}>Voir la commande</Link></p>
@@ -156,7 +160,7 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
               </li>;
             })}
           </ul>}
-          <ul className="purchase-suggestions-assumptions">{data.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}</ul>
+          <details><summary>Comprendre les hypothèses</summary><ul className="purchase-suggestions-assumptions">{data.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}</ul></details>
         </>}
       </>}
     {error && data && <div role="alert"><p>{error}</p><Button ref={retryButtonRef} type="button" variant="outline" onClick={retrySuggestions}>

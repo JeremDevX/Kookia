@@ -13,3 +13,28 @@
   .orders-selection-actions { align-items: stretch; flex-direction: column; }
   .orders-selection-actions .btn { width: var(--unit-100percent); }
 }
+
+.orders-views { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); padding-bottom: var(--spacing-md); border-bottom: var(--size-1) solid var(--color-border); }
+.orders-views .btn { min-height: var(--size-44); }
+.orders-views [aria-pressed="true"] { background: var(--color-primary); color: var(--color-surface); border-color: var(--color-primary); }
+.orders-guide, .orders-kpis { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); margin-block: var(--spacing-md); }
+.orders-guide > div, .orders-kpis article { padding: var(--spacing-lg); background: var(--color-primary-light); border-radius: var(--radius-lg); }
+.orders-guide p, .orders-kpis small { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
+.orders-kpis article { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.orders-kpis strong { font-size: var(--font-size-2xl); color: var(--color-primary); }
+.orders-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--spacing-md); margin-block: var(--spacing-lg); }
+.orders-toolbar label { display: flex; flex-direction: column; gap: var(--spacing-sm); flex: var(--number-1); min-width: min(var(--unit-100percent), var(--size-220)); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
+.orders-toolbar :is(input, select) { min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); width: var(--unit-100percent); background: var(--color-surface); color: var(--color-text-primary); }
+.orders-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spacing-sm); margin-block: var(--spacing-md); }
+.orders-table-wrap { overflow-x: auto; max-width: var(--unit-100percent); }
+.orders-table { border-collapse: collapse; width: var(--unit-100percent); min-width: var(--size-600); }
+.orders-table :is(th, td) { text-align: left; padding: var(--spacing-md); border-bottom: var(--size-1) solid var(--color-border); }
+.orders-table small { display: block; margin-top: var(--spacing-xs); font-weight: var(--font-weight-regular); color: var(--color-text-secondary); }
+.orders-table-hint, .orders-help { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.orders-container :is(a, button, input, select, summary, [tabindex]):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
+.orders-container :is(.source-invoice-archive, .orders-history, .source-invoice-controls) { min-width: var(--number-0); }
+.orders-container summary { cursor: pointer; }
+@media (--media-tablet) {
+  .orders-guide, .orders-kpis { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); }
+  .orders-guide > div, .orders-kpis article { padding: var(--spacing-md); }
+}
