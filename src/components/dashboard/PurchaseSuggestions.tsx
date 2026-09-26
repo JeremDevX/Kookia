@@ -1,3 +1,4 @@
+import { orderStepLabel } from "../../../shared/orderQuantity.js";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
@@ -132,7 +133,7 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
               const localDecision = decisions[item.productId];
               const decided = localDecision ?? item.decision?.kind;
               const quantity = Number(quantities[item.productId] ?? "");
-              const validQuantity = isValidOrderQuantity(quantities[item.productId] ?? "");
+              const validQuantity = isValidOrderQuantity(quantities[item.productId] ?? "", item.orderStep);
               return <li key={item.productId} className="purchase-suggestion-card">
                 <div className="purchase-suggestion-heading"><h3>{item.productName}</h3><span>{item.supplierName}</span></div>
                 <p>Besoin prévu : {item.forecastNeed} {item.unit} · {item.reason}</p>
@@ -142,7 +143,8 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
                 <details><summary>Recettes à l’origine du besoin</summary><ul className="purchase-suggestion-sources">{item.sources.map((source, index) => <li key={`${source.recipeName}-${index}`}>
                   {source.saleItemName} → {source.recipeName} (version {source.recipeVersion}) : {source.quantity} {item.unit}
                 </li>)}</ul></details>
-                {item.estimatedQuantity !== null && <p>Quantité à prévoir : <strong>{item.estimatedQuantity} {item.unit}</strong> · budget indicatif : {item.estimatedCost === null ? "—" : `${money.format(item.estimatedCost)} HT`}.</p>}
+                {item.netNeed !== null && <p>Besoin net : {item.netNeed} {item.unit}. {orderStepLabel(item.orderStep, item.unit)} — arrondi au pas supérieur, conditionnement fournisseur à vérifier.</p>}
+                {item.estimatedQuantity !== null && <p>Quantité proposée : <strong>{item.estimatedQuantity} {item.unit}</strong> · budget indicatif : {item.estimatedCost === null ? "—" : `${money.format(item.estimatedCost)} HT`}.</p>}
                 {item.decision?.orderId && !localDecision
                   ? <p role="status">Déjà présente dans une commande enregistrée. <Link to={`/orders#order-${item.decision.orderId}`}>Voir la commande</Link></p>
                   : inCart
@@ -154,13 +156,15 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
                       </Button></div>
                     : item.canAdd ? <div className="purchase-suggestion-actions">
                       <label htmlFor={`suggested-quantity-${item.productId}`}>Quantité à commander ({item.unit})</label>
-                      <input className="input-field" id={`suggested-quantity-${item.productId}`} type="number" min="0.001" step="0.001"
+                      <input className="input-field" id={`suggested-quantity-${item.productId}`} type="number" min={item.orderStep} step={item.orderStep} max={1000000} aria-invalid={!validQuantity} aria-describedby={`suggested-step-${item.productId}`}
                         value={quantities[item.productId] ?? ""} disabled={busyProductId === item.productId}
                         onChange={(event) => {
                           operationIds.current[item.productId] = crypto.randomUUID();
                           setQuantities((current) => ({ ...current, [item.productId]: event.target.value }));
                         }} />
-                      {!validQuantity && <p role="alert">Saisissez une quantité positive, au plus 1 000 000 avec trois décimales maximum.</p>}
+                      <small id={`suggested-step-${item.productId}`}>{orderStepLabel(item.orderStep, item.unit)}.</small>
+                      {validQuantity && <p>Budget de votre sélection : {money.format(quantity * item.currentUnitPrice)} HT.</p>}
+                      {!validQuantity && <p role="alert">Respectez le pas de commande, avec une quantité positive au plus égale à 1 000 000.</p>}
                       <Button onClick={() => void decide(item.productId, item.suggestionKey, "added")}
                         disabled={busyProductId !== "" || !validQuantity || !Number.isFinite(quantity)}>Ajouter à la commande</Button>
                       <Button variant="outline" onClick={() => void decide(item.productId, item.suggestionKey, "excluded")}

@@ -1,3 +1,4 @@
+import { getOrderStep, isOrderQuantity, orderStepLabel } from "../../../../shared/orderQuantity.js";
 import { cartSchema } from "./cartService.js";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -70,6 +71,8 @@ export async function validateOrder(restaurantId: string, actorId: string, input
       if (line.predictionId) throw new WorkspaceError(400, "DEMO_PREDICTION", "Les scénarios d'exemple ne peuvent pas être validés dans une commande.");
       const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: line.productId } }, include: { supplier: true } });
       if (!product) throw new WorkspaceError(400, "INVALID_PRODUCT", "Un produit de la commande est introuvable.");
+      if (!isOrderQuantity(line.quantity, getOrderStep(product)))
+        throw new WorkspaceError(400, "INVALID_ORDER_QUANTITY", `${product.name} : ${orderStepLabel(getOrderStep(product), product.unit)} ; quantité maximale : 1 000 000.`);
       lines.push({ productId: product.id, productName: product.name, supplierId: product.supplierId,
         supplierName: product.supplier.name, unit: product.unit, quantity: line.quantity, pricePerUnit: product.pricePerUnit,
         ...(line.cartId && suggestionDecisionByCartId.has(line.cartId)

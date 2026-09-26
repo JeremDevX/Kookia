@@ -6,7 +6,7 @@
 .today-forecast p, .today-forecast li, .today-forecast summary { font-size: var(--font-size-sm); line-height: var(--number-1_8); }
 .today-forecast-period, .today-forecast small, .today-forecast-products p { color: var(--color-text-secondary); }
 .today-forecast-overview { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-md); border-radius: var(--radius-md); background: var(--color-primary-light); }
-.today-forecast-overview p { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--spacing-xs); }
+.today-forecast-overview p { display: flex; align-items: center; flex-wrap: wrap; gap: var(--spacing-xs); }
 .today-forecast-overview strong { color: var(--color-primary); font-size: var(--font-size-base); }
 .today-forecast-overview span { color: var(--color-text-secondary); }
 .today-forecast-products { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-sm); padding: var(--number-0); list-style: none; }

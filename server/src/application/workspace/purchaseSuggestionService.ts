@@ -1,3 +1,4 @@
+import { getOrderStep, roundOrderQuantity, isOrderQuantity, orderStepLabel } from "../../../../shared/orderQuantity.js";
 import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient, type WorkspaceMode } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -18,6 +19,8 @@ export interface PurchaseSuggestion {
   forecastNeed: number;
   countedStock: number | null;
   countDate: string | null;
+  netNeed: number | null;
+  orderStep: number;
   estimatedQuantity: number | null;
   currentUnitPrice: number;
   estimatedCost: number | null;
@@ -50,14 +53,16 @@ interface AggregatedNeed {
 const roundQuantity = (value: number) => Math.round(value * 1000) / 1000;
 
 function suggestionFor(need: AggregatedNeed, product: {
-  id: string; name: string; unit: string; stockRevision: number; currentStock: Prisma.Decimal;
+  id: string; name: string; category: string; unit: string; stockRevision: number; currentStock: Prisma.Decimal;
   pricePerUnit: Prisma.Decimal; supplier: { name: string };
 }, count: { countedQuantity: Prisma.Decimal; countDate: Date; stockRevisionAfter: number; unit: string } | undefined,
 workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, projectionComplete: boolean): PurchaseSuggestion {
   const unitMatches = need.unit === product.unit;
   const countVerified = !!count && count.stockRevisionAfter === product.stockRevision && count.unit === product.unit;
   const countedStock = countVerified ? Number(count!.countedQuantity) : null;
-  const estimatedQuantity = !unitMatches || !countVerified ? null : roundQuantity(Math.max(0, need.forecastNeed - countedStock!));
+  const orderStep = getOrderStep(product);
+  const netNeed = !unitMatches || !countVerified ? null : roundQuantity(Math.max(0, need.forecastNeed - countedStock!));
+  const estimatedQuantity = netNeed === null ? null : roundOrderQuantity(netNeed, orderStep);
   const status = !unitMatches ? "unit_mismatch" : !countVerified ? "needs_stock_count"
     : estimatedQuantity === 0 ? "covered" : "ready";
   const sourceEligible = canUseProvenance && workspaceMode === "operational" || workspaceMode === "demo";
@@ -65,7 +70,7 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
   const input = {
     productId: product.id, forecastNeed: roundQuantity(need.forecastNeed), countedStock,
     countDate: countVerified ? count!.countDate.toISOString().slice(0, 10) : null,
-    stockRevision: product.stockRevision, unit: product.unit, unitMatches,
+    orderStep, stockRevision: product.stockRevision, unit: product.unit, unitMatches,
     baselineModel: baseline.model, asOfDate: baseline.asOfDate, forecastDate: baseline.forecastDate,
     workspaceMode, provenance: baseline.provenance,
     sources: need.sources,
@@ -80,7 +85,7 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
   return { suggestionKey, productId: product.id, productName: product.name, supplierName: product.supplier.name,
     unit: product.unit, status, canAdd, forecastNeed: roundQuantity(need.forecastNeed), countedStock,
     countDate: countVerified ? count!.countDate.toISOString().slice(0, 10) : null,
-    estimatedQuantity, currentUnitPrice: Number(product.pricePerUnit),
+    netNeed, orderStep, estimatedQuantity, currentUnitPrice: Number(product.pricePerUnit),
     estimatedCost: estimatedQuantity === null ? null : roundQuantity(estimatedQuantity * Number(product.pricePerUnit)),
     sources: need.sources, reason, decision: null };
 }
@@ -196,6 +201,8 @@ export async function recordPurchaseSuggestionDecision(restaurantId: string, act
       throw new WorkspaceError(409, "SUGGESTION_CHANGED", "Le besoin ou le stock a changé. Rechargez la proposition avant de décider.");
     if (input.decision === "added" && (!suggestion.canAdd || input.quantity === undefined || input.quantity <= 0))
       throw new WorkspaceError(409, "SUGGESTION_NOT_ACTIONABLE", suggestion.reason);
+    if (input.decision === "added" && !isOrderQuantity(input.quantity!, suggestion.orderStep))
+      throw new WorkspaceError(400, "INVALID_ORDER_QUANTITY", `${orderStepLabel(suggestion.orderStep, suggestion.unit)} ; quantité maximale : 1 000 000.`);
     if (input.decision === "excluded" && input.quantity !== undefined)
       throw new WorkspaceError(400, "INVALID_SUGGESTION_DECISION", "Une proposition écartée ne reçoit pas de quantité.");
     const decisionSnapshot = JSON.parse(JSON.stringify({ suggestionKey: suggestion.suggestionKey, productId: suggestion.productId,

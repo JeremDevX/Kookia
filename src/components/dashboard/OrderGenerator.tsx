@@ -1,3 +1,4 @@
+import { getOrderStep, orderStepLabel } from "../../../shared/orderQuantity.js";
 import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { CheckCircle, Package } from "lucide-react";
@@ -28,7 +29,11 @@ export default function OrderGenerator({ recommendations, products, suppliers, c
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const retryFocusPending = useRef(false);
-  const valid = recommendations.length > 0 && quantities.every(isValidOrderQuantity);
+  const validQuantity = (value: string, index: number) => {
+    const product = products.find((candidate) => candidate.id === recommendations[index].productId);
+    return !!product && isValidOrderQuantity(value, getOrderStep(product));
+  };
+  const valid = recommendations.length > 0 && quantities.every(validQuantity);
   const total = recommendations.reduce((sum, item, index) => sum + (products.find((product) => product.id === item.productId)?.pricePerUnit ?? 0) * (Number(quantities[index]) || 0), 0);
 
   useEffect(() => {
@@ -74,7 +79,7 @@ export default function OrderGenerator({ recommendations, products, suppliers, c
     <p>Vérifiez les quantités et le fournisseur. La validation n’envoie rien et ne modifie pas le stock.</p>
     {recommendations.some((item) => item.predictionId) && <p role="alert">Retirez les propositions sans source enregistrée avant de valider.</p>}
     {recommendations.length === 0 && <p role="alert">Aucun article à commander.</p>}
-    {quantities.some((value) => value.trim() && !isValidOrderQuantity(value)) && <p role="alert">Chaque quantité doit être comprise entre 0,001 et 1 000 000, avec au plus 3 décimales.</p>}
+    {!catalogLoading && !catalogError && quantities.some((value, index) => value.trim() && !validQuantity(value, index)) && <p role="alert">Respectez le pas de commande indiqué pour chaque produit (maximum : 1 000 000). Les anciennes sélections doivent être ajustées avant validation.</p>}
     {catalogLoading && <p role="status">Chargement du catalogue…</p>}
     {(catalogError || saveError) && <div role="alert"><p>{saveError || catalogError?.message}</p>
       {catalogError && <Button ref={retryButtonRef} type="button" variant="outline" disabled={catalogLoading} onClick={retryCatalog}>Réessayer</Button>}
@@ -86,7 +91,8 @@ export default function OrderGenerator({ recommendations, products, suppliers, c
         <label htmlFor={`order-quantity-${index}`}>{product?.name ?? item.productName} · {supplier?.name ?? "Fournisseur indisponible"}</label>
         <small>{item.reason}</small>
         <small>{product ? `Stock enregistré : ${product.currentStock} ${product.unit} · seuil : ${product.minThreshold} ${product.unit}` : "Stock et seuil indisponibles"}</small>
-        <input className="input-field" id={`order-quantity-${index}`} type="number" min="0.001" step="0.001" disabled={saving} value={quantities[index]} onChange={(event) => setQuantities((prev) => prev.map((value, i) => i === index ? event.target.value : value))} />
+        <input className="input-field" id={`order-quantity-${index}`} type="number" min={product ? getOrderStep(product) : 1} step={product ? getOrderStep(product) : 1} max={1000000} aria-invalid={!validQuantity(quantities[index], index)} aria-describedby={`order-step-${index}`} disabled={saving} value={quantities[index]} onChange={(event) => setQuantities((prev) => prev.map((value, i) => i === index ? event.target.value : value))} />
+        <small id={`order-step-${index}`}>{product ? `${orderStepLabel(getOrderStep(product), product.unit)} · conditionnement fournisseur à vérifier.` : "Produit indisponible"}</small>
         <small>{product?.unit} · {((product?.pricePerUnit ?? 0) * (Number(quantities[index]) || 0)).toFixed(2)} €</small>
       </div>;
     })}

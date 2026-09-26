@@ -40,8 +40,11 @@ describe("inventory policies", () => {
     expect(needsStockReview(withFreshCount(5))).toBe(false);
   });
 
-  it("suggests a positive, three-decimal order quantity", () => {
-    expect(getSuggestedOrderQuantity({ ...product, currentStock: 0.1, minThreshold: 1.101 })).toBe(1.001);
+  it("suggests a positive quantity rounded to the purchase step", () => {
+    expect(getSuggestedOrderQuantity({ ...product, currentStock: 0.1, minThreshold: 1.101 })).toBe(2);
     expect(getSuggestedOrderQuantity({ ...product, currentStock: 4 })).toBe(1);
+    expect(getSuggestedOrderQuantity({ ...product, unit: "L", currentStock: 0.5, minThreshold: 0.519 })).toBe(0.5);
+    expect(getSuggestedOrderQuantity({ ...product, unit: "L", currentStock: 4 })).toBe(0.5);
+    expect(getSuggestedOrderQuantity({ ...product, name: "Persil frais", currentStock: 0, minThreshold: 0.019 })).toBe(0.05);
   });
 });

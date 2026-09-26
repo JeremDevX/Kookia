@@ -20,6 +20,38 @@ async function account(name: string) {
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
   month: "2-digit", day: "2-digit" }).format(new Date());
 
+it("rounds net oil needs, budgets the purchase, and enforces steps at every purchase boundary", async () => {
+  const owner = await account("Purchase units");
+  const catalog = await owner.agent.get("/api/workspace/catalog").expect(200);
+  const product = catalog.body.products.find((item: { unit: string }) => item.unit === "L");
+  await seedSalesAndRecipe(owner, product.id, "manual");
+  await owner.agent.post(`/api/workspace/products/${product.id}/counts`).send({ operationId: randomUUID(),
+    expectedStockRevision: product.stockRevision, expectedUnit: "L", countedQuantity: 9.981 }).expect(201);
+  const suggestions = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
+  const suggestion = suggestions.body.suggestions.find((item: { productId: string }) => item.productId === product.id);
+  expect(suggestion).toMatchObject({ forecastNeed: 10, countedStock: 9.981, netNeed: 0.019,
+    orderStep: 0.5, estimatedQuantity: 0.5, estimatedCost: product.pricePerUnit * 0.5 });
+  const decisionInput = { operationId: randomUUID(), suggestionKey: suggestion.suggestionKey, decision: "added", quantity: 0.019 };
+  const invalid = await owner.agent.post(`/api/workspace/orders/suggestions/${product.id}/decision`).send(decisionInput).expect(400);
+  expect(invalid.body.error.code).toBe("INVALID_ORDER_QUANTITY");
+  const cartItem = { id: randomUUID(), productId: product.id, productName: product.name, unit: "pcs",
+    quantity: 0.019, source: "stocks" };
+  await owner.agent.post("/api/workspace/cart").send({ action: "add", items: [cartItem] }).expect(400);
+  await owner.agent.post("/api/workspace/orders").send({ operationId: randomUUID(),
+    lines: [{ productId: product.id, quantity: 0.019 }] }).expect(400);
+  const decision = await owner.agent.post(`/api/workspace/orders/suggestions/${product.id}/decision`)
+    .send({ ...decisionInput, quantity: 0.5 }).expect(201);
+  const added = await owner.agent.post("/api/workspace/cart").send({ action: "add", items: [{ ...cartItem,
+    quantity: 0.5, purchaseSuggestionOperationId: decision.body.operationId }] }).expect(200);
+  expect(added.body[0]).toMatchObject({ unit: "L", quantity: 0.5 });
+  const orderInput = { operationId: randomUUID(), lines: [{ productId: product.id, cartId: cartItem.id, quantity: 0.5 }] };
+  const order = await owner.agent.post("/api/workspace/orders").send(orderInput).expect(201);
+  expect(order.body.lines[0]).toMatchObject({ quantity: 0.5, unit: "L", pricePerUnit: product.pricePerUnit });
+  expect((await owner.agent.post("/api/workspace/orders").send(orderInput).expect(201)).body.id).toBe(order.body.id);
+  expect(Number((await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: {
+    restaurantId: owner.restaurantId, id: product.id } } })).currentStock)).toBe(9.981);
+});
+
 async function seedSalesAndRecipe(tenant: Awaited<ReturnType<typeof account>>, productId: string,
   source: "manual" | "demo_simulation", additionalProductId?: string) {
   const saleItem = await tenant.agent.post("/api/workspace/sales/items").send({ name: "Plat suivi" }).expect(201);

@@ -210,10 +210,10 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
     .query({ from: `${today.slice(0, 7)}-01`, to: today, asOf: today }).expect(200);
   const updatedEvents = updatedStory.body.events as Array<{ id: string; label: string; provenance: string; qualifier?: string }>;
   expect(updatedEvents.find((event) => event.id === `stock:${adjustment.id}`)).toMatchObject({
-    provenance: "simulation", qualifier: expect.stringContaining("bac de démonstration"),
+    provenance: "simulation", qualifier: "Opération non retenue dans l’activité enregistrée.",
   });
   expect(updatedEvents.find((event) => event.id === `production:${manualProduction.body.id}`)).toMatchObject({
-    label: "Production déclarée (démo)", provenance: "simulation",
-    qualifier: expect.stringContaining("n’atteste pas une production réelle"),
+    label: "Production déclarée", provenance: "simulation",
+    qualifier: "Déclaration à vérifier avant de la retenir comme production enregistrée.",
   });
 }, 120_000);

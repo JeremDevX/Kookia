@@ -1,3 +1,4 @@
+import { orderStepLabel } from "../../../shared/orderQuantity.js";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ShoppingBasket } from "lucide-react";
@@ -73,6 +74,7 @@ export default function TodayPurchaseForecast() {
                     <div><dt>En stock</dt><dd>{quantity(item.countedStock!)} {item.unit}</dd></div>
                     <div className="today-forecast-to-order"><dt>À commander</dt><dd>{quantity(item.estimatedQuantity!)} {item.unit}</dd></div>
                   </dl>
+                  <small>{orderStepLabel(item.orderStep, item.unit)} · arrondi après déduction du stock.</small>
                 </li>)}
               </ul>
               <div className="today-forecast-actions"><Link className="btn btn-primary" to={reviewHref}>Préparer ma commande<ArrowRight size={17} aria-hidden="true" /></Link>
@@ -97,6 +99,7 @@ export default function TodayPurchaseForecast() {
           <details className="today-forecast-method"><summary>Comment Kookia prépare cette liste ?</summary>
             <p>Kookia estime les ventes à partir de la moyenne des 7 derniers jours, jusqu’au {date(data.asOfDate)}. Les dosages de vos recettes donnent les quantités nécessaires en cuisine. Ce que vous avez déjà en stock est retiré de la liste à commander.</p>
             <p>La liste couvre le service du {date(data.forecastDate)} uniquement. Si vous commandez pour plusieurs jours, adaptez les quantités. Pensez aussi aux réservations et aux livraisons déjà attendues : elles ne sont pas prises en compte.</p>
+            <p>Les quantités d’achat sont arrondies au pas supérieur selon le type de produit. Ces pas sont des conventions d’achat : vérifiez les conditionnements avec vos fournisseurs. Les dosages et stocks ne sont pas arrondis.</p>
             <p>Le coût est estimé avec les prix HT de vos fiches produits. La météo et les événements ne sont pas pris en compte.</p>
             <Link to="/predictions">Voir le détail des prévisions de ventes</Link>
           </details>

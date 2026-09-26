@@ -33,6 +33,8 @@ export interface PurchaseSuggestion {
   forecastNeed: number;
   countedStock: number | null;
   countDate: string | null;
+  netNeed: number | null;
+  orderStep: number;
   estimatedQuantity: number | null;
   currentUnitPrice: number;
   estimatedCost: number | null;

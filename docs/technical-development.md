@@ -210,6 +210,30 @@ création enregistre une recette versionnée, pas une vente, perte, production o
 sortie de stock. La fenêtre de requête reste choisie par l'utilisateur et ne
 fixe pas de limite produit à l'historique.
 
+### Quantités commandables
+
+La politique partagée [`shared/orderQuantity.ts`](../shared/orderQuantity.ts)
+s'applique aux propositions d'achat, aux sélections depuis Stocks et à la revue
+finale. Elle arrondit le besoin net **après déduction du comptage**, sans arrondir
+les dosages, stocks, factures ou réceptions réelles. L'API expose `netNeed`,
+`orderStep` et `estimatedQuantity` ; le budget utilise la quantité commandable.
+Les pas sont des conventions, pas des conditionnements fournisseur attestés :
+
+- Liquides (`L`) : 0,5 L ; pièces (`pcs`) et douzaines (`dz`) : unités entières.
+- Produits au poids : 1 kg par défaut, notamment fruits, légumes et épicerie.
+- Catégories viandes/poissons : 0,5 kg ; fromages/charcuterie et beurre : 0,25 kg.
+- Herbes et épices identifiées dans le nom (liste explicite dans la politique,
+  notamment basilic, persil, poivre, paprika et cumin) : 0,05 kg.
+
+Le serveur vérifie le pas depuis le produit du restaurant pour les décisions,
+l'ajout au panier et la validation finale ; l'unité fournie par le client ne
+fait pas autorité. Le chef peut modifier les quantités par ces pas avant de
+valider. Une ancienne sélection incompatible doit être corrigée explicitement ;
+les commandes et décisions déjà enregistrées ne sont pas réécrites. Aucun envoi
+fournisseur ni mouvement de stock n'est déclenché par ces propositions.
+
+### Historique
+
 La page **Plus → Historique** (/history) appelle la route tenant-scopée
 de lecture seule GET /api/workspace/timeline, sans borne de durée et avec une
 coupe « Connu au ». L'API signale les réponses denses et limite chaque type de

@@ -1,4 +1,5 @@
 import type { Product, ProductStatus } from "./product.types";
+import { getOrderStep, roundOrderQuantity } from "../../../shared/orderQuantity.js";
 import { getStockVerificationStatus } from "./stockCount.policies";
 
 export const getStatusColor = (status: ProductStatus): string => {
@@ -28,7 +29,7 @@ export const needsStockReview = (product: Product): boolean => {
 };
 
 export const getSuggestedOrderQuantity = (product: Product): number =>
-  Math.max(1, Math.round((product.minThreshold - product.currentStock) * 1000) / 1000);
+  roundOrderQuantity(Math.max(getOrderStep(product), product.minThreshold - product.currentStock), getOrderStep(product));
 
 export const getProductStatusLabel = (status: ProductStatus): string => {
   switch (status) {

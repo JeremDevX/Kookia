@@ -1,3 +1,4 @@
+import { getOrderStep, isOrderQuantity, orderStepLabel } from "../../../../shared/orderQuantity.js";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -31,6 +32,8 @@ export async function mutateCart(restaurantId: string, mutation: z.infer<typeof 
       if (item.predictionId) throw new WorkspaceError(400, "DEMO_PREDICTION", "Les scénarios d'exemple ne peuvent pas préparer une commande.");
       const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: item.productId } } });
       if (!product) throw new WorkspaceError(400, "INVALID_PRODUCT", "Produit introuvable dans votre espace.");
+      if (!isOrderQuantity(item.quantity, getOrderStep(product)))
+        throw new WorkspaceError(400, "INVALID_ORDER_QUANTITY", `${product.name} : ${orderStepLabel(getOrderStep(product), product.unit)} ; quantité maximale : 1 000 000.`);
       if (item.purchaseSuggestionOperationId) {
         const decision = await tx.recommendationDecision.findFirst({ where: { restaurantId,
           operationId: item.purchaseSuggestionOperationId, decision: "purchase_suggestion_added" } });

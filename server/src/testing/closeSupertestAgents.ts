@@ -3,6 +3,7 @@ import { afterAll } from "vitest";
 
 type ClosableServer = {
   listening: boolean;
+  listen: (port: number) => unknown;
   close: (callback: (error?: Error) => void) => unknown;
 };
 
@@ -15,7 +16,12 @@ if (!agentFactory.trackedServers) {
   const trackedAgent = ((...args: Parameters<typeof request.agent>) => {
     const agent = originalAgent(...args);
     const app = (agent as unknown as { app?: unknown }).app;
-    if (isClosableServer(app)) servers.add(app);
+    if (isClosableServer(app)) {
+      // Keep one port per agent: recycled ephemeral ports can reuse a keep-alive
+      // connection from another agent and send a request to the wrong server.
+      if (!app.listening) app.listen(0);
+      servers.add(app);
+    }
     return agent;
   }) as TrackedAgentFactory;
   trackedAgent.trackedServers = servers;
@@ -37,5 +43,6 @@ afterAll(async () => {
 function isClosableServer(value: unknown): value is ClosableServer {
   return typeof value === "object" && value !== null
     && "listening" in value && typeof value.listening === "boolean"
+    && "listen" in value && typeof value.listen === "function"
     && "close" in value && typeof value.close === "function";
 }
