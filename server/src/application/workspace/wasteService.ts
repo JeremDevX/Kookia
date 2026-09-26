@@ -44,7 +44,6 @@ export async function recordWaste(restaurantId: string, actorId: string, input: 
     if ((input.kind === "unsold" || input.kind === "plate_return") && !production)
       throw new WorkspaceError(400, "PRODUCTION_REQUIRED", "L’invendu ou le retour doit être lié à une préparation validée.");
     if (production && input.kind === "raw") throw new WorkspaceError(400, "INVALID_RAW_WASTE", "Une perte brute doit être liée à un produit, pas à une préparation.");
-    if (production && input.kind !== "preparation" && !Number.isInteger(input.quantity)) throw new WorkspaceError(400, "INVALID_PORTIONS", "La quantité de portions doit être entière.");
     if (production && input.kind !== "preparation" && (input.unit !== "portion" || input.productId || input.lotId))
       throw new WorkspaceError(400, "INVALID_PREPARED_WASTE", "Une perte de préparation est exprimée en portions, sans nouvelle sortie de matières.");
     if (production && production.serviceSlot && input.serviceSlot && production.serviceSlot !== input.serviceSlot)

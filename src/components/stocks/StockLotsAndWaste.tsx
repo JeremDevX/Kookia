@@ -58,7 +58,7 @@ export default function StockLotsAndWaste({ products, onSaved }: { products: Pro
       {!cooked && <><label>Produit<select required value={productId} onChange={(event) => setProductId(event.target.value)}>
         <option value="">Choisir</option>{products.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
       </select></label>{!linkedPreparation && <label>Lot<select name="lot" key={productId}><option value="">Proposition FEFO</option>{data.lots.filter((row) => row.productId === productId && row.remainingQuantity > 0).map((row) => <option key={row.id} value={row.id}>{row.receivedAt ?? "Âge inconnu"} · échéance {row.expiresAt ?? "inconnue"} · {row.remainingQuantity}</option>)}</select></label>}</>}
-      <label>Quantité ({cooked ? "portions" : product?.unit ?? "unité"})<input name="quantity" type="number" required min="0.001" max="1000000" step={cooked || product?.unit === "pcs" ? "1" : "0.001"} /></label>
+      <label>Quantité ({cooked ? "portions" : product?.unit ?? "unité"})<input name="quantity" type="number" required min="0.001" max="1000000" step={!cooked && product?.unit === "pcs" ? "1" : "0.001"} /></label>
       <label>Date<input name="date" type="date" required defaultValue={new Date().toLocaleDateString("en-CA")} /></label>
       <label>Service<select name="slot"><option value="">Non ventilé</option><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
       <label>Qualification<select name="avoidability"><option value="avoidable">Gaspillage évitable</option><option value="inedible">Déchet non comestible</option></select></label>

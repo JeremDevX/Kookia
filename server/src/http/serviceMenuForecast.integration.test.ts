@@ -1,0 +1,73 @@
+import { randomUUID } from "node:crypto";
+import request from "supertest";
+import { afterAll, expect, it } from "vitest";
+import { app } from "./app.js";
+import { prisma } from "../infrastructure/database/prisma.js";
+import type { MenuEntryInput } from "../../../shared/serviceOperations.js";
+import type { OperationalForecast } from "../../../shared/operationalForecast.js";
+const users: string[] = [];
+afterAll(async () => { await prisma.user.deleteMany({ where: { id: { in: users } } }); await prisma.$disconnect(); });
+const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const day = (offset: number) => new Date(Date.parse(today) + offset * 86400000).toISOString().slice(0, 10);
+async function account() {
+  const agent = request.agent(app);
+  const response = await agent.post("/api/auth/register").send({ displayName: "Menu fixture", email: `menu-forecast-${randomUUID()}@example.com`, password: "isolated menu fixture password" }).expect(201);
+  users.push(response.body.user.id); await agent.get("/api/workspace/catalog").expect(200); return agent;
+}
+it("versions a multi-recipe formula and forecasts qualified service sales exactly once", async () => {
+  const owner = await account(), other = await account();
+  await request(app).get("/api/workspace/service-menu").query({ date: today, slot: "lunch" }).expect(401);
+  const catalog = (await owner.get("/api/workspace/catalog").expect(200)).body;
+  const stockBefore = catalog.products.map((row: { id: string; currentStock: number }) => ({ id: row.id, currentStock: row.currentStock }));
+  const products = [];
+  for (const unit of ["kg", "L"]) products.push((await owner.post("/api/workspace/products").send({ operationId: randomUUID(), name: `Ingredient ${unit}`, category: "Épicerie", currentStock: 10, unit, minThreshold: 1, supplierId: catalog.suppliers[0].id, pricePerUnit: 2 }).expect(201)).body);
+  const recipes = [];
+  for (const [index, category] of ["Plat", "Boisson"].entries()) recipes.push((await owner.post("/api/workspace/recipes").send({ operationId: randomUUID(), name: `Recipe ${category}`, category, prepTime: 5, yieldPortions: index === 0 ? 4 : 2, effectiveFrom: day(-15), ingredients: [{ productId: products[index].id, quantity: index === 0 ? 2 : 1 }] }).expect(201)).body);
+  const formulaSale = (await owner.post("/api/workspace/sales/items").send({ name: "Formule avec boisson" }).expect(201)).body;
+  const beverageSale = (await owner.post("/api/workspace/sales/items").send({ name: "Boisson indisponible" }).expect(201)).body;
+  const formula: MenuEntryInput = { id: randomUUID(), name: "Formule avec boisson", category: "Formule", saleItemId: formulaSale.id, available: true, priceCents: 1800,
+    components: recipes.map((recipe) => ({ recipeId: recipe.id, portions: 1 })) };
+  const unavailable: MenuEntryInput = { id: randomUUID(), name: "Boisson indisponible", category: "Boisson", saleItemId: beverageSale.id, available: false, priceCents: 300, components: [{ recipeId: recipes[1].id, portions: 1 }] };
+  const unmapped: MenuEntryInput = { ...unavailable, id: randomUUID(), name: "Boisson sans correspondance", saleItemId: null, available: true };
+  const input = { operationId: randomUUID(), expectedRevision: 0, serviceDate: day(1), slot: "lunch", entries: [formula, unavailable, unmapped], note: "Chef reviewed" };
+  const saved = (await owner.post("/api/workspace/service-menu").send(input).expect(201)).body;
+  expect(saved.entries[0].components).toHaveLength(2); expect(saved.entries[0].components[1].category).toBe("Boisson");
+  expect((await owner.post("/api/workspace/service-menu").send(input).expect(201)).body.id).toBe(saved.id);
+  await owner.post("/api/workspace/service-menu").send({ ...input, note: "Changed replay" }).expect(409);
+  await owner.post("/api/workspace/service-menu").send({ ...input, operationId: randomUUID() }).expect(409);
+  await other.post("/api/workspace/service-menu").send({ ...input, operationId: randomUUID() }).expect(400);
+  await other.post("/api/workspace/service-menu").send({ ...input, operationId: randomUUID(), entries: [{ ...formula, saleItemId: null }] }).expect(400);
+  await owner.post("/api/workspace/service-menu").send({ ...input, operationId: randomUUID(), expectedRevision: 1, entries: [{ ...formula, components: [formula.components[0], formula.components[0]] }] }).expect(400);
+  const next = (await owner.post("/api/workspace/service-menu").send({ ...input, operationId: randomUUID(), expectedRevision: 1, entries: [{ ...formula, priceCents: 1900 }, unavailable, unmapped] }).expect(201)).body;
+  expect(next.revision).toBe(2);
+  const history = (await owner.get("/api/workspace/service-menu/history").query({ date: day(1), slot: "lunch" }).expect(200)).body;
+  expect(history.map((row: { entries: MenuEntryInput[] }) => row.entries[0].priceCents)).toEqual([1900, 1800]);
+  const dinner = (await owner.get("/api/workspace/service-menu").query({ date: day(1), slot: "dinner" }).expect(200)).body;
+  expect(dinner.revision).toBe(0);
+  const sales: Array<{ id: string; serviceDate: string }> = [];
+  for (let index = -8; index < 0; index++) {
+    const serviceDate = day(index);
+    await owner.post("/api/workspace/service-menu").send({ ...input, operationId: randomUUID(), serviceDate, entries: [formula] }).expect(201);
+    const sale = (await owner.post("/api/workspace/sales").send({ operationId: randomUUID(), saleItemId: formulaSale.id, serviceDate, quantity: 12 }).expect(201)).body;
+    sales.push({ id: sale.id, serviceDate });
+    await owner.put(`/api/workspace/sales/${sale.id}/services`).send({ lunchQuantity: 12, dinnerQuantity: 0, expectedRevision: 0, expectedSaleRevision: 0 }).expect(200);
+    await owner.put("/api/workspace/services/calendar").send({ serviceDate, slot: "lunch", plannedOpen: true, coverage: "complete", actualCovers: 12, expectedRevision: 0, note: "Reviewed" }).expect(200);
+  }
+  await owner.put("/api/workspace/services/calendar").send({ serviceDate: day(1), slot: "lunch", plannedOpen: true, coverage: "missing", actualCovers: null, expectedRevision: 0, note: "Planned" }).expect(200);
+  const prediction = (await owner.get("/api/workspace/service-forecast").query({ from: day(1), to: day(1) }).expect(200)).body as OperationalForecast;
+  const lunch = prediction.services.find((service) => service.slot === "lunch")!;
+  expect(lunch.forecastKey).toMatch(/^[a-f0-9]{64}$/);
+  expect(lunch.items.find((item) => item.entryId === formula.id)).toMatchObject({ quantity: 12, observations: 8, model: "service", deviation: 0 });
+  expect(lunch.items.some((item) => item.entryId === unavailable.id)).toBe(false);
+  expect(lunch.items.find((item) => item.entryId === unmapped.id)?.quantity).toBeNull();
+  expect(prediction.ingredientNeeds.map((ingredient) => ({ productId: ingredient.productId, quantity: ingredient.quantity }))).toEqual(products.map((product) => ({ productId: product.id, quantity: 6 })));
+  expect(lunch.mix.find((row) => row.category === "Boisson")).toMatchObject({ portionsPerCover: 1, services: 8 });
+  await owner.patch(`/api/workspace/sales/${sales[0].id}`).send({ operationId: randomUUID(), saleItemId: formulaSale.id, serviceDate: sales[0].serviceDate, quantity: 15, revision: 0, reason: "Late correction" }).expect(200);
+  const stale = (await owner.get("/api/workspace/service-forecast").query({ from: day(1), to: day(1) }).expect(200)).body as OperationalForecast;
+  expect(stale.excludedServices).toBeGreaterThan(prediction.excludedServices);
+  expect(stale.services.find((service) => service.slot === "lunch")!.items.find((item) => item.entryId === formula.id)).toMatchObject({ quantity: null, observations: 7, model: "insufficient" });
+  expect(stale.ingredientNeeds).toEqual([]);
+  const catalogAfter = (await owner.get("/api/workspace/catalog").expect(200)).body;
+  for (const row of stockBefore) expect(catalogAfter.products.find((product: { id: string }) => product.id === row.id).currentStock).toBe(row.currentStock);
+  for (const product of products) expect(catalogAfter.products.find((row: { id: string }) => row.id === product.id).currentStock).toBe(10);
+});

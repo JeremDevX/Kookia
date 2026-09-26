@@ -26,6 +26,7 @@ it("keeps opening plans separate from reviewed observations and enforces ownersh
   const session = { serviceDate: period.from, slot: "lunch", plannedOpen: false, coverage: "missing", actualCovers: null, note: "Fermeture exceptionnelle", expectedRevision: 0 };
   await owner.put("/api/workspace/services/calendar").send(session).expect(200);
   await owner.put("/api/workspace/services/calendar").send(session).expect(409);
+  await owner.put("/api/workspace/services/calendar").send({ ...session, expectedRevision: 1, coverage: "complete", actualCovers: 1 }).expect(409);
   expect((await owner.get("/api/workspace/services/calendar").query(period).expect(200)).body)
     .toContainEqual(expect.objectContaining({ slot: "lunch", plannedOpen: false, coverage: "missing", exceptional: true }));
   await owner.put("/api/workspace/services/calendar").send({ ...session, serviceDate: "2099-01-01", coverage: "complete" }).expect(400);
@@ -46,6 +47,10 @@ it("ventilates only confirmed quantities, preserves unknown remainder, invalidat
   const query = { from: input.serviceDate, to: input.serviceDate };
   expect((await owner.get("/api/workspace/services/calendar").query(query).expect(200)).body)
     .toContainEqual(expect.objectContaining({ slot: "lunch", soldQuantity: 5, unallocatedQuantity: 3 }));
+  await owner.put("/api/workspace/services/calendar").send({ serviceDate: input.serviceDate, slot: "lunch", plannedOpen: false,
+    coverage: "complete", actualCovers: 0, note: "Fermeture contradictoire", expectedRevision: 0 }).expect(409);
+  await owner.put("/api/workspace/services/calendar").send({ serviceDate: input.serviceDate, slot: "dinner", plannedOpen: false,
+    coverage: "complete", actualCovers: 0, note: "Fermeture contradictoire", expectedRevision: 0 }).expect(409);
   await owner.put("/api/workspace/services/calendar").send({ serviceDate: input.serviceDate, slot: "lunch", plannedOpen: true,
     coverage: "complete", actualCovers: 9, note: "Revue", expectedRevision: 0 }).expect(200);
   await owner.patch(`/api/workspace/sales/${sale.id}`).send({ ...input, quantity: 15, revision: 0,

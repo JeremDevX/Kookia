@@ -1,0 +1,9 @@
+.service-operation-panel { padding: var(--spacing-lg); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.service-operation-panel h2, .service-operation-panel h3, .service-operation-panel p, .service-operation-panel details { margin-block: var(--spacing-md); }
+.service-operation-panel label { display: flex; flex-direction: column; gap: var(--spacing-xs); margin-block: var(--spacing-sm); }
+.service-operation-panel input:not([type="checkbox"]), .service-operation-panel select, .service-operation-panel textarea { width: var(--unit-100percent); min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
+.service-operation-panel input:focus-visible, .service-operation-panel select:focus-visible, .service-operation-panel textarea:focus-visible, .service-operation-panel summary:focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--size-3); }
+.service-menu-entry { margin-block: var(--spacing-lg); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
+.service-operation-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--unit-100percent), var(--size-290)), var(--unit-1fr))); gap: var(--spacing-md); align-items: end; }
+.service-operation-panel li { margin-block: var(--spacing-sm); overflow-wrap: var(--overflow-wrap-anywhere); }
+.service-operation-panel .btn { margin: var(--spacing-xs); }

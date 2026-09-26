@@ -67,6 +67,15 @@ export async function saveCalendarService(restaurantId: string, actorId: string,
     const where = { restaurantId_serviceDate_slot: { restaurantId, serviceDate: date(input.serviceDate), slot: input.slot } };
     const current = await tx.restaurantServiceSession.findUnique({ where });
     if ((current?.revision ?? 0) !== input.expectedRevision) throw conflict();
+    if (!input.plannedOpen) {
+      const sales = await tx.dailySale.findMany({ where: { restaurantId, serviceDate: date(input.serviceDate) }, include: { serviceAllocation: true } });
+      const sold = sales.some(sale => {
+        const assignment = qualifiedAllocation(sale, sale.serviceAllocation);
+        return (input.slot === "lunch" ? assignment.lunchQuantity : assignment.dinnerQuantity) > 0;
+      });
+      if ((input.actualCovers ?? 0) > 0 || sold)
+        throw new WorkspaceError(409, "CLOSED_SERVICE_HAS_ACTIVITY", "Ce service a des ventes attribuées ou des couverts observés. Déclarez-le ouvert avant de conserver ces observations.");
+    }
     const { expectedRevision: _revision, ...values } = input;
     void _revision;
     const data = { ...values, serviceDate: date(input.serviceDate), actorId };
@@ -99,6 +108,8 @@ export async function saveSaleAllocation(restaurantId: string, actorId: string, 
     for (const slot of serviceSlots) {
       const key = { restaurantId_serviceDate_slot: { restaurantId, serviceDate: sale.serviceDate, slot } };
       const session = await tx.restaurantServiceSession.findUnique({ where: key });
+      if (session && !session.plannedOpen && (slot === "lunch" ? input.lunchQuantity : input.dinnerQuantity) > 0)
+        throw new WorkspaceError(409, "SERVICE_PLANNED_CLOSED", "Ce service est déclaré fermé. Déclarez-le ouvert avant de lui attribuer des ventes.");
       if (session?.coverage === "complete") await tx.restaurantServiceSession.update({ where: key, data: { coverage: "partial", revision: { increment: 1 }, actorId } });
     }
   });
