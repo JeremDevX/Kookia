@@ -1,14 +1,12 @@
 import React, { useRef, useState } from "react";
-import Card from "../components/common/Card";
-import Badge from "../components/common/Badge";
+import StockInventoryTable from "../components/stocks/StockInventoryTable";
 import Input from "../components/common/Input";
 import Button from "../components/common/Button";
 import ProductDetail from "../components/stocks/ProductDetail";
 import AddProductModal from "../components/stocks/AddProductModal";
 import FiltersModal from "../components/stocks/FiltersModal";
-import StockReview from "../components/stocks/StockReview";
 import StockInventoryCard from "../components/stocks/StockInventoryCard";
-import { Search, Filter, Plus, ShoppingCart } from "lucide-react";
+import { Search, Filter, Plus } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useProductsWithMutations } from "../hooks";
 import { useCart } from "../context/useCart";
@@ -16,11 +14,10 @@ import { useToast } from "../context/ToastContext";
 import type { Product } from "../types";
 import type { NewProduct, StockFilters } from "../types/callbacks";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
-import { getProductStatusLabel, getSuggestedOrderQuantity, needsStockReview } from "../domain/inventory/product.policies";
-import { getStockVerificationStatus } from "../domain/inventory/stockCount.policies";
+import { getSuggestedOrderQuantity, needsStockReview } from "../domain/inventory/product.policies";
 import { analyticsReturnHref } from "../utils/analyticsNavigation";
-import "./Stocks.css";
 import "../styles/Workspace.css";
+import "./Stocks.css";
 
 const Stocks: React.FC = () => {
   const navigate = useNavigate();
@@ -39,7 +36,7 @@ const Stocks: React.FC = () => {
     () => searchParams.get("product")
   );
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [view, setView] = useState<"review" | "all">("review");
+  const [view, setView] = useState<"review" | "all">("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<StockFilters>({
@@ -50,8 +47,8 @@ const Stocks: React.FC = () => {
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? null;
   const categories = Array.from(new Set(products.map((product) => product.category))).sort((a, b) => a.localeCompare(b, "fr"));
-  const productsToReview = products.filter(needsStockReview)
-    .sort((a, b) => getStatus(a) === getStatus(b) ? 0 : getStatus(a) === "urgent" ? -1 : 1);
+  const hasFilters = searchTerm !== "" || categoryFilter !== "all" || Object.values(advancedFilters).some((value) => value !== "all");
+  const advancedFilterCount = Object.values(advancedFilters).filter((value) => value !== "all").length;
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name
@@ -79,6 +76,7 @@ const Stocks: React.FC = () => {
     }
 
     return (
+      (view === "all" || needsStockReview(p)) &&
       matchesSearch &&
       matchesCategory &&
       matchesStatus &&
@@ -139,17 +137,15 @@ const Stocks: React.FC = () => {
         </Button>
       </header>
 
-      <p className="stocks-source">Vérifiez les pièces source et les motifs des mouvements avant d’utiliser une quantité comme inventaire confirmé. Les seuils ne sont pas calculés à partir des ventes ; toute proposition d’achat reste à revoir et n’envoie aucune commande.</p>
-      <div className="view-toggles" aria-label="Vue des stocks">
-        <Button size="sm" aria-pressed={view === "review"} onClick={() => setView("review")}>À vérifier ({productsToReview.length})</Button>
-        <Button size="sm" aria-pressed={view === "all"} onClick={() => setView("all")}>Tout l'inventaire ({products.length})</Button>
+      <section className="inventory-panel" aria-label="Inventaire">
+      <div className="inventory-navigation">
+        <div className="inventory-tabs" role="group" aria-label="Vue des stocks">
+          <button type="button" aria-pressed={view === "all"} onClick={() => setView("all")}>Tout l’inventaire</button>
+          <button type="button" aria-pressed={view === "review"} onClick={() => setView("review")}>À traiter</button>
+        </div>
+        <span className="inventory-result" role="status">{loading ? "Chargement…" : `${filteredProducts.length} produit${filteredProducts.length > 1 ? "s" : ""}`}</span>
       </div>
-
-      {view === "review" ? <section aria-labelledby="stock-review-title"><div className="workspace-section-heading"><h2 id="stock-review-title">Stocks à vérifier ou sous le seuil</h2></div>
-        {!loading && !error && !catalogError && <StockReview products={productsToReview} suppliers={suppliers} selecting={cartLoading} onInspect={setSelectedProductId} onSelect={(product) => void handleSelectForOrder(product)} />}
-      </section> : <>
-
-      <Card className="stocks-toolbar">
+      <div className="stocks-toolbar">
         <div className="toolbar-content">
           <div className="search-wrapper">
             <Input
@@ -178,71 +174,27 @@ const Stocks: React.FC = () => {
               icon={<Filter size={18} />}
               onClick={() => setIsFiltersModalOpen(true)}
             >
-              Filtres
+              Filtres{advancedFilterCount > 0 ? ` (${advancedFilterCount})` : ""}
             </Button>
           </div>
         </div>
-      </Card>
-
-      <div className="workspace-section-heading"><h2>Produits</h2><span role="status">{filteredProducts.length} résultat{filteredProducts.length > 1 ? "s" : ""}</span></div>
-      <div className="stocks-table-card" role="region" aria-label="Inventaire des produits" tabIndex={0}>
-        <table className="stocks-table">
-          <thead>
-            <tr>
-              <th>Produit</th>
-              <th>Catégorie</th>
-              <th>Stock théorique</th>
-              <th>Valeur</th>
-              <th>État</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredProducts.map((product) => {
-              const status = getStatus(product);
-              return (
-                <tr key={product.id}>
-                  <td>
-                    <button className="product-name stock-product-link" onClick={() => setSelectedProductId(product.id)}>{product.name}</button>
-                  </td>
-                  <td className="text-secondary">{product.category}</td>
-                  <td>
-                    <span className="stock-value">{product.currentStock}</span>{" "}
-                    <span className="unit">{product.unit}</span>
-                    <small className="block text-secondary">{getStockVerificationStatus(product) === "counted" ? `Compté : ${product.latestCount?.countedQuantity} ${product.unit}` : product.latestCount ? `À vérifier · dernier comptage ${product.latestCount.countedQuantity} ${product.unit}` : "À vérifier · aucun comptage"}</small>
-                  </td>
-                  <td className="stock-price-cell">
-                    {(product.currentStock * product.pricePerUnit).toFixed(2)}€
-                  </td>
-                  <td>
-                    <Badge label={getProductStatusLabel(status)} status={status} />
-                  </td>
-                  <td>
-                    <div className="actions-cell">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        icon={<ShoppingCart size={14} />}
-                        disabled={cartLoading}
-                        onClick={() => void handleSelectForOrder(product)}
-                      >
-                        Ajouter à la commande
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {filteredProducts.length === 0 && <tr><td colSpan={6}><div className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</div></td></tr>}
-          </tbody>
-        </table>
+        {hasFilters && <button type="button" className="inventory-reset" onClick={() => {
+          setSearchTerm(""); setCategoryFilter("all");
+          setAdvancedFilters({ status: "all", supplier: "all", stockLevel: "all" });
+          document.getElementById("stock-search")?.focus();
+        }}>Effacer les filtres</button>}
       </div>
+      {!loading && !error && <>
+      <StockInventoryTable products={filteredProducts} selecting={cartLoading}
+        onInspect={setSelectedProductId} onSelect={(product) => void handleSelectForOrder(product)} />
       <ul className="stock-inventory-cards" aria-label="Inventaire des produits">
-        {!loading && !error && filteredProducts.map((product) => <StockInventoryCard key={product.id} product={product} selecting={cartLoading}
+        {filteredProducts.map((product) => <StockInventoryCard key={product.id} product={product} selecting={cartLoading}
           onInspect={() => setSelectedProductId(product.id)} onSelect={() => void handleSelectForOrder(product)} />)}
-        {!loading && !error && filteredProducts.length === 0 && <li className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</li>}
+        {filteredProducts.length === 0 && <li className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</li>}
       </ul>
       </>}
+      <p className="inventory-footnote">Quantités théoriques · Achats à valider avant commande.</p>
+      </section>
       {selectedProduct && <ProductDetail
         key={selectedProduct.id}
         product={selectedProduct}

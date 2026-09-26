@@ -1,9 +1,8 @@
-import { ShoppingCart } from "lucide-react";
-import Badge from "../common/Badge";
+import { ShoppingCart, ClipboardCheck } from "lucide-react";
 import Button from "../common/Button";
-import { getProductStatus, getProductStatusLabel } from "../../domain/inventory/product.policies";
-import { getStockVerificationStatus } from "../../domain/inventory/stockCount.policies";
+import { getProductStatus } from "../../domain/inventory/product.policies";
 import type { Product } from "../../types";
+import StockInventoryStatus from "./StockInventoryStatus";
 
 interface StockInventoryCardProps {
   product: Product;
@@ -14,26 +13,26 @@ interface StockInventoryCardProps {
 
 export default function StockInventoryCard({ product, selecting, onInspect, onSelect }: StockInventoryCardProps) {
   const status = getProductStatus(product);
-  const verification = getStockVerificationStatus(product);
-  const countDescription = verification === "counted"
-    ? `Compté : ${product.latestCount?.countedQuantity} ${product.unit}`
-    : product.latestCount
-      ? `À vérifier · dernier comptage ${product.latestCount.countedQuantity} ${product.unit}`
-      : "À vérifier · aucun comptage";
-
-  return <li className="stock-inventory-card">
+  const unverified = status === "neutral";
+  return <li className={`stock-inventory-card stock-level-${status}`}>
     <article>
       <header className="stock-inventory-card-heading">
-        <h3><button className="product-name stock-product-link" aria-label={`Voir la fiche ${product.name}`} onClick={onInspect}>{product.name}</button></h3>
-        <Badge label={getProductStatusLabel(status)} status={status} />
+        <div>
+          <h3><button className="product-name stock-product-link" aria-label={`Voir la fiche ${product.name}`} onClick={onInspect}>{product.name}</button></h3>
+          <p className="stock-cell-note">{product.category}</p>
+        </div>
+        <div className="inventory-card-quantity">
+          <span className="stock-quantity" aria-label={`Stock théorique : ${product.currentStock.toLocaleString("fr-FR")} ${product.unit}`}><strong className="stock-value">{product.currentStock.toLocaleString("fr-FR")}</strong><span className="unit">{product.unit}</span></span>
+          <small className="stock-cell-note">Seuil : {product.minThreshold.toLocaleString("fr-FR")} {product.unit}</small>
+        </div>
       </header>
-      <p className="stock-inventory-category">{product.category}</p>
-      <dl className="stock-inventory-details">
-        <div><dt>Stock théorique</dt><dd>{product.currentStock} {product.unit}<small>{countDescription}</small></dd></div>
-        <div><dt>Seuil</dt><dd>{product.minThreshold} {product.unit}</dd></div>
-        <div><dt>Valeur catalogue indicative</dt><dd>{(product.currentStock * product.pricePerUnit).toFixed(2)} €</dd></div>
-      </dl>
-      <Button size="sm" variant="outline" icon={<ShoppingCart size={14} />} aria-label={`Ajouter ${product.name} à la commande`} disabled={selecting} onClick={onSelect}>Ajouter à la commande</Button>
+      <footer className="inventory-card-footer">
+        <StockInventoryStatus product={product} />
+        <Button size="sm" variant={unverified || status === "optimal" ? "ghost" : "outline"}
+          icon={unverified ? <ClipboardCheck size={16} /> : <ShoppingCart size={16} />}
+          aria-label={`${unverified ? "Vérifier" : "Préparer l’achat de"} ${product.name}`}
+          disabled={!unverified && selecting} onClick={unverified ? onInspect : onSelect}>{unverified ? "Vérifier" : "Préparer l’achat"}</Button>
+      </footer>
     </article>
   </li>;
 }
