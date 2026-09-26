@@ -2613,3 +2613,23 @@ compte opérationnel ni identifiant local n’a été consulté ou modifié.
 La revue rendue/clavier du Bilan et des Recettes reste ouverte : CUA ne fournit
 toujours pas de navigateur contrôlable. Aucun nouveau rendu de ces pages n’est
 revendiqué.
+
+### F1 — algorithme rendu accessible dans Prévisions (2026-09-26)
+
+La route **Plus → Prévisions** utilise maintenant le GET authentifié
+`/workspace/sales/baseline` au lieu des scénarios de catalogue de l'ancienne
+page. Elle expose la moyenne mobile 7 jours sous condition de 28 jours de
+service complets, le backtest comparé à J−7 et les projections avec recettes
+datées. Les états sans ventes, couverture insuffisante et provenance de
+simulation restent distingués ; aucune méthode n'est déclarée supérieure,
+aucune performance terrain n'est revendiquée et aucun résultat ne crée de
+commande. Les liens Ventes/Achats/Dashboard/Plus et le guide pointent désormais
+vers cette page ; les composants client statiques devenus sans usage sont
+retirés. L'estimation des sorties à partir des réceptions reste séparée dans
+le Bilan : elle n'est pas confondue avec une vente prévue.
+
+Lint, build web et `npm test` (40 fichiers/151 tests Vitest et 33 contrôles
+Node/CSS) passent ; `git diff --check` passe. CUA n'expose toujours pas de
+navigateur contrôlable : le rendu responsive et le clavier de cette version
+restent à vérifier. Aucun compte Kookia opérationnel n'a été consulté ou
+modifié. L'algorithme F1 reste expérimental, faute de jeu terrain qualifié.

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import Button from "../components/common/Button";
 import SalesImport from "../components/sales/SalesImport";
 import SalesMetrics from "../components/sales/SalesMetrics";
-import SalesBaseline from "../components/sales/SalesBaseline";
 import ServiceCalendar from "../components/sales/ServiceCalendar";
 import SalesTicketImport, { type TicketPreview } from "../components/sales/SalesTicketImport";
 import SalesReconciliation from "../components/sales/SalesReconciliation";
@@ -42,7 +42,6 @@ export default function Sales() {
   const [loadError, setLoadError] = useState("");
   const [status, setStatus] = useState("");
   const [showMetrics, setShowMetrics] = useState(false);
-  const [showBaseline, setShowBaseline] = useState(false);
   const productSelect = useRef<HTMLSelectElement>(null);
   const startHeading = useRef<HTMLHeadingElement>(null);
   const historyHeading = useRef<HTMLHeadingElement>(null);
@@ -142,7 +141,7 @@ export default function Sales() {
           {latestService.salesCount > 0 ? ` Sources : ${describeServiceSources(latestService.sources)}.` : ""}</p> :
         <p>Aucun jour de service renseigné. Une absence de donnée n'est ni un jour fermé ni zéro vente.</p>}
       <div className="sales-actions"><a href="#sales-import-title">Importer un CSV Kookia</a><a href="#sales-entry-title">Saisir une vente</a>
-        <a href="#sales-baseline-summary">Estimation test (non utilisée pour les achats)</a></div>
+        <Link to="/predictions">Voir les prévisions</Link></div>
       <small>Ces ventes alimentent les indicateurs, pas encore les achats suggérés.</small>
     </section>
     <ServiceCalendar from={from} to={to} today={parisToday()} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} />
@@ -205,9 +204,6 @@ export default function Sales() {
     </section>
     <details className="sales-disclosure" onToggle={(event) => setShowMetrics(event.currentTarget.open)}><summary>Indicateurs des ventes</summary>
       {showMetrics && <SalesMetrics key={`${from}:${to}:${salesRevision}`} from={from} to={to} />}
-    </details>
-    <details className="sales-disclosure" onToggle={(event) => setShowBaseline(event.currentTarget.open)}><summary id="sales-baseline-summary">Estimation test (non utilisée pour les achats)</summary>
-      {showBaseline && <SalesBaseline key={salesRevision} />}
     </details>
   </div>;
 }

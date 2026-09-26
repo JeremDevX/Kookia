@@ -10,12 +10,6 @@ export {
   getStatusColor,
 } from "../domain/inventory/product.policies";
 
-export type {
-  Prediction,
-  PredictionPriority,
-  PredictionRecommendation,
-} from "../domain/predictions/prediction.types";
-
 export type { Recipe, RecipeIngredient } from "../domain/recipes/recipe.types";
 
 export type {

@@ -50,10 +50,12 @@ avec les données effectivement enregistrées dans votre espace.
 5. Dépliez **Indicateurs des ventes** pour une période. Les moyennes portent
    sur les jours avec ventes enregistrées, pas sur tous les jours du calendrier.
 
-La section **Estimation test** applique une moyenne de sept jours uniquement si
-chaque article possède les 28 journées consécutives requises. Elle ne tient pas
-compte de la météo et ne prépare aucun achat. Ses erreurs rétrospectives ne sont
-pas une garantie de fiabilité. Voir les [règles détaillées](sales.md).
+La page **Plus → Prévisions** applique une moyenne de sept jours uniquement si
+le calendrier et les ventes couvrent les 28 journées consécutives requises. Elle
+compare cette méthode à la vente du même jour de semaine précédent ; aucun
+modèle n'est déclaré gagnant automatiquement. La prévision ne valide pas un
+achat et ses erreurs rétrospectives ne garantissent pas sa fiabilité. Voir les
+[règles détaillées](sales.md).
 
 ## Le matin : repérer ce qui demande une action
 

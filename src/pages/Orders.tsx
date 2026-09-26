@@ -93,7 +93,7 @@ export default function Orders() {
     <section className="orders-examples" aria-labelledby="orders-examples-title">
       <h2 id="orders-examples-title">Pour aller plus loin</h2>
       <p><Link to="/stocks">Vérifier les stocks</Link> pour choisir un produit réel.</p>
-      <p><Link to="/predictions">Explorer les scénarios d'exemple</Link> — uniquement pour comprendre les possibilités futures.</p>
+      <p><Link to="/predictions">Consulter les prévisions de ventes</Link> — elles reposent sur des ventes enregistrées et des jours de service complets, et ne valident pas une commande.</p>
     </section>
 
     <Modal isOpen={reviewOpen} onClose={() => setReviewOpen(false)} title="Revoir les quantités" width="lg">

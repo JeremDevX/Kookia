@@ -18,7 +18,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
   const pageLabels: Record<string, string> = {
     "/": "Aujourd'hui",
     "/stocks": "Stocks",
-    "/predictions": "Scénarios d'exemple",
+    "/predictions": "Prévisions",
     "/recipes": "Recettes",
     "/settings": "Réglages",
     "/analytics": "Bilan",

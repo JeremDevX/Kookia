@@ -95,7 +95,7 @@ export default function Dashboard() {
       <ol><li><strong>Établissement</strong><span>{restaurant ? `${restaurant.name} · informations initiales à confirmer` : restaurantError || "Chargement des informations…"}</span><Link to="/settings">Vérifier l'établissement</Link></li>
         <li><strong>Ventes</strong><span>Aucune vente enregistrée. Choisissez l'import CSV ou la saisie ci-dessus.</span></li>
         <li><strong>Stocks</strong><span>Les produits initiaux sont des exemples à confirmer avant vos premiers achats.</span><Link to="/stocks">Vérifier les stocks</Link></li></ol>
-      <p>Les ventes alimentent le bilan, mais pas encore des suggestions d'achat automatiques.</p>
+      <p>Les prévisions et besoins d'achat nécessitent 28 jours de service complets et un comptage de stock récent ; chaque suggestion reste à revoir.</p>
     </section>}
 
     <div className="today-grid">
@@ -128,9 +128,9 @@ export default function Dashboard() {
       </section>
     </div>
 
-    <details className="today-examples"><summary>Découvrir les exemples de Kookia</summary>
-      <p>Les scénarios d'achat et le menu d'exemple ne sont pas calculés à partir de vos ventes. Les ventes enregistrées servent aux indicateurs, pas encore à des suggestions d'achat.</p>
-      <div className="today-card-actions"><Link to="/predictions">Voir les scénarios</Link><button type="button" onClick={() => setMenuOpen(true)}>Voir le menu d'exemple</button></div>
+    <details className="today-examples"><summary>Prévisions et idées de menu</summary>
+      <p>La prévision reste expérimentale et n'apparaît qu'avec 28 jours complets de ventes et de service. Les idées de menu sont des propositions à vérifier avant toute production.</p>
+      <div className="today-card-actions"><Link to="/predictions">Consulter les prévisions</Link><button type="button" onClick={() => setMenuOpen(true)}>Voir les idées de menu</button></div>
     </details>
 
     <Modal isOpen={menuOpen} onClose={() => setMenuOpen(false)} title="Préparer le menu" width="md">
