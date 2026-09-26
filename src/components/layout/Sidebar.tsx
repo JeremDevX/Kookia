@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const inMore = ["/recipes", "/analytics", "/settings", "/predictions"].includes(pathname);
+  const inMore = ["/recipes", "/analytics", "/settings", "/predictions", "/services"].includes(pathname);
   const sidebarRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     if (!isOpen) return;

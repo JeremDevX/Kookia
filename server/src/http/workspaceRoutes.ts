@@ -2,6 +2,11 @@ import { reportRoutes } from "./reportRoutes.js";
 import { impactRoutes } from "./impactRoutes.js";
 import { ingredientOutflowEstimateRoutes } from "./ingredientOutflowEstimateRoutes.js";
 import { salesRoutes } from "./salesRoutes.js";
+import { inventoryRoutes } from "./inventoryRoutes.js";
+import { serviceCalendarRoutes } from "./serviceCalendarRoutes.js";
+import { serviceOperationsRoutes } from "./serviceOperationsRoutes.js";
+import { serviceSheetRoutes } from "./serviceSheetRoutes.js";
+import { operationalIncidentRoutes } from "./operationalIncidentRoutes.js";
 import { menuRoutes } from "./menuRoutes.js";
 import { restaurantRoutes } from "./restaurantRoutes.js";
 import { invoiceRoutes } from "./invoiceRoutes.js";
@@ -50,6 +55,11 @@ workspaceRoutes.use(reportRoutes);
 workspaceRoutes.use(impactRoutes);
 workspaceRoutes.use(ingredientOutflowEstimateRoutes);
 workspaceRoutes.use(salesRoutes);
+workspaceRoutes.use(inventoryRoutes);
+workspaceRoutes.use(serviceCalendarRoutes);
+workspaceRoutes.use(serviceOperationsRoutes);
+workspaceRoutes.use(serviceSheetRoutes);
+workspaceRoutes.use(operationalIncidentRoutes);
 
 const quantity = z.number().finite().min(0).max(1_000_000).multipleOf(0.001);
 const newProductSchema = z.object({
@@ -57,6 +67,7 @@ const newProductSchema = z.object({
   category: z.string().trim().min(1).max(80), currentStock: quantity,
   unit: z.enum(["kg", "L", "dz", "pcs"]), minThreshold: quantity,
   supplierId: z.string().min(1).max(100), pricePerUnit: z.number().finite().min(0).max(1_000_000).multipleOf(0.0001),
+  orderPackQuantity: z.number().finite().positive().max(1_000_000).multipleOf(.001).nullable().optional(),
 }).strict();
 const stockSchema = z.object({
   operationId: z.uuid(), delta: z.number().finite().min(-1_000_000).max(1_000_000).multipleOf(0.001).refine((value) => value !== 0),
@@ -67,6 +78,7 @@ const editProductSchema = z.object({
   category: z.string().trim().min(1).max(80), minThreshold: quantity,
   supplierId: z.string().min(1).max(100),
   pricePerUnit: z.number().finite().min(0).max(1_000_000).multipleOf(0.0001),
+  orderPackQuantity: z.number().finite().positive().max(1_000_000).multipleOf(.001).nullable().optional(),
 }).strict();
 const stockCountSchema = z.object({
   operationId: z.uuid(), expectedStockRevision: z.number().int().positive(),
@@ -127,9 +139,11 @@ workspaceRoutes.get("/recipes", async (_req, res, next) => {
   try { res.json(await getRecipes(context(res).restaurantId)); } catch (error) { next(error); }
 });
 const recipeIngredientSchema = z.object({ productId: z.string().trim().min(1).max(100),
-  quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001) }).strict();
+  quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001),
+  netQuantity: z.number().finite().min(0).max(1_000_000).multipleOf(.001).nullable().optional(),
+}).strict().refine(value => value.netQuantity == null || value.netQuantity <= value.quantity);
 const recipeValuesSchema = z.object({
-  name: z.string().trim().min(1).max(120), category: z.enum(["Plat", "Dessert", "Entrée"]),
+  name: z.string().trim().min(1).max(120), category: z.enum(["Plat", "Dessert", "Entrée", "Boisson"]),
   prepTime: z.number().int().min(0).max(10080), yieldPortions: z.number().int().min(1).max(10000),
   effectiveFrom: z.iso.date(), ingredients: z.array(recipeIngredientSchema).min(1).max(100),
 }).strict();
@@ -190,7 +204,7 @@ const productionSchema = z.object({
   expectedRecipeRevision: z.number().int().positive().optional(),
   recipeName: z.string().trim().min(1).max(120), portions: z.number().int().min(1).max(10000),
   prepTime: z.number().int().min(0).max(10080), notes: z.string().max(4000),
-  date: z.iso.date(), kind: z.enum(["production", "record", "refusal"]),
+  date: z.iso.date(), serviceSlot: z.enum(["lunch", "dinner"]).nullable().optional(), kind: z.enum(["production", "record", "refusal"]),
 }).strict()
   .refine((data) => data.kind === "record"
     ? (data.recipeId === undefined && data.expectedRecipeRevision === undefined) ||

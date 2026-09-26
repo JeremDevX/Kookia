@@ -16,6 +16,7 @@ const Analytics = lazy(() => import("../../pages/Analytics"));
 const Sales = lazy(() => import("../../pages/Sales"));
 const More = lazy(() => import("../../pages/More"));
 const Timeline = lazy(() => import("../../pages/Timeline"));
+const Services = lazy(() => import("../../pages/Services"));
 
 function LegacyTimelineReplayRedirect() {
   const location = useLocation();
@@ -36,6 +37,7 @@ const AppRouter = () => (
           <Route path="settings" element={<Settings />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="sales" element={<Sales />} />
+          <Route path="services" element={<Services />} />
           <Route path="more" element={<More />} />
           <Route path="history" element={<Timeline />} />
           <Route path="history/replay/:id" element={<LegacyTimelineReplayRedirect />} />
