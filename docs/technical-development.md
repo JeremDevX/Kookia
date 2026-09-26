@@ -10,18 +10,21 @@ fonctionnalité déjà disponible**.
 | Sujet | État actuel vérifié | Cible Jalon 2 / préproduction |
 | --- | --- | --- |
 | Application web | React 19, TypeScript, Vite ; données métier persistées via API | Réduire les gestes du parcours quotidien et vérifier l'usage mobile/clavier |
-| Atelier documentaire | Application locale séparée, `npm run documents:dev` ; prévisions distinctes des demandes, calendrier et carte saisonnière, lots/FEFO avec reprise JSON, incidents causaux, transactions et pertes différenciées ; PDF fournisseurs/Ticket Z, CSV quotidiens et ZIP version 2, sans API ni écriture métier. Voir [usage et couverture](document-workshop.md). | Hypothèses non calibrées sur le terrain. Ne remplace pas les imports disponibles : CSV natif, Ticket Z transcrit et formulaires manuels ; lots et déchets cuisinés restent documentaires |
+| Atelier documentaire | Application locale séparée, `npm run documents:dev` ; prévisions distinctes des demandes, calendrier et carte saisonnière, lots/FEFO avec reprise JSON, incidents causaux, transactions et pertes différenciées ; PDF fournisseurs/Ticket Z, CSV quotidiens et ZIP version 2, sans API ni écriture métier. Voir [usage et couverture](document-workshop.md). | Hypothèses non calibrées sur le terrain. Aucun import automatique des lots ou déchets du générateur ; les opérations Kookia sont saisies et confirmées séparément |
 | Qualité | ESLint, TypeScript, Vitest et CI GitHub Actions ; scripts `lint`, `build`, `test` | CI exécutable sans manipulation ; smoke test sur URL dédiée avant recette |
 | Hébergement | `vercel.json` sert une SPA frontend ; aucun runtime API ni réécriture `/api` | Définir et vérifier séparément l'API, le réseau, les sessions et la persistance avant préproduction |
 | Réseau local | Vite proxifie `/api` vers `http://127.0.0.1:3001` par défaut (cible overrideable pour la démo) ; l'API écoute loopback par défaut, `HOST` configure l'écoute et `APP_ORIGIN` l'origine mutatrice locale ; la recette R0 et la démo utilisent PostgreSQL jetable sur loopback | Configurer explicitement l'écoute externe, un routage `/api` de même origine, une origine mutatrice autorisée et TLS selon l'hébergeur choisi |
 | Backend et persistance | API Express/TypeScript et PostgreSQL/Prisma actifs pour comptes et espaces métier isolés | Renforcer les contrats d'ingestion, la provenance et l'évaluation des calculs |
 | Intégrations | Aucun fournisseur POS/OCR/météo actif ; `Plus → Connexions` lit les statuts serveur `not_connected`. POS reste une fixture revue manuellement ; Ticket Z a une transcription manuelle sans OCR ni conservation du fichier ; Achats expose une unique fixture PDF synthétique via upload local en `demo:local`, sans OCR général ni conservation de l'original ; les autres fichiers gardent le repli manuel. | Contrats et adaptateurs fournisseur, extraction contrôlée, correction et repli manuel |
-| Prévision | La page Prévisions sépare la baseline F1 des ventes (28 jours de calendrier complets requis) des estimations d'écoulement d'ingrédients (réceptions enregistrées positives et recettes datées compatibles). F2 contextuel reste non connecté ; aucune de ces estimations ne crée d'opération | Position confirmée, fournisseurs météo/événements et historique d'émissions après cadrage des droits/rétention ; mesurer un éventuel gain seulement sur données terrain qualifiées ; moteur IA hors périmètre full-stack initial |
+| Prévision | La page Prévisions sépare la baseline F1 des ventes (28 jours de calendrier complets requis) des estimations d'écoulement d'ingrédients. **Services et carte** ajoute des estimations par jour/service et carte versionnée, avec historique qualifié, dispersion et saisonnalité conditionnelle. Aucun calcul ne crée d'opération ; F2 météo reste non connecté | Mesurer les performances sur données terrain qualifiées ; fournisseurs météo/événements après cadrage des droits/rétention ; moteur IA hors périmètre full-stack initial |
 
 Les versions et dépendances actives font foi dans [`package.json`](../package.json).
 La [cartographie détaillée des écarts](ecarts-techniques.md) confronte cette cible au code actuel, brique par brique.
 La [préparation locale de livraison](local-delivery.md) décrit aussi les cookies,
 les secrets d'environnement, la disponibilité observée et les limites de reprise.
+Le parcours [Services, carte et stocks opérationnels](operational-services.md)
+détaille les nouveaux contrats et leurs limites ; le
+[plan de vérification](plans/operational-realism.md) conserve les preuves sur base jetable.
 
 ## Invariants produit et données
 
@@ -43,7 +46,7 @@ les secrets d'environnement, la disponibilité observée et les limites de repri
 Le modèle persistant actuel comprend notamment `Restaurant`, `Product`,
 `StockMovement`, `SaleItem`, `ServiceDay`, `DailySale`, `SaleImport`, `SaleContribution`,
 `SaleContributionEvent`, `TicketZBatch`, `PosSalesBatch`, `Prediction`,
-`PurchaseOrder`, `PurchaseReceipt`, `PurchaseReceiptLine` et
+`PurchaseOrder`, `PurchaseReceipt`, `PurchaseReceiptLine`, `StockLot`, `WasteRecord` et
 `RecommendationDecision`. Les contrats futurs pour les sources externes
 ([détails](integrations.md)) et leur ingestion devront rester distincts des
 payloads bruts des fournisseurs. Le parcours manuel Ticket Z persiste uniquement
@@ -62,6 +65,11 @@ La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
 `PurchaseOrder`, `PurchaseOrderLine`, `PurchaseReceipt`, `PurchaseReceiptLine`, `RecommendationDecision`
 et `WorkspaceDocument`. Ce dernier conserve les documents structurés (analytics,
 préférences, panier, notifications, pièces source, factures et menus), validés aux frontières.
+Les services opérationnels ajoutent `RestaurantServiceSchedule`,
+`RestaurantServiceSession`, `SaleServiceAllocation`, `ServiceMenuVersion`,
+`StockLot`, `StockLotAllocation`, `WasteRecord`, `OperationalIncident` et
+`PurchaseCredit`. La fiche de service est un `WorkspaceDocument` révisé,
+accompagné de décisions immuables et d'un constat figé à la clôture.
 Les mutations critiques sont transactionnelles. Les liens internes sont différés
 pour permettre la suppression en cascade d’un compte sans casser ses références.
 La fiche `Product` porte une révision pour détecter les modifications concurrentes ;
@@ -93,13 +101,25 @@ vente manuelle ou CSV ouvre un service partiel ; seul un jour explicitement
 complet qualifie les absences de lignes comme zéro observé. La migration classe
 les dates historiques avec ventes comme ouvertes/partielles, sans inventer une
 complétude rétrospective.
+Les horaires hebdomadaires et exceptions midi/soir restent distincts de cette
+couverture quotidienne. Les sessions conservent leur propre couverture ; une
+ouverture planifiée ne vaut jamais vente complète. La ventilation midi/soir des
+`DailySale` est explicite, conserve un reliquat non ventilé et devient obsolète
+après correction de la vente source. Productions et pertes portent un service
+facultatif, sans attribution arbitraire des anciennes opérations.
 `Recipe` expose un rendement et une révision optimiste. Chaque création ou
 édition ajoute un instantané `RecipeVersion` daté et attribué, avec ses
 ingrédients, quantités, noms et unités ; les anciennes productions restent
 liées à leur version et leurs déductions ne sont pas recalculées après édition.
 Le backfill attribue une version 1 aux recettes préexistantes avec date d'effet
 inconnue et laisse les productions historiques sans lien de version lorsqu'il
-est impossible de reconstruire cette information.
+est impossible de reconstruire cette information. Les dosages bruts et nets
+facultatifs sont versionnés ; une production déduit le brut une seule fois.
+Les réceptions créent des lots datés et des allocations FEFO tracent les sorties.
+Une échéance est renseignée, jamais calculée depuis une durée sanitaire supposée.
+Les stocks historiques sans preuve restent sans âge connu. La faisabilité des
+recettes exclut les lots échus, signale les échéances inconnues et bloque une
+incohérence entre lots et stock ; elle ne remplace pas le stock physique affiché.
 Les fiches candidates sont réservées aux espaces `demo`, stockées comme
 documents de travail révisés et accompagnées d'une `RecommendationDecision`.
 Chaque ingrédient référence une pièce source du même espace et sa ligne ; hash,
@@ -135,8 +155,11 @@ enregistrement était connu à cette date ; une association ou version saisie
 après coup ne fuit pas vers les jours précédents, même avec une date d'effet
 rétrodatée. Les versions à date inconnue ou future ne sont pas utilisées. La
 projection ne modifie pas les mouvements de stock. Les suggestions d'achat
-réutilisent cette projection pour un seul service à venir, retranchent un stock
-compté encore courant et n'intègrent ni délai fournisseur ni commande non reçue ;
+utilisent désormais les cartes et prévisions opérationnelles par service jusqu'à
+la prochaine livraison, selon jours, délai et heure limite du fournisseur.
+Elles simulent la disponibilité FEFO par besoin daté et les arrivées attendues,
+sans créditer le stock avant réception. Une arrivée future ne couvre pas un manque
+antérieur. Paramètres, conditionnements ou données manquants restent explicites ;
 le prix affiché est indicatif. Le chef peut écarter, modifier et valider une
 suggestion, avec une décision immuable côté serveur. Une origine
 `demo_simulation` ne crée jamais une commande réelle ; le tenant démo persiste
@@ -161,19 +184,21 @@ modèle de péremption n'est introduit par ce parcours.
 
 La page **Bilan** appelle `GET /api/workspace/impact` pour comparer la période
 choisie à la précédente de même durée calendaire. Les ventes sont datées par
-service, les pertes explicites par enregistrement UTC et les achats par date de
-livraison ; les quantités restent séparées par produit/unité. Le coût d'une perte
-est calculé uniquement depuis un prix snapshoté au mouvement, et les dépenses
-uniquement depuis des quantités de réception confirmées et leur prix de facture.
-Les simulations sont séparées des totaux enregistrés ; les mouvements sans
-unité cohérente sont exclus des totaux et exposés à vérifier. Ruptures et invendus
-ne sont pas saisis dans un ledger dédié, donc restent « non mesurés » ; aucune
-économie réalisée n'est calculée. L'export opérationnel comporte une section
-**Pertes déclarées** fondée uniquement sur les mouvements négatifs explicitement
-étiquetés `loss`, avec quantité absolue, date UTC et identifiant d'opération
-source. Il compte les coûts non valorisés et les incompatibilités d'unité,
-signale les métriques non mesurées et exclut les simulations. Il ne constitue
-pas une attestation AGEC.
+service, les pertes structurées par leur jour de service, les anciennes pertes
+sans déclaration liée par enregistrement UTC et les achats par date de livraison.
+Les quantités restent séparées par produit/unité et nature. Le coût d'une perte
+brute structurée provient des allocations de lots connues ; les pertes historiques
+utilisent le prix snapshoté au mouvement. Les dépenses utilisent uniquement les
+réceptions confirmées et leur prix de facture. Les simulations sont séparées.
+La section des pertes structurées du Bilan et des exports conserve causes,
+évitabilité, produit/lot/préparation et unités déclarées. Parures, invendus et
+retours ne déduisent pas une seconde fois les ingrédients déjà consommés, ne
+s'ajoutent pas aux sorties brutes et n'ont pas de coût reconstitué arbitrairement.
+Les déclarations d'invendus sont partielles, pas une mesure de tous les invendus :
+`unavailableMetrics` expose `stockouts` et `complete_unsold_quantity`. Les coûts
+inconnus restent indisponibles ; aucune économie réalisée n'est calculée.
+L'export opérationnel conserve aussi les mouvements de pertes et leur provenance,
+exclut les simulations et ne constitue pas une attestation AGEC.
 
 Avec `monthly=true`, la même route renvoie une page de 12 mois et une
 `monthlyPagination` (`page`, `pageCount`, `totalMonths`, `hasOlder`, `hasNewer`).
@@ -377,9 +402,10 @@ de S3 ; il ne mesure pas la couverture actuelle sans rapport généré.
 - Rapport de gaspillage AGEC : cible *Should have* à T+9 mois. Ne pas revendiquer
   une conformité réglementaire sans vérification dédiée. Les idées de menus
   issues d'un surstock explicite sont préparées localement dans le tenant démo
-  uniquement ; leur extension à des espaces opérationnels, des seuils globaux ou
-  une gestion des péremptions attend une validation pilote et un modèle de
-  données adapté.
+  uniquement ; leur extension à des espaces opérationnels ou des seuils globaux
+  attend une validation pilote. Les lots opérationnels ont une échéance déclarée
+  et des sorties FEFO ; aucune durée sanitaire automatique ni règle de réemploi
+  des préparations conservées n'est validée par cette fonctionnalité.
 - EDI fournisseurs et enregistrement HACCP : cible *Could have* à T+12 mois.
 - Infrastructure dédiée et machine IA : option de montée en charge vers 100
   clients, chiffrée comme enveloppe haute à confirmer par devis ; le scénario de

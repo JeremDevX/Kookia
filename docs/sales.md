@@ -1,5 +1,12 @@
 # Ventes enregistrées et baseline expérimentale
 
+Le calendrier et la baseline quotidiens décrits ici restent disponibles.
+[Services et carte](operational-services.md) ajoute les horaires et exceptions
+midi/soir, la ventilation explicite des ventes et des estimations par service
+fondées sur une carte datée. Une correction de vente invalide sa ventilation ;
+un planning d'ouverture ne confirme jamais les ventes complètes. Les seuils de
+la baseline ci-dessous ne sont pas ceux des nouvelles estimations par service.
+
 La page **Ventes** gère les articles vendus du restaurant, distincts des
 ingrédients de stock. Les saisies et imports (`manual` ou `csv`) restent séparés
 des données de simulation locale, dont les ventes portent la source

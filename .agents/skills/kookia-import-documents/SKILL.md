@@ -116,17 +116,17 @@ régularisations → comptages → couverture des services. Garder l’ordre des
 | Établissement, fournisseurs, catalogue | Créer uniquement ce qui manque ; conserver les identités et unités existantes. Convertir les centimes en euros seulement aux contrats qui attendent des euros. |
 | Recettes et articles | Dosages du lot de **10 portions** dans les fiches actuelles, à vérifier sur la pièce ; une vente correspond à une portion. Respecter la date d’effet et la version, sans recalculer le passé. |
 | Commande, facture, livraison | Une commande validée ne crédite pas le stock. Recevoir les quantités du BL, pas les quantités commandées si manque. Choisir réception de facture OU réception rapprochée de commande : jamais les deux pour la même livraison. |
-| Avoir fournisseur | Pièce de rapprochement, pas une réception négative improvisée ; aucune comptabilité d’avoirs importable présumée. |
+| Avoir fournisseur | Rapprocher référence, montant et motif via la réception/facture concernée ; aucun mouvement de stock ni import de comptabilité générale. |
 | Production | Déduire les ingrédients une seule fois via la recette/version et les portions. Ne pas créer une seconde sortie matière lors de la saisie des ventes. |
 | Note et refus cuisine | Historiser sans déduction de stock ; ne pas rejouer la production décrite par la note. |
 | Ventes | Préférer le CSV natif avec mapping, prévisualisation et confirmation. CSV global, CSV quotidiens, Ticket Z et facture client décrivent les mêmes ventes : ne pas les additionner. Traiter les conflits via la réconciliation existante. |
 | Ticket Z | Upload PDF puis transcription/revue si ce parcours est choisi ; aucun OCR générique présumé. |
 | Facture/avoir client | La facture est déjà comprise dans le Z. Un remboursement trace un motif sans diminuer la quantité servie ni rendre les ingrédients ; le montant reste documentaire si le contrat ne le stocke pas. |
-| Pertes et inventaire | Perte positive dans le document → diminution du stock dans Kookia ; ignorer les pertes nulles. Régulariser un écart par ajustement OU comptage, jamais deux fois. Vérifier le stock après opérations. |
-| Calendrier | Marquer complet seulement après vérification des ventes réellement acceptées ; ne pas déclarer à zéro ou fermé un jour absent. |
+| Pertes et inventaire | Perte brute positive → une diminution du stock. Parures, invendus et retours liés à la préparation → déclaration typée sans seconde sortie ; conserver la nature estimative des retours du dossier. Ignorer les pertes nulles. Régulariser un écart par ajustement OU comptage, jamais deux fois. |
+| Calendrier | Horaires et exceptions midi/soir ne valent pas couverture complète. Ventiler les ventes journalières explicitement ; marquer complet après vérification des ventes acceptées. Une correction invalide la ventilation. Ne pas déclarer à zéro ou fermé un jour absent. |
 
 Les ventes et productions futures doivent attendre leur date (Europe/Paris).
-Les pertes, ajustements et comptages sont actuellement datés à la saisie :
+Les pertes structurées portent une date/service explicite et conservent la trace de leur saisie tardive. Les ajustements et comptages restent datés à la saisie :
 **ne pas antidater la base ni présenter une intégration tardive comme fidèle aux
 dates du dossier**. Mettre ces opérations en attente si une chronologie exacte
 est demandée ; expliquer la limite et demander un choix uniquement si nécessaire.

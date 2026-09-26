@@ -13,15 +13,15 @@ rendu statique des composants lorsque pertinent.
 
 | Axe | Résultat attendu | Preuves requises | État |
 | --- | --- | --- | --- |
-| Services | Horaires hebdomadaires, exceptions, midi/soir, couverture observée distincte | Planning sans faux zéro ; ventilation conservatrice des ventes ; attribution production/pertes ; UI et API isolées | En cours |
-| Lots | Réceptions datées, échéance déclarée, coût et quantités, sorties FEFO traçables | Conservation tous chemins de stock, réception/rejeu, lot inconnu/périmé, isolation | En cours |
-| Fiche de service | Prévu, préparation validée, compléments, vendu, invendu, conservé/écarté, substitutions | Rapprochement sans double écriture ni assimilation du reliquat à une perte | À intégrer |
-| Rendements/pertes | Brut/net versionné, causes et évitabilité, lien lot/production/service | Déchet cuisiné sans seconde déduction ; pertes brutes atomiques ; historique intact | En cours |
-| Achats | Calendrier fournisseur, délais/cutoff, conditionnements et horizon, attendu distinct du stock | Dates/cutoff, reliquat non reçu, validation chef, incohérence/absence explicite | En cours |
-| Prévisions | Jour/service/carte, historique qualifié, mix et dispersion, saisonnalité conditionnelle | Dates sans fuite, ventes incomplètes/simulées exclues, faible historique exposé, aucun score terrain inventé | À intégrer |
-| Carte | Versions datées par service, choix, disponibilités, prix, boissons/formules | Historique conservé, ingrédients des composants une seule fois, édition revue | À intégrer |
-| Incidents | Signalements réels reliés, conséquences prochain service, ajustements proposés | Aucun changement implicite de commande/production ; décision attribuée | À intégrer |
-| Pièces | Chaîne commande/réception/facture/avoir, ventes/remboursements, fiches imprimables | Références reliées, effets stock explicites, rendu statique lisible | À intégrer |
+| Services | Horaires hebdomadaires, exceptions, midi/soir, couverture observée distincte | Planning sans faux zéro ; ventilation invalidée par correction ; refus des ventes/couverts sur session fermée ; isolation HTTP | Implémenté et vérifié |
+| Lots | Réceptions datées, échéance déclarée, coût et quantités, sorties FEFO traçables | Réception/rejeu ; expirations bloquant la production ; stock historique sans âge ; faisabilité catalogue cohérente | Implémenté et vérifié |
+| Fiche de service | Prévu, préparation validée, compléments, vendu, invendu, conservé/écarté, substitutions | Prévision serveur conservée et clé périmée refusée ; clôture réconciliée immuable ; portions fractionnelles ; absence de double sortie | Implémenté et vérifié |
+| Rendements/pertes | Brut/net versionné, causes et évitabilité, lien lot/production/service | Brut atomique ; parures/invendus/retours sans seconde déduction ; Bilan/export datés par service et coûts de lots prouvés | Implémenté et vérifié |
+| Achats | Calendrier fournisseur, délais/cutoff, conditionnements et horizon, attendu distinct du stock | FEFO par service ; livraison future ne couvre pas un manque antérieur ; paramètre inconnu bloquant ; revue chef | Implémenté et vérifié |
+| Prévisions | Jour/service/carte, historique qualifié, mix et dispersion, saisonnalité conditionnelle | Dates sans fuite ; ventes incomplètes/simulées exclues ; historique insuffisant explicite ; aucun score terrain inventé | Implémenté et vérifié |
+| Carte | Versions datées par service, choix, disponibilités, prix, boissons/formules | Prix/dosages historiques ; formules décomposées une fois ; indisponibles exclus ; conflits/rejeux/isolation | Implémenté et vérifié |
+| Incidents | Signalements réels reliés, conséquences prochain service, ajustements proposés | Liens tenant-scopés ; rejeu et résolution révisée ; aucun changement implicite de stock/vente/commande/production | Implémenté et vérifié |
+| Pièces | Chaîne commande/réception/facture/avoir, ventes/remboursements, fiches imprimables | Avoir sans sortie stock ; remboursements journaliers sans montant/service inventé ; HTML échappé et constat figé testé | Implémenté et vérifié hors navigateur |
 
 ## Frontières et compatibilité
 
@@ -48,7 +48,58 @@ rendu statique des composants lorsque pertinent.
 
 ## Validation et suivi
 
-État initial propre au commit `26b1cba`. À compléter après chaque incrément :
-preuves ciblées, puis `lint`, `build`, `build:api`, `test`, tests d'intégration
-jetables, parité des migrations, sauvegarde/restauration et `git diff --check`.
-La restriction de tests navigateur reste une limite de recette UI explicite.
+État initial propre au commit `26b1cba`. Les incréments sont commités séparément :
+plan, schéma, calendrier, lots/pertes, prévisions/achats, disponibilité des recettes,
+Bilan/export, services/carte, incidents et documentation finale.
+
+### Couverture métier
+
+- `serviceCalendar.integration.test.ts` et `serviceCalendar.test.ts` : calendrier,
+  exceptions, couverture, ventilation et révision des sources.
+- `lotWaste.integration.test.ts`, `lotService.test.ts` et
+  `catalogAvailability.integration.test.ts` : réception, correction, comptage,
+  production FEFO, expirations, idempotence, pertes et isolation.
+- `serviceSheetPolicy.test.ts`, `serviceSheet.integration.test.ts` et
+  `serviceSheetPrint.test.ts` : plan relu, provenance des prévisions, substitutions,
+  réconciliation, fractions, remboursements, clôture et échappement HTML.
+- `serviceMenuForecast.integration.test.ts` et `operationalForecastPolicy.test.ts` :
+  versions, prix, formules, saisonnalité conditionnelle, historique incomplet,
+  dates et besoins matière qualifiés.
+- `purchaseSuggestions.integration.test.ts`, `purchaseAvailability.test.ts`,
+  `supplierDelivery.test.ts`, `purchaseReconciliation.integration.test.ts` :
+  horizon, dates d'arrivée, échéances, conditionnements, avoirs et isolation.
+- `operationalIncidents.integration.test.ts` : signalements liés, conséquences,
+  résolution revue, répétitions et absence de mutation opérationnelle implicite.
+- `declaredWasteRead.test.ts`, `impact.integration.test.ts`, tests de rapport et
+  rendu statique du Bilan : date de service, unités historiques, coût connu,
+  absence de double comptage et déclarations partielles distinctes des KPI complets.
+
+### Vérifications transversales
+
+- `npm run lint` : réussi, dont 41 fichiers CSS contrôlés.
+- `npm run build` et `npm run build:api` : réussis.
+- `npm test` : 35 tests des scripts et 258 tests Vitest, 60 fichiers, réussis.
+- Intégrations PostgreSQL : 54 tests dans 33 fichiers réussis sur base dédiée loopback/tmpfs ;
+  aucun compte opérationnel ni base conservée utilisés.
+- `npm run documents:build` après le build principal : réussi, sans génération
+  dans le navigateur. Avertissements non bloquants Rollup/Zod et dossier de sortie.
+- Migration additive appliquée aux seules fixtures ; parité Prisma/migrations
+  confirmée. Sauvegarde/restauration de 41 tables dans une copie jetable :
+  mêmes nombres de lignes, mêmes empreintes de contenu et même schéma.
+  La copie et le conteneur temporaire ont ensuite été supprimés.
+- Guides de l'atelier et d'import alignés sur les nouveaux contrats ; les six
+  tests documentaires ciblés et leur build ont été relancés après ces textes.
+- `git diff --check` : réussi.
+
+### Limites explicites
+
+Les tests navigateur sont exclus par instruction : aucun parcours clavier,
+responsive ou rendu visuel final n'est prétendu vérifié. Les prévisions n'ont pas
+de calibration terrain. Les quantités conservées sont un constat de clôture,
+pas un inventaire cuisiné transférable ni une validation sanitaire de réemploi.
+Les remboursements existants ne portent pas de montant ni de service. Les avoirs
+ne recalculent pas silencieusement les anciens KPI d'achat. Aucun connecteur POS,
+OCR, météo, envoi fournisseur ou conformité réglementaire n'est ajouté.
+
+La base opérationnelle n'a pas reçu la migration. Le parcours et les règles sont
+décrits dans [Services, carte et stocks opérationnels](../operational-services.md).

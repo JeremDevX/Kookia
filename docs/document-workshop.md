@@ -145,8 +145,13 @@ les dates futures ; il ne détecte pas les ventes déjà présentes dans Kookia.
 Les PDF fournissent des pièces à revoir et saisir, pas un import universel :
 commandes puis réceptions, recettes en dosage brut, productions réellement
 préparées, ventes, pertes brutes et comptages. Les prévisions et notes cuisine
-ne déclenchent rien. Les lots, transactions détaillées, remises, comptabilité
-d’avoirs et déchets cuisinés restent documentaires dans les contrats actuels.
+ne déclenchent rien. Kookia prend désormais en charge les lots de réception,
+déchets liés aux préparations et avoirs rapprochés, via ses formulaires/API
+revus ; aucun import automatique du JSON de l'atelier n'est ajouté. Les
+transactions détaillées et remises restent documentaires. Voir
+[Services, carte et stocks opérationnels](operational-services.md) pour les
+champs réellement persistés et leurs limites. Les estimations de retours de
+l'atelier ne doivent pas être présentées comme des pesées observées.
 
 **Garde-fous de rapprochement :**
 
@@ -157,8 +162,10 @@ d’avoirs et déchets cuisinés restent documentaires dans les contrats actuels
 - CSV OU Ticket Z OU saisie manuelle, jamais additionnés pour le même article/jour.
   La facture client est déjà incluse ; remboursement sans annulation de quantité.
 - Une régularisation par ajustement OU comptage, jamais les deux.
-- Les ventes et productions futures sont refusées par Kookia. Les pertes et
-  comptages sont datés à la saisie : une reprise historique ne les antidate pas.
+- Les ventes et productions futures sont refusées par Kookia. Les déclarations
+  de pertes structurées portent une date/service explicite ; leur saisie tardive
+  reste tracée. Les ajustements et comptages conservent leur date d'enregistrement,
+  sans antidatage automatique lors d'une reprise.
 - Les pièces sont des supports opérationnels, pas une certification fiscale.
   Aucun identifiant réel tiers ni numéro de caisse certifiée n’est attribué.
 
