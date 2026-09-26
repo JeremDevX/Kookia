@@ -18,6 +18,11 @@
 @custom-media --media-print (print);
 
 :root {
+  --unit-28vh: 28vh;
+  --unit-18vh: 18vh;
+  --unit-200percent: 200%;
+  --animation-direction-reverse: reverse;
+  --text-wrap-balance: balance;
   --white-space-pre-wrap: pre-wrap;
   --overflow-wrap-anywhere: anywhere;
   /* Colors */
