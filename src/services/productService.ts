@@ -29,6 +29,7 @@ export const adjustProductStock = (id: string, delta: number, reason: "adjustmen
   apiRequest<Product>(`/workspace/products/${encodeURIComponent(id)}/stock`, { method: "POST", body: JSON.stringify({ delta, reason, operationId: crypto.randomUUID() }) });
 export interface StockMovement {
   id: string; delta: number; reason: string; createdAt: string; sourceDocumentId?: string;
-  sourceContentHash?: string; sourceDocumentRevision?: number; invoiceDocumentId?: string; invoiceRevision?: number; stockCountId?: string;
+  sourceContentHash?: string; sourceDocumentRevision?: number; invoiceDocumentId?: string; invoiceRevision?: number;
+  stockCountId?: string; purchaseReceiptLineId?: string;
 }
 export const getStockMovements = (id: string) => apiRequest<StockMovement[]>(`/workspace/products/${encodeURIComponent(id)}/movements`);

@@ -1,10 +1,11 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
+import { impactMonthPage } from "./impactMonthPolicy.js";
 import { isSimulationStockMovement } from "./stockMovementProvenance.js";
 
 type ImpactDatabase = PrismaClient | Prisma.TransactionClient;
 type ImpactItem = { productId: string; productName: string; unit: string; quantity: number; knownCost: number;
-  unpricedMovementCount: number; movementCount: number; operationIds: string[] };
+  unpricedMovementCount: number; movementCount: number; operationIds: string[]; movementIds: string[] };
 type ReceiptItem = { productId: string; productName: string; unit: string; receivedQuantity: number; cost: number;
   receiptIds: string[]; orderIds: string[] };
 type SaleItem = { saleItemId: string; saleItemName: string; quantity: number; operationIds: string[] };
@@ -14,7 +15,6 @@ type ImpactBucket = { menuItemUnits: number; salesByItem: SaleItem[]; serviceDay
   receiptsByProduct: ReceiptItem[] };
 
 const DAY_MS = 86_400_000;
-export const MAX_MONTHLY_IMPACT_MONTHS = 48;
 const dateAt = (date: string) => new Date(`${date}T00:00:00.000Z`);
 const dateOnly = (date: Date) => date.toISOString().slice(0, 10);
 const addDays = (date: string, days: number) => {
@@ -23,21 +23,6 @@ const addDays = (date: string, days: number) => {
   return dateOnly(result);
 };
 const inRange = (date: string, from: string, to: string) => date >= from && date <= to;
-const monthIndex = (date: string) => Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7)) - 1;
-
-export const calendarMonthCount = (from: string, to: string) => monthIndex(to) - monthIndex(from) + 1;
-
-function monthRanges(from: string, to: string) {
-  const ranges: Array<{ month: string; from: string; to: string }> = [];
-  for (let index = monthIndex(from); index <= monthIndex(to); index += 1) {
-    const year = Math.floor(index / 12), monthNumber = index % 12 + 1;
-    const month = `${year}-${String(monthNumber).padStart(2, "0")}`;
-    const monthStart = `${month}-01`;
-    const monthEnd = dateOnly(new Date(Date.UTC(year, monthNumber, 0)));
-    ranges.push({ month, from: from > monthStart ? from : monthStart, to: to < monthEnd ? to : monthEnd });
-  }
-  return ranges;
-}
 
 function emptyBucket(calendarDays: number): ImpactBucket {
   return { menuItemUnits: 0, salesByItem: [], serviceDays: { complete: 0, partial: 0, coverageMissing: 0, closed: 0,
@@ -66,7 +51,7 @@ function monthlyPeriod(month: string, period: ReturnType<typeof emptyPeriod>) {
 function quantity(decimal: Prisma.Decimal) { return Number(decimal); }
 
 export async function getImpactReport(restaurantId: string, from: string, to: string, db: ImpactDatabase = prisma,
-  options: { includeMonthly?: boolean } = {}) {
+  options: { includeMonthly?: boolean; monthlyPage?: number } = {}) {
   const dayCount = Math.floor((dateAt(to).getTime() - dateAt(from).getTime()) / DAY_MS) + 1;
   const previous = { from: addDays(from, -dayCount), to: addDays(from, -1) };
   const rangeStart = dateAt(previous.from);
@@ -91,7 +76,7 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
     const period = emptyPeriod(start, end, calendarDays);
     const salesGroups = new Map<string, { name: string; quantity: number; operationIds: string[] }>();
     const lossGroups = new Map<string, { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
-      knownCost: Prisma.Decimal; unpricedCount: number; count: number; operationIds: string[] }>();
+      knownCost: Prisma.Decimal; unpricedCount: number; count: number; operationIds: string[]; movementIds: string[] }>();
     const receiptGroups = new Map<string, { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
       cost: Prisma.Decimal; receiptIds: string[]; orderIds: string[] }>();
     const recordedServiceDates = new Set<string>();
@@ -152,11 +137,12 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
       const key = `${isSimulation ? "simulation" : "recorded"}:${movement.productId}:${unit}`;
       const loss = lossGroups.get(key) ?? { productId: movement.productId,
         name: movement.productNameSnapshot ?? movement.product.name, unit, quantity: new Prisma.Decimal(0),
-        knownCost: new Prisma.Decimal(0), unpricedCount: 0, count: 0, operationIds: [] };
+        knownCost: new Prisma.Decimal(0), unpricedCount: 0, count: 0, operationIds: [], movementIds: [] };
       const lostQuantity = movement.delta.abs();
       loss.quantity = loss.quantity.plus(lostQuantity);
       loss.count++;
       loss.operationIds.push(movement.operationId);
+      loss.movementIds.push(movement.id);
       if (movement.unitPriceSnapshot === null) loss.unpricedCount++;
       else loss.knownCost = loss.knownCost.plus(lostQuantity.mul(movement.unitPriceSnapshot));
       lossGroups.set(key, loss);
@@ -196,10 +182,10 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
       })).sort((a, b) => a.saleItemName.localeCompare(b.saleItemName, "fr"));
       bucket.lossesByProduct = presentGroups(lossGroups, scope).map((item) => {
         const loss = item as { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
-          knownCost: Prisma.Decimal; unpricedCount: number; count: number; operationIds: string[] };
+          knownCost: Prisma.Decimal; unpricedCount: number; count: number; operationIds: string[]; movementIds: string[] };
         return { productId: loss.productId, productName: loss.name, unit: loss.unit, quantity: quantity(loss.quantity),
           knownCost: quantity(loss.knownCost), unpricedMovementCount: loss.unpricedCount, movementCount: loss.count,
-          operationIds: [...new Set(loss.operationIds)].sort() };
+          operationIds: [...new Set(loss.operationIds)].sort(), movementIds: [...new Set(loss.movementIds)].sort() };
       }).sort((a, b) => a.productName.localeCompare(b.productName, "fr"));
       bucket.receiptsByProduct = presentGroups(receiptGroups, scope).map((item) => {
         const receipt = item as { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
@@ -227,7 +213,9 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
     unavailableMetrics: ["stockouts", "unsold_quantity"], savingsClaim: "not_measured", generatedAt: new Date().toISOString(),
     current, prior };
   if (!options.includeMonthly) return report;
-  const monthly = monthRanges(from, to).map(({ month, from: monthFrom, to: monthTo }) =>
+  const page = impactMonthPage(from, to, options.monthlyPage ?? 0);
+  const monthly = page.ranges.map(({ month, from: monthFrom, to: monthTo }) =>
     monthlyPeriod(month, summarize(monthFrom, monthTo)));
-  return { ...report, monthly };
+  return { ...report, monthly, monthlyPagination: { page: page.page, pageCount: page.pageCount,
+    totalMonths: page.totalMonths, hasOlder: page.hasOlder, hasNewer: page.hasNewer } };
 }

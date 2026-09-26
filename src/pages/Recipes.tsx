@@ -16,6 +16,7 @@ import { useRecipes } from "../hooks";
 import type { Recipe } from "../types";
 import { suggestRecipeFromIncomingProduct, type RecipeSuggestion } from "../domain/recipes/recipeSuggestionPolicy";
 import { getProductions, recordProduction, type Production } from "../services/recipeService";
+import { getPurchaseReceiptLineEvidence, type PurchaseReceiptLineEvidence } from "../services/orderService";
 import { formatLocalISODate } from "../utils/date";
 import type { ProductionRecord } from "../types/callbacks";
 import { ApiError } from "../config/api";
@@ -23,21 +24,10 @@ import { Link, useSearchParams } from "react-router-dom";
 import "./Recipes.css";
 import "../styles/Workspace.css";
 
-const isIsoDate = (value: string | null): value is string => {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
-};
-
 const Recipes: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const productId = searchParams.get("product");
-  const incomingProductId = searchParams.get("incomingProductId");
-  const incomingDate = searchParams.get("incomingDate");
   const incomingReceiptLineId = searchParams.get("incomingReceiptLineId");
-  const incomingReceiptReference = searchParams.get("incomingReceiptReference");
-  const incomingQuantityText = searchParams.get("incomingQuantity");
-  const incomingUnit = searchParams.get("incomingUnit");
   const { addToast } = useToast();
   const {
     recipes, products, loading, error, refetch,
@@ -54,26 +44,56 @@ const Recipes: React.FC = () => {
   const [refusalRecipe, setRefusalRecipe] = useState<Recipe | null>(null);
   const [productions, setProductions] = useState<Production[]>([]);
   const [productionError, setProductionError] = useState("");
+  const [incomingReceiptResult, setIncomingReceiptResult] = useState<{
+    receiptLineId: string;
+    evidence?: PurchaseReceiptLineEvidence;
+    error?: string;
+  } | null>(null);
+  const [incomingReceiptRetryRevision, setIncomingReceiptRetryRevision] = useState(0);
   const [recipeEditorOpen, setRecipeEditorOpen] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [recipePrefill, setRecipePrefill] = useState<RecipeSuggestion | null>(null);
   const recipeEditorHeading = React.useRef<HTMLHeadingElement>(null);
+  const pageHeadingRef = React.useRef<HTMLHeadingElement>(null);
+  const incomingReceiptRetryButtonRef = React.useRef<HTMLButtonElement>(null);
+  const incomingReceiptRetryFocusPending = React.useRef(false);
   const recipeEditOrigin = React.useRef<HTMLButtonElement | null>(null);
   const today = formatLocalISODate(new Date());
-  const suggestedEffectiveDate = isIsoDate(incomingDate) && incomingDate <= today
-    ? incomingDate : today;
-  const incomingReceipt = useMemo(() => {
-    const receivedQuantity = Number(incomingQuantityText);
-    if (!incomingReceiptLineId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(incomingReceiptLineId) ||
-        !incomingReceiptReference || !incomingUnit || !["kg", "L", "dz", "pcs"].includes(incomingUnit) ||
-        !Number.isFinite(receivedQuantity) || receivedQuantity <= 0) return undefined;
-    return { receiptLineId: incomingReceiptLineId, reference: incomingReceiptReference.slice(0, 80), receivedQuantity,
-      unit: incomingUnit };
-  }, [incomingReceiptLineId, incomingReceiptReference, incomingQuantityText, incomingUnit]);
+  useEffect(() => {
+    if (!incomingReceiptLineId) return;
+    let active = true;
+    getPurchaseReceiptLineEvidence(incomingReceiptLineId).then((evidence) => {
+      if (active) setIncomingReceiptResult({ receiptLineId: incomingReceiptLineId, evidence });
+    }, (cause: unknown) => {
+      if (active) setIncomingReceiptResult({ receiptLineId: incomingReceiptLineId,
+        error: cause instanceof Error ? cause.message : "Réessayez." });
+    });
+    return () => { active = false; };
+  }, [incomingReceiptLineId, incomingReceiptRetryRevision]);
+  const incomingReceipt = incomingReceiptResult?.receiptLineId === incomingReceiptLineId
+    ? incomingReceiptResult.evidence ?? null : null;
+  const incomingReceiptError = incomingReceiptResult?.receiptLineId === incomingReceiptLineId
+    ? incomingReceiptResult.error ?? "" : "";
+  const incomingReceiptLoading = Boolean(incomingReceiptLineId) && !incomingReceipt && !incomingReceiptError;
+  useEffect(() => {
+    if (incomingReceiptLoading || !incomingReceiptRetryFocusPending.current) return;
+    incomingReceiptRetryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (incomingReceiptError) incomingReceiptRetryButtonRef.current?.focus();
+    else pageHeadingRef.current?.focus();
+  }, [incomingReceiptError, incomingReceiptLoading]);
+  const retryIncomingReceipt = () => {
+    incomingReceiptRetryFocusPending.current = document.activeElement === incomingReceiptRetryButtonRef.current;
+    setIncomingReceiptResult(null);
+    setIncomingReceiptRetryRevision((revision) => revision + 1);
+  };
   const incomingSuggestion = useMemo(() => {
-    const product = incomingProductId ? products.find((item) => item.id === incomingProductId) : undefined;
-    return product ? suggestRecipeFromIncomingProduct(product, products, suggestedEffectiveDate, incomingReceipt) : null;
-  }, [incomingProductId, incomingReceipt, products, suggestedEffectiveDate]);
+    const product = incomingReceipt ? products.find((item) => item.id === incomingReceipt.productId) : undefined;
+    const sourceReceipt = incomingReceipt ? { receiptLineId: incomingReceipt.receiptLineId,
+      reference: incomingReceipt.deliveryReference, receivedQuantity: incomingReceipt.receivedQuantity, unit: incomingReceipt.unit } : undefined;
+    return product && incomingReceipt ? suggestRecipeFromIncomingProduct(product, products,
+      incomingReceipt.deliveryDate, sourceReceipt) : null;
+  }, [incomingReceipt, products]);
   const refreshProductions = useCallback(async () => {
     try { setProductions(await getProductions()); setProductionError(""); }
     catch { setProductionError("Historique de production indisponible."); }
@@ -108,12 +128,7 @@ const Recipes: React.FC = () => {
     setRecipePrefill(null);
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
-      next.delete("incomingProductId");
-      next.delete("incomingDate");
       next.delete("incomingReceiptLineId");
-      next.delete("incomingReceiptReference");
-      next.delete("incomingQuantity");
-      next.delete("incomingUnit");
       return next;
     });
   };
@@ -189,21 +204,25 @@ const Recipes: React.FC = () => {
       {productionError && <div role="alert"><p>{productionError}</p><Button onClick={() => void refreshProductions()}>Réessayer</Button></div>}
       <header className="workspace-header">
         <div>
-          <h1>{productId ? `Recettes avec ${loading ? "ce produit" : getProductName(productId)}` : "Recettes réalisables"}</h1>
-          <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, réalisables ou non selon l'inventaire enregistré. Aucun surstock n'est déduit automatiquement." : "Faisabilité selon les quantités enregistrées. Les produits initiaux sont des exemples à confirmer ; une production validée déduit le stock."}</p>
+          <h1 ref={pageHeadingRef} tabIndex={-1}>{productId ? `Recettes avec ${loading ? "ce produit" : getProductName(productId)}` : "Recettes réalisables"}</h1>
+          <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, réalisables ou non selon l'inventaire enregistré. Aucun surstock n'est déduit automatiquement." : "Faisabilité selon les quantités et recettes enregistrées. La validation d'une production déduit les ingrédients du stock."}</p>
         </div>
         {!productId && <Button icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>}
       </header>
 
-      {incomingProductId && !loading && !error && incomingSuggestion && <RecipeSuggestionPanel suggestion={incomingSuggestion}
+      {incomingReceiptLineId && incomingReceiptLoading && <p role="status">Chargement de la réception source…</p>}
+      {incomingReceiptLineId && incomingReceiptError && <div role="alert"><p>La réception source est indisponible : {incomingReceiptError}</p>
+        <Button ref={incomingReceiptRetryButtonRef} type="button" variant="outline" onClick={retryIncomingReceipt}>Réessayer</Button>
+      </div>}
+      {incomingReceiptLineId && !loading && !error && !incomingReceiptLoading && !incomingReceiptError && incomingSuggestion && <RecipeSuggestionPanel suggestion={incomingSuggestion}
         onReview={(trigger) => openRecipeEditor(null, trigger, incomingSuggestion)} />}
-      {incomingProductId && !loading && !error && !incomingSuggestion && <p role="status">
-        Aucune proposition de recette automatique n’est disponible pour ce produit. Vous pouvez créer une recette depuis le catalogue.
+      {incomingReceiptLineId && !loading && !error && !incomingReceiptLoading && !incomingReceiptError && !incomingSuggestion && <p role="status">
+        Aucune proposition de recette automatique n’est disponible pour cette réception. Vous pouvez créer une recette depuis le catalogue.
       </p>}
       <RecipeEditor open={recipeEditorOpen} recipe={editingRecipe} products={products} headingRef={recipeEditorHeading}
         initialSuggestion={recipePrefill} onCreate={(trigger) => openRecipeEditor(null, trigger)}
         onClose={closeRecipeEditor} onSaved={handleRecipeSaved} />
-      {!productId && !incomingProductId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
+      {!productId && !incomingReceiptLineId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
 
       {!productId && <div className="workspace-summary"><div><span>Catalogue</span><strong>{recipes.length} recettes</strong></div></div>}
       {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to="/recipes" onClick={() => setActiveTab("anti-waste")}>Voir toutes les recettes</Link></p>}

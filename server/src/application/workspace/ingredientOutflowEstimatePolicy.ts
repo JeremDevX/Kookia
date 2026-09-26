@@ -1,5 +1,6 @@
-export const ESTIMATED_SALES_SHARE = 0.9;
-export const ESTIMATED_LOSS_SHARE = 0.1;
+import { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE, roundEstimatedQuantity } from "../../../../shared/ingredientOutflowAssumptions.js";
+
+export { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE };
 
 export interface ReceivedIngredient {
   id: string;
@@ -34,6 +35,7 @@ export interface IngredientOutflowEstimate {
   recipeName: string;
   recipeVersion: number;
   recipeEffectiveFrom: string;
+  recipeIngredientQuantity: number;
   yieldPortions: number;
   possiblePortions: number;
   estimatedSoldPortions: number;
@@ -46,8 +48,6 @@ export interface IngredientOutflowEstimate {
 export interface UnestimatedReceivedIngredient extends ReceivedIngredient {
   reason: "no_dated_compatible_recipe";
 }
-
-const roundQuantity = (value: number) => Math.round((value + Number.EPSILON) * 1000) / 1000;
 
 function latestVersionsForDate(versions: DatedRecipeVersion[], deliveryDate: string) {
   const latest = new Map<string, DatedRecipeVersion>();
@@ -84,12 +84,13 @@ export function estimateIngredientOutflows(receipts: ReceivedIngredient[], versi
         recipeName: recipe.recipeName,
         recipeVersion: recipe.version,
         recipeEffectiveFrom: recipe.effectiveFrom,
+        recipeIngredientQuantity: roundEstimatedQuantity(ingredient.quantity),
         yieldPortions: recipe.yieldPortions,
-        possiblePortions: roundQuantity(possiblePortions),
-        estimatedSoldPortions: roundQuantity(possiblePortions * ESTIMATED_SALES_SHARE),
-        estimatedLossPortions: roundQuantity(possiblePortions * ESTIMATED_LOSS_SHARE),
-        estimatedSoldQuantity: roundQuantity(receipt.receivedQuantity * ESTIMATED_SALES_SHARE),
-        estimatedLossQuantity: roundQuantity(receipt.receivedQuantity * ESTIMATED_LOSS_SHARE),
+        possiblePortions: roundEstimatedQuantity(possiblePortions),
+        estimatedSoldPortions: roundEstimatedQuantity(possiblePortions * ESTIMATED_SALES_SHARE),
+        estimatedLossPortions: roundEstimatedQuantity(possiblePortions * ESTIMATED_LOSS_SHARE),
+        estimatedSoldQuantity: roundEstimatedQuantity(receipt.receivedQuantity * ESTIMATED_SALES_SHARE),
+        estimatedLossQuantity: roundEstimatedQuantity(receipt.receivedQuantity * ESTIMATED_LOSS_SHARE),
         otherIngredientCount: recipe.ingredients.length - 1,
       });
     }

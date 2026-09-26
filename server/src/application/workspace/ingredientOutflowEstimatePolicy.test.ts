@@ -14,7 +14,8 @@ describe("ingredient outflow estimate policy", () => {
     const result = estimateIngredientOutflows([receipt], [recipe(1, "2026-01-01", 2), recipe(2, "2026-04-01", 4),
       recipe(3, "2026-05-01", 8)]);
     expect(result.estimates).toHaveLength(1);
-    expect(result.estimates[0]).toMatchObject({ recipeVersion: 2, possiblePortions: 10, estimatedSoldPortions: 9,
+    expect(result.estimates[0]).toMatchObject({ receiptId: "receipt-1", recipeVersion: 2, recipeIngredientQuantity: 4,
+      possiblePortions: 10, estimatedSoldPortions: 9,
       estimatedLossPortions: 1, estimatedSoldQuantity: 9, estimatedLossQuantity: 1, otherIngredientCount: 1 });
     expect(result.unestimatedReceipts).toEqual([]);
   });

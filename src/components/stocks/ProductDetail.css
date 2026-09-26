@@ -106,6 +106,10 @@
   border-bottom: var(--size-1) solid var(--color-border);
   padding-bottom: var(--spacing-sm);
 }
+.product-drawer .section-heading:focus {
+  outline: var(--size-3) solid var(--color-focus);
+  outline-offset: var(--size-3);
+}
 
 .status-banner {
   display: flex;
@@ -188,7 +192,10 @@
 }
 .history-item {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
   padding: var(--spacing-sm);
   background-color: var(--color-bg);
   border-radius: var(--radius-sm);
@@ -196,6 +203,10 @@
 }
 .history-item .date {
   color: var(--color-text-secondary);
+}
+.history-item:focus {
+  outline: var(--size-3) solid var(--color-focus);
+  outline-offset: var(--size-2);
 }
 
 .drawer-footer {

@@ -33,22 +33,30 @@ For long-running feature work, follow the dependency gates and evidence in
 - Product history has no fixed four-year limit. Restaurant invoice working
   dates may be shifted to align with 2026; use those working dates and never
   expose origin dates.
-- When sales or loss records are unavailable, derive plausible ingredient
-  outflows from reviewed incoming stock: match each eligible received ingredient
-  to compatible, dated recipes and estimate sales/loss quantities from the
+- When sales or loss records are unavailable, aim to provide plausible
+  ingredient-outflow estimates for every positive, recorded receipt. Match each
+  received ingredient to a compatible, dated recipe and estimate from the
   received amount, recipe dosage, and yield. If no suitable recipe exists,
-  propose a compatible recipe candidate from the incoming ingredients for human
-  review; never treat an unconfirmed candidate as a recipe in use. Keep these
-  estimates distinct from recorded operations, expose their assumptions and
-  provenance, and never persist them as sales, losses, production, or stock
-  movements without confirmation. An invoice transcription alone is not a
-  receipt. In user-facing text, call these “estimations” and explain their
-  basis; do not call them invented, fictional, a demo, or a story, and do not
-  imply they are observed facts. Use “Historique” for the product timeline.
+  derive a compatible recipe candidate from the received ingredient and catalog,
+  then show its conditional estimate for human review; never treat an
+  unconfirmed candidate as a recipe in use. If no credible candidate or usable
+  dosage/unit exists, expose the coverage gap rather than an arbitrary value.
+  Keep candidate-based estimates distinct from ledger-backed estimates and
+  measured KPIs. Keep estimates distinct from recorded operations, expose their
+  assumptions and provenance, and never persist them as sales, losses,
+  production, or stock movements without confirmation. An invoice transcription
+  alone is not a receipt. In user-facing text, call these “estimations” and
+  explain their basis; do not call them invented, fictional, a demo, or a
+  story, and do not imply they are observed facts. Use “Historique” for the
+  product timeline.
 - Prefer derived state to duplicated state, explicit side effects, existing
   patterns, and the smallest useful abstraction or dependency.
 - Preserve strict TypeScript boundaries. Do not let uncontained `any` or raw
   external data spread through the application.
+- When account-level access is needed, use only the `kookia` account and the
+  local untracked `kookia-demo-access.local` credentials. Never try other
+  accounts. Keep automated tests on isolated temporary fixtures; do not generate
+  or alter operational records in the account.
 - Complete the requested outcome without unrelated churn. Adjacent corrections
   needed for the solution or its validation are in scope; opportunistic refactors
   and independent changes are not.

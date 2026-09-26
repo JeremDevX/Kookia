@@ -2,11 +2,17 @@ import type { Product } from "../inventory/product.types";
 import type { Recipe } from "./recipe.types";
 
 type IngredientInput = Pick<Product, "id" | "name" | "category" | "unit">;
+export interface RecipeSuggestionReceipt {
+  receiptLineId: string;
+  reference: string;
+  receivedQuantity: number;
+  unit: string;
+}
 
 export interface RecipeSuggestion {
   sourceProductId: string;
   sourceProductName: string;
-  sourceReceipt?: { receiptLineId: string; reference: string; receivedQuantity: number; unit: string };
+  sourceReceipt?: RecipeSuggestionReceipt;
   effectiveFrom: string;
   name: string;
   category: Recipe["category"];
@@ -27,6 +33,33 @@ function productNamed(products: IngredientInput[], pattern: RegExp, unit?: strin
 function portionQuantity(product: IngredientInput, quantity: number) {
   if (product.unit === "pcs") return Math.max(1, Math.round(quantity));
   return rounded(quantity);
+}
+
+const supportingIngredientPattern = /huile|sel|poivre|epice|vinaigre|basilic|persil|coriandre|origan|thym|romarin|laurier|piment|paprika|cumin/;
+const eggPattern = /\boeufs?\b/;
+const pastaPattern = /pates|tagliatelle|penne|spaghetti/;
+const mainIngredientPattern = /tomates?|pomme|poire|peche|abricot|prune|courgette|carotte|champignon|poulet|boeuf|porc|saumon|poisson|pates|tagliatelle|penne|spaghetti|riz|\boeufs?\b|mozzarella|fromage/;
+
+function seasoningQuantity(product: IngredientInput): number | null {
+  const name = normalize(product.name);
+  const oil = /huile/.test(name);
+  const vinegar = /vinaigre/.test(name);
+  const spice = /sel|poivre|epice|piment|paprika|cumin/.test(name);
+  if (product.unit === "kg") return oil ? 0.04 : vinegar ? 0.02 : spice ? 0.008 : 0.012;
+  if (product.unit === "L") return oil ? 0.04 : vinegar ? 0.02 : spice ? null : 0.02;
+  return null;
+}
+
+function dishIngredientQuantity(product: IngredientInput): number | null {
+  const category = normalize(product.category);
+  const name = normalize(product.name);
+  if (!/legume|fruit|fromage|viande|poisson|volaille|charcuterie|feculent/.test(category) &&
+      !mainIngredientPattern.test(name)) return null;
+  const largerPortion = /fruit/.test(category) || /pomme|poire|peche|abricot|prune/.test(name);
+  if (product.unit === "kg") return largerPortion ? 0.8 : 0.6;
+  if (product.unit === "pcs") return 4;
+  if (product.unit === "dz") return 0.333;
+  return null;
 }
 
 export function suggestRecipeFromIncomingProduct(
@@ -95,9 +128,25 @@ export function suggestRecipeFromIncomingProduct(
       recipeName = "Gratin de pommes de terre au fromage";
       prepTime = 40;
     }
-  } else if (/champignon/.test(name) || /pate|pates|feculent/.test(category) || /pates|tagliatelle|penne|spaghetti|creme/.test(name)) {
+  } else if ((/\briz\b/.test(name) || /feculent/.test(category)) && !pastaPattern.test(name)) {
+    if (incoming.unit !== "kg") return null;
+    const protein = available.find((product) => product.unit === "kg" &&
+      (/viande|poisson|volaille|charcuterie/.test(normalize(product.category)) ||
+        /poulet|boeuf|porc|saumon|poisson/.test(normalize(product.name))));
+    const vegetables = available.find((product) => product.unit === "kg" && /legume/.test(normalize(product.category)) &&
+      !/pomme[s]? de terre|patate/.test(normalize(product.name)));
+    main(0.4);
+    add(protein, 0.5);
+    add(vegetables, 0.4);
+    oil();
+    const starchName = /\briz\b/.test(name) ? "Riz" : titleFor(incoming);
+    const accompaniment = vegetables ? " et aux légumes" : "";
+    recipeName = protein ? `${starchName} au ${titleFor(protein).toLocaleLowerCase("fr-FR")}${accompaniment}`
+      : vegetables ? `${starchName} aux légumes` : `${starchName} nature`;
+    prepTime = 30;
+  } else if (/champignon/.test(name) || /pates?\b/.test(category) || pastaPattern.test(name) || /creme/.test(name)) {
     const mushrooms = /champignon/.test(name) ? incoming : productNamed(available, /champignon/, "kg");
-    const pasta = /pates|tagliatelle|penne|spaghetti/.test(name) ? incoming : productNamed(available, /pates|tagliatelle|penne|spaghetti/, "kg");
+    const pasta = pastaPattern.test(name) ? incoming : productNamed(available, pastaPattern, "kg");
     const cream = /creme/.test(name) ? incoming : productNamed(available, /creme/, "L");
     if (mushrooms && pasta) {
       add(mushrooms, mushrooms.unit === "pcs" ? 4 : 0.4);
@@ -105,8 +154,42 @@ export function suggestRecipeFromIncomingProduct(
       add(cream, 0.2);
       recipeName = "Pâtes aux champignons";
       prepTime = 25;
+    } else if (mushrooms && cream) {
+      add(mushrooms, mushrooms.unit === "pcs" ? 4 : 0.4);
+      add(cream, 0.2);
+      recipeName = "Champignons à la crème";
+      recipeCategory = "Entrée";
+      prepTime = 20;
+    } else if (pasta && cream) {
+      add(pasta, pasta.unit === "pcs" ? 4 : 0.4);
+      add(cream, 0.2);
+      recipeName = "Pâtes à la crème";
+      prepTime = 20;
+    } else if (/creme/.test(name)) {
+      const potatoes = productNamed(available, /pomme[s]? de terre|patate/, "kg");
+      if (potatoes) {
+        add(potatoes, 0.8);
+        main(0.2);
+      recipeName = "Gratin de pommes de terre à la crème";
+        prepTime = 40;
+      } else {
+        main(0.2);
+        recipeName = "Sauce à la crème en accompagnement";
+        prepTime = 15;
+      }
+    } else if (pasta) {
+      add(pasta, pasta.unit === "pcs" ? 4 : 0.4);
+      oil();
+      recipeName = "Pâtes nature";
+      prepTime = 20;
+    } else if (mushrooms) {
+      add(mushrooms, mushrooms.unit === "pcs" ? 4 : 0.4);
+      oil();
+      recipeName = "Champignons poêlés";
+      recipeCategory = "Entrée";
+      prepTime = 20;
     }
-  } else if (/\boeuf\b|\boeufs\b|oeuf/.test(name)) {
+  } else if (eggPattern.test(name)) {
     const mushrooms = productNamed(available, /champignon/, "kg");
     const cheese = productNamed(available, /fromage|emmental|comte|chevre|parmesan/, "kg");
     const ham = productNamed(available, /jambon|lardon/, "kg");
@@ -118,7 +201,7 @@ export function suggestRecipeFromIncomingProduct(
     recipeCategory = "Plat";
     prepTime = 15;
   } else if (/farine/.test(name) || /epicerie/.test(category) && /farine/.test(name)) {
-    const eggs = productNamed(available, /\boeufs?\b|oeuf/, "pcs");
+    const eggs = productNamed(available, eggPattern, "pcs");
     const milk = productNamed(available, /lait/, "L") ?? productNamed(available, /creme/, "L");
     if (eggs && milk) {
       main(0.3);
@@ -130,7 +213,7 @@ export function suggestRecipeFromIncomingProduct(
     }
   } else if (/sucre/.test(name)) {
     const flour = productNamed(available, /farine/, "kg");
-    const eggs = productNamed(available, /\boeufs?\b|oeuf/, "pcs");
+    const eggs = productNamed(available, eggPattern, "pcs");
     const milk = productNamed(available, /lait/, "L");
     if (flour && eggs && milk) {
       main(0.08);
@@ -147,6 +230,19 @@ export function suggestRecipeFromIncomingProduct(
     recipeName = `Compote de ${titleFor(incoming).toLocaleLowerCase("fr-FR")}`;
     recipeCategory = "Dessert";
     prepTime = 30;
+  } else if (supportingIngredientPattern.test(name)) {
+    const dishIngredient = available.find((product) => dishIngredientQuantity(product) !== null);
+    const sourceQuantity = seasoningQuantity(incoming);
+    const dishQuantity = dishIngredient ? dishIngredientQuantity(dishIngredient) : null;
+    if (!dishIngredient || sourceQuantity === null || dishQuantity === null) return null;
+    add(dishIngredient, dishQuantity);
+    main(sourceQuantity);
+    const dishName = normalize(dishIngredient.name);
+    recipeName = /\btomates?\b/.test(dishName) ? "Salade de tomates assaisonnée"
+      : `Préparation de ${titleFor(dishIngredient).toLocaleLowerCase("fr-FR")} avec ${titleFor(incoming).toLocaleLowerCase("fr-FR")}`;
+    const dishCategory = normalize(dishIngredient.category);
+    recipeCategory = /\btomates?\b/.test(dishName) ? "Entrée" : /fruit/.test(dishCategory) ? "Dessert" : "Plat";
+    prepTime = /poulet|boeuf|porc|saumon|poisson/.test(dishName) ? 35 : 20;
   } else if (/viande|poisson|volaille|charcuterie/.test(category) || /\bboeuf\b|\bporc\b|saumon|poisson/.test(name)) {
     const potatoes = productNamed(available, /pomme[s]? de terre|patate/, "kg");
     const rice = productNamed(available, /riz/, "kg");

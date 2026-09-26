@@ -18,12 +18,16 @@ import type { NewProduct, StockFilters } from "../types/callbacks";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { getProductStatusLabel, getSuggestedOrderQuantity, needsStockReview } from "../domain/inventory/product.policies";
 import { getStockVerificationStatus } from "../domain/inventory/stockCount.policies";
+import { analyticsReturnHref } from "../utils/analyticsNavigation";
 import "./Stocks.css";
 import "../styles/Workspace.css";
 
 const Stocks: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const focusedMovementId = searchParams.get("movement");
+  const analyticsReturn = analyticsReturnHref(searchParams.get("returnFrom"), searchParams.get("returnTo"),
+    searchParams.get("returnAnchor"));
   const { addToast } = useToast();
   const { addToCart, loading: cartLoading } = useCart();
   const { products, updateStock, updateProduct, recordCount, addProduct, getStatus, loading, error, refetch } =
@@ -238,7 +242,9 @@ const Stocks: React.FC = () => {
       {selectedProduct && <ProductDetail
         key={selectedProduct.id}
         product={selectedProduct}
-        onClose={() => setSelectedProductId(null)}
+        focusedMovementId={focusedMovementId}
+        returnHref={analyticsReturn}
+        onClose={() => analyticsReturn ? navigate(analyticsReturn) : setSelectedProductId(null)}
         onAdjustStock={handleDrawerAdjustStock}
         onUpdateProduct={updateProduct}
         onRecordCount={recordCount}

@@ -21,6 +21,12 @@ export const formatLocalISODate = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+export const isValidISODate = (value: string | null): value is string => {
+  if (!value || !ISO_DATE_PATTERN.test(value)) return false;
+  const parsedDate = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsedDate.getTime()) && parsedDate.toISOString().slice(0, 10) === value;
+};
+
 const getEpochDayFromISODate = (isoDate: string): number => {
   const [year, month, day] = isoDate.split("-").map(Number);
   if (!year || !month || !day) {

@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import ExportReportModal from "../components/analytics/ExportReportModal";
 import SalesMetrics from "../components/sales/SalesMetrics";
 import ImpactSummary from "../components/analytics/ImpactSummary";
 import EstimatedOutflows from "../components/analytics/EstimatedOutflows";
-import { formatLocalISODate } from "../utils/date";
+import { formatLocalISODate, isValidISODate } from "../utils/date";
 import "./Analytics.css";
 import "./Sales.css";
 import "../styles/Workspace.css";
@@ -14,8 +14,11 @@ const today = () => formatLocalISODate(new Date());
 const monthAgo = () => new Date(Date.parse(today()) - 29 * 86_400_000).toISOString().slice(0, 10);
 
 export default function Analytics() {
-  const [from, setFrom] = useState(monthAgo);
-  const [to, setTo] = useState(today);
+  const [searchParams] = useSearchParams();
+  const requestedFrom = searchParams.get("from");
+  const requestedTo = searchParams.get("to");
+  const [from, setFrom] = useState(() => isValidISODate(requestedFrom) ? requestedFrom : monthAgo());
+  const [to, setTo] = useState(() => isValidISODate(requestedTo) ? requestedTo : today());
   const [exportOpen, setExportOpen] = useState(false);
   const validRange = !!from && !!to && from <= to;
 

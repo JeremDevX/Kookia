@@ -101,9 +101,16 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
       createdAt: { gte: rangeStart, lt: rangeEnd }, reason: { in: ["loss", "simulation_loss"] }, delta: { lt: 0 } },
       include: { product: { select: { unit: true } } } }),
   ]);
-  const monthlyReport = await scenarioOwner.agent.get("/api/workspace/impact")
-    .query({ from: "2023-01-01", to: "2026-12-31", monthly: "true" }).expect(200);
-  expect(monthlyReport.body.monthly).toHaveLength(48);
+  const monthlyPages = [];
+  for (let monthlyPage = 0; monthlyPage < 4; monthlyPage += 1) {
+    monthlyPages.push((await scenarioOwner.agent.get("/api/workspace/impact")
+      .query({ from: "2023-01-01", to: "2026-12-31", monthly: "true", monthlyPage }).expect(200)).body);
+  }
+  for (const [pageIndex, page] of monthlyPages.entries()) {
+    expect(page.monthlyPagination).toMatchObject({ page: pageIndex, pageCount: 4, totalMonths: 48 });
+    expect(page.monthly).toHaveLength(12);
+  }
+  const monthlyPeriods = monthlyPages.flatMap((page) => page.monthly).sort((a, b) => a.month.localeCompare(b.month));
   for (let monthOffset = 0; monthOffset < 48; monthOffset += 1) {
     const year = 2023 + Math.floor(monthOffset / 12);
     const month = monthOffset % 12 + 1;
@@ -123,7 +130,7 @@ it("seeds an isolated four-year fixture, exercises both source states, and delet
       movement.delta.abs().mul(movement.unitPriceSnapshot).toNumber()), 0);
     const report = await scenarioOwner.agent.get("/api/workspace/impact").query({ from, to }).expect(200);
     const current = report.body.current;
-    const monthly = monthlyReport.body.monthly[monthOffset];
+    const monthly = monthlyPeriods[monthOffset];
     expect(monthly).toMatchObject({ month: monthKey, from, to, calendarDays, hasRecordedData: false,
       hasSimulationData: days.length + sales.length + losses.length > 0, excluded: current.excluded });
     expect(monthly.recorded).toMatchObject({ menuItemUnits: current.recorded.menuItemUnits,

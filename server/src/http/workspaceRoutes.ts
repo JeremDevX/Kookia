@@ -118,6 +118,7 @@ workspaceRoutes.get("/products/:id/movements", async (req, res, next) => {
         ...(movement.invoiceDocumentId ? { invoiceDocumentId: movement.invoiceDocumentId } : {}),
         ...(movement.invoiceRevision !== null ? { invoiceRevision: movement.invoiceRevision } : {}),
         ...(movement.stockCountId ? { stockCountId: movement.stockCountId } : {}),
+        ...(movement.purchaseReceiptLineId ? { purchaseReceiptLineId: movement.purchaseReceiptLineId } : {}),
       };
     }));
   } catch (error) { next(error); }

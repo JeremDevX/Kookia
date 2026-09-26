@@ -2007,3 +2007,311 @@ sans volume est supprimé en fin de recette. Aucun compte ou jeu de données
 conservé n'a été utilisé. Cette correction ferme la lacune R0 de readiness ; la
 supervision d'exploitation, les sauvegardes persistantes et R1 restent hors
 activation. Commit d'implémentation : `91b6999`.
+
+### Q2/C3 — retrouver la réception exacte depuis une sortie estimée (2026-09-26)
+
+Les références de livraison des sorties estimées et des entrées sans recette
+compatible ouvrent maintenant la réception exacte dans **Achats**. La commande
+parente est développée et l'en-tête de réception reçoit un focus visible. Le
+tableau d'Impact expose également des liens des réceptions sources vers leur
+dossier Achats. Le retour conserve les deux dates consultées et remet le focus
+sur le tableau Bilan d'origine ; si la réception n'est plus dans l'historique,
+un état explicite et le retour restent disponibles. Cela relie la sortie
+estimée à son entrée enregistrée, sans rejouer ni modifier une opération. La
+règle de développement reste celle de `AGENTS.md` : associer les
+entrées aux recettes datées compatibles, calculer des sorties plausibles en
+ventes/pertes estimées depuis les quantités, dosages et rendements disponibles,
+et ne jamais les présenter comme résultats observés. Le produit conserve
+« Historique » sans borne totale de quatre ans ; seules les dates de travail
+alignées sur 2026 sont utilisées.
+
+Chrome headless/CDP avec réponses synthétiques interceptées et profil jetable :
+les anciennes captures montraient Tab puis Entrée vers la réception source et
+le détail de commande à 320/768/1280 px. Elles précèdent l'ajout de la colonne
+dosage, des estimations conditionnelles par réception et des fiches compactes ;
+elles ne constituent donc plus une preuve de rendu de l'interface actuelle.
+Elles restent archivées uniquement pour tracer cette ancienne passe. Le trajet
+vers Achats n'établissait pas le nouveau retour conservant période et focus ;
+les captures de reçu provenaient aussi d'un harnais avec lien de navigation de
+test, pas du lien de retour produit.
+Anciennes captures de QA technique : [estimation 320 px](evidence/q2-estimate-receipt-trace/estimate-320.png),
+[réception focalisée 320 px](evidence/q2-estimate-receipt-trace/receipt-320.png),
+[entrée non estimée focalisée 320 px](evidence/q2-estimate-receipt-trace/unestimated-receipt-320.png),
+[estimation 1280 px](evidence/q2-estimate-receipt-trace/estimate-1280.png),
+[réception focalisée 1280 px](evidence/q2-estimate-receipt-trace/receipt-1280.png).
+Aucune donnée persistante Kookia, pièce conservée ou authentification réelle
+n'a été utilisée. Le registre CUA ne fournit aucun navigateur (`browsers: []`) ;
+la fenêtre Chrome native visible n'a pas d'isolation confirmée et n'a pas été
+utilisée. Zoom natif 200 % et lecteur d'écran ne sont pas vérifiés. Le trajet complet vente/perte
+réellement enregistrée → production → impact n'est pas établi ici ; C3 demeure
+partiel et le Goal reste en cours.
+
+Validation locale : `npm run build`, `npm run build:api`,
+`npm test` (33 tests Node/CSS et 128 tests Vitest) et `git diff --check`
+passent. Lint passe après suppression du harnais temporaire. Le retour avec
+période conservée est implémenté, mais reste sans vérification rendue : CUA
+indique encore `browsers: []`, même si `getApp("com.google.Chrome")` expose
+une fenêtre native déjà ouverte. Son runner courant n'a pas d'isolation
+confirmée et n'a pas été utilisé. Vite n'a pas pu ouvrir le serveur loopback
+de QA (`EPERM`).
+Le test pur d'estimation affirme aussi que chaque résultat conserve son
+`receiptId` source ; les tests ciblent les liens, l'ancre de retour, les dates
+et le rejet des paramètres invalides.
+Le test d'intégration
+qui vérifie `receiptId` n'a pas été exécuté dans cette reprise :
+`npm run verify:local-delivery` s'est arrêté avant les tests, car le socket
+Docker est inaccessible dans le bac courant. Le runner n'a pas pu confirmer le
+nettoyage du conteneur après cet échec. La revue automatique a ensuite refusé
+l'inspection escaladée avec `401 Unauthorized` (erreur d'authentification du
+service de revue) ; aucune seconde tentative n'a été faite. L'accès réel au
+bac d'intégration et le test API restent donc à revalider. Aucun compte,
+corpus, facture ni stock Kookia conservé n'a été utilisé.
+La tranche reste non commitée : le worktree `.git` est en lecture seule et la
+revue automatique d'escalade a renvoyé `401 Unauthorized`; aucun contournement
+n'a été tenté.
+
+### Sorties estimées et traçabilité des pertes (2026-09-26)
+
+Clarification produit confirmée : en l'absence de relevés de ventes/pertes,
+construire des sorties plausibles par ingrédient à partir de chaque réception
+éligible et des recettes qui correspondent aux ingrédients entrants. Dans
+l'interface, parler d'estimations et expliquer leur base, sans les présenter
+comme des sorties observées ni comme des écritures réelles. Le calcul en place
+associe les réceptions positives enregistrées, non simulées, à la dernière
+version datée compatible par produit et unité ; il applique l'hypothèse 90/10
+aux quantités et rendements. Une entrée sans recette reste sans estimation et
+ouvre une proposition à relire ; une recette non confirmée ne sert pas au
+calcul. Aucune mutation n'est faite dans le compte Kookia.
+
+Le Bilan renvoie maintenant les identifiants des mouvements de perte déclarée
+avec chaque total par produit. Ses liens ouvrent le produit dans Stocks, font
+défiler et focalisent le mouvement exact, puis permettent de revenir à la
+même période du Bilan. Le contrat frontend est aligné et un test d'intégration
+vérifie que les identifiants des mouvements correspondants sont renvoyés.
+
+`npm run lint`, `npm test` (33 tests Node/CSS et 129 tests Vitest), `npm run build`,
+`npm run build:api` et `git diff --check` passent. La recette
+`npm run verify:local-delivery` s'arrête avant le démarrage PostgreSQL : accès
+refusé au socket Docker ; le runner n'a pas pu confirmer le nettoyage du
+conteneur `kookia-r0-a4c3b104-f37`. Le contrat d'intégration modifié n'est donc
+pas encore exercé sur PostgreSQL. Le rendu clavier/responsive du nouveau lien
+et du mouvement focalisé reste également à contrôler : aucun navigateur CUA
+isolé confirmé n'est disponible dans cette reprise. Pas de commit ni d'accès
+authentifié au compte Kookia.
+
+### Aperçu conditionnel depuis une proposition de recette (2026-09-26)
+
+Pour une réception éligible sans recette enregistrée compatible, l'écran de
+revue de la proposition montre maintenant un calcul conditionnel fondé sur
+l'ingrédient source reçu, son dosage proposé et le rendement proposé. Il estime
+les portions possibles et répartit quantité/portions selon la même hypothèse
+90/10 que le Bilan. L'aperçu est explicitement séparé des estimations issues
+des recettes enregistrées et des opérations constatées ; aucun mouvement,
+vente, perte ou production n'est créé. Les unités incompatibles, données
+absentes ou quantités non positives n'affichent pas d'aperçu. L'hypothèse est
+documentée dans `AGENTS.md` et `docs/technical-development.md`.
+
+La politique et son rendu statique sont couverts : 5 tests ciblent le calcul,
+les incompatibilités et le texte de provenance. `npm run lint`, `npm test`
+(33 tests Node/CSS et 134 tests Vitest), `npm run build`, `npm run build:api` et
+`git diff --check` passent. Aucun test PostgreSQL du changement de contrat
+d'impact n'a été exécuté : le socket Docker reste inaccessible. Pas de revue
+visuelle ou clavier navigateur pour cette tranche : CUA ne fournit toujours
+aucun navigateur et Chrome headless s'est terminé par signal 6. Aucune donnée
+persistante Kookia ni credential n'a été consulté ou modifié. La tranche reste
+non commitée, l'index Git étant en lecture seule.
+
+Complément au raccord recette (2026-09-26) : une entrée d'assaisonnement comme
+l'huile ne restait plus sans proposition lorsqu'un aliment compatible figure
+au catalogue du même espace. La proposition relie l'huile reçue à une salade de
+tomates, avec dosage et rendement vérifiables ; l'aperçu sort 1,8 L de ventes
+estimées et 0,2 L de pertes estimées à partir de 2 L reçus, sans supposer les
+tomates en stock et sans écriture métier. Une entrée seule ou une unité sans
+dosage compatible reste sans suggestion plutôt que de supposer une conversion.
+Les tests de génération, calcul et rendu statique sont à 11/11 ; build web et
+build API passent. La revue navigateur et l'intégration PostgreSQL restent
+limitées comme indiqué ci-dessus.
+
+Revalidation de la tranche complète : `npm test` passe avec 35 fichiers/137
+tests Vitest et 33 tests Node/CSS ; lint, builds web/API et `git diff --check`
+passent. `docker info` confirme que le client est présent mais que l'accès au
+socket Docker est refusé ; aucun binaire ni processus PostgreSQL natif n'est
+disponible. Le contrôle CUA relu pendant cette reprise expose toujours
+`browsers: []`. Le rendu statique ne remplace donc ni le parcours intégré au
+navigateur ni le test API/PostgreSQL.
+
+### Requête estimative liée à sa période (2026-09-26)
+
+La revue du flux Bilan → source a révélé que le panneau Sorties estimées gardait
+le rapport précédent visible pendant le chargement d'une nouvelle période.
+L'état est maintenant associé à la clé période + tentative ; une réponse ou une
+erreur précédente ne peut plus être montrée sous la nouvelle période, et les
+réponses tardives restent ignorées. Deux tests vérifient qu'un succès/échec
+ancien revient à l'état chargement et qu'un résultat courant reste visible.
+La suite complète passe : 36 fichiers/139 tests Vitest et 33 tests Node/CSS ;
+lint, builds web/API et `git diff --check` passent. Le test PostgreSQL et le
+rendu navigateur de ce parcours ne sont pas exécutables dans le bac courant
+(socket Docker refusé, aucun navigateur contrôlable).
+
+### Bilan mensuel parcourable sans borne totale (2026-09-26)
+
+Le détail mensuel du Bilan ne refuse plus les périodes au-delà de 48 mois. Il
+renvoie des pages de 12 mois, de la période la plus récente vers les mois plus
+anciens, avec bornes partielles conservées et navigation accessible ; la
+période globale des KPI reste entière. Le contrat inclut la page courante, le
+nombre de pages/mois et la disponibilité des deux directions. Des tests purs
+vérifient 81 mois consultables, les pages extrêmes et les dates partielles ; les
+tests d'intégration sont adaptés pour réconcilier les 48 mois de la fixture
+2023–2026 sur plusieurs pages et accepter une période de 49 mois. Ils restent à
+exécuter sur PostgreSQL tmpfs. La suite locale passe avec 37 fichiers/141 tests
+Vitest et 33 tests Node/CSS ; lint, builds web/API et `git diff --check`
+passent. CUA expose encore `browsers: []`, donc le nouveau contrôle mobile/
+clavier n'est pas rendu ; aucun compte ou corpus conservé n'a été touché.
+
+### Ordre clavier du retour vers le Bilan (2026-09-26)
+
+Après l'ouverture d'une réception source dans Achats, le focus est placé sur son
+titre. Le lien « Retour au Bilan (même période) » suit maintenant ce titre dans
+l'ordre DOM afin qu'un Tab avant atteigne directement le retour, sans devoir
+revenir en arrière dans l'ordre de tabulation. Lint, builds web/API, 37
+fichiers/141 tests Vitest, 33 contrôles Node/CSS et `git diff --check` passent.
+Les trois tests d'intégration modifiés passent aussi une vérification
+TypeScript sans lancer de base. Vérification rendu/clavier encore indisponible
+(`browsers: []`) ; leur exécution PostgreSQL reste à faire, le socket Docker
+étant refusé. Aucun tenant conservé n'a été utilisé ; le worktree et l'index
+Git restent non commités.
+
+### Projection des pages mensuelles au niveau service (2026-09-26)
+
+En complément des tests d'intégration PostgreSQL non exécutables dans le bac,
+un test du service d'Impact utilise un Prisma mocké et confirme que les KPI
+gardent la période entière tandis que la page mensuelle récente ne projette que
+12 mois. Le cas rapproche ventes, coût/perte déclarée avec son identifiant de
+mouvement, et réception avec ses identifiants de pièce/commande et son prix
+snapshoté ; la vente et perte simulées restent dans leurs compartiments. Les
+totaux entiers et la séparation par mois sont vérifiés. Le premier essai a
+corrigé une attente de test qui confondait l'index de la page la plus récente
+avec celui des pages anciennes. `npm test` passe à 38 fichiers/142
+tests Vitest et 33 contrôles Node/CSS ; lint, builds web/API et diff-check
+passent. Ce test applicatif ne remplace pas le test HTTP/PostgreSQL : Docker
+refuse toujours le socket, et aucun tenant conservé n'est utilisé.
+
+### Lecture des entrées d'estimation au niveau service (2026-09-26)
+
+Un test du service avec Prisma mocké vérifie maintenant le filtre strict sur les
+réceptions positives, confirmées/non simulées et la borne de date de livraison,
+la lecture des recettes effectives jusqu'à la fin de période, puis le mapping
+de la réception sourcée en quantités estimées 90/10 selon recette/rendement.
+Une autre entrée sans recette compatible reste listée sans sortie calculée.
+`npm test` passe à 39 fichiers/143 tests Vitest et 33 contrôles Node/CSS ; le
+lint, le build API et le diff-check passent. C'est une preuve du service avec
+dépendances simulées, pas une intégration HTTP/PostgreSQL ; le socket Docker
+reste refusé et aucun compte conservé n'a été sollicité.
+
+### Retour explicite du mouvement au Bilan (2026-09-26)
+
+Le mouvement de perte ouvert depuis le Bilan affiche désormais un lien de retour
+direct vers la même période et la même section. Il est placé après le mouvement
+ciblé que Stocks focalise ; si l'identifiant n'est plus présent, le message
+d'état conserve aussi ce retour. Le bouton de fermeture continue à revenir au
+Bilan. Le tableau d'historique s'enroule en petit écran pour accueillir ce lien.
+Lint, builds web/API, `npm test` (39 fichiers/143 tests Vitest et 33 contrôles
+Node/CSS) et diff-check passent. L'interaction responsive/clavier reste à
+observer dans un navigateur isolé : CUA ne fournit toujours aucun navigateur.
+Aucun espace conservé n'a été utilisé.
+
+### Chargement et reprise de l'historique de stock (2026-09-26)
+
+Le panneau des mouvements distinguait désormais le chargement de l'historique
+d'un résultat vide : « Aucun mouvement enregistré » n'apparaît qu'après un
+chargement réussi. En cas d'erreur, l'alerte conserve le retour vers le Bilan
+et un bouton Réessayer relance la lecture. Le focus revient au bouton en cas
+d'échec, au mouvement ciblé ou au titre de section après succès ; le focus du
+titre programmatique dispose aussi d'un indicateur visible. Lint, builds web et
+API, `npm test` (39 fichiers/143 tests Vitest et 33 contrôles Node/CSS) et
+`git diff --check` passent. La revue du rendu et clavier demeure impossible
+dans CUA (`browsers: []`) ; aucune donnée ou compte métier n'a été consulté.
+
+### Réceptions traçables et sorties estimées (2026-09-26)
+
+Les réceptions rapprochées exposent maintenant le mouvement de stock exact ;
+depuis Achats, le lien vers Stocks conserve la période et l'ancre du Bilan.
+La proposition de recette depuis une entrée sans recette compatible relit sa
+ligne de réception côté serveur et ne fait plus confiance aux quantités, unités,
+dates ou références portées par l'URL. Le tableau d'estimations affiche le
+dosage et le rendement utilisés. L'hypothèse ventes/pertes reste distincte des
+opérations enregistrées et n'écrit aucun mouvement. Le focus visible du titre
+de réception est aussi corrigé.
+
+Vérifications réussies : lint, build client, build API, `npm test` (39 fichiers,
+144 tests Vitest et 33 contrôles Node/CSS), diff-check et recette
+`verify:local-delivery` avec PostgreSQL 16 jetable en tmpfs. Elle a appliqué les
+18 migrations à neuf, validé la parité du schéma, les 26 fichiers/41 tests
+d'intégration, puis une sauvegarde/restauration synthétique ; le conteneur a
+été nettoyé. Deux essais précédents avaient échoué de façon variable dans la
+suite d'intégration (`socket hang up`, et une réponse 401 après le test
+inter-tenant) ; un troisième essai frais a passé intégralement après ajout
+d'une assertion de session explicite. Ce passage unique ne permet pas de
+conclure à lui seul que ces erreurs intermittentes sont éliminées.
+
+La règle de données rappelle qu'un historique produit n'a pas de borne de
+quatre ans, que les dates de travail des factures peuvent être alignées sur
+2026 et que seules des estimations traçables — jamais présentées comme des
+opérations observées — sont calculées quand ventes/pertes manquent. L'accès
+éventuel à un compte est limité à `kookia`. Aucun identifiant ni donnée du
+compte n'a été consulté pendant ces vérifications.
+
+La nouvelle revue responsive/clavier/rendu de cette tranche reste en attente :
+CUA détecte Chrome natif mais ne fournit toujours aucun navigateur contrôlable
+(`browsers: []`).
+Les changements restent dans le worktree ; l'index Git est en lecture seule et
+aucun commit local n'a été créé.
+
+### Revue corrective des estimations depuis une réception (2026-09-26)
+
+La revue indépendante a trouvé une collision lexicale entre « bœuf » et
+« œuf » dans la suggestion de recette. Les frontières du motif œuf sont
+maintenant explicites ; un test de régression conserve l'omelette pour les œufs
+et associe le bœuf reçu à l'accompagnement compatible du catalogue. L'état
+d'erreur du chargement d'une réception source permet aussi de réessayer, avec
+restauration du focus clavier après la réponse. Le sous-titre de Recettes décrit
+maintenant le catalogue enregistré sans qualifier les produits d'exemples.
+
+Après ces corrections, `npm run lint`, `npm run build`, `npm test` (39 fichiers,
+145 tests Vitest et 33 contrôles Node/CSS) et `git diff --check` passent. La
+revue responsive/rendu/clavier actualisée reste non démontrée : CUA retourne
+`browsers: []`, et Chrome headless s'arrête par signal 6 même avec un profil
+isolé. Aucun credential, compte conservé ni corpus privé n'a été lu ; les
+vérifications applicatives continuent sur fixtures isolées.
+
+### Sorties conditionnelles par réception et fiches responsive (2026-09-26)
+
+Après clarification produit, la règle de développement vise une sortie estimée
+pour chaque réception positive : une recette datée compatible, ou à défaut une
+proposition produite depuis la réception et le catalogue courant. Le Bilan
+calcule désormais ventes/pertes conditionnelles selon le dosage et rendement
+proposés, relie la proposition au parcours de vérification, et signale les
+produits sans proposition calculable. Rien n'est créé dans le ledger ni présenté
+comme une recette utilisée. Le test domaine vérifie le raccord réception
+Tomates → salade → portions, ventes et pertes selon l'hypothèse 90/10, ainsi
+que le cas d'un produit d'entretien hors recette. `AGENTS.md` porte maintenant cette règle et rappelle
+l'historique sans borne de quatre ans et les dates de travail alignées sur 2026.
+
+Le tableau Bilan reste disponible sur grand écran ; jusqu'à 1024 px, chaque
+sortie estimée est en fiche à libellés explicites, sans dépendance à un tableau
+horizontal. La revue indépendante n'a trouvé aucun défaut métier/sécurité ; elle
+a relevé un manque d'annonce après chargement, corrigé par un statut de synthèse
+accessible. Après cette correction, `npm run lint`, `npm run build`,
+`npm run build:api`, `npm test` (39 fichiers/153 tests Vitest et 33 contrôles
+Node/CSS) et `git diff --check` passent. La gate R0 `npm run
+verify:local-delivery` a aussi passé sur le worktree courant : 18/18 migrations,
+parité Prisma, 26 fichiers/41 tests d'intégration, tests unitaires et Node/CSS,
+et sauvegarde/restauration d'un témoin synthétique ; le conteneur tmpfs exact a
+été vérifié absent après la recette.
+
+La revue visuelle, clavier, lecteur d'écran réel et zoom n'est pas validée : CUA
+liste Chrome/Arc en tant qu'apps mais `browsers: []`, ne fournit pas `iab` et ne
+trouve aucune fenêtre Chrome/Arc. Le runner `demo:fixtures` a été lancé puis
+arrêté proprement après cette indisponibilité ; ses processus et son conteneur
+tmpfs ont été vérifiés absents. Aucun credential ni compte conservé n'a été
+utilisé ; le Goal reste ouvert.

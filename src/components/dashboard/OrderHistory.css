@@ -11,4 +11,6 @@
 .order-record-body li span { display: flex; flex-direction: column; gap: var(--spacing-xs); }
 .order-record-body li small { color: var(--color-text-secondary); }
 .order-record summary:focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--size-3); }
+.order-receipt [data-receipt-heading]:focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--size-3); }
+.order-receipt [data-receipt-heading]:focus { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--size-3); }
 @media (--media-compact) { .order-record summary { padding: var(--spacing-md); } .order-record-body { padding: var(--spacing-md); } }

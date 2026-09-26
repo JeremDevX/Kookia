@@ -178,6 +178,8 @@ Dans **Plus → Bilan**, choisir une période. Les
 [indicateurs de ventes](../server/src/application/workspace/salesMetrics.ts)
 assemblent les opérations et ventes enregistrées. Les graphiques de
 démonstration repliés ne doivent pas être lus comme résultats du restaurant.
+La réconciliation mensuelle se parcourt par pages de 12 mois dans les deux
+directions ; cette pagination ne limite pas la période consultable.
 
 **À vérifier :** conflit de révision, facture déjà reçue, stock et mouvements
 cohérents, dates/unité/source dans le rapport, période vide, export qui ne
@@ -210,7 +212,14 @@ une proposition datée et préremplie depuis le produit entrant et le catalogue
 de l'espace ; relisez et ajustez ses ingrédients, quantités et rendement.
 L'enregistrer ajoute une recette versionnée, sans créer de vente, perte,
 production ou mouvement ; depuis cette proposition, la ligne de réception
-source et sa référence restent consultables dans la décision de recette.
+source et sa référence restent consultables dans la décision de recette. Chaque
+référence de livraison du Bilan ouvre aussi sa réception exacte dans Achats ;
+la commande correspondante s'ouvre et le focus est placé sur l'en-tête de cette
+réception. Le lien de retour au Bilan conserve la période consultée et remet le
+focus sur les estimations. Une réception retirée de l'historique est annoncée
+avec un retour disponible, sans créer ni rejouer une opération.
+Dans **Impact opérationnel mesuré**, chaque réception source est également
+ouvrable depuis son indicateur et le retour restaure le même tableau/période.
 Tant que vous ne la créez pas, aucune sortie n'est imputée. Les recettes
 alternatives ne s'additionnent pas ; les autres ingrédients et le stock déjà
 présent ne sont pas vérifiés. Voir le [référentiel technique](technical-development.md)

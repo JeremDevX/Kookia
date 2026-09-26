@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { orderDto, validateOrder } from "../application/workspace/orderService.js";
 import { getPurchaseSuggestions, recordPurchaseSuggestionDecision } from "../application/workspace/purchaseSuggestionService.js";
-import { listPurchaseOrders, purchaseReceiptSchema, recordPurchaseReceipt } from "../application/workspace/purchaseReceiptService.js";
+import { getPurchaseReceiptLineEvidence, listPurchaseOrders, purchaseReceiptSchema, recordPurchaseReceipt } from "../application/workspace/purchaseReceiptService.js";
 
 export const orderRoutes = Router();
 const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
@@ -17,6 +17,12 @@ const suggestionDecisionSchema = z.object({ operationId: z.uuid(), suggestionKey
   .strict().refine((input) => input.decision === "added" ? input.quantity !== undefined : input.quantity === undefined);
 orderRoutes.get("/orders/suggestions", async (_req, res, next) => {
   try { res.json(await getPurchaseSuggestions(context(res).restaurantId)); } catch (error) { next(error); }
+});
+orderRoutes.get("/orders/receipt-lines/:lineId", async (req, res, next) => {
+  try {
+    const lineId = z.uuid().parse(req.params.lineId);
+    res.json(await getPurchaseReceiptLineEvidence(context(res).restaurantId, lineId));
+  } catch (error) { next(error); }
 });
 orderRoutes.post("/orders/suggestions/:productId/decision", async (req, res, next) => {
   try {

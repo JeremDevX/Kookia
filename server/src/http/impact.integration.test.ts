@@ -68,6 +68,10 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   const from = shiftDay(utcToday, -4);
   const to = serviceDate > utcToday ? serviceDate : utcToday;
   const response = await agent.get(`/api/workspace/impact?from=${from}&to=${to}`).expect(200);
+  const lossMovementRows = await prisma.stockMovement.findMany({
+    where: { restaurantId: restaurant.id, operationId: { in: [reportedLossOperationId, unpricedLossOperationId] } },
+    select: { id: true },
+  });
   expect(response.body).toMatchObject({ comparison: "same_number_of_calendar_days", timezone: "Europe/Paris",
     currency: "EUR", unavailableMetrics: ["stockouts", "unsold_quantity"], savingsClaim: "not_measured" });
   expect(response.body.current.calendarDays).toBe(response.body.prior.calendarDays);
@@ -79,6 +83,7 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
     serviceDays: { complete: 1, partial: 1, coverageMissing: 1, closed: 1 } });
   expect(response.body.current.excluded).toMatchObject({ simulatedSales: 1, simulatedLosses: 1, lossUnitMismatch: 1 });
   expect(response.body.current.recorded.lossesByProduct[0].operationIds).toHaveLength(2);
+  expect(response.body.current.recorded.lossesByProduct[0].movementIds).toEqual(lossMovementRows.map((row) => row.id).sort());
   const exportedReport = await agent.get(`/api/workspace/report?from=${from}&to=${to}`).expect(200);
   expect(exportedReport.body.declaredLosses).toMatchObject({
     dateBasis: expect.stringContaining("UTC"), reportedMovementCount: 2, unpricedMovementCount: 1,
@@ -103,14 +108,29 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   expect(empty.body.monthly).toBeUndefined();
   expect(empty.body.current.recorded).toMatchObject({ menuItemUnits: 0, lossMovementCount: 0, receivedCost: 0,
     serviceDays: { complete: 0 } });
-  const fourYearMonthly = await agent.get("/api/workspace/impact").query({
-    from: "2020-01-15", to: "2023-12-15", monthly: "true",
+  const latestMonthlyPage = await agent.get("/api/workspace/impact").query({
+    from: "2020-01-15", to: "2023-12-15", monthly: "true", monthlyPage: 0,
   }).expect(200);
-  expect(fourYearMonthly.body.monthly).toHaveLength(48);
-  expect(fourYearMonthly.body.monthly[0]).toMatchObject({ month: "2020-01", from: "2020-01-15", to: "2020-01-31",
-    calendarDays: 17 });
-  expect(fourYearMonthly.body.monthly[47]).toMatchObject({ month: "2023-12", from: "2023-12-01", to: "2023-12-15",
+  expect(latestMonthlyPage.body.monthlyPagination).toMatchObject({ page: 0, pageCount: 4, totalMonths: 48,
+    hasOlder: true, hasNewer: false });
+  expect(latestMonthlyPage.body.monthly).toHaveLength(12);
+  expect(latestMonthlyPage.body.monthly[0]).toMatchObject({ month: "2023-01", from: "2023-01-01" });
+  expect(latestMonthlyPage.body.monthly[11]).toMatchObject({ month: "2023-12", from: "2023-12-01", to: "2023-12-15",
     calendarDays: 15 });
-  await agent.get("/api/workspace/impact").query({ from: "2020-01-01", to: "2024-01-01", monthly: "true" }).expect(400);
+  const oldestMonthlyPage = await agent.get("/api/workspace/impact").query({
+    from: "2020-01-15", to: "2023-12-15", monthly: "true", monthlyPage: 3,
+  }).expect(200);
+  expect(oldestMonthlyPage.body.monthlyPagination).toMatchObject({ page: 3, hasOlder: false, hasNewer: true });
+  expect(oldestMonthlyPage.body.monthly[0]).toMatchObject({ month: "2020-01", from: "2020-01-15", to: "2020-01-31",
+    calendarDays: 17 });
+  const expandedMonthlyPage = await agent.get("/api/workspace/impact").query({
+    from: "2020-01-01", to: "2024-01-01", monthly: "true", monthlyPage: 4,
+  }).expect(200);
+  expect(expandedMonthlyPage.body.monthlyPagination).toMatchObject({ page: 4, pageCount: 5, totalMonths: 49 });
+  expect(expandedMonthlyPage.body.monthly).toHaveLength(1);
+  await agent.get("/api/workspace/impact").query({
+    from: "2020-01-01", to: "2024-01-01", monthly: "true", monthlyPage: 5,
+  }).expect(400);
+  await agent.get("/api/workspace/impact").query({ from: "2020-01-01", to: "2024-01-01", monthlyPage: 0 }).expect(400);
   await agent.get("/api/workspace/impact?from=2026-09-02&to=2026-09-01").expect(400);
 });

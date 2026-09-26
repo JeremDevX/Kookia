@@ -174,6 +174,11 @@ source. Il compte les coûts non valorisés et les incompatibilités d'unité,
 signale les métriques non mesurées et exclut les simulations. Il ne constitue
 pas une attestation AGEC.
 
+Avec `monthly=true`, la même route renvoie une page de 12 mois et une
+`monthlyPagination` (`page`, `pageCount`, `totalMonths`, `hasOlder`, `hasNewer`).
+La première page montre les mois les plus récents de la période choisie ; les
+pages plus anciennes restent accessibles sans borne totale de période.
+
 Le panneau distinct **Sorties estimées par recette** appelle
 `GET /api/workspace/ingredient-outflow-estimates`. L'API ne lit que les lignes
 positives de réceptions enregistrées et non simulées, tenant-scopées ; pour
@@ -189,7 +194,11 @@ avec une proposition datée construite depuis le produit reçu et les autres
 produits du même catalogue. Le restaurateur peut corriger les ingrédients, les
 quantités, le rendement et la date ; les autres stocks ne sont pas réputés
 disponibles. Cette proposition n'est ni persistée ni prise en compte par les
-estimations avant sa création explicite. Une association non reconnue conserve
+estimations du Bilan avant sa création explicite ; son écran de revue peut
+toutefois montrer un aperçu conditionnel calculé depuis la quantité reçue et
+le dosage/rendement proposés, avec la même hypothèse de répartition 90/10. Cet
+aperçu reste séparé des estimations du Bilan et ne crée aucune écriture. Une
+association non reconnue conserve
 le parcours de création manuelle. Lors de la création depuis une réception, le
 serveur vérifie le tenant, la ligne enregistrée, l'unité, le produit inclus et
 la date d'effet, puis conserve la provenance dans la décision consultable. La

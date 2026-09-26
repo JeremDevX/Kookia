@@ -2,7 +2,7 @@ import { apiRequest } from "../config/api";
 
 export interface ImpactProductLoss {
   productId: string; productName: string; unit: string; quantity: number; knownCost: number;
-  unpricedMovementCount: number; movementCount: number; operationIds: string[];
+  unpricedMovementCount: number; movementCount: number; operationIds: string[]; movementIds: string[];
 }
 export interface ImpactReceiptProduct {
   productId: string; productName: string; unit: string; receivedQuantity: number; cost: number;
@@ -38,10 +38,14 @@ export interface ImpactReport {
   unavailableMetrics: string[]; savingsClaim: "not_measured"; generatedAt: string;
   current: ImpactPeriod; prior: ImpactPeriod;
   monthly?: ImpactMonthlyPeriod[];
+  monthlyPagination?: { page: number; pageCount: number; totalMonths: number; hasOlder: boolean; hasNewer: boolean };
 }
 
-export const getImpactReport = (from: string, to: string, includeMonthly = false) => {
+export const getImpactReport = (from: string, to: string, monthlyPage?: number) => {
   const query = new URLSearchParams({ from, to });
-  if (includeMonthly) query.set("monthly", "true");
+  if (monthlyPage !== undefined) {
+    query.set("monthly", "true");
+    query.set("monthlyPage", String(monthlyPage));
+  }
   return apiRequest<ImpactReport>(`/workspace/impact?${query}`);
 };

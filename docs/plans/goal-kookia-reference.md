@@ -117,6 +117,14 @@ disponibles ; plusieurs recettes compatibles pour la même réception sont des
 alternatives, jamais des quantités à additionner. Aucun résultat ne crée une
 vente, une perte, une production, un mouvement, ni n'alimente un KPI mesuré.
 
+Lorsqu'aucune recette enregistrée n'est compatible, l'écran de revue peut
+présenter une estimation conditionnelle fondée sur la recette proposée, le
+dosage/rendement et l'ingrédient de la réception. Elle reste distincte des
+estimations du Bilan et des opérations constatées ; elle ne signifie pas que la
+recette a été utilisée et ne crée aucune écriture. Après création explicite de
+la recette, le calcul séparé du Bilan peut la reprendre à sa date d'effet. Si la
+source, l'unité ou le dosage nécessaire manque, la sortie reste inconnue.
+
 Les dates effectiveAt, knownAt et recordedAt restent distinctes. Une vue
 « Connu au » ne révèle aucune donnée connue après cette date. Les trous de
 couverture demeurent visibles et expliquent pourquoi une chaîne métier ou un

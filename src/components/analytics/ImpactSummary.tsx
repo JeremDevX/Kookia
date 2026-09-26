@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
 import { getImpactReport, type ImpactBucket, type ImpactMonthlyPeriod, type ImpactPeriod, type ImpactReport } from "../../services/impactService";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
+import { receiptDetailsHref, stockMovementHref } from "../../utils/analyticsNavigation";
 
 interface Props { from: string; to: string }
 const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
@@ -20,12 +22,21 @@ function periodRange(period: ImpactPeriod) {
 }
 const recordedValue = (period: ImpactPeriod, value: number | string) => period.hasRecordedData ? value : "Aucune donnée";
 
-function OperationReferences({ ids, label }: { ids: string[]; label: string }) {
-  if (!ids.length) return null;
-  return <details><summary>{label} ({ids.length})</summary><ul>{ids.map((id) => <li key={id}><code>{id}</code></li>)}</ul></details>;
+function LossMovementReferences({ item, from, to }: { item: ImpactBucket["lossesByProduct"][number]; from: string; to: string }) {
+  if (!item.movementIds.length) return null;
+  return <details><summary>Mouvements source ({item.movementIds.length})</summary><ul>{item.movementIds.map((id, index) => <li key={id}>
+    <Link to={stockMovementHref(item.productId, id, from, to)}>Ouvrir le mouvement {index + 1}</Link>
+  </li>)}</ul></details>;
 }
 
-function RecordedOperations({ bucket, currency }: { bucket: ImpactBucket; currency: string }) {
+function ReceiptReferences({ ids, from, to }: { ids: string[]; from: string; to: string }) {
+  if (!ids.length) return null;
+  return <details><summary>Réceptions source ({ids.length})</summary><ul>{ids.map((id, index) => <li key={id}>
+    <Link to={receiptDetailsHref(id, from, to, "impact-summary-title")}>Ouvrir la réception source {index + 1}</Link>
+  </li>)}</ul></details>;
+}
+
+function RecordedOperations({ bucket, currency, from, to }: { bucket: ImpactBucket; currency: string; from: string; to: string }) {
   return <>
     <p>{bucket.menuItemUnits} unité(s) d’articles vendues · {bucket.serviceDays.complete} jour(s) complet(s), {bucket.serviceDays.partial} partiel(s), {bucket.serviceDays.coverageMissing} sans couverture déclarée, {bucket.serviceDays.closed} fermé(s), {bucket.serviceDays.unregistered} sans fiche de service.</p>
     <h3>Pertes déclarées</h3>
@@ -34,7 +45,7 @@ function RecordedOperations({ bucket, currency }: { bucket: ImpactBucket; curren
         {bucket.lossesByProduct.map((item) => <tr key={`${item.productId}:${item.unit}`}>
           <td>{item.productName}</td><td>{formatQuantity(item.quantity)} {item.unit}</td>
           <td>{formatMoney(item.knownCost, currency)}{item.unpricedMovementCount ? ` · ${item.unpricedMovementCount} mouvement(s) sans prix snapshoté` : ""}</td>
-          <td><OperationReferences ids={item.operationIds} label="Opérations source" /></td>
+          <td><LossMovementReferences item={item} from={from} to={to} /></td>
         </tr>)}
       </tbody></table></div> : <p>Aucun mouvement de perte déclarée dans les données mesurables de cette période.</p>}
     <p>Coût connu des pertes : <strong>{formatMoney(bucket.knownLossCost, currency)}</strong> · {bucket.unpricedLossMovementCount} mouvement(s) de perte sans valorisation historique.</p>
@@ -43,7 +54,7 @@ function RecordedOperations({ bucket, currency }: { bucket: ImpactBucket; curren
       <table className="sales-table"><thead><tr><th>Produit</th><th>Quantité reçue</th><th>Coût constaté</th><th>Traçabilité</th></tr></thead><tbody>
         {bucket.receiptsByProduct.map((item) => <tr key={`${item.productId}:${item.unit}`}>
           <td>{item.productName}</td><td>{formatQuantity(item.receivedQuantity)} {item.unit}</td>
-          <td>{formatMoney(item.cost, currency)}</td><td><OperationReferences ids={item.receiptIds} label="Réceptions source" /></td>
+          <td>{formatMoney(item.cost, currency)}</td><td><ReceiptReferences ids={item.receiptIds} from={from} to={to} /></td>
         </tr>)}
       </tbody></table></div> : <p>Aucune quantité réceptionnée dans le ledger de commandes pour cette période.</p>}
     <p>Dépenses de produits réceptionnés : <strong>{formatMoney(bucket.receivedCost, currency)}</strong> · {bucket.receiptCount} réception(s) confirmée(s).</p>
@@ -71,10 +82,29 @@ function monthlyCoverage(bucket: ImpactMonthlyPeriod["recorded"]) {
   return `${days.complete} service(s) complet(s) · ${days.partial} à compléter · ${days.coverageMissing} sans état renseigné · ${days.closed} fermé(s) · ${days.unregistered} sans fiche de service`;
 }
 
-function MonthlyReconciliation({ periods, currency }: { periods: ImpactMonthlyPeriod[]; currency: string }) {
-  return <details className="impact-monthly-summary">
-    <summary>Réconciliation mensuelle ({periods.length} mois)</summary>
+interface MonthlyReconciliationProps {
+  periods: ImpactMonthlyPeriod[];
+  currency: string;
+  pagination: NonNullable<ImpactReport["monthlyPagination"]>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOlder: () => void;
+  onNewer: () => void;
+  headingRef: RefObject<HTMLHeadingElement | null>;
+}
+
+function MonthlyReconciliation({ periods, currency, pagination, open, onOpenChange, onOlder, onNewer, headingRef }: MonthlyReconciliationProps) {
+  const displayedStart = periods[0]?.month ?? "";
+  const displayedEnd = periods[periods.length - 1]?.month ?? "";
+  return <details className="impact-monthly-summary" open={open} onToggle={(event) => onOpenChange(event.currentTarget.open)}>
+    <summary>Réconciliation mensuelle · {pagination.totalMonths} mois consultables</summary>
     <p>Les périodes partielles reprennent uniquement les dates sélectionnées. Les ventes sont des unités d’articles ; un zéro n’est confirmé que par un service complet. Les pertes sont des mouvements déclarés, pas une quantité invendue ; simulations et unités incompatibles restent distinctes ou écartées.</p>
+    <h3 ref={headingRef} tabIndex={-1}>Mois affichés : {displayMonth(displayedStart)} – {displayMonth(displayedEnd)}</h3>
+    {pagination.pageCount > 1 && <nav className="impact-monthly-navigation" aria-label="Navigation des périodes mensuelles">
+      <Button type="button" variant="outline" disabled={!pagination.hasOlder} onClick={onOlder}>Mois plus anciens</Button>
+      <p aria-live="polite">Page {pagination.page + 1} sur {pagination.pageCount}</p>
+      <Button type="button" variant="outline" disabled={!pagination.hasNewer} onClick={onNewer}>Mois plus récents</Button>
+    </nav>}
     <div className="sales-table-wrap" role="region" aria-label="Réconciliation mensuelle des indicateurs opérationnels"
       aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
       <table className="sales-table impact-monthly-table" aria-label="Détails mensuels des ventes, services, pertes et réceptions"><thead><tr>
@@ -96,32 +126,46 @@ function MonthlyReconciliation({ periods, currency }: { periods: ImpactMonthlyPe
 }
 
 export default function ImpactSummary({ from, to }: Props) {
+  const location = useLocation();
+  const selectedMonthCount = monthCount(from, to);
+  const includeMonthly = selectedMonthCount >= 2;
+  const [monthlyPage, setMonthlyPage] = useState(0);
+  const [monthlyOpen, setMonthlyOpen] = useState(false);
   const [refreshRevision, setRefreshRevision] = useState(0);
-  const requestKey = `${from}:${to}:${refreshRevision}`;
+  const requestKey = JSON.stringify([from, to, includeMonthly ? monthlyPage : null, refreshRevision]);
   const [report, setReport] = useState<ImpactReport | null>(null);
   const [error, setError] = useState("");
   const [loadedRequestKey, setLoadedRequestKey] = useState("");
   const loading = loadedRequestKey !== requestKey;
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const monthlyHeadingRef = useRef<HTMLHeadingElement>(null);
   const retryFocusPending = useRef(false);
-  const selectedMonthCount = monthCount(from, to);
-  const includeMonthly = selectedMonthCount >= 2 && selectedMonthCount <= 48;
+  const monthlyPageFocusPending = useRef(false);
   useEffect(() => {
     let active = true;
-    void getImpactReport(from, to, includeMonthly).then((result) => {
+    void getImpactReport(from, to, includeMonthly ? monthlyPage : undefined).then((result) => {
       if (active) { setReport(result); setError(""); setLoadedRequestKey(requestKey); }
     }).catch((cause: unknown) => {
       if (active) { setError(cause instanceof Error ? cause.message : "Réessayez."); setLoadedRequestKey(requestKey); }
     });
     return () => { active = false; };
-  }, [from, to, includeMonthly, requestKey]);
+  }, [from, to, includeMonthly, monthlyPage, requestKey]);
   useEffect(() => {
     if (loading || !retryFocusPending.current) return;
     retryFocusPending.current = false;
     if (document.activeElement !== document.body) return;
     if (error) retryButtonRef.current?.focus();
     else headingRef.current?.focus();
+  }, [error, loading, report]);
+  useEffect(() => {
+    if (location.hash === "#impact-summary-title" && !loading) headingRef.current?.focus();
+  }, [loading, location.hash]);
+  useEffect(() => {
+    if (loading || !monthlyPageFocusPending.current) return;
+    monthlyPageFocusPending.current = false;
+    if (error) retryButtonRef.current?.focus();
+    else monthlyHeadingRef.current?.focus();
   }, [error, loading, report]);
   const retryReport = () => {
     retryFocusPending.current = document.activeElement === retryButtonRef.current;
@@ -144,9 +188,11 @@ export default function ImpactSummary({ from, to }: Props) {
           <tr><th scope="row">Services ouverts complets enregistrés</th><td>{recordedValue(report.current, report.current.recorded.serviceDays.complete)}</td><td>{recordedValue(report.prior, report.prior.recorded.serviceDays.complete)}</td></tr>
         </tbody></table></div>
       {!report.current.hasRecordedData && <p role="status">Aucune donnée opérationnelle mesurable dans la période actuelle.</p>}
-      {report.monthly && <MonthlyReconciliation periods={report.monthly} currency={report.currency} />}
-      {selectedMonthCount > 48 && <p role="status">La réconciliation mensuelle est disponible jusqu’à 48 mois calendaires. Réduisez la période pour l’afficher.</p>}
-      <RecordedOperations bucket={report.current.recorded} currency={report.currency} />
+      {report.monthly && report.monthlyPagination && <MonthlyReconciliation periods={report.monthly} currency={report.currency}
+        pagination={report.monthlyPagination} open={monthlyOpen} onOpenChange={setMonthlyOpen} headingRef={monthlyHeadingRef}
+        onOlder={() => { monthlyPageFocusPending.current = true; setMonthlyPage((page) => page + 1); }}
+        onNewer={() => { monthlyPageFocusPending.current = true; setMonthlyPage((page) => Math.max(0, page - 1)); }} />}
+      <RecordedOperations bucket={report.current.recorded} currency={report.currency} from={from} to={to} />
       <p className="impact-unmeasured"><strong>Non mesuré dans le système :</strong> ruptures de stock et quantités invendues. Un seuil de stock bas, une production ou une simulation ne sont pas assimilés à une rupture ou à un invendu. Les économies réalisées ne sont pas calculées.</p>
       {(report.current.excluded.simulatedSales > 0 || report.current.excluded.simulatedLosses > 0 || report.current.excluded.simulatedReceiptLines > 0) &&
         <p>Exclus des totaux enregistrés : {report.current.excluded.simulatedSales} ligne(s) de vente simulée(s), {report.current.excluded.simulatedLosses} mouvement(s) de perte simulé(s), {report.current.excluded.simulatedReceiptLines} ligne(s) de réception simulée(s). Unités incompatibles ignorées : {report.current.excluded.lossUnitMismatch + report.current.excluded.receiptUnitMismatch}.</p>}

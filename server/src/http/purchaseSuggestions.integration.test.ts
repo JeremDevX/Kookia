@@ -126,6 +126,18 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
     reason: "purchase_receipt", invoiceDocumentId: invoiceId } });
   expect(receiptMovements).toHaveLength(1);
   expect(Number(receiptMovements[0].unitPriceSnapshot)).toBe(invoicePrice);
+  const receiptLineId = firstReceipt.body.lines[0].id as string;
+  const receiptLineEvidence = await owner.agent.get(`/api/workspace/orders/receipt-lines/${receiptLineId}`).expect(200);
+  expect(receiptLineEvidence.body).toMatchObject({ receiptLineId, productId: product.id, productName: product.name,
+    deliveryReference: "BL-O2-1", deliveryDate: parisToday(), receivedQuantity: 2, unit: product.unit });
+  await other.agent.get(`/api/workspace/orders/receipt-lines/${receiptLineId}`).expect(404);
+  expect((await owner.agent.get("/api/auth/me").expect(200)).body.user.id).toBe(owner.actorId);
+  const listedOrder = (await owner.agent.get("/api/workspace/orders").expect(200)).body
+    .find((item: { id: string }) => item.id === order.body.id);
+  expect(listedOrder.receipts[0].lines[0].stockMovementId).toBe(receiptMovements[0].id);
+  const movementHistory = await owner.agent.get(`/api/workspace/products/${product.id}/movements`).expect(200);
+  expect(movementHistory.body).toContainEqual(expect.objectContaining({ id: receiptMovements[0].id,
+    purchaseReceiptLineId: receiptLineId }));
   const receiptReplays = await Promise.all([1, 2].map(() => owner.agent
     .post(`/api/workspace/orders/${order.body.id}/receipts`).send(firstReceiptInput).expect(201)));
   expect(receiptReplays.map((response) => response.body.id)).toEqual([firstReceipt.body.id, firstReceipt.body.id]);

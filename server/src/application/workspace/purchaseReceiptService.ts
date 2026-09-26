@@ -7,9 +7,10 @@ import { WorkspaceError } from "./catalogService.js";
 import { invoiceSchema, sourceInvoiceDocumentSchema, validateSourceReview } from "./invoiceService.js";
 
 type ReceiptDatabase = PrismaClient | Prisma.TransactionClient;
-type ReceiptWithLines = PurchaseReceiptRecord & { lines: PurchaseReceiptLineRecord[] };
+type ReceiptLineWithMovement = PurchaseReceiptLineRecord & { movement: { id: string } | null };
+type ReceiptWithLines = PurchaseReceiptRecord & { lines: ReceiptLineWithMovement[] };
 type PurchaseOrderWithReceipts = Prisma.PurchaseOrderGetPayload<{ include: {
-  lines: true; receipts: { include: { lines: true } };
+  lines: true; receipts: { include: { lines: { include: { movement: { select: { id: true } } } } } };
 } }>;
 
 export interface PurchaseReceiptInput {
@@ -35,6 +36,7 @@ export function purchaseReceiptDto(receipt: ReceiptWithLines) {
     lines: receipt.lines.map((line) => ({ id: line.id, orderLineId: line.orderLineId, productId: line.productId,
       productName: line.productName, invoiceLineIndex: line.invoiceLineIndex, invoiceQuantity: Number(line.invoiceQuantity),
       receivedQuantity: Number(line.receivedQuantity), quantityDifference: Number(line.quantityDifference), unit: line.unit,
+      stockMovementId: line.movement?.id ?? null,
       orderedQuantity: Number(line.orderedQuantity), orderedUnitPrice: Number(line.orderedUnitPrice),
       invoiceUnitPrice: Number(line.invoiceUnitPrice),
       ...(line.priceDifferenceReason ? { priceDifferenceReason: line.priceDifferenceReason } : {}) })),
@@ -51,7 +53,7 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
     const prior = await tx.purchaseReceipt.findUnique({ where: { restaurantId_operationId: {
       restaurantId, operationId: input.operationId,
-    } }, include: { lines: true } });
+    } }, include: { lines: { include: { movement: { select: { id: true } } } } } });
     if (prior) {
       if (!sameSnapshot(prior.requestSnapshot, input))
         throw new WorkspaceError(409, "RECEIPT_OPERATION_CONFLICT", "Cette opération de réception a déjà été utilisée avec d’autres valeurs.");
@@ -190,6 +192,7 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
         priceDifferenceReason: line.priceDifferenceReason ?? null })) },
     }, include: { lines: true } });
 
+    const stockMovementByReceiptLine = new Map<string, string>();
     if (!simulated) for (const line of receipt.lines) {
       if (!line.receivedQuantity.greaterThan(0)) continue;
       const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: line.productId } },
@@ -200,7 +203,7 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
         currentStock: { increment: line.receivedQuantity }, stockRevision: { increment: 1 },
         ...(!product.lastDelivery || product.lastDelivery < day(input.deliveryDate) ? { lastDelivery: day(input.deliveryDate) } : {}),
       } });
-      await tx.stockMovement.create({ data: { restaurantId, productId: product.id, purchaseReceiptLineId: line.id,
+      const movement = await tx.stockMovement.create({ data: { restaurantId, productId: product.id, purchaseReceiptLineId: line.id,
         delta: line.receivedQuantity, reason: "purchase_receipt",
         operationId: `purchase-receipt:${receipt.id}:${line.orderLineId}`, actorId,
         invoiceDocumentId: input.invoiceDocumentId, invoiceRevision: invoiceDocument.revision,
@@ -209,6 +212,7 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
         productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: supplier.name,
         unitPriceSnapshot: line.invoiceUnitPrice,
       } });
+      stockMovementByReceiptLine.set(line.id, movement.id);
     }
 
     const orderComplete = order.lines.every((line) =>
@@ -231,7 +235,9 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
           sourceDocumentRevision: invoice.sourceDocumentRevision, revision: saved.revision, actorId,
           data: JSON.parse(JSON.stringify(nextInvoice)) as Prisma.InputJsonValue } });
     }
-    return { ...purchaseReceiptDto(receipt), replayed: false };
+    const receiptWithMovement = { ...receipt, lines: receipt.lines.map((line) => ({ ...line,
+      movement: stockMovementByReceiptLine.has(line.id) ? { id: stockMovementByReceiptLine.get(line.id)! } : null })) };
+    return { ...purchaseReceiptDto(receiptWithMovement), replayed: false };
   });
 }
 
@@ -246,9 +252,27 @@ export const purchaseReceiptSchema = z.object({
 
 export async function listPurchaseOrders(restaurantId: string, db: ReceiptDatabase = prisma) {
   const orders = await db.purchaseOrder.findMany({ where: { restaurantId }, include: {
-    lines: true, receipts: { include: { lines: true }, orderBy: { createdAt: "desc" } },
+    lines: true, receipts: { include: { lines: { include: { movement: { select: { id: true } } } } },
+      orderBy: { createdAt: "desc" } },
   }, orderBy: { createdAt: "desc" } });
   return orders.map(orderDtoWithReceipts);
+}
+
+export async function getPurchaseReceiptLineEvidence(restaurantId: string, lineId: string, db: ReceiptDatabase = prisma) {
+  const line = await db.purchaseReceiptLine.findFirst({ where: { restaurantId, id: lineId }, include: {
+    receipt: { select: { deliveryReference: true, deliveryDate: true, simulated: true, provenance: true } },
+    product: { select: { unit: true } },
+  } });
+  if (!line) throw new WorkspaceError(404, "RECEIPT_LINE_NOT_FOUND", "Ligne de réception introuvable dans cet espace.");
+  if (line.receipt.simulated || line.receipt.provenance !== "recorded")
+    throw new WorkspaceError(409, "SIMULATED_RECEIPT_NOT_ELIGIBLE", "Cette réception ne peut pas fonder une proposition opérationnelle.");
+  if (!line.receivedQuantity.greaterThan(0))
+    throw new WorkspaceError(409, "EMPTY_RECEIPT_LINE", "La ligne de réception ne contient aucune quantité positive.");
+  if (line.unit !== line.product.unit)
+    throw new WorkspaceError(409, "RECEIPT_PRODUCT_UNIT_CHANGED", "L’unité du produit ne correspond plus à celle de la réception.");
+  return { receiptLineId: line.id, productId: line.productId, productName: line.productName,
+    deliveryReference: line.receipt.deliveryReference, deliveryDate: line.receipt.deliveryDate.toISOString().slice(0, 10),
+    receivedQuantity: Number(line.receivedQuantity), unit: line.unit };
 }
 
 function orderDtoWithReceipts(order: PurchaseOrderWithReceipts) {

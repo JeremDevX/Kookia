@@ -25,6 +25,8 @@ import "./ProductDetail.css";
 
 interface ProductDetailProps {
   product: Product | null;
+  focusedMovementId: string | null;
+  returnHref?: string;
   onClose: () => void;
   onAdjustStock: (productId: string, delta: number, reason?: "adjustment" | "loss") => Promise<void>;
   onUpdateProduct: (productId: string, edit: ProductEdit) => Promise<Product>;
@@ -43,6 +45,8 @@ const movementLabel = (reason: string) => ({
 
 const ProductDetail: React.FC<ProductDetailProps> = ({
   product,
+  focusedMovementId,
+  returnHref,
   onClose,
   onAdjustStock,
   onUpdateProduct,
@@ -54,9 +58,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [movements, setMovements] = useState<StockMovement[]>([]);
+  const [movementsLoaded, setMovementsLoaded] = useState(false);
   const [stockCounts, setStockCounts] = useState<StockCountSummary[]>([]);
   const [historyError, setHistoryError] = useState("");
   const [countHistoryError, setCountHistoryError] = useState("");
+  const [movementReloadRevision, setMovementReloadRevision] = useState(0);
   const [saving, setSaving] = useState(false);
   const [adjustReason, setAdjustReason] = useState<"adjustment" | "loss">("adjustment");
   const [showAdjustModal, setShowAdjustModal] = useState(false);
@@ -64,6 +70,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCountModal, setShowCountModal] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const focusedMovementRef = useRef<HTMLDivElement>(null);
+  const movementHeadingRef = useRef<HTMLHeadingElement>(null);
+  const movementRetryButtonRef = useRef<HTMLButtonElement>(null);
+  const movementRetryFocusPending = useRef(false);
   const closeFromKeyboard = useEffectEvent(() => {
     if (!showEditModal && !showCountModal) onClose();
   });
@@ -88,9 +98,28 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   useEffect(() => {
     if (!productId) return;
     let active = true;
-    getStockMovements(productId).then((data) => { if (active) { setMovements(data); setHistoryError(""); } }, () => { if (active) setHistoryError("Historique indisponible."); });
+    setMovementsLoaded(false);
+    setHistoryError("");
+    getStockMovements(productId).then((data) => { if (active) { setMovements(data); setHistoryError(""); setMovementsLoaded(true); } }, () => {
+      if (active) { setHistoryError("Historique indisponible."); setMovementsLoaded(true); }
+    });
     return () => { active = false; };
-  }, [productId, product?.currentStock]);
+  }, [productId, product?.currentStock, movementReloadRevision]);
+
+  useEffect(() => {
+    if (!focusedMovementId || !movementsLoaded || !focusedMovementRef.current) return;
+    focusedMovementRef.current.scrollIntoView({ block: "center" });
+    focusedMovementRef.current.focus();
+  }, [focusedMovementId, movements, movementsLoaded]);
+
+  useEffect(() => {
+    if (!movementsLoaded || !movementRetryFocusPending.current) return;
+    movementRetryFocusPending.current = false;
+    if (document.activeElement !== document.body) return;
+    if (historyError) movementRetryButtonRef.current?.focus();
+    else if (focusedMovementId && focusedMovementRef.current) focusedMovementRef.current.focus();
+    else movementHeadingRef.current?.focus();
+  }, [focusedMovementId, historyError, movementsLoaded]);
 
   useEffect(() => {
     if (!productId) return;
@@ -107,6 +136,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     const result = await onRecordCount(productId, count);
     setStockCounts((previous) => [result.count, ...previous.filter((item) => item.id !== result.count.id)]);
     return result;
+  };
+
+  const retryMovementHistory = () => {
+    movementRetryFocusPending.current = document.activeElement === movementRetryButtonRef.current;
+    setMovementReloadRevision((revision) => revision + 1);
   };
 
   const handleContactSupplier = () => {
@@ -239,17 +273,27 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </section>
 
           <section className="drawer-section">
-            <h3 className="section-heading">
+            <h3 ref={movementHeadingRef} className="section-heading" tabIndex={-1}>
               <History size={18} /> Mouvements de stock
             </h3>
             <div className="history-list">
-              {historyError ? <p role="alert">{historyError}</p> : movements.length === 0 ? <p>Aucun mouvement enregistré.</p> : movements.map((movement) => (
-                <div className="history-item" key={movement.id}>
+              {historyError ? <div role="alert"><p>{historyError} {returnHref &&
+                <Link to={returnHref}>Retour au Bilan (même période)</Link>}</p>
+                <Button ref={movementRetryButtonRef} type="button" variant="outline" onClick={retryMovementHistory}>Réessayer</Button></div>
+                : !movementsLoaded ? <p role="status">Chargement de l’historique des mouvements…</p>
+                  : movements.length === 0 ? <p>Aucun mouvement enregistré.</p> : movements.map((movement) => (
+                <div className="history-item" id={`stock-movement-${movement.id}`} key={movement.id} tabIndex={-1}
+                  ref={movement.id === focusedMovementId ? focusedMovementRef : undefined}>
                   <span className="date">{new Date(movement.createdAt).toLocaleDateString("fr-FR")}</span>
                   <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {product.unit} ({movementLabel(movement.reason)})</span>
                   {movement.sourceDocumentId && <Link to={`/orders?source=${encodeURIComponent(movement.sourceDocumentId)}#invoices`}>Ouvrir la pièce source</Link>}
+                  {movement.id === focusedMovementId && returnHref &&
+                    <Link to={returnHref}>Retour au Bilan (même période)</Link>}
                 </div>
               ))}
+              {focusedMovementId && movementsLoaded && !historyError && !movements.some((movement) => movement.id === focusedMovementId) &&
+                <p role="status">Ce mouvement n’est pas présent dans l’historique de ce produit. {returnHref &&
+                  <Link to={returnHref}>Retour au Bilan (même période)</Link>}</p>}
             </div>
           </section>
 

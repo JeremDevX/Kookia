@@ -11,20 +11,46 @@
 .bilan-period input { min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
 .impact-summary .sales-table { min-width: var(--size-600); }
 .estimated-outflows .sales-table { min-width: var(--size-1000); }
+.estimated-outflow-table-hint { display: block; margin: var(--spacing-sm) var(--number-0); color: var(--color-text-muted); font-size: var(--font-size-caption); }
+.estimated-outflow-cards-hint { display: none; }
+.estimated-outflow-cards { display: none; gap: var(--spacing-md); list-style: none; margin: var(--number-0); padding: var(--number-0); }
+.estimated-outflow-card { min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.estimated-outflow-card-header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--spacing-sm); margin-block-end: var(--spacing-md); }
+.estimated-outflow-card dl { display: grid; grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); margin: var(--number-0); }
+.estimated-outflow-card dl > div { min-width: var(--number-0); }
+.estimated-outflow-card dt { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.estimated-outflow-card dd { margin: var(--spacing-xs) var(--number-0) var(--number-0); font-weight: var(--font-weight-medium); overflow-wrap: var(--overflow-wrap-anywhere); }
+.estimated-unmatched-list { display: grid; gap: var(--spacing-md); list-style: none; margin: var(--number-0); padding: var(--number-0); }
+.estimated-unmatched-receipt { min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); overflow-wrap: var(--overflow-wrap-anywhere); }
+.conditional-recipe-outflow { margin-block: var(--spacing-md); padding: var(--spacing-md); border-inline-start: var(--size-3) solid var(--color-primary); background: var(--color-primary-light); }
+.conditional-recipe-outflow h4 { margin-block: var(--number-0) var(--spacing-sm); }
+.conditional-recipe-outflow ul { padding-inline-start: var(--spacing-lg); }
 .analytics-container .impact-summary .btn { min-height: var(--size-44); }
 .analytics-container .estimated-outflows .btn { min-height: var(--size-44); }
 .impact-summary .impact-monthly-table { min-width: var(--size-1000); }
 .impact-monthly-summary { margin-block: var(--spacing-lg); }
 .impact-monthly-summary > summary { cursor: pointer; font-weight: var(--font-weight-medium); }
 .impact-monthly-summary > p { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.impact-monthly-navigation { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spacing-sm); margin-block: var(--spacing-md); }
+.impact-monthly-navigation p { margin-block: var(--number-0); text-align: center; }
 .bilan-next { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .bilan-next a { color: var(--color-primary); text-underline-offset: var(--size-3); }
 .analytics-container :is(a, button, summary, input):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 
 @media (--media-mobile) {
   .analytics-container { padding: var(--spacing-md); gap: var(--spacing-md); }
+  .impact-monthly-navigation { align-items: stretch; flex-direction: column; }
+}
+
+@media (--media-tablet) {
+  .estimated-outflow-table { display: none; }
+  .estimated-outflow-cards { display: grid; }
+  .estimated-outflow-table-hint { display: none; }
+  .estimated-outflow-cards-hint { display: block; margin: var(--spacing-sm) var(--number-0); color: var(--color-text-muted); font-size: var(--font-size-caption); }
 }
 
 @media (--media-phone) {
   .analytics-container { padding: var(--spacing-sm); gap: var(--spacing-sm); }
+  .estimated-outflow-card dl { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-sm); }
+  .estimated-outflow-card { padding: var(--spacing-sm); }
 }

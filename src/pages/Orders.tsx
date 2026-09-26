@@ -13,11 +13,17 @@ import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { createOrderRecommendationsFromCartItems } from "../features/orders/orderRecommendations";
 import type { Invoice } from "../services/invoiceService";
 import { formatLocalISODate } from "../utils/date";
+import { analyticsReturnHref, analyticsReturnTarget } from "../utils/analyticsNavigation";
 import "../styles/Workspace.css";
 import "./Orders.css";
 
 export default function Orders() {
   const [searchParams] = useSearchParams();
+  const focusReceiptId = searchParams.get("receiptId") ?? undefined;
+  const returnFrom = searchParams.get("from");
+  const returnTo = searchParams.get("to");
+  const returnTarget = analyticsReturnTarget(returnFrom, returnTo, searchParams.get("returnAnchor"));
+  const returnHref = returnTarget ? analyticsReturnHref(returnTarget.from, returnTarget.to, returnTarget.anchor) : undefined;
   const { cartItems, loading: cartLoading, loadError: cartError, removeFromCart, refreshCart } = useCart();
   const { products, suppliers, loading: catalogLoading, error: catalogError, refetch } = useInventoryCatalog();
   const { addToast } = useToast();
@@ -70,7 +76,7 @@ export default function Orders() {
       onCreateManual={openManualInvoice}
       onOpenDraft={(invoice) => { setInvoiceDraft(invoice); setInvoiceOpen(true); }} />
 
-    <OrderHistory refreshKey={historyRevision} onReceiptSaved={() => {
+    <OrderHistory refreshKey={historyRevision} focusReceiptId={focusReceiptId} returnHref={returnHref} returnTarget={returnTarget} onReceiptSaved={() => {
       setInvoiceRefresh((value) => value + 1);
       setSuggestionsRevision((value) => value + 1);
     }} />

@@ -13,6 +13,7 @@ export interface IngredientOutflowEstimate {
   recipeName: string;
   recipeVersion: number;
   recipeEffectiveFrom: string;
+  recipeIngredientQuantity: number;
   yieldPortions: number;
   possiblePortions: number;
   estimatedSoldPortions: number;
@@ -27,9 +28,11 @@ export interface IngredientOutflowEstimateReport {
   to: string;
   assumptions: { estimatedSalesShare: number; estimatedLossShare: number };
   estimates: IngredientOutflowEstimate[];
-  unestimatedReceipts: Array<Pick<IngredientOutflowEstimate, "id" | "receiptId" | "receiptReference" | "deliveryDate" |
-    "productId" | "productName" | "unit" | "receivedQuantity"> & { reason: "no_dated_compatible_recipe" }>;
+  unestimatedReceipts: UnestimatedReceivedIngredient[];
 }
+
+export type UnestimatedReceivedIngredient = Pick<IngredientOutflowEstimate, "id" | "receiptId" | "receiptReference" | "deliveryDate" |
+  "productId" | "productName" | "unit" | "receivedQuantity"> & { reason: "no_dated_compatible_recipe" };
 
 export const getIngredientOutflowEstimates = (from: string, to: string) => {
   const query = new URLSearchParams({ from, to });

@@ -90,6 +90,14 @@ it("estimates only dated recipes from recorded in-scope receipts without creatin
     ingredients: [{ productId: otherProduct.id, quantity: 2.5 }] }).expect(201);
   const otherReceipt = await addReceipt(other, otherProduct, today);
 
+  const receiptEvidence = await owner.agent.get(`/api/workspace/orders/receipt-lines/${unmatchedReceipt.lineId}`).expect(200);
+  expect(receiptEvidence.body).toMatchObject({ receiptLineId: unmatchedReceipt.lineId, productId: unmatchedProduct.id,
+    productName: unmatchedProduct.name, deliveryReference: unmatchedReceipt.deliveryReference,
+    deliveryDate: today, receivedQuantity: 3, unit: "L" });
+  await owner.agent.get(`/api/workspace/orders/receipt-lines/${otherReceipt.lineId}`).expect(404);
+  await owner.agent.get(`/api/workspace/orders/receipt-lines/${simulatedReceipt.lineId}`).expect(409)
+    .expect(({ body }) => expect(body.error.code).toBe("SIMULATED_RECEIPT_NOT_ELIGIBLE"));
+
   const salesBefore = await prisma.dailySale.count({ where: { restaurantId: owner.restaurantId } });
   const movementsBefore = await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId } });
   const productionsBefore = await prisma.production.count({ where: { restaurantId: owner.restaurantId } });
@@ -112,6 +120,7 @@ it("estimates only dated recipes from recorded in-scope receipts without creatin
     const estimate = response.body.estimates.find((item: { productId: string }) => item.productId === ingredient.product!.id);
     expect(estimate).toMatchObject({ productId: ingredient.product!.id,
       receivedQuantity: ingredient.receivedQuantity, recipeName: "Pizza Margherita", recipeVersion: 1,
+      recipeIngredientQuantity: ingredient.quantity,
       ...ingredient.expected });
   }
   const recipeOperationId = randomUUID();
@@ -142,7 +151,8 @@ it("estimates only dated recipes from recorded in-scope receipts without creatin
   const afterRecipeReview = await owner.agent.get("/api/workspace/ingredient-outflow-estimates")
     .query({ from: "2022-01-01", to: "2026-12-31" }).expect(200);
   expect(afterRecipeReview.body.estimates).toContainEqual(expect.objectContaining({
-    productId: unmatchedProduct.id, receivedQuantity: 3, recipeName: "Sauce à la crème",
+    productId: unmatchedProduct.id, receiptId: unmatchedReceipt.id,
+    receivedQuantity: 3, recipeName: "Sauce à la crème",
     possiblePortions: 20, estimatedSoldQuantity: 2.7, estimatedLossQuantity: 0.3,
   }));
   expect(afterRecipeReview.body.unestimatedReceipts).toEqual([]);
