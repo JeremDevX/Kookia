@@ -2688,3 +2688,26 @@ cette session a disparu. Cette vérification porte uniquement sur la page de
 connexion : la route authentifiée Prévisions, les largeurs responsive et le
 zoom 200 % restent à vérifier ; le rendu visuel par capture CUA demeure
 indisponible dans cette fenêtre VS Code.
+
+### F1 — précision des quantités attendues (2026-09-26)
+
+La moyenne mobile conserve désormais trois décimales au lieu d'arrondir une
+demande attendue à un entier. La précision est propagée aux portions et
+quantités d'ingrédients projetées avec recette datée ; Prévisions présente ces
+valeurs et les métriques en format numérique français. Les ventes observées
+restent des quantités entières, et la projection ne crée aucune opération.
+
+Vérification : `npm run lint`, `npm run build`, `npm test` (41 fichiers/154
+tests Vitest et 33 contrôles Node/CSS), `git diff --check` passent. Le test
+ciblé a d'abord mis en évidence des attentes de backtest à recalculer ; elles
+ont été mises à jour et la suite complète passe ensuite.
+
+### Q2 — accès navigateur VS Code (2026-09-26)
+
+Conformément à la préférence de revue, aucune vérification Chrome n'a été
+tentée. CUA a listé VS Code comme application en cours, mais les tentatives
+d'accès à sa fenêtre (`getApp` par identifiant et nom « Code ») ont expiré ;
+aucun contrôle de rendu de cette version, responsive ou clavier n'est donc
+revendiqué. Garder Q2 ouvert jusqu'à observation dans le navigateur intégré de
+VS Code. Aucun runner de démo n'a été lancé et aucun compte ni donnée
+opérationnelle consulté.

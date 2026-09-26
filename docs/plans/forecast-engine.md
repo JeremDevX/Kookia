@@ -7,7 +7,9 @@ validée. **Plus → Prévisions** expose la baseline expérimentale calculée c
 serveur à partir de ventes enregistrées et du calendrier de service. Elle
 requiert 28 journées consécutives complètes, calcule une moyenne mobile sur
 7 jours et la compare à « même jour de semaine précédent » sur les 7 dernières
-dates complètes ; avec une correspondance article↔recette explicitement
+dates complètes ; les quantités prévues conservent jusqu'à trois décimales,
+car une moyenne attendue peut être fractionnaire même si les ventes saisies
+sont des unités entières. Avec une correspondance article↔recette explicitement
 confirmée et datée, elle projette aussi les ingrédients au rendement effectif
 par jour, sans stock ni commande. Les recettes à date inconnue/future ne sont
 pas utilisées dans le backtest. Les données `demo_simulation` ne permettent

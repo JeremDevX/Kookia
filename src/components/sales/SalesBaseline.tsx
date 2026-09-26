@@ -6,6 +6,7 @@ import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegio
 
 const PAGE_SIZE = 50;
 type BaselineItem = Baseline["items"][number];
+const formatQuantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
 const contextSourceLabel = (status: Baseline["contextualForecast"]["weather"]) =>
   status === "not_connected" ? "sans connexion" : status === "unavailable" ? "indisponible"
     : status === "stale" ? "périmée" : "à jour";
@@ -14,16 +15,16 @@ function RecipeProjectionDetails({ item }: { item: BaselineItem }) {
   const projection = item.recipeProjection;
   if (projection.status !== "mapped") return <span>{projection.reason}</span>;
   return <details>
-    <summary>{projection.recipeName} v{projection.recipeVersion} · {projection.forecastPortions} portions</summary>
-    <p>Correspondance {projection.mappingRevision} depuis le {projection.mappingEffectiveFrom} · recette v{projection.recipeVersion} effective le {projection.recipeEffectiveFrom} · {projection.portionsPerItem} portion(s) par article vendu.</p>
+    <summary>{projection.recipeName} v{projection.recipeVersion} · {formatQuantity(projection.forecastPortions)} portions</summary>
+    <p>Correspondance {projection.mappingRevision} depuis le {projection.mappingEffectiveFrom} · recette v{projection.recipeVersion} effective le {projection.recipeEffectiveFrom} · {formatQuantity(projection.portionsPerItem)} portion(s) par article vendu.</p>
     <ul>{projection.ingredients.map((ingredient) => <li key={ingredient.productId}>
-      {ingredient.productName} : {ingredient.quantity} {ingredient.unit}
+      {ingredient.productName} : {formatQuantity(ingredient.quantity)} {ingredient.unit}
     </li>)}</ul>
     <p>Backtest matière : {item.recipeBacktest.mappedDays}/{item.recipeBacktest.days} jours avec correspondance et recette datées ; {item.recipeBacktest.missingMappingDays} sans correspondance, {item.recipeBacktest.missingDatedRecipeDays} sans version datée. La recette est résolue séparément à la date cible, jamais depuis sa version actuelle si elle est future.</p>
     {item.recipeBacktest.versionsUsed.length > 0 && <ul>{item.recipeBacktest.versionsUsed.map((usage) =>
       <li key={usage.serviceDate}>{usage.serviceDate} : {usage.recipeName} v{usage.recipeVersion} (effet {usage.recipeEffectiveFrom}), correspondance {usage.mappingRevision}</li>)}</ul>}
     {item.recipeBacktest.ingredients.length > 0 && <ul>{item.recipeBacktest.ingredients.map((ingredient) =>
-      <li key={ingredient.productId}>Erreur matière {ingredient.productName} : {ingredient.meanAbsoluteError} {ingredient.unit}/jour · WAPE {ingredient.weightedAbsolutePercentageError === null ? "non calculable" : `${ingredient.weightedAbsolutePercentageError} %`}</li>)}</ul>}
+      <li key={ingredient.productId}>Erreur matière {ingredient.productName} : {formatQuantity(ingredient.meanAbsoluteError)} {ingredient.unit}/jour · WAPE {ingredient.weightedAbsolutePercentageError === null ? "non calculable" : `${formatQuantity(ingredient.weightedAbsolutePercentageError)} %`}</li>)}</ul>}
   </details>;
 }
 
@@ -66,7 +67,7 @@ export default function SalesBaseline() {
       <div role="alert"><p>Prévision indisponible : {error}</p>
         <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryBaseline}>Recharger la prévision</Button>
       </div> : baseline && <>
-        <p>Historique étudié : du {baseline.historyFrom} au {baseline.asOfDate}. Calendrier confirmé complet : {baseline.completeServiceDays}/{baseline.requiredConsecutiveDays} jours, dont {baseline.openServiceDays} services ouverts. Une ligne absente vaut zéro observé seulement pour un jour complet (ou fermé confirmé) ; une date non renseignée, partielle ou manquante reste inconnue. Prévision pour le {baseline.forecastDate}. Méthode : moyenne arrondie des {baseline.lookbackDays} derniers jours calendaires complets de ventes de chaque article. {baseline.provenance === "demo_simulation" ? "Ces résultats reposent sur des données simulées et ne mesurent pas l’activité réelle." : baseline.provenance === "mixed" ? "L’historique mélange données simulées et ventes enregistrées : ces résultats ne sont pas une mesure terrain." : ""}{baseline.excludedSimulationRows > 0 ? ` ${baseline.excludedSimulationRows} ligne(s) simulée(s) exclue(s) du calcul car des ventes enregistrées sont présentes.` : ""}</p>
+        <p>Historique étudié : du {baseline.historyFrom} au {baseline.asOfDate}. Calendrier confirmé complet : {baseline.completeServiceDays}/{baseline.requiredConsecutiveDays} jours, dont {baseline.openServiceDays} services ouverts. Une ligne absente vaut zéro observé seulement pour un jour complet (ou fermé confirmé) ; une date non renseignée, partielle ou manquante reste inconnue. Prévision pour le {baseline.forecastDate}. Méthode : moyenne des {baseline.lookbackDays} derniers jours calendaires complets de ventes de chaque article, présentée au millième d’unité. {baseline.provenance === "demo_simulation" ? "Ces résultats reposent sur des données simulées et ne mesurent pas l’activité réelle." : baseline.provenance === "mixed" ? "L’historique mélange données simulées et ventes enregistrées : ces résultats ne sont pas une mesure terrain." : ""}{baseline.excludedSimulationRows > 0 ? ` ${baseline.excludedSimulationRows} ligne(s) simulée(s) exclue(s) du calcul car des ventes enregistrées sont présentes.` : ""}</p>
         <p><strong>Contexte facultatif :</strong> {baseline.contextualForecast.status === "not_connected" ? "aucune source contextuelle n’est connectée" :
           baseline.contextualForecast.status === "fixture_ready" ? "contexte synthétique disponible pour vérification du contrat uniquement" :
             baseline.contextualForecast.status === "stale" ? "au moins une source contextuelle ne couvre pas la période visée" : "position ou données contextuelles indisponibles"}.
@@ -82,12 +83,12 @@ export default function SalesBaseline() {
               <th>Volume observé · {baseline.evaluationDays} j</th><th>EAM · moyenne 7 j</th><th>EAM · même jour J−7</th>
               <th>WAPE · moyenne 7 j</th><th>WAPE · même jour J−7</th><th>Projection recette datée</th>
             </tr></thead><tbody>{baseline.items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((item) => <tr key={item.saleItemId}>
-              <td>{item.saleItemName}</td><td>{item.forecastQuantity} unités</td>
-              <td>{item.backtest.observedQuantity} unités</td>
-              <td>{item.backtest.rollingMean7.meanAbsoluteError} unités</td>
-              <td>{item.backtest.previousWeekday.meanAbsoluteError} unités</td>
-              <td>{item.backtest.rollingMean7.weightedAbsolutePercentageError === null ? "Non calculable" : `${item.backtest.rollingMean7.weightedAbsolutePercentageError} %`}</td>
-              <td>{item.backtest.previousWeekday.weightedAbsolutePercentageError === null ? "Non calculable" : `${item.backtest.previousWeekday.weightedAbsolutePercentageError} %`}</td>
+              <td>{item.saleItemName}</td><td>{formatQuantity(item.forecastQuantity)} unités</td>
+              <td>{formatQuantity(item.backtest.observedQuantity)} unités</td>
+              <td>{formatQuantity(item.backtest.rollingMean7.meanAbsoluteError)} unités</td>
+              <td>{formatQuantity(item.backtest.previousWeekday.meanAbsoluteError)} unités</td>
+              <td>{item.backtest.rollingMean7.weightedAbsolutePercentageError === null ? "Non calculable" : `${formatQuantity(item.backtest.rollingMean7.weightedAbsolutePercentageError)} %`}</td>
+              <td>{item.backtest.previousWeekday.weightedAbsolutePercentageError === null ? "Non calculable" : `${formatQuantity(item.backtest.previousWeekday.weightedAbsolutePercentageError)} %`}</td>
               <td><RecipeProjectionDetails item={item} /></td>
             </tr>)}</tbody></table></div></div>
             <p className="sales-baseline-cards-hint">Comparaison de la moyenne mobile et du même jour de semaine précédent ; ouvrez la projection recette pour en consulter les détails.</p>
@@ -95,10 +96,10 @@ export default function SalesBaseline() {
               {baseline.items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((item) => <li className="sales-baseline-card" key={item.saleItemId}>
                 <h3>{item.saleItemName}</h3>
                 <dl>
-                  <div><dt>Prévision pour le {baseline.forecastDate}</dt><dd>{item.forecastQuantity} unités</dd></div>
-                  <div><dt>Volume observé · {baseline.evaluationDays} j</dt><dd>{item.backtest.observedQuantity} unités</dd></div>
-                  <div><dt>EAM · moyenne 7 j</dt><dd>{item.backtest.rollingMean7.meanAbsoluteError} unités · WAPE {item.backtest.rollingMean7.weightedAbsolutePercentageError === null ? "non calculable" : `${item.backtest.rollingMean7.weightedAbsolutePercentageError} %`}</dd></div>
-                  <div><dt>EAM · même jour J−7</dt><dd>{item.backtest.previousWeekday.meanAbsoluteError} unités · WAPE {item.backtest.previousWeekday.weightedAbsolutePercentageError === null ? "non calculable" : `${item.backtest.previousWeekday.weightedAbsolutePercentageError} %`}</dd></div>
+                  <div><dt>Prévision pour le {baseline.forecastDate}</dt><dd>{formatQuantity(item.forecastQuantity)} unités</dd></div>
+                  <div><dt>Volume observé · {baseline.evaluationDays} j</dt><dd>{formatQuantity(item.backtest.observedQuantity)} unités</dd></div>
+                  <div><dt>EAM · moyenne 7 j</dt><dd>{formatQuantity(item.backtest.rollingMean7.meanAbsoluteError)} unités · WAPE {item.backtest.rollingMean7.weightedAbsolutePercentageError === null ? "non calculable" : `${formatQuantity(item.backtest.rollingMean7.weightedAbsolutePercentageError)} %`}</dd></div>
+                  <div><dt>EAM · même jour J−7</dt><dd>{formatQuantity(item.backtest.previousWeekday.meanAbsoluteError)} unités · WAPE {item.backtest.previousWeekday.weightedAbsolutePercentageError === null ? "non calculable" : `${formatQuantity(item.backtest.previousWeekday.weightedAbsolutePercentageError)} %`}</dd></div>
                   <div><dt>Projection recette datée</dt><dd><RecipeProjectionDetails item={item} /></dd></div>
                 </dl>
               </li>)}

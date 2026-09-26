@@ -37,9 +37,9 @@ const LOOKBACK_DAYS = 7;
 const EVALUATION_DAYS = 7;
 const day = (date: string, offset: number) =>
   new Date(Date.parse(date) + offset * 86_400_000).toISOString().slice(0, 10);
-const mean = (values: number[]) => Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
-const round = (value: number) => Math.round(value * 10) / 10;
 const roundQuantity = (value: number) => Math.round(value * 1000) / 1000;
+const mean = (values: number[]) => roundQuantity(values.reduce((sum, value) => sum + value, 0) / values.length);
+const round = (value: number) => Math.round(value * 10) / 10;
 const errorMetrics = (errors: number[], actuals: number[]) => {
   const absoluteError = errors.reduce((sum, error) => sum + error, 0);
   const actualTotal = actuals.reduce((sum, value) => sum + value, 0);

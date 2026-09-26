@@ -23,12 +23,28 @@ it("backtests a rolling seven-day mean without leaking target-day data", () => {
     recipeBacktest: { days: 7, mappedDays: 0, missingMappingDays: 7, missingDatedRecipeDays: 0, versionsUsed: [], ingredients: [] } }]);
 });
 
+it("preserves fractional expected demand through the dated recipe projection", () => {
+  const recentSales = [1, 1, 1, 2, 2, 2, 2];
+  const firstDay = day(-27);
+  const result = evaluateSalesBaseline(history("quiche", "Quiche", (index) =>
+    index < 21 ? 1 : recentSales[index - 21]), completeCalendar(), asOf,
+  [{ saleItemId: "quiche", recipeId: "quiche-recipe", revision: 1,
+    effectiveFrom: firstDay, knownAt: firstDay, portionsPerItem: 1 }],
+  [{ recipeId: "quiche-recipe", version: 1, effectiveFrom: firstDay, knownAt: firstDay,
+    name: "Quiche", yieldPortions: 5,
+    ingredients: [{ productId: "flour", productName: "Farine", unit: "kg", quantity: 5 }] }]);
+
+  expect(result.items[0]).toMatchObject({ forecastQuantity: 1.571,
+    recipeProjection: { status: "mapped", forecastPortions: 1.571,
+      ingredients: [{ productId: "flour", quantity: 1.571 }] } });
+});
+
 it("evaluates both fixed baselines on the same held-out dates and uses only earlier values", () => {
   const quantities = (index: number) => index < 21 ? index + 1 : index === 21 ? 100 : index + 1;
   const item = evaluateSalesBaseline(history("pizza", "Pizza", quantities), completeCalendar(), asOf).items[0];
   expect(item.backtest).toMatchObject({ from: "2026-09-16", to: asOf, days: 7, observedQuantity: 253,
-    rollingMean7: { meanAbsoluteError: 17.7 }, previousWeekday: { meanAbsoluteError: 18.1 } });
-  expect(item.forecastQuantity).toBe(36);
+    rollingMean7: { meanAbsoluteError: 17.8 }, previousWeekday: { meanAbsoluteError: 18.1 } });
+  expect(item.forecastQuantity).toBe(36.143);
 });
 
 it("uses only the mapping and dated recipe version effective on each backtest day", () => {
