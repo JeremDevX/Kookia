@@ -4,6 +4,8 @@ import Button from "../components/common/Button";
 import SalesImport from "../components/sales/SalesImport";
 import SalesMetrics from "../components/sales/SalesMetrics";
 import ServiceCalendar from "../components/sales/ServiceCalendar";
+import DatedServices from "../components/sales/DatedServices";
+import SaleServiceAllocation from "../components/sales/SaleServiceAllocation";
 import SalesTicketImport, { type TicketPreview } from "../components/sales/SalesTicketImport";
 import SalesReconciliation from "../components/sales/SalesReconciliation";
 import SalesRecipeMappings from "../components/sales/SalesRecipeMappings";
@@ -144,7 +146,8 @@ export default function Sales() {
         <Link to="/predictions">Voir les prévisions</Link></div>
       <small>Ces ventes alimentent les indicateurs, pas encore les achats suggérés.</small>
     </section>
-    <ServiceCalendar from={from} to={to} today={parisToday()} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} />
+    <DatedServices today={parisToday()} refreshToken={salesRevision} />
+    <details className="sales-disclosure"><summary>Couverture quotidienne historique (non ventilée)</summary><ServiceCalendar from={from} to={to} today={parisToday()} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} /></details>
     <SalesTicketImport onCandidatesSaved={async (serviceDate) => {
       setSalesRevision((current) => current + 1);
       if (serviceDate < from || serviceDate > to) { setFrom(serviceDate); setTo(serviceDate); }
@@ -195,6 +198,7 @@ export default function Sales() {
           <td>{sale.source === "demo_simulation" ? "Hors bilan" : sale.source === "manual" ? "Saisie manuelle" : sale.source === "pos" ? sale.revision ? "Caisse POS corrigée" : "Caisse POS" : sale.source === "ticket_z" ? "Ticket Z vérifié" : sale.revision ? "Import CSV corrigé manuellement" : "Import CSV"}</td>
           <td>{new Date(sale.updatedAt).toLocaleString("fr-FR")}</td>
           <td><div className="sales-history-actions"><Button type="button" size="sm" variant="outline" onClick={(event) => { editOrigin.current = event.currentTarget; setEditing(sale); setCorrectionOperationId(crypto.randomUUID()); setValues({ saleItemId: sale.saleItemId, serviceDate: sale.serviceDate, quantity: sale.quantity }); setEditReason(""); setError(""); setStatus(""); document.getElementById("sales-entry-title")?.scrollIntoView(); }}>Corriger</Button>
+            <SaleServiceAllocation sale={sale} onChanged={() => setSalesRevision((current) => current + 1)} />
             <SaleOutcomeActions sale={sale} onUpdated={async (action) => {
               setStatus(action === "void" ? "Vente annulée et conservée dans la provenance." : "Remboursement signalé ; les unités vendues restent inchangées.");
               setSalesRevision((current) => current + 1); await load();

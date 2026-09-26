@@ -1,5 +1,6 @@
 import Card from "../components/common/Card";
 import RestaurantSettings from "../components/settings/RestaurantSettings";
+import ServiceScheduleSettings from "../components/settings/ServiceScheduleSettings";
 import SupplierSettings from "../components/settings/SupplierSettings";
 import ConnectionsSettings from "../components/settings/ConnectionsSettings";
 import { Store, Users, Plug, UserRound } from "lucide-react";
@@ -49,7 +50,7 @@ export default function Settings() {
         </Card>
 
         <div className="settings-content" id="settings-panel">
-          {activeTab === "restaurant" && <RestaurantSettings />}
+          {activeTab === "restaurant" && <><RestaurantSettings /><ServiceScheduleSettings /></>}
           {activeTab === "suppliers" && <SupplierSettings />}
           {activeTab === "connections" && <ConnectionsSettings />}
           {activeTab === "account" && <AccountSettings />}
