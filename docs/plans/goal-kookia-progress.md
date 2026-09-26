@@ -2315,3 +2315,27 @@ trouve aucune fenêtre Chrome/Arc. Le runner `demo:fixtures` a été lancé puis
 arrêté proprement après cette indisponibilité ; ses processus et son conteneur
 tmpfs ont été vérifiés absents. Aucun credential ni compte conservé n'a été
 utilisé ; le Goal reste ouvert.
+
+### Vérification visuelle isolée des sorties estimées (2026-09-26)
+
+Une instance Chrome à profil isolé a finalement permis la revue rendue via
+CDP, malgré l'absence de navigateur dans CUA. À 320 et 768 px, les lignes
+passent en fiches sans débordement horizontal du document ; à 1280 px, le
+tableau reste dans sa région défilante nommée et les flèches gauche/droite la
+font défiler au clavier. Le rendu mobile de la proposition affiche le dosage,
+le rendement, la quantité reçue, la répartition estimée et les limites de
+l'hypothèse. Les textes d'introduction ont été raccourcis pour réduire la
+dilution avant les résultats.
+
+Pour rendre la proposition sans toucher à la base, la réponse GET du rapport a
+été interceptée temporairement en mémoire dans le navigateur ; aucun
+enregistrement ni mouvement n'a été écrit. Les captures associées sont
+explicitement des preuves QA techniques, sans valeur métier, dans
+`docs/plans/evidence/q2-estimated-outflows-rendered-20260926/`.
+
+Lint, build client et `git diff --check` passent. La vérification clavier a
+utilisé l'injection CDP : ouverture/fermeture du menu et restitution du focus
+ont été observées, mais le changement de route au clavier n'est pas concluant.
+macOS a refusé l'injection native de touches ; CUA ne fournit toujours pas de
+navigateur. Lecteur d'écran réel et zoom 200 % restent non vérifiés, donc cette
+revue ne vaut pas validation complète d'accessibilité.

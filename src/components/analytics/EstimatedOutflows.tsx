@@ -76,12 +76,12 @@ export default function EstimatedOutflows({ from, to }: Props) {
 
   return <section className="sales-panel estimated-outflows" aria-labelledby="estimated-outflows-title">
     <h2 ref={headingRef} id="estimated-outflows-title" tabIndex={-1}>Sorties estimées par recette</h2>
-    <p>À partir des réceptions enregistrées, les sorties estimées s’appuient sur les recettes datées compatibles ou, à défaut, sur une proposition à vérifier calculée depuis l’ingrédient reçu et le catalogue. Les quantités suivent le dosage et le rendement de la recette. Ce calcul n’enregistre aucune vente, perte ou sortie de stock.</p>
-    <p>Les portions sont estimées séparément pour chaque ingrédient reçu. Si une recette utilise plusieurs de ces ingrédients, les lignes se recouvrent et ne s’additionnent pas ; les recettes différentes pour une même réception sont aussi des alternatives. Les autres ingrédients et les stocks déjà présents ne sont pas vérifiés.</p>
+    <p>Calculées depuis les réceptions confirmées, les recettes datées, leur dosage et leur rendement. Aucune opération n’est enregistrée.</p>
+    <p>Chaque ligne estime un ingrédient reçu. Les recettes alternatives ne s’additionnent pas ; les autres ingrédients et le stock ne sont pas vérifiés.</p>
     {loading ? <p role="status">Calcul des sorties estimées…</p> : error ? <div role="alert"><p>Estimations indisponibles : {error}</p>
       <Button ref={retryButtonRef} type="button" variant="outline" onClick={retry}>Recharger les estimations</Button>
     </div> : report && <>
-      <p>Hypothèse appliquée à la quantité reçue : {formatPercent(report.assumptions.estimatedSalesShare)} en ventes estimées et {formatPercent(report.assumptions.estimatedLossShare)} en pertes estimées. Ce ratio n’est pas une mesure du restaurant.</p>
+      <p>Hypothèse de répartition : {formatPercent(report.assumptions.estimatedSalesShare)} en ventes estimées, {formatPercent(report.assumptions.estimatedLossShare)} en pertes estimées. À valider.</p>
       {report.estimates.length ? <>
       <p id="estimated-outflows-table-hint" className="estimated-outflow-table-hint">Les références correspondent aux livraisons rapprochées. Au clavier, placez le focus sur le tableau puis utilisez ← et →.</p>
       <p className="estimated-outflow-cards-hint">Les sorties sont présentées en fiches pour faciliter la lecture sur cet écran.</p>
@@ -123,12 +123,12 @@ export default function EstimatedOutflows({ from, to }: Props) {
       </> : report.unestimatedReceipts.length === 0 && <p role="status">Aucune réception enregistrée positive sur la période.</p>}
       {report.unestimatedReceipts.length > 0 && <section aria-labelledby="estimated-outflows-unmatched-title">
         <h3 id="estimated-outflows-unmatched-title">Entrées sans recette datée compatible</h3>
-        <p>Pour chaque entrée, une estimation conditionnelle est calculée si le catalogue permet de proposer un dosage et un rendement cohérents. La proposition reste à vérifier et n’est pas réputée être une recette utilisée.</p>
+        <p>Une estimation conditionnelle est proposée si le catalogue permet un dosage et un rendement cohérents. La recette reste à vérifier.</p>
         {catalogError && <div role="alert"><p>Le catalogue n’est pas disponible pour établir les propositions : {catalogError}</p>
           <Button type="button" variant="outline" onClick={() => setCatalogRevision((value) => value + 1)}>Recharger les propositions</Button>
         </div>}
         {unmatchedReceiptIds && !catalogProducts && !catalogError && <p role="status">Recherche de recettes compatibles dans le catalogue…</p>}
-        {catalogProducts && <p role="status">Analyse terminée. Les estimations conditionnelles calculables et les entrées restant à couvrir sont listées ci-dessous.</p>}
+        {catalogProducts && <p role="status">Analyse terminée. Chaque entrée est estimée ou signalée à couvrir.</p>}
         <ul className="estimated-unmatched-list">{report.unestimatedReceipts.map((entry) => <li className="estimated-unmatched-receipt" key={entry.id}>
           <strong><Link to={receiptDetailsHref(entry.receiptId, from, to, "estimated-outflows-title")}
             aria-label={`Ouvrir la réception ${entry.receiptReference} dans Achats`}>

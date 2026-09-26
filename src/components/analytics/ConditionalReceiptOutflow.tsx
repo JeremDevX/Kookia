@@ -20,12 +20,12 @@ export default function ConditionalReceiptOutflow({ entry, products }: Props) {
   return <>
     {suggestion && ingredient && estimate ? <section className="conditional-recipe-outflow" aria-label={`Estimation conditionnelle pour ${entry.productName}`}>
       <h4>Estimation conditionnelle · {suggestion.name}</h4>
-      <p>Dosage proposé : {quantity(ingredient.quantity)} {ingredient.unit} par lot de {suggestion.yieldPortions} portions. La quantité reçue correspond théoriquement à {quantity(estimate.possiblePortions)} portions.</p>
+      <p>Dosage proposé : {quantity(ingredient.quantity)} {ingredient.unit} par lot de {suggestion.yieldPortions} portions. {quantity(entry.receivedQuantity)} {entry.unit} reçus donnent théoriquement {quantity(estimate.possiblePortions)} portions.</p>
       <ul>
         <li>Ventes estimées ({percent(estimate.estimatedSalesShare)}) : {quantity(estimate.estimatedSoldQuantity)} {estimate.unit} · {quantity(estimate.estimatedSoldPortions)} portions</li>
         <li>Pertes estimées ({percent(estimate.estimatedLossShare)}) : {quantity(estimate.estimatedLossQuantity)} {estimate.unit} · {quantity(estimate.estimatedLossPortions)} portions</li>
       </ul>
-      <p>Les autres ingrédients ne sont pas réputés disponibles. Vérifiez la recette, son dosage et son rendement avant de la créer ; cette estimation ne constitue pas une opération enregistrée.</p>
+      <p>Le stock des autres ingrédients n’est pas vérifié. Vérifiez la recette avant création ; rien n’est enregistré.</p>
     </section> : <p>Aucune proposition compatible avec ce produit et son unité n’a pu être calculée ; cette entrée reste à couvrir.</p>}
     <Link to={`/recipes?${new URLSearchParams({ incomingReceiptLineId: entry.id })}`}>
       {suggestion ? "Vérifier et adapter la proposition" : "Voir les recettes pour cette entrée"}
