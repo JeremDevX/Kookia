@@ -14,18 +14,23 @@ réelle n'écrit pas dans le compte.
 
 **État du Goal :** travail en cours ; Q1, Q1b, C1, D1, D2, D3, D4, D5, D6, C2, F1, F3/F4, O1–O2, M1–M3, R0 et I1–I4 sont prouvés localement sur leurs portées et fixtures respectives ; aucun fournisseur OCR n'est activé.
 
-**Revalidation du 26/09/2026 :** sur l'état courant (`188a227`, worktree propre),
-`npm run lint`, `npm run build`, `npm run build:api` et `npm test` passent ; la
-suite compte 39 fichiers/153 tests Vitest et 33 contrôles Node/CSS. Le test ciblé
-`restaurantSimulationPlan.test.ts` passe aussi 2/2 : le ledger fixture est
-déterministe et chaque mois de service de mai 2023 à septembre 2026 est couvert.
-La recette d'intégration locale n'a pas été relancée : l'accès au socket Docker
-est refusé avant création d'un conteneur, et aucun PostgreSQL/Podman local de
-rechange n'est installé. CUA liste `browsers: []` et `getApp("Google Chrome")`
-retourne `cgWindowNotFound`. Aucun test ni mouvement n'a été exécuté sur un
-compte conservé ; l'intégration PostgreSQL tmpfs et la revue native
-200 %/technologie d'assistance restent à refaire quand leurs contrôles sont
-disponibles. Le Goal reste ouvert.
+**Revalidation du 26/09/2026 :** le code de `188a227` passe `npm run lint`,
+`npm run build`, `npm run build:api` et `npm test` (39 fichiers/153 tests
+Vitest, 33 contrôles Node/CSS). `restaurantSimulationPlan.test.ts` passe 2/2 :
+le ledger fixture est déterministe et chaque mois de service de mai 2023 à
+septembre 2026 est couvert. Après autorisation de l'accès au moteur local,
+`npm run verify:local-delivery` passe également : PostgreSQL 16 tmpfs neuf,
+18 migrations et parité Prisma, mêmes contrôles de code, 26 fichiers/41 tests
+d'intégration et sauvegarde/restauration synthétique. Le conteneur exact créé
+par la recette est absent après nettoyage. Aucun compte conservé n'a été testé
+ni modifié. CUA liste toujours `browsers: []` et `getApp("Google Chrome")`
+retourne `cgWindowNotFound` ; la revue native 200 %/technologie d'assistance
+reste ouverte. Un runner `demo:fixtures` temporaire a répondu HTTP 200 sur
+`/login` et `/api/health`, mais macOS n'a pas pu ouvrir le bundle Chrome
+(`kLSNoExecutableErr`) ; aucune capture native n'a été obtenue. Le runner exact
+a été interrompu et son conteneur, ses ports et son fichier d'accès temporaire
+ont été vérifiés absents ; les anciens bacs n'ont pas été touchés. Le Goal
+reste en cours.
 
 **Reprise du 25/09/2026 :** les sorties sans tickets/données de service peuvent
 être estimées séparément depuis des entrées de stock revues et des recettes
