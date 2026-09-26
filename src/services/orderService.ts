@@ -1,8 +1,10 @@
+import type { SupplierDeliveryHorizon } from "../../shared/supplierDelivery";
 import { apiRequest } from "../config/api";
 export interface OrderLineInput { productId: string; quantity: number; predictionId?: string; cartId?: string; }
 export interface PurchaseOrder {
   id: string; status: string; createdAt: string;
   lines: { id: string; productId: string; productName: string; supplierId: string; supplierName: string;
+    expectedDeliveryDate?: string | null; deliveryRevision?: number; deliveryNote?: string | null;
     quantity: number; receivedQuantity: number; remainingQuantity: number; unit: string; pricePerUnit: number }[];
   receipts: Array<{ id: string; invoiceReference: string; invoiceDocumentId: string; deliveryReference: string;
     deliveryDate: string; simulated: boolean; provenance: string; invoiceComplete: boolean;
@@ -28,8 +30,16 @@ export interface PurchaseSuggestion {
   productName: string;
   supplierName: string;
   unit: string;
-  status: "ready" | "needs_stock_count" | "covered" | "unit_mismatch";
+  status: "ready" | "needs_stock_count" | "covered" | "unit_mismatch" | "supplier_constraints_missing" | "availability_conflict";
   canAdd: boolean;
+  deliveryHorizon: SupplierDeliveryHorizon;
+  usableStock?: number | null;
+  expiredQuantity?: number;
+  unknownExpiryQuantity?: number;
+  beforeDeliveryShortage?: number;
+  shortages?: Array<{ date: string; slot?: "lunch" | "dinner"; quantity: number }>;
+  expectedQuantity: number;
+  conditionalNetNeed: number | null;
   forecastNeed: number;
   countedStock: number | null;
   countDate: string | null;
@@ -62,7 +72,7 @@ export interface PurchaseReceiptInput {
   invoiceDocumentRevision: number;
   deliveryReference: string;
   deliveryDate: string;
-  lines: Array<{ invoiceLineIndex: number; orderLineId: string; receivedQuantity: number; priceDifferenceReason?: string }>;
+  lines: Array<{ invoiceLineIndex: number; orderLineId: string; receivedQuantity: number; priceDifferenceReason?: string; expiresAt?: string | null }>;
 }
 
 export const getOrders = () => apiRequest<PurchaseOrder[]>("/workspace/orders");
@@ -82,3 +92,16 @@ export const reconcilePurchaseReceipt = (orderId: string, input: PurchaseReceipt
   id: string; orderId: string; invoiceReference: string; invoiceDocumentId: string; deliveryReference: string;
   deliveryDate: string; simulated: boolean; provenance: string; invoiceComplete: boolean; replayed: boolean;
 }>(`/workspace/orders/${encodeURIComponent(orderId)}/receipts`, { method: "POST", body: JSON.stringify(input) });
+
+export const updatePurchaseDelivery = (lineId: string, input: { operationId: string; expectedRevision: number; expectedDeliveryDate: string | null; note: string }) =>
+  apiRequest<{ replayed: boolean }>(`/workspace/orders/lines/${encodeURIComponent(lineId)}/delivery`, { method: "PATCH", body: JSON.stringify(input) });
+
+export interface PurchaseReconciliation {
+  orderId: string;
+  receipts: Array<{ receiptId: string; deliveryReference: string; deliveryDate: string; invoiceDocumentId: string; invoiceReference: string; invoiceComplete: boolean; simulated: boolean;
+    credits: Array<{ id: string; reference: string; amount: number; reason: string }> }>;
+  assumptions: string[];
+}
+export const getPurchaseReconciliation = (orderId: string) => apiRequest<PurchaseReconciliation>(`/workspace/orders/${encodeURIComponent(orderId)}/reconciliation`);
+export const recordPurchaseCredit = (input: { operationId: string; receiptId: string; reference: string; amount: number; reason: string }) =>
+  apiRequest<{ id: string; replayed: boolean }>("/workspace/orders/credits", { method: "POST", body: JSON.stringify(input) });

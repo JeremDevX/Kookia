@@ -46,7 +46,7 @@ export default function TodayPurchaseForecast() {
           setLoading(true); setError(""); setRevision((value) => value + 1); headingRef.current?.focus();
         }}>Réessayer</Button> : <Link to="/orders#selection">Vérifier la commande en préparation</Link>}
       </div> : data && summary && <>
-        <p className="today-forecast-period">Pour le service du <strong>{date(data.forecastDate)}</strong></p>
+        <p className="today-forecast-period">À partir du <strong>{date(data.forecastDate)}</strong></p>
         {data.status !== "ready" ? <div className="today-forecast-guidance">
           <h3>{data.status === "no_data" ? "Renseignez vos ventes pour obtenir une liste de courses" :
             data.status === "simulation_only" ? "Renseignez les ventes de votre restaurant" : "Il manque des journées de ventes"}</h3>
@@ -56,10 +56,10 @@ export default function TodayPurchaseForecast() {
           <Link to="/sales#sales-start">Renseigner mes ventes<ArrowRight size={16} aria-hidden="true" /></Link>
         </div> : <>
           {data.blockers.length > 0 ? <div className="today-forecast-guidance">
-            <h3>Il manque des recettes pour préparer la liste</h3>
-            <p>Certains plats vendus n’ont pas de recette utilisable. Complétez leurs ingrédients et leurs dosages pour calculer les quantités à commander.</p>
+            <h3>Complétez les données des services pour préparer la liste</h3>
+            <p>Vérifiez les horaires, les cartes datées, les recettes et l’historique ventilé par service. Un horizon incomplet ne permet pas de valider une suggestion.</p>
             <details><summary>Voir ce qu’il manque</summary><ul>{data.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul></details>
-            <Link to="/sales">Vérifier les recettes associées aux ventes</Link>
+            <Link to="/sales">Vérifier les services et leurs cartes</Link>
           </div> : <>
             {summary.toReview.length > 0 && <>
               <div className="today-forecast-overview">
@@ -72,25 +72,27 @@ export default function TodayPurchaseForecast() {
                   <p>{item.supplierName}</p>
                   <dl className="today-forecast-quantities">
                     <div><dt>Besoin estimé</dt><dd>{quantity(item.forecastNeed)} {item.unit}</dd></div>
-                    <div><dt>En stock</dt><dd>{quantity(item.countedStock!)} {item.unit}</dd></div>
+                    <div><dt>En stock</dt><dd>{quantity(item.usableStock ?? item.countedStock!)} {item.unit}</dd></div>
                     <div className="today-forecast-to-order"><dt>À commander</dt><dd>{quantity(item.estimatedQuantity!)} {item.unit}</dd></div>
                   </dl>
-                  <small>{orderStepLabel(item.orderStep, item.unit)} · arrondi après déduction du stock.</small>
+                  {item.deliveryHorizon.status === "known" && <p>Livraison possible {date(item.deliveryHorizon.nextDeliveryDate)} · besoins jusqu’au {date(item.deliveryHorizon.throughDate)}.</p>}
+                  {item.expectedQuantity > 0 && <p>Attendu : {quantity(item.expectedQuantity)} {item.unit}, non disponible. Achat proposé sous réserve de réception.</p>}
+                  <small>{orderStepLabel(item.orderStep, item.unit)} · conditionnement renseigné, arrondi après stock et attendu conditionnel.</small>
                 </li>)}
               </ul>
               <div className="today-forecast-actions"><Link className="btn btn-primary" to={purchasePreparationHref}>Préparer ma commande<ArrowRight size={17} aria-hidden="true" /></Link>
                 <small>Quantités ajustables, sans envoi automatique.</small></div>
             </>}
             {summary.toReview.length === 0 && summary.needsCheck.length === 0 && summary.handled.length === 0 &&
-              <p>{summary.covered.length > 0 ? "Vous avez assez de stock pour les ventes prévues : rien à commander pour ce service."
+              <p>{summary.covered.length > 0 ? "Le besoin estimé est couvert par le stock ou conditionnellement par des commandes attendues. Vérifiez les réceptions."
                 : "La liste ne peut pas encore être calculée. Vérifiez les ventes et les recettes de vos plats."}</p>}
             {summary.needsCheck.length > 0 && <div className="today-forecast-guidance">
-              <h3>Vérifiez le stock de {summary.needsCheck.length} produit{summary.needsCheck.length > 1 ? "s" : ""} pour compléter la liste</h3>
+              <h3>Vérifiez les données de {summary.needsCheck.length} produit{summary.needsCheck.length > 1 ? "s" : ""} pour compléter la liste</h3>
               <ul>{summary.needsCheck.map((item) => <li key={item.productId}><Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>
-                {item.productName} — {item.status === "unit_mismatch" ? "vérifier l’unité" : "compter le stock"}</Link></li>)}</ul>
+                {item.productName} — {item.status === "unit_mismatch" ? "vérifier l’unité" : item.status === "supplier_constraints_missing" ? "renseigner fournisseur et conditionnement" : item.status === "availability_conflict" ? "résoudre un manque avant livraison ou rapprocher les lots" : "compter le stock"}</Link></li>)}</ul>
             </div>}
-            {summary.covered.length > 0 && <details><summary>Stock suffisant pour {summary.covered.length} produits</summary>
-              <ul>{summary.covered.map((item) => <li key={item.productId}>{item.productName} : {quantity(item.countedStock!)} {item.unit} en stock pour {quantity(item.forecastNeed)} {item.unit} prévus.</li>)}</ul>
+            {summary.covered.length > 0 && <details><summary>Besoin couvert ou conditionnel pour {summary.covered.length} produits</summary>
+              <ul>{summary.covered.map((item) => <li key={item.productId}>{item.productName} : {quantity(item.usableStock ?? item.countedStock!)} {item.unit} en stock pour {quantity(item.forecastNeed)} {item.unit} prévus. {item.expectedQuantity > 0 && `${quantity(item.expectedQuantity)} ${item.unit} attendus, non disponibles — couverture sous réserve de réception.`}</li>)}</ul>
             </details>}
             {summary.handled.length > 0 && <details><summary>{summary.handled.length} produits déjà traités dans vos commandes</summary>
               <ul>{summary.handled.map((item) => <li key={item.productId}>{item.productName} — {purchaseForecastItemStatus(item)}</li>)}</ul>
@@ -98,9 +100,9 @@ export default function TodayPurchaseForecast() {
             </details>}
           </>}
           <details className="today-forecast-method"><summary>Comment Kookia prépare cette liste ?</summary>
-            <p>Kookia estime les ventes à partir de la moyenne des 7 derniers jours, jusqu’au {date(data.asOfDate)}. Les dosages de vos recettes donnent les quantités nécessaires en cuisine. Ce que vous avez déjà en stock est retiré de la liste à commander.</p>
-            <p>La liste couvre le service du {date(data.forecastDate)} uniquement. Si vous commandez pour plusieurs jours, adaptez les quantités. Pensez aussi aux réservations et aux livraisons déjà attendues : elles ne sont pas prises en compte.</p>
-            <p>Les quantités d’achat sont arrondies au pas supérieur selon le type de produit. Ces pas sont des conventions d’achat : vérifiez les conditionnements avec vos fournisseurs. Les dosages et stocks ne sont pas arrondis.</p>
+            <p>Les estimations utilisent les ventes complètes ventilées par service jusqu’au {date(data.asOfDate)}, le jour de semaine et les cartes datées. L’historique insuffisant bloque la suggestion.</p>
+            <p>Chaque fournisseur détermine l’horizon : jours de livraison, délai et heure limite Europe/Paris. Les besoins couvrent les services planifiés jusqu’à la veille de la livraison suivante. Le jour d’arrivée ne garantit pas une disponibilité avant le service.</p>
+            <p>Les commandes attendues sont distinguées du stock disponible et déduites uniquement sous réserve de réception, avec date confirmée. Les colis réels renseignés déterminent l’arrondi. Le chef vérifie et valide la commande.</p>
             <p>Le coût est estimé avec les prix HT de vos fiches produits. La météo et les événements ne sont pas pris en compte.</p>
             <Link to="/predictions">Voir le détail des prévisions de ventes</Link>
           </details>

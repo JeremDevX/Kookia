@@ -13,7 +13,7 @@ export function summarizePurchaseForecast(data: PurchaseSuggestions, cartProduct
   toReview.sort((a, b) => a.supplierName.localeCompare(b.supplierName, "fr") ||
     a.productName.localeCompare(b.productName, "fr"));
   const needsCheck = data.suggestions.filter((item) => !isPurchaseSuggestionHandled(item, inCart.has(item.productId)) &&
-    (item.status === "needs_stock_count" || item.status === "unit_mismatch"));
+    (item.status === "needs_stock_count" || item.status === "unit_mismatch" || item.status === "supplier_constraints_missing" || item.status === "availability_conflict"));
   const covered = data.suggestions.filter((item) => item.status === "covered" && !isPurchaseSuggestionHandled(item, inCart.has(item.productId)));
   const handled = data.suggestions.filter((item) => isPurchaseSuggestionHandled(item, inCart.has(item.productId)));
   const estimatedCost = toReview.length > 0 && toReview.every((item) => item.estimatedCost !== null)

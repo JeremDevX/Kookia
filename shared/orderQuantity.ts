@@ -3,11 +3,14 @@ export interface OrderProduct {
   unit: string;
   name?: string;
   category?: string;
+  orderPackQuantity?: number | { toString(): string } | null;
 }
 
 const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 export function getOrderStep(product: OrderProduct): number {
+  const pack = Number(product.orderPackQuantity);
+  if (Number.isFinite(pack) && pack > 0) return pack;
   if (product.unit === "L") return 0.5;
   if (product.unit !== "kg") return 1;
   const name = normalize(product.name ?? "");

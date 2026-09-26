@@ -57,6 +57,12 @@ export default function SupplierSettings() {
       <Input id="supplier-name" label="Nom" required value={editing.name} disabled={saving} onChange={(event) => setEditing({ ...editing, name: event.target.value })} />
       <Input id="supplier-email" label="Email" type="email" required value={editing.email} disabled={saving} onChange={(event) => setEditing({ ...editing, email: event.target.value })} />
       <Input id="supplier-phone" label="Téléphone" type="tel" value={editing.phone} disabled={saving} onChange={(event) => setEditing({ ...editing, phone: event.target.value })} />
+      <fieldset disabled={saving}><legend>Jours de livraison (Europe/Paris)</legend>
+        {["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"].map((day, index) => <label key={day}><input type="checkbox" checked={editing.deliveryWeekdays?.includes(index) ?? false} onChange={(event) => setEditing({ ...editing, deliveryWeekdays: event.target.checked ? [...(editing.deliveryWeekdays ?? []), index].sort() : (editing.deliveryWeekdays ?? []).filter((value) => value !== index) })} /> {day} </label>)}
+      </fieldset>
+      <Input id="supplier-lead" label="Délai de commande (jours calendaires)" type="number" min="0" max="60" value={editing.leadTimeDays ?? ""} disabled={saving} onChange={(event) => setEditing({ ...editing, leadTimeDays: event.target.value === "" ? null : Number(event.target.value) })} />
+      <Input id="supplier-cutoff" label="Heure limite de commande (Europe/Paris)" type="time" value={editing.orderCutoffTime ?? ""} disabled={saving} onChange={(event) => setEditing({ ...editing, orderCutoffTime: event.target.value || null })} />
+      <p>Sans contraintes renseignées, l’horizon d’achat reste à confirmer. Après l’heure limite, le calcul part du lendemain.</p>
       <div className="flex gap-sm"><Button type="submit" disabled={saving}>Enregistrer</Button><Button type="button" variant="outline" disabled={saving} onClick={() => setEditing(null)}>Annuler</Button></div>
     </form>}
   </Card>;

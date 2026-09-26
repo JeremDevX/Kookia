@@ -22,7 +22,7 @@ async function account() {
   return { agent, userId: user.id, restaurantId: user.restaurant!.id };
 }
 
-it("relie quatre chapitres, la suggestion revue, la réception simulée et son impact calculé", async () => {
+it("relie quatre chapitres, le choix manuel quand la prévision est bloquée, la réception simulée et son impact calculé", async () => {
   const owner = await account();
   await prisma.restaurant.update({ where: { id: owner.restaurantId }, data: { mode: "demo" } });
   const catalog = await owner.agent.get("/api/workspace/catalog").expect(200);
@@ -86,8 +86,8 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
 
   const beforeCount = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
   expect(beforeCount.body).toMatchObject({ status: "ready", provenance: "demo_simulation", workspaceMode: "demo" });
-  const target = beforeCount.body.suggestions.find((suggestion: { productId: string }) => suggestion.productId === product.id);
-  expect(target).toMatchObject({ canAdd: false, status: "needs_stock_count", forecastNeed: 1 });
+  expect(beforeCount.body.suggestions).toEqual([]);
+  expect(beforeCount.body.blockers.some((blocker: string) => blocker.includes("démonstration"))).toBe(true);
   await prisma.product.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.id } },
     data: { currentStock: 0, stockRevision: { increment: 1 } } });
   const countedProduct = await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: {
@@ -95,27 +95,28 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
   } } });
   await owner.agent.post(`/api/workspace/products/${product.id}/counts`).send({ operationId: randomUUID(),
     expectedStockRevision: countedProduct.stockRevision, expectedUnit: countedProduct.unit, countedQuantity: 0 }).expect(201);
-  const ready = (await owner.agent.get("/api/workspace/orders/suggestions").expect(200)).body.suggestions
-    .find((suggestion: { productId: string }) => suggestion.productId === product.id);
-  expect(ready).toMatchObject({ status: "ready", canAdd: true });
-  const decision = await owner.agent.post(`/api/workspace/orders/suggestions/${product.id}/decision`).send({
-    operationId: randomUUID(), suggestionKey: ready.suggestionKey, decision: "added", quantity: ready.estimatedQuantity,
-  }).expect(201);
-  await owner.agent.post("/api/workspace/cart").send({ action: "add", items: [{ id: decision.body.operationId,
-    productId: product.id, productName: ready.productName, quantity: ready.estimatedQuantity, unit: ready.unit,
-    source: "dashboard", purchaseSuggestionOperationId: decision.body.operationId }] }).expect(200);
-  const order = await owner.agent.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{
-    productId: product.id, quantity: ready.estimatedQuantity, cartId: decision.body.operationId,
+  const afterCount = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
+  expect(afterCount.body.suggestions).toEqual([]);
+  // An explicit manual choice remains available; synthetic sales are not a measured forecast.
+  const chosenQuantity = 1;
+  const cartId = randomUUID();
+  await owner.agent.post("/api/workspace/cart").send({ action: "add", items: [{ id: cartId,
+    productId: product.id, productName: product.name, quantity: chosenQuantity, unit: product.unit, source: "stocks" }] }).expect(200);
+  const orderOperationId = randomUUID();
+  const order = await owner.agent.post("/api/workspace/orders").send({ operationId: orderOperationId, lines: [{
+    productId: product.id, quantity: chosenQuantity, cartId,
   }] }).expect(201);
   expect(order.body.status).toBe("simulated");
+  const savedDecision = await prisma.recommendationDecision.findFirstOrThrow({ where: { restaurantId: owner.restaurantId, operationId: orderOperationId } });
+  expect(savedDecision.decision).toBe("order_simulated_validated");
 
   const sourceId = sourceIdFor();
   const content = "Pièce synthétique créée uniquement pour le parcours C3.";
   const source: Prisma.InputJsonObject = { id: sourceId, contentHash: createHash("sha256").update(content).digest("hex"),
     title: "Pièce fictive du parcours C3", date: today, originalDate: null, supplier: supplier.name,
     type: "invoice", status: "Source synthétique à confirmer", content,
-    stockLines: [{ name: product.name, quantity: ready.estimatedQuantity, unit: product.unit,
-      unitPrice: product.pricePerUnit, sourceQuantityText: `${ready.estimatedQuantity} ${product.unit}`,
+    stockLines: [{ name: product.name, quantity: chosenQuantity, unit: product.unit,
+      unitPrice: product.pricePerUnit, sourceQuantityText: `${chosenQuantity} ${product.unit}`,
       sourceLineNumber: 1, priceBasis: "stated_unit_price", priceTaxBasis: "unknown" }],
   };
   await prisma.workspaceDocument.create({ data: { restaurantId: owner.restaurantId,
@@ -125,7 +126,7 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
     revision: sourceDraft.body.revision, receive: false,
     draft: { reference: sourceDraft.body.reference, date: sourceDraft.body.date, supplierId: product.supplierId,
       sourceTypeConfirmed: true, sourceDateConfirmed: true,
-      lines: [{ ...sourceDraft.body.lines[0], productId: product.id, quantity: ready.estimatedQuantity,
+      lines: [{ ...sourceDraft.body.lines[0], productId: product.id, quantity: chosenQuantity,
         unit: product.unit, unitPrice: product.pricePerUnit, disposition: "stock" }] },
   }).expect(200);
   const beforeReceipt = await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: {
@@ -134,7 +135,7 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
   const receipt = await owner.agent.post(`/api/workspace/orders/${order.body.id}/receipts`).send({
     operationId: randomUUID(), invoiceDocumentId: invoice.body.id, invoiceDocumentRevision: invoice.body.revision,
     deliveryReference: "LIVRAISON-SIMULEE-C3", deliveryDate: today,
-    lines: [{ invoiceLineIndex: 0, orderLineId: order.body.lines[0].id, receivedQuantity: ready.estimatedQuantity }],
+    lines: [{ invoiceLineIndex: 0, orderLineId: order.body.lines[0].id, receivedQuantity: chosenQuantity }],
   }).expect(201);
   expect(receipt.body).toMatchObject({ simulated: true, provenance: "demo_simulation", invoiceComplete: true });
   const afterReceipt = await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: {
@@ -152,7 +153,7 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
   const impact = await owner.agent.get("/api/workspace/impact").query({ from: yesterday, to: today, monthly: "true" }).expect(200);
   expect(impact.body.current).toMatchObject({ recorded: { receivedCost: 0 }, hasSimulationData: true,
     simulation: { receiptCount: 1, menuItemUnits: 10 } });
-  const expectedReceiptCost = product.pricePerUnit * ready.estimatedQuantity;
+  const expectedReceiptCost = product.pricePerUnit * chosenQuantity;
   expect(impact.body.current.simulation.receivedCost).toBe(expectedReceiptCost);
   expect(impact.body.current.excluded.simulatedReceiptLines).toBe(1);
   const receiptMonth = impact.body.monthly.find((month: { month: string }) => month.month === today.slice(0, 7));
@@ -185,7 +186,7 @@ it("relie quatre chapitres, la suggestion revue, la réception simulée et son i
   const story = await owner.agent.get("/api/workspace/timeline")
     .query({ from: `${today.slice(0, 7)}-01`, to: today, asOf: today }).expect(200);
   const events = story.body.events as Array<{ id: string; kind: string; provenance: string; detail: string; qualifier?: string }>;
-  expect(events.find((event) => event.id === `decision:${decision.body.id}`)).toMatchObject({ provenance: "simulation" });
+  expect(events.find((event) => event.id === `decision:${savedDecision.id}`)).toMatchObject({ provenance: "simulation" });
   expect(events.find((event) => event.id === `purchase-order:${order.body.id}`))
     .toMatchObject({ kind: "purchase_order", provenance: "simulation" });
   expect(events.find((event) => event.id === `purchase-receipt:${receipt.body.id}`))

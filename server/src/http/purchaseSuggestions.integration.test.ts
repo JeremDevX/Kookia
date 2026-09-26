@@ -1,3 +1,6 @@
+import { getPurchaseSuggestions } from "../application/workspace/purchaseSuggestionService.js";
+import { addCalendarDays } from "../../../shared/supplierDelivery.js";
+import { getOrderStep } from "../../../shared/orderQuantity.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -54,6 +57,11 @@ it("rounds net oil needs, budgets the purchase, and enforces steps at every purc
 
 async function seedSalesAndRecipe(tenant: Awaited<ReturnType<typeof account>>, productId: string,
   source: "manual" | "demo_simulation", additionalProductId?: string) {
+  const products = await prisma.product.findMany({ where: { restaurantId: tenant.restaurantId, id: { in: [productId, ...(additionalProductId ? [additionalProductId] : [])] } } });
+  for (const product of products) {
+    await prisma.product.update({ where: { restaurantId_id: { restaurantId: tenant.restaurantId, id: product.id } }, data: { orderPackQuantity: getOrderStep(product) } });
+    await prisma.supplier.update({ where: { restaurantId_id: { restaurantId: tenant.restaurantId, id: product.supplierId } }, data: { deliveryWeekdays: [0, 1, 2, 3, 4, 5, 6], leadTimeDays: 0, orderCutoffTime: "23:59" } });
+  }
   const saleItem = await tenant.agent.post("/api/workspace/sales/items").send({ name: "Plat suivi" }).expect(201);
   const today = parisToday();
   const asOf = new Date(Date.parse(today) - 86_400_000).toISOString().slice(0, 10);
@@ -67,6 +75,12 @@ async function seedSalesAndRecipe(tenant: Awaited<ReturnType<typeof account>>, p
   const recipe = await tenant.agent.post("/api/workspace/recipes").send({ operationId: randomUUID(), name: "Recette suivie",
     category: "Plat", prepTime: 10, yieldPortions: 4, effectiveFrom: date(0).toISOString().slice(0, 10),
     ingredients: [{ productId, quantity: 2 }, ...(additionalProductId ? [{ productId: additionalProductId, quantity: 1 }] : [])] }).expect(201);
+  await prisma.restaurantServiceSchedule.createMany({ data: Array.from({ length: 7 }, (_, weekday) => ({ restaurantId: tenant.restaurantId, weekday, slot: "lunch", opensAt: "12:00", closesAt: "14:00", actorId: tenant.actorId })) });
+  await prisma.restaurantServiceSession.createMany({ data: Array.from({ length: 28 }, (_, index) => ({ restaurantId: tenant.restaurantId, serviceDate: date(index), slot: "lunch", plannedOpen: true, coverage: "complete", actorId: tenant.actorId })) });
+  const sales = await prisma.dailySale.findMany({ where: { restaurantId: tenant.restaurantId, saleItemId: saleItem.body.id } });
+  await prisma.saleServiceAllocation.createMany({ data: sales.map((sale) => ({ restaurantId: tenant.restaurantId, saleId: sale.id, lunchQuantity: sale.quantity, dinnerQuantity: 0, saleRevision: sale.revision, actorId: tenant.actorId })) });
+  const version = await prisma.recipeVersion.findFirstOrThrow({ where: { restaurantId: tenant.restaurantId, recipeId: recipe.body.id }, include: { ingredients: true } });
+  await prisma.serviceMenuVersion.create({ data: { restaurantId: tenant.restaurantId, serviceDate: new Date(`${today}T00:00:00Z`), slot: "lunch", revision: 1, operationId: randomUUID(), actorId: tenant.actorId, note: "Qualified fixture menu", entries: [{ id: randomUUID(), name: "Plat suivi", category: "Plat", saleItemId: saleItem.body.id, available: true, priceCents: 1200, components: [{ recipeId: recipe.body.id, portions: 2, recipeName: version.name, recipeVersionId: version.id, recipeVersion: version.version, category: "Plat", yieldPortions: version.yieldPortions, ingredients: version.ingredients.map((ingredient) => ({ productId: ingredient.productId, productName: ingredient.productName, unit: ingredient.productUnit, quantity: Number(ingredient.quantity) })) }] }] } });
   await tenant.agent.post("/api/workspace/sales/recipe-mappings").send({ saleItemId: saleItem.body.id,
     recipeId: recipe.body.id, expectedRevision: 0, operationId: randomUUID(),
     effectiveFrom: date(0).toISOString().slice(0, 10), portionsPerItem: 2 }).expect(201);
@@ -230,14 +244,9 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
     expectedStockRevision: demoProductState.stockRevision, expectedUnit: demoProductState.unit, countedQuantity: 2 }).expect(201);
   const demoSuggestions = await demo.agent.get("/api/workspace/orders/suggestions").expect(200);
   expect(demoSuggestions.body).toMatchObject({ status: "ready", workspaceMode: "demo", provenance: "demo_simulation" });
-  const demoSuggestion = demoSuggestions.body.suggestions.find((item: { productId: string }) => item.productId === demoProduct.id);
-  expect(demoSuggestion).toMatchObject({ canAdd: true, estimatedQuantity: 8 });
-  const demoDecision = await demo.agent.post(`/api/workspace/orders/suggestions/${demoProduct.id}/decision`).send({
-    operationId: randomUUID(), suggestionKey: demoSuggestion.suggestionKey, decision: "added", quantity: 8 }).expect(201);
-  await demo.agent.post("/api/workspace/cart").send({ action: "add", items: [{ id: demoDecision.body.operationId,
-    productId: demoProduct.id, productName: demoProduct.name, quantity: 8, unit: demoProduct.unit,
-    source: "dashboard", purchaseSuggestionOperationId: demoDecision.body.operationId }] }).expect(200);
-  const demoOrderInput = { operationId: randomUUID(), lines: [{ productId: demoProduct.id, quantity: 8, cartId: demoDecision.body.operationId }] };
+  expect(demoSuggestions.body.suggestions).toEqual([]);
+  expect(demoSuggestions.body.blockers.length).toBeGreaterThan(0);
+  const demoOrderInput = { operationId: randomUUID(), lines: [{ productId: demoProduct.id, quantity: 8 }] };
   const demoOrder = await demo.agent.post("/api/workspace/orders").send(demoOrderInput).expect(201);
   expect(demoOrder.body.status).toBe("simulated");
   const demoInvoiceId = randomUUID();
@@ -265,6 +274,48 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
   await seedSalesAndRecipe(simulatedSales, (await simulatedSales.agent.get("/api/workspace/catalog").expect(200)).body.products[0].id,
     "demo_simulation");
   expect((await simulatedSales.agent.get("/api/workspace/orders/suggestions").expect(200)).body)
-    .toMatchObject({ status: "simulation_only", provenance: "demo_simulation", workspaceMode: "operational", suggestions: [] });
+    .toMatchObject({ status: "ready", provenance: "recorded_sales", workspaceMode: "operational", suggestions: [] });
   expect(await request(app).get("/api/workspace/orders/suggestions").expect(401).then((response) => response.body)).toHaveProperty("error");
 });
+
+it("covers the supplier horizon, keeps inbound conditional, and blocks incomplete menus or unknown constraints", async () => {
+  const owner = await account("Purchase horizon fixture");
+  const product = (await owner.agent.get("/api/workspace/catalog").expect(200)).body.products[0] as { id: string; supplierId: string; unit: string; stockRevision: number };
+  await seedSalesAndRecipe(owner, product.id, "manual");
+  const today = parisToday(), inputDate = new Date(`${today}T08:00:00Z`);
+  const weekday = new Date(`${today}T00:00:00Z`).getUTCDay();
+  await prisma.supplier.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.supplierId } }, data: { deliveryWeekdays: [weekday, (weekday + 3) % 7], leadTimeDays: 0, orderCutoffTime: "23:59" } });
+  const menu = await prisma.serviceMenuVersion.findFirstOrThrow({ where: { restaurantId: owner.restaurantId } });
+  for (const offset of [1, 2]) await prisma.serviceMenuVersion.create({ data: { restaurantId: owner.restaurantId,
+    serviceDate: new Date(`${addCalendarDays(today, offset)}T00:00:00Z`), slot: "lunch", revision: 1, operationId: randomUUID(), actorId: owner.actorId, note: "Future qualified fixture", entries: menu.entries! } });
+  await owner.agent.post(`/api/workspace/products/${product.id}/counts`).send({ operationId: randomUUID(), expectedStockRevision: product.stockRevision, expectedUnit: product.unit, countedQuantity: 2 }).expect(201);
+  const first = await getPurchaseSuggestions(owner.restaurantId, prisma, inputDate);
+  const suggestion = first.suggestions.find((item) => item.productId === product.id)!;
+  expect(first.blockers).toEqual([]);
+  expect(suggestion).toMatchObject({ forecastNeed: 30, netNeed: 28, conditionalNetNeed: 28, expectedQuantity: 0, canAdd: true,
+    deliveryHorizon: { status: "known", nextDeliveryDate: today, throughDate: addCalendarDays(today, 2) } });
+  const order = await owner.agent.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{ productId: product.id, quantity: 4 }] }).expect(201);
+  const unknownArrival = await getPurchaseSuggestions(owner.restaurantId, prisma, inputDate);
+  expect(unknownArrival.suggestions.find((item) => item.productId === product.id)?.expectedQuantity).toBe(0);
+  await owner.agent.patch(`/api/workspace/orders/lines/${order.body.lines[0].id}/delivery`).send({ operationId: randomUUID(), expectedRevision: 0, expectedDeliveryDate: today, note: "Arrival confirmed fixture" }).expect(200);
+  const expected = (await getPurchaseSuggestions(owner.restaurantId, prisma, inputDate)).suggestions.find((item) => item.productId === product.id)!;
+  expect(expected).toMatchObject({ countedStock: 2, forecastNeed: 30, netNeed: 28, conditionalNetNeed: 24, expectedQuantity: 4, estimatedQuantity: 24 });
+  expect(expected.suggestionKey).not.toBe(suggestion.suggestionKey);
+  expect(Number((await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.id } } })).currentStock)).toBe(2);
+  await prisma.stockLot.updateMany({ where: { restaurantId: owner.restaurantId, productId: product.id, remainingQuantity: { gt: 0 } }, data: { expiresAt: new Date(`${addCalendarDays(today, -1)}T00:00:00Z`) } });
+  const expired = (await getPurchaseSuggestions(owner.restaurantId, prisma, inputDate)).suggestions.find((item) => item.productId === product.id)!;
+  expect(expired).toMatchObject({ countedStock: 2, usableStock: 0, expiredQuantity: 2, netNeed: 30, conditionalNetNeed: 26 });
+  await prisma.serviceMenuVersion.create({ data: { restaurantId: owner.restaurantId, serviceDate: new Date(`${addCalendarDays(today, 3)}T00:00:00Z`), slot: "lunch", revision: 1, operationId: randomUUID(), actorId: owner.actorId, note: "Later horizon fixture", entries: menu.entries! } });
+  await prisma.supplier.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.supplierId } }, data: { deliveryWeekdays: [(weekday + 1) % 7, (weekday + 4) % 7] } });
+  await owner.agent.patch(`/api/workspace/orders/lines/${order.body.lines[0].id}/delivery`).send({ operationId: randomUUID(), expectedRevision: 1, expectedDeliveryDate: addCalendarDays(today, 1), note: "Confirmed later arrival" }).expect(200);
+  const laterArrival = (await getPurchaseSuggestions(owner.restaurantId, prisma, inputDate)).suggestions.find((item) => item.productId === product.id)!;
+  expect(laterArrival).toMatchObject({ forecastNeed: 40, netNeed: 40, expectedQuantity: 4, conditionalNetNeed: 36,
+    beforeDeliveryShortage: 10, estimatedQuantity: 26, status: "availability_conflict", canAdd: false });
+  expect(laterArrival.shortages).toContainEqual({ date: today, slot: "lunch", quantity: 10 });
+  await prisma.serviceMenuVersion.deleteMany({ where: { restaurantId: owner.restaurantId, serviceDate: new Date(`${addCalendarDays(today, 1)}T00:00:00Z`) } });
+  const incomplete = await getPurchaseSuggestions(owner.restaurantId, prisma, inputDate);
+  expect(incomplete.blockers.some((blocker) => blocker.includes("Carte du service"))).toBe(true);
+  expect(incomplete.suggestions.every((item) => !item.canAdd)).toBe(true);
+  await prisma.supplier.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.supplierId } }, data: { leadTimeDays: null } });
+  expect((await getPurchaseSuggestions(owner.restaurantId, prisma, inputDate)).suggestions.find((item) => item.productId === product.id)).toMatchObject({ status: "supplier_constraints_missing", canAdd: false, estimatedQuantity: null, estimatedCost: null, deliveryHorizon: { status: "unknown" } });
+}, 15_000);

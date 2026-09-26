@@ -10,7 +10,11 @@ const restaurantSchema = z.object({
   address: z.string().trim().max(300), city: z.string().trim().min(1).max(120),
   phone: z.string().trim().max(40), email: z.email().max(254), dailyCovers: z.number().int().min(0).max(100000),
 }).strict();
-const supplierSchema = z.object({ name: z.string().trim().min(1).max(120), email: z.email().max(254), phone: z.string().trim().max(40) }).strict();
+const supplierSchema = z.object({ name: z.string().trim().min(1).max(120), email: z.email().max(254), phone: z.string().trim().max(40),
+  deliveryWeekdays: z.array(z.number().int().min(0).max(6)).max(7).refine((days) => new Set(days).size === days.length).optional(),
+  leadTimeDays: z.number().int().min(0).max(60).nullable().optional(),
+  orderCutoffTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+}).strict();
 restaurantRoutes.get("/restaurant", async (_req, res, next) => {
   try {
     const record = await prisma.restaurant.findUniqueOrThrow({ where: { id: restaurantId(res) } });

@@ -5,7 +5,7 @@ import { reconcilePurchaseReceipt, type PurchaseOrder, type PurchaseReceiptInput
 import "./PurchaseReceiptReview.css";
 
 interface PurchaseReceiptReviewProps { order: PurchaseOrder; orderStateCurrent: boolean; onSaved: () => void; onNotice: (notice: string) => void; }
-interface ReceiptLineDraft { orderLineId: string; receivedQuantity: string; priceDifferenceReason: string; }
+interface ReceiptLineDraft { orderLineId: string; receivedQuantity: string; priceDifferenceReason: string; expiresAt: string; }
 
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
   month: "2-digit", day: "2-digit" }).format(new Date());
@@ -81,7 +81,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
       const invoiceRemainder = Math.max(0, invoiceLine.quantity - alreadyReceived);
       const orderRemainder = candidate?.remainingQuantity ?? 0;
       nextLines[index] = { orderLineId: candidate?.id ?? "",
-        receivedQuantity: String(Math.max(0, Math.min(invoiceRemainder, orderRemainder))), priceDifferenceReason: "" };
+        receivedQuantity: String(Math.max(0, Math.min(invoiceRemainder, orderRemainder))), priceDifferenceReason: "", expiresAt: "" };
     });
     setLines(nextLines);
   };
@@ -93,7 +93,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
   const payload = invoice && ({ invoiceDocumentId: invoice.id, invoiceDocumentRevision: invoice.revision,
     deliveryReference: deliveryReference.trim(), deliveryDate,
     lines: includedLines.map(({ index }) => ({ invoiceLineIndex: index, orderLineId: lines[index]?.orderLineId ?? "",
-      receivedQuantity: Number(lines[index]?.receivedQuantity ?? "0"),
+      receivedQuantity: Number(lines[index]?.receivedQuantity ?? "0"), expiresAt: lines[index]?.expiresAt || null,
       ...(lines[index]?.priceDifferenceReason.trim() ? { priceDifferenceReason: lines[index].priceDifferenceReason.trim() } : {}),
     })),
   } satisfies Omit<PurchaseReceiptInput, "operationId">);
@@ -205,6 +205,9 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
             <input className="input-field" id={`receipt-quantity-${order.id}-${index}`} type="number" min="0" step="0.001"
               value={draft?.receivedQuantity ?? "0"} onChange={(event) => updateLine(index, { receivedQuantity: event.target.value })} />
             <small>Saisissez 0 si cette ligne n’est pas arrivée. La quantité livrée ne peut pas dépasser la facture ni le reliquat de commande.</small>
+            <label htmlFor={`receipt-expiry-${order.id}-${index}`}>Échéance du lot (si connue)</label>
+            <input className="input-field" id={`receipt-expiry-${order.id}-${index}`} type="date" value={draft?.expiresAt ?? ""} onChange={(event) => updateLine(index, { expiresAt: event.target.value })} />
+            <small>Laissez vide si l’échéance n’est pas renseignée sur le lot. Aucune durée de conservation n’est supposée.</small>
             {priceDiffers && <>
               <p role="status">Écart de prix : commande {matched?.pricePerUnit.toFixed(4)} € · facture {line.unitPrice.toFixed(4)} €.</p>
               <label htmlFor={`receipt-price-reason-${order.id}-${index}`}>Motif vérifié de l’écart</label>

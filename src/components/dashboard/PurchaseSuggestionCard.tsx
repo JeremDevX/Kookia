@@ -26,6 +26,12 @@ export default function PurchaseSuggestionCard({ item, value, inCart, busy, savi
     <div className="purchase-product-summary">
       <h4>{item.productName}</h4>
       <p className="purchase-stock-context">Besoin estimé {number(item.forecastNeed)} {item.unit} · Stock {item.countedStock === null ? "à vérifier" : `${number(item.countedStock)} ${item.unit}`}</p>
+      {item.deliveryHorizon?.status === "known" && <p>Livraison possible le {item.deliveryHorizon.nextDeliveryDate} · besoins jusqu’au {item.deliveryHorizon.throughDate} (Europe/Paris).</p>}
+      {item.expectedQuantity > 0 && <p>Attendu : {number(item.expectedQuantity)} {item.unit}, non disponible en stock. Besoin sous réserve de réception : {item.conditionalNetNeed === null ? "à vérifier" : number(item.conditionalNetNeed)} {item.unit}.</p>}
+      {item.usableStock !== undefined && item.usableStock !== null && <p>Stock compté hors échéances dépassées : {number(item.usableStock)} {item.unit} · échéance dépassée : {number(item.expiredQuantity ?? 0)} {item.unit}.</p>}
+      {(item.unknownExpiryQuantity ?? 0) > 0 && <p>Échéance inconnue pour {number(item.unknownExpiryQuantity!)} {item.unit} : disponibilité à vérifier par le chef.</p>}
+      {(item.beforeDeliveryShortage ?? 0) > 0 && <p role="status">Manque avant livraison : {number(item.beforeDeliveryShortage!)} {item.unit}. Les achats proposés pour la suite ne résolvent pas ce manque.</p>}
+      {(item.shortages?.length ?? 0) > 0 && <details><summary>Manques estimés par date, après stock et attendu conditionnel</summary><ul>{item.shortages!.map((shortage, index) => <li key={`${shortage.date}:${index}`}>{shortage.date}{shortage.slot === "lunch" ? " midi" : shortage.slot === "dinner" ? " soir" : ""} : {number(shortage.quantity)} {item.unit}</li>)}</ul></details>}
       {inCart && <span className="purchase-added"><Check size={14} aria-hidden="true" /> Dans ma sélection</span>}
     </div>
       {editable ? <div className="purchase-quantity-edit">
@@ -44,6 +50,6 @@ export default function PurchaseSuggestionCard({ item, value, inCart, busy, savi
     {item.decision?.orderId ? <p className="purchase-item-status">Commande enregistrée. <Link to={`/orders#order-${item.decision.orderId}`}>Voir la commande</Link></p>
       : inCart ? null
       : item.decision?.kind === "excluded" ? <p className="purchase-item-status">Écarté de cette proposition.</p>
-      : !item.canAdd && <p className="purchase-item-status">{item.status === "covered" ? "Votre stock couvre le besoin prévu." : item.status === "needs_stock_count" || item.status === "unit_mismatch" ? <><Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Vérifier {item.status === "unit_mismatch" ? "l’unité" : "le stock"} de {item.productName}</Link> avant de commander.</> : item.reason}</p>}
+      : !item.canAdd && <p className="purchase-item-status">{item.status === "covered" ? item.reason : item.status === "needs_stock_count" || item.status === "unit_mismatch" ? <><Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Vérifier {item.status === "unit_mismatch" ? "l’unité" : "le stock"} de {item.productName}</Link> avant de commander.</> : item.status === "supplier_constraints_missing" ? <>{item.reason} <Link to="/settings">Paramètres fournisseur</Link> · <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Conditionnement du produit</Link></> : item.reason}</p>}
   </li>;
 }

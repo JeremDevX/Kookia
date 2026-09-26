@@ -8,6 +8,7 @@ import { summarizePurchaseForecast } from "./purchaseForecastPresentation";
 const item = (productId: string, values: Partial<PurchaseSuggestion> = {}): PurchaseSuggestion => ({
   productId, productName: productId, supplierName: "Primeur", unit: "kg", suggestionKey: productId,
   status: "ready", canAdd: true, forecastNeed: 5, countedStock: 2, countDate: "2026-09-26",
+  deliveryHorizon: { status: "unknown", reason: "test fixture" }, expectedQuantity: 0, conditionalNetNeed: 3,
   netNeed: 3, orderStep: 1, estimatedQuantity: 3, currentUnitPrice: 4, estimatedCost: 12, sources: [], reason: "Besoin net", decision: null,
   ...values,
 });

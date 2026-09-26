@@ -1,3 +1,5 @@
+import { purchaseCreditSchema, recordPurchaseCredit, getPurchaseReconciliation } from "../application/workspace/purchaseReconciliationService.js";
+import { purchaseDeliverySchema, updatePurchaseDelivery } from "../application/workspace/purchaseDeliveryService.js";
 import { Router, type Response } from "express";
 import { z } from "zod";
 import { prisma } from "../infrastructure/database/prisma.js";
@@ -48,6 +50,24 @@ orderRoutes.post("/orders/:orderId/receipts", async (req, res, next) => {
     const input = purchaseReceiptSchema.parse(req.body);
     const { restaurantId, actorId } = context(res);
     res.status(201).json(await recordPurchaseReceipt(restaurantId, actorId, orderId, input));
+  } catch (error) { next(error); }
+});
+orderRoutes.patch("/orders/lines/:lineId/delivery", async (req, res, next) => {
+  try {
+    const lineId = z.uuid().parse(req.params.lineId);
+    const input = purchaseDeliverySchema.parse(req.body);
+    const { restaurantId, actorId } = context(res);
+    res.json(await updatePurchaseDelivery(restaurantId, actorId, lineId, input));
+  } catch (error) { next(error); }
+});
+orderRoutes.get("/orders/:orderId/reconciliation", async (req, res, next) => {
+  try { res.json(await getPurchaseReconciliation(context(res).restaurantId, z.uuid().parse(req.params.orderId))); }
+  catch (error) { next(error); }
+});
+orderRoutes.post("/orders/credits", async (req, res, next) => {
+  try {
+    const { restaurantId, actorId } = context(res);
+    res.status(201).json(await recordPurchaseCredit(restaurantId, actorId, purchaseCreditSchema.parse(req.body)));
   } catch (error) { next(error); }
 });
 orderRoutes.get("/decisions", async (_req, res, next) => {

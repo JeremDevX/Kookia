@@ -19,14 +19,15 @@ const EditProductModal = ({ product, suppliers, isOpen, onClose, onSave }: EditP
   const [minThreshold, setMinThreshold] = useState(String(product.minThreshold));
   const [supplierId, setSupplierId] = useState(product.supplierId);
   const [pricePerUnit, setPricePerUnit] = useState(String(product.pricePerUnit));
+  const [orderPack, setOrderPack] = useState(String(product.orderPackQuantity ?? ""));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!isOpen) return;
     setName(product.name); setCategory(product.category); setMinThreshold(String(product.minThreshold));
-    setSupplierId(product.supplierId); setPricePerUnit(String(product.pricePerUnit)); setError("");
-  }, [isOpen, product.id, product.name, product.category, product.minThreshold, product.supplierId, product.pricePerUnit, product.revision]);
+    setOrderPack(String(product.orderPackQuantity ?? "")); setSupplierId(product.supplierId); setPricePerUnit(String(product.pricePerUnit)); setError("");
+  }, [isOpen, product.id, product.name, product.category, product.minThreshold, product.supplierId, product.pricePerUnit, product.revision, product.orderPackQuantity]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -40,7 +41,7 @@ const EditProductModal = ({ product, suppliers, isOpen, onClose, onSave }: EditP
     setSaving(true); setError("");
     try {
       await onSave(product.id, { expectedRevision: product.revision, name: name.trim(), category: category.trim(),
-        minThreshold: threshold, supplierId, pricePerUnit: price });
+        minThreshold: threshold, supplierId, pricePerUnit: price, orderPackQuantity: orderPack === "" ? null : Number(orderPack) });
       onClose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "La fiche n’a pas été modifiée.");
@@ -57,6 +58,8 @@ const EditProductModal = ({ product, suppliers, isOpen, onClose, onSave }: EditP
       </select>
       <Input id="edit-product-threshold" label={`Seuil d’alerte (${product.unit})`} type="number" min="0" max="1000000" step="0.001" value={minThreshold} onChange={(event) => setMinThreshold(event.target.value)} required />
       <Input id="edit-product-price" label={`Prix unitaire par ${product.unit} (€)`} type="number" min="0" max="1000000" step="0.0001" value={pricePerUnit} onChange={(event) => setPricePerUnit(event.target.value)} required />
+      <Input id="edit-product-pack" label={`Conditionnement fournisseur réel (${product.unit})`} type="number" min="0.001" max="1000000" step="0.001" value={orderPack} onChange={(event) => setOrderPack(event.target.value)} />
+      <p>Renseignez la quantité par colis réellement proposée par le fournisseur. Une valeur absente bloque les suggestions automatiques.</p>
       <p className="text-sm text-secondary">L’unité ({product.unit}) ne se modifie pas ici : les mouvements et recettes existants en dépendent.</p>
       {error && <p role="alert">{error}</p>}
       <div className="flex justify-end gap-2"><Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Annuler</Button><Button type="submit" disabled={saving || suppliers.length === 0}>{saving ? "Enregistrement…" : "Enregistrer"}</Button></div>

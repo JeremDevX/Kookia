@@ -14,7 +14,7 @@ export const createProduct = (product: NewProduct) => {
   const { id, ...data } = product;
   return apiRequest<Product>("/workspace/products", { method: "POST", body: JSON.stringify({ ...data, operationId: id }) });
 };
-export type ProductEdit = Pick<Product, "name" | "category" | "minThreshold" | "supplierId" | "pricePerUnit"> & { expectedRevision: number };
+export type ProductEdit = Pick<Product, "name" | "category" | "minThreshold" | "supplierId" | "pricePerUnit"> & { expectedRevision: number; orderPackQuantity?: number | null };
 export const editProduct = (id: string, data: ProductEdit) =>
   apiRequest<Product>(`/workspace/products/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) });
 export interface NewStockCount {

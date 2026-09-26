@@ -107,7 +107,7 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
         {data.status === "insufficient_history" && <p>Complétez les 28 jours de services avant d’utiliser une estimation de besoin.</p>}
         {(data.status === "no_data" || data.status === "insufficient_history") && <p><Link to="/sales#sales-start">Compléter les ventes et les jours de service</Link> ou <Link to="/stocks">choisir vos produits dans les stocks</Link>.</p>}
         {data.status === "ready" && <>
-          <p className="purchase-suggestions-period">Pour le service du {new Date(`${data.forecastDate}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} · besoins calculés depuis vos ventes et recettes, stock vérifié déduit.</p>
+          <p className="purchase-suggestions-period">À partir du {new Date(`${data.forecastDate}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} · besoins par service et carte datée, jusqu’à la prochaine livraison de chaque fournisseur. Stock vérifié et attendu conditionnel séparés.</p>
           {data.blockers.length > 0 && <div className="purchase-suggestions-blockers" role="status">
             <strong>Besoin incomplet — aucune proposition ne peut être ajoutée.</strong>
             <ul>{data.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>
@@ -117,7 +117,7 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
               <div><span>Budget proposé HT</span><strong>{summary.estimatedCost === null ? "—" : money.format(summary.estimatedCost)}</strong></div>
             </div>
             <div className="purchase-filters" aria-label="Filtrer les recommandations">{([
-              ["toReview", "À acheter"], ["needsCheck", "À vérifier"], ["covered", "Stock suffisant"], ["handled", "Déjà traités"],
+              ["toReview", "À acheter"], ["needsCheck", "À vérifier"], ["covered", "Besoin couvert / conditionnel"], ["handled", "Déjà traités"],
             ] as const).map(([key, label]) => <Button key={key} variant="outline" size="sm" aria-pressed={filter === key}
               onClick={() => setFilter(key)}>{label} · {summary[key].length}</Button>)}</div>
             <div className="orders-toolbar"><label>Rechercher un produit ou fournisseur<input type="search" value={search} placeholder="Huile, tomates, fournisseur…" onChange={(event) => setSearch(event.target.value)} /></label></div>

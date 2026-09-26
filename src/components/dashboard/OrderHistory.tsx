@@ -1,3 +1,5 @@
+import PurchaseReconciliation from "./PurchaseReconciliation";
+import PurchaseDeliveryReview from "./PurchaseDeliveryReview";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
@@ -124,10 +126,12 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
         <div className="orders-table-wrap" role="region" aria-label="Produits de la commande — défilement horizontal avec les flèches" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
           <table className="orders-table"><thead><tr><th scope="col">Produit / fournisseur</th><th scope="col">Commandé</th><th scope="col">Reçu</th><th scope="col">Reste à recevoir</th><th scope="col">Montant</th></tr></thead>
             <tbody>{order.lines.map((line) => <tr key={line.id}><th scope="row">{line.productName}<small>{line.supplierName} · {money.format(line.pricePerUnit)} / {line.unit}</small></th>
-              <td>{line.quantity} {line.unit}</td><td>{line.receivedQuantity} {line.unit}</td><td>{line.remainingQuantity} {line.unit}</td><td>{money.format(line.quantity * line.pricePerUnit)}</td></tr>)}</tbody>
+              <td>{line.quantity} {line.unit}</td><td>{line.receivedQuantity} {line.unit}</td><td>{line.remainingQuantity} {line.unit}<small>Attendu : {line.expectedDeliveryDate ?? "date à confirmer"}{line.deliveryNote ? ` · ${line.deliveryNote}` : ""}</small></td><td>{money.format(line.quantity * line.pricePerUnit)}</td></tr>)}</tbody>
           </table>
         </div>
+        <PurchaseReconciliation key={`${order.id}:${requestKey}`} orderId={order.id} disabled={loading || Boolean(currentError)} />
         {order.status === "validated" && <SupplierOrderSheets order={order} />}
+        {["validated", "partially_received"].includes(order.status) && <PurchaseDeliveryReview order={order} disabled={loading || Boolean(currentError)} onSaved={refreshAfterReceipt} />}
         {order.receipts.length > 0 && <section aria-label="Réceptions rapprochées"><h3>Réceptions rapprochées</h3>
           {order.receipts.map((receipt) => <article key={receipt.id} id={`receipt-${receipt.id}`} className="order-receipt">
             <h4 data-receipt-heading tabIndex={-1}>{receipt.deliveryReference}</h4>
