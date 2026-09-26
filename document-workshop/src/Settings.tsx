@@ -19,23 +19,40 @@ export function Settings({ value, onChange }: Props) {
       <p className="period-note">Jusqu’au <strong>{end === "—" ? end : displayDate(end)}</strong> inclus. De 1 à 90 jours, passés ou futurs.</p>
     </fieldset>
     <fieldset><legend>2. Ajustez l’activité</legend><div className="fields">
-      <label>Couverts moyens par jour<input required type="number" min={5} max={200} value={value.covers || ""} onChange={e => update("covers", Number(e.target.value))}/></label>
-      <label>Variation quotidienne : ± {value.variationPercent} %<input type="range" min={0} max={50} step={5} value={value.variationPercent} onChange={e => update("variationPercent", Number(e.target.value))}/></label>
-      <p className="hint">Environ {Math.max(5, Math.round(value.covers * (1 - value.variationPercent / 100)))} à {Math.max(5, Math.round(value.covers * (1 + value.variationPercent / 100)))} couverts par jour. À 0 %, la fréquentation reste constante.</p>
+      <label>Couverts de référence par jour ouvert<input required type="number" min={5} max={200} value={value.covers || ""} onChange={e => update("covers", Number(e.target.value))}/></label>
+      <label>Écart de fréquentation autour de la prévision : ± {value.variationPercent} %<input type="range" min={0} max={50} step={5} value={value.variationPercent} onChange={e => update("variationPercent", Number(e.target.value))}/></label>
+      <p className="hint">La prévision suit la semaine et la saison. Ce réglage ajoute un écart au service, sans changer les achats prévus. À 0 %, les couverts suivent la prévision ; le choix des plats reste variable.</p>
     </div>
+      <details><summary>Jours ouverts, services et carte</summary><div className="fields">
+        <label>Services<select value={value.services} onChange={e => update("services", e.target.value as Options["services"])}>
+          <option value="lunch">Midi uniquement</option><option value="dinner">Soir uniquement</option><option value="both">Midi et soir (60 % / 40 %)</option>
+        </select></label>
+        <fieldset><legend className="small-legend">Jours de fermeture</legend><div className="weekday-options">
+          {["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"].map((day, i) => <label className="check-label" key={day}>
+            <input type="checkbox" checked={value.closedWeekdays.includes(i)} onChange={e => update("closedWeekdays", e.target.checked ? [...value.closedWeekdays, i] : value.closedWeekdays.filter(d => d !== i))}/>{day}
+          </label>)}
+        </div></fieldset>
+        <label className="check-label"><input type="checkbox" checked={value.drinks} onChange={e => update("drinks", e.target.checked)}/>Inclure le café à la commande</label>
+        <label className="check-label"><input type="checkbox" checked={value.mealDeals} onChange={e => update("mealDeals", e.target.checked)}/>Formule midi : 2 € de remise avec un plat</label>
+        <p className="hint">Carte saisonnière tournante, deux plats au choix. Les commandes suivent les tournées fournisseurs. Les jours fermés peuvent recevoir une livraison.</p>
+      </div></details>
       <details><summary>Affiner les repas et les pertes</summary><div className="fields">
-        <label>Clients prenant une entrée : {value.starterPercent} %<input type="range" min={20} max={100} step={5} value={value.starterPercent} onChange={e => update("starterPercent", Number(e.target.value))}/></label>
-        <label>Clients prenant un dessert : {value.dessertPercent} %<input type="range" min={20} max={100} step={5} value={value.dessertPercent} onChange={e => update("dessertPercent", Number(e.target.value))}/></label>
-        <label>Pertes matières habituelles : {value.lossPercent} %<input type="range" min={0} max={20} step={0.5} value={value.lossPercent} onChange={e => update("lossPercent", Number(e.target.value))}/></label>
-        <p className="hint">Chaque couvert prend un plat. Les achats et les quantités produites s’adaptent aux repas et aux pertes.</p>
+        <label>Clients prenant une entrée : {value.starterPercent} %<input type="range" min={0} max={100} step={5} value={value.starterPercent} onChange={e => update("starterPercent", Number(e.target.value))}/></label>
+        <label>Clients prenant un dessert : {value.dessertPercent} %<input type="range" min={0} max={100} step={5} value={value.dessertPercent} onChange={e => update("dessertPercent", Number(e.target.value))}/></label>
+        <label>Sur-parage de référence : {value.lossPercent} %<input type="range" min={0} max={20} step={0.5} value={value.lossPercent} onChange={e => update("lossPercent", Number(e.target.value))}/></label>
+        <p className="hint">Le sur-parage est pondéré par ingrédient et inclus dans le dosage brut. Échéances, altération, invendus et retours d’assiette sont suivis séparément. Les retours sont des estimations, pas des pesées.</p>
       </div></details>
     </fieldset>
     <fieldset><legend>3. Ajoutez des imprévus</legend><div className="fields">
       <label>Situation à rencontrer<select value={value.incident} onChange={e => update("incident", e.target.value as Options["incident"])}>
-        <option value="normal">Aucun incident</option><option value="short_delivery">Livraison incomplète + avoir</option><option value="high_waste">Pertes matières élevées (+10 points)</option><option value="refund">Un repas remboursé</option><option value="stock_gap">Écart d’inventaire (+250 g)</option>
+        <option value="normal">Pas d'incident ajouté</option><option value="mixed">Imprévus variés</option>
+        <option value="short_delivery">Livraison incomplète + avoir</option><option value="late_delivery">Tournée fournisseur retardée</option>
+        <option value="unavailable">Produit non livré</option><option value="high_waste">Lot frais altéré</option>
+        <option value="demand_shift">Fréquentation inattendue</option><option value="refund">Article servi remboursé</option>
+        <option value="stock_gap">Écart d’inventaire positif ou négatif</option>
       </select></label>
       {value.incident !== "normal" && <><label>Un incident tous les… jours<input required type="number" min={1} max={90} value={value.incidentEvery || ""} onChange={e => update("incidentEvery", Number(e.target.value))}/></label>
-        <p className="hint">{Math.floor(value.days / value.incidentEvery) || 0} incident(s) sur la période. Premier incident au jour {value.incidentEvery || "…"}, les autres jours restent habituels.</p></>}
+        <p className="hint">Un créneau tous les {value.incidentEvery || "…"} jours calendaires, depuis le début du dossier initial. Sur un jour fermé ou sans livraison concernée, l’incident peut être sans effet. Même sans incident ajouté, la demande peut dépasser la préparation.</p></>}
     </div></fieldset>
     <details className="identity-settings"><summary>Restaurant et numéro de dossier</summary><div className="fields">
       <label>Nom<input required maxLength={80} value={value.name} onChange={e => update("name", e.target.value)}/></label>

@@ -38,16 +38,21 @@ Deux organisations peuvent être rencontrées :
   `ventes.csv`, `ventes-periode-complete.csv`, `scenario.json` et `guide.md`.
 - Dossier initial : `documents/*.pdf`, `ventes.csv`, `scenario.json`, `guide.md`.
 
-`scenario.json` contient `options` et `days`. Chaque journée décrit notamment
-`date`, `covers`, `sales`, `stock` et les montants. Les montants numériques sont
-**en centimes** ; les quantités matière sont au millième de l’unité du produit.
-Les nouveaux paramètres de variabilité et certains champs financiers peuvent
-être absents d’un ancien dossier : ne pas régénérer le dossier pour les remplir.
+`scenario.json` contient `options` et `days`. En version 1/non versionnée, les
+ventes figurent dans `day.sales`. En version 2, elles proviennent des transactions
+de `day.services`, avec recettes, prévisions, portions préparées, demandes non
+servies, déchets et lots distincts ; `purchases` porte les commandes/réceptions.
+Les CSV agrègent les quantités positives par article/jour, tous services confondus.
+Une journée fermée ou sans vente fournit une note plutôt qu’un CSV invalide.
+Les montants numériques sont **en centimes** ; la matière est au millième de
+l’unité. Ne pas régénérer un ancien dossier pour compléter des champs absents.
 
 **Ne pas traiter les identifiants locaux ni les index de tableaux comme des IDs
-Kookia.** Le JSON n’embarque pas un catalogue complet versionné : relever noms,
-unités, fournisseurs, prix et recettes depuis les PDF catalogue/fiches techniques,
-et les noms d’articles depuis les CSV. Le catalogue actuel de
+Kookia.** La version 2 embarque un catalogue figé d’ingrédients et recettes,
+contrairement aux versions précédentes. Rapprocher ces données des PDF : dosages
+**BRUTS** à saisir, références fournisseurs et prix réellement facturés, noms
+d’articles des CSV. Ne pas utiliser les dosages nets de la recette comme sortie
+de production. Le catalogue actuel de
 `document-workshop/src/catalog.ts` est une aide à vérifier, pas une source qui
 peut remplacer silencieusement les pièces fournies.
 
@@ -72,6 +77,20 @@ et quantités, puis réconcilier pour chaque produit et chaque journée :
 Vérifier les reports entre jours, les quantités CSV/Ticket Z, les totaux HT/TVA/TTC,
 et les paiements nets des remboursements. Une incohérence de source n’est pas
 une invitation à choisir arbitrairement un chiffre : isoler les lignes concernées.
+
+En version 2, `stock.loss` représente seulement les pertes brutes avant cuisine
+(échéance/altération). Les déchets marqués `stockEffect: false` (parures,
+invendus et retours d’assiette) sont déjà dans les productions et ne créent
+**aucune seconde sortie de stock**. Saisir les portions réellement préparées,
+pas les prévisions ni seulement les ventes ; services séparés OU total quotidien,
+jamais les deux. Les lots, estimations de retours, transactions et remises restent
+documentaires si les contrats Kookia ne les prennent pas en charge.
+
+`opening`/`stock-reprise.json` décrit une continuité de l’atelier, pas un import
+de stock automatique : rapprocher les lots/quantités et commandes déjà émises,
+sans les réceptionner ni les commander une deuxième fois. Des pièces datées avant
+ou après les journées de service sont possibles (commande, facture). Une commande
+sans `receivedOn` ne justifie jamais un crédit de matière.
 
 Relire les enregistrements existants. Ne jamais remettre un stock à zéro,
 remplacer une recette ou renommer le restaurant pour faire correspondre le

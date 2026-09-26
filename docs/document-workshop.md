@@ -2,196 +2,188 @@
 
 ## Lancer à côté de Kookia
 
-Depuis la racine du dépôt, après `npm install` :
+Depuis la racine, après `npm install` :
 
 ```bash
 npm run documents:dev
 ```
 
-Ouvrir <http://127.0.0.1:5180>. Kookia peut rester sur son port habituel.
-L'atelier fonctionne sans API, sans PostgreSQL, sans compte et sans accès à
-Kookia. Tous les calculs et téléchargements sont effectués dans le navigateur.
-Il n'envoie aucun email et ne modifie aucun enregistrement métier.
-Arrêt : `Ctrl-C` dans le terminal du générateur.
+Ouvrir <http://127.0.0.1:5180>. Arrêt : `Ctrl-C` dans le terminal concerné.
+L’atelier est une application locale séparée, sans API, PostgreSQL, compte,
+connexion caisse ni envoi fournisseur. Il ne modifie aucun enregistrement Kookia.
 
 ```bash
 npm run documents:build
 npm run documents:preview
 ```
 
-Le build autonome est dans `dist/document-workshop`. Le build principal de
-Kookia vide `dist` : reconstruire l'atelier après `npm run build` si nécessaire.
+Le build autonome est dans `dist/document-workshop`. Le build principal vide
+`dist` : reconstruire l’atelier après `npm run build` si nécessaire.
 
-## Générer un dossier
+## Préparer un dossier
 
-1. Choisir une période : **7 derniers jours**, **7 jours dès aujourd’hui** ou
-   **14 jours à venir**, ou saisir une date de début et une durée de 1 à 90 jours.
-   Les dates passées et futures sont acceptées, sans limite à quatre ans.
-2. Régler les couverts moyens (5 à 200) et la variation quotidienne (0 à 50 %).
-   L'interface indique immédiatement la fourchette de fréquentation. À 0 %,
-   toutes les journées ont le même nombre de couverts.
-3. Dans **Affiner les repas et les pertes**, choisir la part de clients prenant
-   une entrée et un dessert (20 à 100 %, arrondie en portions entières), et le
-   taux habituel de pertes (0 à 20 % des quantités utilisées en production).
-   Chaque couvert prend un plat ; les achats suivent les besoins matière.
-4. Choisir un incident facultatif et sa fréquence : un incident tous les N jours,
-   le premier au jour N. Une perte élevée ajoute 10 points au taux habituel ;
-   une livraison incomplète manque de 500 g de tomates lorsqu'elles sont commandées ; l'écart d'inventaire
-   ajoute 250 g ; un remboursement concerne un repas complet. Les autres jours
-   restent habituels.
-5. Adapter au besoin l'identité et le numéro de dossier dans le volet dédié.
-   Mêmes paramètres et numéro : mêmes résultats. **Essayer une autre
-   répartition** change le numéro sans toucher aux autres réglages.
-6. Cliquer **Générer N jours de documents**, puis **Télécharger tout (.zip)**.
-   Le dossier précédent reste consultable tant que les nouveaux réglages ne
-   sont pas appliqués ; un message explicite le signale.
+1. Choisir une période de **1 à 90 jours**, passée ou future. Les raccourcis
+   proposent les sept derniers jours, sept jours dès aujourd’hui et quatorze jours
+   à venir. Il n’existe pas de limite à quatre ans d’historique.
+2. Renseigner les **couverts de référence par jour ouvert**, entre 5 et 200.
+   La prévision applique un profil semaine/week-end et saisonnier ; ce champ
+   n’est ni une capacité maximale ni une moyenne garantie sur la période.
+3. Régler l’écart de fréquentation autour de la prévision, de 0 à 50 %.
+   À 0 %, les couverts suivent la prévision, mais le calendrier, le choix des
+   plats et les incidents de fréquentation peuvent toujours varier.
+4. Dans **Jours ouverts, services et carte**, choisir les fermetures (lundi par
+   défaut), midi, soir ou les deux. Les deux services répartissent la référence
+   à 60 % / 40 %, puis s’arrondissent séparément. Au moins un jour de la semaine
+   doit rester ouvert. Café à la commande et formule midi sont facultatifs.
+5. Ajuster les parts d’entrée/dessert, de 0 à 100 %. Le **sur-parage de référence**
+   est pondéré selon l’ingrédient, en complément de son rendement de préparation.
+6. Choisir un incident, ou les imprévus variés, et sa fréquence. Un créneau tous
+   les N jours calendaires depuis le début du dossier initial, uniquement sur
+   journée ouverte. Un incident fournisseur sans livraison prévue est signalé
+   sans effet, pas transformé en réception. Les reprises conservent cet ancrage.
+7. Cliquer **Générer** puis télécharger le ZIP. Les réglages modifiés ne changent
+   pas le dossier affiché avant génération. Mêmes paramètres, numéro et état
+   d’ouverture : mêmes résultats.
 
-### Préparer plusieurs semaines sans régénérer
+La synthèse **De la prévision au service** distingue couverts prévus/demandés et
+articles préparés/servis/invendus. Les demandes non servies ne deviennent jamais
+ventes. Le détail quotidien expose incidents et nombre de lots reportés.
 
-Le ZIP contient :
+## Un déroulement chronologique
 
-- `installation/` : établissement, fournisseurs, produits, recettes, calendrier ;
-- un répertoire `AAAA-MM-JJ/` pour chaque jour, avec ses PDF et son `ventes.csv` ;
-- `ventes-periode-complete.csv` : toutes les ventes de la période ;
-- `guide.md` et `scenario.json` : ordre de saisie et journal chiffré complet.
+- **Avant service** : prévision indépendante des demandes à venir et carte de
+  saison avec une entrée, deux plats au choix et un dessert. Les ingrédients sont
+  partagés entre recettes ; popularité des plats et prix peuvent évoluer.
+- **Achats** : commandes sur besoins prévus jusqu’à la tournée suivante, après
+  déduction du stock encore utilisable et des commandes attendues. Maraîcher les
+  mardi/jeudi/samedi, frais mardi/vendredi, épicerie mercredi ; commande à la clôture
+  de la veille. Une livraison de mise en route est convenue avant le dossier neuf.
+  Les conditionnements de travail sont des multiples des pas Kookia partagés,
+  pas des conditionnements fournisseur certifiés. Le surplus réduit les achats.
+- **Réception et tri** : un retard repousse réellement l’entrée ; un manque
+  réduit la matière disponible et produit un avoir. Les lots écartés avant
+  cuisine ne sont plus disponibles. Aucun réapprovisionnement immédiat n’efface
+  automatiquement une rupture.
+- **Production** : lots préparés sur prévision, limités par la matière. Les lots
+  dont l’échéance est la plus proche sont consommés en premier (FEFO).
+- **Service** : demandes différentes de la prévision, compléments limités sur
+  recettes rapides, substitutions acceptées vers l’autre plat disponible ou
+  demandes non servies. Le café est préparé à la commande.
+- **Caisse** : transactions par table, articles effectivement servis, remises,
+  carte ou espèces et éventuel remboursement d’un article. Les justificatifs
+  clients ne sont produits que pour les transactions qui en demandent un.
+- **Clôture** : invendus, retours d’assiette, écarts d’inventaire signés et lots
+  restants. Les achats du lendemain utilisent le disponible de clôture, jamais
+  les ventes encore inconnues du lendemain.
 
-Télécharger puis décompresser le ZIP une fois. Chaque jour, utiliser le dossier
-correspondant : le générateur peut être fermé. Les stocks de fermeture se
-reportent au jour suivant ; suivre l'ordre chronologique des opérations.
+Les incidents couvrent livraison partielle, produit non livré, tournée retardée,
+lot frais altéré, fréquentation inattendue, remboursement et écart de comptage.
+Leur impact dépend des quantités et possibilités présentes dans le dossier.
+Même sans incident ajouté, une prévision imparfaite peut créer invendu ou rupture.
 
-Les commandes utilisent les mêmes pas que Kookia via la règle partagée
-`shared/orderQuantity.ts` : pour ce catalogue, 1 kg pour les fruits, légumes et
-produits secs, 0,5 kg pour le poulet, 0,25 kg pour le beurre et 0,5 L pour l'huile.
-Le besoin (production + pertes + seuil de réserve − stock disponible) est
-arrondi au pas supérieur. Le surplus reste en stock et réduit l'achat suivant.
-Un besoin déjà couvert ne génère aucune ligne d'achat, ni pièce fournisseur vide.
-Les réceptions partielles, consommations, pertes et comptages restent au millième.
-Ces pas sont des conventions d'achat, pas des conditionnements fournisseur vérifiés.
+## Lots, pertes et unités
 
-Kookia refuse toujours les ventes et productions futures. Les pièces futures
-sont préparées, mais s'utilisent à partir de leur date. Le bouton **CSV jusqu’à
-aujourd’hui** exclut les dates futures et est désactivé si toute la période est
-à venir. Il contient toutes les dates éligibles du dossier, pas seulement les
-ventes encore absentes de Kookia : pour un usage quotidien, préférer les CSV
-par journée et vérifier les doublons lors de la revue.
+Les lots portent réception, échéance, quantité restante et prix d’entrée. Une
+échéance est inclusive : le lot est écarté à l’ouverture du jour suivant, même
+si le restaurant est fermé. Les durées sont des **hypothèses de travail**, pas
+une consigne sanitaire vérifiée. Les quantités sont au millième de l’unité.
 
-Le dossier courant reste en mémoire dans l'onglet : télécharger l'archive avant
-de fermer ou recharger la page. Un changement de paramètre n'affecte le dossier
-qu'après validation par le bouton Générer. Utiliser un nouveau numéro pour un
-nouveau dossier afin de distinguer les références ; un dossier couvrant une
-date déjà saisie nécessite un rapprochement, pas une addition de ventes.
+| Catégorie | Interprétation | Nouvelle sortie de stock Kookia ? |
+| --- | --- | --- |
+| Péremption / altération brute | Matière écartée avant production, avec lot et cause | Oui, une fois |
+| Parures non comestibles | Fraction du dosage brut nécessaire à la préparation | Non, déjà dans la production |
+| Sur-parage évitable | Matière écartée pendant la préparation | Non, déjà dans la production |
+| Invendus | Portions préparées mais non servies, écartées en fin de service dans ce dossier | Non, déjà dans la production |
+| Retours d’assiette | Estimation en équivalents-portions sur les articles servis | Non, déjà dans la production et le servi |
 
-## Couverture des entrées
+Les fiches recettes distinguent net et **BRUT à saisir** pour dix portions. Le
+brut est arrondi à 10 g/mL par lot, soit 1 g/mL par portion ; les productions
+initiales et compléments se réconcilient aussi lorsqu’ils sont agrégés.
+Ne pas additionner kg, L et portions. Les retours ne sont pas des pesées et aucun
+poids cuit mesuré n’est fourni. Les hypothèses demandent une calibration terrain.
 
-| Pièce | Utilisation dans Kookia |
-| --- | --- |
-| Fiche établissement | Paramètres du restaurant, saisie manuelle |
-| Répertoire fournisseurs | Création/édition des fournisseurs |
-| Catalogue ingrédients | Produits, unités, catégories, prix HT, seuils ; stock initial zéro |
-| Fiches techniques | Recettes datées, dosages pour 10 portions, correspondance article/recette |
-| Carte du jour | Choix et validation du menu |
-| Bons de commande | Panier/commande par fournisseur puis validation |
-| Factures fournisseurs | Saisie manuelle des références, lignes, quantités et prix HT |
-| Bons de livraison | Réception complète/partielle et écarts sur la commande |
-| Avoir fournisseur | Rapprochement documentaire ; pas de comptabilité fournisseur importable |
-| Feuille de production | Production datée par recette et nombre de portions |
-| Journal des décisions cuisine | Note de réalisation et refus d'un lot supplémentaire, sans sortie matière |
-| Ticket Z détaillé | Upload PDF puis transcription et revue manuelles |
-| `ventes.csv` | Import natif `service_date,item_name,quantity`, avec association des articles |
-| Facture client | Justificatif d'un repas déjà inclus dans les ventes, sans réimport additionnel |
-| Avoir client | Motif de remboursement sur les articles ; les quantités servies restent inchangées |
-| Registre de pertes | Ajustements négatifs de type perte |
-| Fiche de régularisation | Écart physique positif, par ajustement OU comptage |
-| Feuille d'inventaire | Comptage final après les opérations |
-| Calendrier des services | Journées ouvertes et couverture complète après revue |
-| Journal matière | Contrôle initial + reçu − produit − perdu + écart = final |
+## Reprendre sans remettre les stocks à zéro
 
-Les choix de compte, de notifications, de source et de préférences d'affichage
-ne sont pas des pièces métier. Ils restent configurés dans Kookia. L'historique,
-les prévisions et les rapports d'impact sont des sorties calculées par Kookia,
-pas des fichiers à réimporter. POS, météo, EDI et HACCP ne constituent pas des
-imports opérationnels actifs et ne sont pas activés par l'atelier.
+- **Continuer après le dossier affiché** prépare les réglages du dossier suivant.
+- Sinon, charger `stock-reprise.json`, ou le `scenario.json` version 2 complet,
+  dans **Reprendre les stocks d’un dossier**. Limite : 25 Mo ; aucun transfert.
+- Le début est obligatoirement le lendemain de la clôture. Lots, dates, prix et
+  commandes en attente sont conservés ; une tournée retardée reste en attente.
+- Les réglages d’activité du formulaire sont conservés et restent à revoir. À
+  réglages identiques, découper une période ne change pas les journées obtenues.
+- **Retirer la reprise** revient à un dossier neuf lors de la prochaine génération.
+  Cela ne modifie ni le dossier affiché ni un stock existant dans Kookia.
 
-## Ordre et limites à respecter
+Le lecteur refuse dates incohérentes, doublons de lots/commandes, produits ou
+fournisseurs inconnus, quantités négatives, pas incompatibles et versions
+anciennes. Les anciens ZIP restent consultables ; pas de migration automatique
+qui inventerait l’âge des stocks. Les recettes modifiées exigent une nouvelle
+version datée lors de l’intégration, pas le remplacement d’une fiche passée.
 
-Créer fournisseurs, produits (stock initial zéro), recettes et articles avant
-les opérations. Enregistrer ensuite réceptions, productions, ventes, pertes et
-comptages ; renseigner enfin la couverture du service. La colonne « Utilisation
-dans Kookia » de chaque aperçu explique le parcours précis.
+## Contenu du ZIP et couverture Kookia
 
-- **Factures :** pas d'OCR générique. Le PDF fournit la pièce à reprendre dans
-  le formulaire manuel. Réceptionner par facture OU par commande, jamais deux
-  fois une même livraison. Avec un manque, utiliser les quantités du BL.
-- **Ventes :** CSV OU Ticket Z OU saisie manuelle pour une date/article donné.
-  La facture client n'ajoute pas de ventes au Z. Un remboursement est tracé dans
-  Kookia sans changement de quantité vendue ; son montant figure sur l'avoir.
-- **Stock :** les ingrédients sont consommés par les productions, pas une
-  deuxième fois par la saisie des ventes. Les pertes s'ajoutent aux dosages.
-  Une régularisation de stock est réalisée une fois, par ajustement ou comptage.
-- **Dates :** les pertes, ajustements et comptages Kookia sont datés à la saisie.
-  Le générateur ne contourne pas cette limite. Pour une réconciliation datée
-  exacte de ces opérations, utiliser une journée courante. Les ventes et
-  productions permettent une date passée.
-- **Périmètre :** les pièces sont des supports opérationnels, pas une
-  certification fiscale. Aucun numéro d'immatriculation ni identifiant de
-  caisse certifiée n'est attribué à un tiers. Les coordonnées `.example`
-  évitent toute communication vers un tiers ; elles sont modifiables pour
-  l'établissement dans l'atelier.
+- `installation/` : établissement, fournisseurs, catalogue, recettes, calendrier.
+- Répertoires datés : pièces selon leur date d’émission, CSV de chaque journée
+  avec ventes et note `sans-ventes.md` pour les jours fermés ou sans vente.
+- `ventes-periode-complete.csv`, seulement si au moins une vente existe.
+- `scenario.json` : format 2, catalogue figé, options, commandes, journées,
+  services, décisions, transactions, déchets et lots de clôture.
+- `stock-reprise.json` : état minimal versionné à réutiliser dans l’atelier.
+- `guide.md` : ordre et limites de reprise, pièces et rapprochements.
 
-## Intégration accompagnée par un agent
+Les commandes peuvent précéder la période et les factures suivre les livraisons.
+Le filtre **Date de pièce** inclut ces dates périphériques. Trois présentations
+fournisseurs distinctes et un Ticket Z étroit à police de caisse sont générés,
+avec la même mise en page dans l’aperçu et le PDF sélectionnable.
 
-Le skill versionné [`kookia-import-documents`](../.agents/skills/kookia-import-documents/SKILL.md)
-guide la lecture du ZIP, le rapprochement avec l’existant, les écritures par les
-contrats Kookia et la vérification finale. Exemple de demande :
+Le CSV natif reste `service_date,item_name,quantity` : une ligne **positive** par
+article/jour, tous services confondus, sans doublons. Le Z et les transactions
+se rapprochent de ces mêmes quantités. Les jours à zéro passent par le calendrier,
+jamais par des lignes CSV invalides. Le bouton **CSV jusqu’à aujourd’hui** exclut
+les dates futures ; il ne détecte pas les ventes déjà présentes dans Kookia.
 
-> Utilise $kookia-import-documents pour intégrer ce ZIP dans mon espace Kookia.
+Les PDF fournissent des pièces à revoir et saisir, pas un import universel :
+commandes puis réceptions, recettes en dosage brut, productions réellement
+préparées, ventes, pertes brutes et comptages. Les prévisions et notes cuisine
+ne déclenchent rien. Les lots, transactions détaillées, remises, comptabilité
+d’avoirs et déchets cuisinés restent documentaires dans les contrats actuels.
 
-Joindre de préférence le ZIP complet. Le skill n’est pas un importeur automatique :
-il distingue les opérations compatibles, les doublons, les dates à venir et les
-limites du modèle actuel. Il prévoit un manifeste local pour reprendre sans rejouer
-les opérations déjà confirmées. Une simple analyse du dossier ne modifie rien.
+**Garde-fous de rapprochement :**
 
-## Architecture et vérification
+- Réception par commande OU facture, jamais les deux ; une facture seule n’est
+  pas une réception. Une commande reprise n’est pas une nouvelle commande.
+- Production par service OU total quotidien, jamais les deux. Une vente ou une
+  note de complément ne doit pas provoquer une deuxième déduction de production.
+- CSV OU Ticket Z OU saisie manuelle, jamais additionnés pour le même article/jour.
+  La facture client est déjà incluse ; remboursement sans annulation de quantité.
+- Une régularisation par ajustement OU comptage, jamais les deux.
+- Les ventes et productions futures sont refusées par Kookia. Les pertes et
+  comptages sont datés à la saisie : une reprise historique ne les antidate pas.
+- Les pièces sont des supports opérationnels, pas une certification fiscale.
+  Aucun identifiant réel tiers ni numéro de caisse certifiée n’est attribué.
 
-Application Vite/React séparée dans `document-workshop/`, dépendances existantes
-du dépôt, aucune route ajoutée à Kookia. Scénario pur déterministe, montants en
-centimes, quantités au millième. Les PDF utilisent du texte sélectionnable et
-une pagination A4 partagée avec l'aperçu. Le ZIP ne nécessite aucune dépendance.
-Le catalogue CSS de l'atelier est contrôlé séparément de celui de Kookia, avec
-les mêmes règles de centralisation et de validation.
+Le skill [kookia-import-documents](../.agents/skills/kookia-import-documents/SKILL.md)
+guide le rapprochement, les écritures par les contrats existants et la reprise
+sans doublons. L’historique, les prévisions Kookia et rapports restent des sorties
+calculées, pas des fichiers à réimporter. POS, météo et OCR générique ne sont pas
+activés par l’atelier.
+
+## Architecture et validation
+
+Application React/Vite séparée. Moteur pur par responsabilités : calendrier et
+carte, achats, lots, service et caisse ; assemblage documentaire séparé du modèle.
+La reprise valide le JSON externe à sa frontière. Aucune nouvelle dépendance.
 
 ```bash
-npx vitest run document-workshop/src/workshop.test.ts
-npm run documents:build
+npx vitest run document-workshop/src/scenario.test.ts document-workshop/src/workshop.test.ts
 npm run lint
 npm run build
+npm run documents:build
 npm test
 ```
 
-Les tests utilisent des objets temporaires et les frontières pures du parseur
-CSV et du contrôle de fichiers Ticket Z de Kookia, sans connexion à une base.
-Ils ne créent aucune opération dans un compte.
-
-### Vérification initiale du 26 septembre 2026
-
-- `lint`, `build` et `documents:build` réussis ; `npm test` : 172 tests Vitest
-  et 35 contrôles Node réussis, dont 10 tests propres au générateur.
-- Navigateur : génération avec avoir au clavier, téléchargement individuel PDF
-  et ZIP complet, puis vérification de son CRC et de ses 28 fichiers (25 PDF,
-  CSV, guide et journal). Aperçus et formulaires vérifiés à 320 pixels.
-- PDF : ouverture et extraction du texte avec PDFKit ; rendu inspecté pour
-  facture, Ticket Z, journal matière et calendrier de 90 jours sur quatre pages.
-- Aucun compte ni enregistrement de Kookia utilisé pour ces contrôles.
-
-### Évolution interface et périodes
-
-- Parcours en trois étapes, raccourcis de dates, réglages explicites et état
-  « réglages modifiés » vérifiés dans le navigateur ; champs de période et
-  aperçu contrôlés à 320 pixels.
-- Génération et téléchargement clavier d'une quinzaine future avec variation
-  de 15 % : archive vérifiée (CRC, 245 PDF, 14 CSV quotidiens, CSV global,
-  guide et journal). Le CSV immédiat est désactivé pour une période entièrement
-  future ; sa date limite se met à jour si l'onglet reste ouvert la nuit.
-- `lint`, `build`, `documents:build` et `npm test` réussis : 176 tests Vitest
-  et 35 contrôles Node ; 14 tests du générateur couvrent notamment périodes
-  futures, bornes de variation, taux, fréquence des incidents et exports datés.
+Les tests utilisent des objets temporaires, le parseur CSV et le contrôle de
+fichiers Ticket Z de Kookia, sans compte ni base. Conservation matière/portions/
+argent, causalité, FEFO, reprise, limites d’import, dates, PDF et ZIP sont couverts.
+Le suivi des preuves du développement est dans le
+[plan de réalisme](plans/document-workshop-realism.md).

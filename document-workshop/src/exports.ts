@@ -13,13 +13,21 @@ function pdfString(value: string) {
 export function pdfBytes(doc: Document): Uint8Array<ArrayBuffer> {
   const pages = layoutDocument(doc);
   const objects = ["<< /Type /Catalog /Pages 2 0 R >>", "", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>"];
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold /Encoding /WinAnsiEncoding >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Times-Bold /Encoding /WinAnsiEncoding >>"];
   const pageIds: number[] = [];
   for (const page of pages) {
     const id = objects.length + 1;
     pageIds.push(id);
-    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${id + 1} 0 R >>`);
-    const stream = page.runs.map(run => `BT /F${run.bold ? 2 : 1} ${run.size} Tf ${run.muted ? "0.32 0.39 0.36" : "0.08 0.16 0.12"} rg 1 0 0 1 ${run.x.toFixed(2)} ${(842 - run.y).toFixed(2)} Tm (${pdfString(run.text)}) Tj ET`).join("\n");
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${page.width} ${page.height}] /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R /F4 6 0 R /F5 7 0 R /F6 8 0 R >> >> /Contents ${id + 1} 0 R >>`);
+    const rules = page.rules.map(rule => `${rule.color.join(" ")} rg ${rule.x} ${page.height - rule.y - rule.height} ${rule.width} ${rule.height} re f`);
+    const stream = [...rules, ...page.runs.map(run => {
+      const font = (run.font === "mono" ? 3 : run.font === "serif" ? 5 : 1) + Number(run.bold);
+      return `BT /F${font} ${run.size} Tf ${run.muted ? page.accent.join(" ") : "0.08 0.10 0.09"} rg 1 0 0 1 ${run.x.toFixed(2)} ${(page.height - run.y).toFixed(2)} Tm (${pdfString(run.text)}) Tj ET`;
+    })].join("\n");
     objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
   }
   objects[1] = `<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(" ")}] /Count ${pages.length} >>`;
