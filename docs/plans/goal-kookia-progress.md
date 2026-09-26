@@ -2563,5 +2563,12 @@ Validation après correction : `npm run lint`, `npm run build`, `npm test`
 (39 fichiers/153 tests Vitest et 33 contrôles Node/CSS), `git diff --check` et
 le rendu/parcours Chrome headless/CDP passent. L'Historique 2023 est consultable
 sans limite produit à quatre ans ; la revue ne valide pas le calendrier natif,
-le clavier macOS/CUA ni un lecteur d'écran réel. Le bac tmpfs et ses
-identifiants temporaires restent à nettoyer après la capture.
+le clavier macOS/CUA ni un lecteur d'écran réel.
+
+La tentative suivante de revue clavier du Bilan et des Recettes à 320×844 n'a
+pas atteint l'interface : CUA ne publiait aucun navigateur et Chrome headless
+n'a pas ouvert son port DevTools. Aucune capture ni preuve clavier n'est
+revendiquée pour ces deux routes. Le runner `demo:fixtures` a été arrêté par
+SIGINT ciblé (code 130) ; son répertoire d'identifiants a disparu, les ports
+52421/52422 refusent la connexion et la vérification Docker en lecture seule ne
+trouve aucun conteneur qui les publie.
