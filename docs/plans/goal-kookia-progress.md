@@ -2340,3 +2340,28 @@ ont été observées, mais le changement de route au clavier n'est pas concluant
 macOS a refusé l'injection native de touches ; CUA ne fournit toujours pas de
 navigateur. Lecteur d'écran réel et zoom 200 % restent non vérifiés, donc cette
 revue ne vaut pas validation complète d'accessibilité.
+
+### Q2 — revue mobile de la commande et de sa réception (2026-09-26)
+
+Sur le runner `demo:fixtures` isolé en tmpfs, l'action depuis Stocks ouvre la
+revue d'une quantité de commande de 1 L. À 390×844 px, la modale tient dans le
+viewport (`x=12`, largeur 366 px) et le document ne déborde pas. Par clavier
+injecté via CDP, le focus visible parcourt fermeture → quantité → annulation →
+validation puis reboucle ; la commande simulée s'enregistre et l'état relu est
+`simulated`, sans réception. L'historique s'ouvre ensuite au clavier.
+
+Pour exercer le rapprochement dans ce seul bac technique, un brouillon
+explicitement QA a été créé, puis reçu en mode simulé. L'API confirme 1 L reçu,
+facture rapprochée et provenance simulée ; le stock reste à 1,04 L, le nombre de
+mouvements du produit reste à 1 427 et la ligne n'a aucun mouvement lié. Cette
+réception est exclue des estimations métier, conformément au filtre des
+réceptions simulées. Aucun compte Kookia persistant, credential local ou corpus
+privé n'a été utilisé.
+
+Captures QA uniquement : [revue commande mobile](evidence/q2-purchase-flow/order-review-mobile-390.png),
+[réception mobile](evidence/q2-purchase-flow/receipt-history-mobile-390.png) et
+[réception bureau](evidence/q2-purchase-flow/receipt-history-desktop-1280.png).
+Le document ne déborde pas à 390 et 1280 px. Cette passe utilise l'injection de
+touches CDP, pas un clavier macOS natif ; lecteur d'écran réel et zoom 200 %
+restent non vérifiés. Elle valide le parcours Achats/commande, pas l'ensemble
+des écrans du Bilan.
