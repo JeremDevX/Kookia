@@ -2454,3 +2454,27 @@ surinterpréter la source : aucun envoi fournisseur n'a lieu. Les anciennes
 mentions « C3 demeure partiel » restent des constats datés ; la matrice en tête
 porte l'état courant. Aucun test, compte ou bac externe n'a été lancé pour cette
 correction documentaire.
+
+### Sorties estimées — revalidation de la base et du vocabulaire (2026-09-26)
+
+Les six tests ciblés des politiques/services d'estimation, des recettes proposées
+et de l'état UI passent (26/26). Le rendu serveur de `RecipeSuggestionPanel`
+affirme ventes/pertes estimées et leur base, sans terme de QA décrivant ces
+sorties ; les quatre tests ciblés passent aussi après renforcement de cette
+garde. Les captures courantes du Bilan existent à 320/768/1280 px ; celles de
+320 et 1280 px, ainsi que la proposition conditionnelle à 320 px, ont été
+inspectées. Elles restent des preuves QA techniques, sans valeur métier.
+
+Une vérification Chrome headless en lecture seule sur un nouveau `demo:fixtures`
+tmpfs reçoit HTTP 200 de `/api/workspace/ingredient-outflow-estimates` pour
+2023-01-01–2026-09-26, avec zéro estimation et zéro entrée non couverte parmi
+les réceptions positives, non simulées et enregistrées retenues par le service.
+Ce run ne prouve donc pas le rendu de lignes issues d'une réception enregistrée ;
+les tests d'intégration et les captures isolées existants couvrent séparément
+ce cas. Aucun compte Kookia ni corpus privé n'a été consulté.
+
+À l'arrêt par `Ctrl-C`, ce runner précis a arrêté web/API mais laissé son
+conteneur tmpfs et son fichier d'accès temporaire. Le conteneur créé par ce run
+et le fichier ont été supprimés puis vérifiés absents ; API/web ne répondent
+plus. Aucun bac antérieur n'a été modifié. CUA natif reste indisponible
+(`browsers: []`).

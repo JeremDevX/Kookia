@@ -24,7 +24,7 @@ describe("RecipeSuggestionPanel", () => {
     expect(html).toContain("0,8 kg");
     expect(html).toContain("cette projection n’est pas une vente");
     expect(html).toContain("autres ingrédients ne sont pas réputés disponibles");
-    expect(html).not.toMatch(/fictif|inventé|histoire/i);
+    expect(html).not.toMatch(/fictif|inventé|fiction|d[eé]mo|d[eé]monstration|simul|histoire/i);
   });
 
   it("shows estimated outflows for an incoming seasoning matched to a catalog recipe ingredient", () => {
@@ -53,7 +53,7 @@ describe("RecipeSuggestionPanel", () => {
     expect(html).toContain("correspond théoriquement à 40 portions");
     expect(html).toContain("Ventes estimées (90 %) : 1,8 L");
     expect(html).toContain("Pertes estimées (10 %) : 0,2 L");
-    expect(html).not.toMatch(/fictif|inventé|histoire/i);
+    expect(html).not.toMatch(/fictif|inventé|fiction|d[eé]mo|d[eé]monstration|simul|histoire/i);
   });
 
   it("omits the conditional outflow estimate when there is no received source", () => {
