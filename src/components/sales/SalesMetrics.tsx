@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { Link } from "react-router-dom";
 import { getSalesMetrics, type SalesMetrics as Metrics } from "../../services/salesService";
+import { describeSalesMetricsSources, describeSalesMetricsTotalSource } from "../../features/sales/salesPresentation";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 
 interface Props { from: string; to: string }
@@ -22,11 +23,6 @@ export default function SalesMetrics({ from, to }: Props) {
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const retryFocusPending = useRef(false);
-  const sourceDescription = metrics?.provenance === "demo_simulation"
-    ? "Ces données sont simulées pour la démonstration et ne sont pas des ventes observées."
-    : metrics?.provenance === "mixed"
-      ? "Les résultats mélangent ventes observées et données simulées ; ils ne représentent pas une mesure terrain."
-      : "Les données de démonstration, le stock et les commandes sont exclus.";
   useEffect(() => {
     if (periodTooLong) return;
     let active = true;
@@ -51,14 +47,14 @@ export default function SalesMetrics({ from, to }: Props) {
 
   return <section className="sales-panel sales-metrics" aria-labelledby="sales-metrics-title">
     <h2 ref={headingRef} id="sales-metrics-title" tabIndex={-1}>Indicateurs des ventes enregistrées</h2>
-    <p>Source : saisies manuelles, imports CSV, tickets de caisse vérifiés, lignes POS confirmées ou simulation du restaurant. {sourceDescription} Une ligne absente ne vaut zéro que si le calendrier du jour est complet ; les jours partiels, manquants ou non renseignés restent inconnus.</p>
+    {metrics && <p>{describeSalesMetricsSources(metrics.provenance)} Une ligne absente ne vaut zéro que si le calendrier du jour est complet ; les jours partiels, manquants ou non renseignés restent inconnus.</p>}
     {loading ? <p role="status">Calcul des indicateurs…</p> : periodTooLong ?
       <p role="status">Les indicateurs de ventes sont limités à une période d’environ un an. Raccourcissez les dates pour les consulter ; le rapport Impact reste disponible sur la période choisie.</p> : error ? <div role="alert"><p>Indicateurs indisponibles : {error}</p>
       <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryMetrics}>Recharger les indicateurs</Button>
     </div> : metrics && <>
       <p>Période : du {displayDate(metrics.period.from)} au {displayDate(metrics.period.to)} · {metrics.observedDays} jour{metrics.observedDays > 1 ? "s" : ""} ouvert{metrics.observedDays > 1 ? "s" : ""} confirmé{metrics.observedDays > 1 ? "s" : ""} complet{metrics.observedDays > 1 ? "s" : ""} · {metrics.completeServiceDays} date(s) complètes au total · {metrics.incompleteServiceDays} date(s) manquante(s) ou partielles.</p>
       {metrics.status === "no_data" ? <p>Aucune vente enregistrée sur cette période. <Link to="/sales#sales-start">Ajouter des ventes</Link>.</p> : <>
-        <p className="sales-metrics-total"><strong>{metrics.totalQuantity} unités vendues ({metrics.provenance === "demo_simulation" ? "simulées" : metrics.provenance === "mixed" ? "observées et simulées" : "enregistrées"})</strong><br />{metrics.manualQuantity} en saisie manuelle · {metrics.csvQuantity} par import CSV{metrics.correctedCsvQuantity > 0 ? `, dont ${metrics.correctedCsvQuantity} corrigées` : ""} · {metrics.posQuantity} par caisse POS · {metrics.ticketZQuantity} par Ticket Z vérifié · {metrics.demoSimulationQuantity} simulées.</p>
+        <p className="sales-metrics-total"><strong>{metrics.totalQuantity} unités vendues ({describeSalesMetricsTotalSource(metrics.totalQuantity, metrics.demoSimulationQuantity)})</strong><br />{metrics.manualQuantity} en saisie manuelle · {metrics.csvQuantity} par import CSV{metrics.correctedCsvQuantity > 0 ? `, dont ${metrics.correctedCsvQuantity} corrigées` : ""} · {metrics.posQuantity} par caisse POS · {metrics.ticketZQuantity} par Ticket Z vérifié{metrics.demoSimulationQuantity > 0 ? ` · ${metrics.demoSimulationQuantity} simulées` : ""}.</p>
         {metrics.status === "insufficient_history" ?
           <p role="status">Comparaison indisponible : {metrics.observedDays} services ouverts complets sur cette période et {metrics.previousObservedDays} sur la précédente. Il faut au moins {metrics.minimumObservedDays} jours complets ouverts dans chacune ; les jours fermés ne sont pas divisés comme jours de service.</p> :
           <p>Moyenne par service ouvert complet : {metrics.averagePerObservedDay} unités, contre {metrics.previousAveragePerObservedDay} sur la période précédente ({metrics.previousObservedDays} services ouverts complets). {metrics.changePercent === null ? "Évolution non calculable (moyenne précédente nulle)." : "Évolution : " + (metrics.changePercent > 0 ? "+" : "") + metrics.changePercent + " %."}</p>}

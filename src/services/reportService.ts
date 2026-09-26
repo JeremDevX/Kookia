@@ -7,20 +7,24 @@ export interface Report {
   rows: { section: string; date: string; metric: string; value: string | number; source: string }[];
 }
 export const getReport = (from: string, to: string) => apiRequest<Report>(`/workspace/report?${new URLSearchParams({ from, to })}`);
-export const reportCells = (report: Report): (string | number)[][] => [
-  ["Rapport opérationnel KookiA — ne constitue pas une attestation de conformité"],
-  ["Du", report.from, "au", report.to, "Fuseau des opérations", report.timezone, "Généré le", report.generatedAt],
-  ["Base des dates", "Ventes : jour de service Europe/Paris ; pertes et autres opérations : date UTC."],
-  ["Méthode des pertes déclarées", report.declaredLosses.method, "Date", report.declaredLosses.dateBasis],
-  ["Mouvements de perte inclus", report.declaredLosses.reportedMovementCount,
+export const reportCells = (report: Report): (string | number)[][] => {
+  const lossCounts: (string | number)[] = ["Mouvements de perte inclus", report.declaredLosses.reportedMovementCount,
     "Sans prix snapshoté", report.declaredLosses.unpricedMovementCount,
-    "Unités incompatibles exclues", report.declaredLosses.incompatibleUnitMovementCount,
-    "Pertes de démonstration exclues", report.declaredLosses.excludedSimulationMovementCount],
-  ["Métriques non mesurées", report.declaredLosses.unavailableMetrics.map((metric) =>
-    metric === "stockouts" ? "ruptures de stock" : "quantités invendues").join(" ; ")],
-  ["Section", "Date", "Indicateur", "Valeur", "Source"],
-  ...report.rows.map((row) => [row.section, row.date, row.metric, row.value, row.source]),
-];
+    "Unités incompatibles exclues", report.declaredLosses.incompatibleUnitMovementCount];
+  if (report.declaredLosses.excludedSimulationMovementCount > 0)
+    lossCounts.push("Pertes de démonstration exclues", report.declaredLosses.excludedSimulationMovementCount);
+  return [
+    ["Rapport opérationnel KookiA — ne constitue pas une attestation de conformité"],
+    ["Du", report.from, "au", report.to, "Fuseau des opérations", report.timezone, "Généré le", report.generatedAt],
+    ["Base des dates", "Ventes : jour de service Europe/Paris ; pertes et autres opérations : date UTC."],
+    ["Méthode des pertes déclarées", report.declaredLosses.method, "Date", report.declaredLosses.dateBasis],
+    lossCounts,
+    ["Métriques non mesurées", report.declaredLosses.unavailableMetrics.map((metric) =>
+      metric === "stockouts" ? "ruptures de stock" : "quantités invendues").join(" ; ")],
+    ["Section", "Date", "Indicateur", "Valeur", "Source"],
+    ...report.rows.map((row) => [row.section, row.date, row.metric, row.value, row.source]),
+  ];
+};
 export function reportCsv(report: Report) {
   return "\uFEFF" + reportCells(report).map((row) => row.map((value) => {
     const text = typeof value === "string" && /^[\s]*[=+@-]/.test(value) ? `'${value}` : String(value);

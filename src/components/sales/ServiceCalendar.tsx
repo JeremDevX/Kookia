@@ -79,7 +79,7 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
 
   return <section className="sales-panel" aria-labelledby="service-calendar-title">
     <h2 id="service-calendar-title" ref={heading} tabIndex={-1}>Calendrier des services</h2>
-    <p>« Ouvert + complet » signifie que les ventes du service ont été revues : un article sans ligne vaut alors zéro observé. Partiel, manquant ou non renseigné reste inconnu. Un jour fermé et confirmé complet n’est pas un service. La provenance simulée ou mixte est affichée et ne vaut pas une observation terrain.</p>
+    <p>« Ouvert + complet » signifie que les ventes du service ont été revues : un article sans ligne vaut alors zéro observé. Partiel, manquant ou non renseigné reste inconnu. Un jour fermé et confirmé complet n’est pas un service.</p>
     <form className="sales-form" onSubmit={(event) => void submit(event)}>
       <label>Date de service<input type="date" required min={from} max={to < today ? to : today} value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} /></label>
       <label>État du restaurant<select value={status} onChange={(event) => { const next = event.target.value as ServiceStatus; setStatus(next); if (next === "closed") setCoverage("complete"); }}>
@@ -100,7 +100,7 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
           const day = days.find((item) => item.serviceDate === date);
           return <tr key={date} aria-current={selectedDate === date ? "date" : undefined}>
             <td>{date}</td><td>{day ? statusLabels[day.status as ServiceStatus] : "Non renseigné"}</td>
-            <td>{day ? `${describeServiceCoverage(day.coverage)} · provenance ${sourceLabels[day.source]}` : "Manquante"}</td>
+            <td>{day ? `${describeServiceCoverage(day.coverage)}${day.source === "recorded" ? "" : ` · provenance ${sourceLabels[day.source]}`}` : "Manquante"}</td>
             <td>{!day ? "Inconnu" : day.status === "closed" ? "Pas de service" : day.coverage === "complete" && day.salesCount === 0 ? "0 observé" : `${day.salesCount} ligne(s)`}</td>
           </tr>;
         })}</tbody>

@@ -15,6 +15,7 @@ import { useToast } from "../context/ToastContext";
 import { useRecipes } from "../hooks";
 import type { Recipe } from "../types";
 import { suggestRecipeFromIncomingProduct, type RecipeSuggestion } from "../domain/recipes/recipeSuggestionPolicy";
+import { isScenarioProduction, productionNoteForDisplay } from "../features/recipes/productionPresentation";
 import { getProductions, recordProduction, type Production } from "../services/recipeService";
 import { getPurchaseReceiptLineEvidence, type PurchaseReceiptLineEvidence } from "../services/orderService";
 import { formatLocalISODate } from "../utils/date";
@@ -105,9 +106,7 @@ const Recipes: React.FC = () => {
     return () => { active = false; };
   }, []);
   const producedRecipes = productions.filter((item) => item.kind === "production" && item.date.slice(0, 10) === today).map((item) => item.recipeId);
-  const simulatedProductionThisWeek = productions.some((item) => item.kind === "production" &&
-    item.operationId.startsWith("restaurant-simulation-v1:") &&
-    isSameWeek(parseISO(item.date.slice(0, 10)), parseISO(today), { weekStartsOn: 1 }));
+  const hasScenarioRecords = productions.some((item) => isScenarioProduction(item.operationId));
   const formatIngredientCost = (recipe: Recipe) => {
     const cost = getIngredientCost(recipe);
     return cost === null ? "Indisponible" : `${cost.toFixed(2)} €`;
@@ -248,8 +247,8 @@ const Recipes: React.FC = () => {
         </div>
       </div>
 
-      {displayedTab === "history" && simulatedProductionThisWeek && <p className="workspace-subtitle" role="note">
-        Cette semaine comprend des productions simulées pour la démonstration ; elles ne sont pas des productions observées.
+      {displayedTab === "history" && hasScenarioRecords && <p className="workspace-subtitle" role="note">
+        Le journal contient des enregistrements de QA isolés ; ils ne décrivent pas des productions observées du restaurant.
       </p>}
 
       {/* TAB 1: HISTORY */}
@@ -414,10 +413,13 @@ const Recipes: React.FC = () => {
 
       {displayedTab === "history" && productions.length > 0 && <section aria-label="Journal de production">
         <h2>Productions enregistrées</h2>
-        {productions.map((item) => <Card key={item.id}><strong>{item.recipeName}</strong>
+        {productions.map((item) => {
+          const visibleNote = productionNoteForDisplay(item);
+          return <Card key={item.id}><strong>{item.recipeName}</strong>
           <p>{item.portions} portions · {format(parseISO(item.date.slice(0, 10)), "dd/MM/yyyy")} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé" : "Production réalisée — stock déduit"}</p>
           {item.recipeVersion && <p>Version recette {item.recipeVersion.version} · rendement {item.recipeVersion.yieldPortions} portions · effet {item.recipeVersion.effectiveFrom ? format(parseISO(item.recipeVersion.effectiveFrom.slice(0, 10)), "dd/MM/yyyy") : "date historique inconnue"}</p>}
-          {item.notes && <p>{item.notes}</p>}</Card>)}
+          {visibleNote && <p>{visibleNote}</p>}</Card>;
+        })}
       </section>}
 
       <RecordProductionModal

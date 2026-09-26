@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { reportCsv, reportExcelXml, type Report } from "./reportService";
+import { reportCells, reportCsv, reportExcelXml, type Report } from "./reportService";
 const report: Report = { from: "2026-09-01", to: "2026-09-30", timezone: "UTC", generatedAt: "2026-09-11T12:00:00Z",
   declaredLosses: { method: "Mouvements loss négatifs uniquement", dateBasis: "createdAt UTC",
     reportedMovementCount: 2, unpricedMovementCount: 1, incompatibleUnitMovementCount: 1,
@@ -12,6 +12,7 @@ it("escapes CSV cells and prevents string formula interpretation without changin
   expect(csv).toContain('"-2.5"');
   expect(csv).toContain("2026-09-01");
   expect(csv).toContain('"Mouvements de perte inclus";"2";"Sans prix snapshoté";"1"');
+  expect(csv).toContain('"Pertes de démonstration exclues";"3"');
   expect(csv).toContain('"Métriques non mesurées";"ruptures de stock ; quantités invendues"');
 });
 it("exports typed Excel XML without executable formulas or raw XML markup from data", () => {
@@ -21,4 +22,9 @@ it("exports typed Excel XML without executable formulas or raw XML markup from d
   expect(xml).toContain("Unités incompatibles exclues");
   expect(xml).toContain("quantités invendues");
   expect(xml).not.toContain("ss:Formula");
+});
+
+it("omits demonstration provenance from operational exports when no such losses were excluded", () => {
+  const recordedOnly = { ...report, declaredLosses: { ...report.declaredLosses, excludedSimulationMovementCount: 0 } };
+  expect(reportCells(recordedOnly).flat().join(" ")).not.toMatch(/démonstration|simulée?/i);
 });

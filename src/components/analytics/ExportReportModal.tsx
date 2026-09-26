@@ -59,7 +59,7 @@ export default function ExportReportModal({ isOpen, onClose, initialFrom, initia
   };
   return <Modal isOpen={isOpen} onClose={onClose} title="Exporter le bilan" width="md">
     <div className="export-report-modal flex flex-col gap-lg">
-      <p>L’export distingue les pertes déclarées uniquement par des mouvements de stock négatifs au motif « perte ». Leur date est en UTC ; le coût n’est calculé qu’avec un prix snapshoté. Les pertes sans prix ou avec unité incompatible sont signalées. Ruptures et quantités invendues ne sont pas mesurées ; les scénarios de démonstration sont exclus.</p>
+      <p>L’export distingue les pertes déclarées uniquement par des mouvements de stock négatifs au motif « perte ». Leur date est en UTC ; le coût n’est calculé qu’avec un prix snapshoté. Les pertes sans prix ou avec unité incompatible sont signalées. Ruptures et quantités invendues ne sont pas mesurées.</p>
       <label htmlFor="report-format">Format</label>
       <select className="input-field" id="report-format" value={format} disabled={loading} onChange={(event) => setFormat(event.target.value)}>
         <option value="csv">Tableur CSV</option><option value="excel">Tableur compatible Excel</option><option value="pdf">Imprimer ou enregistrer en PDF</option>

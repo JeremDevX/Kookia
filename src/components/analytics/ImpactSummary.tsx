@@ -98,7 +98,7 @@ function MonthlyReconciliation({ periods, currency, pagination, open, onOpenChan
   const displayedEnd = periods[periods.length - 1]?.month ?? "";
   return <details className="impact-monthly-summary" open={open} onToggle={(event) => onOpenChange(event.currentTarget.open)}>
     <summary>Réconciliation mensuelle · {pagination.totalMonths} mois consultables</summary>
-    <p>Les périodes partielles reprennent uniquement les dates sélectionnées. Les ventes sont des unités d’articles ; un zéro n’est confirmé que par un service complet. Les pertes sont des mouvements déclarés, pas une quantité invendue ; simulations et unités incompatibles restent distinctes ou écartées.</p>
+    <p>Les périodes partielles reprennent uniquement les dates sélectionnées. Les ventes sont des unités d’articles ; un zéro n’est confirmé que par un service complet. Les pertes sont des mouvements déclarés, pas une quantité invendue ; les unités incompatibles sont écartées.</p>
     <h3 ref={headingRef} tabIndex={-1}>Mois affichés : {displayMonth(displayedStart)} – {displayMonth(displayedEnd)}</h3>
     {pagination.pageCount > 1 && <nav className="impact-monthly-navigation" aria-label="Navigation des périodes mensuelles">
       <Button type="button" variant="outline" disabled={!pagination.hasOlder} onClick={onOlder}>Mois plus anciens</Button>
@@ -112,14 +112,16 @@ function MonthlyReconciliation({ periods, currency, pagination, open, onOpenChan
         <th scope="col">Pertes déclarées</th><th scope="col">Réceptions confirmées</th>
       </tr></thead><tbody>{periods.map((period) => <tr key={period.month}>
         <th scope="row">{displayMonth(period.month)}<br /><small>{displayDate(period.from)} – {displayDate(period.to)} ({period.calendarDays} j)</small></th>
-        <td><p><strong>Enregistré :</strong> {monthlySales(period, false)}</p><p><strong>Simulation :</strong> {monthlySales(period, true)}</p></td>
-        <td><p><strong>Enregistré :</strong> {monthlyCoverage(period.recorded)}</p><p><strong>Simulation :</strong> {monthlyCoverage(period.simulation)}</p></td>
+        <td><p><strong>Enregistré :</strong> {monthlySales(period, false)}</p>
+          {period.hasSimulationData && <p><strong>Simulation :</strong> {monthlySales(period, true)}</p>}</td>
+        <td><p><strong>Enregistré :</strong> {monthlyCoverage(period.recorded)}</p>
+          {period.hasSimulationData && <p><strong>Simulation :</strong> {monthlyCoverage(period.simulation)}</p>}</td>
         <td><p><strong>Enregistré :</strong> {period.hasRecordedData ? `${period.recorded.lossMovementCount} mouvement(s) · ${formatMoney(period.recorded.knownLossCost, currency)} connu(s) · ${period.recorded.unpricedLossMovementCount} sans prix` : "Aucune donnée"}</p>
-          <p><strong>Simulation :</strong> {period.hasSimulationData ? `${period.simulation.lossMovementCount} mouvement(s) · ${formatMoney(period.simulation.knownLossCost, currency)} connu(s) · ${period.simulation.unpricedLossMovementCount} sans prix` : "Aucune simulation"}</p>
+          {period.hasSimulationData && <p><strong>Simulation :</strong> {`${period.simulation.lossMovementCount} mouvement(s) · ${formatMoney(period.simulation.knownLossCost, currency)} connu(s) · ${period.simulation.unpricedLossMovementCount} sans prix`}</p>}
           {period.excluded.lossUnitMismatch > 0 && <p>{period.excluded.lossUnitMismatch} mouvement(s) de perte écarté(s) pour unité incompatible</p>}
           {period.excluded.receiptUnitMismatch > 0 && <p>{period.excluded.receiptUnitMismatch} ligne(s) de réception écartée(s) pour unité incompatible</p>}</td>
         <td><p><strong>Enregistré :</strong> {period.hasRecordedData ? `${period.recorded.receiptCount} réception(s) · ${formatMoney(period.recorded.receivedCost, currency)}` : "Aucune donnée"}</p>
-          <p><strong>Simulation :</strong> {period.hasSimulationData ? `${period.simulation.receiptCount} réception(s) · ${formatMoney(period.simulation.receivedCost, currency)}` : "Aucune simulation"}</p></td>
+          {period.hasSimulationData && <p><strong>Simulation :</strong> {`${period.simulation.receiptCount} réception(s) · ${formatMoney(period.simulation.receivedCost, currency)}`}</p>}</td>
       </tr>)}</tbody></table>
     </div>
   </details>;
@@ -193,7 +195,7 @@ export default function ImpactSummary({ from, to }: Props) {
         onOlder={() => { monthlyPageFocusPending.current = true; setMonthlyPage((page) => page + 1); }}
         onNewer={() => { monthlyPageFocusPending.current = true; setMonthlyPage((page) => Math.max(0, page - 1)); }} />}
       <RecordedOperations bucket={report.current.recorded} currency={report.currency} from={from} to={to} />
-      <p className="impact-unmeasured"><strong>Non mesuré dans le système :</strong> ruptures de stock et quantités invendues. Un seuil de stock bas, une production ou une simulation ne sont pas assimilés à une rupture ou à un invendu. Les économies réalisées ne sont pas calculées.</p>
+      <p className="impact-unmeasured"><strong>Non mesuré dans le système :</strong> ruptures de stock et quantités invendues. Un seuil de stock bas ou une production ne prouvent pas une rupture ou un invendu. Les économies réalisées ne sont pas calculées.</p>
       {(report.current.excluded.simulatedSales > 0 || report.current.excluded.simulatedLosses > 0 || report.current.excluded.simulatedReceiptLines > 0) &&
         <p>Exclus des totaux enregistrés : {report.current.excluded.simulatedSales} ligne(s) de vente simulée(s), {report.current.excluded.simulatedLosses} mouvement(s) de perte simulé(s), {report.current.excluded.simulatedReceiptLines} ligne(s) de réception simulée(s). Unités incompatibles ignorées : {report.current.excluded.lossUnitMismatch + report.current.excluded.receiptUnitMismatch}.</p>}
       <SimulationOperations bucket={report.current.simulation} currency={report.currency} />

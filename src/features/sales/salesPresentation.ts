@@ -1,4 +1,4 @@
-import type { LatestService } from "../../services/salesService";
+import type { LatestService, SalesMetrics } from "../../services/salesService";
 
 const coverageLabels: Record<LatestService["coverage"], string> = {
   complete: "Complète", partial: "Partielle", missing: "Manquante",
@@ -16,4 +16,15 @@ export const describeServiceSources = (sources: LatestService["sources"]): strin
   ];
   if (labels.length) return labels.join(", ");
   return "source indisponible";
+};
+
+export const describeSalesMetricsSources = (provenance: SalesMetrics["provenance"]): string => {
+  if (provenance === "demo_simulation") return "Ces données de démonstration ne sont pas des ventes observées.";
+  if (provenance === "mixed") return "Les données de démonstration restent séparées des ventes enregistrées et ne sont pas des ventes observées.";
+  return "Sources : saisies manuelles, imports CSV, tickets de caisse vérifiés ou lignes POS confirmées.";
+};
+
+export const describeSalesMetricsTotalSource = (totalQuantity: number, demoSimulationQuantity: number): string => {
+  if (demoSimulationQuantity <= 0) return "enregistrées";
+  return demoSimulationQuantity < totalQuantity ? "enregistrées et simulées" : "simulées";
 };

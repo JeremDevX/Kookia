@@ -41,7 +41,7 @@ export default function SalesBaseline() {
 
   return <section className="sales-panel" aria-labelledby="sales-baseline-title">
     <h2 ref={headingRef} id="sales-baseline-title" tabIndex={-1}>Estimation test des ventes</h2>
-    <p>Cette estimation utilise les ventes manuelles, CSV et éventuellement simulées. Elle ne tient compte ni de la météo, ni des événements, ni du stock. Les ingrédients restent une projection expérimentale, sans mouvement ni commande ; chaque vente est associée uniquement à la correspondance et à la version de recette datées pour son jour.</p>
+    <p>Cette estimation part de l’historique disponible pour chaque article. Elle ne tient compte ni de la météo, ni des événements, ni du stock. Les ingrédients restent une projection expérimentale, sans mouvement ni commande ; chaque vente est associée uniquement à la correspondance et à la version de recette datées pour son jour.</p>
     {loading ? <p role="status">Calcul de l'estimation test…</p> : error ?
       <div role="alert"><p>Estimation test indisponible : {error}</p>
         <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryBaseline}>Recharger l’estimation test</Button>

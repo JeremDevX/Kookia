@@ -2577,3 +2577,23 @@ AppleScript ne peut pas joindre sa fenêtre (`-1728`). En parallèle, les quatre
 suites ciblées réception→recette datée→sorties estimées et rendu de la candidate
 passent (13 tests) ; cela valide le calcul et son contenu, pas le rendu ni le
 clavier de ces deux pages.
+
+### Q2 — provenance conditionnelle et notes de QA (2026-09-26)
+
+Les parcours opérationnels n’affichent plus de mentions génériques de données
+de démonstration lorsque la période n’en contient pas : `SalesMetrics` ne les
+annonce qu’avec provenance correspondante, le calendrier ne qualifie que les
+jours non enregistrés, les lignes mensuelles du Bilan sont conditionnelles à
+`hasSimulationData`, et l’export ne publie le compteur d’exclusion que s’il est
+positif. Les hypothèses d’estimation restent nommées « estimations » et leur
+provenance n’est pas assimilée aux KPI enregistrés. Le journal Recettes signale
+les enregistrements de QA sur toute la période mais n’expose plus leurs notes
+techniques contenant des identifiants d’opération ; les notes du restaurateur
+sont conservées. Tests de présentation couvrent les provenances enregistrée,
+mixte et scénario ainsi que la visibilité des notes.
+
+Validation : `npm run lint`, `npm run build`, `npm test` (41 fichiers/158 tests
+Vitest et 33 contrôles Node/CSS), `git diff --check`. Le navigateur n’étant pas
+contrôlable, les captures antérieures ne sont pas revendiquées comme rendu
+après cette correction ; l’inspection visuelle et le parcours clavier de ces
+pages restent ouverts.
