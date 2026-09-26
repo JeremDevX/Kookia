@@ -1,3 +1,4 @@
+import StockLotsAndWaste from "../components/stocks/StockLotsAndWaste";
 import React, { useRef, useState } from "react";
 import StockInventoryTable from "../components/stocks/StockInventoryTable";
 import Input from "../components/common/Input";
@@ -192,6 +193,7 @@ const Stocks: React.FC = () => {
           onInspect={() => setSelectedProductId(product.id)} onSelect={() => void handleSelectForOrder(product)} />)}
         {filteredProducts.length === 0 && <li className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</li>}
       </ul>
+      <StockLotsAndWaste products={products} onSaved={refetch} />
       </>}
       <p className="inventory-footnote">Quantités théoriques · Achats à valider avant commande.</p>
       </section>

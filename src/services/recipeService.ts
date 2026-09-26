@@ -4,7 +4,7 @@ import { apiRequest } from "../config/api";
 export const getRecipes = () => apiRequest<Recipe[]>("/workspace/recipes");
 export interface RecipeMutation {
   operationId: string; name: string; category: Recipe["category"]; prepTime: number;
-  yieldPortions: number; effectiveFrom: string; ingredients: Array<Pick<RecipeIngredient, "productId" | "quantity">>;
+  yieldPortions: number; effectiveFrom: string; ingredients: Array<Pick<RecipeIngredient, "productId" | "quantity" | "netQuantity">>;
   sourceReceiptLineId?: string;
 }
 export const createRecipe = (data: RecipeMutation) => apiRequest<Recipe>("/workspace/recipes", {
@@ -27,7 +27,7 @@ export {
 } from "../domain/recipes/recipe.policies";
 export interface ProductionInput {
   operationId: string; recipeId?: string; expectedRecipeRevision?: number; recipeName: string; portions: number;
-  prepTime: number; notes: string; date: string; kind: "production" | "record" | "refusal";
+  prepTime: number; notes: string; date: string; serviceSlot?: string | null; kind: "production" | "record" | "refusal";
 }
 export interface Production extends Omit<ProductionInput, "expectedRecipeRevision"> {
   id: string; createdAt: string; recipeVersionId: string | null;

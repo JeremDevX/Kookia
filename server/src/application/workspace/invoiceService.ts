@@ -1,3 +1,4 @@
+import { recordLotMovement } from "./lotService.js";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -281,6 +282,7 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
       const receivableLines = source ? savedDraft.lines.filter((line) => line.disposition === "stock") : savedDraft.lines;
       if (receivableLines.length === 0) throw new WorkspaceError(409, "NO_RECEIVABLE_LINES", "Aucune ligne n’a été incluse au stock.");
       for (const [index, line] of receivableLines.entries()) {
+        await tx.$queryRaw(Prisma.sql`SELECT id FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${line.productId} FOR UPDATE`);
         const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: line.productId } },
           include: { supplier: { select: { name: true } } } });
         if (!product) throw new WorkspaceError(400, "INVALID_PRODUCT", "Un produit est absent de votre catalogue.");
@@ -294,13 +296,14 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
         const operationId = source
           ? `${simulationVersion}:invoice:${linkedSourceId}:${line.sourceLineNumber ?? `manual-${index}`}:${product.id}`
           : `invoice:${id}`;
-        await tx.stockMovement.create({ data: { restaurantId, productId: product.id, delta: line.quantity,
+        const movement = await tx.stockMovement.create({ data: { restaurantId, productId: product.id, delta: line.quantity,
           reason: source ? "invoice_import_demo" : "receipt", operationId, actorId,
           productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: product.supplier.name,
           unitPriceSnapshot: new Prisma.Decimal(line.unitPrice),
           invoiceDocumentId: id, invoiceRevision: nextRevision,
           ...(source ? { sourceDocumentId: linkedSourceId, sourceContentHash, sourceDocumentRevision } : {}),
         } });
+        await recordLotMovement(tx, restaurantId, product.id, product.currentStock, movement, actorId);
       }
     }
 

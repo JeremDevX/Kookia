@@ -1,3 +1,4 @@
+import { recordLotMovement } from "./lotService.js";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma, type PurchaseReceipt as PurchaseReceiptRecord, type PurchaseReceiptLine as PurchaseReceiptLineRecord,
   type PrismaClient } from "@prisma/client";
@@ -19,7 +20,7 @@ export interface PurchaseReceiptInput {
   invoiceDocumentRevision: number;
   deliveryReference: string;
   deliveryDate: string;
-  lines: Array<{ invoiceLineIndex: number; orderLineId: string; receivedQuantity: number; priceDifferenceReason?: string }>;
+  lines: Array<{ invoiceLineIndex: number; orderLineId: string; receivedQuantity: number; priceDifferenceReason?: string; expiresAt?: string | null }>;
 }
 
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
@@ -212,6 +213,9 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
         productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: supplier.name,
         unitPriceSnapshot: line.invoiceUnitPrice,
       } });
+      await recordLotMovement(tx, restaurantId, product.id, product.currentStock, movement, actorId, {
+        lineId: line.id, receivedAt: day(input.deliveryDate), expiresAt: input.lines.find((entry) => entry.orderLineId === line.orderLineId)?.expiresAt ? day(input.lines.find((entry) => entry.orderLineId === line.orderLineId)!.expiresAt!) : null, unitCost: line.invoiceUnitPrice,
+      });
       stockMovementByReceiptLine.set(line.id, movement.id);
     }
 
@@ -246,7 +250,7 @@ export const purchaseReceiptSchema = z.object({
   invoiceDocumentRevision: z.number().int().positive(), deliveryReference: z.string().trim().min(1).max(120),
   deliveryDate: z.iso.date(), lines: z.array(z.object({ invoiceLineIndex: z.number().int().min(0).max(99),
     orderLineId: z.string().trim().min(1).max(100), receivedQuantity: z.number().finite().min(0).max(1_000_000).multipleOf(0.001),
-    priceDifferenceReason: z.string().trim().min(1).max(240).optional(),
+    priceDifferenceReason: z.string().trim().min(1).max(240).optional(), expiresAt: z.iso.date().nullable().optional(),
   }).strict()).min(1).max(100),
 }).strict();
 
@@ -283,7 +287,7 @@ function orderDtoWithReceipts(order: PurchaseOrderWithReceipts) {
     lines: order.lines.map((line) => {
       const receivedQuantity = receivedByLine.get(line.id) ?? new Prisma.Decimal(0);
       return { id: line.id, productId: line.productId, productName: line.productName, supplierId: line.supplierId,
-        supplierName: line.supplierName, quantity: Number(line.quantity), receivedQuantity: Number(receivedQuantity),
+        supplierName: line.supplierName, expectedDeliveryDate: line.expectedDeliveryDate?.toISOString().slice(0, 10) ?? null, deliveryRevision: line.deliveryRevision, deliveryNote: line.deliveryNote, quantity: Number(line.quantity), receivedQuantity: Number(receivedQuantity),
         remainingQuantity: Math.max(0, Number(line.quantity) - Number(receivedQuantity)),
         unit: line.unit, pricePerUnit: Number(line.pricePerUnit) };
     }), receipts: order.receipts.map(purchaseReceiptDto),

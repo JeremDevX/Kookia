@@ -203,7 +203,7 @@ export default function RecipeCandidates({ products, onRecipeConfirmed }: Props)
         <label>Nom hypothétique de la recette<input required maxLength={120} value={draft.name}
           onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} /></label>
         <label>Catégorie<select value={draft.category} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value as Recipe["category"] }))}>
-          <option value="Entrée">Entrée</option><option value="Plat">Plat</option><option value="Dessert">Dessert</option>
+          <option value="Entrée">Entrée</option><option value="Plat">Plat</option><option value="Dessert">Dessert</option><option value="Boisson">Boisson</option>
         </select></label>
         <label>Préparation hypothétique (min)<input type="number" min="0" max="10080" step="1" required value={draft.prepTime}
           onChange={(event) => setDraft((current) => ({ ...current, prepTime: Number(event.target.value) }))} /></label>

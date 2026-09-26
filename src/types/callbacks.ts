@@ -33,6 +33,7 @@ export interface ProductionRecord {
   prepTime: string;
   notes: string;
   date: string;
+  serviceSlot?: string | null;
 }
 
 /**

@@ -136,7 +136,7 @@ const Recipes: React.FC = () => {
   const handleRecordProduction = async (data: ProductionRecord, operationId: string) => {
     const saved = await recordProduction({ operationId, recipeName: data.recipeName,
       portions: Number(data.portions), prepTime: Number(data.prepTime || 0), notes: data.notes,
-      date: formatLocalISODate(new Date(data.date)), kind: "record" });
+      date: formatLocalISODate(new Date(data.date)), serviceSlot: data.serviceSlot ?? null, kind: "record" });
     setProductions((prev) => [saved, ...prev]);
     void refreshProductions();
     addToast(
@@ -151,13 +151,13 @@ const Recipes: React.FC = () => {
     setIsProductionModalOpen(true);
   };
 
-  const handleConfirmProduction = async (quantity: number, operationId: string) => {
+  const handleConfirmProduction = async (quantity: number, operationId: string, serviceSlot: string | null) => {
     if (selectedRecipe) {
       try {
         const saved = await recordProduction({ operationId, recipeId: selectedRecipe.id,
           expectedRecipeRevision: selectedRecipe.version,
           recipeName: selectedRecipe.name, portions: quantity, prepTime: selectedRecipe.prepTime,
-          notes: "", date: formatLocalISODate(new Date()), kind: "production" });
+          notes: "", date: formatLocalISODate(new Date()), serviceSlot, kind: "production" });
         setProductions((prev) => [saved, ...prev]);
         void refreshProductions();
         await refetch();

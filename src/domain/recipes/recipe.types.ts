@@ -3,6 +3,7 @@ export interface RecipeIngredient {
   productName: string;
   unit: string;
   quantity: number;
+  netQuantity?: number | null;
 }
 
 export interface RecipeVersion {
@@ -20,7 +21,7 @@ export interface RecipeVersion {
 export interface Recipe {
   id: string;
   name: string;
-  category: "Plat" | "Dessert" | "Entrée";
+  category: "Plat" | "Dessert" | "Entrée" | "Boisson";
   prepTime: number;
   yieldPortions: number;
   revision: number;

@@ -12,7 +12,7 @@ export interface RecipeVersionSnapshot {
   prepTime: number;
   yieldPortions: number;
   createdAt?: Date;
-  ingredients: Array<{ productId: string; productName: string; productUnit: string; quantity: Prisma.Decimal }>;
+  ingredients: Array<{ productId: string; productName: string; productUnit: string; quantity: Prisma.Decimal; netQuantity?: Prisma.Decimal | null }>;
 }
 
 export async function appendRecipeVersion(tx: Prisma.TransactionClient, snapshot: RecipeVersionSnapshot) {

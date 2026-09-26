@@ -1,0 +1,7 @@
+.stock-lots-waste { margin-block: var(--spacing-lg); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.stock-lots-waste form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--unit-100percent), var(--size-290)), var(--unit-1fr))); gap: var(--spacing-md); margin-block: var(--spacing-md); }
+.stock-lots-waste form h3, .stock-lots-waste form p { grid-column: var(--number-1) / var(--number-negative-1); }
+.stock-lots-waste label { display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.stock-lots-waste input, .stock-lots-waste select { width: var(--unit-100percent); min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--spacing-xs); }
+.stock-lots-waste input:focus-visible, .stock-lots-waste select:focus-visible, .stock-lots-waste summary:focus-visible { outline: var(--size-2) solid var(--color-focus); outline-offset: var(--size-2); }
+.stock-lots-waste li { margin-block: var(--spacing-sm); overflow-wrap: var(--overflow-wrap-anywhere); }

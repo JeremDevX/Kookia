@@ -1,3 +1,4 @@
+import { recordLotMovement } from "./lotService.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma } from "@prisma/client";
@@ -11,14 +12,14 @@ const recipeInclude = {
 } satisfies Prisma.RecipeInclude;
 type RecipeWithVersions = Prisma.RecipeGetPayload<{ include: typeof recipeInclude }>;
 
-export interface RecipeIngredientInput { productId: string; quantity: number }
+export interface RecipeIngredientInput { productId: string; quantity: number; netQuantity?: number | null }
 export interface RecipeValues {
   name: string; category: string; prepTime: number; yieldPortions: number; effectiveFrom: string;
   ingredients: RecipeIngredientInput[];
 }
 export interface ProductionInput {
   operationId: string; recipeId?: string; expectedRecipeRevision?: number; recipeName: string; portions: number;
-  prepTime: number; notes: string; date: string; kind: "production" | "record" | "refusal";
+  prepTime: number; notes: string; date: string; serviceSlot?: string | null; kind: "production" | "record" | "refusal";
 }
 
 const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
@@ -32,20 +33,20 @@ function versionDto(version: RecipeWithVersions["versions"][number]) {
   return { version: version.version, effectiveFrom: version.effectiveFrom?.toISOString().slice(0, 10) ?? null,
     actorId: version.actorId, createdAt: version.createdAt.toISOString(), name: version.name,
     category: version.category, prepTime: version.prepTime, yieldPortions: version.yieldPortions,
-    ingredients: version.ingredients.map(({ productId, productName, productUnit, quantity }) =>
-      ({ productId, productName, unit: productUnit, quantity: Number(quantity) })) };
+    ingredients: version.ingredients.map(({ productId, productName, productUnit, quantity, netQuantity }) =>
+      ({ productId, productName, unit: productUnit, quantity: Number(quantity), netQuantity: netQuantity == null ? null : Number(netQuantity) })) };
 }
 
 function recipeDto(recipe: RecipeWithVersions) {
   const version = recipe.versions[0];
-  const legacyIngredients = recipe.ingredients.map(({ productId, product, quantity }) =>
-    ({ productId, productName: product.name, unit: product.unit, quantity: Number(quantity) }));
+  const legacyIngredients = recipe.ingredients.map(({ productId, product, quantity, netQuantity }) =>
+    ({ productId, productName: product.name, unit: product.unit, quantity: Number(quantity), netQuantity: netQuantity == null ? null : Number(netQuantity) }));
   return { id: recipe.id, name: version?.name ?? recipe.name, category: version?.category ?? recipe.category,
     prepTime: version?.prepTime ?? recipe.prepTime, yieldPortions: version?.yieldPortions ?? recipe.yieldPortions,
     revision: recipe.revision, version: version?.version ?? recipe.revision,
     effectiveFrom: version?.effectiveFrom?.toISOString().slice(0, 10) ?? null,
-    ingredients: version?.ingredients.map(({ productId, productName, productUnit, quantity }) =>
-      ({ productId, productName, unit: productUnit, quantity: Number(quantity) })) ?? legacyIngredients,
+    ingredients: version?.ingredients.map(({ productId, productName, productUnit, quantity, netQuantity }) =>
+      ({ productId, productName, unit: productUnit, quantity: Number(quantity), netQuantity: netQuantity == null ? null : Number(netQuantity) })) ?? legacyIngredients,
     versions: recipe.versions.map(versionDto),
     ...(recipe.lastMade ? { lastMade: recipe.lastMade.toISOString() } : {}) };
 }
@@ -67,19 +68,21 @@ async function productsForIngredients(tx: Prisma.TransactionClient, restaurantId
     const product = byId.get(ingredient.productId)!;
     if (product.unit === "pcs" && !Number.isInteger(ingredient.quantity))
       throw new WorkspaceError(400, "INVALID_RECIPE_UNIT", "Un ingrédient compté en pièces doit avoir une quantité entière.");
+    if (ingredient.netQuantity != null && (ingredient.netQuantity < 0 || ingredient.netQuantity > ingredient.quantity))
+      throw new WorkspaceError(400, "INVALID_NET_QUANTITY", "La quantité nette doit être comprise entre zéro et la quantité brute.");
     return { ...ingredient, product };
   });
 }
 
 function snapshotIngredients(ingredients: Awaited<ReturnType<typeof productsForIngredients>>) {
-  return ingredients.map(({ productId, quantity, product }) => ({ productId, quantity: new Prisma.Decimal(quantity.toFixed(3)),
+  return ingredients.map(({ productId, quantity, netQuantity, product }) => ({ productId, quantity: new Prisma.Decimal(quantity.toFixed(3)), netQuantity: netQuantity == null ? null : new Prisma.Decimal(netQuantity.toFixed(3)),
     productName: product.name, productUnit: product.unit }));
 }
 
 function sameSnapshot(version: { name: string; category: string; prepTime: number; yieldPortions: number;
-  effectiveFrom: Date | null; ingredients: Array<{ productId: string; quantity: Prisma.Decimal }> }, input: RecipeValues) {
-  const saved = version.ingredients.map((ingredient) => `${ingredient.productId}:${ingredient.quantity.toFixed(3)}`).sort();
-  const requested = input.ingredients.map((ingredient) => `${ingredient.productId}:${ingredient.quantity.toFixed(3)}`).sort();
+  effectiveFrom: Date | null; ingredients: Array<{ productId: string; quantity: Prisma.Decimal; netQuantity?: Prisma.Decimal | null }> }, input: RecipeValues) {
+  const saved = version.ingredients.map((ingredient) => `${ingredient.productId}:${ingredient.quantity.toFixed(3)}:${ingredient.netQuantity == null ? "unknown" : ingredient.netQuantity.toFixed(3)}`).sort();
+  const requested = input.ingredients.map((ingredient) => `${ingredient.productId}:${ingredient.quantity.toFixed(3)}:${ingredient.netQuantity == null ? "unknown" : ingredient.netQuantity.toFixed(3)}`).sort();
   return version.name === input.name && version.category === input.category && version.prepTime === input.prepTime &&
     version.yieldPortions === input.yieldPortions && version.effectiveFrom?.toISOString().slice(0, 10) === input.effectiveFrom &&
     saved.length === requested.length && saved.every((value, index) => value === requested[index]);
@@ -110,8 +113,8 @@ export async function createRecipeInTransaction(tx: Prisma.TransactionClient, re
   const id = randomUUID();
   await tx.recipe.create({ data: { id, restaurantId, name: input.name, category: input.category,
     prepTime: input.prepTime, yieldPortions: input.yieldPortions, revision: 1 } });
-  if (ingredients.length) await tx.recipeIngredient.createMany({ data: ingredients.map(({ productId, quantity }) => ({
-    restaurantId, recipeId: id, productId, quantity: new Prisma.Decimal(quantity.toFixed(3)),
+  if (ingredients.length) await tx.recipeIngredient.createMany({ data: ingredients.map(({ productId, quantity, netQuantity }) => ({
+    restaurantId, recipeId: id, productId, quantity: new Prisma.Decimal(quantity.toFixed(3)), netQuantity: netQuantity == null ? null : new Prisma.Decimal(netQuantity.toFixed(3)),
   })) });
   await appendRecipeVersion(tx, versionData(restaurantId, id, 1, actorId, operationId, input, ingredients));
   return recipeDto(await tx.recipe.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id } }, include: recipeInclude }));
@@ -192,8 +195,8 @@ export async function updateRecipe(restaurantId: string, actorId: string, id: st
       yieldPortions: input.yieldPortions, revision,
     } });
     await tx.recipeIngredient.deleteMany({ where: { restaurantId, recipeId: id } });
-    if (ingredients.length) await tx.recipeIngredient.createMany({ data: ingredients.map(({ productId, quantity }) => ({
-      restaurantId, recipeId: id, productId, quantity: new Prisma.Decimal(quantity.toFixed(3)),
+    if (ingredients.length) await tx.recipeIngredient.createMany({ data: ingredients.map(({ productId, quantity, netQuantity }) => ({
+      restaurantId, recipeId: id, productId, quantity: new Prisma.Decimal(quantity.toFixed(3)), netQuantity: netQuantity == null ? null : new Prisma.Decimal(netQuantity.toFixed(3)),
     })) });
     await appendRecipeVersion(tx, versionData(restaurantId, id, revision, actorId, operationId, input, ingredients));
     return recipeDto(await tx.recipe.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id } }, include: recipeInclude }));
@@ -207,7 +210,7 @@ export async function recordProduction(restaurantId: string, actorId: string, in
       include: { recipeVersion: { select: { version: true, effectiveFrom: true, yieldPortions: true } } } });
     if (prior) {
       if (prior.recipeId !== (input.recipeId ?? null) || prior.portions !== input.portions || prior.kind !== input.kind ||
-        prior.date.toISOString().slice(0, 10) !== input.date || prior.notes !== input.notes ||
+        prior.date.toISOString().slice(0, 10) !== input.date || prior.serviceSlot !== (input.serviceSlot ?? null) || prior.notes !== input.notes ||
         (!prior.recipeId && (prior.recipeName !== input.recipeName || prior.prepTime !== input.prepTime)) ||
         (prior.recipeId && prior.recipeVersion && prior.recipeVersion.version !== input.expectedRecipeRevision) ||
         (prior.recipeId && !prior.recipeVersion && (prior.recipeName !== input.recipeName || prior.prepTime !== input.prepTime))) {
@@ -237,11 +240,13 @@ export async function recordProduction(restaurantId: string, actorId: string, in
           data: { currentStock: { decrement: amount }, stockRevision: { increment: 1 } },
         });
         if (!updated.count) throw new WorkspaceError(409, "INSUFFICIENT_STOCK", "Stock insuffisant : ajustez les portions et réessayez.");
-        await tx.stockMovement.create({ data: {
+        const movement = await tx.stockMovement.create({ data: {
           restaurantId, productId: ingredient.productId, delta: amount.negated(), reason: "production",
           actorId, operationId: input.operationId,
-          productNameSnapshot: ingredient.productName, productUnitSnapshot: ingredient.productUnit,
+          productNameSnapshot: ingredient.productName, productUnitSnapshot: ingredient.productUnit, serviceSlot: input.serviceSlot ?? null,
         } });
+        const product = await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: ingredient.productId } } });
+        await recordLotMovement(tx, restaurantId, ingredient.productId, product.currentStock.plus(amount), movement, actorId, undefined, undefined, date(input.date));
       }
     }
     if (recipe && input.kind !== "refusal") {
@@ -250,7 +255,7 @@ export async function recordProduction(restaurantId: string, actorId: string, in
     }
     const productionInput = { operationId: input.operationId, recipeId: input.recipeId,
       recipeName: input.recipeName, portions: input.portions, prepTime: input.prepTime,
-      notes: input.notes, date: input.date, kind: input.kind };
+      notes: input.notes, date: input.date, serviceSlot: input.serviceSlot ?? null, kind: input.kind };
     const production = await tx.production.create({ data: { ...productionInput, restaurantId, actorId,
       recipeVersionId: recipeVersion?.id ?? null, recipeName: recipeVersion?.name ?? input.recipeName,
       prepTime: recipeVersion?.prepTime ?? input.prepTime, date: date(input.date),

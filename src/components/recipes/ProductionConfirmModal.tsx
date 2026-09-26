@@ -18,7 +18,7 @@ interface ProductionConfirmModalProps {
   costPerPortion: number | null;
   getProductName: (productId: string) => string;
   getProductUnit: (productId: string) => string;
-  onConfirm: (quantity: number, operationId: string) => Promise<void>;
+  onConfirm: (quantity: number, operationId: string, serviceSlot: string | null) => Promise<void>;
 }
 
 const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
@@ -31,6 +31,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   getProductUnit,
   onConfirm,
 }) => {
+  const [serviceSlot, setServiceSlot] = useState("");
   const [saving, setSaving] = useState(false);
   const [operationId] = useState(() => crypto.randomUUID());
   const safeMaxYield = Math.min(10_000, Math.max(0, maxYield));
@@ -53,7 +54,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
     }
 
     setSaving(true);
-    try { await onConfirm(clampedQuantity, operationId); onClose(); }
+    try { await onConfirm(clampedQuantity, operationId, serviceSlot || null); onClose(); }
     catch (error) { setQuantityError(error instanceof Error ? error.message : "Production non enregistrée."); }
     finally { setSaving(false); }
   };
@@ -77,6 +78,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
           <Badge label={safeMaxYield > 0 ? "Stock disponible" : "Stock insuffisant"} status={safeMaxYield > 0 ? "optimal" : "urgent"} />
         </div>
 
+        <label>Service<select value={serviceSlot} onChange={(event) => setServiceSlot(event.target.value)}><option value="">Non ventilé</option><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
         {/* Quantity Selector */}
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
           <label htmlFor="production-quantity" className="block text-sm font-semibold text-blue-900 mb-2">

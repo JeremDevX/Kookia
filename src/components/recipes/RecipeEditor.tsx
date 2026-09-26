@@ -6,7 +6,7 @@ import Button from "../common/Button";
 
 interface RecipeDraft {
   name: string; category: Recipe["category"]; prepTime: number; yieldPortions: number;
-  effectiveFrom: string; ingredients: Array<{ productId: string; quantity: number }>;
+  effectiveFrom: string; ingredients: Array<{ productId: string; quantity: number; netQuantity?: number | null }>;
 }
 const today = () => new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
@@ -27,7 +27,7 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
     if (!open) return;
     setDraft(recipe ? { name: recipe.name, category: recipe.category, prepTime: recipe.prepTime,
       yieldPortions: recipe.yieldPortions, effectiveFrom: today(),
-      ingredients: recipe.ingredients.map(({ productId, quantity }) => ({ productId, quantity })) }
+      ingredients: recipe.ingredients.map(({ productId, quantity, netQuantity }) => ({ productId, quantity, netQuantity })) }
       : initialSuggestion ? { name: initialSuggestion.name, category: initialSuggestion.category,
         prepTime: initialSuggestion.prepTime, yieldPortions: initialSuggestion.yieldPortions,
         effectiveFrom: initialSuggestion.effectiveFrom,
@@ -67,7 +67,7 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
         <label>Nom de la recette<input required maxLength={120} value={draft.name}
           onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
         <label>Catégorie<select value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value as Recipe["category"] })}>
-          <option value="Plat">Plat</option><option value="Entrée">Entrée</option><option value="Dessert">Dessert</option>
+          <option value="Plat">Plat</option><option value="Entrée">Entrée</option><option value="Dessert">Dessert</option><option value="Boisson">Boisson</option>
         </select></label>
         <label>Préparation (minutes)<input type="number" required min="0" max="10080" step="1" value={draft.prepTime}
           onChange={(event) => setDraft({ ...draft, prepTime: Number(event.target.value) })} /></label>
@@ -78,7 +78,7 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
       </div>
       <fieldset className="recipe-editor-ingredients">
         <legend>Ingrédients pour le lot ({draft.yieldPortions} portions)</legend>
-        <p>La quantité est exprimée dans l’unité du produit ; elle sera divisée par le rendement pour calculer une portion.</p>
+        <p>La quantité brute est prélevée du stock. La quantité nette après préparation est facultative ; le rendement est net ÷ brut. Une valeur inconnue reste inconnue.</p>
         {draft.ingredients.map((ingredient, index) => {
           const selectedProduct = products.find((product) => product.id === ingredient.productId);
           const sourceProduct = initialSuggestion?.sourceReceipt && ingredient.productId === initialSuggestion.sourceProductId;
@@ -96,9 +96,12 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
                 {product.name} ({product.unit})
               </option>)}
             </select></label>
-            <label>Quantité ({selectedProduct?.unit ?? "unité"})<input type="number" required min={selectedProduct?.unit === "pcs" ? 1 : 0.001}
+            <label>Quantité brute ({selectedProduct?.unit ?? "unité"})<input type="number" required min={selectedProduct?.unit === "pcs" ? 1 : 0.001}
               max="1000000" step={selectedProduct?.unit === "pcs" ? 1 : 0.001}
               value={ingredient.quantity} onChange={(event) => setIngredient(index, { quantity: Number(event.target.value) })} /></label>
+            <label>Quantité nette ({selectedProduct?.unit ?? "unité"})<input type="number" min="0" max={ingredient.quantity} step="0.001"
+              value={ingredient.netQuantity ?? ""} onChange={(event) => setIngredient(index, { netQuantity: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+            <span>Rendement : {ingredient.netQuantity == null ? "inconnu" : `${Math.round(ingredient.netQuantity / ingredient.quantity * 100)} %`}</span>
             {!sourceProduct && <Button type="button" size="sm" variant="outline" disabled={draft.ingredients.length === 1}
               aria-label={`Retirer le produit ${index + 1}`} onClick={() => setDraft((current) => ({ ...current,
                 ingredients: current.ingredients.filter((_, rowIndex) => rowIndex !== index) }))}>Retirer</Button>}

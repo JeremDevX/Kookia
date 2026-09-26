@@ -20,6 +20,7 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
   onClose,
   onRecord,
 }) => {
+  const [serviceSlot, setServiceSlot] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
@@ -48,7 +49,7 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
       portions: formData.portions.trim(),
       prepTime: formData.prepTime.trim(),
       notes: formData.notes.trim(),
-      date: new Date().toISOString(),
+      date: new Date().toISOString(), serviceSlot: serviceSlot || null,
     }, operationId);
     setFormData({
       recipeName: "",
@@ -71,6 +72,7 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
     >
       <div className="flex flex-col gap-4">
         <p>Cette préparation sera ajoutée au journal. Le stock ne sera pas modifié.</p>
+        <label>Service<select value={serviceSlot} onChange={(event) => setServiceSlot(event.target.value)}><option value="">Non ventilé</option><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
         {saveError && <p role="alert">{saveError}</p>}
         <div>
           <label htmlFor="recordproductionmodal-1" className="block text-sm font-medium mb-2">

@@ -2,6 +2,7 @@ import { Prisma, type StockCount } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
 import { productDto } from "./catalogService.js";
+import { recordLotMovement } from "./lotService.js";
 import { stockCountDto } from "./stockCountDto.js";
 
 export interface StockCountInput {
@@ -61,12 +62,13 @@ export async function recordStockCount(restaurantId: string, actorId: string, pr
         data: { currentStock: { increment: delta }, stockRevision: { increment: 1 } },
       });
       if (!updated.count) throw new WorkspaceError(409, "STOCK_CHANGED", "Le stock a changé pendant le comptage. Rechargez la fiche.");
-      await tx.stockMovement.create({ data: {
+      const movement = await tx.stockMovement.create({ data: {
         restaurantId, productId, stockCountId: count.id, delta, reason: "stock_count",
         operationId: `stock-count:${input.operationId}`, actorId,
         productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: supplier.name,
         unitPriceSnapshot: product.pricePerUnit,
       } });
+      await recordLotMovement(tx, restaurantId, productId, product.currentStock, movement, actorId);
     }
     return response(count);
   });
