@@ -1,4 +1,5 @@
-import { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE, roundEstimatedQuantity } from "../../../../shared/ingredientOutflowAssumptions.js";
+import { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE, roundEstimatedQuantity, splitEstimatedQuantity }
+  from "../../../../shared/ingredientOutflowAssumptions.js";
 
 export { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE };
 
@@ -70,7 +71,8 @@ export function estimateIngredientOutflows(receipts: ReceivedIngredient[], versi
       const ingredient = recipe.ingredients.find((item) => item.productId === receipt.productId && item.unit === receipt.unit);
       if (!ingredient || ingredient.quantity <= 0) continue;
       const quantityPerPortion = ingredient.quantity / recipe.yieldPortions;
-      const possiblePortions = receipt.receivedQuantity / quantityPerPortion;
+      const portions = splitEstimatedQuantity(receipt.receivedQuantity / quantityPerPortion);
+      const ingredientSplit = splitEstimatedQuantity(receipt.receivedQuantity);
       receiptEstimates.push({
         id: `${receipt.id}:${recipe.recipeId}:${recipe.version}`,
         receiptId: receipt.receiptId,
@@ -86,11 +88,11 @@ export function estimateIngredientOutflows(receipts: ReceivedIngredient[], versi
         recipeEffectiveFrom: recipe.effectiveFrom,
         recipeIngredientQuantity: roundEstimatedQuantity(ingredient.quantity),
         yieldPortions: recipe.yieldPortions,
-        possiblePortions: roundEstimatedQuantity(possiblePortions),
-        estimatedSoldPortions: roundEstimatedQuantity(possiblePortions * ESTIMATED_SALES_SHARE),
-        estimatedLossPortions: roundEstimatedQuantity(possiblePortions * ESTIMATED_LOSS_SHARE),
-        estimatedSoldQuantity: roundEstimatedQuantity(receipt.receivedQuantity * ESTIMATED_SALES_SHARE),
-        estimatedLossQuantity: roundEstimatedQuantity(receipt.receivedQuantity * ESTIMATED_LOSS_SHARE),
+        possiblePortions: portions.total,
+        estimatedSoldPortions: portions.sales,
+        estimatedLossPortions: portions.loss,
+        estimatedSoldQuantity: ingredientSplit.sales,
+        estimatedLossQuantity: ingredientSplit.loss,
         otherIngredientCount: recipe.ingredients.length - 1,
       });
     }

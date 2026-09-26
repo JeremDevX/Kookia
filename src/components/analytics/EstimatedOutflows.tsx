@@ -81,7 +81,7 @@ export default function EstimatedOutflows({ from, to }: Props) {
     {loading ? <p role="status">Calcul des sorties estimées…</p> : error ? <div role="alert"><p>Estimations indisponibles : {error}</p>
       <Button ref={retryButtonRef} type="button" variant="outline" onClick={retry}>Recharger les estimations</Button>
     </div> : report && <>
-      <p>Hypothèse de répartition : {formatPercent(report.assumptions.estimatedSalesShare)} en ventes estimées, {formatPercent(report.assumptions.estimatedLossShare)} en pertes estimées. À valider.</p>
+      <p>Hypothèse de répartition : {formatPercent(report.assumptions.estimatedSalesShare)} en ventes estimées, {formatPercent(report.assumptions.estimatedLossShare)} en pertes estimées. À valider. Les quantités sont arrondies au millième ; le solde d’arrondi revient aux pertes estimées.</p>
       {report.estimates.length ? <>
       <p id="estimated-outflows-table-hint" className="estimated-outflow-table-hint">Les références correspondent aux livraisons rapprochées. Au clavier, placez le focus sur le tableau puis utilisez ← et →.</p>
       <p className="estimated-outflow-cards-hint">Les sorties sont présentées en fiches pour faciliter la lecture sur cet écran.</p>

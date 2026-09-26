@@ -1,4 +1,5 @@
-import { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE, roundEstimatedQuantity } from "../../../shared/ingredientOutflowAssumptions";
+import { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE, splitEstimatedQuantity }
+  from "../../../shared/ingredientOutflowAssumptions";
 import { suggestRecipeFromIncomingProduct, type RecipeSuggestion, type RecipeSuggestionReceipt } from "./recipeSuggestionPolicy";
 import type { Product } from "../inventory/product.types";
 
@@ -37,16 +38,18 @@ export function estimateSuggestedRecipeOutflow(suggestion: RecipeSuggestion): Su
   const quantityPerPortion = sourceIngredient.quantity / suggestion.yieldPortions;
   const possiblePortions = receipt.receivedQuantity / quantityPerPortion;
   if (!Number.isFinite(possiblePortions) || possiblePortions <= 0) return null;
+  const portionSplit = splitEstimatedQuantity(possiblePortions);
+  const ingredientSplit = splitEstimatedQuantity(receipt.receivedQuantity);
 
   return {
     unit: receipt.unit,
     receivedQuantity: receipt.receivedQuantity,
     estimatedSalesShare: ESTIMATED_SALES_SHARE,
     estimatedLossShare: ESTIMATED_LOSS_SHARE,
-    possiblePortions: roundEstimatedQuantity(possiblePortions),
-    estimatedSoldPortions: roundEstimatedQuantity(possiblePortions * ESTIMATED_SALES_SHARE),
-    estimatedLossPortions: roundEstimatedQuantity(possiblePortions * ESTIMATED_LOSS_SHARE),
-    estimatedSoldQuantity: roundEstimatedQuantity(receipt.receivedQuantity * ESTIMATED_SALES_SHARE),
-    estimatedLossQuantity: roundEstimatedQuantity(receipt.receivedQuantity * ESTIMATED_LOSS_SHARE),
+    possiblePortions: portionSplit.total,
+    estimatedSoldPortions: portionSplit.sales,
+    estimatedLossPortions: portionSplit.loss,
+    estimatedSoldQuantity: ingredientSplit.sales,
+    estimatedLossQuantity: ingredientSplit.loss,
   };
 }

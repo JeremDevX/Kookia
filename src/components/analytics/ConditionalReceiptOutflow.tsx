@@ -25,6 +25,7 @@ export default function ConditionalReceiptOutflow({ entry, products }: Props) {
         <li>Ventes estimées ({percent(estimate.estimatedSalesShare)}) : {quantity(estimate.estimatedSoldQuantity)} {estimate.unit} · {quantity(estimate.estimatedSoldPortions)} portions</li>
         <li>Pertes estimées ({percent(estimate.estimatedLossShare)}) : {quantity(estimate.estimatedLossQuantity)} {estimate.unit} · {quantity(estimate.estimatedLossPortions)} portions</li>
       </ul>
+      <p>Les quantités sont arrondies au millième ; le solde d’arrondi revient aux pertes estimées.</p>
       <p>Le stock des autres ingrédients n’est pas vérifié. Vérifiez la recette avant création ; rien n’est enregistré.</p>
     </section> : <p>Aucune proposition compatible avec ce produit et son unité n’a pu être calculée ; cette entrée reste à couvrir.</p>}
     <Link to={`/recipes?${new URLSearchParams({ incomingReceiptLineId: entry.id })}`}>

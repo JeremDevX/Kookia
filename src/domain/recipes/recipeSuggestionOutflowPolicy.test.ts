@@ -33,6 +33,17 @@ describe("estimateSuggestedRecipeOutflow", () => {
     expect(estimateSuggestedRecipeOutflow({ ...suggestion, sourceReceipt: { ...suggestion.sourceReceipt!, receivedQuantity: 0 } }))
       .toBeNull();
   });
+
+  it("keeps rounded conditional sales and loss estimates within the received quantity and portions", () => {
+    const smallSuggestion = { ...suggestion, yieldPortions: 1,
+      sourceReceipt: { ...suggestion.sourceReceipt!, receivedQuantity: 0.005 },
+      ingredients: suggestion.ingredients.map((ingredient) => ingredient.productId === "tomato"
+        ? { ...ingredient, quantity: 0.005 } : ingredient) };
+    const estimate = estimateSuggestedRecipeOutflow(smallSuggestion);
+
+    expect(estimate!.estimatedSoldQuantity + estimate!.estimatedLossQuantity).toBe(0.005);
+    expect(estimate!.estimatedSoldPortions + estimate!.estimatedLossPortions).toBe(estimate!.possiblePortions);
+  });
 });
 
 describe("estimateIncomingRecipeSuggestion", () => {

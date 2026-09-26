@@ -38,4 +38,13 @@ describe("ingredient outflow estimate policy", () => {
     expect(result.estimates).toEqual([]);
     expect(result.unestimatedReceipts).toEqual([{ ...receipt, reason: "no_dated_compatible_recipe" }]);
   });
+
+  it("keeps rounded sales and loss estimates within the received quantity and possible portions", () => {
+    const smallReceipt = { ...receipt, receivedQuantity: 0.005 };
+    const smallRecipe = { ...recipe(1, "2026-01-01", 0.005), yieldPortions: 1 };
+    const estimate = estimateIngredientOutflows([smallReceipt], [smallRecipe]).estimates[0];
+
+    expect(estimate.estimatedSoldQuantity + estimate.estimatedLossQuantity).toBe(0.005);
+    expect(estimate.estimatedSoldPortions + estimate.estimatedLossPortions).toBe(estimate.possiblePortions);
+  });
 });
