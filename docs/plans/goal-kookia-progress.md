@@ -2633,3 +2633,19 @@ Node/CSS) passent ; `git diff --check` passe. CUA n'expose toujours pas de
 navigateur contrôlable : le rendu responsive et le clavier de cette version
 restent à vérifier. Aucun compte Kookia opérationnel n'a été consulté ou
 modifié. L'algorithme F1 reste expérimental, faute de jeu terrain qualifié.
+
+### Q2 — affichage responsive de la nouvelle page F1 (2026-09-26)
+
+Commit `ace6e00` : les résultats à huit colonnes gardent une région nommée et
+défilable au clavier sur grand écran ; sur tablette/téléphone, ils deviennent
+des fiches conservant les métriques et le détail de recette datée. Les états
+sans historique et couverture incomplète proposent d'ouvrir Ventes pour
+compléter les entrées. Le gestionnaire de défilement par flèches a maintenant
+des tests unitaires pour les deux directions, les touches non concernées et
+les limites de défilement.
+
+`npm run lint`, `npm run build`, `npm test` (41 fichiers/153 tests Vitest et
+33 contrôles Node/CSS) et `git diff --check` passent. La revue rendue de cette
+version demeure ouverte : CUA répond toujours `browsers: []`, et les tests
+unitaires du gestionnaire ne remplacent pas une observation réelle du rendu ou
+du focus. Aucun espace ou compte opérationnel n'a été lu ou modifié.

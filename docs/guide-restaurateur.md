@@ -55,7 +55,9 @@ le calendrier et les ventes couvrent les 28 journées consécutives requises. El
 compare cette méthode à la vente du même jour de semaine précédent ; aucun
 modèle n'est déclaré gagnant automatiquement. La prévision ne valide pas un
 achat et ses erreurs rétrospectives ne garantissent pas sa fiabilité. Voir les
-[règles détaillées](sales.md).
+[règles détaillées](sales.md). Si l'historique est absent ou incomplet, la page
+n'affiche pas de prévision et propose de compléter les ventes ou le calendrier
+de service.
 
 ## Le matin : repérer ce qui demande une action
 
