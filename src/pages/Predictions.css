@@ -18,6 +18,7 @@
 .sales-baseline-card dl > div { min-width: var(--number-0); }
 .sales-baseline-card dt { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .sales-baseline-card dd { margin: var(--spacing-xs) var(--number-0) var(--number-0); font-weight: var(--font-weight-medium); overflow-wrap: var(--overflow-wrap-anywhere); }
+.predictions-container :is(summary, a, button):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 
 @media (--media-tablet) {
   .sales-baseline-table, .sales-baseline-table-hint { display: none; }
