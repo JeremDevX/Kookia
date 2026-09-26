@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { Link } from "react-router-dom";
 import { getSalesMetrics, type SalesMetrics as Metrics } from "../../services/salesService";
-import { describeSalesMetricsSources, describeSalesMetricsTotalSource } from "../../features/sales/salesPresentation";
+import { describeSalesMetricsSources } from "../../features/sales/salesPresentation";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 
+import SalesOverview from "./SalesOverview";
+import "../../pages/Analytics.css";
+
 interface Props { from: string; to: string }
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 const MAX_PERIOD_SPAN_MS = 366 * 86_400_000;
 const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
 
@@ -20,6 +23,12 @@ export default function SalesMetrics({ from, to }: Props) {
   const loading = !periodTooLong && loadedRequestKey !== requestKey;
   const [itemPage, setItemPage] = useState(0);
   const [dayPage, setDayPage] = useState(0);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("quantity");
+  const matchingItems = (metrics?.items ?? []).filter((item) => item.saleItemName.toLocaleLowerCase("fr").includes(search.trim().toLocaleLowerCase("fr")))
+    .sort((a, b) => sort === "name" ? a.saleItemName.localeCompare(b.saleItemName, "fr") : b.quantity - a.quantity);
+  const matchingDays = (metrics?.dailyItems ?? []).filter((item) => item.saleItemName.toLocaleLowerCase("fr").includes(search.trim().toLocaleLowerCase("fr")))
+    .sort((a, b) => b.serviceDate.localeCompare(a.serviceDate) || a.saleItemName.localeCompare(b.saleItemName, "fr"));
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const retryFocusPending = useRef(false);
@@ -46,39 +55,44 @@ export default function SalesMetrics({ from, to }: Props) {
   };
 
   return <section className="sales-panel sales-metrics" aria-labelledby="sales-metrics-title">
-    <h2 ref={headingRef} id="sales-metrics-title" tabIndex={-1}>Indicateurs des ventes enregistrées</h2>
-    {metrics && <p>{describeSalesMetricsSources(metrics.provenance)} Une ligne absente ne vaut zéro que si le calendrier du jour est complet ; les jours partiels, manquants ou non renseignés restent inconnus.</p>}
+    <h2 ref={headingRef} id="sales-metrics-title" tabIndex={-1}>Comprendre vos ventes</h2>
+    {metrics && <details className="impact-reading-guide"><summary>Sources et qualité des ventes</summary><p>{describeSalesMetricsSources(metrics.provenance)} Une ligne absente ne vaut zéro que si le calendrier du jour est complet ; les jours partiels, manquants ou non renseignés restent inconnus.</p></details>}
     {loading ? <p role="status">Calcul des indicateurs…</p> : periodTooLong ?
       <p role="status">Les indicateurs de ventes sont limités à une période d’environ un an. Raccourcissez les dates pour les consulter ; le rapport Impact reste disponible sur la période choisie.</p> : error ? <div role="alert"><p>Indicateurs indisponibles : {error}</p>
       <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryMetrics}>Recharger les indicateurs</Button>
     </div> : metrics && <>
-      <p>Période : du {displayDate(metrics.period.from)} au {displayDate(metrics.period.to)} · {metrics.observedDays} jour{metrics.observedDays > 1 ? "s" : ""} ouvert{metrics.observedDays > 1 ? "s" : ""} confirmé{metrics.observedDays > 1 ? "s" : ""} complet{metrics.observedDays > 1 ? "s" : ""} · {metrics.completeServiceDays} date(s) complètes au total · {metrics.incompleteServiceDays} date(s) manquante(s) ou partielles.</p>
-      {metrics.status === "no_data" ? <p>Aucune vente enregistrée sur cette période. <Link to="/sales#sales-start">Ajouter des ventes</Link>.</p> : <>
-        <p className="sales-metrics-total"><strong>{metrics.totalQuantity} unités dans l’historique ({describeSalesMetricsTotalSource(metrics.totalQuantity, metrics.demoSimulationQuantity)})</strong><br />{metrics.manualQuantity} en saisie manuelle · {metrics.csvQuantity} par import CSV{metrics.correctedCsvQuantity > 0 ? `, dont ${metrics.correctedCsvQuantity} corrigées` : ""} · {metrics.posQuantity} par caisse POS · {metrics.ticketZQuantity} par Ticket Z vérifié{metrics.demoSimulationQuantity > 0 ? ` · ${metrics.demoSimulationQuantity} unité(s) hors bilan` : ""}.</p>
-        {metrics.status === "insufficient_history" ?
-          <p role="status">Comparaison indisponible : {metrics.observedDays} services ouverts complets sur cette période et {metrics.previousObservedDays} sur la précédente. Il faut au moins {metrics.minimumObservedDays} jours complets ouverts dans chacune ; les jours fermés ne sont pas divisés comme jours de service.</p> :
-          <p>Moyenne par service ouvert complet : {metrics.averagePerObservedDay} unités, contre {metrics.previousAveragePerObservedDay} sur la période précédente ({metrics.previousObservedDays} services ouverts complets). {metrics.changePercent === null ? "Évolution non calculable (moyenne précédente nulle)." : "Évolution : " + (metrics.changePercent > 0 ? "+" : "") + metrics.changePercent + " %."}</p>}
+      <SalesOverview metrics={metrics} />
+      {metrics.status === "no_data" ? <div className="bilan-attention"><h3>Commencez par renseigner vos ventes</h3><p>Aucune vente disponible sur cette période. Les achats seuls ne permettent pas de mesurer les ventes.</p><Link to="/sales#sales-start">Ajouter des ventes →</Link></div> : <>
+        <h3>Quels articles se vendent le plus ?</h3>
+        <p>Classement en unités, pas en chiffre d’affaires. Le filtre s’applique aussi au détail journalier.</p>
+        <div className="bilan-toolbar">
+          <label>Rechercher un article<input type="search" value={search} onChange={(event) => { setSearch(event.target.value); setItemPage(0); setDayPage(0); }} placeholder="Nom de l’article" /></label>
+          <label>Trier les articles<select value={sort} onChange={(event) => { setSort(event.target.value); setItemPage(0); }}><option value="quantity">Plus vendus d’abord</option><option value="name">Nom de l’article</option></select></label>
+          <p role="status">{matchingItems.length} article(s)</p>
+        </div>
+        {!matchingItems.length && <p role="status">Aucun article ne correspond à votre recherche.</p>}
         <p id="sales-metrics-table-hint" className="sales-table-hint">Sur petit écran, faites défiler le tableau horizontalement. Au clavier, placez le focus sur la zone puis utilisez ← et →.</p>
-        <h3>Par article vendu</h3>
-        <div className="sales-table-wrap" role="region" aria-label="Ventes par article" aria-describedby="sales-metrics-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="sales-table"><thead><tr><th>Article vendu</th><th>Unités enregistrées</th></tr></thead><tbody>
-          {metrics.items.slice(itemPage * PAGE_SIZE, (itemPage + 1) * PAGE_SIZE).map((item) =>
+
+        <div className="sales-table-wrap" role="region" aria-label="Ventes par article" aria-describedby="sales-metrics-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="sales-table"><thead><tr><th scope="col">Article vendu</th><th scope="col">Unités dans l’historique</th></tr></thead><tbody>
+          {matchingItems.slice(itemPage * PAGE_SIZE, (itemPage + 1) * PAGE_SIZE).map((item) =>
             <tr key={item.saleItemId}><td>{item.saleItemName}</td><td>{item.quantity}</td></tr>)}
         </tbody></table></div>
-        {metrics.items.length > PAGE_SIZE && <div className="sales-actions">
+        {matchingItems.length > PAGE_SIZE && <div className="sales-actions">
           <Button type="button" variant="outline" disabled={itemPage === 0} onClick={() => setItemPage((page) => page - 1)}>Articles précédents</Button>
-          <span role="status">Articles {itemPage * PAGE_SIZE + 1} à {Math.min((itemPage + 1) * PAGE_SIZE, metrics.items.length)} sur {metrics.items.length}</span>
-          <Button type="button" variant="outline" disabled={(itemPage + 1) * PAGE_SIZE >= metrics.items.length} onClick={() => setItemPage((page) => page + 1)}>Articles suivants</Button>
+          <span role="status">Articles {itemPage * PAGE_SIZE + 1} à {Math.min((itemPage + 1) * PAGE_SIZE, matchingItems.length)} sur {matchingItems.length}</span>
+          <Button type="button" variant="outline" disabled={(itemPage + 1) * PAGE_SIZE >= matchingItems.length} onClick={() => setItemPage((page) => page + 1)}>Articles suivants</Button>
         </div>}
-        <h3>Par date de service et article</h3>
-        <div className="sales-table-wrap" role="region" aria-label="Ventes par date et article" aria-describedby="sales-metrics-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="sales-table"><thead><tr><th>Date</th><th>Article vendu</th><th>Unités enregistrées</th></tr></thead><tbody>
-          {metrics.dailyItems.slice(dayPage * PAGE_SIZE, (dayPage + 1) * PAGE_SIZE).map((row) =>
+        <details className="bilan-drilldown"><summary>Détail par jour et article</summary>
+        <div className="sales-table-wrap" role="region" aria-label="Ventes par date et article" aria-describedby="sales-metrics-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="sales-table"><thead><tr><th>Date</th><th scope="col">Article vendu</th><th scope="col">Unités dans l’historique</th></tr></thead><tbody>
+          {matchingDays.slice(dayPage * PAGE_SIZE, (dayPage + 1) * PAGE_SIZE).map((row) =>
             <tr key={`${row.serviceDate}:${row.saleItemId}`}><td>{displayDate(row.serviceDate)}</td><td>{row.saleItemName}</td><td>{row.quantity}</td></tr>)}
         </tbody></table></div>
-        {metrics.dailyItems.length > PAGE_SIZE && <div className="sales-actions">
+        {matchingDays.length > PAGE_SIZE && <div className="sales-actions">
           <Button type="button" variant="outline" disabled={dayPage === 0} onClick={() => setDayPage((page) => page - 1)}>Lignes précédentes</Button>
-          <span role="status">Lignes {dayPage * PAGE_SIZE + 1} à {Math.min((dayPage + 1) * PAGE_SIZE, metrics.dailyItems.length)} sur {metrics.dailyItems.length}</span>
-          <Button type="button" variant="outline" disabled={(dayPage + 1) * PAGE_SIZE >= metrics.dailyItems.length} onClick={() => setDayPage((page) => page + 1)}>Lignes suivantes</Button>
+          <span role="status">Lignes {dayPage * PAGE_SIZE + 1} à {Math.min((dayPage + 1) * PAGE_SIZE, matchingDays.length)} sur {matchingDays.length}</span>
+          <Button type="button" variant="outline" disabled={(dayPage + 1) * PAGE_SIZE >= matchingDays.length} onClick={() => setDayPage((page) => page + 1)}>Lignes suivantes</Button>
         </div>}
+        </details>
       </>}
     </>}
   </section>;

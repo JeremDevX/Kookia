@@ -16,18 +16,14 @@
 .impact-reading-guide > summary { cursor: pointer; font-weight: var(--font-weight-medium); }
 .impact-reading-guide > p { max-width: var(--size-800); margin-block: var(--spacing-sm) var(--number-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
 .impact-summary .sales-table { min-width: var(--size-600); }
-.estimated-outflows .sales-table { min-width: var(--size-1000); }
 .estimated-outflow-table-hint { display: block; margin: var(--spacing-sm) var(--number-0); color: var(--color-text-muted); font-size: var(--font-size-caption); }
-.estimated-outflow-cards-hint { display: none; }
-.estimated-outflow-cards { display: none; gap: var(--spacing-md); list-style: none; margin: var(--number-0); padding: var(--number-0); }
-.estimated-outflow-card { min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
-.estimated-outflow-card-header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--spacing-sm); margin-block-end: var(--spacing-md); }
-.estimated-outflow-card dl { display: grid; grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); margin: var(--number-0); }
-.estimated-outflow-card dl > div { min-width: var(--number-0); }
-.estimated-outflow-card dt { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
-.estimated-outflow-card dd { margin: var(--spacing-xs) var(--number-0) var(--number-0); font-weight: var(--font-weight-medium); overflow-wrap: var(--overflow-wrap-anywhere); }
-.estimated-unmatched-list { display: grid; gap: var(--spacing-md); list-style: none; margin: var(--number-0); padding: var(--number-0); }
-.estimated-unmatched-receipt { min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); overflow-wrap: var(--overflow-wrap-anywhere); }
+.estimated-outflows { min-width: var(--number-0); }
+.estimated-outflows .sales-table { min-width: var(--size-800); }
+.outflow-secondary { color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-regular); }
+.outflow-details { min-width: var(--size-220); white-space: normal; }
+.outflow-details > summary { cursor: pointer; min-height: var(--size-44); font-weight: var(--font-weight-medium); }
+.outflow-details p { line-height: var(--number-1_7); }
+.outflow-details > summary:focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 .conditional-recipe-outflow { margin-block: var(--spacing-md); padding: var(--spacing-md); border-inline-start: var(--size-3) solid var(--color-primary); background: var(--color-primary-light); }
 .conditional-recipe-outflow h4 { margin-block: var(--number-0) var(--spacing-sm); }
 .conditional-recipe-outflow ul { padding-inline-start: var(--spacing-lg); }
@@ -48,18 +44,49 @@
   .impact-monthly-navigation { align-items: stretch; flex-direction: column; }
 }
 
-@media (--media-tablet) {
-  .estimated-outflow-table { display: none; }
-  .estimated-outflow-cards { display: grid; }
-  .estimated-outflow-table-hint { display: none; }
-  .estimated-outflow-cards-hint { display: block; margin: var(--spacing-sm) var(--number-0); color: var(--color-text-muted); font-size: var(--font-size-caption); }
-}
-
 @media (--media-phone) {
   .analytics-container { padding: var(--spacing-sm); gap: var(--spacing-sm); }
   .bilan-period { align-items: stretch; flex-direction: column; padding: var(--spacing-md); }
   .bilan-period label { align-items: flex-start; flex-direction: column; }
   .bilan-period input { width: var(--unit-100percent); }
-  .estimated-outflow-card dl { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-sm); }
-  .estimated-outflow-card { padding: var(--spacing-sm); }
 }
+
+/* Bilan: overview first, operational detail on demand. */
+.bilan-presets, .bilan-views { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.bilan-presets { margin-inline-start: auto; }
+.bilan-views { padding-block: var(--spacing-sm); border-bottom: var(--size-1) solid var(--color-border); }
+.bilan-views .btn { min-height: var(--size-44); }
+.bilan-views [aria-pressed="true"] { color: var(--color-surface); background: var(--color-primary); border-color: var(--color-primary); }
+.bilan-kpis { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
+.bilan-kpis article { padding: var(--spacing-lg); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.bilan-kpis h3 { font-size: var(--font-size-sm); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); }
+.bilan-kpis .bilan-kpi-value { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-primary); margin-block: var(--spacing-md) var(--spacing-sm); overflow-wrap: var(--overflow-wrap-anywhere); }
+.bilan-kpis p { margin-block: var(--spacing-sm); }
+.bilan-kpis small { color: var(--color-text-secondary); }
+.bilan-attention { padding: var(--spacing-lg); background: var(--color-primary-light); border-radius: var(--radius-lg); }
+.bilan-action-rows > div { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-lg); padding-block: var(--spacing-md); }
+.bilan-action-rows > div + div { border-top: var(--size-1) solid var(--color-border); }
+.bilan-action-rows p { margin-block: var(--spacing-xs) var(--number-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); max-width: var(--size-600); line-height: var(--number-1_7); }
+.bilan-action-rows a { flex-shrink: var(--number-0); color: var(--color-primary); padding-block: var(--spacing-sm); font-weight: var(--font-weight-medium); }
+.bilan-loss-priorities > p { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.bilan-loss-priorities ol { list-style: none; padding: var(--number-0); margin: var(--number-0); }
+.bilan-loss-priorities li { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding-block: var(--spacing-md); border-bottom: var(--size-1) solid var(--color-border); }
+.bilan-loss-priorities li span { display: block; margin-top: var(--spacing-xs); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.bilan-drilldown { border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md); margin-block: var(--number-0); min-width: var(--number-0); }
+.bilan-drilldown > summary { cursor: pointer; padding-block: var(--spacing-sm); font-weight: var(--font-weight-semibold); }
+.bilan-drilldown > summary span { margin-inline-start: var(--spacing-md); color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-regular); }
+.bilan-drilldown[open] > summary { margin-bottom: var(--spacing-md); }
+.bilan-drilldown > p { font-size: var(--font-size-sm); color: var(--color-text-secondary); line-height: var(--number-1_7); }
+@media (--media-tablet) {
+  .bilan-kpis { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); }
+  .bilan-action-rows > div { flex-direction: column; align-items: flex-start; gap: var(--spacing-sm); }
+  .bilan-presets { margin-inline-start: var(--number-0); }
+}
+
+.bilan-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--spacing-md); padding-block: var(--spacing-md); }
+.bilan-toolbar label { display: flex; flex-direction: column; gap: var(--spacing-sm); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); flex: var(--number-1); min-width: min(var(--unit-100percent), var(--size-220)); }
+.bilan-toolbar :is(input, select) { min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-primary); background: var(--color-surface); width: var(--unit-100percent); }
+.bilan-toolbar p { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.bilan-toolbar :is(input, select):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
+.sales-metrics .bilan-kpis, .estimated-outflows .bilan-kpis { margin-block: var(--spacing-md); }
+.bilan-attention > p { font-size: var(--font-size-sm); line-height: var(--number-1_7); color: var(--color-text-secondary); }
