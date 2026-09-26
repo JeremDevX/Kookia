@@ -2711,3 +2711,28 @@ aucun contrôle de rendu de cette version, responsive ou clavier n'est donc
 revendiqué. Garder Q2 ouvert jusqu'à observation dans le navigateur intégré de
 VS Code. Aucun runner de démo n'a été lancé et aucun compte ni donnée
 opérationnelle consulté.
+
+### C3 — réconciliation de l’arrondi des sorties estimées (2026-09-26)
+
+Commit `b7375c0` : l’arrondi indépendant des parts 90/10 pouvait dépasser la
+quantité reçue (0,005 kg donnait 0,006 kg). Les estimations issues d’une
+recette datée comme les propositions conditionnelles arrondissent maintenant
+le total au millième, arrondissent la part ventes, puis affectent le solde aux
+pertes ; les deux sommes se réconcilient. Le Bilan et la proposition
+conditionnelle exposent cette règle d’arrondi.
+
+Vérifications : tests ciblés 10/10, lint, build web, build API, `npm test`
+(41 fichiers/156 tests Vitest et 33 contrôles Node/CSS), `git diff --check`.
+La recette `verify:local-delivery` applique 18 migrations, trouve la parité
+Prisma vide et passe builds, unités et sauvegarde/restauration ; son intégration
+termine à 39/41. Le test pertinent
+`ingredientOutflowEstimate.integration.test.ts` passe. Deux échecs non liés
+restent à investiguer : HTTP 500 sur la lecture des jours de service dans
+`sales.integration.test.ts`, puis `socket hang up` dans une lecture du test
+`workspace.integration.test.ts`. Le conteneur temporaire de cette recette a
+été vérifié absent après nettoyage ; aucune donnée opérationnelle n’a été
+utilisée.
+
+La modification de microcopie reste à inspecter rendue. CUA liste VS Code
+lancé mais `getApp` expire toujours ; aucun contrôle Chrome n’a été tenté. Le
+parcours Q2 dans le navigateur intégré de VS Code reste ouvert.
