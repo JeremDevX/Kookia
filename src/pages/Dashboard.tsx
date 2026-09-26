@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Calendar } from "lucide-react";
 import Button from "../components/common/Button";
@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [latestService, setLatestService] = useState<LatestService | null | undefined>(undefined);
   const [salesError, setSalesError] = useState("");
   const [salesReload, setSalesReload] = useState(0);
+  const salesHeading = useRef<HTMLHeadingElement>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [restaurantError, setRestaurantError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -106,8 +107,11 @@ export default function Dashboard() {
           : "Les seuils sont des exemples à confirmer ; vérifiez la provenance des quantités et mouvements avant vos décisions."}</small>
         <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><Link to="/orders#invoices">Revoir les factures</Link></div>
       </section>
-      <section className="today-card" aria-labelledby="today-sales-title"><h2 id="today-sales-title">Ventes</h2>
-        {salesError ? <div role="alert"><p>{salesError}</p><Button variant="outline" onClick={() => { setLatestService(undefined); setSalesError(""); setSalesReload((value) => value + 1); }}>Réessayer</Button></div> : latestService === undefined ? <p role="status">Chargement des ventes…</p> :
+      <section className="today-card" aria-labelledby="today-sales-title"><h2 id="today-sales-title" ref={salesHeading} tabIndex={-1}>Ventes</h2>
+        {salesError ? <div role="alert"><p>{salesError}</p><Button variant="outline" onClick={() => {
+          setLatestService(undefined); setSalesError(""); setSalesReload((value) => value + 1);
+          requestAnimationFrame(() => salesHeading.current?.focus());
+        }}>Réessayer</Button></div> : latestService === undefined ? <p role="status">Chargement des ventes…</p> :
           <p>{latestService ? `Dernier service enregistré le ${new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")}.` : "Aucune vente enregistrée."}</p>}
         {latestService && <small>Source : {describeServiceSources(latestService.sources)}.</small>}
         <div className="today-card-actions"><Link to="/sales#sales-start">Ajouter ou corriger des ventes</Link></div>

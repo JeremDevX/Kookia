@@ -2365,3 +2365,26 @@ Le document ne déborde pas à 390 et 1280 px. Cette passe utilise l'injection d
 touches CDP, pas un clavier macOS natif ; lecteur d'écran réel et zoom 200 %
 restent non vérifiés. Elle valide le parcours Achats/commande, pas l'ensemble
 des écrans du Bilan.
+
+### Q2 — Aujourd'hui : erreur de lecture des ventes et reprise clavier (2026-09-26)
+
+Sur un runner `demo:fixtures` séparé en tmpfs, seule la route GET de lecture des
+dernières ventes a été interceptée (503), jusqu'à l'apparition de l'erreur ; les
+autres lectures sont restées intactes. Aujourd'hui affiche l'alerte et son bouton
+« Réessayer ». À 390×844 px, le document reste à 390 px de large ; à
+1280×900 px, il reste à 1280 px. Tab atteint le bouton avec un focus visible,
+Entrée relance la lecture et les ventes reviennent depuis l'API. Le focus est
+conservé sur le titre « Ventes » lorsque le bouton disparaît ; cette restitution
+du focus a été corrigée dans `src/pages/Dashboard.tsx`.
+
+Captures de cette instance uniquement, comme preuves QA techniques sans valeur
+métier : [erreur mobile](evidence/q2-today-error/mobile-sales-error.png),
+[reprise mobile](evidence/q2-today-error/mobile-sales-recovery.png) et
+[reprise bureau](evidence/q2-today-error/desktop-sales-recovery.png). Les
+vérifications ont utilisé des événements clavier CDP dans un Chrome à profil
+isolé, pas le clavier macOS/CUA ; lecteur d'écran réel et zoom 200 % restent
+non vérifiés. Aucune donnée du compte Kookia persistant, credential local ou
+corpus privé n'a été utilisée.
+
+`npm run lint`, `npm run build`, `npm test` (39 fichiers/153 tests Vitest et
+33 contrôles Node/CSS) et `git diff --check` passent.
