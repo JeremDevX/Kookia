@@ -2644,6 +2644,9 @@ compléter les entrées. Le gestionnaire de défilement par flèches a maintenan
 des tests unitaires pour les deux directions, les touches non concernées et
 les limites de défilement.
 
+Le commit `6c789f2` complète ce lot en rendant visible le focus clavier sur les
+résumés natifs des détails de recette.
+
 `npm run lint`, `npm run build`, `npm test` (41 fichiers/153 tests Vitest et
 33 contrôles Node/CSS) et `git diff --check` passent. La revue rendue de cette
 version demeure ouverte : CUA répond toujours `browsers: []`, et les tests
