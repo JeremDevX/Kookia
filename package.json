@@ -28,7 +28,10 @@
     "db:seed": "node --import tsx server/src/scripts/seedWorkspaces.ts",
     "import:invoices": "node --import tsx server/src/scripts/importSourceInvoices.ts",
     "simulate:restaurant": "node --import tsx server/src/scripts/simulateRestaurant.ts",
-    "restore:restaurant-simulation": "node --import tsx server/src/scripts/restoreRestaurantSimulation.ts"
+    "restore:restaurant-simulation": "node --import tsx server/src/scripts/restoreRestaurantSimulation.ts",
+    "documents:dev": "vite document-workshop --host 127.0.0.1 --port 5180 --strictPort",
+    "documents:build": "tsc -p document-workshop/tsconfig.json && vite build document-workshop --outDir ../dist/document-workshop",
+    "documents:preview": "vite preview document-workshop --outDir ../dist/document-workshop --host 127.0.0.1 --port 5180 --strictPort"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",

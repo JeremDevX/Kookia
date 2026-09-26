@@ -5,7 +5,8 @@ import { mediaAlias, readMediaDefinitions } from "./css-media.mjs";
 
 export const globalFile = "src/styles/index.css";
 
-export function auditCss(files) {
+export function auditCss(files, catalogueFile = globalFile) {
+  const globalFile = catalogueFile;
   const issues = [];
   const roots = new Map();
   const report = (file, node, message) => {

@@ -20,15 +20,17 @@ export async function findCssFiles(directory, relative = "") {
 
 async function main() {
   const files = await findCssFiles(process.cwd());
-  const issues = auditCss(files);
+  const workshop = new Map([...files].filter(([file]) => file.startsWith("document-workshop/")));
+  const application = new Map([...files].filter(([file]) => !file.startsWith("document-workshop/")));
+  const issues = [...auditCss(application), ...(workshop.size ? auditCss(workshop, "document-workshop/src/tokens.css") : [])];
   for (const issue of issues) {
     console.error(`${issue.file}:${issue.line}:${issue.column} — ${issue.message}`);
   }
   if (issues.length) {
-    console.error(`\n${issues.length} problème(s) CSS. Définir/réutiliser les variables de src/styles/index.css.`);
+    console.error(`\n${issues.length} problème(s) CSS. Définir/réutiliser les variables du catalogue de l'application concernée.`);
     process.exitCode = 1;
   } else {
-    console.log(`CSS OK — ${files.size} fichiers contrôlés, valeurs visuelles et médias centralisés dans src/styles/index.css.`);
+    console.log(`CSS OK — ${files.size} fichiers contrôlés, valeurs visuelles et médias centralisés par application.`);
   }
 }
 

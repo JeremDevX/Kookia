@@ -1,0 +1,6 @@
+{
+  "extends": "../tsconfig.app.json",
+  "compilerOptions": { "tsBuildInfoFile": "../node_modules/.tmp/workshop.tsbuildinfo" },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

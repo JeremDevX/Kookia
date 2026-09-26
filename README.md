@@ -31,6 +31,11 @@ la base et le fichier. Voir
 
 ## Fonctionnement actuel
 
+Un [atelier documentaire indépendant](docs/document-workshop.md) permet de
+préparer les pièces Maison Sureau (achats, livraisons, Tickets Z, ventes CSV,
+recettes, productions, pertes et inventaires) à reprendre dans Kookia :
+`npm run documents:dev`, puis <http://127.0.0.1:5180>. Aucune base nécessaire.
+
 Les données métier sont persistées dans un espace isolé par compte : restaurant,
 fournisseurs, produits, mouvements, recettes, productions/refus, prévisions,
 ventes, commandes, décisions, panier, notifications, factures, menus et analytics.

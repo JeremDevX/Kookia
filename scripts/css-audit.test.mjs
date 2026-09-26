@@ -16,6 +16,16 @@ const audit = (css, catalogue = globals) => auditCss(new Map([
   [globalFile, catalogue], ["src/card.css", css],
 ]));
 
+test("an independent app uses its own catalogue without weakening literal checks", () => {
+  const catalogue = "document-workshop/src/tokens.css";
+  const files = new Map([[catalogue, globals], ["document-workshop/src/style.css", ".card { color: var(--ink); }"]]);
+  assert.deepEqual(auditCss(files, catalogue), []);
+  files.set("document-workshop/src/style.css", ".card { color: #123; }");
+  assert.ok(auditCss(files, catalogue).some(issue => issue.message.includes("en dur")));
+  files.set("document-workshop/src/style.css", ".card { color: var(--application-only); }");
+  assert.ok(auditCss(files, catalogue).some(issue => issue.message.includes("Variable inconnue")));
+});
+
 test("accepts global tokens, compositions, CSS-wide keywords and media aliases", () => {
   assert.deepEqual(audit(`
     /* 123px in a comment is not a declaration. */

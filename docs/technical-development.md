@@ -10,6 +10,7 @@ fonctionnalité déjà disponible**.
 | Sujet | État actuel vérifié | Cible Jalon 2 / préproduction |
 | --- | --- | --- |
 | Application web | React 19, TypeScript, Vite ; données métier persistées via API | Réduire les gestes du parcours quotidien et vérifier l'usage mobile/clavier |
+| Atelier documentaire | Application locale séparée, `npm run documents:dev` ; PDF, CSV de ventes quotidiens et dossier ZIP Maison Sureau ; périodes passées/futures et variabilité paramétrable, sans connexion à l'API ni écriture métier. Voir [usage et couverture](document-workshop.md). | Ne remplace pas les imports disponibles : CSV natif, Ticket Z transcrit et autres formulaires manuels |
 | Qualité | ESLint, TypeScript, Vitest et CI GitHub Actions ; scripts `lint`, `build`, `test` | CI exécutable sans manipulation ; smoke test sur URL dédiée avant recette |
 | Hébergement | `vercel.json` sert une SPA frontend ; aucun runtime API ni réécriture `/api` | Définir et vérifier séparément l'API, le réseau, les sessions et la persistance avant préproduction |
 | Réseau local | Vite proxifie `/api` vers `http://127.0.0.1:3001` par défaut (cible overrideable pour la démo) ; l'API écoute loopback par défaut, `HOST` configure l'écoute et `APP_ORIGIN` l'origine mutatrice locale ; la recette R0 et la démo utilisent PostgreSQL jetable sur loopback | Configurer explicitement l'écoute externe, un routage `/api` de même origine, une origine mutatrice autorisée et TLS selon l'hébergeur choisi |
