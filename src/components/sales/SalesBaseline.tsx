@@ -1,11 +1,31 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { getSalesBaseline, type SalesBaseline as Baseline } from "../../services/salesService";
+import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 
 const PAGE_SIZE = 50;
+type BaselineItem = Baseline["items"][number];
 const contextSourceLabel = (status: Baseline["contextualForecast"]["weather"]) =>
   status === "not_connected" ? "sans connexion" : status === "unavailable" ? "indisponible"
     : status === "stale" ? "périmée" : "à jour";
+
+function RecipeProjectionDetails({ item }: { item: BaselineItem }) {
+  const projection = item.recipeProjection;
+  if (projection.status !== "mapped") return <span>{projection.reason}</span>;
+  return <details>
+    <summary>{projection.recipeName} v{projection.recipeVersion} · {projection.forecastPortions} portions</summary>
+    <p>Correspondance {projection.mappingRevision} depuis le {projection.mappingEffectiveFrom} · recette v{projection.recipeVersion} effective le {projection.recipeEffectiveFrom} · {projection.portionsPerItem} portion(s) par article vendu.</p>
+    <ul>{projection.ingredients.map((ingredient) => <li key={ingredient.productId}>
+      {ingredient.productName} : {ingredient.quantity} {ingredient.unit}
+    </li>)}</ul>
+    <p>Backtest matière : {item.recipeBacktest.mappedDays}/{item.recipeBacktest.days} jours avec correspondance et recette datées ; {item.recipeBacktest.missingMappingDays} sans correspondance, {item.recipeBacktest.missingDatedRecipeDays} sans version datée. La recette est résolue séparément à la date cible, jamais depuis sa version actuelle si elle est future.</p>
+    {item.recipeBacktest.versionsUsed.length > 0 && <ul>{item.recipeBacktest.versionsUsed.map((usage) =>
+      <li key={usage.serviceDate}>{usage.serviceDate} : {usage.recipeName} v{usage.recipeVersion} (effet {usage.recipeEffectiveFrom}), correspondance {usage.mappingRevision}</li>)}</ul>}
+    {item.recipeBacktest.ingredients.length > 0 && <ul>{item.recipeBacktest.ingredients.map((ingredient) =>
+      <li key={ingredient.productId}>Erreur matière {ingredient.productName} : {ingredient.meanAbsoluteError} {ingredient.unit}/jour · WAPE {ingredient.weightedAbsolutePercentageError === null ? "non calculable" : `${ingredient.weightedAbsolutePercentageError} %`}</li>)}</ul>}
+  </details>;
+}
 
 export default function SalesBaseline() {
   const [refreshRevision, setRefreshRevision] = useState(0);
@@ -52,10 +72,12 @@ export default function SalesBaseline() {
             baseline.contextualForecast.status === "stale" ? "au moins une source contextuelle ne couvre pas la période visée" : "position ou données contextuelles indisponibles"}.
           {` Position : ${baseline.contextualForecast.position === "fixture_position" ? "fixture étiquetée" : "non confirmée"} ; météo : ${contextSourceLabel(baseline.contextualForecast.weather)} ; événements : ${contextSourceLabel(baseline.contextualForecast.events)} ; émissions historiques : ${contextSourceLabel(baseline.contextualForecast.historicalEmissions)}. `}
           {baseline.contextualForecast.forecastSource === "f1" ? "La méthode fondée sur les ventes reste retenue." : "Aucune prévision n’est retenue faute d’historique complet."} Aucun ajustement contextuel n’est appliqué et aucun gain n’est revendiqué.</p>
-        {baseline.status === "no_data" ? <p>Historique insuffisant : aucune vente enregistrée dans cette fenêtre. Aucune prévision affichée.</p> :
-          baseline.status === "insufficient_history" ? <p>{baseline.mixedSourceWindow ? "Sources simulées et enregistrées mélangées : les simulations sont exclues, mais le calendrier ne distingue pas la complétude par source. Aucune prévision ni erreur de backtest n’est publiée." : `Historique insuffisant : les ${baseline.requiredConsecutiveDays} jours doivent être marqués complets (ouverts ou fermés confirmés). ${baseline.incompleteDates.length} date(s) restent inconnues ou partielles. Aucune prévision affichée ; ces jours ne sont jamais convertis en zéro vente.`}</p> : <>
+        {baseline.status === "no_data" ? <p>Historique insuffisant : aucune vente enregistrée dans cette fenêtre. Aucune prévision affichée. <Link to="/sales#sales-start">Ajouter ou importer les ventes</Link>.</p> :
+          baseline.status === "insufficient_history" ? <p>{baseline.mixedSourceWindow ? "Sources simulées et enregistrées mélangées : les simulations sont exclues, mais le calendrier ne distingue pas la complétude par source. Aucune prévision ni erreur de backtest n’est publiée." : `Historique insuffisant : les ${baseline.requiredConsecutiveDays} jours doivent être marqués complets (ouverts ou fermés confirmés). ${baseline.incompleteDates.length} date(s) restent inconnues ou partielles. Aucune prévision affichée ; ces jours ne sont jamais convertis en zéro vente.`} <Link to="/sales#sales-start">Compléter les ventes et le calendrier de service</Link>.</p> : <>
             <p><strong>Résultats expérimentaux, non validés sur un jeu de données terrain indépendant.</strong> {baseline.items.length} article(s) sur {baseline.observedItemCount} disposent de l’historique requis ; {baseline.observedItemCount - baseline.items.length} article(s) observé(s) ne sont pas estimés faute de {baseline.requiredConsecutiveDays} jours complets. Une ligne absente sur ces journées complètes représente zéro vente observé. Les deux méthodes sont comparées sur les mêmes {baseline.evaluationDays} dates, sans utiliser la vente du jour à prédire : moyenne des sept jours précédents et vente du même jour de semaine précédent (J−7). La prévision publiée utilise la moyenne mobile ; aucune méthode n’est déclarée meilleure sur cette comparaison. EAM en unités et WAPE résument les erreurs rétrospectives : ce ne sont ni un score de confiance ni une garantie de fiabilité.</p>
-            <div className="sales-table-wrap" role="region" aria-label="Prévision des ventes par article" tabIndex={0}><table className="sales-table"><thead><tr>
+            <p id="sales-baseline-table-hint" className="sales-baseline-table-hint">Sur petit écran, les résultats sont présentés en fiches. Sur grand écran, faites défiler le tableau horizontalement ; au clavier, placez le focus sur la zone puis utilisez ← et →.</p>
+            <div className="sales-baseline-table"><div className="sales-table-wrap" role="region" aria-label="Prévision des ventes par article" aria-describedby="sales-baseline-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="sales-table">
+              <thead><tr>
               <th>Article vendu</th><th>Prévision pour le {baseline.forecastDate}</th>
               <th>Volume observé · {baseline.evaluationDays} j</th><th>EAM · moyenne 7 j</th><th>EAM · même jour J−7</th>
               <th>WAPE · moyenne 7 j</th><th>WAPE · même jour J−7</th><th>Projection recette datée</th>
@@ -66,21 +88,21 @@ export default function SalesBaseline() {
               <td>{item.backtest.previousWeekday.meanAbsoluteError} unités</td>
               <td>{item.backtest.rollingMean7.weightedAbsolutePercentageError === null ? "Non calculable" : `${item.backtest.rollingMean7.weightedAbsolutePercentageError} %`}</td>
               <td>{item.backtest.previousWeekday.weightedAbsolutePercentageError === null ? "Non calculable" : `${item.backtest.previousWeekday.weightedAbsolutePercentageError} %`}</td>
-              <td>{item.recipeProjection.status === "unmapped" ? item.recipeProjection.reason :
-                item.recipeProjection.status === "recipe_version_unknown" ? item.recipeProjection.reason : <details>
-                  <summary>{item.recipeProjection.recipeName} v{item.recipeProjection.recipeVersion} · {item.recipeProjection.forecastPortions} portions</summary>
-                  <p>Correspondance {item.recipeProjection.mappingRevision} depuis le {item.recipeProjection.mappingEffectiveFrom} · recette v{item.recipeProjection.recipeVersion} effective le {item.recipeProjection.recipeEffectiveFrom} · {item.recipeProjection.portionsPerItem} portion(s) par article vendu.</p>
-                  <ul>{item.recipeProjection.ingredients.map((ingredient) => <li key={ingredient.productId}>
-                    {ingredient.productName} : {ingredient.quantity} {ingredient.unit}
-                  </li>)}</ul>
-                  <p>Backtest matière : {item.recipeBacktest.mappedDays}/{item.recipeBacktest.days} jours avec correspondance et recette datées ; {item.recipeBacktest.missingMappingDays} sans correspondance, {item.recipeBacktest.missingDatedRecipeDays} sans version datée. La recette est résolue séparément à la date cible, jamais depuis sa version actuelle si elle est future.</p>
-                  {item.recipeBacktest.versionsUsed.length > 0 && <ul>{item.recipeBacktest.versionsUsed.map((usage) =>
-                    <li key={usage.serviceDate}>{usage.serviceDate} : {usage.recipeName} v{usage.recipeVersion} (effet {usage.recipeEffectiveFrom}), correspondance {usage.mappingRevision}</li>)}</ul>}
-                  {item.recipeBacktest.ingredients.length > 0 && <ul>{item.recipeBacktest.ingredients.map((ingredient) => <li key={ingredient.productId}>
-                    Erreur matière {ingredient.productName} : {ingredient.meanAbsoluteError} {ingredient.unit}/jour · WAPE {ingredient.weightedAbsolutePercentageError === null ? "non calculable" : `${ingredient.weightedAbsolutePercentageError} %`}
-                  </li>)}</ul>}
-                </details>}</td>
-            </tr>)}</tbody></table></div>
+              <td><RecipeProjectionDetails item={item} /></td>
+            </tr>)}</tbody></table></div></div>
+            <p className="sales-baseline-cards-hint">Comparaison de la moyenne mobile et du même jour de semaine précédent ; ouvrez la projection recette pour en consulter les détails.</p>
+            <ul className="sales-baseline-cards" aria-label="Prévisions et comparaisons par article">
+              {baseline.items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((item) => <li className="sales-baseline-card" key={item.saleItemId}>
+                <h3>{item.saleItemName}</h3>
+                <dl>
+                  <div><dt>Prévision pour le {baseline.forecastDate}</dt><dd>{item.forecastQuantity} unités</dd></div>
+                  <div><dt>Volume observé · {baseline.evaluationDays} j</dt><dd>{item.backtest.observedQuantity} unités</dd></div>
+                  <div><dt>EAM · moyenne 7 j</dt><dd>{item.backtest.rollingMean7.meanAbsoluteError} unités · WAPE {item.backtest.rollingMean7.weightedAbsolutePercentageError === null ? "non calculable" : `${item.backtest.rollingMean7.weightedAbsolutePercentageError} %`}</dd></div>
+                  <div><dt>EAM · même jour J−7</dt><dd>{item.backtest.previousWeekday.meanAbsoluteError} unités · WAPE {item.backtest.previousWeekday.weightedAbsolutePercentageError === null ? "non calculable" : `${item.backtest.previousWeekday.weightedAbsolutePercentageError} %`}</dd></div>
+                  <div><dt>Projection recette datée</dt><dd><RecipeProjectionDetails item={item} /></dd></div>
+                </dl>
+              </li>)}
+            </ul>
             {baseline.items.length > PAGE_SIZE && <div className="sales-actions">
               <Button type="button" variant="outline" disabled={page === 0} onClick={() => setPage((current) => current - 1)}>Articles précédents</Button>
               <span role="status">Articles {page * PAGE_SIZE + 1} à {Math.min((page + 1) * PAGE_SIZE, baseline.items.length)} sur {baseline.items.length}</span>
