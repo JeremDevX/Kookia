@@ -7,6 +7,12 @@ import type { MenuEntry } from "../../../../shared/serviceOperations.js";
 import type { ForecastIngredient, ForecastService, OperationalForecast } from "../../../../shared/operationalForecast.js";
 import { forecastMenuEntry, projectMenuIngredients, type ServiceObservation } from "./operationalForecastPolicy.js";
 import { WorkspaceError } from "./catalogService.js";
+import { env } from "../../config/env.js";
+import { getWeatherLocation } from "./weatherPositionService.js";
+import { readWeatherCache } from "./weatherStorage.js";
+import { projectServiceWeather } from "./weatherPolicy.js";
+import { applyForecastWeather, forecastWeatherAdjustment } from "./forecastWeatherPolicy.js";
+import { forecastWeatherNotice } from "../../../../shared/forecastWeather.js";
 
 type Database = PrismaClient | Prisma.TransactionClient;
 const date = (value: string) => new Date(`${value}T00:00:00Z`);
@@ -20,12 +26,16 @@ export async function getOperationalForecast(restaurantId: string, fromDate: str
   // Analysis window, not a limit on the restaurant's retained history.
   const since = offset(asOfDate, -1095), knownBefore = new Date();
   const [restaurant, weekly, sessions, sales, menus] = await Promise.all([
-    db.restaurant.findUniqueOrThrow({ where: { id: restaurantId }, select: { mode: true } }),
+    db.restaurant.findUniqueOrThrow({ where: { id: restaurantId }, select: { mode: true, hasTerrace: true } }),
     db.restaurantServiceSchedule.findMany({ where: { restaurantId } }),
     db.restaurantServiceSession.findMany({ where: { restaurantId, serviceDate: { gte: date(since), lte: date(throughDate) } } }),
     db.dailySale.findMany({ where: { restaurantId, serviceDate: { gte: date(since), lte: date(asOfDate) } }, include: { serviceAllocation: true } }),
     db.serviceMenuVersion.findMany({ where: { restaurantId, serviceDate: { gte: date(since), lte: date(throughDate) } }, orderBy: { revision: "desc" } }),
   ]);
+  const weatherEnabled = restaurant.hasTerrace !== null && restaurant.mode === "operational" && env.OPEN_METEO_MODE !== "disabled";
+  const [weatherLocation, weatherCache] = weatherEnabled ? await Promise.all([
+    getWeatherLocation(restaurantId, true, db), readWeatherCache(db, restaurantId),
+  ]) : [null, null];
   const menuAt = (day: string, slot: ServiceSlot, historical = false) => menus.find(m => iso(m.serviceDate) === day && m.slot === slot && (!historical || m.createdAt < knownBefore));
   const history: ServiceObservation[] = [], qualifiedDays = new Set<string>();
   let excludedServices = 0;
@@ -53,7 +63,10 @@ export async function getOperationalForecast(restaurantId: string, fromDate: str
     if (!weekly.length && !session) blockers.push("Horaires de service non renseignés.");
     if (open && !menu) blockers.push("Carte du service non renseignée.");
     if (restaurant.mode !== "operational") blockers.push("Espace de démonstration : aucune prévision mesurée.");
-    const items = open ? entries.filter(e => e.available).map(e => forecastMenuEntry(e, day, slot, history)) : [];
+    const weather = weatherLocation?.status === "confirmed" && weatherLocation.position
+      ? projectServiceWeather(day, slot, weatherLocation.position, weatherCache, knownBefore) : null;
+    const weatherAdjustment = forecastWeatherAdjustment(restaurant.hasTerrace, weather);
+    const items = applyForecastWeather(open ? entries.filter(e => e.available).map(e => forecastMenuEntry(e, day, slot, history)) : [], weatherAdjustment);
     for (const item of items) if (item.quantity === null) blockers.push(`${item.name} : correspondance de vente ou historique qualifié insuffisant.`);
     const projection = projectMenuIngredients(entries, items);
     blockers.push(...projection.blockers);
@@ -74,8 +87,8 @@ export async function getOperationalForecast(restaurantId: string, fromDate: str
       }
       return count >= 4 && covers ? [{ category, portionsPerCover: Math.round(portions / covers * 1000) / 1000, observedCovers: covers, services: count }] : [];
     });
-    const forecastKey = createHash("sha256").update(JSON.stringify({ date: day, slot, menuId: menu?.id ?? null, items, blockers })).digest("hex");
-    services.push({ date: day, slot, plannedOpen: open, menuRevision: menu?.revision ?? 0, forecastKey, items, ingredientNeeds: projection.ingredients, blockers, mix });
+    const forecastKey = createHash("sha256").update(JSON.stringify({ date: day, slot, menuId: menu?.id ?? null, items, blockers, weatherAdjustment })).digest("hex");
+    services.push({ date: day, slot, plannedOpen: open, menuRevision: menu?.revision ?? 0, forecastKey, items, weatherAdjustment, ingredientNeeds: projection.ingredients, blockers, mix });
   }
   return { fromDate, throughDate, asOfDate, provenance: restaurant.mode === "demo" ? "demo_simulation" : "recorded_sales",
     services, ingredientNeeds: [...totals.values()], blockers: services.flatMap(s => s.blockers.map(b => `${s.date} ${s.slot === "lunch" ? "midi" : "soir"} : ${b}`)), excludedServices,
@@ -83,5 +96,5 @@ export async function getOperationalForecast(restaurantId: string, fromDate: str
       "Services complets et ventes ventilées uniquement ; jours absents, ventes corrigées non revues et simulations exclus.",
       "Même jour/service : au moins 4 observations ; repli service : au moins 8. Saison : 8 observations comparables sur au moins 2 années.",
       "Dispersion observée, pas un intervalle de confiance. Aucune précision terrain revendiquée.",
-      "Fenêtre d'analyse de trois ans ; l'historique conservé n'est pas limité."] };
+      "Fenêtre d'analyse de trois ans ; l'historique conservé n'est pas limité.", forecastWeatherNotice] };
 }

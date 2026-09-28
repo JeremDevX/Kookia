@@ -30,8 +30,13 @@ Le [lot de continuité du service](plans/service-flow-continuity.md) est un plan
 proposé, non implémenté : conserver le contexte entre écrans, guider les opérations
 depuis Aujourd'hui et expliciter les blocages sans changer les règles de clôture.
 Son [volet Open-Meteo informatif](plans/service-weather.md) est implémenté :
-localisation confirmée, météo de la journée et contexte conservé lors de la décision,
-sans ajustement automatique des ventes ou achats. Un bouton dans la barre du haut
+localisation confirmée, météo de la journée et contexte conservé lors de la décision.
+Le [lot terrasse](plans/terrace-weather-adjustment.md) ajoute des coefficients indicatifs
+non calibrés aux prévisions de service et besoins d’achat, sous revue du chef,
+sans modifier les opérations enregistrées ni la comparaison historique F1.
+Sa migration locale est appliquée après sauvegarde et autorisation ; les prérequis
+et preuves sont dans le lot. Le choix Terrasse reste à renseigner par le restaurant.
+Un bouton dans la barre du haut
 affiche l'état du ciel (pluie, brouillard, éclaircies…), une icône adaptée et la plage
 de température ; il ouvre une modale limitée à la commune, avec les prévisions détaillées
 sur demande. Aucun horaire ni service à saisir pour la météo. Sur Services, il suit

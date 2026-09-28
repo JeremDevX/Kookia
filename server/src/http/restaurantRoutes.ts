@@ -7,10 +7,12 @@ import { lockWeatherWorkspace } from "../application/workspace/weatherStorage.js
 
 export const restaurantRoutes = Router();
 const restaurantId = (res: Response) => (res.locals.workspace as { restaurantId: string }).restaurantId;
+const restaurantSelect = { name: true, type: true, address: true, city: true, phone: true, email: true, dailyCovers: true, hasTerrace: true } as const;
 const restaurantSchema = z.object({
   name: z.string().trim().min(1).max(120), type: z.string().trim().min(1).max(120),
   address: z.string().trim().max(300), city: z.string().trim().min(1).max(120),
   phone: z.string().trim().max(40), email: z.email().max(254), dailyCovers: z.number().int().min(0).max(100000),
+  hasTerrace: z.boolean().nullable().optional(),
 }).strict();
 const supplierSchema = z.object({ name: z.string().trim().min(1).max(120), email: z.email().max(254), phone: z.string().trim().max(40),
   deliveryWeekdays: z.array(z.number().int().min(0).max(6)).max(7).refine((days) => new Set(days).size === days.length).optional(),
@@ -19,22 +21,21 @@ const supplierSchema = z.object({ name: z.string().trim().min(1).max(120), email
 }).strict();
 restaurantRoutes.get("/restaurant", async (_req, res, next) => {
   try {
-    const record = await prisma.restaurant.findUniqueOrThrow({ where: { id: restaurantId(res) } });
-    const { name, type, address, city, phone, email, dailyCovers } = record;
-    res.json({ name, type, address, city, phone, email, dailyCovers });
+    res.json(await prisma.restaurant.findUniqueOrThrow({ where: { id: restaurantId(res) }, select: restaurantSelect }));
   } catch (error) { next(error); }
 });
 restaurantRoutes.patch("/restaurant", async (req, res, next) => {
   try {
     const input = restaurantSchema.parse(req.body);
-    await prisma.$transaction(async tx => {
+    const saved = await prisma.$transaction(async tx => {
       const id = restaurantId(res);
       await lockWeatherWorkspace(tx, id);
       const previous = await tx.restaurant.findUniqueOrThrow({ where: { id } });
-      await tx.restaurant.update({ where: { id }, data: input });
+      const updated = await tx.restaurant.update({ where: { id }, data: input, select: restaurantSelect });
       if (locationFingerprint(previous) !== locationFingerprint(input)) await invalidateWeatherLocation(tx, id);
+      return updated;
     });
-    res.json(input);
+    res.json(saved);
   } catch (error) { next(error); }
 });
 restaurantRoutes.post("/suppliers", async (req, res, next) => {

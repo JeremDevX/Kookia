@@ -21,12 +21,28 @@ it("persists restaurant and suppliers with validated input and account isolation
   await request(app).get("/api/workspace/insights").expect(401);
   const initial = await agent.get("/api/workspace/restaurant").expect(200);
   expect(initial.body.ownerId).toBeUndefined();
-  const changed = { ...initial.body, name: "Restaurant Test", city: "Lyon", dailyCovers: 200 };
+  expect(initial.body.hasTerrace).toBeNull();
+  const changed = { ...initial.body, name: "Restaurant Test", city: "Lyon", dailyCovers: 200, hasTerrace: true };
   await agent.patch("/api/workspace/restaurant").send(changed).expect(200);
   const read = await agent.get("/api/workspace/restaurant").expect(200);
   expect(read.body).toEqual(changed);
   const isolated = await other.get("/api/workspace/restaurant").expect(200);
   expect(isolated.body.city).toBe("Grenoble");
+  expect(isolated.body.hasTerrace).toBeNull();
+  const { hasTerrace: _hasTerrace, ...legacyInput } = changed;
+  expect(_hasTerrace).toBe(true);
+  expect((await agent.patch("/api/workspace/restaurant").send(legacyInput).expect(200)).body.hasTerrace).toBe(true);
+  expect((await agent.get("/api/workspace/restaurant").expect(200)).body.hasTerrace).toBe(true);
+  for (const hasTerrace of ["true", "false", 1, {}, []]) {
+    await agent.patch("/api/workspace/restaurant").send({ ...changed, hasTerrace }).expect(400);
+  }
+  expect((await agent.get("/api/workspace/restaurant").expect(200)).body.hasTerrace).toBe(true);
+  for (const hasTerrace of [false, null, true]) {
+    expect((await agent.patch("/api/workspace/restaurant").send({ ...changed, hasTerrace }).expect(200)).body.hasTerrace).toBe(hasTerrace);
+    expect((await agent.get("/api/workspace/restaurant").expect(200)).body.hasTerrace).toBe(hasTerrace);
+  }
+  await request(app).patch("/api/workspace/restaurant").send(changed).expect(401);
+  expect((await other.get("/api/workspace/restaurant").expect(200)).body.hasTerrace).toBeNull();
   await agent.patch("/api/workspace/restaurant").send({ ...changed, dailyCovers: -1 }).expect(400);
   await agent.patch("/api/workspace/restaurant").send({ ...changed, ownerId: randomUUID() }).expect(400);
   const supplier = { id: randomUUID(), name: "Supplier Test", email: "supplier@example.com", phone: "0123456789" };

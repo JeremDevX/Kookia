@@ -12,6 +12,8 @@ import type { SheetInput } from "../../../shared/serviceOperations";
 import type { ServiceSheet } from "../../../shared/serviceSheet";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 import { WeatherDecisionSummary } from "./ServiceWeatherPanel";
+import ForecastWeatherSummary from "./ForecastWeatherSummary";
+import type { ForecastWeatherAdjustment } from "../../../shared/forecastWeather";
 
 export default function ServiceSheetPanel({ date, slot, onChanged, weatherContextRef }: { date: string; slot: ServiceSlot; onChanged?: () => void; weatherContextRef?: string }) {
   const [sheet, setSheet] = useState<ServiceSheet | null>(null);
@@ -31,11 +33,13 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
   const [status, setStatus] = useState("");
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [forecastKey, setForecastKey] = useState<string | null>(null);
+  const [forecastWeather, setForecastWeather] = useState<ForecastWeatherAdjustment | undefined>();
   const loadRevision = useRef(0);
   const pendingInput = useRef<SheetInput | null>(null);
   const apply = (result: ServiceSheet) => {
     setSheet(result); setPlanned(result.planned); setOutcomes(result.outcomes); setSubstitutions(result.substitutions); setNote(result.note);
     setForecastKey(result.forecastKey);
+    setForecastWeather(result.forecastReference?.weatherAdjustment);
   };
   const load = useCallback(async () => {
     const requestRevision = ++loadRevision.current;
@@ -62,6 +66,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
         ? forecastSheetPlan(sheet.menuEntries, service.items) : null;
       if (!suggestion) { setError(service?.blockers.join(" ") || "La prévision ou la carte ne permet pas de proposer un plan complet."); return; }
       if (!planned.length) setPlanned(suggestion);
+      setForecastWeather(service!.weatherAdjustment);
       setForecastKey(service!.forecastKey); setNote(current => `${current}${current ? "\n" : ""}Référence d’estimations du ${date}, observations arrêtées au ${forecast.asOfDate}. Portions arrondies au supérieur, à revoir par le chef.`.slice(0, 2000));
       changed(); setStatus(planned.length ? "Référence actualisée ; les quantités du chef sont conservées. Revoyez-les avant validation." : "Estimations reprises dans le brouillon uniquement. Revoyez les quantités avant validation.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Prévision indisponible."); }
@@ -112,6 +117,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
       <div className="sales-actions"><Link to="/recipes">Enregistrer une production ou un complément</Link><Link to="/sales">Ventiler et revoir les ventes</Link><Link to="/stocks">Déclarer les pertes liées aux préparations</Link></div>
       <h3>Préparation prévue</h3>
       <p>Provenance du plan : {forecastKey ? validated ? "estimations reprises, puis revues par le chef" : "estimations reprises, à revoir par le chef" : "quantités saisies manuellement"}.</p>
+      {forecastKey && <ForecastWeatherSummary adjustment={forecastWeather} />}
       {!validated && (!planned.length || forecastKey) && <Button type="button" variant="outline" disabled={busy} onClick={() => void importForecast()}>{planned.length ? "Actualiser la référence de prévision, conserver le plan" : "Reprendre les estimations dans le brouillon"}</Button>}
       {!validated && forecastKey && <Button type="button" variant="outline" disabled={busy} onClick={() => { setForecastKey(null); changed(); }}>Conserver les quantités comme plan manuel</Button>}
       {!validated && <form className="sales-form" onSubmit={addPlan}>

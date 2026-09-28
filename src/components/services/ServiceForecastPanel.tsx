@@ -5,6 +5,7 @@ import { getOperationalForecast } from "../../services/serviceOperationsService"
 import { selectedForecastService } from "./forecastPresentation";
 import Button from "../common/Button";
 import "./ServiceOperations.css";
+import ForecastWeatherSummary from "./ForecastWeatherSummary";
 const modelLabels = { weekday: "Jour de semaine comparable", service: "Historique du service", seasonal: "Historique saisonnier suffisant", insufficient: "Historique insuffisant" };
 const provenanceLabels = { recorded_sales: "Ventes enregistrées", demo_simulation: "Estimations historiques", mixed: "Historique de provenance mixte" };
 function IngredientNeeds({ ingredients }: { ingredients: ForecastIngredient[] }) {
@@ -17,10 +18,12 @@ export function ForecastServiceView({ service }: { service: ForecastService | nu
   if (!service) return <p>Aucune prévision pour ce service. Vérifiez l’ouverture planifiée et la carte datée.</p>;
   return <>
     <p>{service.plannedOpen ? "Service planifié ouvert" : "Service planifié fermé"} · carte version {service.menuRevision}. L’ouverture ne prouve pas que les ventes sont complètes.</p>
+    {service.plannedOpen && <ForecastWeatherSummary adjustment={service.weatherAdjustment} />}
     {service.blockers.length > 0 && <ul aria-label="Limites du service">{service.blockers.map((limit, index) => <li key={index}>{limit}</li>)}</ul>}
     {service.items.length === 0 && <p>Aucun article éligible à une prévision.</p>}
     <ul>{service.items.map((item) => <li key={item.entryId}>
       <strong>{item.name} · {item.category}</strong> : {item.quantity == null ? "prévision indisponible" : `${item.quantity.toLocaleString("fr-FR")} articles estimés`}
+      {item.baselineQuantity != null && <p>Base historique avant météo : {item.baselineQuantity.toLocaleString("fr-FR")} articles.</p>}
       <p>Méthode : {modelLabels[item.model]} · {item.observations} services observés.</p>
       <p>Variabilité observée : {item.observedMin == null || item.observedMax == null ? "indisponible" : `${item.observedMin} à ${item.observedMax} articles`}
         {item.deviation == null ? " · dispersion inconnue" : ` · écart-type ${item.deviation.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}`}.</p>

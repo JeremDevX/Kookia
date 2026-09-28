@@ -5,6 +5,7 @@ import { orderStepLabel } from "../../../shared/orderQuantity.js";
 import { isValidOrderQuantity } from "../../domain/orders/orderQuantity";
 import type { PurchaseSuggestion } from "../../services/orderService";
 import Button from "../common/Button";
+import PurchaseWeatherDetails from "./PurchaseWeatherDetails";
 
 const number = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(value);
@@ -26,6 +27,7 @@ export default function PurchaseSuggestionCard({ item, value, inCart, busy, savi
     <div className="purchase-product-summary">
       <h4>{item.productName}</h4>
       <p className="purchase-stock-context">Besoin estimé {number(item.forecastNeed)} {item.unit} · Stock {item.countedStock === null ? "à vérifier" : `${number(item.countedStock)} ${item.unit}`}</p>
+      <PurchaseWeatherDetails references={item.weatherAdjustments} />
       {item.deliveryHorizon?.status === "known" && <p>Livraison possible le {item.deliveryHorizon.nextDeliveryDate} · besoins jusqu’au {item.deliveryHorizon.throughDate} (Europe/Paris).</p>}
       {item.expectedQuantity > 0 && <p>Attendu : {number(item.expectedQuantity)} {item.unit}, non disponible en stock. Besoin sous réserve de réception : {item.conditionalNetNeed === null ? "à vérifier" : number(item.conditionalNetNeed)} {item.unit}.</p>}
       {item.usableStock !== undefined && item.usableStock !== null && <p>Stock compté hors échéances dépassées : {number(item.usableStock)} {item.unit} · échéance dépassée : {number(item.expiredQuantity ?? 0)} {item.unit}.</p>}

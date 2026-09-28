@@ -16,6 +16,21 @@ const sheet: ServiceSheet = { serviceDate: "2026-09-21", slot: "lunch", revision
       sold: null, refused: 0, preparationLosses: [], plateReturns: 0, unsold: null, retained: 0, discarded: 0,
       recordedUnsoldWaste: 0, unexplained: null, explanation: ["Ne pas assimiler au gaspillage"] }] } };
 
+it("prints the captured weather adjustment and historical base without recomputing them", () => {
+  const html = serviceSheetHtml({ ...sheet, forecastKey: "ref", forecastReference: {
+    date: sheet.serviceDate, slot: sheet.slot, forecastKey: "ref", plannedOpen: true, menuRevision: 2,
+    ingredientNeeds: [], blockers: [], mix: [], items: [{ entryId: "entry", name: "Plat", saleItemId: "sale", category: "Plat",
+      quantity: 8.5, baselineQuantity: 10, observations: 4, model: "weekday", observedMin: 10, observedMax: 10, deviation: 0 }],
+    weatherAdjustment: { policyVersion: "terrace-weather-v1", hasTerrace: true, status: "applied", percent: -15, reason: "Pluie",
+      weather: { date: sheet.serviceDate, city: "Paris <script>", weatherCode: 63, temperatureMax: 20, maxWindSpeed: 10,
+        fetchedAt: "2026-09-21T08:00:00Z", contextRef: "captured-ref" } },
+  } });
+  expect(html).toContain("8.5 unités estimées (base historique : 10)");
+  expect(html).toContain("-15 % (avec terrasse)"); expect(html).toContain("non calibré");
+  expect(html).toContain("captured-ref"); expect(html).toContain("2026-09-21T08:00:00Z");
+  expect(html).toContain("Paris &lt;script&gt;"); expect(html).not.toContain("Paris <script>");
+});
+
 it("exports a printable semantic document with unknown values and escaped user content", () => {
   const html = serviceSheetHtml(sheet);
   expect(html).toContain('<html lang="fr">'); expect(html).toContain('scope="row"');

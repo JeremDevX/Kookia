@@ -94,7 +94,8 @@ export async function saveServiceSheet(restaurantId: string, actorId: string, in
     if (current.state === "validated" && (current.forecastKey ?? null) !== (input.forecastKey ?? null))
       throw new WorkspaceError(409, "VALIDATED_PLAN_CHANGED", "La provenance du plan validé doit être conservée.");
     let forecastReference = current.forecastReference;
-    if (input.action === "validate_plan" && input.forecastKey) {
+    if (current.state === "draft" && input.forecastKey &&
+        (input.action === "validate_plan" || current.forecastReference?.forecastKey !== input.forecastKey)) {
       const forecast = await getOperationalForecast(restaurantId, input.serviceDate, input.serviceDate, tx);
       const reference = forecast.services.find(service => service.slot === input.slot);
       if (!reference || reference.forecastKey !== input.forecastKey)

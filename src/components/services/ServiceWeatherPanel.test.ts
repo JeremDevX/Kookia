@@ -33,7 +33,7 @@ describe("weather presentation and service navigation", () => {
     expect(html).toContain("n’est pas celle de l’ensemble de la période affichée");
     expect(html).toContain("https://open-meteo.com/"); expect(html).toContain("https://www.geonames.org/");
     expect(html).not.toContain("/settings");
-    expect(html).toContain("ne modifie pas les quantités");
+    expect(html).toContain("Le chef garde la validation des quantités");
   });
   it("makes loading/errors nonblocking and distinguishes missing decision context from legacy snapshots", () => {
     const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(ServiceWeatherPanel, {

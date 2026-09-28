@@ -8,9 +8,6 @@ const PAGE_SIZE = 50;
 type BaselineItem = Baseline["items"][number];
 const formatQuantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
 const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
-const contextSourceLabel = (status: Baseline["contextualForecast"]["weather"]) =>
-  status === "not_connected" ? "sans connexion" : status === "unavailable" ? "indisponible"
-    : status === "stale" ? "périmée" : "à jour";
 
 function RecipeProjectionDetails({ item }: { item: BaselineItem }) {
   const projection = item.recipeProjection;
@@ -78,7 +75,7 @@ export default function SalesBaseline() {
         <details className="sales-baseline-method">
           <summary>Méthode et contexte</summary>
           <p>Moyenne des {baseline.lookbackDays} derniers jours calendaires complets par article. Les dates inconnues ou partielles restent exclues ; une absence de vente vaut zéro uniquement pour un service complet.</p>
-          <p>La météo, les événements et le stock ne sont pas intégrés. Position : non confirmée ; météo : {contextSourceLabel(baseline.contextualForecast.weather)} ; événements : {contextSourceLabel(baseline.contextualForecast.events)} ; données historiques : {contextSourceLabel(baseline.contextualForecast.historicalEmissions)}. Aucun ajustement contextuel n’est appliqué.</p>
+          <p>Cette base de comparaison reste sans météo, événements ni stock. L’ajustement météo selon la terrasse concerne les <Link to="/services">prévisions par service</Link> et les besoins d’achat, pas cette comparaison historique.</p>
           <p>Les ingrédients ne sont projetés qu’avec une correspondance confirmée et une version de recette datée. Cette prévision ne crée aucune vente, production, perte, sortie de stock ou commande.</p>
         </details>
         {baseline.status === "no_data" ? <div className="sales-baseline-guidance" role="status">

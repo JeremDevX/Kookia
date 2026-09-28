@@ -78,6 +78,10 @@ saisie/import, tout en laissant les règles de seuil de stock visibles.
 - Traiter explicitement saison, jour de semaine, fermetures, événements connus
   à l'avance et changements de carte. Ajouter météo/événements seulement si
   leur disponibilité future, qualité et gain hors-échantillon sont démontrés.
+  Exception explicite demandée le 28 septembre 2026 : les
+  [scénarios météo selon la terrasse](terrace-weather-adjustment.md) ajustent déjà
+  les estimations opérationnelles, avec coefficients non calibrés et aucune
+  revendication de gain. Ils ne modifient pas ce backtest historique F1.
 - Une donnée météo future ne doit pas être remplacée par une observation passée
   lors du backtest ; simuler ce qui était réellement connu à la date de décision.
 - **Sortie :** erreurs par horizon/segment, taux de couverture des entrées,

@@ -38,7 +38,7 @@ export function WeatherSummary({ weather }: { weather: ServiceWeather }) {
 export function WeatherDecisionSummary({ context }: { context?: WeatherDecisionContext }) {
   if (!context) return null;
   return <details className="service-weather-history"><summary>Météo à la validation du plan</summary>
-    {context.status === "saved" ? <><p>Contexte conservé avec la décision, sans ajustement automatique des portions.</p><WeatherSummary weather={context.weather} /></> :
+    {context.status === "saved" ? <><p>Contexte conservé avec la décision. Les portions validées par le chef restent inchangées.</p><WeatherSummary weather={context.weather} /></> :
       <p>{context.reason === "not_consulted" ? "Aucun contexte météo consulté n’a été joint au plan." : "Le contexte météo n’a pas pu être conservé. Le plan a bien été validé."}</p>}
   </details>;
 }
@@ -55,6 +55,6 @@ export default function ServiceWeatherPanel({ date, state }: {
     <div className="service-weather-actions">
       <Button type="button" variant="outline" disabled={state.loading} onClick={state.reload}>{state.error ? "Réessayer la météo" : "Actualiser la météo"}</Button>
     </div>
-    <p><small>La météo éclaire votre décision ; elle ne modifie pas les quantités proposées.</small></p>
+    <p><small>Selon le réglage de terrasse, une météo récente et complète peut ajuster les estimations. Le chef garde la validation des quantités.</small></p>
   </section>;
 }

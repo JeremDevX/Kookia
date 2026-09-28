@@ -48,6 +48,17 @@ export default function RestaurantSettings({ onSaved }: { onSaved?: () => void }
     {!restaurant ? loading && <p role="status">Chargement du restaurant…</p> : <form ref={formRef} onSubmit={submit} className="form-grid">
       {([['name', 'Nom du restaurant'], ['type', 'Type d’établissement'], ['address', 'Adresse'], ['city', 'Ville'], ['phone', 'Téléphone'], ['email', 'Email de contact']] as const).map(([field, label]) => <Input key={field} id={`restaurant-${field}`} label={label} type={field === "email" ? "email" : field === "phone" ? "tel" : "text"} value={restaurant[field]} required={field !== "phone" && field !== "address"} disabled={saving} onChange={(event) => setRestaurant({ ...restaurant, [field]: event.target.value })} />)}
       <Input id="restaurant-covers" label="Couverts moyens par jour" type="number" min={0} max={100000} step={1} required value={restaurant.dailyCovers} disabled={saving} onChange={(event) => setRestaurant({ ...restaurant, dailyCovers: Number(event.target.value) })} />
+      <div className="input-wrapper">
+        <label className="input-label" htmlFor="restaurant-terrace">Terrasse</label>
+        <select id="restaurant-terrace" className="input-field" aria-describedby="restaurant-terrace-help" disabled={saving}
+          value={restaurant.hasTerrace == null ? "" : restaurant.hasTerrace ? "yes" : "no"}
+          onChange={event => setRestaurant({ ...restaurant, hasTerrace: event.target.value === "" ? null : event.target.value === "yes" })}>
+          <option value="">Non renseigné</option>
+          <option value="yes">Oui, nous avons une terrasse</option>
+          <option value="no">Non, pas de terrasse</option>
+        </select>
+        <small id="restaurant-terrace-help">Avec une terrasse, la météo pèse davantage dans les estimations. Ces ajustements indicatifs restent à revoir avant validation. Sans réponse, aucun ajustement météo.</small>
+      </div>
       <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button>
     </form>}
   </Card>;

@@ -6,6 +6,9 @@ import { prisma } from "../infrastructure/database/prisma.js";
 import { orderDto, validateOrder } from "../application/workspace/orderService.js";
 import { getPurchaseSuggestions, recordPurchaseSuggestionDecision } from "../application/workspace/purchaseSuggestionService.js";
 import { getPurchaseReceiptLineEvidence, listPurchaseOrders, purchaseReceiptSchema, recordPurchaseReceipt } from "../application/workspace/purchaseReceiptService.js";
+import { refreshForecastWeather } from "../application/workspace/forecastWeatherService.js";
+import { weatherToday } from "../application/workspace/weatherPolicy.js";
+import type { WeatherProvider } from "../integrations/weatherProvider.js";
 
 export const orderRoutes = Router();
 const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
@@ -18,7 +21,10 @@ const suggestionDecisionSchema = z.object({ operationId: z.uuid(), suggestionKey
   decision: z.enum(["added", "excluded"]), quantity: z.number().finite().positive().max(1_000_000).multipleOf(0.001).optional() })
   .strict().refine((input) => input.decision === "added" ? input.quantity !== undefined : input.quantity === undefined);
 orderRoutes.get("/orders/suggestions", async (_req, res, next) => {
-  try { res.json(await getPurchaseSuggestions(context(res).restaurantId)); } catch (error) { next(error); }
+  try {
+    await refreshForecastWeather(context(res).restaurantId, weatherToday(new Date()), res.locals.weatherProvider as WeatherProvider);
+    res.json(await getPurchaseSuggestions(context(res).restaurantId));
+  } catch (error) { next(error); }
 });
 orderRoutes.get("/orders/receipt-lines/:lineId", async (req, res, next) => {
   try {

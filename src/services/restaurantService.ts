@@ -1,6 +1,6 @@
 import { apiRequest } from "../config/api";
 import type { Supplier } from "../types";
-export interface Restaurant { name: string; type: string; address: string; city: string; phone: string; email: string; dailyCovers: number; }
+export interface Restaurant { name: string; type: string; address: string; city: string; phone: string; email: string; dailyCovers: number; hasTerrace: boolean | null; }
 export const getRestaurant = () => apiRequest<Restaurant>("/workspace/restaurant");
 export const saveRestaurant = (restaurant: Restaurant) => apiRequest<Restaurant>("/workspace/restaurant", { method: "PATCH", body: JSON.stringify(restaurant) });
 export const saveSupplier = (supplier: Supplier, create: boolean) => {

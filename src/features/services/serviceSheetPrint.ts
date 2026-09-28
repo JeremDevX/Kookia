@@ -2,13 +2,22 @@ import type { ServiceSheet } from "../../../shared/serviceSheet";
 import { serviceSlotLabels } from "../../../shared/serviceCalendar";
 import type { WeatherDecisionContext } from "../../../shared/serviceWeather";
 import { weatherCondition } from "../../../shared/weatherConditions";
+import { forecastWeatherExplanation, forecastWeatherNotice, type ForecastWeatherAdjustment } from "../../../shared/forecastWeather";
 const escape = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
 const number = (value: number | null) => value === null ? "Inconnu" : String(value);
+function adjustmentHtml(adjustment?: ForecastWeatherAdjustment) {
+  if (!adjustment) return "";
+  const weather = adjustment.weather;
+  return `<p>${escape(forecastWeatherExplanation(adjustment))}</p><p>${escape(forecastWeatherNotice)}</p>
+${weather ? `<p>${escape(weather.city)} · ${escape(weather.date)} · ${escape(weatherCondition(weather.weatherCode).label)} (journée).
+Maximum ${number(weather.temperatureMax)} °C ; vent maximal ${number(weather.maxWindSpeed)} km/h.
+Source : Open-Meteo, récupérée le ${escape(weather.fetchedAt)}. Référence : ${escape(weather.contextRef)}.</p>` : ""}`;
+}
 function weatherHtml(context?: WeatherDecisionContext) {
   if (!context) return "";
   if (context.status === "not_saved") return "<h2>Météo à la validation du plan</h2><p>Contexte météo non conservé. Le plan reste validé indépendamment de la météo.</p>";
   const weather = context.weather;
-  return `<h2>Météo à la validation du plan</h2><p>Contexte conservé avec la décision, sans ajustement automatique des portions.</p>
+  return `<h2>Météo à la validation du plan</h2><p>Contexte conservé avec la décision. Les portions validées par le chef restent inchangées.</p>
 <p>${escape(weather.position?.place.name)} · ${escape(weather.position?.place.region)} · ${escape(weather.position?.place.country)} · précision : commune.
 ${weather.window?.basis === "day" ? "Journée entière" : `${escape(weather.window?.opensAt)}–${escape(weather.window?.closesAt)}`} (heure de Paris). Récupérée le ${escape(weather.fetchedAt)}.</p>
 ${weather.provenance === "fixture" ? "<p>Données de test, sans observation météo réelle.</p>" : ""}<p>${escape(weather.reason)}</p>
@@ -25,7 +34,8 @@ body{font:14px Arial,sans-serif;color:#18201d;margin:28px;line-height:1.45}h1{fo
 <h1>Fiche de service · ${escape(sheet.serviceDate)} · ${escape(serviceSlotLabels[sheet.slot])}</h1>
 <p>${escape(state)} · révision ${sheet.revision} · carte de référence ${sheet.menuRevision}</p>
 <p>Provenance du plan : ${sheet.forecastKey ? "estimations reprises puis revues par le chef" : "saisie manuelle"}.</p>
-${sheet.forecastReference ? `<ul>${sheet.forecastReference.items.map(item => `<li>${escape(item.name)} : ${number(item.quantity)} unités estimées, modèle ${escape(item.model)}, ${item.observations} observations.</li>`).join("")}</ul>` : ""}
+${sheet.forecastReference ? `<ul>${sheet.forecastReference.items.map(item => `<li>${escape(item.name)} : ${number(item.quantity)} unités estimées${item.baselineQuantity != null ? ` (base historique : ${number(item.baselineQuantity)})` : ""}, modèle ${escape(item.model)}, ${item.observations} observations.</li>`).join("")}</ul>` : ""}
+${adjustmentHtml(sheet.forecastReference?.weatherAdjustment)}
 ${sheet.validatedAt ? `<p>Plan validé le ${escape(sheet.validatedAt)}. La validation du plan ne constitue pas un mouvement de stock.</p>` : ""}
 ${weatherHtml(sheet.weatherContext)}
 ${sheet.closedAt ? `<p>Clôture le ${escape(sheet.closedAt)}. Les observations ci-dessous sont le constat conservé à la clôture.</p>` : ""}

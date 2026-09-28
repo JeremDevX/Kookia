@@ -11,6 +11,18 @@ const forecast: OperationalForecast = { fromDate: "2026-10-01", throughDate: "20
     { date: "2026-10-01", slot: "dinner", plannedOpen: false, menuRevision: 0, forecastKey: "b".repeat(64), ingredientNeeds: [], blockers: [], mix: [], items: [] },
   ] };
 describe("service forecasts", () => {
+  it("distinguishes the historical base, weather scenario and chef-reviewed estimate", () => {
+    const adjusted = structuredClone(forecast);
+    adjusted.services[0].items[0] = { ...adjusted.services[0].items[0], quantity: 8.5, baselineQuantity: 10 };
+    adjusted.services[0].weatherAdjustment = { policyVersion: "terrace-weather-v1", hasTerrace: true,
+      status: "applied", percent: -15, reason: "Pluie ou averses prévues.",
+      weather: { date: "2026-10-01", city: "Paris", weatherCode: 63, temperatureMax: 18, maxWindSpeed: 10,
+        fetchedAt: "2026-10-01T08:00:00Z", contextRef: "a".repeat(64) } };
+    const html = renderToStaticMarkup(createElement(ForecastPanelContent, { forecast: adjusted, date: "2026-10-01", slot: "lunch" }));
+    expect(html).toContain("8,5"); expect(html).toContain("Base historique avant météo : 10");
+    expect(html).toContain("-15 % (avec terrasse)"); expect(html).toContain("Pluie");
+    expect(html).toContain("non calibré"); expect(html).toContain("Open-Meteo");
+  });
   it("filters the selected service without mistaking whole-day ingredients for one service", () => {
     expect(selectedForecastService(forecast, "2026-10-01", "dinner")?.plannedOpen).toBe(false);
     expect(selectedForecastService(forecast, "2026-10-02", "lunch")).toBeNull();

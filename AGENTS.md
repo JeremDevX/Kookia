@@ -14,7 +14,10 @@ code before introducing or replacing boundaries.
 
 POS/OCR providers and an AI prediction engine remain planned, not active.
 Open-Meteo service context is implemented but disabled by default; confirmed city,
-freshness and provenance are required, with no automatic quantity adjustment.
+freshness and provenance are required. A known terrace setting enables explicit,
+uncalibrated weather scenarios for service forecasts and purchase needs, never
+automatic changes to recorded operations or already validated decisions. See
+[`docs/plans/terrace-weather-adjustment.md`](docs/plans/terrace-weather-adjustment.md).
 The chef must retain explicit review and validation;
 commands and menus have persistent decision records. No provider email is sent
 by order validation. The technical reference is

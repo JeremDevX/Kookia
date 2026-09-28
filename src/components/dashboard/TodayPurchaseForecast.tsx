@@ -8,6 +8,7 @@ import { useCart } from "../../context/useCart";
 import { purchaseForecastItemStatus, summarizePurchaseForecast } from "../../features/orders/purchaseForecastPresentation";
 import { getPurchaseSuggestions, type PurchaseSuggestions } from "../../services/orderService";
 import "./TodayPurchaseForecast.css";
+import PurchaseWeatherDetails from "./PurchaseWeatherDetails";
 
 const quantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
 const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(value);
@@ -78,6 +79,7 @@ export default function TodayPurchaseForecast() {
                   {item.deliveryHorizon.status === "known" && <p>Livraison possible {date(item.deliveryHorizon.nextDeliveryDate)} · besoins jusqu’au {date(item.deliveryHorizon.throughDate)}.</p>}
                   {item.expectedQuantity > 0 && <p>Attendu : {quantity(item.expectedQuantity)} {item.unit}, non disponible. Achat proposé sous réserve de réception.</p>}
                   <small>{orderStepLabel(item.orderStep, item.unit)} · conditionnement renseigné, arrondi après stock et attendu conditionnel.</small>
+                  <PurchaseWeatherDetails references={item.weatherAdjustments} />
                 </li>)}
               </ul>
               <div className="today-forecast-actions"><Link className="btn btn-primary" to={purchasePreparationHref}>Préparer ma commande<ArrowRight size={17} aria-hidden="true" /></Link>
@@ -103,7 +105,7 @@ export default function TodayPurchaseForecast() {
             <p>Les estimations utilisent les ventes complètes ventilées par service jusqu’au {date(data.asOfDate)}, le jour de semaine et les cartes datées. L’historique insuffisant bloque la suggestion.</p>
             <p>Chaque fournisseur détermine l’horizon : jours de livraison, délai et heure limite Europe/Paris. Les besoins couvrent les services planifiés jusqu’à la veille de la livraison suivante. Le jour d’arrivée ne garantit pas une disponibilité avant le service.</p>
             <p>Les commandes attendues sont distinguées du stock disponible et déduites uniquement sous réserve de réception, avec date confirmée. Les colis réels renseignés déterminent l’arrondi. Le chef vérifie et valide la commande.</p>
-            <p>Le coût est estimé avec les prix HT de vos fiches produits. La météo et les événements ne sont pas pris en compte.</p>
+            <p>Le coût est estimé avec les prix HT de vos fiches produits. Une météo récente et complète peut ajuster les besoins selon la présence d’une terrasse ; ces règles sont indicatives. Les événements ne sont pas pris en compte.</p>
             <Link to="/predictions">Voir le détail des prévisions de ventes</Link>
           </details>
         </>}

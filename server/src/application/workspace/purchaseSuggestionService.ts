@@ -8,6 +8,7 @@ import { Prisma, type PrismaClient, type WorkspaceMode } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
 import { getSalesBaseline } from "./salesBaselineService.js";
+import { forecastWeatherNotice, type ForecastWeatherReference } from "../../../../shared/forecastWeather.js";
 
 type PurchaseDatabase = PrismaClient | Prisma.TransactionClient;
 type Baseline = { model: string; asOfDate: string; forecastDate: string; provenance: PurchaseSuggestions["provenance"] };
@@ -37,6 +38,7 @@ export interface PurchaseSuggestion {
   currentUnitPrice: number;
   estimatedCost: number | null;
   sources: Array<{ saleItemName: string; recipeName: string; recipeVersion: number; quantity: number }>;
+  weatherAdjustments: ForecastWeatherReference[];
   reason: string;
   decision: { kind: "added" | "excluded"; operationId: string; quantity: number | null; orderId: string | null } | null;
 }
@@ -60,7 +62,7 @@ function suggestionFor(need: ForecastIngredient & { forecastNeed: number }, prod
   id: string; name: string; category: string; unit: string; stockRevision: number; currentStock: Prisma.Decimal;
   pricePerUnit: Prisma.Decimal; orderPackQuantity?: Prisma.Decimal | null; supplier: { name: string; deliveryWeekdays: number[]; leadTimeDays: number | null; orderCutoffTime: string | null };
 }, count: { countedQuantity: Prisma.Decimal; countDate: Date; stockRevisionAfter: number; unit: string } | undefined,
-workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, projectionComplete: boolean, now: Date, expectedQuantity: number, availability: ReturnType<typeof purchaseAvailability> | null): PurchaseSuggestion {
+workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, projectionComplete: boolean, now: Date, expectedQuantity: number, availability: ReturnType<typeof purchaseAvailability> | null, weatherAdjustments: ForecastWeatherReference[]): PurchaseSuggestion {
   const deliveryHorizon = supplierDeliveryHorizon(product.supplier, now);
   const packKnown = product.orderPackQuantity !== null && product.orderPackQuantity !== undefined;
   const constraintsKnown = deliveryHorizon.status === "known" && packKnown;
@@ -83,7 +85,7 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
     orderStep, stockRevision: product.stockRevision, unit: product.unit, unitMatches,
     baselineModel: baseline.model, asOfDate: baseline.asOfDate, forecastDate: baseline.forecastDate,
     workspaceMode, provenance: baseline.provenance,
-    sources: need.sources,
+    sources: need.sources, weatherAdjustments,
   };
   const suggestionKey = createHash("sha256").update(JSON.stringify(input)).digest("hex");
   const reason = !constraintsKnown ? "Renseignez les contraintes de livraison et le conditionnement réel avant de valider une suggestion." : !unitMatches ? "L’unité de la recette ne correspond plus à l’unité du produit."
@@ -102,7 +104,7 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
     countDate: countVerified ? count!.countDate.toISOString().slice(0, 10) : null,
     netNeed, orderStep, estimatedQuantity, currentUnitPrice: Number(product.pricePerUnit),
     estimatedCost: estimatedQuantity === null ? null : roundQuantity(estimatedQuantity * Number(product.pricePerUnit)),
-    sources: need.sources, reason, decision: null };
+    sources: need.sources, weatherAdjustments, reason, decision: null };
 }
 
 export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseDatabase = prisma, inputDate = new Date()): Promise<PurchaseSuggestions> {
@@ -146,7 +148,9 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
         .map((ingredient) => ({ date: service.date, slot: service.slot, quantity: ingredient.quantity }))), arrivals, today, horizon.status === "known" ? horizon.nextDeliveryDate : today) : null;
     return [suggestionFor(need, product, count, workspaceMode, context,
       forecast.provenance === "recorded_sales", blockers.length === 0, inputDate,
-      roundQuantity(arrivals.reduce((sum, arrival) => sum + arrival.quantity, 0)), availability)];
+      roundQuantity(arrivals.reduce((sum, arrival) => sum + arrival.quantity, 0)), availability,
+      forecast.services.flatMap(service => service.weatherAdjustment && service.ingredientNeeds.some(ingredient => ingredient.productId === product.id)
+        ? [{ date: service.date, slot: service.slot, adjustment: service.weatherAdjustment }] : []))];
   });
   const decisionRows = await db.recommendationDecision.findMany({
     where: { restaurantId, decision: { in: ["purchase_suggestion_added", "purchase_suggestion_excluded"] } },
@@ -176,7 +180,7 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
       "Les contraintes de livraison inconnues et les conditionnements non renseignés bloquent la suggestion.",
       "La couverture est simulée par date et FEFO : les lots à échéance dépassée ne couvrent pas un service ultérieur. Une échéance inconnue reste à vérifier par le chef.",
       "Les commandes attendues ne sont pas du stock disponible. Le besoin conditionnel reste soumis à leur réception.",
-      "Le prix utilise le catalogue actuel, à titre indicatif; ce n’est pas un prix historique ni un montant comptable."] };
+      "Le prix utilise le catalogue actuel, à titre indicatif; ce n’est pas un prix historique ni un montant comptable.", forecastWeatherNotice] };
 }
 
 export async function recordPurchaseSuggestionDecision(restaurantId: string, actorId: string, input: {

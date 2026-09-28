@@ -116,6 +116,7 @@ model Restaurant {
   phone        String
   email        String
   dailyCovers  Int
+  hasTerrace   Boolean?
   mode         WorkspaceMode @default(operational)
   seededAt     DateTime @default(now())
   serviceSchedules RestaurantServiceSchedule[]

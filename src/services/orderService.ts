@@ -1,4 +1,5 @@
 import type { SupplierDeliveryHorizon } from "../../shared/supplierDelivery";
+import type { ForecastWeatherReference } from "../../shared/forecastWeather";
 import { apiRequest } from "../config/api";
 export interface OrderLineInput { productId: string; quantity: number; predictionId?: string; cartId?: string; }
 export interface PurchaseOrder {
@@ -49,6 +50,7 @@ export interface PurchaseSuggestion {
   currentUnitPrice: number;
   estimatedCost: number | null;
   sources: Array<{ saleItemName: string; recipeName: string; recipeVersion: number; quantity: number }>;
+  weatherAdjustments?: ForecastWeatherReference[];
   reason: string;
   decision: { kind: "added" | "excluded"; operationId: string; quantity: number | null; orderId: string | null } | null;
 }

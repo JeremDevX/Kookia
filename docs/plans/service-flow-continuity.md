@@ -2,6 +2,11 @@
 
 ## 1. Objectif et statut
 
+**Évolution séparée :** le [lot terrasse et ajustement météo](terrace-weather-adjustment.md)
+étend désormais W0–W2 aux estimations opérationnelles, sur demande explicite.
+Les exclusions d’ajustement météo de ce plan concernent son périmètre initial,
+pas ce nouveau lot. Les restrictions de recette navigateur restent inchangées.
+
 **Plan proposé le 27 septembre 2026, complété le 28 septembre avec Open-Meteo ; non implémenté.** Inspection au commit
 `8c69c6f`, arbre propre avant rédaction. Les résultats de tests de
 [l'adaptation opérationnelle](operational-realism.md) sont des preuves antérieures,

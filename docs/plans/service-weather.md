@@ -2,6 +2,12 @@
 
 ## Statut et objectif
 
+**Évolution du 28 septembre 2026 :** le [lot terrasse et ajustement](terrace-weather-adjustment.md)
+remplace les restrictions « aucun coefficient » et « calculs inchangés » ci-dessous
+pour les prévisions opérationnelles et achats. Les sections W0–W2 décrivent leur
+périmètre initial ; les règles, traces et preuves actuelles sont dans ce nouveau lot.
+La baseline historique F1 et les opérations déjà enregistrées restent inchangées.
+
 **Implémenté localement le 28 septembre 2026 ; configuration désactivée
 par défaut, mode public sans clé activé dans le `.env` local de développement ;
 recette visuelle/interactions en attente.**

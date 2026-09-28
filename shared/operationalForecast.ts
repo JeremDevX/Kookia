@@ -1,12 +1,15 @@
 import type { ServiceSlot } from "./serviceCalendar.js";
+import type { ForecastWeatherAdjustment } from "./forecastWeather.js";
 export interface ForecastItem {
   entryId: string; name: string; saleItemId: string | null; category: string;
   quantity: number | null; observations: number; model: "weekday" | "service" | "seasonal" | "insufficient";
   observedMin: number | null; observedMax: number | null; deviation: number | null;
+  baselineQuantity?: number | null;
 }
 export interface ForecastService {
   date: string; slot: ServiceSlot; plannedOpen: boolean; menuRevision: number; forecastKey: string;
   items: ForecastItem[]; ingredientNeeds: ForecastIngredient[]; blockers: string[];
+  weatherAdjustment?: ForecastWeatherAdjustment;
   mix: Array<{ category: string; portionsPerCover: number; observedCovers: number; services: number }>;
 }
 export interface ForecastIngredient {
