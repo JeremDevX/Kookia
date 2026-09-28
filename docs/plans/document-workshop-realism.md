@@ -60,8 +60,36 @@ causaux et pièces variées. L’atelier reste local, déterministe, sans API ni
   Ces preuves contrôlent le modèle et sa cohérence, pas une calibration terrain,
   qui n’est pas fournie dans ce mandat.
 
+## Extension terrasse et météo — 28 septembre 2026
+
+- Choix Terrasse oui/non/non renseigné et météo facultative, conditions fixes ou
+  variées par date. Aucune requête Open-Meteo : provenance `scenario`, coefficients
+  indicatifs non calibrés, maxima saisonniers et répartition déterministe.
+- Coefficients extraits dans `shared/weatherScenario.ts` et réutilisés par le
+  contrôle météo serveur existant, sans modifier ses gardes ni ses résultats.
+- Base semaine/saison et ajustement séparés ; même calcul pour achats et
+  préparation, avant la demande. Détail quotidien, fiche établissement, prévision,
+  guide et JSON enrichis. Aucun changement du CSV ni du checkpoint stock version 2.
+- Les paramètres historiques omettant les nouveaux choix conservent leur calcul.
+  Les choix de terrasse/météo restent ceux du formulaire lors d’une reprise.
+- Validation : lint, builds web/API/atelier et `npm test` réussis : **316 tests
+  Vitest dans 67 fichiers**, dont **38 pour l’atelier**, et **35 tests de scripts**.
+  Les neuf scénarios d’incident vérifient désormais la conservation avec météo.
+  Les nouvelles assertions couvrent repli, arrondis, causalité achats/prévision,
+  reprise, PDF/ZIP et sémantique des champs en rendu React statique.
+- Inspection finale de **3 PDF temporaires / 3 pages** (établissement, pluie avec
+  terrasse midi/soir, brouillard sans terrasse renseignée), rendus avec PDFKit :
+  texte lisible et extractible, coefficient et provenance visibles, aucune note
+  isolée sur une page supplémentaire dans ces cas. ZIP de **58 entrées** vérifié
+  par CRC, sans doublon ni chemin traversant. Fixtures temporaires uniquement,
+  aucun compte ni base utilisé. Les 14 tests d’export/météo et le build atelier
+  ont été relancés après les dernières corrections de copie PDF.
+- L’utilisateur a confirmé **aucun test navigateur nécessaire** pour cette
+  extension. Aucun test navigateur exécuté ; les contrôles sont hors navigateur.
+
 ## Retour arrière
 
-Changements limités à l’atelier, sa documentation et le guide d’intégration.
+Changements limités à l’atelier, sa documentation, le guide d’intégration et
+l’extraction de la politique météo pure partagée avec le serveur.
 Aucune migration de données. Les archives précédentes restent lisibles ; seule
 la reprise automatique exige le nouveau format versionné.

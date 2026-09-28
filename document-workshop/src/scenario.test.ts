@@ -11,7 +11,7 @@ import { getOrderStep, isOrderQuantity } from "../../shared/orderQuantity";
 const sold = (s: Scenario) => s.days.reduce((n, d) => n + d.services.reduce((n, s) => n + s.runs.reduce((n, r) => n + r.sold, 0), 0), 0);
 describe("chronological restaurant engine", () => {
   it.each<Incident | "mixed">(["normal", "short_delivery", "late_delivery", "unavailable", "high_waste", "refund", "stock_gap", "demand_shift", "mixed"])("conserves stock, prepared portions and transaction money for %s", incident => {
-    const scenario = generateScenario({ ...input, days: 42, covers: 200, services: "both", incident });
+    const scenario = generateScenario({ ...input, days: 42, covers: 200, services: "both", incident, hasTerrace: true, weather: "varied" });
     for (const [index, day] of scenario.days.entries()) {
       expect(day.card + day.cash).toBe(day.collected);
       expect(day.gross - day.discount - day.refunded).toBe(day.collected);

@@ -8,6 +8,7 @@ import type { Checkpoint, Day, Incident, Options, OptionsInput, Scenario } from 
 import { bootstrapPurchases, planTomorrow, receivePurchases } from "./purchasing";
 import { runService } from "./service";
 import { refundTransaction } from "./till";
+import { scenarioWeather } from "./weather";
 
 export { localToday, displayDate, offsetDate } from "./calendar";
 export { optionsSchema } from "./model";
@@ -19,7 +20,7 @@ function incidentOn(date: string, origin: string, options: Options): Incident {
   return options.incident === "mixed" ? incidents[Math.floor(draw(options.seed, `${date}:incident`) * incidents.length)] : options.incident;
 }
 function openingDay(date: string, opening: Checkpoint["lots"], incident: Incident, options: Options): Day {
-  return { date, open: isOpen(date, options), incident, events: [], forecastCovers: 0, covers: 0,
+  return { date, open: isOpen(date, options), incident, events: [], baselineCovers: 0, forecastCovers: 0, covers: 0, weather: scenarioWeather(date, options),
     services: [], waste: [], closingLots: [], stock: ingredients.map(p => ({ id: p.id, opening: available(opening, p.id), ordered: 0,
       received: 0, shortage: 0, consumed: 0, loss: 0, adjustment: 0, closing: 0 })),
     gross: 0, discount: 0, refunded: 0, collected: 0, net: 0, tax: 0, card: 0, cash: 0 };
@@ -44,6 +45,7 @@ export function generateScenario(input: OptionsInput, continuation?: Checkpoint)
     if (day.incident === "high_waste") spoilLot(lots, day, options);
     if (day.open) {
       for (const name of serviceNames(options)) day.services.push(runService(day, name, lots, options));
+      day.baselineCovers = day.services.reduce((sum, s) => sum + s.baselineCovers, 0);
       day.forecastCovers = day.services.reduce((sum, s) => sum + s.forecastCovers, 0);
       day.covers = day.services.reduce((sum, s) => sum + s.covers, 0);
       const transactions = day.services.flatMap(s => s.transactions);

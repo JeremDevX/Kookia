@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Ingredient, Recipe } from "./catalog";
+import type { ScenarioWeather } from "./weather";
 
 export const optionsSchema = z.object({
   name: z.string().trim().min(1).max(80), address: z.string().trim().min(1).max(120),
@@ -13,6 +14,8 @@ export const optionsSchema = z.object({
   closedWeekdays: z.array(z.number().int().min(0).max(6)).max(6).refine(v => new Set(v).size === v.length).default([1]),
   services: z.enum(["lunch", "dinner", "both"]).default("lunch"),
   drinks: z.boolean().default(true), mealDeals: z.boolean().default(true),
+  hasTerrace: z.boolean().nullable().default(null),
+  weather: z.enum(["none", "varied", "clear", "rain", "fog", "storm"]).default("none"),
 }).strict();
 export type Options = z.infer<typeof optionsSchema>;
 export type OptionsInput = z.input<typeof optionsSchema>;
@@ -49,12 +52,12 @@ export interface Transaction {
   refund: number; refundNet: number; refundRecipeId?: string; refundReason?: string;
 }
 export interface Service {
-  name: ServiceName; forecastCovers: number; covers: number; runs: RecipeRun[];
+  name: ServiceName; baselineCovers: number; forecastCovers: number; covers: number; runs: RecipeRun[];
   decisions: Decision[]; transactions: Transaction[];
 }
 export interface Day {
   date: string; open: boolean; incident: Incident; events: string[];
-  forecastCovers: number; covers: number; services: Service[]; stock: StockLine[];
+  baselineCovers: number; forecastCovers: number; weather: ScenarioWeather; covers: number; services: Service[]; stock: StockLine[];
   waste: Waste[]; closingLots: Lot[];
   gross: number; discount: number; refunded: number; collected: number;
   net: number; tax: number; card: number; cash: number;

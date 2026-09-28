@@ -30,7 +30,11 @@ Première règle correspondante uniquement, sans cumul :
 | Autres conditions connues | 0 % | 0 % |
 
 Les codes exacts et seuils sont dans
-[la politique pure](../../server/src/application/workspace/forecastWeatherPolicy.ts).
+[la politique pure partagée](../../shared/weatherScenario.ts).
+Le [contrôle serveur](../../server/src/application/workspace/forecastWeatherPolicy.ts)
+garde la vérification de provenance, de fraîcheur et de complétude. L’atelier
+documentaire réutilise uniquement les coefficients pour ses hypothèses de scénario,
+sans accéder aux données du restaurant ni se présenter comme météo réelle.
 La quantité est multipliée par `1 + coefficient / 100`, arrondie à trois décimales.
 La base et sa dispersion observée restent conservées ; aucune quantité inconnue
 n’est remplacée par une estimation météo. La reprise en portions de préparation

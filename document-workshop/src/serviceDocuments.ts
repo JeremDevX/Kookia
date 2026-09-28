@@ -2,6 +2,7 @@ import { money, number, recipeById } from "./catalog";
 import { section, serviceLabel } from "./documentModel";
 import type { WriteDocument } from "./documentModel";
 import type { Day, Scenario } from "./model";
+import { scenarioWeatherNotice, scenarioWeatherSummary, terraceLabel, weatherPercent } from "./weather";
 
 export function dailySales(day: Day) {
   const quantities = new Map<string, number>();
@@ -13,9 +14,14 @@ export function dailySales(day: Day) {
 export function serviceDocuments(scenario: Scenario, day: Day, add: WriteDocument) {
   if (!day.open) return;
   const { date } = day;
-  add("forecast", "Prévision et plan de préparation", date, "01", day.services.map(s => section(`${serviceLabel(s.name)} · ${s.forecastCovers} couverts prévus`,
-    ["Recette", "Prévu", "Planifié", "Lot"], s.runs.map(r => [recipeById(r.recipeId).name, String(r.forecast), String(r.planned), String(recipeById(r.recipeId).batch)]))),
-    ["Plan établi avant connaissance de la fréquentation et des incidents du service. Café préparé à la commande. Les lots de préparation arrondissent les besoins."]);
+  add("forecast", "Prévision et plan de préparation", date, "01", [
+    section("Couverts avant préparation", ["Service", "Base semaine/saison", "Effet météo", "Prévu ajusté"],
+      day.services.map(s => [serviceLabel(s.name), String(s.baselineCovers), weatherPercent(day.weather.percent), String(s.forecastCovers)])),
+    ...day.services.map(s => section(`${serviceLabel(s.name)} · ${s.forecastCovers} couverts prévus`,
+      ["Recette", "Prévu", "Planifié", "Lot"], s.runs.map(r => [recipeById(r.recipeId).name, String(r.forecast), String(r.planned), String(recipeById(r.recipeId).batch)]))),
+  ], [`Terrasse : ${terraceLabel(day.weather.hasTerrace)}. ${scenarioWeatherSummary(day.weather)}. ${day.weather.reason}`, scenarioWeatherNotice,
+    "Même hypothèse météo de journée à midi et au soir. Arrondi des couverts par service, puis des portions et lots de préparation.",
+    "Plan avant demande et incidents du service. Café préparé à la commande."]);
   add("menu", "Carte du jour", date, "01", day.services.map(s => section(`Service ${serviceLabel(s.name).toLowerCase()}`, ["Séquence", "Choix", "Prix TTC"],
     s.runs.map(r => [recipeById(r.recipeId).category, recipeById(r.recipeId).name, money(r.price)]))),
     [scenario.options.mealDeals ? "Midi : réduction de 2,00 EUR sur l'entrée ou le dessert avec un plat, une réduction par couvert. Appliquée sur les transactions." : "Carte à l'unité, sans formule.",

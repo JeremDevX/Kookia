@@ -23,6 +23,17 @@ export function Settings({ value, onChange }: Props) {
       <label>Écart de fréquentation autour de la prévision : ± {value.variationPercent} %<input type="range" min={0} max={50} step={5} value={value.variationPercent} onChange={e => update("variationPercent", Number(e.target.value))}/></label>
       <p className="hint">La prévision suit la semaine et la saison. Ce réglage ajoute un écart au service, sans changer les achats prévus. À 0 %, les couverts suivent la prévision ; le choix des plats reste variable.</p>
     </div>
+      <details><summary>Terrasse et météo</summary><div className="fields">
+        <label>Le restaurant possède une terrasse<select aria-describedby="workshop-weather-help" value={value.hasTerrace === null ? "unknown" : value.hasTerrace ? "yes" : "no"}
+          onChange={e => update("hasTerrace", e.target.value === "unknown" ? null : e.target.value === "yes")}>
+          <option value="unknown">Non renseigné</option><option value="yes">Oui</option><option value="no">Non</option>
+        </select></label>
+        <label>Météo du dossier<select aria-describedby="workshop-weather-help" value={value.weather} onChange={e => update("weather", e.target.value as Options["weather"])}>
+          <option value="none">Sans météo</option><option value="varied">Conditions variées selon les jours</option>
+          <option value="clear">Éclaircies</option><option value="rain">Pluie</option><option value="fog">Brouillard</option><option value="storm">Orage et vent fort</option>
+        </select></label>
+        <p id="workshop-weather-help" className="hint">Hypothèses de scénario, pas une prévision Open-Meteo. La terrasse renforce l’effet météo sur les estimations, les achats et la préparation. Sans réponse sur la terrasse ou sans météo, la base reste inchangée. Les températures suivent la saison.</p>
+      </div></details>
       <details><summary>Jours ouverts, services et carte</summary><div className="fields">
         <label>Services<select value={value.services} onChange={e => update("services", e.target.value as Options["services"])}>
           <option value="lunch">Midi uniquement</option><option value="dinner">Soir uniquement</option><option value="both">Midi et soir (60 % / 40 %)</option>

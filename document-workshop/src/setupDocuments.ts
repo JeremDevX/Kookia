@@ -3,14 +3,17 @@ import { available, grossDosages } from "./inventory";
 import type { Scenario } from "./model";
 import { section, serviceLabel } from "./documentModel";
 import type { WriteDocument } from "./documentModel";
+import { terraceLabel } from "./weather";
 
 export function setupDocuments(scenario: Scenario, add: WriteDocument) {
   const { options, days, opening } = scenario;
   add("identity", "Fiche établissement", options.start, "01", [section("Maison", ["Champ", "Valeur"], [
     ["Nom", options.name], ["Cuisine", identity.type], ["Adresse", options.address], ["Ville", options.city],
     ["Contact", options.email], ["Responsable", identity.chef], ["Couverts de référence / jour ouvert", String(options.covers)],
+    ["Terrasse", terraceLabel(options.hasTerrace)],
     ["Reprise", opening ? `${opening.dossier} · clôture ${opening.asOf}` : "Nouveau dossier, stock initial nul"],
-  ])], ["Hypothèses de travail locales : calendrier, rendements, fréquentation, prix et durées de conservation ne sont pas calibrés sur un établissement réel."]);
+  ])], ["Hypothèses de travail locales : calendrier, météo, rendements, fréquentation, prix et durées de conservation ne sont pas calibrés sur un établissement réel.",
+    "Revoir le choix Terrasse dans les paramètres du restaurant. La commune météo se confirme séparément dans Kookia ; le dossier ne la configure pas."]);
   const weekdays = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
   add("suppliers", "Répertoire fournisseurs", options.start, "01", [section("Approvisionnements", ["Fournisseur", "Contact", "Tournées prévues"], suppliers.map(s => [s.name, s.email, s.deliveryDays.map(d => weekdays[d]).join(", ")]))],
     ["Commande la veille de la tournée. Livraison de mise en route convenue avant le premier service ; les jours fermés peuvent recevoir une livraison."]);

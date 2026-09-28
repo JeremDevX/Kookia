@@ -31,23 +31,51 @@ Le build autonome est dans `dist/document-workshop`. Le build principal vide
 3. Régler l’écart de fréquentation autour de la prévision, de 0 à 50 %.
    À 0 %, les couverts suivent la prévision, mais le calendrier, le choix des
    plats et les incidents de fréquentation peuvent toujours varier.
-4. Dans **Jours ouverts, services et carte**, choisir les fermetures (lundi par
+4. Dans **Terrasse et météo**, indiquer si le restaurant a une terrasse et choisir
+   sans météo, conditions variées, éclaircies, pluie, brouillard ou orage/vent fort.
+   Ce sont des **hypothèses de scénario**, pas des prévisions Open-Meteo. Sans météo
+   ou sans indication de terrasse, la base semaine/saison reste inchangée.
+5. Dans **Jours ouverts, services et carte**, choisir les fermetures (lundi par
    défaut), midi, soir ou les deux. Les deux services répartissent la référence
    à 60 % / 40 %, puis s’arrondissent séparément. Au moins un jour de la semaine
    doit rester ouvert. Café à la commande et formule midi sont facultatifs.
-5. Ajuster les parts d’entrée/dessert, de 0 à 100 %. Le **sur-parage de référence**
+6. Ajuster les parts d’entrée/dessert, de 0 à 100 %. Le **sur-parage de référence**
    est pondéré selon l’ingrédient, en complément de son rendement de préparation.
-6. Choisir un incident, ou les imprévus variés, et sa fréquence. Un créneau tous
+7. Choisir un incident, ou les imprévus variés, et sa fréquence. Un créneau tous
    les N jours calendaires depuis le début du dossier initial, uniquement sur
    journée ouverte. Un incident fournisseur sans livraison prévue est signalé
    sans effet, pas transformé en réception. Les reprises conservent cet ancrage.
-7. Cliquer **Générer** puis télécharger le ZIP. Les réglages modifiés ne changent
+8. Cliquer **Générer** puis télécharger le ZIP. Les réglages modifiés ne changent
    pas le dossier affiché avant génération. Mêmes paramètres, numéro et état
    d’ouverture : mêmes résultats.
 
 La synthèse **De la prévision au service** distingue couverts prévus/demandés et
 articles préparés/servis/invendus. Les demandes non servies ne deviennent jamais
 ventes. Le détail quotidien expose incidents et nombre de lots reportés.
+
+### Terrasse et météo : une hypothèse explicite
+
+Le détail quotidien et la fiche de prévision montrent la **base avant météo**,
+la condition (pluie, brouillard…), les maxima de température/vent, le pourcentage
+et le **prévu ajusté**. Les coefficients sont ceux du
+[lot météo Kookia](plans/terrace-weather-adjustment.md), mutualisés dans une
+[politique pure](../shared/weatherScenario.ts) : pluie −15 % avec terrasse contre
+−5 % sans terrasse, par exemple. Ils ne sont pas calibrés sur les ventes réelles.
+La base de l’atelier reste un profil semaine/saison, pas un historique de ventes.
+
+La météo varie de façon reproductible par date et numéro de dossier, avec des
+températures de travail saisonnières. La même hypothèse de journée vaut pour midi
+et soir. Les couverts ajustés sont arrondis par service, puis les portions par
+recette et les lots de préparation. Les achats utilisent ce même calcul, avant
+déduction du stock et des commandes attendues. Les jours fermés restent à zéro.
+La demande est ensuite répartie autour de cette estimation avec l’écart et les
+incidents choisis : ce mécanisme **ne prouve aucun gain prédictif**.
+
+La fiche établissement conserve le choix Terrasse. Le guide explique sa reprise
+dans les paramètres de Kookia et la confirmation séparée de la commune depuis le
+bouton météo. Le dossier ne configure aucune connexion et ne fournit jamais une
+météo à importer comme observation réelle. Ne pas appliquer une seconde fois le
+coefficient aux quantités déjà ajustées.
 
 ## Un déroulement chronologique
 
@@ -111,6 +139,7 @@ poids cuit mesuré n’est fourni. Les hypothèses demandent une calibration ter
   commandes en attente sont conservés ; une tournée retardée reste en attente.
 - Les réglages d’activité du formulaire sont conservés et restent à revoir. À
   réglages identiques, découper une période ne change pas les journées obtenues.
+  Cela comprend Terrasse et Météo : le fichier de stock ne les remplace pas.
 - **Retirer la reprise** revient à un dossier neuf lors de la prochaine génération.
   Cela ne modifie ni le dossier affiché ni un stock existant dans Kookia.
 
@@ -127,7 +156,9 @@ version datée lors de l’intégration, pas le remplacement d’une fiche pass�
   avec ventes et note `sans-ventes.md` pour les jours fermés ou sans vente.
 - `ventes-periode-complete.csv`, seulement si au moins une vente existe.
 - `scenario.json` : format 2, catalogue figé, options, commandes, journées,
-  services, décisions, transactions, déchets et lots de clôture.
+  services, décisions, transactions, déchets et lots de clôture. Les journées
+  ajoutent `baselineCovers` et une météo de provenance `scenario` avec ses
+  conditions, sa version de règle, le choix Terrasse, le coefficient et sa raison.
 - `stock-reprise.json` : état minimal versionné à réutiliser dans l’atelier.
 - `guide.md` : ordre et limites de reprise, pièces et rapprochements.
 
@@ -180,9 +211,13 @@ activés par l’atelier.
 Application React/Vite séparée. Moteur pur par responsabilités : calendrier et
 carte, achats, lots, service et caisse ; assemblage documentaire séparé du modèle.
 La reprise valide le JSON externe à sa frontière. Aucune nouvelle dépendance.
+Les anciens paramètres sans Terrasse/Météo sont normalisés en « non renseigné »
+et « sans météo ». Le format de reprise stock version 2 et le CSV natif ne
+changent pas. Les gardes de provenance/fraîcheur de la météo réelle restent côté
+serveur : partager les coefficients n’autorise pas une fixture à ajuster Kookia.
 
 ```bash
-npx vitest run document-workshop/src/scenario.test.ts document-workshop/src/workshop.test.ts
+npx vitest run document-workshop/src/scenario.test.ts document-workshop/src/workshop.test.ts document-workshop/src/weather.test.ts
 npm run lint
 npm run build
 npm run documents:build

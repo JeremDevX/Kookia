@@ -1,6 +1,7 @@
 import { roundOrderQuantity } from "../../shared/orderQuantity";
 import { ingredientById, ingredients, quantity, suppliers } from "./catalog";
-import { draw, expectedCovers, forecastPortions, isOpen, menuFor, offsetDate, purchasePrice, serviceNames, weekday } from "./calendar";
+import { draw, forecastPortions, isOpen, menuFor, offsetDate, purchasePrice, serviceNames, weekday } from "./calendar";
+import { serviceForecast } from "./forecast";
 import { available, grossDosages } from "./inventory";
 import type { Day, Lot, Options, Purchase } from "./model";
 
@@ -18,7 +19,7 @@ export function forecastNeeds(from: string, until: string, options: Options) {
   for (let date = from; date < until; date = offsetDate(date, 1)) {
     if (!isOpen(date, options)) continue;
     for (const service of serviceNames(options)) for (const recipe of menuFor(date, service, options)) {
-      const { planned } = forecastPortions(recipe, expectedCovers(date, service, options), options);
+      const { planned } = forecastPortions(recipe, serviceForecast(date, service, options).forecastCovers, options);
       for (const [id, dosage] of Object.entries(grossDosages(recipe, options.lossPercent))) {
         needs[id] = quantity((needs[id] ?? 0) + quantity(dosage * planned / 10));
       }

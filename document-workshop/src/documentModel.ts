@@ -5,12 +5,12 @@ export interface Document {
   sections: Section[]; notes: string[]; workflow: string; style: DocumentStyle;
 }
 export const workflows = {
-  identity: "Paramètres → Restaurant : reprendre l'identité et les couverts de référence après revue.",
+  identity: "Paramètres → Restaurant : reprendre l'identité, les couverts de référence et le choix Terrasse après revue. Confirmer la commune depuis le bouton météo de Kookia, sans importer la météo du dossier.",
   suppliers: "Fournisseurs : créer ou rapprocher les fiches. Les tournées et conditionnements sont des hypothèses de travail, aucun email n'est envoyé.",
   catalog: "Stocks : rapprocher les produits, unités, prix et fournisseurs. Stock initial zéro seulement pour un dossier neuf sans stock préexistant ; ne jamais écraser le stock du compte.",
   recipes: "Recettes : rendement 10 portions, dosages BRUTS de la fiche, date d'effet indiquée. Les parures sont incluses. Associer 1 article vendu à 1 portion ; ne pas recréer les recettes inchangées à chaque reprise.",
   menu: "Services et carte : reprendre les choix, recettes, disponibilités et prix par service après revue du chef. Aucune validation dans Kookia depuis l'atelier.",
-  forecast: "Prévision de travail établie avant service. Elle ne constitue ni vente, ni production, ni prévision terrain qualifiée de Kookia.",
+  forecast: "Estimation de travail établie avant service, avec base et effet météo séparés. Elle ne constitue ni vente, ni production, ni prévision terrain qualifiée de Kookia. Revoir le plan ; ne pas appliquer une seconde fois le coefficient aux quantités ajustées.",
   order: "Achats : reprendre et vérifier la commande avant validation. Une commande en attente ou retardée ne crédite pas le stock.",
   invoice: "Factures : saisie manuelle et rapprochement des références commande/livraison. Sans OCR générique. La facture seule ne réceptionne rien ; utiliser les quantités réellement reçues.",
   delivery: "Achats → Réception : enregistrer une seule fois les quantités livrées, par commande OU par facture, jamais les deux. Une tournée retardée n'est pas une réception.",
