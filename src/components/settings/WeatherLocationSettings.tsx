@@ -13,8 +13,11 @@ export default function WeatherLocationSettings({ onConfirmed }: { onConfirmed: 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
+  const [editing, setEditing] = useState(false);
   const requestId = useRef(0);
   const resultsHeading = useRef<HTMLHeadingElement>(null);
+  const locationHeading = useRef<HTMLHeadingElement>(null);
+  const queryInput = useRef<HTMLInputElement>(null);
   const load = useCallback(async () => {
     const request = ++requestId.current;
     setBusy(true); setError(""); setStatus("");
@@ -47,23 +50,25 @@ export default function WeatherLocationSettings({ onConfirmed }: { onConfirmed: 
       const saved = await confirmWeatherLocation({ placeId: selectedId, expectedRevision: location.revision, addressFingerprint: location.addressFingerprint });
       onConfirmed();
       if (request !== requestId.current) return;
-      setLocation(saved); setStatus("Commune confirmée. La météo peut être consultée pour vos services.");
+      setLocation(saved); setEditing(false); setPlaces(null); setSelectedId(null); setStatus("Commune enregistrée.");
+      requestAnimationFrame(() => { if (request === requestId.current) locationHeading.current?.focus(); });
     } catch (cause) { if (request === requestId.current) setError(cause instanceof Error ? cause.message : "Confirmation impossible."); }
     finally { if (request === requestId.current) setBusy(false); }
   };
   return <Card>
-    <h2 id="weather-location-title">Commune pour la météo</h2>
-    <p>Confirmez la commune du restaurant. La prévision ne correspond pas à une mesure à votre adresse.</p>
+    <h2 id="weather-location-title" ref={locationHeading} tabIndex={-1}>Commune pour la météo</h2>
+    <p>La météo couvre toute la journée, à l’échelle de votre commune.</p>
     {busy && <p role="status">Chargement…</p>}
     {error && <p role="alert">{error}</p>}
     {status && <p role="status">{status}</p>}
     {location && <>
       {location.status === "confirmed" && location.position && <p>Commune confirmée : <strong>{location.position.place.name}</strong> · {location.position.place.region} · {location.position.place.country}.</p>}
       {location.status === "needs_review" && <p role="status">Les informations du restaurant ont changé. Confirmez à nouveau sa commune.</p>}
-      {!location.configured ? <p>La connexion météo n’est pas activée. Vos services restent accessibles sans météo.</p> : <>
+      {!location.configured ? <p>La connexion météo n’est pas activée. Vos services restent accessibles sans météo.</p> : location.status === "confirmed" && !editing ?
+        <Button type="button" variant="outline" onClick={() => { setEditing(true); setStatus(""); requestAnimationFrame(() => queryInput.current?.focus()); }}>Changer de commune</Button> : <>
         <form className="weather-location-form" onSubmit={event => void search(event)}>
           <label htmlFor="weather-place-query">Commune ou code postal</label>
-          <input id="weather-place-query" required minLength={2} maxLength={120} value={query} disabled={busy}
+          <input id="weather-place-query" ref={queryInput} required minLength={2} maxLength={120} value={query} disabled={busy}
             onChange={event => { setQuery(event.target.value); setPlaces(null); setSelectedId(null); setStatus(""); }} />
           <Button type="submit" variant="outline" disabled={busy || query.trim().length < 2}>Rechercher une commune</Button>
         </form>
@@ -77,9 +82,13 @@ export default function WeatherLocationSettings({ onConfirmed }: { onConfirmed: 
           </label></li>)}</ul>
           {places.length > 0 && <Button type="button" disabled={busy || selectedId === null} onClick={() => void confirm()}>Confirmer cette commune</Button>}
         </div>}
+        {location.status === "confirmed" && <Button type="button" variant="outline" disabled={busy} onClick={() => {
+          setEditing(false); setPlaces(null); setSelectedId(null); setError("");
+          requestAnimationFrame(() => locationHeading.current?.focus());
+        }}>Annuler le changement</Button>}
       </>}
     </>}
-    <Button type="button" variant="outline" disabled={busy} onClick={() => void load()}>{error ? "Recharger la localisation" : "Actualiser la localisation enregistrée"}</Button>
+    {error && <Button type="button" variant="outline" disabled={busy} onClick={() => void load()}>Recharger la localisation</Button>}
     <p><small>Localisation : <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> / <a href="https://www.geonames.org/" target="_blank" rel="noreferrer">GeoNames</a>.</small></p>
   </Card>;
 }

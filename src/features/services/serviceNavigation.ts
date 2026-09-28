@@ -9,6 +9,6 @@ export function readServiceContext(params: URLSearchParams): ServiceContext | nu
 export function serviceContextHref(path: "/services" | "/settings", context: ServiceContext) {
   return `${path}?${new URLSearchParams({ serviceDate: context.date, serviceSlot: context.slot })}`;
 }
-export function weatherServiceContext(pathname: string, params: URLSearchParams, today: string, slot: ServiceSlot): ServiceContext {
-  return pathname === "/services" ? readServiceContext(params) ?? { date: today, slot: "lunch" } : { date: today, slot };
+export function weatherServiceContext(pathname: string, params: URLSearchParams, today: string): ServiceContext {
+  return pathname === "/services" ? readServiceContext(params) ?? { date: today, slot: "lunch" } : { date: today, slot: "lunch" };
 }

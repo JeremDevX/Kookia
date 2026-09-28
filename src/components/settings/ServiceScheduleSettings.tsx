@@ -2,13 +2,12 @@ import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 
 import Button from "../common/Button";
 import { getWeeklyServices, saveWeeklyService } from "../../services/serviceCalendarService";
 import { serviceSlotLabels, type ServiceSlot, type WeeklyService } from "../../../shared/serviceCalendar";
-import type { ServiceContext } from "../../features/services/serviceNavigation";
 
 const weekdays = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-export default function ServiceScheduleSettings({ initialService, onSaved }: { initialService?: ServiceContext; onSaved?: () => void }) {
+export default function ServiceScheduleSettings() {
   const [entries, setEntries] = useState<WeeklyService[]>([]);
-  const [weekday, setWeekday] = useState(() => initialService ? new Date(`${initialService.date}T12:00:00Z`).getUTCDay() : 1);
-  const [slot, setSlot] = useState<ServiceSlot>(initialService?.slot ?? "lunch");
+  const [weekday, setWeekday] = useState(1);
+  const [slot, setSlot] = useState<ServiceSlot>("lunch");
   const [open, setOpen] = useState(false);
   const [opensAt, setOpensAt] = useState("12:00");
   const [closesAt, setClosesAt] = useState("14:00");
@@ -44,7 +43,6 @@ export default function ServiceScheduleSettings({ initialService, onSaved }: { i
     try {
       await saveWeeklyService({ weekday, slot, open, opensAt, closesAt,
         expectedRevision: entries.find((entry) => entry.weekday === weekday && entry.slot === slot)?.revision ?? 0 });
-      onSaved?.();
       await load(); setStatus("Horaire hebdomadaire enregistré. Les ventes restent à renseigner séparément.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Enregistrement impossible."); }
     finally { setBusy(false); }

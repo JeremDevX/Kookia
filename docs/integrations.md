@@ -251,8 +251,13 @@ Le détail de configuration, les règles de cache et les preuves sont dans ce lo
 - `GET /api/workspace/weather/places?q=…` : recherche de commune/code postal côté serveur.
 - `POST /api/workspace/weather/location` : `placeId`, `expectedRevision`, `addressFingerprint` ;
   résolution fournisseur avant confirmation, coordonnées client refusées.
-- `GET /api/workspace/services/weather?date=…&slot=…` : fenêtre du calendrier,
-  état explicite, heures normalisées, provenance, fraîcheur et référence du contexte.
+- `GET /api/workspace/services/weather?date=…&slot=…` : journée civile entière
+  (`window.basis: day`, `00:00–24:00`, Europe/Paris), sans dépendance aux horaires
+  ni à l'ouverture. `slot` rattache la référence à la fiche, pas à une tranche météo.
+  État explicite, heures normalisées, provenance, fraîcheur et référence du contexte.
+  `summary.weatherCode` reprend le code WMO journalier Open-Meteo, ou `null` s'il
+  manque/n'est pas reconnu. Il décrit l'épisode le plus marqué prévu, pas toute la journée.
+  Les anciens snapshots sans `basis` gardent leur fenêtre de service d'origine.
 
 La précision est `city`, pas une adresse vérifiée ; le fuseau initial reste Europe/Paris.
 Une modification de ville/adresse invalide position et cache. La météo n'est jamais

@@ -42,17 +42,19 @@ it("projects formulas once and rounds recipe totals rather than each article sep
   expect(forecastSheetPlan(entries, items)).toEqual([{ recipeId: "main", portions: 2 }]);
   expect(forecastSheetPlan(entries, [{ entryId: "a", quantity: null }] as ForecastItem[])).toBeNull();
 });
-it("prints the captured weather with escaped provenance and unknown values, without fetching today's weather", () => {
+it.each([undefined, "day"] as const)("prints captured weather (%s) without changing its scope or fetching today's weather", basis => {
   expect(serviceSheetHtml({ ...sheet, weatherContext: { status: "not_saved", reason: "not_consulted" } })).toContain("Contexte météo non conservé");
   const html = serviceSheetHtml({ ...sheet, weatherContext: { status: "saved", weather: {
     serviceDate: sheet.serviceDate, slot: sheet.slot, status: "partial", reason: "<script>weather</script>",
-    source: "Open-Meteo", provenance: "fixture", position: null, window: { opensAt: "12:00", closesAt: "14:00", timezone: "Europe/Paris" },
+    source: "Open-Meteo", provenance: "fixture", position: null, window: { opensAt: basis ? "00:00" : "12:00", closesAt: basis ? "24:00" : "14:00", timezone: "Europe/Paris", basis },
     hours: [{ time: "2026-09-21T10:00:00Z", temperature: 18, precipitation: null, precipitationProbability: null, windSpeed: 10 }],
-    summary: null, expectedHours: 2, completeHours: 0, fetchedAt: "2026-09-21T08:00:00Z", issuedAt: null,
+    summary: { weatherCode: 45, temperatureMin: 18, temperatureMax: 18, maxHourlyPrecipitationProbability: null, maxWindSpeed: 10 }, expectedHours: 2, completeHours: 0, fetchedAt: "2026-09-21T08:00:00Z", issuedAt: null,
     expiresAt: "2026-09-21T14:00:00Z", contextRef: "reference",
     units: { temperature: "°C", precipitation: "mm", precipitationProbability: "%", windSpeed: "km/h" },
   } } });
   expect(html).toContain("Contexte conservé avec la décision"); expect(html).toContain("2026-09-21T08:00:00Z");
+  expect(html).toContain(basis ? "Journée entière" : "12:00–14:00");
+  if (basis) expect(html).toContain("Brouillard : épisode le plus marqué");
   expect(html).toContain("pluie Inconnu mm"); expect(html).toContain("https://open-meteo.com/");
   expect(html).not.toContain("<script>weather</script>"); expect(html).toContain("&lt;script&gt;weather");
 });

@@ -8,7 +8,6 @@
 .weather-dialog p { margin-block: var(--spacing-sm); }
 .weather-dialog :is(input:not([type="radio"]), select) { width: var(--unit-100percent); min-width: var(--number-0); }
 .weather-dialog .weather-place-options input { width: auto; flex-shrink: var(--number-0); }
-.weather-service-select { display: grid; gap: var(--spacing-sm); }
 .weather-dialog-footer { display: flex; justify-content: flex-end; margin-top: var(--spacing-md); }
 .weather-modal-root .modal-overlay { z-index: var(--number-200); }
 @media (--media-desktop-compact) {

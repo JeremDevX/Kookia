@@ -4,7 +4,7 @@ import { afterAll, afterEach, beforeEach, expect, it } from "vitest";
 import { vi } from "vitest";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { WeatherProviderError } from "../integrations/weatherProvider.js";
-import { readWeatherCache } from "../application/workspace/weatherStorage.js";
+import { readWeatherCache, weatherJson, weatherKey, cacheKind } from "../application/workspace/weatherStorage.js";
 import { weatherContextForDecision } from "../application/workspace/serviceWeatherService.js";
 import { weatherAccount, weatherDate, weatherForecast, weatherPlace, weatherProvider } from "./weatherTestFixture.js";
 
@@ -30,7 +30,9 @@ it("confirms only server-resolved places, isolates restaurants and invalidates c
   expect(confirmed).toMatchObject({ status: "confirmed", revision: 1, position: { precision: "city", confirmedBy: owner.actorId } });
   expect((await other.location()).position).toBeNull();
   await owner.agent.post("/api/workspace/weather/location").send(input).expect(409);
-  await owner.weekly(); expect((await owner.weather()).status).toBe("ready");
+  expect(await owner.weather()).toMatchObject({ status: "ready", expectedHours: 24, window: { basis: "day" }, summary: { weatherCode: 63 } });
+  expect(await prisma.restaurantServiceSchedule.count({ where: { restaurantId: owner.restaurantId } })).toBe(0);
+  expect(await prisma.restaurantServiceSession.count({ where: { restaurantId: owner.restaurantId } })).toBe(0);
   await owner.agent.get("/api/workspace/services/weather").query({ date: weatherDate, slot: "lunch", restaurantId: other.restaurantId }).expect(400);
   await owner.agent.get("/api/workspace/services/weather").query({ date: "2026-02-30", slot: "lunch" }).expect(400);
   const restaurant = (await owner.agent.get("/api/workspace/restaurant").expect(200)).body;
@@ -45,9 +47,6 @@ it("confirms only server-resolved places, isolates restaurants and invalidates c
 it("coalesces calls, retains valid data on partial/failed responses and observes freshness/Retry-After/expiry", async () => {
   const provider = weatherProvider(), owner = await weatherAccount(users, provider);
   await owner.confirm();
-  expect(await owner.weather()).toMatchObject({ status: "unavailable", contextRef: null });
-  expect(provider.forecast).not.toHaveBeenCalled();
-  await owner.weekly();
   const [first, second] = await Promise.all([owner.weather(), owner.weather()]);
   expect(first).toEqual(second); expect(provider.forecast).toHaveBeenCalledTimes(1);
   await owner.weather(); expect(provider.forecast).toHaveBeenCalledTimes(1);
@@ -66,12 +65,25 @@ it("coalesces calls, retains valid data on partial/failed responses and observes
   vi.setSystemTime(new Date(`${weatherDate}T14:02:00Z`));
   const incomplete = weatherForecast(); incomplete.hours[12].precipitation = null;
   provider.forecast.mockResolvedValueOnce(incomplete);
-  expect(await owner.weather()).toMatchObject({ status: "partial", completeHours: 1 });
+  expect(await owner.weather()).toMatchObject({ status: "partial", completeHours: 23, expectedHours: 24 });
   const calls = provider.forecast.mock.calls.length;
   for (const date of ["2026-09-27", "2026-10-05"]) {
     expect((await owner.agent.get("/api/workspace/services/weather").query({ date, slot: "lunch" }).expect(200)).body.status).toBe("unavailable");
   }
   expect(provider.forecast).toHaveBeenCalledTimes(calls);
+  // Fresh legacy caches refresh once to acquire conditions, preserving temperatures
+  // and respecting the retry delay if that upgrade temporarily fails.
+  const cached = (await readWeatherCache(prisma, owner.restaurantId))!;
+  await prisma.workspaceDocument.update({ where: weatherKey(owner.restaurantId, cacheKind),
+    data: { data: weatherJson({ ...cached, forecast: { ...cached.forecast!, days: undefined } }) } });
+  provider.forecast.mockRejectedValueOnce(new WeatherProviderError("unavailable"));
+  expect(await owner.weather()).toMatchObject({ status: "stale", summary: { temperatureMin: 18, weatherCode: null } });
+  await owner.weather(); expect(provider.forecast).toHaveBeenCalledTimes(calls + 1);
+  vi.setSystemTime(new Date(`${weatherDate}T14:03:01Z`));
+  const upgraded = await Promise.all([owner.weather(), owner.weather()]);
+  expect(upgraded[0]).toEqual(upgraded[1]);
+  expect(upgraded[0]).toMatchObject({ status: "ready", summary: { weatherCode: 63 } });
+  expect(provider.forecast).toHaveBeenCalledTimes(calls + 2);
 });
 
 it("keeps the consulted decision immutable, rejects cross-context refs without rejecting the plan, and never changes operations", async () => {
@@ -98,9 +110,14 @@ it("keeps the consulted decision immutable, rejects cross-context refs without r
   expect(await weatherContextForDecision(prisma, owner.restaurantId, weatherDate, "lunch", "f".repeat(64))).toMatchObject({ status: "not_saved" });
   expect(await weatherContextForDecision(prisma, owner.restaurantId, weatherDate, "lunch")).toEqual({ status: "not_saved", reason: "not_consulted" });
   await owner.weekly(1, "15:00");
-  expect(await weatherContextForDecision(prisma, owner.restaurantId, weatherDate, "lunch", weather.contextRef!)).toMatchObject({ status: "not_saved" });
+  expect(await weatherContextForDecision(prisma, owner.restaurantId, weatherDate, "lunch", weather.contextRef!)).toEqual({ status: "saved", weather });
+  await owner.agent.put("/api/workspace/services/weekly").send({ weekday: 1, slot: "lunch", opensAt: "12:00", closesAt: "15:00", open: false, expectedRevision: 2 }).expect(200);
+  expect(await owner.weather()).toEqual(weather);
   expect(provider.forecast).toHaveBeenCalledTimes(calls);
-  vi.setSystemTime(new Date(`${weatherDate}T09:01:00Z`)); await owner.weather();
+  vi.setSystemTime(new Date(`${weatherDate}T09:01:00Z`));
+  const changed = weatherForecast(); changed.days![0].weatherCode = 45;
+  provider.forecast.mockResolvedValueOnce(changed);
+  expect((await owner.weather()).summary?.weatherCode).toBe(45);
   expect((await owner.agent.post("/api/workspace/services/sheet").send(validation).expect(200)).body).toEqual(decision);
   const saved = (await owner.agent.post("/api/workspace/services/sheet").send({ ...input, operationId: randomUUID(), expectedRevision: 1, action: "save" }).expect(200)).body;
   expect(saved.weatherContext).toEqual(decision.weatherContext);

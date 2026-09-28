@@ -5,7 +5,6 @@ import { prisma } from "../../infrastructure/database/prisma.js";
 import { getWeatherLocation } from "./weatherPositionService.js";
 import { loadWeatherCache } from "./weatherCacheService.js";
 import { completeWeatherForecast, emptyServiceWeather, projectServiceWeather, weatherUnavailableReason, WEATHER_FRESH_MS } from "./weatherPolicy.js";
-import { getWeatherSchedule } from "./weatherSchedule.js";
 import { readWeatherCache, type WeatherDatabase } from "./weatherStorage.js";
 
 export async function getServiceWeather(restaurantId: string, date: string, slot: ServiceSlot, provider: WeatherProvider) {
@@ -14,26 +13,24 @@ export async function getServiceWeather(restaurantId: string, date: string, slot
   if (location.status !== "confirmed" || !location.position) return emptyServiceWeather(date, slot,
     location.status === "needs_review" ? "La localisation a changé. Confirmez à nouveau la commune." :
       "Confirmez la commune du restaurant pour afficher la météo.", "not_configured");
-  const schedule = await getWeatherSchedule(prisma, restaurantId, date, slot);
-  const reason = weatherUnavailableReason(date, schedule, new Date());
+  const reason = weatherUnavailableReason(date, new Date());
   if (reason) return emptyServiceWeather(date, slot, reason, "unavailable", location.position);
   const cache = await loadWeatherCache(restaurantId, location.position, provider);
   // A location change while awaiting the provider must not display the old place.
   const current = await getWeatherLocation(restaurantId, provider.configured);
   if (current.status !== "confirmed" || current.revision !== location.revision)
     return emptyServiceWeather(date, slot, "La localisation a changé. Rechargez la météo.", "not_configured");
-  const currentSchedule = await getWeatherSchedule(prisma, restaurantId, date, slot);
-  return projectServiceWeather(date, slot, location.position, currentSchedule, cache, new Date());
+  return projectServiceWeather(date, slot, location.position, cache, new Date());
 }
 
 export async function weatherContextForDecision(db: WeatherDatabase, restaurantId: string, date: string, slot: ServiceSlot,
   contextRef?: string): Promise<WeatherDecisionContext> {
   if (!contextRef) return { status: "not_saved", reason: "not_consulted" };
-  const [location, schedule, cache] = await Promise.all([
-    getWeatherLocation(restaurantId, true, db), getWeatherSchedule(db, restaurantId, date, slot), readWeatherCache(db, restaurantId),
+  const [location, cache] = await Promise.all([
+    getWeatherLocation(restaurantId, true, db), readWeatherCache(db, restaurantId),
   ]);
   if (location.status === "confirmed" && location.position) {
-    const weather = projectServiceWeather(date, slot, location.position, schedule, cache, new Date());
+    const weather = projectServiceWeather(date, slot, location.position, cache, new Date());
     if (weather.contextRef === contextRef) return { status: "saved", weather };
   }
   return { status: "not_saved", reason: "no_longer_available" };

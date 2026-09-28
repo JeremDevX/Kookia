@@ -30,13 +30,18 @@ Le [lot de continuité du service](plans/service-flow-continuity.md) est un plan
 proposé, non implémenté : conserver le contexte entre écrans, guider les opérations
 depuis Aujourd'hui et expliciter les blocages sans changer les règles de clôture.
 Son [volet Open-Meteo informatif](plans/service-weather.md) est implémenté :
-localisation confirmée, météo par service et contexte conservé lors de la décision,
+localisation confirmée, météo de la journée et contexte conservé lors de la décision,
 sans ajustement automatique des ventes ou achats. Un bouton dans la barre du haut
-affiche un résumé et ouvre la modale de commune, horaires et détails. Sur Services,
-il suit la sélection de la fiche ; ailleurs, aujourd'hui midi/soir. Le même contexte
+affiche l'état du ciel (pluie, brouillard, éclaircies…), une icône adaptée et la plage
+de température ; il ouvre une modale limitée à la commune, avec les prévisions détaillées
+sur demande. Aucun horaire ni service à saisir pour la météo. Sur Services, il suit
+la date de la fiche ; ailleurs, aujourd'hui. Le même contexte
 alimente la validation du plan. Aucun départ de l'écran ni remontage de la fiche
 pour régler la météo ; la continuité complète des brouillons S1 reste à livrer.
-La configuration serveur reste désactivée par défaut. Un test réel de l'adaptateur
+La configuration serveur reste désactivée par défaut ; le `.env` local de développement
+active désormais l'endpoint public sans clé (`OPEN_METEO_MODE=evaluation`), pas l'usage commercial.
+Les horaires restent dans Réglages, sans effet sur la fenêtre météo de journée. Les anciennes
+traces météo par service restent lisibles. Un test réel de l'adaptateur
 sur Paris a réussi, sans activer la connexion du restaurant. La recette navigateur
 reste en attente, conformément à la restriction du plan.
 

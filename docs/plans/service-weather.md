@@ -3,11 +3,12 @@
 ## Statut et objectif
 
 **Implémenté localement le 28 septembre 2026 ; configuration désactivée
-par défaut, recette visuelle/interactions en attente.**
+par défaut, mode public sans clé activé dans le `.env` local de développement ;
+recette visuelle/interactions en attente.**
 Ce document détaille le volet météo du [lot de continuité du service](service-flow-continuity.md).
 Il ne remplace ni le parcours de préparation ni les contrats de vente et d'achat.
 
-Afficher une prévision météo utile pour midi/soir, laisser le chef ajuster son plan
+Afficher la météo de la journée, sans saisie des services ni horaires, laisser le chef ajuster son plan
 et conserver les informations disponibles lors de sa décision. **Aucun coefficient
 météo sur ventes, couverts, portions ou achats ; aucune prétention de gain prédictif.**
 La météo est facultative : son absence ne bloque ni préparation, ni achat, ni clôture.
@@ -30,10 +31,14 @@ ensemble pour afficher le seul contexte météo. Les calculs F1 et par service r
   Réglages. Il ne livre pas tout S1 : les brouillons non enregistrés doivent toujours être
   enregistrés avant de quitter l'écran. Ouvrir/fermer la modale météo ne navigue pas et
   ne remonte pas la fiche. Le contexte affiché dans la barre est partagé avec sa validation.
-  Sur Services, la météo suit la date et le service sélectionnés ; ailleurs, elle affiche
-  aujourd'hui avec choix midi/soir dans la modale. Les anciens blocs des pages sont retirés.
-- Le calendrier existant refuse les horaires débordant sur minuit ; aucune durée nocturne
-  supplémentaire n'est supposée. Les heures UTC distinguent les répétitions du changement d'heure.
+  Sur Services, la météo suit la date sélectionnée ; ailleurs, elle affiche aujourd'hui.
+  Midi/soir reste uniquement le rattachement de la trace à la fiche, pas un réglage météo.
+- Simplification du 28 septembre : journée civile entière (`00:00–24:00`, Europe/Paris),
+  indépendante du calendrier d'ouverture. Aucun horaire ni service à enregistrer pour consulter
+  la météo. Les horaires métier restent dans Réglages et ne sont ni créés ni modifiés.
+  Les heures UTC distinguent les répétitions du changement d'heure : journées de 23, 24 ou 25 h.
+  Les anciens snapshots sans `window.basis` conservent leurs tranches de service ; les nouveaux
+  portent `window.basis: day`. Aucun historique réécrit.
 - Deux documents serveur réservés : `weather-position` et `weather-cache`. Ce dernier est
   remplacé, pas historisé ; l'expiration est vérifiée à chaque lecture, sans tâche de purge
   périodique. Seuls les contextes de décision ont une conservation historique métier.
@@ -43,12 +48,13 @@ Configuration dans l'environnement **serveur**, puis redémarrage de l'API :
 | Variable | Usage |
 | --- | --- |
 | `OPEN_METEO_MODE=disabled` | Valeur par défaut, aucun appel fournisseur |
-| `OPEN_METEO_MODE=evaluation` | Endpoint public, uniquement pour un usage non commercial autorisé |
+| `OPEN_METEO_MODE=evaluation` | Endpoint public sans clé, prototypage local / usage non commercial autorisé |
 | `OPEN_METEO_MODE=commercial` | Endpoints `customer-`, abonnement adapté requis |
 | `OPEN_METEO_API_KEY` | Obligatoire en mode commercial ; aucun préfixe `VITE_`, aucune clé dans le dépôt |
 
 Après configuration : bouton météo dans la barre du haut → rechercher la commune,
-relire puis confirmer ; régler au besoin les horaires dans la même modale. « Terminer »,
+relire puis confirmer. Ensuite, seule la commune enregistrée et « Changer de commune » sont
+affichés ; les prévisions détaillées sont accessibles à la demande. « Terminer »,
 la croix ou Échap ferment la modale ; seul le résumé reste dans la barre. Réglages et
 Connexions ouvrent cette même modale, sans formulaire de localisation concurrent.
 Pour désactiver, remettre `disabled` et redémarrer ; les décisions passées restent lisibles.
@@ -56,6 +62,20 @@ Ne pas activer une offre payante ni changer le compte conservé dans le cadre de
 
 ### Preuves et limites
 
+- État du ciel ajouté au résumé le 28 septembre 2026 : recette complète
+  `npm run verify:local-delivery` réussie (**291 tests Vitest**, **35 tests de scripts**,
+  **59 tests d'intégration**), lint/builds web/API, migrations/parité et restauration.
+  Codes WMO, dates Paris/DST, cas inconnus, cache antérieur et snapshot immuable testés.
+  Lecture réelle à 09:22 UTC : Paris, **168 heures et 7 jours**, code journalier `61`
+  traduit « Pluie légère ». Aucun compte ni donnée opérationnelle modifié ; recette navigateur en attente.
+- Simplification en météo de journée : `npm run verify:local-delivery` réussie
+  le 28 septembre 2026 après les changements : lint/CSS, builds web/API,
+  **281 tests Vitest**, **35 tests de scripts**, **59 tests d'intégration dans
+  34 fichiers**, migrations/parité et restauration témoin. Base jetable supprimée.
+  Couverture : lecture sans horaires et sans création de calendrier, fermeture/changement
+  d'horaires sans effet météo, journée Paris/DST, anciennes traces et accès public sans clé.
+  Le rendu SSR vérifie l'absence de sélection de service et les détails repliés,
+  pas les interactions de recherche, confirmation ou focus.
 - Recette finale `npm run verify:local-delivery` réussie le 28 septembre 2026 :
   lint/CSS, builds web/API, tests unitaires et scripts, **59 tests d'intégration
   dans 34 fichiers**, migrations fraîches, parité Prisma et restauration témoin.
@@ -78,6 +98,10 @@ Ne pas activer une offre payante ni changer le compte conservé dans le cadre de
   résolution de l'identifiant `2988507` et prévision validées par l'adaptateur public :
   **168 heures**, `Europe/Paris`, `issuedAt: null`. Ni donnée privée ni écriture en base ;
   cela ne vaut pas activation commerciale ou connexion du compte du restaurant.
+- Après activation locale sans clé, nouvelle vérification réelle le même jour à
+  09:07 UTC : configuration `evaluation`, résolution Paris et **168 heures** valides,
+  `Europe/Paris`. API locale rechargée, `/api/health` renvoie 200. Aucune confirmation
+  de commune ni donnée opérationnelle modifiée dans le compte du restaurant.
 - La restriction de tests navigateur du plan principal est conservée : **recette
   visuelle/mobile/clavier en attente**, SSR ne prouvant pas les interactions.
 - Aucun bénéfice prédictif mesuré, aucune vente/production/commande créée par la météo.
@@ -114,20 +138,23 @@ restaurants, invalidation démontrée ; aucune localisation approchée présent�
   clé éventuelle en environnement serveur, jamais dans le navigateur ni les logs.
   Définir types externes/schéma de validation puis modèle interne normalisé.
 - Requête bornée aux sept prochains jours : températures, précipitations,
-  probabilité de précipitation et vent horaires, avec unités et fuseau explicites.
+  probabilité de précipitation et vent horaires, plus `daily=weather_code`,
+  avec unités et fuseau explicites. Les codes WMO sont traduits en français
+  (pluie, brouillard, neige, orage, éclaircies…) avec une icône adaptée.
+  Le code journalier décrit l'épisode le plus marqué prévu, pas nécessairement
+  la journée entière. Il n'est pas déduit de la température ou de la probabilité de pluie.
   Les variables horaires sont fournies par la [Forecast API](https://open-meteo.com/en/docs).
   Ne pas importer tous les modèles ni des années d'archives pour afficher un service.
 - Contrat UI proposé : `GET /api/workspace/services/weather?date=…&slot=…`.
-  Le serveur déduit le restaurant et la position, puis les horaires depuis le calendrier.
-  Réponse : `status`, localisation/précision, fenêtre du service, valeurs/unité,
+  Le serveur déduit le restaurant et la position, puis la journée civile demandée, sans lire le calendrier.
+  Réponse : `status`, localisation/précision, fenêtre de journée (`basis: day`), valeurs/unité,
   couverture, `fetchedAt`, `issuedAt` nullable, expiration, source et référence de contexte.
 - États explicites : `not_configured`, `unavailable`, `stale`, `partial`, `ready`.
-  Horaires absents ou date hors horizon : pas de résumé de service supposé ; afficher
-  la raison. Une date passée n'est pas reconstruite depuis la prévision actuelle.
+  Date hors horizon : afficher la raison. Une date passée n'est pas reconstruite depuis
+  la prévision actuelle. Des horaires absents ou une fermeture ne bloquent pas la météo.
 - Afficher la plage de température, le vent maximal et les probabilités horaires
-  sur les créneaux concernés. Si résumé par maximum horaire, le libeller ainsi :
-  ce n'est pas la probabilité de pluie sur tout le service. Pluie absente ≠ 0 mm.
-  Une tranche débordant sur minuit suit le calendrier existant ; ne pas inventer sa durée.
+  sur la journée entière. Si résumé par maximum horaire, le libeller ainsi :
+  ce n'est pas la probabilité de pluie sur toute la journée. Pluie absente ≠ 0 mm.
 - Cache normalisé borné par restaurant, révision de position et fenêtre couverte,
   via document serveur distinct des décisions. Choix initiaux Kookia : fraîcheur
   1 h ; dernier résultat éventuellement visible jusqu'à 6 h, marqué ancien ; au-delà,
@@ -135,6 +162,10 @@ restaurants, invalidation démontrée ; aucune localisation approchée présent�
 - Délai réseau maximal 5 s, requêtes concurrentes identiques regroupées, pas de boucle
   de retry ; sur `429`, respecter `Retry-After`. Le changement de position invalide le
   cache courant. Erreur/JSON invalide/heure manquante ne doivent pas écraser un résultat valide.
+- Les caches antérieurs sans codes journaliers sont relus sans perte des températures,
+  puis actualisés au prochain accès, en respectant le délai de reprise sur erreur.
+  Un code absent/non reconnu donne « Ciel inconnu » et une couverture partielle,
+  jamais du soleil par défaut. Les anciens snapshots restent inchangés.
 - Distinguer récupération (`fetchedAt`) et émission du modèle (`issuedAt`) : ne pas
   inventer cette dernière lorsqu'elle n'est pas fournie, ni utiliser `generationtime_ms`
   comme date. Une capture prouve seulement ce qui était connu à sa récupération.
@@ -150,17 +181,19 @@ fraîcheur visibles ; aucune modification des ventes, prévisions, achats ou sto
 
 **Prérequis : W1.** L'accès météo est commun aux écrans authentifiés.
 
-- Bouton secondaire dans la barre du haut : service/date et résumé de température,
-  avec état ancien/partiel/inconnu. Sa modale présente « Météo du service » : lieu, midi/soir, température/pluie/vent,
-  dernière actualisation, source et limites. Les horaires non renseignés conduisent
-  au formulaire réutilisé dans la modale, sans bloquer la fiche. Pas de nouvel écran ni d'action principale concurrente.
+- Bouton secondaire dans la barre du haut : météo/date, état du ciel et température,
+  avec état ancien/partiel/inconnu. Sa modale règle uniquement la commune ; un bouton
+  dévoile « Météo de la journée » : température/pluie/vent, dernière actualisation,
+  source et limites. Aucun sélecteur midi/soir ni formulaire d'horaires dans la modale.
+  Pas de nouvel écran ni d'action principale concurrente.
 - Charger indépendamment de la fiche ; une météo en panne ne remplace pas le bouton
   de préparation. Pas de rafraîchissement en boucle ni de perte de brouillon.
 - Le chef modifie les portions dans le plan existant. Ne pas proposer « +20 % »
   ou « moins de couverts » depuis un seuil météorologique sans évaluation terrain.
 - À la validation explicite du plan, transmettre seulement la référence du contexte
-  consulté. Le serveur contrôle restaurant, date/service, révisions de position et
-  d'horaires puis copie ce contexte normalisé dans le snapshot de décision existant.
+  consulté. Le serveur contrôle restaurant, date/service, révision de position et cache
+  puis copie ce contexte normalisé dans le snapshot de décision existant. Un changement
+  d'horaires ne périme pas la météo de la journée.
   Ne pas accepter les valeurs météo soumises par le client comme source.
 - Une référence expirée/absente/non correspondante n'est ni remplacée par une météo
   plus récente que le chef n'a pas vue ni un motif de rejet du plan : enregistrer
@@ -179,7 +212,7 @@ reliée aux données réellement disponibles sans effet automatique sur les quan
 ## Fichiers et frontières concernés
 
 Réutiliser réglages et [restaurantService](../../src/services/restaurantService.ts),
-[serviceCalendarService](../../src/services/serviceCalendarService.ts), la fiche
+la fiche
 [serviceSheetService](../../server/src/application/workspace/serviceSheetService.ts),
 son contrat partagé et les décisions immuables. Conserver les anciens snapshots lisibles.
 Ajouter seulement un adaptateur Open-Meteo dans l'infrastructure serveur, les schémas/DTO
@@ -194,7 +227,7 @@ doit être justifié dans le plan avant implémentation, pas ajouté par anticip
 | Cas | Preuve attendue |
 | --- | --- |
 | Lieux homonymes, réponse vide, coordonnées invalides, changement d'adresse | Confirmation explicite, aucune position arbitraire, cache invalidé |
-| Midi/soir, changement d'heure, minuit, horaires absents, horizon dépassé | Bonne fenêtre/fuseau ou limite explicite, aucune météo attribuée au mauvais service |
+| Journée entière, changement d'heure, horaires absents ou fermeture, horizon dépassé | Journée Paris de 23/24/25 h, météo indépendante de l'ouverture ; référence liée à la bonne fiche |
 | `null`, heures manquantes, unités erronées, JSON invalide | Donnée partielle/inutilisable identifiée ; ni zéro ni probabilité agrégée inventés |
 | Frais/périmé, timeout, `429`, `5xx`, deux consultations simultanées | Cache borné, appels maîtrisés, service toujours utilisable |
 | Session absente, autre restaurant, référence manipulée | Autorisation serveur, pas de fuite de position/cache/décision |
@@ -208,10 +241,13 @@ navigateur du plan principal reste applicable ; SSR ne vaut pas preuve interacti
 Consigner deux résultats : contrat testé sur fixtures, puis connexion réelle vérifiée
 avec un lieu autorisé, offre adaptée et configuration serveur ; jamais confondre les deux.
 
-L'API gratuite est destinée au non-commercial ; l'offre commerciale fournit un
+L'API gratuite sans clé est proposée pour l'évaluation/prototypage et réservée au
+non-commercial. Le `.env` local utilise `evaluation` ; cela ne couvre pas
+l'exploitation commerciale de Kookia. La valeur par défaut du code reste `disabled`.
+L'offre commerciale fournit un
 endpoint dédié et une clé. Prévoir l'attribution Open-Meteo et celle des données de
 localisation, et vérifier les conditions lors de l'activation. Aucun abonnement,
-achat ou déploiement n'est effectué par cette mise à jour documentaire.
+achat ou déploiement n'est effectué par cette simplification.
 [Offres et attribution](https://open-meteo.com/en/pricing), [géocodage et source GeoNames](https://open-meteo.com/en/docs/geocoding-api).
 
 ## Après le lot : mesurer avant d'influencer les achats

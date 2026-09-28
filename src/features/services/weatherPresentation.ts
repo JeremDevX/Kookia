@@ -1,4 +1,5 @@
 import type { ServiceWeather } from "../../../shared/serviceWeather";
+import { weatherCondition } from "../../../shared/weatherConditions";
 import type { useServiceWeather } from "./useServiceWeather";
 
 export function weatherButtonSummary(state: Pick<ReturnType<typeof useServiceWeather>, "loading" | "weather" | "error">) {
@@ -10,7 +11,7 @@ export function weatherButtonSummary(state: Pick<ReturnType<typeof useServiceWea
   const temperature = temperatureRange(weather);
   const notice = [weather.status === "stale" ? "ancienne" : weather.status === "partial" ? "partielle" : "",
     weather.provenance === "fixture" ? "test" : ""].filter(Boolean).join(" · ");
-  return `${temperature}${notice ? ` · ${notice}` : ""}`;
+  return `${weatherCondition(weather.summary?.weatherCode).label} · ${temperature}${notice ? ` · ${notice}` : ""}`;
 }
 function temperatureRange(weather: ServiceWeather) {
   const min = weather.summary?.temperatureMin, max = weather.summary?.temperatureMax;

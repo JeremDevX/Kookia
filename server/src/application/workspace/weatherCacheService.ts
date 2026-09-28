@@ -22,7 +22,7 @@ async function refresh(restaurantId: string, position: WeatherPosition, provider
   const previous = await readWeatherCache(prisma, restaurantId);
   const cache = previous?.positionRevision === position.revision ? previous : null;
   const age = cache?.forecast ? Date.now() - Date.parse(cache.forecast.fetchedAt) : Infinity;
-  if (cache && ((age >= 0 && age < WEATHER_FRESH_MS) || (cache.retryAt && Date.parse(cache.retryAt) > Date.now()))) return cache;
+  if (cache && ((age >= 0 && age < WEATHER_FRESH_MS && cache.forecast?.days) || (cache.retryAt && Date.parse(cache.retryAt) > Date.now()))) return cache;
   let next: WeatherCache;
   try {
     const parsed = weatherForecastSchema.safeParse(await provider.forecast(position.place));

@@ -44,7 +44,7 @@ export function createOpenMeteo(options: OpenMeteoOptions, transport: typeof fet
     },
     async forecast(place: WeatherPlace) {
       const raw = await request("forecast", "forecast", { latitude: String(place.latitude), longitude: String(place.longitude),
-        hourly: "temperature_2m,precipitation,precipitation_probability,wind_speed_10m", forecast_days: "7",
+        hourly: "temperature_2m,precipitation,precipitation_probability,wind_speed_10m", daily: "weather_code", forecast_days: "7",
         timezone: "Europe/Paris", timeformat: "unixtime", temperature_unit: "celsius", wind_speed_unit: "kmh", precipitation_unit: "mm" });
       return parseForecast(raw, new Date().toISOString());
     },

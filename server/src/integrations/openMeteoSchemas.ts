@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { WeatherForecast, WeatherPlace } from "../../../shared/serviceWeather.js";
+import { weatherCodeSchema } from "../../../shared/serviceWeather.js";
 import { WeatherProviderError } from "./weatherProvider.js";
 
 const place = z.object({
@@ -9,8 +10,10 @@ const place = z.object({
   timezone: z.string().min(1).max(100),
 });
 const searchResult = z.object({ results: z.array(place).max(10).optional() });
+const timestamp = z.number().int().nonnegative().max(253402300799);
+const dayFormat = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" });
 const hourly = z.object({
-  time: z.array(z.number().int().nonnegative().max(253402300799)).min(1).max(170),
+  time: z.array(timestamp).min(1).max(170),
   temperature_2m: z.array(z.number().finite().min(-100).max(70).nullable()),
   precipitation: z.array(z.number().finite().min(0).max(1000).nullable()),
   precipitation_probability: z.array(z.number().finite().min(0).max(100).nullable()),
@@ -22,6 +25,10 @@ const forecastResult = z.object({
   hourly_units: z.object({ time: z.literal("unixtime"), temperature_2m: z.literal("°C"),
     precipitation: z.literal("mm"), precipitation_probability: z.literal("%"), wind_speed_10m: z.literal("km/h") }),
   hourly,
+  daily_units: z.object({ time: z.literal("unixtime"), weather_code: z.literal("wmo code") }),
+  daily: z.object({ time: z.array(timestamp).min(1).max(7), weather_code: z.array(weatherCodeSchema) })
+    .refine(value => value.time.length === value.weather_code.length && value.time.every((time, i) =>
+      i === 0 || dayFormat.format(new Date(time * 1000)) > dayFormat.format(new Date(value.time[i - 1] * 1000)))),
 });
 const mapPlace = (value: z.infer<typeof place>): WeatherPlace => ({
   id: value.id, name: value.name, region: value.admin1 ?? "", country: value.country,
@@ -44,5 +51,7 @@ export function parseForecast(input: unknown, fetchedAt: string): WeatherForecas
   return { fetchedAt, issuedAt: null, timezone: "Europe/Paris", hours: values.time.map((time, i) => ({
     time: new Date(time * 1000).toISOString(), temperature: values.temperature_2m[i],
     precipitation: values.precipitation[i], precipitationProbability: values.precipitation_probability[i], windSpeed: values.wind_speed_10m[i],
+  })), days: parsed.data.daily.time.map((time, i) => ({
+    date: dayFormat.format(new Date(time * 1000)), weatherCode: parsed.data.daily.weather_code[i],
   })) };
 }

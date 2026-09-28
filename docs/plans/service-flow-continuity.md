@@ -11,14 +11,15 @@ pas des contrôles relancés pour ce plan. Le code prime sur les anciens inventa
 préparations, revoir les ventes, déclarer les pertes puis clôturer ; conserver
 date, midi/soir, objet concerné et saisies lors des allers-retours. Le chef voit
 ce qui est prévu, enregistré, manquant et la prochaine action utile, sans aide.
-La météo du service éclaire sa décision, sans modifier automatiquement les quantités.
+La météo de la journée éclaire sa décision, sans modifier automatiquement les quantités.
 
 Références : [règles d'interface](../design-system.md),
 [contrats opérationnels actuels](../operational-services.md),
 [ordre de livraison](plan-execution.md), [recette isolée](../local-delivery.md).
 Le [volet Open-Meteo W0–W2](service-weather.md) détaille ses contrats et sa validation.
 Depuis le 28 septembre 2026, ce volet est implémenté localement, désactivé par défaut ;
-ses preuves et limites sont consignées dans le document lié. Les lots S0–S6 restent
+Le développement local utilise l'offre publique sans clé pour le prototypage. La modale
+se limite à la commune ; aucun horaire requis. Ses preuves et limites sont dans le document lié. Les lots S0–S6 restent
 planifiés : les liens météo conservent la sélection, pas encore les brouillons non enregistrés.
 
 ### Périmètre
@@ -196,7 +197,8 @@ bloque pas le parcours. Livrer sans lien vers un formulaire qui ignore encore le
 
 - **W0** : commune/localisation confirmée, précision explicite et invalidation après modification.
 - **W1** : adaptateur Open-Meteo serveur, cache, fraîcheur et repli sans dépendance bloquante.
-- **W2** : panneau météo commun à Services/Aujourd'hui et snapshot à la validation du plan.
+- **W2** : résumé météo dans la barre du haut, modale de commune et prévisions de journée
+  à la demande ; snapshot à la validation du plan.
 - Contrats, fichiers, critères de sortie et tests dans [l'annexe météo](service-weather.md).
   Ne pas activer F2 prédictif, recalculer un achat ou inventer un effet sur les couverts.
 
@@ -279,7 +281,7 @@ bloque pas le parcours. Livrer sans lien vers un formulaire qui ignore encore le
 | API sûreté | Session absente, autre restaurant, double clic, rejeu identique/différent | Autorisation, idempotence et refus inchangés |
 | API parcours complet | Carte → plan validé → vraie production via HTTP → vente → ventilation → perte → clôture | Stock déduit une fois ; ventes/pertes reliées ; constat immuable |
 | API exceptions | Ventes partielles/corrigées, refus, substitution, portions fractionnelles, pertes d'un autre service | Inconnues visibles ; blocages expliqués ; aucun contournement |
-| Météo W0–W2 | Position, tranches horaires, cache, panne, snapshot et isolation | Source/fraîcheur explicites ; aucune quantité ni clôture dépendante de la météo |
+| Météo W0–W2 | Position, journée civile/DST, cache, panne, snapshot et isolation | Source/fraîcheur explicites ; aucune quantité ni clôture dépendante de la météo |
 | UI parcours | Aujourd'hui → service soir → Recettes → Ventes → Stocks → fiche | Date/service/objet conservés, retours clairs, saisies retrouvées |
 | UI récupération | 503, réponse tardive, POST réussi/GET échoué, 409, rechargement, précédent/suivant | Saisie et focus préservés ; pas de double opération |
 | UI accessibilité | 320/768/1280 px, clavier seul, modales, zoom 200 %, états non nominaux | Action accessible, focus visible/restauré, pas de débordement de page |

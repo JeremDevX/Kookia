@@ -58,7 +58,7 @@ export default function Settings() {
         <div className="settings-content" id="settings-panel">
           {activeTab === "restaurant" && <><RestaurantSettings onSaved={weather.state.reload} />
             <Card title="Météo"><Button type="button" variant="outline" aria-haspopup="dialog" onClick={weather.openSettings}>Ouvrir les réglages météo</Button></Card>
-            <ServiceScheduleSettings onSaved={weather.state.reload} /></>}
+            <ServiceScheduleSettings /></>}
           {activeTab === "suppliers" && <SupplierSettings />}
           {activeTab === "connections" && <ConnectionsSettings onWeatherSettings={weather.openSettings} />}
           {activeTab === "account" && <AccountSettings />}

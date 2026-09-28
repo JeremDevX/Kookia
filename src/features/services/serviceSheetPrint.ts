@@ -1,6 +1,7 @@
 import type { ServiceSheet } from "../../../shared/serviceSheet";
 import { serviceSlotLabels } from "../../../shared/serviceCalendar";
 import type { WeatherDecisionContext } from "../../../shared/serviceWeather";
+import { weatherCondition } from "../../../shared/weatherConditions";
 const escape = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
 const number = (value: number | null) => value === null ? "Inconnu" : String(value);
 function weatherHtml(context?: WeatherDecisionContext) {
@@ -9,10 +10,11 @@ function weatherHtml(context?: WeatherDecisionContext) {
   const weather = context.weather;
   return `<h2>Météo à la validation du plan</h2><p>Contexte conservé avec la décision, sans ajustement automatique des portions.</p>
 <p>${escape(weather.position?.place.name)} · ${escape(weather.position?.place.region)} · ${escape(weather.position?.place.country)} · précision : commune.
-${escape(weather.window?.opensAt)}–${escape(weather.window?.closesAt)} (heure de Paris). Récupérée le ${escape(weather.fetchedAt)}.</p>
+${weather.window?.basis === "day" ? "Journée entière" : `${escape(weather.window?.opensAt)}–${escape(weather.window?.closesAt)}`} (heure de Paris). Récupérée le ${escape(weather.fetchedAt)}.</p>
 ${weather.provenance === "fixture" ? "<p>Données de test, sans observation météo réelle.</p>" : ""}<p>${escape(weather.reason)}</p>
+${weather.window?.basis === "day" ? `<p>${escape(weatherCondition(weather.summary?.weatherCode).label)} : épisode le plus marqué prévu dans la journée, pas nécessairement toute sa durée.</p>` : ""}
 <ul>${weather.hours.map(hour => `<li>${escape(hour.time)} (UTC) : ${number(hour.temperature)} °C ; pluie ${number(hour.precipitation)} mm sur l’heure précédente ; probabilité horaire ${number(hour.precipitationProbability)} % ; vent ${number(hour.windSpeed)} km/h.</li>`).join("")}</ul>
-<p>Les probabilités horaires ne sont pas celles de l’ensemble du service. Prévision, pas observation. Source : <a href="https://open-meteo.com/">Open-Meteo</a> ; localisation : <a href="https://www.geonames.org/">GeoNames</a>.</p>`;
+<p>Les probabilités horaires ne sont pas celles de l’ensemble de la période affichée. Prévision, pas observation. Source : <a href="https://open-meteo.com/">Open-Meteo</a> ; localisation : <a href="https://www.geonames.org/">GeoNames</a>.</p>`;
 }
 export function serviceSheetHtml(sheet: ServiceSheet) {
   const facts = sheet.closureFacts ?? sheet.facts;

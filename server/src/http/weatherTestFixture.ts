@@ -10,7 +10,8 @@ export const weatherDate = "2026-09-28";
 export const weatherPlace: WeatherPlace = { id: 2988507, name: "Paris", region: "Île-de-France", country: "France",
   latitude: 48.85, longitude: 2.35, timezone: "Europe/Paris" };
 export function weatherForecast(): WeatherForecast {
-  return { timezone: "Europe/Paris", fetchedAt: new Date().toISOString(), issuedAt: null,
+  return { days: Array.from({ length: 7 }, (_, i) => ({ date: new Date(Date.parse(weatherDate) + i * 86400000).toISOString().slice(0, 10), weatherCode: 63 })),
+    timezone: "Europe/Paris", fetchedAt: new Date().toISOString(), issuedAt: null,
     hours: Array.from({ length: 168 }, (_, i) => ({ time: new Date(Date.parse(`${weatherDate}T00:00:00Z`) - 7200000 + i * 3600000).toISOString(),
       temperature: 18, precipitation: 0, precipitationProbability: 20, windSpeed: 10 })) };
 }
