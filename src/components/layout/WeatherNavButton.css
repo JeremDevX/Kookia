@@ -1,0 +1,27 @@
+.weather-nav-button { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--size-6) var(--size-10); min-height: var(--size-44); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-roomy); background: var(--color-surface-hover); color: var(--color-primary); text-align: left; max-width: var(--size-280); }
+.weather-nav-button:hover { background: var(--color-surface-active); }
+.weather-nav-button > svg { flex-shrink: var(--number-0); }
+.weather-nav-copy { display: flex; flex-direction: column; min-width: var(--number-0); }
+.weather-nav-label { font-size: var(--font-size-caption); }
+.weather-nav-copy strong { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); }
+.weather-dialog > .card { box-shadow: none; padding: var(--number-0); margin-block: var(--spacing-md); }
+.weather-dialog p { margin-block: var(--spacing-sm); }
+.weather-dialog :is(input:not([type="radio"]), select) { width: var(--unit-100percent); min-width: var(--number-0); }
+.weather-dialog .weather-place-options input { width: auto; flex-shrink: var(--number-0); }
+.weather-service-select { display: grid; gap: var(--spacing-sm); }
+.weather-dialog-footer { display: flex; justify-content: flex-end; margin-top: var(--spacing-md); }
+.weather-modal-root .modal-overlay { z-index: var(--number-200); }
+@media (--media-desktop-compact) {
+  .top-nav .profile-copy { display: none; }
+}
+@media (--media-mobile) {
+  .weather-nav-button { padding: var(--size-6); max-width: var(--size-220); }
+  .weather-nav-settings { display: none; }
+}
+@media (--media-phone) {
+  .top-nav { height: auto; padding-block: var(--size-6); }
+  .top-nav-actions { min-width: var(--number-0); flex-shrink: var(--number-1); }
+  .top-nav .user-profile { flex-shrink: var(--number-0); }
+  .top-nav .breadcrumbs { display: none; }
+  .weather-nav-button { max-width: var(--size-230); }
+}

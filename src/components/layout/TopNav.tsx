@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import "../../styles/index.css";
 import "./TopNav.css";
 import { useAuth } from "../../features/auth/context/AuthContext";
+import WeatherNavButton from "./WeatherNavButton";
 
 interface TopNavProps {
   onMenuClick: () => void;
@@ -25,6 +26,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
     "/history": "Historique",
     "/orders": "Achats",
     "/sales": "Ventes",
+    "/services": "Services et carte",
     "/more": "Plus",
   };
 
@@ -51,6 +53,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
       </div>
 
       <div className="top-nav-actions">
+        <WeatherNavButton />
         <Link to="/settings?section=account" className="user-profile" aria-label="Ouvrir mon compte">
           <div className="avatar">{user?.displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "K"}</div>
           <span className="profile-copy"><span className="username">{user?.displayName || "Mon compte"}</span></span>

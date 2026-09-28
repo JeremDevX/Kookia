@@ -8,6 +8,8 @@ import { changeEmailSchema, changePasswordSchema, deleteAccountSchema, loginSche
 import { rateLimit } from "./rateLimit.js";
 import { unconfiguredInvoiceExtractionAdapter, type InvoiceExtractionAdapter } from "../integrations/invoiceExtractionAdapter.js";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { createOpenMeteo } from "../integrations/openMeteo.js";
+import type { WeatherProvider } from "../integrations/weatherProvider.js";
 
 import { workspaceRoutes } from "./workspaceRoutes.js";
 
@@ -15,6 +17,7 @@ const publicUserResponse = (user: Awaited<ReturnType<typeof getUserBySessionToke
 const setSessionCookie = (res: Response, token: string, expiresAt: Date) => res.cookie(sessionCookieName, token, { httpOnly: true, sameSite: "strict", secure: env.NODE_ENV === "production", path: "/", expires: expiresAt });
 const clearSessionCookie = (res: Response) => res.clearCookie(sessionCookieName, { httpOnly: true, sameSite: "strict", secure: env.NODE_ENV === "production", path: "/" });
 const checkDatabaseReadiness = async (): Promise<void> => { await prisma.$queryRaw`SELECT 1`; };
+const configuredWeatherProvider = createOpenMeteo({ mode: env.OPEN_METEO_MODE, apiKey: env.OPEN_METEO_API_KEY });
 const parseBody = <T>(schema: z.ZodType<T>, req: Request, res: Response): T | undefined => {
   const result = schema.safeParse(req.body);
   if (!result.success) { const fields: Record<string, string> = {}; result.error.issues.forEach((issue) => { const field = issue.path[0]; if (typeof field === "string" && !fields[field]) fields[field] = issue.message; }); res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données fournies sont invalides.", fields } }); return undefined; }
@@ -23,7 +26,8 @@ const parseBody = <T>(schema: z.ZodType<T>, req: Request, res: Response): T | un
 const requireUser = async (req: Request) => getUserBySessionToken(req.cookies[sessionCookieName]);
 
 export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = unconfiguredInvoiceExtractionAdapter,
-  databaseReadinessProbe: () => Promise<void> = checkDatabaseReadiness) {
+  databaseReadinessProbe: () => Promise<void> = checkDatabaseReadiness,
+  weatherProvider: WeatherProvider = configuredWeatherProvider) {
   const app = express();
   app.disable("x-powered-by");
   const allowedOrigins = env.APP_ORIGIN === "http://127.0.0.1:5173"
@@ -69,6 +73,7 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
 
   app.use((_, res, next) => {
     res.locals.invoiceExtractionAdapter = invoiceExtractionAdapter;
+    res.locals.weatherProvider = weatherProvider;
     next();
   });
   app.use("/api/workspace", workspaceRoutes);

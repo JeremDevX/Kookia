@@ -15,7 +15,7 @@ const labels: Record<SourceKind, string> = {
 
 const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 
-export default function ConnectionsSettings() {
+export default function ConnectionsSettings({ onWeatherSettings }: { onWeatherSettings: () => void }) {
   const [result, setResult] = useState<{ state: "loading" } | { state: "error"; message: string } | { state: "loaded"; sources: SourceHealth[] }>({ state: "loading" });
   const [reload, setReload] = useState(0);
   const loading = result.state === "loading";
@@ -37,7 +37,7 @@ export default function ConnectionsSettings() {
   }, [reload]);
 
   return <Card title="Sources de données">
-    <p className="settings-section-intro">Aucune source automatique n'est configurée. Les imports et corrections manuels restent disponibles.</p>
+    <p className="settings-section-intro">Vérifiez les sources disponibles et leur dernière récupération réussie. Les imports et corrections manuels restent disponibles.</p>
     <p id="connections-status" role="status">
       {result.state === "loading" ? "Chargement de l'état des sources…" : result.state === "loaded" ? "État des sources à jour." : ""}
     </p>
@@ -49,12 +49,13 @@ export default function ConnectionsSettings() {
       {result.sources.map((source) => <li className="integration-item" key={source.kind}>
         <div>
           <strong>{labels[source.kind]}</strong>
-          {source.lastSuccessAt && <p>Dernière synchronisation réussie : {dateTime.format(new Date(source.lastSuccessAt))}</p>}
+          {source.lastSuccessAt && <p>Dernier succès : {dateTime.format(new Date(source.lastSuccessAt))}</p>}
         </div>
         <Badge label={source.state === "ready" ? "Disponible" : source.state === "degraded" ? "À vérifier" : "Non connecté"}
           status={source.state === "ready" ? "optimal" : source.state === "degraded" ? "moderate" : "neutral"} />
       </li>)}
     </ul>}
+    <p><Button type="button" variant="outline" aria-haspopup="dialog" onClick={onWeatherSettings}>Régler la météo</Button></p>
     <h3>Replis manuels</h3>
     <p>Pour les ventes, utilisez l'<Link to="/sales#sales-import-title">import CSV Kookia</Link> ou la saisie manuelle.</p>
     <p>Les factures peuvent être vérifiées et réceptionnées depuis <Link to="/orders">Achats</Link>.</p>

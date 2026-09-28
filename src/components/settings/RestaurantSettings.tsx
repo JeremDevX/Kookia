@@ -4,7 +4,7 @@ import Button from "../common/Button";
 import Input from "../common/Input";
 import { getRestaurant, saveRestaurant, type Restaurant } from "../../services/restaurantService";
 
-export default function RestaurantSettings() {
+export default function RestaurantSettings({ onSaved }: { onSaved?: () => void }) {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -37,7 +37,7 @@ export default function RestaurantSettings() {
     event.preventDefault();
     if (!restaurant || saving) return;
     setSaving(true); setError(""); setNotice("");
-    try { setRestaurant(await saveRestaurant(restaurant)); setNotice("Informations du restaurant enregistrées."); }
+    try { setRestaurant(await saveRestaurant(restaurant)); setNotice("Informations du restaurant enregistrées."); onSaved?.(); }
     catch (error) { setError(error instanceof Error ? error.message : "Enregistrement impossible."); }
     finally { setSaving(false); }
   };

@@ -3,10 +3,14 @@ import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopNav from "./TopNav";
 import RouteErrorBoundary from "./RouteErrorBoundary";
+import ServiceWeatherProvider from "../../features/services/ServiceWeatherProvider";
+import WeatherSettingsModal from "./WeatherSettingsModal";
+import { useAuth } from "../../features/auth/context/AuthContext";
 import "../../styles/index.css";
 import "./Layout.css";
 
 const Layout: React.FC = () => {
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const mainContentRef = useRef<HTMLElement>(null);
@@ -30,7 +34,7 @@ const Layout: React.FC = () => {
   }, [menuButtonRef]);
 
   return (
-    <div className="layout-container">
+    <ServiceWeatherProvider key={user?.id}><div className="layout-container">
       <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} returnFocusRef={menuButtonRef} />
       <div className="main-content-wrapper">
         <TopNav onMenuClick={toggleSidebar} isSidebarOpen={isSidebarOpen} menuButtonRef={menuButtonRef} />
@@ -40,7 +44,7 @@ const Layout: React.FC = () => {
           </RouteErrorBoundary>
         </main>
       </div>
-    </div>
+    </div><WeatherSettingsModal /></ServiceWeatherProvider>
   );
 };
 

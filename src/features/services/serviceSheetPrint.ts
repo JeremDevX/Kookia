@@ -1,7 +1,19 @@
 import type { ServiceSheet } from "../../../shared/serviceSheet";
 import { serviceSlotLabels } from "../../../shared/serviceCalendar";
+import type { WeatherDecisionContext } from "../../../shared/serviceWeather";
 const escape = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
 const number = (value: number | null) => value === null ? "Inconnu" : String(value);
+function weatherHtml(context?: WeatherDecisionContext) {
+  if (!context) return "";
+  if (context.status === "not_saved") return "<h2>Météo à la validation du plan</h2><p>Contexte météo non conservé. Le plan reste validé indépendamment de la météo.</p>";
+  const weather = context.weather;
+  return `<h2>Météo à la validation du plan</h2><p>Contexte conservé avec la décision, sans ajustement automatique des portions.</p>
+<p>${escape(weather.position?.place.name)} · ${escape(weather.position?.place.region)} · ${escape(weather.position?.place.country)} · précision : commune.
+${escape(weather.window?.opensAt)}–${escape(weather.window?.closesAt)} (heure de Paris). Récupérée le ${escape(weather.fetchedAt)}.</p>
+${weather.provenance === "fixture" ? "<p>Données de test, sans observation météo réelle.</p>" : ""}<p>${escape(weather.reason)}</p>
+<ul>${weather.hours.map(hour => `<li>${escape(hour.time)} (UTC) : ${number(hour.temperature)} °C ; pluie ${number(hour.precipitation)} mm sur l’heure précédente ; probabilité horaire ${number(hour.precipitationProbability)} % ; vent ${number(hour.windSpeed)} km/h.</li>`).join("")}</ul>
+<p>Les probabilités horaires ne sont pas celles de l’ensemble du service. Prévision, pas observation. Source : <a href="https://open-meteo.com/">Open-Meteo</a> ; localisation : <a href="https://www.geonames.org/">GeoNames</a>.</p>`;
+}
 export function serviceSheetHtml(sheet: ServiceSheet) {
   const facts = sheet.closureFacts ?? sheet.facts;
   const state = sheet.state === "closed" ? "Clôturé" : sheet.state === "validated" ? "Plan validé par le chef" : "Brouillon, non validé";
@@ -13,6 +25,7 @@ body{font:14px Arial,sans-serif;color:#18201d;margin:28px;line-height:1.45}h1{fo
 <p>Provenance du plan : ${sheet.forecastKey ? "estimations reprises puis revues par le chef" : "saisie manuelle"}.</p>
 ${sheet.forecastReference ? `<ul>${sheet.forecastReference.items.map(item => `<li>${escape(item.name)} : ${number(item.quantity)} unités estimées, modèle ${escape(item.model)}, ${item.observations} observations.</li>`).join("")}</ul>` : ""}
 ${sheet.validatedAt ? `<p>Plan validé le ${escape(sheet.validatedAt)}. La validation du plan ne constitue pas un mouvement de stock.</p>` : ""}
+${weatherHtml(sheet.weatherContext)}
 ${sheet.closedAt ? `<p>Clôture le ${escape(sheet.closedAt)}. Les observations ci-dessous sont le constat conservé à la clôture.</p>` : ""}
 ${sheet.factsChangedSinceClosure ? '<p class="notice">Des opérations ont changé depuis la clôture. Le constat imprimé reste celui de la clôture ; consulter le rapprochement courant dans Kookia.</p>' : ""}
 <table><thead><tr><th>Recette</th><th>Prévu / ajusté</th><th>Préparé</th><th>Complément</th><th>Vendu</th><th>Invendu</th><th>Conservé</th><th>Écarté déclaré</th><th>À rapprocher</th></tr></thead><tbody>${facts.lines.map(line => `<tr><th scope="row">${escape(line.recipeName)}</th><td>${line.planned} / ${line.adjustedPlanned}</td><td>${line.prepared}</td><td>${line.additionalPrepared}</td><td>${number(line.sold)}</td><td>${number(line.unsold)}</td><td>${line.retained}</td><td>${line.discarded}</td><td>${number(line.unexplained)}</td></tr>`).join("")}</tbody></table>

@@ -40,8 +40,9 @@ interface SourceAdapter<Input, Output> {
 }
 ```
 
-La route renvoie actuellement `not_connected` pour chaque source, **sans
-requête externe ni valeur inventée**. Elle prend le `restaurantId` de la session
+Sans configuration, la route renvoie `not_connected`. Pour position/météo, elle
+lit désormais les confirmations et succès Open-Meteo persistés, **sans requête
+externe ni valeur inventée** ; une fixture reste non connectée. Elle prend le `restaurantId` de la session
 serveur, pas d'un paramètre client. Sa réponse est
 `{ sources: Array<{ kind: SourceKind } & SourceHealth> }`. Lorsqu'un adaptateur
 sera configuré, une panne de son statut ne devra pas masquer les autres. L'UI
@@ -78,8 +79,8 @@ les droits, l'accès et la rétention ; la saisie manuelle reste disponible.
 | --- | --- | --- |
 | `pos` | `from`, `to` (journées de service bornées) | `coverage: complete/partial` et lignes `{sourceRecordId, serviceDate, externalItemId?, itemLabel, quantity, refunded}`. |
 | `ticket_ocr` | Octets, MIME PDF/JPEG/PNG, finalité `ticket_z` ou `purchase_invoice` | Texte et champs candidats `{name, text, confidence?, page?}` ; **aucune vente ou réception validée**. |
-| `geocoding` | Adresse, ville, pays confirmés | Latitude, longitude, fuseau, précision `address/city` et date de confirmation. |
-| `weather` | Position confirmée, dates et horizon | Journées avec températures min/max et précipitations éventuellement absentes ; date d'émission indispensable. |
+| `geocoding` | Commune/code postal puis identifiant fournisseur sélectionné | Coordonnées résolues côté serveur, fuseau, précision `city`, date/auteur et révision de confirmation. |
+| `weather` | Position confirmée, sept jours horaires | Température, pluie/probabilité et vent éventuellement absents ; récupération datée, émission nullable. Contrat W0–W2 distinct d'un backtest. |
 | `events` | Position confirmée, rayon et période | Identifiant fournisseur, titre, dates et source ; pertinence non présumée. |
 
 Pour chaque port, définir avant le premier fournisseur les bornes de dates,
@@ -104,7 +105,8 @@ détermine jamais directement ces champs de confiance.
    statut. Elle ne valide ni commande fournisseur ni stock à elle seule.
 7. Une source indisponible ne fait pas disparaître les valeurs déjà confirmées ;
    leur date et leur état restent visibles.
-8. Les secrets restent côté serveur et hors dépôt, URL, bundle client et logs.
+8. Les secrets restent côté serveur, hors dépôt, URL exposée, bundle client et logs.
+   La clé Open-Meteo commerciale est transmise uniquement dans sa requête HTTPS serveur.
 
 Le type cible `SourceResult<T>` distingue `ok` de `unavailable`. Le code appelant
 doit traiter `not_configured`, `temporary_error` et `invalid_data`
@@ -241,28 +243,29 @@ l'OCR ; la même pièce ne crédite pas deux fois le stock.
 
 ## Adresse, position et météo
 
-L'adresse/ville actuelles sont du texte saisi dans `Restaurant` ; il n'existe
-pas de latitude/longitude vérifiée. Le port cible `geocoding` transforme une adresse
-confirmée en `GeoPoint` (coordonnées, fuseau, précision adresse/ville).
+Le [lot Open-Meteo W0–W2](plans/service-weather.md) est implémenté, désactivé par défaut.
+Il fournit un contexte informatif, jamais un coefficient sur ventes ou achats.
+Le détail de configuration, les règles de cache et les preuves sont dans ce lot.
 
-1. Le restaurateur vérifie l'adresse. Une position déduite au niveau de la
-   ville n'est pas présentée comme une adresse exacte.
-2. Le service géocode côté serveur, valide latitude/longitude/fuseau et
-   présente l'écart si plusieurs résultats plausibles apparaissent.
-3. Seule une position confirmée alimente la météo ou les événements.
-4. Le futur port `weather` lit des journées bornées avec températures min/max et
-   précipitations éventuellement absentes. Il faut conserver fournisseur,
-   heure d'émission, horizon, fuseau et date du service.
-5. La prévision utilise les **prévisions météo qui étaient disponibles à la
-   date de décision** lors d'un backtest, pas les observations ultérieures :
-   sinon le test fuit l'avenir.
-6. Si le fournisseur échoue ou la météo est trop ancienne, calculer sans cette
-   variable, signaler son absence et ne jamais remplir par une valeur fictive.
+- `GET /api/workspace/weather/location` : confirmation courante et révision.
+- `GET /api/workspace/weather/places?q=…` : recherche de commune/code postal côté serveur.
+- `POST /api/workspace/weather/location` : `placeId`, `expectedRevision`, `addressFingerprint` ;
+  résolution fournisseur avant confirmation, coordonnées client refusées.
+- `GET /api/workspace/services/weather?date=…&slot=…` : fenêtre du calendrier,
+  état explicite, heures normalisées, provenance, fraîcheur et référence du contexte.
 
-Une future table de position doit porter `restaurantId`, source, précision,
-date de confirmation et version d'adresse. Une table météo, si nécessaire,
-doit permettre d'identifier l'émission utilisée et son expiration ; ne pas
-stocker des années de réponses brutes sans usage défini.
+La précision est `city`, pas une adresse vérifiée ; le fuseau initial reste Europe/Paris.
+Une modification de ville/adresse invalide position et cache. La météo n'est jamais
+requise pour préparer ou clôturer un service. Les inconnues restent `null`.
+La validation de fiche accepte uniquement une référence de contexte : le serveur copie
+les données correspondantes, ou constate leur absence sans substituer une nouvelle météo.
+Le cache utilise `WorkspaceDocument` et n'archive pas les consultations ; seuls les
+contextes de décision sont historiques. La suppression de l'espace les supprime aussi.
+
+L'émission `issuedAt` reste inconnue si le fournisseur ne la donne pas : la récupération
+`fetchedAt` n'est pas l'émission du modèle. Un futur backtest devra utiliser les prévisions
+disponibles à la date de décision, jamais des observations ultérieures ou une archive
+récupérée après coup présentée comme consultée à l'époque.
 
 ## Événements locaux
 

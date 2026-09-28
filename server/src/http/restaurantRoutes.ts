@@ -2,6 +2,8 @@ import { Router, type Response } from "express";
 import { z } from "zod";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { WorkspaceError } from "../application/workspace/catalogService.js";
+import { invalidateWeatherLocation, locationFingerprint } from "../application/workspace/weatherPositionService.js";
+import { lockWeatherWorkspace } from "../application/workspace/weatherStorage.js";
 
 export const restaurantRoutes = Router();
 const restaurantId = (res: Response) => (res.locals.workspace as { restaurantId: string }).restaurantId;
@@ -25,7 +27,13 @@ restaurantRoutes.get("/restaurant", async (_req, res, next) => {
 restaurantRoutes.patch("/restaurant", async (req, res, next) => {
   try {
     const input = restaurantSchema.parse(req.body);
-    await prisma.restaurant.update({ where: { id: restaurantId(res) }, data: input });
+    await prisma.$transaction(async tx => {
+      const id = restaurantId(res);
+      await lockWeatherWorkspace(tx, id);
+      const previous = await tx.restaurant.findUniqueOrThrow({ where: { id } });
+      await tx.restaurant.update({ where: { id }, data: input });
+      if (locationFingerprint(previous) !== locationFingerprint(input)) await invalidateWeatherLocation(tx, id);
+    });
     res.json(input);
   } catch (error) { next(error); }
 });

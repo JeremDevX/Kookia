@@ -41,6 +41,7 @@ export const sheetInputSchema = z.object({
   serviceDate: z.iso.date(), slot: slotSchema,
   action: z.enum(["save", "validate_plan", "close"]),
   forecastKey: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  weatherContextRef: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   planned: z.array(z.object({ recipeId: z.string().min(1).max(100),
     portions: z.number().int().min(0).max(10000) }).strict()).max(60),
   outcomes: z.array(z.object({ recipeId: z.string().min(1).max(100),

@@ -12,8 +12,10 @@ workspaces are persisted; authorization and critical mutations are server-side.
 Demo data is seeded idempotently, never a frontend fallback. Inspect the current
 code before introducing or replacing boundaries.
 
-POS ingestion, Ticket Z/OCR, live weather and an AI prediction engine remain
-planned, not active. The chef must retain explicit review and validation;
+POS/OCR providers and an AI prediction engine remain planned, not active.
+Open-Meteo service context is implemented but disabled by default; confirmed city,
+freshness and provenance are required, with no automatic quantity adjustment.
+The chef must retain explicit review and validation;
 commands and menus have persistent decision records. No provider email is sent
 by order validation. The technical reference is
 [`docs/technical-development.md`](docs/technical-development.md); migration scope

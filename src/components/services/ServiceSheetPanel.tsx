@@ -11,8 +11,9 @@ import type { ServiceSlot } from "../../../shared/serviceCalendar";
 import type { SheetInput } from "../../../shared/serviceOperations";
 import type { ServiceSheet } from "../../../shared/serviceSheet";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
+import { WeatherDecisionSummary } from "./ServiceWeatherPanel";
 
-export default function ServiceSheetPanel({ date, slot, onChanged }: { date: string; slot: ServiceSlot; onChanged?: () => void }) {
+export default function ServiceSheetPanel({ date, slot, onChanged, weatherContextRef }: { date: string; slot: ServiceSlot; onChanged?: () => void; weatherContextRef?: string }) {
   const [sheet, setSheet] = useState<ServiceSheet | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [planned, setPlanned] = useState<SheetInput["planned"]>([]);
@@ -31,6 +32,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged }: { date: str
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [forecastKey, setForecastKey] = useState<string | null>(null);
   const loadRevision = useRef(0);
+  const pendingInput = useRef<SheetInput | null>(null);
   const apply = (result: ServiceSheet) => {
     setSheet(result); setPlanned(result.planned); setOutcomes(result.outcomes); setSubstitutions(result.substitutions); setNote(result.note);
     setForecastKey(result.forecastKey);
@@ -41,7 +43,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged }: { date: str
     try {
       const [result, catalog] = await Promise.all([getServiceSheet(date, slot), getRecipes()]);
       if (loadRevision.current !== requestRevision) return;
-      apply(result); setRecipes(catalog); setOperationId(crypto.randomUUID());
+      apply(result); setRecipes(catalog); setOperationId(crypto.randomUUID()); pendingInput.current = null;
     } catch (cause) { if (loadRevision.current === requestRevision) setError(cause instanceof Error ? cause.message : "Fiche indisponible."); }
     finally { if (loadRevision.current === requestRevision) setBusy(false); }
   }, [date, slot]);
@@ -49,7 +51,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged }: { date: str
     void load(); const revision = loadRevision;
     return () => { revision.current++; };
   }, [load]);
-  const changed = () => { setOperationId(crypto.randomUUID()); setStatus(""); };
+  const changed = () => { setOperationId(crypto.randomUUID()); pendingInput.current = null; setStatus(""); };
   const importForecast = async () => {
     if (!sheet) return;
     setBusy(true); setError(""); setStatus("");
@@ -69,10 +71,16 @@ export default function ServiceSheetPanel({ date, slot, onChanged }: { date: str
     if (!sheet) return;
     setBusy(true); setError(""); setStatus("");
     try {
-      const result = await saveServiceSheet({ serviceDate: date, slot, action, operationId,
-        expectedRevision: sheet.revision, planned, outcomes, substitutions, note, ...(forecastKey ? { forecastKey } : {}) });
-      apply(result); setOperationId(crypto.randomUUID()); onChanged?.();
-      setStatus(action === "close" ? "Service clôturé ; le constat est conservé sans nouvelle sortie de stock." : action === "validate_plan" ? "Plan validé par le chef. Enregistrez séparément les préparations réellement réalisées." : "Brouillon enregistré.");
+      // Keep retries identical even if an independent weather refresh finishes meanwhile.
+      if (!pendingInput.current || pendingInput.current.action !== action) pendingInput.current = {
+        serviceDate: date, slot, action, operationId: pendingInput.current ? crypto.randomUUID() : operationId,
+        expectedRevision: sheet.revision, planned, outcomes, substitutions, note, ...(forecastKey ? { forecastKey } : {}),
+        ...(action === "validate_plan" && weatherContextRef ? { weatherContextRef } : {}),
+      };
+      const result = await saveServiceSheet(pendingInput.current);
+      apply(result); pendingInput.current = null; setOperationId(crypto.randomUUID()); onChanged?.();
+      setStatus(action === "close" ? "Service clôturé ; le constat est conservé sans nouvelle sortie de stock." : action === "validate_plan"
+        ? `Plan validé par le chef. ${result.weatherContext?.status === "saved" ? "Contexte météo conservé." : "Contexte météo non conservé."} Enregistrez séparément les préparations réellement réalisées.` : "Brouillon enregistré.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Enregistrement impossible."); }
     finally { setBusy(false); }
   };
@@ -100,6 +108,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged }: { date: str
     <Button type="button" variant="outline" disabled={busy} onClick={() => void load()}>Recharger le constat enregistré</Button>
     {sheet && <>
       <p>État : {closed ? "clôturé" : validated ? "plan validé" : "brouillon"} · révision {sheet.revision}. Carte de référence : {sheet.menuRevision || "non renseignée"}.</p>
+      <WeatherDecisionSummary context={sheet.weatherContext} />
       <div className="sales-actions"><Link to="/recipes">Enregistrer une production ou un complément</Link><Link to="/sales">Ventiler et revoir les ventes</Link><Link to="/stocks">Déclarer les pertes liées aux préparations</Link></div>
       <h3>Préparation prévue</h3>
       <p>Provenance du plan : {forecastKey ? validated ? "estimations reprises, puis revues par le chef" : "estimations reprises, à revoir par le chef" : "quantités saisies manuellement"}.</p>

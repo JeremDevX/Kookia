@@ -12,6 +12,7 @@ pour les capacités disponibles.
 | Savoir ce qui existe et ce qui manque | [Référence technique](technical-development.md) et [écarts vérifiés](ecarts-techniques.md) |
 | Préparer et vérifier une livraison locale | [Topologie, sauvegardes et recette jetable](local-delivery.md) |
 | Construire dans le bon ordre | [Roadmap produit](plans/roadmap-produit.md) et [plan d'exécution vérifiable](plans/plan-execution.md) |
+| Avancer le lot de continuité du service | [Plan d'implémentation](plans/service-flow-continuity.md) proposé ; [volet Open-Meteo informatif](plans/service-weather.md) implémenté, désactivé par défaut, recette interactive en attente |
 | Lancer un développement long centré restaurateur | [Prompt `/goal` prêt à coller](plans/goal-kookia-prompt.md), [référentiel complet](plans/goal-kookia-reference.md) et [journal de reprise](plans/goal-kookia-progress.md) |
 | Brancher caisse, OCR, position, météo et événements | [Contrats et flux de données](integrations.md) |
 | Préparer puis évaluer les prévisions | [Plan du moteur de prévision](plans/forecast-engine.md) |

@@ -1,6 +1,7 @@
 import type { ServiceSlot } from "./serviceCalendar.js";
 import type { MenuEntry, SheetInput } from "./serviceOperations.js";
 import type { ForecastService } from "./operationalForecast.js";
+import type { WeatherDecisionContext } from "./serviceWeather.js";
 
 export interface ServiceSheetLine {
   recipeId: string; recipeName: string; planned: number; adjustedPlanned: number;
@@ -24,5 +25,6 @@ export interface ServiceSheet {
   note: string; menuEntries: MenuEntry[]; menuRevision: number;
   validatedAt: string | null; validatedBy: string | null; closedAt: string | null; closedBy: string | null;
   forecastKey: string | null; forecastReference: ForecastService | null;
+  weatherContext?: WeatherDecisionContext;
   facts: ServiceSheetFacts; factsChangedSinceClosure: boolean; closureFacts: ServiceSheetFacts | null;
 }

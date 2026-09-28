@@ -15,7 +15,7 @@ fonctionnalité déjà disponible**.
 | Hébergement | `vercel.json` sert une SPA frontend ; aucun runtime API ni réécriture `/api` | Définir et vérifier séparément l'API, le réseau, les sessions et la persistance avant préproduction |
 | Réseau local | Vite proxifie `/api` vers `http://127.0.0.1:3001` par défaut (cible overrideable pour la démo) ; l'API écoute loopback par défaut, `HOST` configure l'écoute et `APP_ORIGIN` l'origine mutatrice locale ; la recette R0 et la démo utilisent PostgreSQL jetable sur loopback | Configurer explicitement l'écoute externe, un routage `/api` de même origine, une origine mutatrice autorisée et TLS selon l'hébergeur choisi |
 | Backend et persistance | API Express/TypeScript et PostgreSQL/Prisma actifs pour comptes et espaces métier isolés | Renforcer les contrats d'ingestion, la provenance et l'évaluation des calculs |
-| Intégrations | Aucun fournisseur POS/OCR/météo actif ; `Plus → Connexions` lit les statuts serveur `not_connected`. POS reste une fixture revue manuellement ; Ticket Z a une transcription manuelle sans OCR ni conservation du fichier ; Achats expose une unique fixture PDF synthétique via upload local en `demo:local`, sans OCR général ni conservation de l'original ; les autres fichiers gardent le repli manuel. | Contrats et adaptateurs fournisseur, extraction contrôlée, correction et repli manuel |
+| Intégrations | Open-Meteo implémenté côté serveur, désactivé par défaut : commune confirmée, cache horaire et contexte informatif du service. Connexions reflète les succès réels, jamais une fixture. Aucun fournisseur POS/OCR actif ; Ticket Z reste une transcription manuelle sans conservation du fichier ; Achats expose une fixture PDF synthétique locale, les autres fichiers gardent le repli manuel. | Activation météo adaptée à l'usage, recette interactive ; adaptateurs POS/OCR et correction contrôlée |
 | Prévision | La page Prévisions sépare la baseline F1 des ventes (28 jours de calendrier complets requis) des estimations d'écoulement d'ingrédients. **Services et carte** ajoute des estimations par jour/service et carte versionnée, avec historique qualifié, dispersion et saisonnalité conditionnelle. Aucun calcul ne crée d'opération ; F2 météo reste non connecté | Mesurer les performances sur données terrain qualifiées ; fournisseurs météo/événements après cadrage des droits/rétention ; moteur IA hors périmètre full-stack initial |
 
 Les versions et dépendances actives font foi dans [`package.json`](../package.json).
@@ -25,6 +25,20 @@ les secrets d'environnement, la disponibilité observée et les limites de repri
 Le parcours [Services, carte et stocks opérationnels](operational-services.md)
 détaille les nouveaux contrats et leurs limites ; le
 [plan de vérification](plans/operational-realism.md) conserve les preuves sur base jetable.
+
+Le [lot de continuité du service](plans/service-flow-continuity.md) est un plan
+proposé, non implémenté : conserver le contexte entre écrans, guider les opérations
+depuis Aujourd'hui et expliciter les blocages sans changer les règles de clôture.
+Son [volet Open-Meteo informatif](plans/service-weather.md) est implémenté :
+localisation confirmée, météo par service et contexte conservé lors de la décision,
+sans ajustement automatique des ventes ou achats. Un bouton dans la barre du haut
+affiche un résumé et ouvre la modale de commune, horaires et détails. Sur Services,
+il suit la sélection de la fiche ; ailleurs, aujourd'hui midi/soir. Le même contexte
+alimente la validation du plan. Aucun départ de l'écran ni remontage de la fiche
+pour régler la météo ; la continuité complète des brouillons S1 reste à livrer.
+La configuration serveur reste désactivée par défaut. Un test réel de l'adaptateur
+sur Paris a réussi, sans activer la connexion du restaurant. La recette navigateur
+reste en attente, conformément à la restriction du plan.
 
 ## Invariants produit et données
 
@@ -54,7 +68,8 @@ des métadonnées, candidats transcrits et décisions.
 
 ```text
 UI React → hooks/features → client API → API Express → domaine → PostgreSQL
-                                  ↘ futurs ports POS / OCR / position / météo / événements
+API Express → adaptateur Open-Meteo (optionnel) → cache serveur / contexte de décision
+            ↘ futurs fournisseurs POS / OCR / événements
 ```
 
 La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,

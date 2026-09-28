@@ -17,6 +17,7 @@ import { preferencesRoutes } from "./preferencesRoutes.js";
 import { workspaceReadRoutes } from "./workspaceReadRoutes.js";
 import { timelineRoutes } from "./timelineRoutes.js";
 import { sourceRoutes } from "./sourceRoutes.js";
+import { weatherRoutes } from "./weatherRoutes.js";
 import { Router, type Response } from "express";
 import { z } from "zod";
 import { sessionCookieName } from "../config/env.js";
@@ -44,6 +45,7 @@ workspaceRoutes.use(async (req, res, next) => {
 workspaceRoutes.use(workspaceReadRoutes);
 workspaceRoutes.use(timelineRoutes);
 workspaceRoutes.use(sourceRoutes);
+workspaceRoutes.use(weatherRoutes);
 workspaceRoutes.use(preferencesRoutes);
 workspaceRoutes.use(orderRoutes);
 workspaceRoutes.use(cartRoutes);

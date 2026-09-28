@@ -8,6 +8,7 @@ import { reconcileServiceSheet, serviceSheetClosureErrors, type SheetEvidence } 
 import { qualifiedAllocation, type ServiceSlot } from "../../../../shared/serviceCalendar.js";
 import type { MenuEntry, SheetInput } from "../../../../shared/serviceOperations.js";
 import type { ServiceSheet } from "../../../../shared/serviceSheet.js";
+import { weatherContextForDecision } from "./serviceWeatherService.js";
 
 type Database = PrismaClient | Prisma.TransactionClient;
 type StoredSheet = Omit<ServiceSheet, "serviceDate" | "slot" | "revision" | "facts" | "factsChangedSinceClosure">;
@@ -109,6 +110,9 @@ export async function saveServiceSheet(restaurantId: string, actorId: string, in
       if (errors.length) throw new WorkspaceError(409, "SERVICE_RECONCILIATION_REQUIRED", errors.join(" "));
     }
     const timestamp = new Date().toISOString();
+    const weatherContext = input.action === "validate_plan" && current.state === "draft"
+      ? await weatherContextForDecision(tx, restaurantId, input.serviceDate, input.slot, input.weatherContextRef)
+      : current.weatherContext;
     const next: StoredSheet = { state: input.action === "close" ? "closed" : input.action === "validate_plan" ? "validated" : current.state,
       planned: input.planned, outcomes: input.outcomes, substitutions: input.substitutions, note: input.note,
       menuEntries: current.menuEntries, menuRevision: current.menuRevision,
@@ -116,7 +120,8 @@ export async function saveServiceSheet(restaurantId: string, actorId: string, in
       validatedBy: input.action === "validate_plan" ? actorId : current.validatedBy,
       closedAt: input.action === "close" ? timestamp : null, closedBy: input.action === "close" ? actorId : null,
       closureFacts: input.action === "close" ? facts : null, forecastKey: input.forecastKey ?? null,
-      forecastReference: input.forecastKey ? forecastReference : null };
+      forecastReference: input.forecastKey ? forecastReference : null,
+      ...(weatherContext ? { weatherContext } : {}) };
     const result: ServiceSheet = { ...next, serviceDate: input.serviceDate, slot: input.slot,
       revision: current.revision + 1, facts, factsChangedSinceClosure: false };
     await tx.workspaceDocument.upsert({ where: { restaurantId_kind: { restaurantId, kind: kind(input.serviceDate, input.slot) } },
