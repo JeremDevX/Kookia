@@ -35,7 +35,7 @@ export default function SalesImport({ items, onImported, onItemsCreated }: {
     if (!file) return;
     event.target.value = "";
     const selection = ++sequence.current;
-    setPreview(null); setCsv(""); setMapping({}); setError(""); setStatus(""); setPage(0);
+    setLoading(false); setPreview(null); setCsv(""); setMapping({}); setError(""); setStatus(""); setPage(0);
     if (file.size > 256_000) { setError("Le fichier CSV dépasse 256 Ko."); return; }
     try {
       const content = await file.text();
