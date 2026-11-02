@@ -205,7 +205,17 @@ avec les champs validés et n’ajoute aucune donnée de catalogue. Il compare
 changement de compte ; l’identité autorisée reste celle de la session. Les
 routes `/api/workspace` répondent `409 SETUP_REQUIRED` avant cette création ;
 une création concurrente ou répétée reçoit `409 SETUP_ALREADY_COMPLETED`.
-Les données existantes sont conservées.
+Les données existantes sont conservées. Le parcours est enregistré sans migration
+comme document `onboarding` lors de la création atomique de l’établissement.
+`GET /api/setup` renvoie aussi `step` (`team`, `suppliers`, `review` ou `null`)
+et `revision` (0 si document absent). Un établissement antérieur sans document
+est considéré comme terminé ; la lecture ne crée rien. `PATCH /api/setup/step`
+attend `expectedUserId`, `expectedStep`, `nextStep` et `expectedRevision` ;
+les étapes adjacentes sont accessibles dans les deux sens et seule `review`
+permet de terminer avec `nextStep: null`. Une version périmée reçoit
+`409 REVISION_CONFLICT` ; un rejeu est accepté seulement si son résultat
+correspond à la révision immédiatement suivante. Les routes workspace restent
+accessibles pendant le parcours.
 
 Chaque requête `/api/workspace`, y compris en lecture, doit porter l’en-tête
 `X-Expected-User-Id` avec l’identifiant de l’utilisateur associé à l’écran.

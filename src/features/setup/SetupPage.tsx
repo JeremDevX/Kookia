@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import { ApiError } from "../../config/api";
@@ -9,14 +9,17 @@ import { useAuth } from "../auth/context/AuthContext";
 import "../auth/pages/AuthPages.css";
 import "./SetupPage.css";
 import { setupValues } from "./setupLogic";
-import { createSetup } from "./setupApi";
+import { createSetup, type SetupProgress } from "./setupApi";
+import SetupSteps from "./SetupSteps";
+import SetupProgressIndicator from "./SetupProgressIndicator";
 import { clearSetupDraft, emptySetupForm, readSetupDraft, saveSetupDraft } from "./setupDraft";
 
 type Field = keyof typeof emptySetupForm;
 
 export default function SetupPage() {
   const { user } = useAuth();
-  return <SetupForm key={user?.id} />;
+  const progress = useOutletContext<SetupProgress>();
+  return progress.configured ? <SetupSteps key={user?.id} initialProgress={progress} /> : <SetupForm key={user?.id} />;
 }
 
 function SetupForm() {
@@ -51,7 +54,8 @@ function SetupForm() {
     </header>
     <div className="setup-content">
       <h1 id="setup-title">Configurez votre restaurant</h1>
-      <p className="setup-subtitle">Renseignez les informations de votre établissement pour commencer.</p>
+      <p className="setup-subtitle">Étape 1 sur 4 · Renseignez les informations de votre établissement.</p>
+      <SetupProgressIndicator index={0} />
       <section className="setup-card" aria-labelledby="setup-card-title">
         <h2 id="setup-card-title">Votre restaurant</h2>
         <form className="auth-form setup-form" onSubmit={submit}>

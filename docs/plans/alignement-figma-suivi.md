@@ -43,8 +43,8 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Écran / route | Référence candidate | Structure | Informations | Fonctionnalités | Visuel | Interactions | Statut |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Connexion `/login` | A `673:43390` | À vérifier | À vérifier | À vérifier | À vérifier | Connexion factice vérifiée ; reste à tester | En cours |
-| Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration restaurant disponible ; étapes équipe et fournisseurs absentes | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
-| Configuration `/setup` | A `673:43437` à `673:43559` | Page restaurant centrée ; progression Figma absente | Champs restaurant présents ; jours d’ouverture à compléter | Équipe et fournisseurs non inclus dans ce parcours | Rapprochement partiel ; comparaison précise à faire | Création, validation clavier et retour testés sur données synthétiques | En cours |
+| Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration en quatre étapes ; invitations d’équipe indisponibles | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
+| Configuration `/setup` | A `673:43437` à `673:43559` | Quatre étapes avec progression et reprise | Champs restaurant présents ; jours d’ouverture à compléter | Fournisseurs et récapitulatif disponibles ; invitations d’équipe indisponibles | Rapprochement partiel ; comparaison précise à faire | Création, reprise, ajout fournisseur et retour testés sur données synthétiques | En cours |
 | Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | Divergente pour `673:43621` | Indicateurs et blocs différents | Planning et notifications à confronter | À vérifier | À vérifier | En cours |
 | Stocks `/stocks` | A `673:44425`, `673:44584` | À vérifier | Ticket Z et OCR divergents | À vérifier | À vérifier | À vérifier | En cours |
 | Prévisions `/predictions` | A `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
@@ -398,16 +398,16 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   premier rendu empêche le défilement ; ce risque n'est pas encore confirmé.
 - La première connexion sans établissement mène maintenant à `/setup` : les
   informations du restaurant sont saisies avant création, sans catalogue
-  fictif. Les restaurants existants sont conservés. La maquette A prévoit
-  quatre étapes ; l’application ne propose encore que le formulaire restaurant.
-  Les invitations d’équipe ne sont pas disponibles ; les fournisseurs restent
-  configurables dans Paramètres. Ne pas présenter ces étapes comme livrées.
-  La première page reprend partiellement la structure centrée de la maquette,
-  avec en-tête et carte ; un contrôle Firefox à 390 px ne montre pas de
-  débordement horizontal. En Firefox sur base jetable, la création revient à
-  la route demandée avec un catalogue vide ; une expiration puis reconnexion
-  conserve la saisie en mémoire
-  pour le même compte. Recharger ou fermer l’onglet efface cette saisie.
+  fictif. La progression restaurant, équipe, fournisseurs et récapitulatif est
+  enregistrée sans migration et peut reprendre après rechargement. L’étape
+  équipe indique que les invitations sont indisponibles ; les rôles et leur
+  gestion restent à construire. Les fournisseurs utilisent les données réelles.
+  Les établissements existants sans progression restent accessibles. Dans Firefox
+  sur base jetable : reprise à l’étape équipe après rechargement, ajout d’un
+  fournisseur, récapitulatif, retour à la route demandée et catalogue sans
+  produit fictif vérifiés ; aucun débordement horizontal observé à 390 px.
+  Les brouillons restaurant et fournisseur non enregistrés sont perdus au
+  rechargement ; retour navigateur peut aussi effacer une saisie fournisseur.
 - La consultation du menu sans document enregistré ne crée plus de plats
   d’exemple : un brouillon vide de révision 0 est affiché. La sauvegarde exige
   les trois plats et crée le document sous verrou ; les menus existants restent

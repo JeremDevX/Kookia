@@ -1,6 +1,8 @@
-export function setupDestination(configured: boolean, setupPage: boolean): "continue" | "setup" | "return" {
-  if (setupPage && configured) return "return";
-  if (!setupPage && !configured) return "setup";
+import type { SetupStep } from "./setupApi";
+
+export function setupDestination(configured: boolean, step: SetupStep | null, setupPage: boolean): "continue" | "setup" | "return" {
+  if (setupPage && configured && step === null) return "return";
+  if (!setupPage && (!configured || step !== null)) return "setup";
   return "continue";
 }
 

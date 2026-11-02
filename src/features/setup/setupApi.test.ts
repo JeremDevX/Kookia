@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "../../config/api";
-import { checkSetup, createSetup } from "./setupApi";
+import { changeSetupStep, checkSetup, createSetup } from "./setupApi";
 
 vi.mock("../../config/api", async (original) => ({
   ...await original<typeof import("../../config/api")>(),
@@ -14,7 +14,7 @@ afterEach(() => vi.resetAllMocks());
 
 describe("setup API", () => {
   it("recovers a completed setup after a conflict", async () => {
-    request.mockRejectedValueOnce(failure(409, "SETUP_ALREADY_COMPLETED")).mockResolvedValueOnce({ configured: true, userId: "account-id" });
+    request.mockRejectedValueOnce(failure(409, "SETUP_ALREADY_COMPLETED")).mockResolvedValueOnce({ configured: true, userId: "account-id", step: "team", revision: 1 });
     await expect(createSetup(restaurant, "account-id", vi.fn())).resolves.toBeUndefined();
     expect(request).toHaveBeenLastCalledWith("/setup");
   });
@@ -33,7 +33,7 @@ describe("setup API", () => {
   });
   it("keeps the conflict visible if setup is not configured", async () => {
     const error = failure(409, "SETUP_ALREADY_COMPLETED");
-    request.mockRejectedValueOnce(error).mockResolvedValueOnce({ configured: false, userId: "account-id" });
+    request.mockRejectedValueOnce(error).mockResolvedValueOnce({ configured: false, userId: "account-id", step: null, revision: 0 });
     await expect(createSetup(restaurant, "account-id", vi.fn())).rejects.toBe(error);
   });
   it.each(["POST", "relecture après conflit"])("refreshes an expired session during %s", async (step) => {
@@ -62,16 +62,29 @@ describe("setup API", () => {
   });
   it.each([true, false])("rejects setup status for another account (configured=%s)", async (configured) => {
     const refresh = vi.fn().mockResolvedValue(undefined);
-    request.mockResolvedValueOnce({ configured, userId: "other-account" });
+    request.mockResolvedValueOnce({ configured, userId: "other-account", step: null, revision: 0 });
     await expect(checkSetup("account-id", refresh)).rejects.toThrow("La session a changé");
     expect(refresh).toHaveBeenCalledOnce();
   });
   it("does not recover a conflict using another account's status", async () => {
     const refresh = vi.fn().mockResolvedValue(undefined);
     request.mockRejectedValueOnce(failure(409, "SETUP_ALREADY_COMPLETED"));
-    request.mockResolvedValueOnce({ configured: true, userId: "other-account" });
+    request.mockResolvedValueOnce({ configured: true, userId: "other-account", step: "team", revision: 1 });
     await expect(createSetup(restaurant, "account-id", refresh)).rejects.toThrow("La session a changé");
     expect(refresh).toHaveBeenCalledOnce();
+  });
+  it("records a revision-checked step transition and rereads the saved state", async () => {
+    request.mockResolvedValueOnce({ configured: true, userId: "account-id", step: "suppliers", revision: 2 });
+    request.mockResolvedValueOnce({ configured: true, userId: "account-id", step: "suppliers", revision: 2 });
+    await expect(changeSetupStep("account-id", "team", "suppliers", 1, vi.fn())).resolves.toEqual({ configured: true, step: "suppliers", revision: 2 });
+    expect(request).toHaveBeenNthCalledWith(1, "/setup/step", { method: "PATCH", body: JSON.stringify({ expectedUserId: "account-id", expectedStep: "team", nextStep: "suppliers", expectedRevision: 1 }) });
+  });
+  it("never accepts malformed progression as finished", async () => {
+    const refresh = vi.fn();
+    for (const response of [{ configured: true, userId: "account-id" }, { configured: true, userId: "account-id", step: "bad", revision: 1 }, { configured: true, userId: "account-id", step: null, revision: -1 }, { configured: false, userId: "account-id", step: "team", revision: 0 }]) {
+      request.mockResolvedValueOnce(response);
+      await expect(checkSetup("account-id", refresh)).rejects.toThrow("Impossible de vérifier");
+    }
   });
   it("refreshes only an expired session", async () => {
     const refresh = vi.fn().mockResolvedValue(undefined);

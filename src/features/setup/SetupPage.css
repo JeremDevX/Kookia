@@ -13,3 +13,14 @@
 .setup-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); border-top: var(--size-1) solid var(--color-border); padding-top: var(--spacing-lg); }
 body .setup-actions .btn-primary { width: auto; }
 @media (--media-mobile) { .setup-header { padding: var(--spacing-md) var(--spacing-lg); } .setup-content { padding: var(--spacing-xl) var(--spacing-lg); } .setup-card { padding: var(--spacing-lg); } .setup-form { grid-template-columns: var(--unit-1fr); } .setup-actions { flex-direction: column-reverse; align-items: stretch; } body .setup-actions .btn-primary { width: var(--unit-100percent); } }
+.setup-progress { display: grid; grid-template-columns: repeat(var(--number-4), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-sm); margin: var(--number-0) var(--number-0) var(--spacing-xl); padding: var(--number-0); list-style: none; }
+.setup-progress li { color: var(--color-nav-muted); font-size: var(--font-size-sm); }
+.setup-progress li[aria-current="step"] { color: var(--color-nav-text); font-weight: var(--font-weight-bold); }
+.setup-progress li > span:first-child { display: inline-flex; align-items: center; justify-content: center; width: var(--size-36); height: var(--size-36); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-full); }
+.setup-progress li[aria-current="step"] > span:first-child { background: var(--color-nav-text); color: var(--color-surface); }
+.setup-page .form-grid { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.setup-page .supplier-form { margin-top: var(--spacing-lg); }
+.setup-page .supplier-form fieldset { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.setup-page .integration-item { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); margin-bottom: var(--spacing-md); }
+.setup-review h3 { margin-top: var(--spacing-lg); }
+@media (--media-mobile) { .setup-progress { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); } .setup-page .integration-item { align-items: flex-start; flex-direction: column; } }
