@@ -34,6 +34,10 @@
 .today-context li strong { font-size: var(--font-size-sm); }
 .today-context li small { display: block; }
 .today-context li button { color: var(--color-accent-text); font-size: var(--font-size-sm); text-decoration: underline; text-underline-offset: var(--size-3); }
+.today-stock-products { display: flex; flex-direction: column; gap: var(--spacing-md); list-style: none; margin: var(--spacing-sm) var(--number-0); padding: var(--number-0); }
+.today-stock-product-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spacing-sm); }
+.today-stock-product-heading a { color: var(--color-accent-text); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
+.today-stock-products meter { display: block; width: var(--unit-100percent); }
 .today-card .badge { align-self: flex-start; }
 .today-card small { color: var(--color-text-muted); font-size: var(--font-size-caption); }
 .today-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-md); margin-top: auto; padding-top: var(--spacing-sm); }

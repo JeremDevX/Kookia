@@ -169,6 +169,13 @@ source opérationnelle ne les établit. Un rendu à données synthétiques a ét
 observé dans Firefox ; ouverture clavier des réglages, fermeture par Échap et
 retour du focus vérifiés. Comparaison géométrique et états météo réels restent
 à vérifier.
+La carte « Stock critique » de A `673:43621` montre trois produits, leurs
+quantités, seuils et besoins estimés. Le tableau de bord présente maintenant
+jusqu’à trois produits à vérifier, classés selon les statuts métier existants,
+avec stock théorique, seuil et accès à leur fiche. Une quantité non comptée
+reste « À vérifier », sans être qualifiée de rupture. Aucun besoin d’achat
+n’est affiché sans source. Firefox a vérifié le détail d’un produit et le
+rendu à 390 px sur des données synthétiques ; comparaison géométrique à faire.
 La frame A `673:43793` ajoute une vue « Planning du jour » : indicateurs,
 graphique par service, prochaines revues avec créneaux et participants, action
 prioritaire et raccourcis. `Dashboard.tsx` n'expose pas cette sous-vue ; les

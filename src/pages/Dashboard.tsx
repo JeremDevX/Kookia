@@ -6,6 +6,7 @@ import Badge from "../components/common/Badge";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import TodayPurchaseForecast from "../components/dashboard/TodayPurchaseForecast";
 import TodayContext from "../components/dashboard/TodayContext";
+import TodayStockPreview from "../components/dashboard/TodayStockPreview";
 import { purchaseForecastIndicator } from "../features/orders/purchaseForecastPresentation";
 import { purchasePreparationHref } from "../features/orders/orderNavigation";
 import { getPurchaseSuggestions, type PurchaseSuggestions } from "../services/orderService";
@@ -140,6 +141,7 @@ export default function Dashboard() {
           requestAnimationFrame(() => stockHeading.current?.focus());
         }}>Réessayer</Button></div> :
           <p>{products.length === 0 ? "Aucun produit enregistré. Ajoutez vos produits pour suivre vos stocks." : stockToReview.length === 0 ? "Aucun produit sous le seuil théorique." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique.`}</p>}
+        {!productsLoading && !productsError && <TodayStockPreview products={stockToReview} />}
         {!productsLoading && !productsError && confirmedStockoutCount > 0 && <Badge label={`${confirmedStockoutCount} rupture${confirmedStockoutCount > 1 ? "s" : ""} confirmée${confirmedStockoutCount > 1 ? "s" : ""}`} status="urgent" />}
         {(productsLoading || productsError || products.length > 0) && <small>{latestService?.sources.includes("demo_simulation")
           ? "Certaines opérations du service ne sont pas retenues dans l’inventaire enregistré ; vérifiez les pièces et les mouvements."
