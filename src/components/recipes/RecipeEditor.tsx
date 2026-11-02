@@ -14,10 +14,10 @@ const today = () => new Intl.DateTimeFormat("en-CA", {
 const blankDraft = (): RecipeDraft => ({ name: "", category: "Plat", prepTime: 15, yieldPortions: 1,
   effectiveFrom: today(), ingredients: [{ productId: "", quantity: 0.1 }] });
 
-export default function RecipeEditor({ open, recipe, products, headingRef, initialSuggestion, onCreate, onClose, onSaved }: {
+export default function RecipeEditor({ open, recipe, products, headingRef, initialSuggestion, onClose, onSaved }: {
   open: boolean; recipe: Recipe | null; products: Product[]; headingRef: RefObject<HTMLHeadingElement | null>;
   initialSuggestion: RecipeSuggestion | null;
-  onCreate: (trigger: HTMLButtonElement) => void; onClose: () => void; onSaved: () => Promise<void>;
+  onClose: () => void; onSaved: () => Promise<void>;
 }) {
   const [draft, setDraft] = useState<RecipeDraft>(blankDraft);
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
@@ -56,7 +56,6 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
   return <section className="recipe-editor-panel" aria-labelledby="recipe-editor-section-title">
     <div className="recipe-editor-heading">
       <h2 id="recipe-editor-section-title">Gestion des recettes</h2>
-      {!open && <Button type="button" onClick={(event) => onCreate(event.currentTarget)}>Créer une recette</Button>}
     </div>
     {open && <form className="recipe-editor-form" onSubmit={(event) => void submit(event)}>
       <h3 id="recipe-editor-title" ref={headingRef} tabIndex={-1}>{recipe ? `Modifier ${recipe.name}` : initialSuggestion ? "Revoir la proposition" : "Nouvelle recette"}</h3>

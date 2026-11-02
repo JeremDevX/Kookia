@@ -1,0 +1,37 @@
+import { useState } from "react";
+import { Clock } from "lucide-react";
+import type { Recipe } from "../../types";
+import Button from "../common/Button";
+
+type CatalogRecipe = Recipe & { maxYield: number };
+
+export default function RecipeCatalog({ recipes, loading, onEdit, onProduce }: {
+  recipes: CatalogRecipe[];
+  loading: boolean;
+  onEdit: (recipe: Recipe, trigger: HTMLButtonElement) => void;
+  onProduce: (recipe: Recipe) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("all");
+  const categories = [...new Set(recipes.map((recipe) => recipe.category))].sort((a, b) => a.localeCompare(b, "fr"));
+  const query = search.trim().toLocaleLowerCase("fr");
+  const visible = recipes.filter((recipe) => (category === "all" || recipe.category === category) &&
+    `${recipe.name} ${recipe.ingredients.map((ingredient) => ingredient.productName).join(" ")}`.toLocaleLowerCase("fr").includes(query));
+
+  return <section className="recipe-catalog" aria-label="Catalogue des recettes">
+    <div className="recipe-catalog-filters">
+      <label>Rechercher une recette ou un ingrédient<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nom ou ingrédient" /></label>
+      <label>Catégorie<select value={category} onChange={(event) => setCategory(event.target.value)}>
+        <option value="all">Toutes les catégories</option>{categories.map((value) => <option key={value} value={value}>{value}</option>)}
+      </select></label>
+    </div>
+    {loading ? <p role="status">Chargement du catalogue…</p> : visible.length === 0 ? <p role="status" className="recipe-catalog-empty">Aucune recette ne correspond à cette recherche.</p> :
+      <div className="recipe-catalog-grid">{visible.map((recipe) => <article className="recipe-catalog-card" key={recipe.id}>
+        <div className="recipe-catalog-card-heading"><h3>{recipe.name}</h3><span>{recipe.category}</span></div>
+        <p className="recipe-catalog-meta"><Clock size={14} aria-hidden="true" /> {recipe.prepTime} min · {recipe.yieldPortions} portions par lot</p>
+        <div className="recipe-catalog-availability"><span>Disponibilité</span><strong>{recipe.ingredients.length === 0 ? "Ingrédients à renseigner" : recipe.maxYield > 0 ? `Jusqu’à ${recipe.maxYield} portions sous réserve` : "Stock insuffisant ou à vérifier"}</strong></div>
+        <div className="recipe-catalog-actions"><Button size="sm" variant="outline" onClick={(event) => onEdit(recipe, event.currentTarget)}>Modifier</Button>
+          {recipe.maxYield > 0 && <Button size="sm" onClick={() => onProduce(recipe)}>Produire</Button>}</div>
+      </article>)}</div>}
+  </section>;
+}
