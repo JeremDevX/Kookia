@@ -68,6 +68,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
       setStatus(saved.duplicate ? "Cette pièce existe déjà dans cet espace ; aucune nouvelle ligne n’a été ajoutée." :
         "Pièce reçue. L’original n’est pas conservé ; vous pouvez le lire ici pour transcrire les lignes.");
       await refresh();
+      if (saved.status === "candidates" && saved.serviceDate) await onCandidatesSaved(saved.serviceDate);
     } catch (cause) {
       URL.revokeObjectURL(url); if (objectUrl.current === url) objectUrl.current = null;
       setError(errorMessage(cause));
@@ -119,6 +120,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
     {loading && <p role="status">Vérification du fichier…</p>}
     {error && <p role="alert">{error}</p>}
     {status && <p role="status">{status}</p>}
+    {batch?.status === "candidates" && <p><a href="#sales-reconciliation-title">Vérifier les lignes transcrites</a></p>}
     {batch && preview && <div className="ticket-transcription-layout">
       <figure className="ticket-original-preview">
         <figcaption>Original visible sur cet appareil · empreinte {batch.contentHash.slice(0, 12)}… · {Math.ceil(batch.byteSize / 1024)} Ko</figcaption>

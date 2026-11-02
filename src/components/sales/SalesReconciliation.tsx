@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import Button from "../common/Button";
 import { getSaleContributions, getSales, reviewSaleContribution, type DailySale, type SaleContribution, type SaleItem } from "../../services/salesService";
 
@@ -25,6 +26,10 @@ export default function SalesReconciliation({ from, to, refreshToken, items, tic
   const [status, setStatus] = useState("");
   const [revision, setRevision] = useState(0);
   const heading = useRef<HTMLHeadingElement>(null);
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash === "#sales-reconciliation-title") heading.current?.focus();
+  }, [hash]);
   const load = useCallback(async () => {
     setLoading(true); setLoadError("");
     try { setRows(await getSaleContributions(from, to)); }
