@@ -35,7 +35,7 @@ export default function RecipeCatalog({ recipes, loading, onEdit, onProduce }: {
       <div className="recipe-catalog-grid">{visible.map((recipe) => <article className="recipe-catalog-card" key={recipe.id}>
         <div className="recipe-catalog-card-heading"><h3>{recipe.name}</h3><span>{recipe.category}</span></div>
         <p className="recipe-catalog-meta"><Clock size={14} aria-hidden="true" /> {recipe.prepTime} min · {recipe.yieldPortions} portions par lot</p>
-        <div className="recipe-catalog-availability"><span>Disponibilité</span><strong>{recipe.ingredients.length === 0 ? "Ingrédients à renseigner" : recipe.maxYield > 0 ? `Jusqu’à ${recipe.maxYield} portions sous réserve` : "Stock insuffisant ou à vérifier"}</strong></div>
+        <div className="recipe-catalog-availability"><span>Disponibilité</span><strong className={recipe.ingredients.length === 0 ? undefined : recipe.maxYield > 0 ? "is-available" : "is-limited"}>{recipe.ingredients.length === 0 ? "Ingrédients à renseigner" : recipe.maxYield > 0 ? `Jusqu’à ${recipe.maxYield} portions sous réserve` : "Stock insuffisant ou à vérifier"}</strong></div>
         <div className="recipe-catalog-actions"><Button size="sm" variant="outline" onClick={(event) => onEdit(recipe, event.currentTarget)}>Modifier</Button>
           {recipe.maxYield > 0 && <Button size="sm" onClick={() => onProduce(recipe)}>Produire</Button>}</div>
       </article>)}</div>}

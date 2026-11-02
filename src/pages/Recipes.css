@@ -33,6 +33,8 @@
 .recipe-catalog-availability { display: grid; gap: var(--spacing-xs); padding-top: var(--spacing-sm); border-top: var(--size-1) solid var(--color-nav-border); font-size: var(--font-size-caption); }
 .recipe-catalog-availability span { color: var(--color-nav-muted); }
 .recipe-catalog-availability strong { color: var(--color-auth-icon-border); font-weight: var(--font-weight-medium); }
+.recipe-catalog-availability .is-available { color: var(--color-optimal-text); }
+.recipe-catalog-availability .is-limited { color: var(--color-moderate-text); }
 .recipe-catalog-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); margin-top: auto; }
 .recipe-catalog-empty { padding: var(--spacing-lg); color: var(--color-auth-icon-border); }
 .recipe-sheets { min-width: var(--number-0); display: grid; gap: var(--spacing-md); padding: var(--spacing-lg); }
