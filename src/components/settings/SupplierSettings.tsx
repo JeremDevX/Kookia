@@ -52,7 +52,7 @@ export default function SupplierSettings() {
     {notice && <p role="status">{notice}</p>}
     {suppliers.map((supplier, index) => <div key={supplier.id} className="integration-item"><div><strong>{supplier.name}</strong><p>{supplier.email} · {supplier.phone}</p></div><Button ref={index === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving} variant="outline" onClick={() => { setEditing(supplier); setCreating(false); setMessage(""); setNotice(""); }}>Modifier</Button></div>)}
     <Button ref={suppliers.length === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving || loading || Boolean(error)} onClick={() => { setEditing({ id: crypto.randomUUID(), name: "", email: "", phone: "" }); setCreating(true); setMessage(""); setNotice(""); }}>Ajouter un fournisseur</Button>
-    {editing && <form ref={formRef} onSubmit={submit} className="form-grid">
+    {editing && <form ref={formRef} onSubmit={submit} className="form-grid supplier-form">
       <h3>{creating ? "Nouveau fournisseur" : "Modifier le fournisseur"}</h3>
       <Input id="supplier-name" label="Nom" required value={editing.name} disabled={saving} onChange={(event) => setEditing({ ...editing, name: event.target.value })} />
       <Input id="supplier-email" label="Email" type="email" required value={editing.email} disabled={saving} onChange={(event) => setEditing({ ...editing, email: event.target.value })} />

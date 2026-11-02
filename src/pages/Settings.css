@@ -45,6 +45,11 @@
   flex-direction: column;
   gap: var(--spacing-lg);
 }
+.supplier-form { margin-top: var(--spacing-xl); }
+.supplier-form h3 { font-size: var(--font-size-lg); }
+.supplier-form fieldset { display: flex; flex-wrap: wrap; gap: var(--spacing-sm) var(--spacing-md); padding: var(--spacing-md); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); }
+.supplier-form legend { padding-inline: var(--spacing-xs); color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
+.supplier-form fieldset label { display: inline-flex; align-items: center; gap: var(--spacing-xs); min-height: var(--size-40); font-size: var(--font-size-sm); }
 .grid-2 {
   display: grid;
   grid-template-columns: var(--unit-1fr) var(--unit-1fr);
