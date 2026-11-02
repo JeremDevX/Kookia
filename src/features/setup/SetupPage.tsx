@@ -6,7 +6,6 @@ import { ApiError } from "../../config/api";
 import { useCart } from "../../context/useCart";
 import { returnTo } from "../auth/returnTo";
 import { useAuth } from "../auth/context/AuthContext";
-import AuthLayout from "../auth/pages/AuthLayout";
 import "../auth/pages/AuthPages.css";
 import "./SetupPage.css";
 import { setupValues } from "./setupLogic";
@@ -45,10 +44,17 @@ function SetupForm() {
       if (err instanceof ApiError) setFields(err.details.fields ?? {});
     } finally { setSaving(false); }
   };
-  return <AuthLayout><section className="auth-card setup-card" aria-labelledby="setup-title">
-    <h1 id="setup-title">Configurer votre restaurant</h1>
-    <p className="auth-subtitle">Renseignez les informations de votre établissement pour commencer.</p>
-    <form className="auth-form setup-form" onSubmit={submit}>
+  return <main className="setup-page">
+    <header className="setup-header">
+      <div className="auth-logo setup-logo"><span aria-hidden="true">K</span><strong>KookIA</strong></div>
+      <a href="mailto:support@kookia.app?subject=Support%20KookiA">Besoin d’aide ?</a>
+    </header>
+    <div className="setup-content">
+      <h1 id="setup-title">Configurez votre restaurant</h1>
+      <p className="setup-subtitle">Renseignez les informations de votre établissement pour commencer.</p>
+      <section className="setup-card" aria-labelledby="setup-card-title">
+        <h2 id="setup-card-title">Votre restaurant</h2>
+        <form className="auth-form setup-form" onSubmit={submit}>
       {error && <p className="auth-error setup-wide" role="alert">{error}</p>}
       {([
         ["name", "Nom du restaurant", "text", 120, true],
@@ -64,8 +70,12 @@ function SetupForm() {
           <option value="">Non renseigné</option><option value="yes">Oui</option><option value="no">Non</option>
         </select>
       </div>
-      <Button className="setup-wide" type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Créer mon établissement"}</Button>
-    </form>
-    <p className="auth-footer"><button type="button" className="btn btn-ghost" disabled={saving} onClick={() => { if (user) clearSetupDraft(user.id); void logout().then(() => navigate("/login", { replace: true, state: location.state })).catch(() => setError("Déconnexion impossible. Réessayez.")); }}>Se déconnecter</button></p>
-  </section></AuthLayout>;
+          <div className="setup-actions setup-wide">
+            <button type="button" className="btn btn-ghost" disabled={saving} onClick={() => { void logout().then(() => { if (user) clearSetupDraft(user.id); navigate("/login", { replace: true, state: location.state }); }).catch((err: unknown) => setError(err instanceof Error ? err.message : "Déconnexion impossible. Réessayez.")); }}>Se déconnecter</button>
+            <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Créer mon établissement"}</Button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </main>;
 }

@@ -1,5 +1,15 @@
-.setup-card { width: min(var(--unit-100percent), var(--size-600)); }
+.setup-page { min-height: var(--unit-100dvh); background: var(--color-bg); color: var(--color-nav-text); }
+.setup-header { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-3xl); background: var(--color-surface); border-bottom: var(--size-1) solid var(--color-border); }
+.setup-logo > span { background: var(--color-nav-text); color: var(--color-surface); }
+.setup-header a { color: var(--color-nav-text); font-size: var(--font-size-sm); }
+.setup-content { width: min(var(--unit-100percent), var(--size-800)); margin: auto; padding: var(--spacing-3xl) var(--spacing-lg); }
+.setup-content h1 { font-size: var(--font-size-2xl); line-height: var(--number-1_3); }
+.setup-subtitle { color: var(--color-nav-muted); margin: var(--spacing-sm) var(--number-0) var(--spacing-xl); }
+.setup-card { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--spacing-xl); }
+.setup-card h2 { font-size: var(--font-size-lg); margin: var(--number-0) var(--number-0) var(--spacing-xl); }
 .setup-form { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); }
 .setup-wide { grid-column: var(--number-1) / var(--number-negative-1); }
 .setup-form select.input-field { width: var(--unit-100percent); }
-@media (--media-mobile) { .setup-form { grid-template-columns: var(--unit-1fr); } }
+.setup-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); border-top: var(--size-1) solid var(--color-border); padding-top: var(--spacing-lg); }
+body .setup-actions .btn-primary { width: auto; }
+@media (--media-mobile) { .setup-header { padding: var(--spacing-md) var(--spacing-lg); } .setup-content { padding: var(--spacing-xl) var(--spacing-lg); } .setup-card { padding: var(--spacing-lg); } .setup-form { grid-template-columns: var(--unit-1fr); } .setup-actions { flex-direction: column-reverse; align-items: stretch; } body .setup-actions .btn-primary { width: var(--unit-100percent); } }

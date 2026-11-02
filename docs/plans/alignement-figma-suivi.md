@@ -44,7 +44,7 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Connexion `/login` | A `673:43390` | À vérifier | À vérifier | À vérifier | À vérifier | Connexion factice vérifiée ; reste à tester | En cours |
 | Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration restaurant disponible ; étapes équipe et fournisseurs absentes | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
-| Configuration `/setup` | A `673:43437` à `673:43559` | Formulaire unique, progression Figma absente | Champs restaurant présents ; jours d’ouverture à compléter | Équipe et fournisseurs non inclus dans ce parcours | Divergente | Création, validation clavier et retour testés sur données synthétiques | En cours |
+| Configuration `/setup` | A `673:43437` à `673:43559` | Page restaurant centrée ; progression Figma absente | Champs restaurant présents ; jours d’ouverture à compléter | Équipe et fournisseurs non inclus dans ce parcours | Rapprochement partiel ; comparaison précise à faire | Création, validation clavier et retour testés sur données synthétiques | En cours |
 | Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | Divergente pour `673:43621` | Indicateurs et blocs différents | Planning et notifications à confronter | À vérifier | À vérifier | En cours |
 | Stocks `/stocks` | A `673:44425`, `673:44584` | À vérifier | Ticket Z et OCR divergents | À vérifier | À vérifier | À vérifier | En cours |
 | Prévisions `/predictions` | A `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
@@ -328,8 +328,12 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   différées ; une transition vers un autre compte recharge le document. Dans
   Firefox sur base synthétique, une saisie commencée sous A puis soumise après
   passage à B a été refusée, et les données de B sont restées intactes. Les
-  routes de compte et de déconnexion ne sont pas couvertes par ce contrôle ;
-  elles restent à examiner. Le rechargement efface le brouillon en mémoire.
+  mutations de compte et la déconnexion vérifient aussi cette identité avant
+  de modifier la session ou les données. Firefox a vérifié qu’une déconnexion
+  refusée préserve le brouillon et la session du second compte. Des réponses
+  d’authentification `Set-Cookie` retardées peuvent encore arriver dans un ordre
+  différent entre onglets ; la protection ne résout pas cette course. Le
+  rechargement efface le brouillon en mémoire.
 - Le contrôle d’origine serveur couvre désormais les requêtes `PUT` en plus de
   `POST`, `PATCH` et `DELETE` ; il ne remplace pas la vérification de session.
 
@@ -388,8 +392,11 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   quatre étapes ; l’application ne propose encore que le formulaire restaurant.
   Les invitations d’équipe ne sont pas disponibles ; les fournisseurs restent
   configurables dans Paramètres. Ne pas présenter ces étapes comme livrées.
-  En Firefox sur base jetable, la création revient à la route demandée avec un
-  catalogue vide ; une expiration puis reconnexion conserve la saisie en mémoire
+  La première page reprend partiellement la structure centrée de la maquette,
+  avec en-tête et carte ; un contrôle Firefox à 390 px ne montre pas de
+  débordement horizontal. En Firefox sur base jetable, la création revient à
+  la route demandée avec un catalogue vide ; une expiration puis reconnexion
+  conserve la saisie en mémoire
   pour le même compte. Recharger ou fermer l’onglet efface cette saisie.
 - La consultation du menu sans document enregistré ne crée plus de plats
   d’exemple : un brouillon vide de révision 0 est affiché. La sauvegarde exige
