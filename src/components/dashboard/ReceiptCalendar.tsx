@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { PurchaseOrder } from "../../services/orderService";
-import { formatLocalISODate } from "../../utils/date";
+import { formatLocalISODate, isValidISODate } from "../../utils/date";
 import { dateExceeded, receiptEventHref, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "../../features/orders/receiptCalendar";
 import Button from "../common/Button";
 import "./ReceiptCalendar.css";
@@ -12,11 +11,19 @@ const displayDate = (date: string, options: Intl.DateTimeFormatOptions) =>
 export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] }) {
   const [params, setParams] = useSearchParams();
   const period = params.get("period") === "month" ? "month" : "week";
-  const setPeriod = (next: "week" | "month") => { const updated = new URLSearchParams(params); updated.set("period", next); setParams(updated); };
-  const [supplier, setSupplier] = useState("");
-  const [status, setStatus] = useState<"all" | "expected" | "received" | "exceeded">("all");
-  const [anchor, setAnchor] = useState(() => formatLocalISODate(new Date()));
   const today = formatLocalISODate(new Date());
+  const requestedDate = params.get("receiptDate");
+  const anchor = isValidISODate(requestedDate) ? requestedDate! : today;
+  const supplier = params.get("receiptSupplier") ?? "";
+  const requestedStatus = params.get("receiptStatus");
+  const status = requestedStatus === "expected" || requestedStatus === "received" || requestedStatus === "exceeded" ? requestedStatus : "all";
+  const updateCalendar = (key: string, value: string, replace = true) => {
+    const updated = new URLSearchParams(params);
+    if (value) updated.set(key, value); else updated.delete(key);
+    setParams(updated, { replace });
+  };
+  const setPeriod = (next: "week" | "month") => updateCalendar("period", next, false);
+  const setAnchor = (date: string) => updateCalendar("receiptDate", date);
   const start = period === "week" ? startOfWeek(anchor) : startOfWeek(`${anchor.slice(0, 7)}-01`);
   const days = Array.from({ length: period === "week" ? 7 : 42 }, (_, index) => shiftDays(start, index));
   const suppliers = [...new Map(orders.flatMap((order) => order.lines.map((line) => [line.supplierId, line.supplierName] as const))).entries()]
@@ -41,8 +48,8 @@ export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] })
       <strong aria-live="polite">{title}</strong>
       <Button variant="outline" aria-label="Période précédente" onClick={() => move(-1)}>‹</Button>
       <Button variant="outline" aria-label="Période suivante" onClick={() => move(1)}>›</Button>
-      <label>Fournisseur<select value={supplier} onChange={(event) => setSupplier(event.target.value)}><option value="">Tous les fournisseurs</option>{suppliers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
-      <label>Statut<select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="all">Tous les statuts</option><option value="expected">À recevoir</option><option value="exceeded">Date prévue dépassée</option><option value="received">Réception enregistrée</option></select></label></div>
+      <label>Fournisseur<select value={supplier} onChange={(event) => updateCalendar("receiptSupplier", event.target.value)}><option value="">Tous les fournisseurs</option>{suppliers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+      <label>Statut<select value={status} onChange={(event) => updateCalendar("receiptStatus", event.target.value === "all" ? "" : event.target.value)}><option value="all">Tous les statuts</option><option value="expected">À recevoir</option><option value="exceeded">Date prévue dépassée</option><option value="received">Réception enregistrée</option></select></label></div>
     {status !== "received" && status !== "exceeded" && undated > 0 && <p className="receipt-calendar-note">{undated} ligne{undated > 1 ? "s" : ""} à recevoir sans date prévue : <Link to="/orders?view=orders">consulter les commandes</Link>.</p>}
     {period === "week" ? <div className="receipt-calendar-table-wrap"><table className="receipt-calendar-table">
       <thead><tr><th scope="col">Date</th><th scope="col">Fournisseur ou référence</th><th scope="col">Statut</th><th scope="col">Action</th></tr></thead>
