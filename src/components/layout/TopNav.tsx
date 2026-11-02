@@ -17,20 +17,20 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
   const { user } = useAuth();
 
   const pageLabels: Record<string, string> = {
-    "/": "Aujourd'hui",
+    "/": "Tableau de bord",
     "/stocks": "Stocks",
     "/predictions": "Prévisions",
     "/recipes": "Recettes",
     "/settings": "Réglages",
     "/analytics": "Bilan",
     "/history": "Historique",
-    "/orders": "Achats",
+    "/orders": "Commandes",
     "/sales": "Ventes",
     "/services": "Services et carte",
     "/more": "Plus",
   };
 
-  const currentPage = pageLabels[pathname] ?? (pathname.startsWith("/history/") ? "Historique" : "Aujourd'hui");
+  const currentPage = pageLabels[pathname] ?? (pathname.startsWith("/history/") ? "Historique" : "Tableau de bord");
 
   return (
     <header className="top-nav">

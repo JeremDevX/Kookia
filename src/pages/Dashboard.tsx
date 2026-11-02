@@ -78,10 +78,19 @@ export default function Dashboard() {
                     : { title: "Aucune alerte de stock enregistrée", detail: "Vérifiez les ventes du dernier service ou préparez vos prochains achats.", to: "/orders", action: "Ouvrir les achats" };
 
   return <div className="dashboard-container">
-    <header className="dashboard-header"><h1>Aujourd'hui</h1>
-      <span className="dashboard-date"><Calendar size={18} aria-hidden="true" />{new Date().toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long" })}</span>
+    <header className="dashboard-header"><div><h1>Tableau de bord</h1>
+      <span className="dashboard-date"><Calendar size={16} aria-hidden="true" />{new Date().toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long" })}</span></div>
+      <Link to="/sales#sales-start" className="btn btn-primary dashboard-import">Ajouter des ventes</Link>
     </header>
 
+    <div className="dashboard-metrics" aria-label="Situation du restaurant">
+      <Link to="/stocks" className="dashboard-metric"><span>Stocks à vérifier</span><strong>{productsLoading || productsError ? "—" : stockToReview.length}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : "Produits à examiner"}</small></Link>
+      <Link to="/stocks" className="dashboard-metric"><span>Ruptures confirmées</span><strong>{productsLoading || productsError ? "—" : confirmedStockoutCount}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : "D’après les quantités enregistrées"}</small></Link>
+      <Link to="/orders#selection" className="dashboard-metric"><span>Commande en préparation</span><strong>{cartLoading || cartError ? "—" : cartItems.length}</strong><small>{cartError ? "Commande indisponible" : cartLoading ? "Chargement…" : "Articles à revoir"}</small></Link>
+      <Link to="/sales" className="dashboard-metric"><span>Dernier service enregistré</span><strong className="dashboard-metric-date">{salesError || !latestService ? "—" : new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</strong><small>{salesError ? "Ventes indisponibles" : latestService === undefined ? "Chargement…" : latestService === null ? "Aucune vente enregistrée" : "Ventes enregistrées"}</small></Link>
+    </div>
+
+    <div className="dashboard-columns"><div className="dashboard-main-column">
     <section className="today-focus" aria-labelledby="today-focus-title">
       <span className="today-eyebrow">À faire</span>
       <h2 id="today-focus-title">{focus.title}</h2>
@@ -99,7 +108,8 @@ export default function Dashboard() {
       <p>Les prévisions et besoins d'achat nécessitent 28 jours de service complets et un comptage de stock récent ; chaque suggestion reste à revoir.</p>
     </section>}
 
-    <div className="today-grid">
+    <TodayPurchaseForecast />
+    </div><div className="today-grid">
       <section className="today-card" aria-labelledby="today-stock-title"><h2 id="today-stock-title" ref={stockHeading} tabIndex={-1}>Stocks</h2>
         {productsLoading ? <p role="status">Chargement du stock…</p> : productsError ? <div role="alert"><p>Stock indisponible.</p><Button variant="outline" onClick={() => {
           void refreshProducts();
@@ -127,14 +137,12 @@ export default function Dashboard() {
           <p aria-live="polite">{cartItems.length === 0 ? "Aucun article sélectionné." : `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`}</p>}
         <div className="today-card-actions"><Link to="/orders#selection">Ouvrir les achats</Link></div>
       </section>
-    </div>
-
     <section className="today-card" aria-labelledby="today-menu-title"><h2 id="today-menu-title">Préparer le menu</h2>
       <p>Trouvez des idées de recettes pour utiliser les produits disponibles en stock.</p>
       <div className="today-card-actions"><button type="button" onClick={() => setMenuOpen(true)}>Voir les idées de menu</button></div>
     </section>
 
-    <TodayPurchaseForecast />
+    </div></div>
 
     <Modal isOpen={menuOpen} onClose={() => setMenuOpen(false)} title="Préparer le menu" width="md">
       <MenuIdeasModal onValidate={() => addToast("success", "Menu validé", "Le menu est prêt à imprimer.")} onClose={() => setMenuOpen(false)} />
