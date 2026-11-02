@@ -232,57 +232,6 @@ body .notification-generate-button:focus-visible {
   transform: none;
   box-shadow: none !important;
 }
-body .auth-page {
-  min-height: var(--unit-100dvh);
-  background:
-    radial-gradient(ellipse at var(--unit-20percent) var(--unit-20percent), var(--color-surface-active) var(--number-0), transparent var(--unit-55percent)), var(--color-bg);
-  padding: var(--spacing-xl) var(--size-20);
-}
-body .auth-card {
-  width: min(var(--unit-100percent), var(--size-460));
-  padding: var(--size-40);
-  border: var(--size-1) solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--number-0) var(--size-12) var(--size-52) rgba(var(--rgb-palette-sage-14), var(--number-0_05));
-}
-body .auth-brand {
-  width: var(--size-172);
-  margin-bottom: var(--size-36);
-}
-body .auth-card h1 {
-  font-size: var(--font-size-display-sm);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--tracking-negative-0_04);
-}
-body .auth-subtitle {
-  font-size: var(--font-size-sm);
-  line-height: var(--number-1_8);
-}
-body .auth-form {
-  gap: var(--size-20);
-}
-body .auth-form .input-label {
-  font-size: var(--font-size-xs);
-}
-body .auth-form .input-field {
-  min-height: var(--spacing-2xl);
-  background: var(--color-bg);
-  font-size: var(--font-size-base);
-}
-body .auth-form .btn {
-  min-height: var(--spacing-2xl);
-  font-size: var(--font-size-base);
-  margin-top: var(--spacing-xs);
-}
-body .auth-footer {
-  font-size: var(--font-size-xs);
-  line-height: var(--number-1_8);
-}
-body .auth-footer a {
-  font-weight: var(--font-weight-semibold);
-  text-decoration: underline;
-  text-underline-offset: var(--size-3);
-}
 @media (--media-compact) {
   body .modal-content :is(.grid-cols-2, .grid-cols-3) {
     grid-template-columns: var(--unit-1fr);
