@@ -227,7 +227,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                 <span className="value">{product.pricePerUnit} €</span>
               </div>
               <div className="info-item">
-                <span className="label">Valeur du stock</span>
+                <span className="label">Valeur indicative du stock théorique : estimation selon le prix catalogue, dont la base fiscale et la provenance ne sont pas précisées</span>
                 <span className="value">
                   {(product.currentStock * product.pricePerUnit).toFixed(2)} €
                 </span>
