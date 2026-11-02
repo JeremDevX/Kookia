@@ -10,6 +10,18 @@ describe("apiRequest", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("allows idempotent logout without a session", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
+    await expect(apiRequest("/auth/logout", { method: "POST" })).resolves.toBeUndefined();
+    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).has("X-Expected-User-Id")).toBe(false);
+  });
+
+  it.each(["/account/profile", "/account/change-email", "/account/change-password", "/account"])("blocks %s mutation without a session", async (path) => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    await expect(apiRequest(path, { method: "POST" })).rejects.toThrow("Connectez-vous");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("keeps delayed workspace requests tied to the first account", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
     expect(bindDocumentUser("account-a")).toBe(true);
@@ -22,6 +34,12 @@ describe("apiRequest", () => {
     const options = fetchMock.mock.calls[0][1];
     expect(new Headers(options?.headers).get("X-Expected-User-Id")).toBe("account-a");
     expect(bindDocumentUser("account-a")).toBe(true);
+  });
+
+  it.each(["/account/profile", "/account/change-email", "/account/change-password", "/account", "/auth/logout"])("ties %s mutation to the document account", async (path) => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 204 }));
+    await apiRequest(path, { method: "POST", headers: { "X-Expected-User-Id": "account-b" } });
+    expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get("X-Expected-User-Id")).toBe("account-a");
   });
 
   it("uses the local API prefix and includes cookies", async () => {

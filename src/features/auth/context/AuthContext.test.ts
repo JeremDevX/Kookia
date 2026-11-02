@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useState } from "react";
-import { bindDocumentUser } from "../../../config/api";
+import { ApiError, bindDocumentUser } from "../../../config/api";
 import { authApi } from "../api/authApi";
 import { AuthProvider, type AuthContextValue } from "./AuthContext";
 import type { User } from "../types";
@@ -49,6 +49,20 @@ describe("authentification concurrente", () => {
     expect(window.location.reload).toHaveBeenCalledOnce();
     const userSetter = vi.mocked(useState).mock.results[1].value[1];
     expect(userSetter).not.toHaveBeenCalled();
+  });
+  it.each([new ApiError(409, { code: "SESSION_CHANGED", message: "Session modifiée" }), new Error("Réseau")])("keeps the displayed account when logout fails", async (error) => {
+    vi.mocked(authApi.logout).mockRejectedValueOnce(error);
+    const auth = context();
+    await expect(auth.logout()).rejects.toBe(error);
+    expect(vi.mocked(useState).mock.results[1].value[1]).not.toHaveBeenCalled();
+    expect(vi.mocked(useState).mock.results[0].value[1]).not.toHaveBeenCalled();
+  });
+  it("clears the displayed account when logout succeeds", async () => {
+    vi.mocked(authApi.logout).mockResolvedValueOnce(undefined);
+    const auth = context();
+    await auth.logout();
+    expect(vi.mocked(useState).mock.results[1].value[1]).toHaveBeenCalledWith(null);
+    expect(vi.mocked(useState).mock.results[0].value[1]).toHaveBeenCalledWith("unauthenticated");
   });
   it("reloads if an older login changes the cookie after a newer session check", async () => {
     const pending = deferred<{ user: User }>();

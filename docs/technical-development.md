@@ -214,6 +214,10 @@ avant l’accès à l’établissement ; sans session la réponse reste `401`. C
 identifiant ne donne aucun droit : la session détermine toujours le compte et
 l’établissement. Les clients externes doivent ajouter cet en-tête et ne pas
 rejouer automatiquement une modification après changement de compte.
+Les mutations `/api/account` et `/api/auth/logout` exigent le même en-tête
+lorsqu’une session est active. Une déconnexion sans session valide reste
+idempotente (`204`) et ne renvoie pas de cookie. Ces contrôles ne règlent pas
+les réponses `Set-Cookie` concurrentes reçues dans un ordre différent.
 
 `GET /api/workspace/analytics` et `GET /api/workspace/activity` renvoient
 `null` si leur document est absent, sans fabriquer de statistiques à zéro ni

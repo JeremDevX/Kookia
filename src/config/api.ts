@@ -16,9 +16,11 @@ export const apiRequest = async <T>(path: string, options: RequestInit = {}): Pr
   const headers = new Headers(options.headers);
   if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   const pathname = path.split(/[?#]/, 1)[0];
-  if (pathname === "/workspace" || pathname.startsWith("/workspace/")) {
-    if (!documentUserId) throw new Error("Connectez-vous pour accéder à votre établissement.");
-    headers.set("X-Expected-User-Id", documentUserId);
+  const mutation = ["POST", "PUT", "PATCH", "DELETE"].includes((options.method ?? "GET").toUpperCase());
+  const accountMutation = mutation && (pathname === "/account" || pathname.startsWith("/account/") || pathname === "/auth/logout");
+  if (pathname === "/workspace" || pathname.startsWith("/workspace/") || accountMutation) {
+    if (!documentUserId && pathname !== "/auth/logout") throw new Error("Connectez-vous pour continuer.");
+    if (documentUserId) headers.set("X-Expected-User-Id", documentUserId);
   }
   let response: Response;
   try {

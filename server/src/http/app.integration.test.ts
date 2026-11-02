@@ -38,6 +38,7 @@ describe("authentication HTTP flow", () => {
     const registration = await agent.post("/api/auth/register").set("Origin", env.APP_ORIGIN)
       .send({ displayName: "Integration User", email: ` ${email.toUpperCase()} `, password: firstPassword }).expect(201);
     createdIds.push(registration.body.user.id);
+    agent.set("X-Expected-User-Id", registration.body.user.id);
     expect(registration.body.user.passwordHash).toBeUndefined();
     expect(registration.headers["set-cookie"]).toHaveLength(1);
 
@@ -51,6 +52,7 @@ describe("authentication HTTP flow", () => {
     await request(app).post("/api/auth/login").send({ email: updatedEmail, password: secondPassword }).expect(200);
     const logoutAgent = request.agent(app);
     await logoutAgent.post("/api/auth/login").send({ email: updatedEmail, password: secondPassword }).expect(200);
+    logoutAgent.set("X-Expected-User-Id", registration.body.user.id);
     await logoutAgent.post("/api/auth/logout").expect(204);
     await logoutAgent.post("/api/auth/logout").expect(204);
     await agent.delete("/api/account").send({ currentPassword: secondPassword }).expect(204);

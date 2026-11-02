@@ -18,6 +18,7 @@ import {
 // Styles are imported in Sidebar.css
 import "./Sidebar.css";
 import { useAuth } from "../../features/auth/context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import SidebarSubnav from "./SidebarSubnav";
 import { getOrderView } from "../../features/orders/orderNavigation";
 import { getRestaurant, type Restaurant } from "../../services/restaurantService";
@@ -30,6 +31,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) => {
   const { logout } = useAuth();
+  const { addToast } = useToast();
   const navigate = useNavigate();
   const { pathname, search, hash } = useLocation();
   const showingReceipts = pathname === "/orders" && getOrderView(new URLSearchParams(search), hash) === "receipts";
@@ -165,7 +167,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
             <HelpCircle size={20} />
             <span>Besoin d’aide ?</span><ArrowUpRight size={14} className="support-arrow" aria-hidden="true" />
           </a>
-          <button className="nav-item logout-btn" onClick={() => { void logout().finally(() => navigate("/login", { replace: true })); }}>
+          <button className="nav-item logout-btn" onClick={() => { void logout().then(() => navigate("/login", { replace: true })).catch((error: unknown) => addToast("info", "Déconnexion impossible", error instanceof Error ? error.message : "Réessayez.")); }}>
             <LogOut size={20} />
             <span>Déconnexion</span>
           </button>

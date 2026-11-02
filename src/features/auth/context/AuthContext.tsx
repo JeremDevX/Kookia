@@ -24,7 +24,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try { const result = await authApi.me(); if (generation.current === current) acceptUser(result.user); }
     catch (error) { if (generation.current === current) { setUser(null); setStatus(sessionErrorStatus(error)); } }
   }, [acceptUser]);
-  useEffect(() => { void refreshUser(); }, [refreshUser]);
+  useEffect(() => {
+    let active = true;
+    const current = generation.current;
+    queueMicrotask(() => { if (active && generation.current === current) void refreshUser(); });
+    return () => { active = false; };
+  }, [refreshUser]);
   const login = useCallback(async (credentials: Credentials) => {
     const current = ++generation.current;
     const result = await authApi.login(credentials);
@@ -39,11 +44,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [acceptUser, reload]);
   const logout = useCallback(async () => {
     const current = ++generation.current;
-    try { await authApi.logout(); }
-    finally {
-      if (generation.current !== current) reload();
-      else { setUser(null); setStatus("unauthenticated"); }
-    }
+    await authApi.logout();
+    if (generation.current !== current) reload();
+    else { setUser(null); setStatus("unauthenticated"); }
   }, [reload]);
   const updateProfile = useCallback(async (displayName: string) => {
     const current = generation.current;
