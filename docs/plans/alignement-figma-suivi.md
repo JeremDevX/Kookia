@@ -1,14 +1,14 @@
 # Alignement Figma : suivi initial
 
-État au 2 novembre 2026. Cet inventaire est provisoire : les références Figma,
-les parcours protégés et la plupart des états n'ont pas encore été comparés ou
-testés. La présence d'une page dans le code ne prouve pas sa conformité.
+État au 2 novembre 2026. Cet inventaire est provisoire : les parcours protégés
+et la plupart des états n'ont pas encore été comparés ou testés. La présence
+d'une page dans le code ne prouve pas sa conformité.
 
 ## Routes
 
-Le routeur est défini dans `src/app/router/AppRouter.tsx`. Les sources Figma et
-les identifiants de frames restent à relever. Pour chaque ligne, la fidélité et
-le fonctionnement complet restent à vérifier ; aucune ligne n'est validée.
+Le routeur est défini dans `src/app/router/AppRouter.tsx`. Les correspondances
+entre les routes et les frames restent à vérifier. Pour chaque ligne, la fidélité
+et le fonctionnement complet restent à vérifier ; aucune ligne n'est validée.
 
 | Écran | Route | Implémentation | Couverture constatée | Priorité | Validation |
 | --- | --- | --- | --- | --- | --- |
@@ -31,6 +31,58 @@ le fonctionnement complet restent à vérifier ; aucune ligne n'est validée.
 Les routes privées passent par `RequireAuth` ; les pages publiques par
 `PublicOnly`. Les sous-vues et états de chaque page restent à inventorier et
 valider individuellement. La matrice des composants utilisés reste à compléter.
+
+## Références Figma
+
+La source A a été consultée en lecture seule dans le navigateur, sans MCP. La
+page « Interface » présente les ensembles « KOOK.IA v2 — Écrans desktop » et
+« KOOK.IA v2 — Composants ». Les écrans visibles couvrent notamment connexion,
+tableau de bord, commandes, réceptions, stocks, recettes, fiches techniques,
+analytics et paramètres. La vue d'ensemble du tableau de bord indique
+1440 × 1507 px. L'inspection précise des styles demande une connexion : les
+valeurs fines et les correspondances de nœuds restent à vérifier. Les nœuds
+suivants ont été identifiés dans l'arborescence ; ils ne constituent pas encore
+une validation de correspondance avec le rendu applicatif.
+
+| Maquette A | Nœud |
+| --- | --- |
+| Ensemble des écrans desktop | `673:43388` |
+| Connexion et inscription (1440 × 1024) | `673:43390` |
+| Tableau de bord — Vue d'ensemble | `673:43621` |
+| Commandes — Recommandations | `673:43938` |
+| Réceptions — Semaine | `673:44142` |
+| Stocks — Liste des produits | `673:44425` |
+| Mes recettes — Toutes les recettes | `673:45740` |
+| Analytics — Vue d'ensemble | `673:46262` |
+| Analytics — Prévisions | `673:46361` |
+
+La source B (`zEnZ9HLwjcw2D5PUw9Phk0`), consultée via MCP sans modification,
+contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
+
+| Écran | Nœud | Dimensions |
+| --- | --- | --- |
+| Ventes | `8:2` | 1440 × 2500 |
+| Services et carte | `16:2` | 1440 × 2000 |
+| Historique vide | `18:2` | 1440 × 1250 |
+| Historique avec événements | `21:2` | 1440 × 1450 |
+| Plus | `22:2` | 1440 × 1250 |
+| Fournisseurs | `25:2` | 1440 × 1100 |
+| Nouveau fournisseur | `25:77` | 1440 × 1450 |
+| Connexions | `26:2` | 1440 × 1450 |
+| Tableau de bord première utilisation | `29:2` | 1440 × 1500 |
+| Revue Ticket Z fictif | `35:143` | 1440 × 1600 |
+| Réception partielle fictive | `36:2` | 1440 × 1500 |
+
+Ces écrans emploient des frames et textes locaux ; aucun composant, instance,
+style local ou collection de variables n'a été relevé dans B. Les liens de
+prototype et la fidélité à A restent à vérifier. Aucun écran n'a été créé pendant
+cet audit.
+
+Sur l'écran Ventes (`8:2`), l'inspection relève notamment une navigation de
+240 px, une barre supérieure de 61 px, un fond `#F7F9FB`, du texte principal
+`#111111`, la police Poppins et des cartes blanches de rayon 8 px. Ces valeurs
+proviennent de B et ne remplacent pas une vérification de la référence A ni une
+comparaison avec l'application.
 
 ## Socle existant et premiers constats
 
@@ -60,18 +112,17 @@ valider individuellement. La matrice des composants utilisés reste à compléte
   le responsive et le lecteur d'écran ne sont pas encore validés.
 - Les tests d'intégration PostgreSQL et la démo isolée exigent Docker ; le
   daemon était indisponible lors du premier audit.
-- L'accès à la source A et l'inspection détaillée de B ont été refusés par la
-  revue automatique. Aucune mesure, conformité visuelle ou création Figma ne
-  peut être déduite de cet inventaire. La source A ne doit jamais être modifiée
-  ni consultée via MCP Figma.
+- Après autorisation explicite, A a été consultée en lecture seule et B a été
+  inventoriée via MCP. Aucune comparaison visuelle ni création Figma n'a encore
+  été validée. A ne doit jamais être modifiée ni consultée via MCP Figma.
 - Le dépôt local contient des changements préexistants sur le comptage des
   stocks. Les préserver et ne pas les inclure dans un lot sans vérification de
   leur provenance et de leur état.
 
 ## Ordre de travail
 
-1. Obtenir l'accès autorisé aux références, inventorier les frames et compléter
-   la matrice des composants et états.
+1. Compléter l'inventaire des frames et la matrice des composants et états ;
+   relever les valeurs de référence accessibles sans modifier A.
 2. Vérifier les parcours et l'accessibilité avec des données isolées, puis
    traiter les fondations et composants transverses selon les écarts prouvés.
 3. Comparer chaque vue à sa référence, corriger et documenter les écarts ;
