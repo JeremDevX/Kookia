@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import EstimatedOutflows from "../components/analytics/EstimatedOutflows";
+import BilanNavigation from "../components/analytics/BilanNavigation";
 import SalesBaseline from "../components/sales/SalesBaseline";
 import "../styles/Workspace.css";
 import "./Analytics.css";
@@ -15,6 +16,10 @@ export default function Predictions() {
   const [searchParams] = useSearchParams();
   const requestedFrom = searchParams.get("from");
   const requestedTo = searchParams.get("to");
+  return <PredictionsContent key={`${requestedFrom}:${requestedTo}`} requestedFrom={requestedFrom} requestedTo={requestedTo} />;
+}
+
+function PredictionsContent({ requestedFrom, requestedTo }: { requestedFrom: string | null; requestedTo: string | null }) {
   const [from, setFrom] = useState(() => isValidISODate(requestedFrom) ? requestedFrom : startOfCurrentYear());
   const [to, setTo] = useState(() => isValidISODate(requestedTo) ? requestedTo : today());
   const validRange = !!from && !!to && from <= to;
@@ -28,6 +33,7 @@ export default function Predictions() {
         </p>
       </div>
     </header>
+    <BilanNavigation active="predictions" from={from} to={to} />
     <section className="predictions-period" aria-labelledby="predictions-period-title">
       <h2 id="predictions-period-title">Période des réceptions</h2>
       <div className="predictions-period-fields">

@@ -28,7 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const inMore = ["/predictions", "/services", "/history"].includes(pathname);
+  const inMore = ["/services", "/history"].includes(pathname);
   const sidebarRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     if (!isOpen) return;
@@ -115,9 +115,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
               key={item.path}
               to={item.path}
               onClick={handleNavClick}
-              aria-current={item.path === "/more" && inMore ? "page" : undefined}
+              aria-current={(item.path === "/more" && inMore) || (item.path === "/analytics" && pathname === "/predictions") ? "page" : undefined}
               className={({ isActive }) =>
-                `nav-item ${isActive || (item.path === "/more" && inMore) ? "active" : ""}`
+                `nav-item ${isActive || (item.path === "/more" && inMore) || (item.path === "/analytics" && pathname === "/predictions") ? "active" : ""}`
               }
             >
               <item.icon size={19} aria-hidden="true" />
