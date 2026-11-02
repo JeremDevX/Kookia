@@ -17,8 +17,8 @@ workspaceReadRoutes.get("/predictions", async (_req, res, next) => {
 for (const kind of ["analytics", "activity"] as const) {
   workspaceReadRoutes.get(`/${kind}`, async (_req, res, next) => {
     try {
-      const document = await prisma.workspaceDocument.findUniqueOrThrow({ where: { restaurantId_kind: { restaurantId: restaurantId(res), kind } } });
-      res.json(document.data);
+      const document = await prisma.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: restaurantId(res), kind } } });
+      res.json(document?.data ?? null);
     } catch (error) { next(error); }
   });
 }

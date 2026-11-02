@@ -389,6 +389,10 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
 - La lecture des indicateurs de démonstration retourne maintenant `null` en
   l’absence de document, sans création implicite. Les documents existants sont
   conservés ; cette correction ne retire pas encore le catalogue initial.
+- Les lectures analytics et activity renvoient maintenant `null` si leur
+  document manque ; elles ne créent pas de statistiques et les consommateurs
+  concernés acceptent explicitement cette absence. Le catalogue initial reste
+  encore prérempli et doit être séparé du parcours réel.
 - Risque P0 à vérifier sur un compte isolé : `ensureWorkspace.ts` crée pour
   tout nouveau propriétaire un restaurant nommé « La Pizzeria de Camille » et
   un catalogue prérempli. Le mode par défaut du restaurant est opérationnel ;

@@ -48,7 +48,7 @@ export const useAnalytics = (): UseAnalyticsReturn => {
 };
 
 interface UseDashboardActivityReturn {
-  activity: DashboardActivity[];
+  activity: DashboardActivity[] | null;
   loading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
@@ -58,7 +58,7 @@ interface UseDashboardActivityReturn {
  * Hook for dashboard activity chart data
  */
 export const useDashboardActivity = (): UseDashboardActivityReturn => {
-  const [activity, setActivity] = useState<DashboardActivity[]>([]);
+  const [activity, setActivity] = useState<DashboardActivity[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
