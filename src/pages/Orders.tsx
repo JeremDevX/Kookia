@@ -60,11 +60,11 @@ export default function Orders() {
     setInvoiceOpen(true);
   };
 
-  return <div className="orders-container workspace-page">
+  return <div className={`orders-container workspace-page${view === "receipts" ? " orders-receipts" : ""}`}>
     <div className="orders-heading-panel">
     <header className="workspace-header"><div>
       <h1 ref={headingRef} tabIndex={-1}>{view === "receipts" ? "Réceptions fournisseurs" : "Mes commandes"}</h1>
-      <p className="workspace-subtitle">{view === "prepare" ? "Examinez les besoins recommandés, puis vérifiez votre sélection." : "Suivez vos commandes et retrouvez vos documents fournisseurs."}</p>
+      <p className="workspace-subtitle">{view === "receipts" ? "Consultez les dates prévues et les réceptions enregistrées." : view === "prepare" ? "Examinez les besoins recommandés, puis vérifiez votre sélection." : "Suivez vos commandes et retrouvez vos documents fournisseurs."}</p>
     </div>{view === "prepare" ? <Link className="btn btn-primary orders-cart-link" to={showingSelection ? "/orders?view=prepare#purchase-suggestions-title" : "/orders?view=prepare#selection"}>{showingSelection ? "Retour aux recommandations" : `Voir ma sélection${!cartLoading && !cartError ? ` (${cartItems.length})` : ""}`}</Link> : <Button onClick={() => changeView("prepare")}>Préparer un achat</Button>}</header>
     {view !== "receipts" && <nav className="orders-views" aria-label="Vues des achats">
       {([["orders", "Commandes & réceptions"], ["prepare", "Préparer un achat"], ["invoices", "Factures & documents"]] as const).map(([id, label]) =>

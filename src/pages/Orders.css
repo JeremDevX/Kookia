@@ -61,3 +61,8 @@
   .orders-prepare-layout .orders-selection { position: static; }
 }
 @media (--media-mobile) { .orders-heading-panel .workspace-header { padding: var(--spacing-lg); } .orders-views { padding-inline: var(--spacing-lg); gap: var(--spacing-md); } }
+
+.workspace-page.orders-receipts { gap: var(--number-0); }
+.orders-receipts .orders-heading-panel { border-radius: var(--radius-compact) var(--radius-compact) var(--number-0) var(--number-0); box-shadow: none; }
+.orders-receipts .receipt-calendar { border-top: none; border-radius: var(--number-0) var(--number-0) var(--radius-compact) var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
+.orders-receipts .orders-help { margin-top: var(--spacing-lg); }

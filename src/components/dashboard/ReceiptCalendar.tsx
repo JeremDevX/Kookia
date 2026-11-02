@@ -34,30 +34,38 @@ export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] })
   const events = allEvents.filter((event) => status === "all" || event.kind === status || status === "exceeded" && dateExceeded(event, today));
   const weekEvents = events.filter((event) => event.date >= days[0] && event.date <= days[6])
     .sort((a, b) => a.date.localeCompare(b.date));
+  const weekSummary = allEvents.filter((event) => event.date >= days[0] && event.date <= days[6]);
+  const expectedCount = weekSummary.filter((event) => event.kind === "expected" && !dateExceeded(event, today)).length;
+  const receivedCount = weekSummary.filter((event) => event.kind === "received").length;
+  const exceededCount = weekSummary.filter((event) => dateExceeded(event, today)).length;
   const title = period === "week"
     ? `${displayDate(days[0], { day: "numeric", month: "short" })} – ${displayDate(days[6], { day: "numeric", month: "short", year: "numeric" })}`
     : displayDate(anchor, { month: "long", year: "numeric" });
   const move = (direction: number) => setAnchor(period === "week" ? shiftDays(anchor, direction * 7) : shiftMonth(anchor, direction));
 
-  return <section className="receipt-calendar" aria-labelledby="receipt-calendar-title">
-    <div className="receipt-calendar-heading"><div><h2 id="receipt-calendar-title">Réceptions fournisseurs</h2>
-      <p>Consultez les dates prévues et les réceptions enregistrées.</p></div></div>
+  return <section className="receipt-calendar" aria-label="Calendrier des réceptions">
     <div className="receipt-calendar-tabs" aria-label="Période des réceptions">
       <Button variant="outline" aria-pressed={period === "week"} onClick={() => setPeriod("week")}>Semaine</Button>
       <Button variant="outline" aria-pressed={period === "month"} onClick={() => setPeriod("month")}>Mois</Button>
     </div>
     <div className="receipt-calendar-controls"><Button variant="outline" onClick={() => setAnchor(today)}>Aujourd’hui</Button>
       <strong aria-live="polite">{title}</strong>
-      <Button variant="outline" aria-label="Période précédente" onClick={() => move(-1)}>‹</Button>
-      <Button variant="outline" aria-label="Période suivante" onClick={() => move(1)}>›</Button>
+      <div className="receipt-calendar-navigation" role="group" aria-label="Changer de période"><Button variant="outline" aria-label="Période précédente" onClick={() => move(-1)}>‹</Button>
+      <Button variant="outline" aria-label="Période suivante" onClick={() => move(1)}>›</Button></div>
       <label>Fournisseur<select value={supplier} onChange={(event) => updateCalendar("receiptSupplier", event.target.value)}><option value="">Tous les fournisseurs</option>{supplier && !suppliers.some(([id]) => id === supplier) && <option value={supplier}>Fournisseur indisponible</option>}{suppliers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
       <label>Statut<select value={status} onChange={(event) => updateCalendar("receiptStatus", event.target.value === "all" ? "" : event.target.value)}><option value="all">Tous les statuts</option><option value="expected">À recevoir</option><option value="exceeded">Date prévue dépassée</option><option value="received">Réception enregistrée</option></select></label></div>
+    {period === "week" && <div className="receipt-calendar-summary" aria-label="Bilan de la semaine">
+      <span className="receipt-calendar-status expected">{expectedCount} à recevoir</span>
+      <span className="receipt-calendar-status received">{receivedCount} réception{receivedCount > 1 ? "s" : ""} enregistrée{receivedCount > 1 ? "s" : ""}</span>
+      <span className="receipt-calendar-status exceeded">{exceededCount} date{exceededCount > 1 ? "s" : ""} prévue{exceededCount > 1 ? "s" : ""} dépassée{exceededCount > 1 ? "s" : ""}</span>
+      {weekSummary.some((event) => event.simulated) && <span>Données de démonstration incluses</span>}
+    </div>}
     {status !== "received" && status !== "exceeded" && undated > 0 && <p className="receipt-calendar-note">{undated} ligne{undated > 1 ? "s" : ""} à recevoir sans date prévue : <Link to="/orders?view=orders">consulter les commandes</Link>.</p>}
     {period === "week" ? <div className="receipt-calendar-table-wrap"><table className="receipt-calendar-table">
       <thead><tr><th scope="col">Date</th><th scope="col">Fournisseur ou référence</th><th scope="col">Contenu</th><th scope="col">Statut</th><th scope="col">Action</th></tr></thead>
       <tbody>{weekEvents.map((event, index) => <tr key={`${event.orderId}-${event.kind}-${index}`}>
         <td><time dateTime={event.date}>{displayDate(event.date, { weekday: "short", day: "numeric", month: "short" })}</time></td>
-        <th scope="row">{event.label}</th><td>{displayItems(event.items)}</td><td><span className={`receipt-calendar-status ${event.kind}`}>{dateExceeded(event, today) ? "Date prévue dépassée" : event.kind === "expected" ? "À recevoir" : "Réception enregistrée"}{event.simulated ? " · simulation" : ""}</span></td>
+        <th scope="row">{event.label}</th><td>{displayItems(event.items)}</td><td><span className={`receipt-calendar-status ${dateExceeded(event, today) ? "exceeded" : event.kind}`}>{dateExceeded(event, today) ? "Date prévue dépassée" : event.kind === "expected" ? "À recevoir" : "Réception enregistrée"}{event.simulated ? " · simulation" : ""}</span></td>
         <td><Link aria-label={`${event.kind === "expected" ? "Rapprocher la livraison" : "Voir la réception"} : ${event.label}, ${displayDate(event.date, { day: "numeric", month: "long", year: "numeric" })}`} to={receiptEventHref(event)}>{event.kind === "expected" ? "Rapprocher" : "Voir la réception"}</Link></td>
       </tr>)}</tbody>
     </table>{weekEvents.length === 0 && <p className="receipt-calendar-note">Aucune réception datée cette semaine.</p>}</div> : <div className="receipt-calendar-days receipt-calendar-month">
