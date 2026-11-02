@@ -383,8 +383,9 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   Le contrat et ses valeurs nulles sont précisés dans `docs/technical-development.md`.
 - Une lecture des notifications sans document existant retourne désormais une
   liste vide, sans injecter les alertes d’exemple. Les notifications déjà
-  enregistrées restent intactes ; le script de peuplement global peut encore
-  ajouter des exemples et doit être isolé avant utilisation sur une base réelle.
+  enregistrées restent intactes. Le script de peuplement exige désormais une
+  base locale `kookia_demo` et un compte temporaire unique explicitement ciblé ;
+  cette vérification ne démontre pas à elle seule que la base est jetable.
 - Risque P0 à vérifier sur un compte isolé : `ensureWorkspace.ts` crée pour
   tout nouveau propriétaire un restaurant nommé « La Pizzeria de Camille » et
   un catalogue prérempli. Le mode par défaut du restaurant est opérationnel ;

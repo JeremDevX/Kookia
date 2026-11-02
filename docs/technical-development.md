@@ -158,9 +158,13 @@ de démonstration sont séparées dans leur preuve. Les quantités et rendements
 restent des hypothèses. Le runner charge les sources uniquement dans sa base
 tmpfs ; les tests et captures utilisent toujours des lignes synthétiques.
 
-Le seed ne recrée pas les données à chaque chargement : `npm run db:seed` initialise
-les comptes existants sans écrasement ; les nouveaux espaces sont initialisés au
-premier accès. Les dates des prévisions de démonstration sont figées. Aucun calcul
+Le peuplement explicite `npm run db:seed` est réservé au compte temporaire unique
+d’une base locale `kookia_demo`, identifié par `LOCAL_DEMO_USER_ID` en mode
+développement. Le runner `demo:local` fournit ces paramètres. Ce contrôle réduit
+les erreurs de ciblage sans prouver à lui seul que la base est jetable. Les
+nouveaux espaces restent pour l’instant initialisés au premier accès avec un
+catalogue d’exemple : cette limite doit encore être corrigée. Les dates des
+prévisions de démonstration sont figées. Aucun calcul
 IA, connecteur POS/OCR réel ou envoi fournisseur n’est impliqué par la persistance.
 Les ventes du restaurant sont saisies, importées ou issues de la simulation locale
 `demo_simulation` ; elles ne sont pas les prévisions de démonstration du seed.
@@ -196,9 +200,8 @@ conservation du hash sont décrits dans [Sources de données](integrations.md).
 `GET /api/workspace/notifications` renvoie une liste vide sans créer de
 notification lorsque le document est absent. Le marquage comme lu conserve
 les documents existants et ne crée pas de document vide. Les alertes d’exemple
-ne sont fournies que par le peuplement explicite de démonstration ; ce script
-conserve actuellement une portée globale et ne doit pas être lancé sur une
-base contenant des comptes réels.
+ne sont fournies que par le peuplement explicite de démonstration, soumis aux
+contrôles de ciblage décrits ci-dessus.
 
 `GET /api/workspace/menu` retourne un brouillon virtuel vide de révision 0
 lorsqu’aucun menu n’existe, sans créer de document. Dans cet état, `source`

@@ -216,7 +216,9 @@ async function main() {
     const web = startServer(process.execPath, ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(webPort), "--strictPort"], webEnv);
     await waitForHttp(`${webOrigin}/login`, [api, web]);
     const ownerId = await registerDemoAccount(demoPassword, webOrigin);
-    await spawnTask(process.execPath, ["--import", "tsx", "server/src/scripts/seedWorkspaces.ts"], { env: demoEnv });
+    await spawnTask(process.execPath, ["--import", "tsx", "server/src/scripts/seedWorkspaces.ts"], {
+      env: { ...demoEnv, LOCAL_DEMO_USER_ID: ownerId },
+    });
     await spawnTask(process.execPath, ["--import", "tsx", "--input-type=module", "-e",
       fixtureOnly ? seedFixtureWorkspaceSource : seedWorkspaceSource], {
       env: { ...demoEnv, LOCAL_DEMO_USER_ID: ownerId },
