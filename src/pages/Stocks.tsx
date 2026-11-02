@@ -1,5 +1,5 @@
 import StockLotsAndWaste from "../components/stocks/StockLotsAndWaste";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import StockInventoryTable from "../components/stocks/StockInventoryTable";
 import Input from "../components/common/Input";
 import Button from "../components/common/Button";
@@ -8,7 +8,7 @@ import AddProductModal from "../components/stocks/AddProductModal";
 import FiltersModal from "../components/stocks/FiltersModal";
 import StockInventoryCard from "../components/stocks/StockInventoryCard";
 import { Search, Filter, Plus } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useProductsWithMutations } from "../hooks";
 import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
@@ -22,7 +22,8 @@ import "./Stocks.css";
 
 const Stocks: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { hash } = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const focusedMovementId = searchParams.get("movement");
   const analyticsReturn = analyticsReturnHref(searchParams.get("returnFrom"), searchParams.get("returnTo"),
     searchParams.get("returnAnchor"));
@@ -32,7 +33,13 @@ const Stocks: React.FC = () => {
     useProductsWithMutations();
   const { suppliers, error: catalogError, refetch: refetchCatalog } = useInventoryCatalog();
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchTerm = searchParams.get("search") ?? "";
+  const setSearchTerm = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set("search", value); else next.delete("search");
+    setSearchParams(next, { replace: true });
+  };
+  useEffect(() => { if (hash === "#stock-search") document.getElementById("stock-search")?.focus(); }, [hash]);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     () => searchParams.get("product")
   );
