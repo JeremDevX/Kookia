@@ -1,6 +1,7 @@
 import { getOrderStep, orderStepLabel } from "../../../shared/orderQuantity.js";
 import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
+import Modal from "../common/Modal";
 import { CheckCircle, Package } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { OrderRecommendation } from "../../features/orders/orderRecommendations";
@@ -65,16 +66,14 @@ export default function OrderGenerator({ recommendations, products, suppliers, c
     finally { setSaving(false); }
   };
 
-  if (order) return <div className="flex flex-col gap-lg" role="status">
+  return <Modal isOpen onClose={onClose} closeDisabled={saving} title="Vérifier ma commande" width="lg">{order ? <div className="flex flex-col gap-lg" role="status">
     <CheckCircle size={40} aria-hidden="true" />
     <h3>{order.status.startsWith("simulated") ? "Commande préparée" : "Commande enregistrée"}</h3>
     <p>{order.status.startsWith("simulated") ? "La commande n’est pas transmise : aucun achat, message fournisseur ou mouvement de stock n’a été créé." : "À transmettre au fournisseur : aucun email n’a été envoyé et le stock n’a pas changé."}</p>
     <p>Référence : {order.id}</p>
     <Link to="/orders#to-transmit" onClick={onClose}>{order.status.startsWith("simulated") ? "Voir la commande préparée" : "Voir la commande à transmettre"}</Link>
     <Button onClick={onClose}>Fermer</Button>
-  </div>;
-
-  return <div ref={formRef} className="flex flex-col gap-lg">
+  </div> : <div ref={formRef} className="flex flex-col gap-lg">
     <h3><Package size={20} aria-hidden="true" /> Quantités à commander</h3>
     <p>Vérifiez les quantités et le fournisseur. La validation n’envoie rien et ne modifie pas le stock.</p>
     {recommendations.some((item) => item.predictionId) && <p role="alert">Retirez les propositions sans source enregistrée avant de valider.</p>}
@@ -101,5 +100,5 @@ export default function OrderGenerator({ recommendations, products, suppliers, c
       <Button variant="outline" onClick={onClose} disabled={saving}>Annuler</Button>
       <Button onClick={handleValidate} disabled={saving || catalogLoading || !!catalogError || !valid || recommendations.some((item) => item.predictionId)}>{saving ? "Enregistrement…" : "Valider la commande"}</Button>
     </div>
-  </div>;
+  </div>}</Modal>;
 }

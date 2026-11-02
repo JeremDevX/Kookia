@@ -65,7 +65,12 @@
   justify-content: center;
 }
 
-.modal-close-btn:hover {
+.modal-close-btn:disabled {
+  cursor: not-allowed;
+  opacity: var(--number-0_5);
+}
+
+.modal-close-btn:hover:not(:disabled) {
   background-color: var(--color-surface-hover);
   color: var(--color-text-primary);
 }

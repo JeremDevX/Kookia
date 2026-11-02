@@ -80,7 +80,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={onClose} closeDisabled={saving}
       title="Ajouter un produit"
       width="md"
     >
@@ -193,7 +193,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         </div>
 
         <div className="flex justify-end gap-3 mt-4">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Annuler
           </Button>
           <Button

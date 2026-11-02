@@ -48,7 +48,7 @@ const EditProductModal = ({ product, suppliers, isOpen, onClose, onSave }: EditP
     } finally { setSaving(false); }
   };
 
-  return <Modal isOpen={isOpen} onClose={onClose} title={`Modifier ${product.name}`}>
+  return <Modal isOpen={isOpen} onClose={onClose} closeDisabled={saving} title={`Modifier ${product.name}`}>
     <form onSubmit={(event) => void submit(event)} className="space-y-4">
       <Input id="edit-product-name" label="Nom" value={name} maxLength={120} onChange={(event) => setName(event.target.value)} required />
       <Input id="edit-product-category" label="Catégorie" value={category} maxLength={80} onChange={(event) => setCategory(event.target.value)} required />

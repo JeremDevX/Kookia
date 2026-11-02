@@ -2,7 +2,6 @@ import { getOrderView, orderViewHref } from "../features/orders/orderNavigation"
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
-import Modal from "../components/common/Modal";
 import InvoiceModal from "../components/dashboard/InvoiceModal";
 import OrderGenerator from "../components/dashboard/OrderGenerator";
 import OrderHistory from "../components/dashboard/OrderHistory";
@@ -111,21 +110,17 @@ export default function Orders() {
 
     <p className="orders-help"><Link to="/stocks">Consulter les stocks</Link> · <Link to="/analytics">Voir le bilan des achats réceptionnés</Link></p>
 
-    <Modal isOpen={reviewOpen} onClose={() => setReviewOpen(false)} title="Vérifier ma commande" width="lg">
-      <OrderGenerator recommendations={recommendations} products={products} suppliers={suppliers}
+    {reviewOpen && <OrderGenerator recommendations={recommendations} products={products} suppliers={suppliers}
         catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
         onClose={() => setReviewOpen(false)}
-        onValidated={() => { void refreshCart(); setHistoryRevision((value) => value + 1); setSuggestionsRevision((value) => value + 1); }} />
-    </Modal>
-    <Modal isOpen={invoiceOpen} onClose={() => setInvoiceOpen(false)} title="Revoir une facture" width="lg">
-      <InvoiceModal initialInvoice={invoiceDraft} products={products} suppliers={suppliers}
+        onValidated={() => { void refreshCart(); setHistoryRevision((value) => value + 1); setSuggestionsRevision((value) => value + 1); }} />}
+    {invoiceOpen && <InvoiceModal initialInvoice={invoiceDraft} products={products} suppliers={suppliers}
         catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
         onInvoiceDataChanged={() => setInvoiceRefresh((value) => value + 1)}
         onValidate={(invoice) => {
           addToast("success", invoice.source === "source_document" ? "Pièce rapprochée" : "Réception enregistrée",
             invoice.source === "source_document" ? "La pièce est rapprochée sans créer d'achat ni modifier le stock." : "Le stock a été mis à jour.");
           void refetch();
-        }} onClose={() => setInvoiceOpen(false)} />
-    </Modal>
+        }} onClose={() => setInvoiceOpen(false)} />}
   </div>;
 }

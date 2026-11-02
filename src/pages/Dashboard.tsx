@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Calendar } from "lucide-react";
 import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
-import Modal from "../components/common/Modal";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import TodayPurchaseForecast from "../components/dashboard/TodayPurchaseForecast";
 import { useToast } from "../context/ToastContext";
@@ -144,8 +143,6 @@ export default function Dashboard() {
 
     </div></div>
 
-    <Modal isOpen={menuOpen} onClose={() => setMenuOpen(false)} title="Préparer le menu" width="md">
-      <MenuIdeasModal onValidate={() => addToast("success", "Menu validé", "Le menu est prêt à imprimer.")} onClose={() => setMenuOpen(false)} />
-    </Modal>
+    {menuOpen && <MenuIdeasModal onValidate={() => addToast("success", "Menu validé", "Le menu est prêt à imprimer.")} onClose={() => setMenuOpen(false)} />}
   </div>;
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Button from "../common/Button";
+import Modal from "../common/Modal";
 import Input from "../common/Input";
 import { createMenuIdeas, getMenu, getMenuSurplusOptions, saveMenu, type MenuIdeasResult,
   type MenuRecipeIdea, type MenuSuggestion, type MenuSurplusOptions } from "../../services/menuService";
@@ -105,7 +106,7 @@ export default function MenuIdeasModal({ onValidate, onClose }: MenuIdeasModalPr
     page.document.close(); page.focus(); page.print();
   };
 
-  return <div className="flex flex-col gap-lg">
+  return <Modal isOpen onClose={onClose} closeDisabled={saving || generating} title="Préparer le menu" width="md"><div className="flex flex-col gap-lg">
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {!menu ? !error && <p role="status">Chargement du menu…</p> : <>
@@ -194,5 +195,5 @@ export default function MenuIdeasModal({ onValidate, onClose }: MenuIdeasModalPr
       </div>
     </>}
     <Button variant="outline" onClick={onClose} disabled={saving || generating}>Fermer</Button>
-  </div>;
+  </div></Modal>;
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
+import Modal from "../common/Modal";
 import { ApiError } from "../../config/api";
 import { getInvoices, saveInvoice, type Invoice, type InvoiceLine, type SourceLineDisposition } from "../../services/invoiceService";
 import type { Product, Supplier } from "../../types";
@@ -189,7 +190,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
   const total = invoice?.lines.filter((line) => !sourceLinked || line.disposition === "stock")
     .reduce((sum, line) => sum + line.quantity * line.unitPrice, 0) ?? 0;
 
-  return <div className="invoice-modal flex flex-col gap-lg">
+  return <Modal isOpen onClose={onClose} closeDisabled={saving} title="Revoir une facture" width="lg"><div className="invoice-modal flex flex-col gap-lg">
     <p>{sourceLinked
       ? received
         ? "Réception liée à une pièce transcrite. Les lignes sont en lecture seule et ne pourront pas créditer le stock une seconde fois."
@@ -334,5 +335,5 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
       </>}
     </>}
     <Button variant="outline" onClick={onClose} disabled={saving}>Fermer</Button>
-  </div>;
+  </div></Modal>;
 }

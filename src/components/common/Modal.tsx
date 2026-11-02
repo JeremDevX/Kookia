@@ -5,6 +5,7 @@ import "./Modal.css";
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
+  closeDisabled?: boolean;
   title: string;
   children: React.ReactNode;
   width?: "sm" | "md" | "lg" | "xl";
@@ -36,6 +37,7 @@ const unlockBodyScroll = () => {
 const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
+  closeDisabled = false,
   title,
   children,
   width = "md",
@@ -43,7 +45,7 @@ const Modal: React.FC<ModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
-  const closeFromKeyboard = useEffectEvent(() => onClose());
+  const closeFromKeyboard = useEffectEvent(() => { if (!closeDisabled) onClose(); });
 
   useLayoutEffect(() => {
     if (!isOpen) return;
@@ -125,7 +127,7 @@ const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={closeDisabled ? undefined : onClose}>
       <div
         className={`modal-container modal-${width} animate-scale-in`}
         onClick={(e) => e.stopPropagation()}
@@ -142,6 +144,7 @@ const Modal: React.FC<ModalProps> = ({
           <button
             className="modal-close-btn"
             onClick={onClose}
+            disabled={closeDisabled}
             type="button"
             aria-label="Fermer la modale"
           >
