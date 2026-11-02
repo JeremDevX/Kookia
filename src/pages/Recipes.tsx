@@ -9,6 +9,7 @@ import RecipeEditor from "../components/recipes/RecipeEditor";
 import RecipeCandidates from "../components/recipes/RecipeCandidates";
 import RecipeSuggestionPanel from "../components/recipes/RecipeSuggestionPanel";
 import RecipeCatalog from "../components/recipes/RecipeCatalog";
+import RecipeSheets from "../components/recipes/RecipeSheets";
 import { Clock, ChefHat, CheckCircle, AlertTriangle } from "lucide-react";
 import { format, parseISO, isSameWeek } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -18,6 +19,7 @@ import type { Recipe } from "../types";
 import { suggestRecipeFromIncomingProduct, type RecipeSuggestion } from "../domain/recipes/recipeSuggestionPolicy";
 import { isScenarioProduction, productionNoteForDisplay } from "../features/recipes/productionPresentation";
 import { recipeStockWarnings } from "../features/recipes/productionAvailability";
+import { getRecipeView, recipeViewHref, recipeViewParams, type RecipeView } from "../features/recipes/recipeNavigation";
 import { getProductions, recordProduction, type Production } from "../services/recipeService";
 import { getPurchaseReceiptLineEvidence, type PurchaseReceiptLineEvidence } from "../services/orderService";
 import { formatLocalISODate } from "../utils/date";
@@ -40,8 +42,8 @@ const Recipes: React.FC = () => {
     getProductName,
     getProductUnit,
   } = useRecipes();
-  const [activeTab, setActiveTab] = useState<"catalog" | "history" | "anti-waste">("catalog");
-  const displayedTab = productId ? "anti-waste" : activeTab;
+  const displayedTab = getRecipeView(searchParams);
+  const changeTab = (view: RecipeView) => setSearchParams(recipeViewParams(searchParams, view));
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isProductionModalOpen, setIsProductionModalOpen] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -206,16 +208,17 @@ const Recipes: React.FC = () => {
       {productionError && <div role="alert"><p>{productionError}</p><Button onClick={() => void refreshProductions()}>Réessayer</Button></div>}
       <div className="recipes-heading-panel"><header className="workspace-header">
         <div>
-          <h1 ref={pageHeadingRef} tabIndex={-1}>{productId ? `Recettes avec ${loading ? "ce produit" : getProductName(productId)}` : "Mes recettes"}</h1>
-          <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, selon les lots proposés. Aucun surstock n'est déduit automatiquement." : "Faisabilité selon les lots et recettes enregistrés. Les échéances dépassées sont exclues, les échéances inconnues restent à vérifier par le chef. La validation d'une production déduit les ingrédients du stock."}</p>
+          <h1 ref={pageHeadingRef} tabIndex={-1}>{productId ? `Recettes avec ${loading ? "ce produit" : getProductName(productId)}` : displayedTab === "sheets" ? "Fiches techniques" : "Mes recettes"}</h1>
+          <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, selon les lots proposés. Aucun surstock n'est déduit automatiquement." : displayedTab === "sheets" ? "Retrouvez les coûts et les quantités de vos recettes." : "Faisabilité selon les lots et recettes enregistrés. Les échéances dépassées sont exclues, les échéances inconnues restent à vérifier par le chef. La validation d'une production déduit les ingrédients du stock."}</p>
         </div>
         <div className="recipes-header-actions"><Button onClick={(event) => openRecipeEditor(null, event.currentTarget)}>Nouvelle recette</Button>
           {!productId && <Button variant="outline" icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>}</div>
       </header>
       <div className="recipe-tabs" role="group" aria-label="Vues des recettes">
-        <button type="button" aria-pressed={displayedTab === "catalog"} onClick={() => { if (productId) setSearchParams({}); setActiveTab("catalog"); }}>Toutes les recettes · {loading ? "…" : error ? "—" : recipes.length}</button>
-        <button type="button" aria-pressed={displayedTab === "anti-waste"} onClick={() => setActiveTab("anti-waste")}>Réalisables avec le stock</button>
-        <button type="button" aria-pressed={displayedTab === "history"} onClick={() => { if (productId) setSearchParams({}); setActiveTab("history"); }}>Produites cette semaine</button>
+        <button type="button" aria-pressed={displayedTab === "catalog"} onClick={() => changeTab("catalog")}>Toutes les recettes · {loading ? "…" : error ? "—" : recipes.length}</button>
+        <button type="button" aria-pressed={displayedTab === "anti-waste"} onClick={() => changeTab("anti-waste")}>Réalisables avec le stock</button>
+        <button type="button" aria-pressed={displayedTab === "sheets"} onClick={() => changeTab("sheets")}>Fiches techniques</button>
+        <button type="button" aria-pressed={displayedTab === "history"} onClick={() => changeTab("history")}>Produites cette semaine</button>
       </div></div>
 
       {incomingReceiptLineId && incomingReceiptLoading && <p role="status">Chargement de la réception source…</p>}
@@ -232,9 +235,11 @@ const Recipes: React.FC = () => {
         onClose={closeRecipeEditor} onSaved={handleRecipeSaved} />}
       {!productId && !incomingReceiptLineId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
 
-      {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to="/recipes" onClick={() => setActiveTab("catalog")}>Voir toutes les recettes</Link></p>}
+      {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to={recipeViewHref(searchParams, "catalog")}>Voir toutes les recettes</Link></p>}
       {displayedTab === "catalog" && !error && <RecipeCatalog recipes={recipesWithYield} loading={loading}
         onEdit={(recipe, trigger) => openRecipeEditor(recipe, trigger)} onProduce={handleStartProduction} />}
+      {displayedTab === "sheets" && !error && <RecipeSheets recipes={recipes} loading={loading} costPerPortion={getIngredientCost}
+        onEdit={(recipe, trigger) => openRecipeEditor(recipe, trigger)} />}
 
       {displayedTab === "history" && hasScenarioRecords && <p className="workspace-subtitle" role="note">
         Le journal contient des enregistrements de QA isolés ; ils ne décrivent pas des productions observées du restaurant.
@@ -378,7 +383,7 @@ const Recipes: React.FC = () => {
               </Card>
             );
           })}
-          {productId && matchingRecipes.length === 0 && !loading && !error ? <div className="empty-week col-span-full"><p>Aucune recette du catalogue ne contient ce produit.</p><Link to="/recipes" onClick={() => setActiveTab("catalog")}>Voir toutes les recettes</Link></div> : antiWasteRecipes.length === 0 && !loading && !error && (
+          {productId && matchingRecipes.length === 0 && !loading && !error ? <div className="empty-week col-span-full"><p>Aucune recette du catalogue ne contient ce produit.</p><Link to={recipeViewHref(searchParams, "catalog")}>Voir toutes les recettes</Link></div> : antiWasteRecipes.length === 0 && !loading && !error && (
             <div className="empty-week col-span-full">
               <p>{recipes.length === 0 ? "Aucune recette disponible." : unavailableRecipes.length > 0 ? "Pas assez de stock pour préparer une portion des recettes renseignées." : "Aucune recette avec des ingrédients renseignés."}</p>
             </div>

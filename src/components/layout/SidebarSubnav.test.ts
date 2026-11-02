@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import SidebarSubnav from "./SidebarSubnav";
 
-function render(path: string, section: "orders" | "analytics" | "settings") {
+function render(path: string, section: "orders" | "analytics" | "settings" | "recipes") {
   return renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] },
     createElement(SidebarSubnav, { section, onNavigate: () => {} })));
 }
@@ -24,5 +24,10 @@ describe("sous-navigation", () => {
     const html = render("/settings?date=2026-11-02&slot=lunch&section=account", "settings");
     expect(html).toContain('href="/settings?date=2026-11-02&amp;slot=lunch&amp;section=restaurant"');
     expect(html).toMatch(/<a[^>]*aria-current="page"[^>]*>Compte<\/a>/);
+  });
+  it("ouvre les fiches sans conserver un filtre produit", () => {
+    const html = render("/recipes?product=p1&incomingReceiptLineId=r1", "recipes");
+    expect(html).toContain('href="/recipes?incomingReceiptLineId=r1&amp;view=sheets"');
+    expect(html).toMatch(/<a[^>]*aria-current="page"[^>]*>Réalisables avec le stock<\/a>/);
   });
 });

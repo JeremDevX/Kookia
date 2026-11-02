@@ -3,6 +3,7 @@ import { Menu, ChevronRight } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import searchIcon from "../../assets/figma-layout/search.svg";
 import { getOrderView } from "../../features/orders/orderNavigation";
+import { getRecipeView } from "../../features/recipes/recipeNavigation";
 import "../../styles/index.css";
 import "./TopNav.css";
 import { useAuth } from "../../features/auth/context/AuthContext";
@@ -40,7 +41,8 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
   const section = pathname === "/predictions" ? "Bilan" : currentPage;
   const subpage = pathname === "/" ? "Vue d’ensemble" : pathname === "/stocks" ? "Inventaire" :
     orderView ? { prepare: "Préparer un achat", orders: "Commandes et réceptions", invoices: "Factures et documents" }[orderView] :
-    pathname === "/predictions" ? "Prévisions" : pathname === "/settings" ?
+    pathname === "/predictions" ? "Prévisions" : pathname === "/recipes" ?
+      ({ catalog: "Toutes les recettes", "anti-waste": "Réalisables avec le stock", sheets: "Fiches techniques", history: "Produites cette semaine" })[getRecipeView(params)] : pathname === "/settings" ?
       ({ account: "Compte", suppliers: "Fournisseurs", connections: "Connexions" } as Record<string, string>)[params.get("section") ?? ""] ?? "Restaurant" : null;
 
   const searchProducts = (event: React.FormEvent) => {

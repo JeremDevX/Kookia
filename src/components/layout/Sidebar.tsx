@@ -113,6 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
           <p className="sidebar-label">MENU PRINCIPAL</p>
           {navItems.map((item) => {
             const section = item.path === "/orders" && pathname === "/orders" ? "orders" :
+              item.path === "/recipes" && pathname === "/recipes" ? "recipes" :
               item.path === "/analytics" && (pathname === "/analytics" || pathname === "/predictions") ? "analytics" : null;
             return <React.Fragment key={item.path}>
             <NavLink

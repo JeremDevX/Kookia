@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { getOrderView, orderViewHref } from "../../features/orders/orderNavigation";
+import { getRecipeView, recipeViewHref, type RecipeView } from "../../features/recipes/recipeNavigation";
 
-type Section = "orders" | "analytics" | "settings";
+type Section = "orders" | "analytics" | "settings" | "recipes";
 
 export default function SidebarSubnav({ section, onNavigate }: { section: Section; onNavigate: () => void }) {
   const { pathname, search, hash } = useLocation();
@@ -28,6 +29,13 @@ export default function SidebarSubnav({ section, onNavigate }: { section: Sectio
       { id: "estimates", label: "Sorties estimées", href: href("estimates") },
       { id: "predictions", label: "Prévisions", href: `/predictions${period.size ? `?${period}` : ""}` },
     ];
+  } else if (section === "recipes") {
+    active = getRecipeView(params);
+    const views: Array<{ id: RecipeView; label: string }> = [
+      { id: "catalog", label: "Toutes les recettes" }, { id: "anti-waste", label: "Réalisables avec le stock" },
+      { id: "sheets", label: "Fiches techniques" }, { id: "history", label: "Produites cette semaine" },
+    ];
+    items = views.map(({ id, label }) => ({ id, label, href: recipeViewHref(params, id) }));
   } else {
     const requested = params.get("section");
     active = requested === "account" || requested === "suppliers" || requested === "connections" ? requested : "restaurant";
