@@ -32,6 +32,31 @@ Les routes privées passent par `RequireAuth` ; les pages publiques par
 `PublicOnly`. Les sous-vues et états de chaque page restent à inventorier et
 valider individuellement. La matrice des composants utilisés reste à compléter.
 
+### Correspondances à vérifier
+
+Les références ci-dessous sont des candidats par intitulé ou rôle, pas des
+correspondances validées. « À vérifier » signifie qu'aucune conclusion de
+conformité n'est établie dans la dimension indiquée. Les chemins et priorités
+figurent dans le tableau précédent ; les sous-vues demandent des lignes propres.
+
+| Écran / route | Référence candidate | Structure | Informations | Fonctionnalités | Visuel | Interactions | Statut |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Connexion `/login` | A `673:43390` | À vérifier | À vérifier | À vérifier | À vérifier | Connexion factice vérifiée ; reste à tester | En cours |
+| Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration guidée absente du parcours actuel | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
+| Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | À vérifier | À vérifier | Planning et notifications à confronter | À vérifier | À vérifier | À faire |
+| Stocks `/stocks` | A `673:44425`, `673:44584` | À vérifier | Ticket Z et OCR divergents | À vérifier | À vérifier | À vérifier | En cours |
+| Prévisions `/predictions` | A `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
+| Recettes `/recipes` | A `673:45740`, `673:45766`, `673:45044` | À vérifier | À vérifier | Import CSV de fiches non trouvé | À vérifier | À vérifier | En cours |
+| Commandes `/orders` | A `673:43938`, `673:44035`, `673:44142`, `673:44242`, `673:44919` | À vérifier | À vérifier | Rapprochement à comparer | À vérifier | Cas synthétiques partiels | En cours |
+| Paramètres `/settings` | A `673:46642`, `673:46754`, `673:46843` ; B `25:2`, `26:2` | À vérifier | À vérifier | Accès équipe absent du modèle repéré | À vérifier | Météo : erreur différée vérifiée | En cours |
+| Bilan `/analytics` | A `673:46262`, `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
+| Ventes `/sales` | B `8:2` ; A `673:44664`, `673:44732` | À vérifier | À vérifier | Transcription manuelle ; OCR absent | À vérifier | À vérifier | À faire |
+| Services `/services` | B `16:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
+| Plus `/more` | B `22:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
+| Historique `/history` | B `18:2`, `21:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
+| Ancien historique `/history/replay/:id` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |
+| Route inconnue `*` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |
+
 ## Références Figma
 
 La source A a été consultée en lecture seule dans le navigateur, sans MCP. La
@@ -71,6 +96,11 @@ libellés de groupes ne constituent pas un inventaire exhaustif des écrans.
 | Commandes — Prévision et recommandations | `673:44765` |
 | Commandes — Contrôle de réception | `673:44919` |
 | Mes recettes — Toutes les recettes | `673:45740` |
+| Mes recettes — Anti-gaspillage | `673:45766` |
+| Recette — Velouté de fanes de carottes | `673:45809` |
+| Recette — Pain perdu salé aux légumes | `673:45922` |
+| Recette — Pesto de tiges d'herbes | `673:46035` |
+| Recette — Suprême de volaille rôti | `673:46148` |
 | Fiches techniques — Liste | `673:45044` |
 | Fiches techniques — Choix de création | `673:45095` |
 | Fiches techniques — Saisie manuelle | `673:45172` |
@@ -237,11 +267,21 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   déclaration de perte structurée recueille davantage de contexte et utilise
   un autre service. Les effets et besoins diffèrent : comparer les parcours
   avant de décider s'ils doivent converger.
-- Certaines modales appellent `onClose` par Échap, la croix ou le fond même
-  lorsque leur bouton de fermeture est désactivé pendant une opération. Le
-  risque est identifié notamment pour les factures et les exports ; vérifier
-  les appels et le comportement rendu avant correction. Les modales de
-  production protègent déjà leur fermeture pendant l'enregistrement.
+- Les modales de facture, commande, idées de menu, export, ajout ou modification
+  de produit et suppression de compte bloquent désormais localement leur
+  fermeture pendant l'opération. La croix est désactivée ; un test navigateur
+  sur une modale isolée vérifie Échap et clic sur le fond pendant l'attente,
+  puis Échap après reprise. Les parcours métier complets et la restauration du
+  focus restent à vérifier. La modale météo bloque également la fermeture lors
+  de la confirmation de commune : un test navigateur avec réponse différée a
+  vérifié Échap, clic sur le fond et affichage de l'erreur. Le succès reste à
+  vérifier en interaction. Le rapprochement de réception bloque le repli pendant
+  l'enregistrement et conserve la commande lors d'un filtrage ; un test
+  navigateur synthétique a vérifié ces cas, l'erreur et la notification après
+  navigation. Un second banc synthétique a vérifié le succès différé, le retour
+  du focus au résumé de commande, puis la notification après navigation pendant
+  le rechargement. Lecteur d'écran réel et backend de ce scénario restent à
+  vérifier.
 - `SalesMetrics` est utilisé dans Ventes et dans Bilan : même composant et
   service, donc pas de règle dupliquée. Examiner si ces accès répondent à des
   besoins distincts avant de modifier la navigation. Les totaux du bilan et
