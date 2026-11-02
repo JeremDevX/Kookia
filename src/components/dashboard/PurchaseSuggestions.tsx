@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
+import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 import { useCart } from "../../context/useCart";
 import PurchaseSuggestionCard from "./PurchaseSuggestionCard";
 import { summarizePurchaseForecast } from "../../features/orders/purchaseForecastPresentation";
@@ -94,7 +95,6 @@ export default function PurchaseSuggestions({ refreshKey, salesHref = "/sales#sa
     decision: decisions[item.productId] ?? item.decision })) } : null;
   const summary = reviewedData ? summarizePurchaseForecast(reviewedData, cartItems.map((item) => item.productId)) : null;
   const visible = summary?.[filter].filter((item) => `${item.productName} ${item.supplierName}`.toLocaleLowerCase("fr").includes(search.trim().toLocaleLowerCase("fr"))) ?? [];
-  const supplierNames = [...new Set(visible.map((item) => item.supplierName))].sort((a, b) => a.localeCompare(b, "fr"));
   return <section className="purchase-suggestions" aria-labelledby="purchase-suggestions-title">
     <header className="workspace-section-heading"><h2 ref={headingRef} id="purchase-suggestions-title" tabIndex={-1}>Vos recommandations d’achat</h2>
       <span>{loading ? "Calcul…" : data?.status === "ready" ? `${summary?.toReview.length ?? 0} à acheter` : "Pas de quantité fiable"}</span>
@@ -123,16 +123,15 @@ export default function PurchaseSuggestions({ refreshKey, salesHref = "/sales#sa
             <div className="orders-toolbar"><label>Rechercher un produit ou fournisseur<input type="search" value={search} placeholder="Huile, tomates, fournisseur…" onChange={(event) => setSearch(event.target.value)} /></label></div>
             {visible.length === 0 && <div className="purchase-empty" role="status"><strong>{search ? "Aucun résultat" : filter === "toReview" ? "Aucun achat à ajouter pour le moment" : "Aucun produit dans cette vue"}</strong>
               <p>{search ? "Essayez un autre nom de produit ou fournisseur." : "Consultez les autres vues ou complétez votre sélection depuis les stocks."}</p><Link to={stocksHref}>Choisir un autre produit</Link></div>}
-            {supplierNames.map((supplierName) => <section className="purchase-supplier-group" key={supplierName} aria-label={supplierName}>
-              <header><span>FOURNISSEUR</span><h3>{supplierName}</h3></header>
-              <div className="purchase-list-heading" aria-hidden="true"><span>Produit et contexte</span><span>Proposition</span><span>Quantité</span><span>Estimation HT</span><span>Action</span></div>
-              <ul className="purchase-suggestion-list">{visible.filter((item) => item.supplierName === supplierName).map((item) => <PurchaseSuggestionCard
+            {visible.length > 0 && <div className="purchase-table-wrap" role="region" aria-label="Recommandations d’achat — défilement horizontal avec les flèches" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="purchase-table">
+              <thead><tr><th scope="col">Produit</th><th scope="col">Proposition</th><th scope="col">Quantité</th><th scope="col">Estimation HT</th><th scope="col">Action</th></tr></thead>
+              <tbody>{visible.map((item) => <PurchaseSuggestionCard
                 key={item.productId} item={item} limited={limited} value={quantities[item.productId] ?? ""}
                 inCart={cartItems.some((cartItem) => cartItem.productId === item.productId)}
                 busy={busyProductId !== ""} saving={busyProductId === item.productId}
                 onChange={(value) => { setQuantities((current) => ({ ...current, [item.productId]: value })); }}
-                onDecide={(decision) => void decide(item.productId, item.suggestionKey, decision)} />)}</ul>
-            </section>)}
+                onDecide={(decision) => void decide(item.productId, item.suggestionKey, decision)} />)}</tbody>
+            </table></div>}
           </>}
           <details><summary>Comprendre les hypothèses</summary><ul className="purchase-suggestions-assumptions">{data.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}</ul></details>
         </>}

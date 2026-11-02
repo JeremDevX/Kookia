@@ -42,6 +42,7 @@ export default function Orders() {
   useEffect(() => {
     if (view === "prepare" && location.hash === "#selection") selectionHeadingRef.current?.focus();
   }, [view, location.hash]);
+  const showingSelection = view === "prepare" && location.hash === "#selection";
   const recommendations = createOrderRecommendationsFromCartItems(cartItems);
   const missingProduct = !cartError && cartItems.some((item) => !products.some((product) => product.id === item.productId));
   const hasExampleItem = !cartError && cartItems.some((item) => !!item.predictionId);
@@ -64,17 +65,17 @@ export default function Orders() {
     <header className="workspace-header"><div>
       <h1 ref={headingRef} tabIndex={-1}>{view === "receipts" ? "Réceptions fournisseurs" : "Mes commandes"}</h1>
       <p className="workspace-subtitle">{view === "prepare" ? "Examinez les besoins recommandés, puis vérifiez votre sélection." : "Suivez vos commandes et retrouvez vos documents fournisseurs."}</p>
-    </div>{view === "prepare" ? <Link className="btn btn-primary orders-cart-link" to="/orders?view=prepare#selection">Voir ma sélection{!cartLoading && !cartError ? ` (${cartItems.length})` : ""}</Link> : <Button onClick={() => changeView("prepare")}>Préparer un achat</Button>}</header>
+    </div>{view === "prepare" ? <Link className="btn btn-primary orders-cart-link" to={showingSelection ? "/orders?view=prepare#purchase-suggestions-title" : "/orders?view=prepare#selection"}>{showingSelection ? "Retour aux recommandations" : `Voir ma sélection${!cartLoading && !cartError ? ` (${cartItems.length})` : ""}`}</Link> : <Button onClick={() => changeView("prepare")}>Préparer un achat</Button>}</header>
     {view !== "receipts" && <nav className="orders-views" aria-label="Vues des achats">
       {([["orders", "Commandes & réceptions"], ["prepare", "Préparer un achat"], ["invoices", "Factures & documents"]] as const).map(([id, label]) =>
         <Button key={id} variant="outline" aria-pressed={view === id} onClick={() => changeView(id)}>{label}</Button>)}
     </nav>}
     </div>
     {view === "prepare" && <>
-    <div className="orders-prepare-intro"><span>1 · Choisir et ajuster</span><span>2 · Valider la sélection</span><span>3 · Transmettre aux fournisseurs</span></div>
+    <div className="orders-prepare-intro"><span aria-current={!showingSelection ? "step" : undefined}>1 · Choisir et ajuster</span><span aria-current={showingSelection ? "step" : undefined}>2 · Valider la sélection</span><span>3 · Transmettre aux fournisseurs</span></div>
     <div className="orders-prepare-layout">
-    <PurchaseSuggestions refreshKey={suggestionsRevision} />
-    <section id="selection" className="orders-selection" aria-labelledby="selection-title">
+    <div hidden={showingSelection}><PurchaseSuggestions refreshKey={suggestionsRevision} /></div>
+    {showingSelection && <section id="selection" className="orders-selection" aria-labelledby="selection-title">
       <div className="workspace-section-heading"><h2 ref={selectionHeadingRef} id="selection-title" tabIndex={-1}>Ma sélection</h2>
         <span role="status" aria-busy={cartLoading}>
           {cartLoading ? "Chargement…" : cartError ? "Indisponible" : `${cartItems.length} article${cartItems.length > 1 ? "s" : ""}`}
@@ -93,7 +94,7 @@ export default function Orders() {
         </li>)}</ul>}
       {!cartError && cartItems.length > 0 && <div className="orders-selection-actions"><div className="orders-selection-total"><span>Budget indicatif HT</span><strong>{catalogLoading || catalogError || missingProduct ? "—" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(cartItems.reduce((sum, item) => sum + item.quantity * (products.find((p) => p.id === item.productId)?.pricePerUnit ?? 0), 0))}</strong></div><p>La validation enregistre votre décision. Elle n'envoie rien au fournisseur et ne modifie pas le stock.</p>
         <Button onClick={() => setReviewOpen(true)} disabled={cartLoading || catalogLoading || !!catalogError || missingProduct || hasExampleItem}>Vérifier et valider ma sélection</Button></div>}
-    </section>
+    </section>}
 
     </div>
     </>}

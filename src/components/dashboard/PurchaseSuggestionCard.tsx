@@ -24,9 +24,10 @@ interface Props {
 export default function PurchaseSuggestionCard({ item, value, inCart, busy, saving, onChange, onDecide, limited = false }: Props) {
   const valid = isValidOrderQuantity(value, item.orderStep);
   const editable = item.canAdd && !isPurchaseSuggestionHandled(item, inCart);
-  return <li className="purchase-suggestion-card">
-    <div className="purchase-product-summary">
+  return <tr className="purchase-suggestion-card">
+    <td className="purchase-product-summary">
       <h4>{item.productName}</h4>
+      <p className="purchase-stock-context">{item.supplierName}</p>
       <p className="purchase-stock-context">Besoin estimé {number(item.forecastNeed)} {item.unit} · Stock {item.countedStock === null ? "à vérifier" : `${number(item.countedStock)} ${item.unit}`}</p>
       <PurchaseWeatherDetails references={item.weatherAdjustments} />
       {item.deliveryHorizon?.status === "known" && <p>Livraison possible le {item.deliveryHorizon.nextDeliveryDate} · besoins jusqu’au {item.deliveryHorizon.throughDate} (Europe/Paris).</p>}
@@ -36,24 +37,25 @@ export default function PurchaseSuggestionCard({ item, value, inCart, busy, savi
       {(item.beforeDeliveryShortage ?? 0) > 0 && <p role="status">Manque avant livraison : {number(item.beforeDeliveryShortage!)} {item.unit}. Les achats proposés pour la suite ne résolvent pas ce manque.</p>}
       {(item.shortages?.length ?? 0) > 0 && <details><summary>Manques estimés par date, après stock et attendu conditionnel</summary><ul>{item.shortages!.map((shortage, index) => <li key={`${shortage.date}:${index}`}>{shortage.date}{shortage.slot === "lunch" ? " midi" : shortage.slot === "dinner" ? " soir" : ""} : {number(shortage.quantity)} {item.unit}</li>)}</ul></details>}
       {inCart && <span className="purchase-added"><Check size={14} aria-hidden="true" /> Dans ma sélection</span>}
-    </div>
-      <div className="purchase-quantity-read"><span>Achat proposé</span><strong>{item.estimatedQuantity === null ? "À vérifier" : `${number(item.estimatedQuantity)} ${item.unit}`}</strong></div>
-      {editable && <div className="purchase-quantity-edit">
+    </td>
+      <td className="purchase-quantity-read"><strong>{item.estimatedQuantity === null ? "À vérifier" : `${number(item.estimatedQuantity)} ${item.unit}`}</strong></td>
+      <td className="purchase-quantity-edit">{editable && <>
         <label htmlFor={`suggested-quantity-${item.productId}`}>À commander ({item.unit})</label>
         <input className="input-field" id={`suggested-quantity-${item.productId}`} type="number" min={item.orderStep}
           step={item.orderStep} max={1000000} value={value} disabled={busy} aria-invalid={!valid}
           aria-describedby={`suggested-step-${item.productId}`} onChange={(event) => onChange(event.target.value)} />
         <small id={`suggested-step-${item.productId}`}>{orderStepLabel(item.orderStep, item.unit)}</small>
-      </div>}
-      {editable && <div className="purchase-line-budget"><span>Estimation HT</span><strong>{valid ? money(Number(value) * item.currentUnitPrice) : "—"}</strong></div>}
-    {editable && <div className="purchase-suggestion-actions">
+      </>}</td>
+      <td className="purchase-line-budget">{editable && <strong>{valid ? money(Number(value) * item.currentUnitPrice) : "—"}</strong>}</td>
+    <td className="purchase-suggestion-actions">{editable && <>
       <Button size="sm" disabled={busy || !valid} icon={<Plus size={16} aria-hidden="true" />} aria-label={`Ajouter ${item.productName} à ma sélection`} onClick={() => onDecide("added")}>{saving ? "Ajout…" : "Ajouter"}</Button>
       <Button size="sm" variant="ghost" disabled={busy} title={`Écarter ${item.productName}`} aria-label={`Écarter ${item.productName}`} onClick={() => onDecide("excluded")}><X size={16} aria-hidden="true" /></Button>
-    </div>}
+    </>}
     {editable && !valid && <p className="purchase-item-status" role="alert">Respectez le pas de commande, avec une quantité positive jusqu’à 1 000 000.</p>}
     {item.decision?.orderId ? <p className="purchase-item-status">Commande enregistrée. <Link to={limited ? `/orders?view=receipts#order-${item.decision.orderId}` : `/orders#order-${item.decision.orderId}`}>Voir la commande</Link></p>
       : inCart ? null
       : item.decision?.kind === "excluded" ? <p className="purchase-item-status">Écarté de cette proposition.</p>
       : !item.canAdd && <p className="purchase-item-status">{item.status === "covered" ? item.reason : item.status === "needs_stock_count" || item.status === "unit_mismatch" ? <><Link to={limited ? "/stocks" : `/stocks?product=${encodeURIComponent(item.productId)}`}>Vérifier {item.status === "unit_mismatch" ? "l’unité" : "le stock"} de {item.productName}</Link> avant de commander.</> : item.status === "supplier_constraints_missing" ? <>{item.reason} {limited ? "Demandez au propriétaire de vérifier les paramètres fournisseur." : <><Link to="/settings">Paramètres fournisseur</Link> · <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Conditionnement du produit</Link></>}</> : item.reason}</p>}
-  </li>;
+    </td>
+  </tr>;
 }

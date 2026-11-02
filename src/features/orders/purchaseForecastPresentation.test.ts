@@ -81,7 +81,7 @@ describe("purchase forecast overview", () => {
       item: current, value: "4", inCart, busy: false, saving: false, onChange: () => {}, onDecide: () => {},
     }));
     const removed = render(suggestion, false);
-    expect(removed).toContain("Achat proposé</span><strong>3 kg</strong>");
+    expect(removed).toContain("<strong>3 kg</strong>");
     expect(removed).toContain('value="4"');
     expect(removed).toContain('aria-label="Ajouter Huile à ma sélection"');
     expect(removed).toContain('aria-label="Écarter Huile"');
