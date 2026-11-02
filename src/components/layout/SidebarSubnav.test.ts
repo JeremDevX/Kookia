@@ -5,12 +5,16 @@ import { describe, expect, it } from "vitest";
 import SidebarSubnav from "./SidebarSubnav";
 import { getOrderView } from "../../features/orders/orderNavigation";
 
-function render(path: string, section: "orders" | "receipts" | "analytics" | "settings" | "recipes") {
+function render(path: string, section: "orders" | "receipts" | "stocks" | "analytics" | "settings" | "recipes") {
   return renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] },
     createElement(SidebarSubnav, { section, onNavigate: () => {} })));
 }
 
 describe("sous-navigation", () => {
+  it("ouvre les ruptures confirmées", () => {
+    const html = render("/stocks?stockView=out", "stocks");
+    expect(html).toMatch(/<a[^>]*aria-current="page"[^>]*>Ruptures confirmées<\/a>/);
+  });
   it("identifie la vue mensuelle des réceptions", () => {
     const html = render("/orders?view=receipts&period=month", "receipts");
     expect(html).toContain('href="/orders?view=receipts&amp;period=week"');

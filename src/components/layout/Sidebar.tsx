@@ -118,6 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
           {navItems.map((item) => {
             const section = item.path === "/orders?view=receipts" && showingReceipts ? "receipts" :
               item.path === "/orders" && pathname === "/orders" && !showingReceipts ? "orders" :
+              item.path === "/stocks" && pathname === "/stocks" ? "stocks" :
               item.path === "/recipes" && pathname === "/recipes" ? "recipes" :
               item.path === "/analytics" && (pathname === "/analytics" || pathname === "/predictions") ? "analytics" : null;
             return <React.Fragment key={item.path}>

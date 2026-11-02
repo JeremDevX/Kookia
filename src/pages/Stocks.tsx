@@ -74,7 +74,7 @@ const Stocks: React.FC = () => {
     }
 
     return (
-      (view === "all" || needsStockReview(p)) &&
+      (view === "all" || (view === "review" ? needsStockReview(p) : status === "urgent")) &&
       matchesSearch &&
       matchesCategory &&
       matchesStatus &&
@@ -140,6 +140,7 @@ const Stocks: React.FC = () => {
       <div className="inventory-navigation">
         <div className="inventory-tabs" role="group" aria-label="Vue des stocks">
           <button type="button" aria-pressed={view === "all"} onClick={() => updateFilters({ stockView: "all" })}>Tous les produits</button>
+          <button type="button" aria-pressed={view === "out"} onClick={() => updateFilters({ stockView: "out" })}>Ruptures confirmées</button>
           <button type="button" aria-pressed={view === "review"} onClick={() => updateFilters({ stockView: "review" })}>À traiter</button>
         </div>
         <span className="inventory-result" role="status">{loading ? "Chargement…" : `${filteredProducts.length} produit${filteredProducts.length > 1 ? "s" : ""}`}</span>

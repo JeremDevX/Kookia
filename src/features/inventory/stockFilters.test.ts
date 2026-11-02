@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { readStockFilters, updateStockFilters } from "./stockFilters";
 
 describe("filtres de stock dans l’URL", () => {
+  it("reconnaît la vue des ruptures confirmées", () => {
+    expect(readStockFilters(new URLSearchParams("stockView=out")).view).toBe("out");
+  });
   it("ignore les états inconnus et conserve une recherche littérale", () => {
     expect(readStockFilters(new URLSearchParams("search=all&stockStatus=inconnu&stockLevel=inconnu&stockView=inconnu"))).toEqual({
       search: "all", category: "all", view: "all", advanced: { status: "all", supplier: "all", stockLevel: "all" },

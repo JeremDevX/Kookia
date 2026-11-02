@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { getOrderView, orderViewHref } from "../../features/orders/orderNavigation";
 import { getRecipeView, recipeViewHref, type RecipeView } from "../../features/recipes/recipeNavigation";
 
-type Section = "orders" | "receipts" | "analytics" | "settings" | "recipes";
+type Section = "orders" | "receipts" | "stocks" | "analytics" | "settings" | "recipes";
 
 export default function SidebarSubnav({ section, onNavigate }: { section: Section; onNavigate: () => void }) {
   const { pathname, search, hash } = useLocation();
@@ -21,6 +21,11 @@ export default function SidebarSubnav({ section, onNavigate }: { section: Sectio
     active = params.get("period") === "month" ? "month" : "week";
     items = [{ id: "week", label: "Semaine", href: "/orders?view=receipts&period=week" },
       { id: "month", label: "Mois", href: "/orders?view=receipts&period=month" }];
+  } else if (section === "stocks") {
+    active = params.get("stockView") === "out" ? "out" : params.get("stockView") === "review" ? "review" : "all";
+    items = [{ id: "all", label: "Tous les produits", href: "/stocks" },
+      { id: "out", label: "Ruptures confirmées", href: "/stocks?stockView=out" },
+      { id: "review", label: "À traiter", href: "/stocks?stockView=review" }];
   } else if (section === "analytics") {
     const requested = params.get("view");
     active = pathname === "/predictions" ? "predictions" : hash === "#estimated-outflows-title" ? "estimates" : hash === "#impact-summary-title" ? "overview" : requested === "sales" || requested === "estimates" ? requested : "overview";
