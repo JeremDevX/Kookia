@@ -43,7 +43,7 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Connexion `/login` | A `673:43390` | À vérifier | À vérifier | À vérifier | À vérifier | Connexion factice vérifiée ; reste à tester | En cours |
 | Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration guidée absente du parcours actuel | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
-| Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | À vérifier | À vérifier | Planning et notifications à confronter | À vérifier | À vérifier | À faire |
+| Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | Divergente pour `673:43621` | Indicateurs et blocs différents | Planning et notifications à confronter | À vérifier | À vérifier | En cours |
 | Stocks `/stocks` | A `673:44425`, `673:44584` | À vérifier | Ticket Z et OCR divergents | À vérifier | À vérifier | À vérifier | En cours |
 | Prévisions `/predictions` | A `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
 | Recettes `/recipes` | A `673:45740`, `673:45766`, `673:45044` | À vérifier | À vérifier | Import CSV de fiches non trouvé | À vérifier | À vérifier | En cours |
@@ -122,6 +122,34 @@ Le nœud `673:43938`, sélectionné dans Arc le 2 novembre 2026, est intitulé
 fond `bg/app` `#F7F9FB`. Il montre un tableau de recommandations, des filtres,
 des quantités modifiables et un accès au panier. Ces propriétés constituent
 une référence, pas une comparaison avec le rendu de l'application.
+La frame A `673:43621`, consultée visuellement le 2 novembre 2026, présente
+quatre indicateurs (couverts prévus, chiffre d'affaires estimé, alertes de
+stock, commandes suggérées), un graphique de couverts, un contexte du jour,
+des recommandations, des tâches et un bloc de stock critique. Le code de
+`Dashboard.tsx` organise actuellement d'autres indicateurs autour d'une action
+prioritaire, des besoins d'achat et de cartes Stocks/Ventes/Commande/Menu :
+la structure et les informations divergent. Les valeurs de la maquette sont
+des exemples ; leur affichage nécessite des sources réelles et qualifiées.
+Un rendu isolé de `Dashboard` à 1440 × 900, avec données et services
+synthétiques, confirme sa composition actuelle ; il ne reproduit pas le shell
+complet et ne constitue pas une comparaison pixel à pixel. États vide,
+chargement et erreur observés ; navigation réelle et données remplies restent
+à vérifier. Le catalogue vide ne présente plus les indicateurs de stock comme
+des zéros rassurants : tests ciblés et rendu synthétique confirment le message
+et la priorité d'une commande existante.
+L'audit des contrats ne trouve ni prévision de nombre de couverts ni chiffre
+d'affaires estimé fiable : les couverts disponibles sont observés et les
+prévisions portent sur des quantités d'articles. Les indicateurs du service
+`insightsService` sont étiquetés `demo`. Les stocks à vérifier et suggestions
+d'achat peuvent être issus respectivement du catalogue et du service de
+suggestions, avec leurs limites, leur provenance et validation humaine. La
+météo exige une commune confirmée et des données fraîches ; les événements ne
+sont pas connectés. Ne pas confondre articles au panier et suggestions.
+La frame A `673:43793` ajoute une vue « Planning du jour » : indicateurs,
+graphique par service, prochaines revues avec créneaux et participants, action
+prioritaire et raccourcis. `Dashboard.tsx` n'expose pas cette sous-vue ; les
+horaires et services existants ne démontrent pas l'existence d'un agenda de
+revues ou de participants. Une adaptation doit rendre les absences explicites.
 Le nœud `673:44425` « Stocks — Liste des produits » mesure 1440 × 1374 px
 et utilise le même fond `bg/app` `#F7F9FB`.
 Le nœud `673:45326` « Fiches techniques — Import CSV » mesure 1440 × 1024 px.

@@ -72,6 +72,8 @@ export default function Dashboard() {
                 ? { title: "Vérifiez votre stock", detail: "L'inventaire n'a pas pu être chargé.", to: "/stocks", action: "Ouvrir les stocks" }
                 : productsLoading
                   ? { title: "Retrouvez vos données", detail: "L'inventaire est en cours de chargement.", to: "/stocks", action: "Ouvrir les stocks" }
+                  : products.length === 0
+                    ? { title: "Aucun produit enregistré", detail: "Ajoutez vos produits pour suivre vos stocks.", to: "/stocks", action: "Ouvrir les stocks" }
                   : stockToReview.length > 0
                     ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique. Les niveaux de stock initiaux doivent être confirmés.`, to: "/stocks?stockView=review", action: "Voir les stocks" }
                     : { title: "Aucune alerte de stock enregistrée", detail: "Vérifiez les ventes du dernier service ou préparez vos prochains achats.", to: "/orders", action: "Ouvrir les achats" };
@@ -83,8 +85,8 @@ export default function Dashboard() {
     </header>
 
     <div className="dashboard-metrics" aria-label="Situation du restaurant">
-      <Link to="/stocks?stockView=review" className="dashboard-metric"><span>Stocks à vérifier</span><strong>{productsLoading || productsError ? "—" : stockToReview.length}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : "Produits à examiner"}</small></Link>
-      <Link to="/stocks?stockView=out" className="dashboard-metric"><span>Ruptures confirmées</span><strong>{productsLoading || productsError ? "—" : confirmedStockoutCount}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : "D’après les quantités enregistrées"}</small></Link>
+      <Link to="/stocks?stockView=review" className="dashboard-metric"><span>Stocks à vérifier</span><strong>{productsLoading || productsError || products.length === 0 ? "—" : stockToReview.length}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : products.length === 0 ? "Aucun produit enregistré" : "Produits à examiner"}</small></Link>
+      <Link to="/stocks?stockView=out" className="dashboard-metric"><span>Ruptures confirmées</span><strong>{productsLoading || productsError || products.length === 0 ? "—" : confirmedStockoutCount}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : products.length === 0 ? "Aucun produit enregistré" : "D’après les quantités enregistrées"}</small></Link>
       <Link to="/orders#selection" className="dashboard-metric"><span>Commande en préparation</span><strong>{cartLoading || cartError ? "—" : cartItems.length}</strong><small>{cartError ? "Commande indisponible" : cartLoading ? "Chargement…" : "Articles à revoir"}</small></Link>
       <Link to="/sales" className="dashboard-metric"><span>Dernier service enregistré</span><strong className="dashboard-metric-date">{salesError || !latestService ? "—" : new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</strong><small>{salesError ? "Ventes indisponibles" : latestService === undefined ? "Chargement…" : latestService === null ? "Aucune vente enregistrée" : "Ventes enregistrées"}</small></Link>
     </div>
@@ -114,11 +116,11 @@ export default function Dashboard() {
           void refreshProducts();
           requestAnimationFrame(() => stockHeading.current?.focus());
         }}>Réessayer</Button></div> :
-          <p>{stockToReview.length === 0 ? "Aucun produit sous le seuil théorique." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique.`}</p>}
+          <p>{products.length === 0 ? "Aucun produit enregistré. Ajoutez vos produits pour suivre vos stocks." : stockToReview.length === 0 ? "Aucun produit sous le seuil théorique." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique.`}</p>}
         {!productsLoading && !productsError && confirmedStockoutCount > 0 && <Badge label={`${confirmedStockoutCount} rupture${confirmedStockoutCount > 1 ? "s" : ""} confirmée${confirmedStockoutCount > 1 ? "s" : ""}`} status="urgent" />}
-        <small>{latestService?.sources.includes("demo_simulation")
+        {(productsLoading || productsError || products.length > 0) && <small>{latestService?.sources.includes("demo_simulation")
           ? "Certaines opérations du service ne sont pas retenues dans l’inventaire enregistré ; vérifiez les pièces et les mouvements."
-          : "Les seuils actuels restent à confirmer ; vérifiez la provenance des quantités et mouvements avant vos décisions."}</small>
+          : "Les seuils actuels restent à confirmer ; vérifiez la provenance des quantités et mouvements avant vos décisions."}</small>}
         <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><Link to="/orders#invoices">Revoir les factures</Link></div>
       </section>
       <section className="today-card" aria-labelledby="today-sales-title"><h2 id="today-sales-title" ref={salesHeading} tabIndex={-1}>Ventes</h2>
