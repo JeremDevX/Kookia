@@ -238,7 +238,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
       </select>
       <Button variant="outline" onClick={createDraft} disabled={saving || sourceConflict}>Nouvelle facture manuelle</Button>
       {invoice && <>
-        {invoice.source === "manual" && !invoice.supplierId && <p>Sans fournisseur, les factures similaires ne peuvent pas être repérées.</p>}
+        {invoice.source === "manual" && !invoice.supplierId && <p>Sans fournisseur, les factures manuelles déjà reçues ou rapprochées avec cette référence seront signalées, quel que soit leur fournisseur.</p>}
         {invoice.source === "demo" && <p>Brouillon prérempli à contrôler avant tout rapprochement.</p>}
         {sourceLinked && <section className="invoice-source-note" aria-label="Provenance de la pièce source">
           <h3>Pièce source liée — transcription</h3>

@@ -40,7 +40,7 @@ it("persists corrected drafts, isolates accounts and receives invoices exactly o
   await agent.post(`/api/workspace/invoices/${id}`).send({ draft, revision: results[0].body.revision, receive: false }).expect(409);
   const history = await agent.get(`/api/workspace/products/${product.id}/movements`).expect(200);
   expect(history.body.filter((item: { reason: string }) => item.reason === "receipt")).toHaveLength(1);
-  await agent.post(`/api/workspace/invoices/${randomUUID()}`).send({ draft: { ...draft, lines: [...draft.lines, { productId: "zzmissing", quantity: 2, unitPrice: 1 }] }, revision: 0, receive: true }).expect(400);
+  await agent.post(`/api/workspace/invoices/${randomUUID()}`).send({ draft: { ...draft, reference: "Invalid product invoice", lines: [...draft.lines, { productId: "zzmissing", quantity: 2, unitPrice: 1 }] }, revision: 0, receive: true }).expect(400);
   const rollback = await agent.get("/api/workspace/catalog").expect(200);
   expect(rollback.body).toEqual(after.body);
   const reread = await agent.get("/api/workspace/invoices").expect(200);
