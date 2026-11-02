@@ -141,6 +141,28 @@ function DashboardOverview() {
     }} />
     </div><div className="today-grid">
       <TodayContext />
+      <section className="today-card" aria-labelledby="today-tasks-title"><h2 id="today-tasks-title">Tâches du jour</h2>
+      <section className="today-task" aria-labelledby="today-sales-title"><h3 id="today-sales-title" ref={salesHeading} tabIndex={-1}>Ventes</h3>
+        {salesError ? <div role="alert"><p>{salesError}</p><Button variant="outline" onClick={() => {
+          setLatestService(undefined); setSalesError(""); setSalesReload((value) => value + 1);
+          requestAnimationFrame(() => salesHeading.current?.focus());
+        }}>Réessayer</Button></div> : latestService === undefined ? <p role="status">Chargement des ventes…</p> :
+          <p>{latestService ? `Dernier service enregistré le ${new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")}.` : "Aucune vente enregistrée."}</p>}
+        {latestService && <small>Source : {describeServiceSources(latestService.sources)}.</small>}
+        <div className="today-card-actions"><Link to="/sales#sales-start">Ajouter ou corriger des ventes</Link></div>
+      </section>
+      <section className="today-task" aria-labelledby="today-order-title"><h3 id="today-order-title">Commande en préparation</h3>
+        {cartLoading ? <p role="status">Chargement…</p> : cartError ? <div role="alert"><p>Commande indisponible : {cartError}</p>
+          <Button type="button" variant="outline" onClick={() => void refreshCart()}>Réessayer</Button></div> :
+          <p aria-live="polite">{cartItems.length === 0 ? "Aucun article sélectionné." : `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`}</p>}
+        <div className="today-card-actions"><Link to="/orders#selection">Ouvrir les achats</Link></div>
+      </section>
+    <section className="today-task" aria-labelledby="today-menu-title"><h3 id="today-menu-title">Préparer le menu</h3>
+      <p>Trouvez des idées de recettes pour utiliser les produits disponibles en stock.</p>
+      <div className="today-card-actions"><button type="button" onClick={() => setMenuOpen(true)}>Voir les idées de menu</button></div>
+    </section>
+    </section>
+
       <section className="today-card" aria-labelledby="today-stock-title"><h2 id="today-stock-title" ref={stockHeading} tabIndex={-1}>Stocks</h2>
         {productsLoading ? <p role="status">Chargement du stock…</p> : productsError ? <div role="alert"><p>Stock indisponible.</p><Button variant="outline" onClick={() => {
           void refreshProducts();
@@ -154,26 +176,6 @@ function DashboardOverview() {
           : "Les seuils actuels restent à confirmer ; vérifiez la provenance des quantités et mouvements avant vos décisions."}</small>}
         <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><Link to="/orders#invoices">Revoir les factures</Link></div>
       </section>
-      <section className="today-card" aria-labelledby="today-sales-title"><h2 id="today-sales-title" ref={salesHeading} tabIndex={-1}>Ventes</h2>
-        {salesError ? <div role="alert"><p>{salesError}</p><Button variant="outline" onClick={() => {
-          setLatestService(undefined); setSalesError(""); setSalesReload((value) => value + 1);
-          requestAnimationFrame(() => salesHeading.current?.focus());
-        }}>Réessayer</Button></div> : latestService === undefined ? <p role="status">Chargement des ventes…</p> :
-          <p>{latestService ? `Dernier service enregistré le ${new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")}.` : "Aucune vente enregistrée."}</p>}
-        {latestService && <small>Source : {describeServiceSources(latestService.sources)}.</small>}
-        <div className="today-card-actions"><Link to="/sales#sales-start">Ajouter ou corriger des ventes</Link></div>
-      </section>
-      <section className="today-card" aria-labelledby="today-order-title"><h2 id="today-order-title">Commande en préparation</h2>
-        {cartLoading ? <p role="status">Chargement…</p> : cartError ? <div role="alert"><p>Commande indisponible : {cartError}</p>
-          <Button type="button" variant="outline" onClick={() => void refreshCart()}>Réessayer</Button></div> :
-          <p aria-live="polite">{cartItems.length === 0 ? "Aucun article sélectionné." : `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`}</p>}
-        <div className="today-card-actions"><Link to="/orders#selection">Ouvrir les achats</Link></div>
-      </section>
-    <section className="today-card" aria-labelledby="today-menu-title"><h2 id="today-menu-title">Préparer le menu</h2>
-      <p>Trouvez des idées de recettes pour utiliser les produits disponibles en stock.</p>
-      <div className="today-card-actions"><button type="button" onClick={() => setMenuOpen(true)}>Voir les idées de menu</button></div>
-    </section>
-
     </div></div>
 
     {menuOpen && <MenuIdeasModal onValidate={() => addToast("success", "Menu validé", "Le menu est prêt à imprimer.")} onClose={() => setMenuOpen(false)} />}

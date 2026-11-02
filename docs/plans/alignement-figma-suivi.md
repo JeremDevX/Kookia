@@ -45,7 +45,7 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Connexion `/login` | A `673:43390` | À vérifier | À vérifier | À vérifier | À vérifier | Connexion factice vérifiée ; reste à tester | En cours |
 | Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration en quatre étapes ; invitations par lien manuel | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
 | Configuration `/setup` | A `673:43437` à `673:43559` | Quatre étapes avec progression et reprise | Champs restaurant présents ; jours d’ouverture à compléter | Fournisseurs, récapitulatif et invitations manuelles disponibles | Rapprochement partiel ; comparaison précise à faire | Création, reprise, ajout fournisseur et retour testés sur données synthétiques | En cours |
-| Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | Divergente pour `673:43621` | Indicateurs et blocs différents | Planning et notifications à confronter | À vérifier | À vérifier | En cours |
+| Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | Tâches regroupées ; autres écarts à vérifier | Indicateurs indisponibles explicités | Planning et notifications à confronter | Comparaison partielle | Firefox bureau et mobile ; autres états à vérifier | En cours |
 | Stocks `/stocks` | A `673:44425`, `673:44584` | À vérifier | Dernier comptage distingué du stock théorique ; Ticket Z et OCR divergents | À vérifier | À vérifier | Liste inventaire ouverte dans Firefox ; autres interactions à vérifier | En cours |
 | Prévisions `/predictions` | A `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
 | Recettes `/recipes` | A `673:45740`, `673:45766`, `673:45044` | À vérifier | À vérifier | Import CSV avec association et revue ; comparaison Figma à poursuivre | À vérifier | À vérifier | En cours |
@@ -363,9 +363,10 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   réceptions existantes et les quantités. Pour deux factures manuelles de même
   fournisseur et référence, une confirmation explicite est désormais demandée
   avant crédit, sans bloquer les livraisons distinctes. La vérification est
-  atomique et couvre réception directe et rapprochement. Sans fournisseur,
-  aucun doublon ne peut être détecté ; le formulaire le signale. Tests
-  d’intégration et parcours Firefox synthétique vérifiés.
+  atomique et couvre réception directe et rapprochement. Si un fournisseur
+  manque, les références identiques sont signalées par prudence ; deux
+  fournisseurs connus différents restent distincts. Tests d’intégration et
+  parcours Firefox synthétique vérifiés.
 - Une correction locale vérifie l’unité explicitement renseignée sur une facture
   manuelle avant crédit du stock. Un test d’intégration a été ajouté pour le
   refus d’une unité incompatible et l’acceptation d’une unité compatible ; il a
