@@ -14,7 +14,7 @@ export default function More() {
   return <div className="workspace-page more-page">
     <header className="workspace-header"><div><h1>Plus</h1><p className="workspace-subtitle">Les fonctions utiles de temps en temps.</p></div></header>
     <div className="more-grid">{destinations.map((item) => <section className="more-card" key={item.to}>
-      <h2>{item.title}</h2><p>{item.detail}</p><Link to={item.to}>Ouvrir {item.title.toLocaleLowerCase("fr-FR")}</Link>
+      <h2>{item.title}</h2><p>{item.detail}</p><Link to={item.to}>Ouvrir {item.title.toLocaleLowerCase("fr-FR")} <span aria-hidden="true">›</span></Link>
     </section>)}</div>
     <p className="more-help"><a href="mailto:support@kookia.app?subject=Support%20KookiA">Besoin d'aide ? Contacter Kookia</a></p>
   </div>;
