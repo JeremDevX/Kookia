@@ -68,7 +68,7 @@ export default function OperationalIncidents({ date, slot }: { date: string; slo
   return <section className="sales-panel" aria-labelledby="incidents-title"><h2 id="incidents-title">Incidents et réponses du responsable</h2>
     <p>Signalez un fait observé et son service concerné. Les propositions restent à confirmer ; aucune opération n’est déclenchée par ce formulaire.</p>
     {loading && <p role="status">Chargement des signalements…</p>}{error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
-    <Button type="button" variant="outline" disabled={busy || loading} onClick={() => setReload(n => n + 1)}>Recharger les signalements</Button>
+    {!loading && !error && !incidents.some(i => i.serviceSlot === slot || i.serviceSlot === null) && <p>Aucun incident déclaré pour ce service.</p>}
     <details><summary>Déclarer un incident pour ce service</summary><form onSubmit={submit} className="sales-form">
       <label>Situation<select value={kind} onChange={e => changeKind(e.target.value as IncidentInput["kind"])}>{Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <label>Produit concerné<select required={kind === "lot_discarded"} value={productId} onChange={e => { setProductId(e.target.value); setLotId(""); setOrderLineId(""); }}><option value="">Sans produit précis</option>{products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
@@ -81,8 +81,8 @@ export default function OperationalIncidents({ date, slot }: { date: string; slo
       <label>Constat et conséquence observée<textarea required maxLength={2000} value={note} onChange={e => setNote(e.target.value)} /></label>
       <Button type="submit" disabled={busy || loading}>{busy ? "Enregistrement…" : "Enregistrer le signalement"}</Button>
     </form></details>
+    <Button type="button" variant="outline" disabled={busy || loading} onClick={() => setReload(n => n + 1)}>Recharger les signalements</Button>
     <div className="sales-actions"><Link to="/orders">Revoir les achats et réceptions</Link><Link to="/stocks">Revoir les lots et pertes</Link><Link to="/recipes">Enregistrer une préparation</Link></div>
-    {!loading && !incidents.some(i => i.serviceSlot === slot || i.serviceSlot === null) && <p>Aucun incident déclaré pour ce service.</p>}
     {incidents.filter(i => i.serviceSlot === slot || i.serviceSlot === null).map(incident => <article key={incident.id}>
       <h3>{labels[incident.kind]} · {incident.status === "open" ? "à traiter" : "suivi clos"}</h3><p>{incident.note}</p>
       <ul>{incident.consequences.map(c => <li key={c}>{c}</li>)}</ul>
