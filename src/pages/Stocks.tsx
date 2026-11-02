@@ -15,6 +15,7 @@ import { useToast } from "../context/ToastContext";
 import type { Product } from "../types";
 import type { NewProduct, StockFilters } from "../types/callbacks";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
+import { readStockFilters, updateStockFilters, type StockFilterKey } from "../features/inventory/stockFilters";
 import { getSuggestedOrderQuantity, needsStockReview } from "../domain/inventory/product.policies";
 import { analyticsReturnHref } from "../utils/analyticsNavigation";
 import "../styles/Workspace.css";
@@ -33,25 +34,14 @@ const Stocks: React.FC = () => {
     useProductsWithMutations();
   const { suppliers, error: catalogError, refetch: refetchCatalog } = useInventoryCatalog();
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const searchTerm = searchParams.get("search") ?? "";
-  const setSearchTerm = (value: string) => {
-    const next = new URLSearchParams(searchParams);
-    if (value) next.set("search", value); else next.delete("search");
-    setSearchParams(next, { replace: true });
-  };
+  const { search: searchTerm, category: categoryFilter, view, advanced: advancedFilters } = readStockFilters(searchParams);
+  const updateFilters = (updates: Partial<Record<StockFilterKey, string>>) => setSearchParams(updateStockFilters(searchParams, updates), { replace: true });
   useEffect(() => { if (hash === "#stock-search") document.getElementById("stock-search")?.focus(); }, [hash]);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     () => searchParams.get("product")
   );
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [view, setView] = useState<"review" | "all">("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
-  const [advancedFilters, setAdvancedFilters] = useState<StockFilters>({
-    status: "all",
-    supplier: "all",
-    stockLevel: "all",
-  });
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? null;
   const categories = Array.from(new Set(products.map((product) => product.category))).sort((a, b) => a.localeCompare(b, "fr"));
@@ -107,7 +97,7 @@ const Stocks: React.FC = () => {
   };
 
   const handleApplyFilters = (filters: StockFilters) => {
-    setAdvancedFilters(filters);
+    updateFilters({ stockStatus: filters.status, stockSupplier: filters.supplier, stockLevel: filters.stockLevel });
     const activeFiltersCount = Object.values(filters).filter(
       (v) => v !== "all"
     ).length;
@@ -149,8 +139,8 @@ const Stocks: React.FC = () => {
 
       <div className="inventory-navigation">
         <div className="inventory-tabs" role="group" aria-label="Vue des stocks">
-          <button type="button" aria-pressed={view === "all"} onClick={() => setView("all")}>Tous les produits</button>
-          <button type="button" aria-pressed={view === "review"} onClick={() => setView("review")}>À traiter</button>
+          <button type="button" aria-pressed={view === "all"} onClick={() => updateFilters({ stockView: "all" })}>Tous les produits</button>
+          <button type="button" aria-pressed={view === "review"} onClick={() => updateFilters({ stockView: "review" })}>À traiter</button>
         </div>
         <span className="inventory-result" role="status">{loading ? "Chargement…" : `${filteredProducts.length} produit${filteredProducts.length > 1 ? "s" : ""}`}</span>
       </div>
@@ -163,7 +153,7 @@ const Stocks: React.FC = () => {
               placeholder="Nom du produit"
               icon={<Search size={18} />}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => updateFilters({ search: e.target.value })}
             />
           </div>
           <div className="filters-wrapper">
@@ -172,7 +162,7 @@ const Stocks: React.FC = () => {
               id="stock-category"
               className="category-select"
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              onChange={(e) => updateFilters({ category: e.target.value })}
             >
               <option value="all">Toutes les catégories</option>
               {categories.map((category) => <option key={category} value={category}>{category}</option>)}
@@ -188,8 +178,7 @@ const Stocks: React.FC = () => {
           </div>
         </div>
         {hasFilters && <button type="button" className="inventory-reset" onClick={() => {
-          setSearchTerm(""); setCategoryFilter("all");
-          setAdvancedFilters({ status: "all", supplier: "all", stockLevel: "all" });
+          updateFilters({ search: "", category: "all", stockStatus: "all", stockSupplier: "all", stockLevel: "all" });
           document.getElementById("stock-search")?.focus();
         }}>Effacer les filtres</button>}
       </div>
