@@ -2,6 +2,7 @@ import type { PurchaseOrder } from "../../services/orderService";
 import { isValidISODate } from "../../utils/date";
 
 export type ReceiptEvent = { date: string; orderId: string; label: string; kind: "expected" | "received"; simulated: boolean };
+export const dateExceeded = (event: ReceiptEvent, today: string) => event.kind === "expected" && event.date < today;
 const dateFromISO = (date: string) => new Date(`${date}T12:00:00Z`);
 const isoFromDate = (date: Date) => date.toISOString().slice(0, 10);
 

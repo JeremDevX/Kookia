@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { PurchaseOrder } from "../../services/orderService";
 import { formatLocalISODate } from "../../utils/date";
-import { receiptEvents, shiftDays, shiftMonth, startOfWeek } from "../../features/orders/receiptCalendar";
+import { dateExceeded, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "../../features/orders/receiptCalendar";
 import Button from "../common/Button";
 import "./ReceiptCalendar.css";
 
@@ -14,7 +14,7 @@ export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] })
   const period = params.get("period") === "month" ? "month" : "week";
   const setPeriod = (next: "week" | "month") => { const updated = new URLSearchParams(params); updated.set("period", next); setParams(updated); };
   const [supplier, setSupplier] = useState("");
-  const [status, setStatus] = useState<"all" | "expected" | "received">("all");
+  const [status, setStatus] = useState<"all" | "expected" | "received" | "exceeded">("all");
   const [anchor, setAnchor] = useState(() => formatLocalISODate(new Date()));
   const today = formatLocalISODate(new Date());
   const start = period === "week" ? startOfWeek(anchor) : startOfWeek(`${anchor.slice(0, 7)}-01`);
@@ -22,7 +22,7 @@ export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] })
   const suppliers = [...new Map(orders.flatMap((order) => order.lines.map((line) => [line.supplierId, line.supplierName] as const))).entries()]
     .sort((a, b) => a[1].localeCompare(b[1], "fr"));
   const { events: allEvents, undated } = receiptEvents(orders, supplier);
-  const events = allEvents.filter((event) => status === "all" || event.kind === status);
+  const events = allEvents.filter((event) => status === "all" || event.kind === status || status === "exceeded" && dateExceeded(event, today));
   const weekEvents = events.filter((event) => event.date >= days[0] && event.date <= days[6])
     .sort((a, b) => a.date.localeCompare(b.date));
   const title = period === "week"
@@ -42,20 +42,20 @@ export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] })
       <Button variant="outline" aria-label="Période précédente" onClick={() => move(-1)}>‹</Button>
       <Button variant="outline" aria-label="Période suivante" onClick={() => move(1)}>›</Button>
       <label>Fournisseur<select value={supplier} onChange={(event) => setSupplier(event.target.value)}><option value="">Tous les fournisseurs</option>{suppliers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
-      <label>Statut<select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="all">Tous les statuts</option><option value="expected">À recevoir</option><option value="received">Réception enregistrée</option></select></label></div>
-    {status !== "received" && undated > 0 && <p className="receipt-calendar-note">{undated} ligne{undated > 1 ? "s" : ""} à recevoir sans date prévue : <Link to="/orders?view=orders">consulter les commandes</Link>.</p>}
+      <label>Statut<select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}><option value="all">Tous les statuts</option><option value="expected">À recevoir</option><option value="exceeded">Date prévue dépassée</option><option value="received">Réception enregistrée</option></select></label></div>
+    {status !== "received" && status !== "exceeded" && undated > 0 && <p className="receipt-calendar-note">{undated} ligne{undated > 1 ? "s" : ""} à recevoir sans date prévue : <Link to="/orders?view=orders">consulter les commandes</Link>.</p>}
     {period === "week" ? <div className="receipt-calendar-table-wrap"><table className="receipt-calendar-table">
       <thead><tr><th scope="col">Date</th><th scope="col">Fournisseur ou référence</th><th scope="col">Statut</th><th scope="col">Action</th></tr></thead>
       <tbody>{weekEvents.map((event, index) => <tr key={`${event.orderId}-${event.kind}-${index}`}>
         <td><time dateTime={event.date}>{displayDate(event.date, { weekday: "short", day: "numeric", month: "short" })}</time></td>
-        <th scope="row">{event.label}</th><td><span className={`receipt-calendar-status ${event.kind}`}>{event.kind === "expected" ? "À recevoir" : "Réception enregistrée"}{event.simulated ? " · simulation" : ""}</span></td>
+        <th scope="row">{event.label}</th><td><span className={`receipt-calendar-status ${event.kind}`}>{dateExceeded(event, today) ? "Date prévue dépassée" : event.kind === "expected" ? "À recevoir" : "Réception enregistrée"}{event.simulated ? " · simulation" : ""}</span></td>
         <td><Link aria-label={`Voir la commande : ${event.label}, ${displayDate(event.date, { day: "numeric", month: "long", year: "numeric" })}`} to={`/orders?view=orders#order-${encodeURIComponent(event.orderId)}`}>Voir la commande</Link></td>
       </tr>)}</tbody>
     </table>{weekEvents.length === 0 && <p className="receipt-calendar-note">Aucune réception datée cette semaine.</p>}</div> : <div className="receipt-calendar-days receipt-calendar-month">
       {days.map((day) => <div key={day} className={day.slice(0, 7) !== anchor.slice(0, 7) ? "receipt-calendar-outside" : undefined}>
         <time dateTime={day} aria-current={day === today ? "date" : undefined}>{displayDate(day, { weekday: "short", day: "numeric" })}</time>
         {events.filter((event) => event.date === day).map((event, index) => <Link key={`${event.orderId}-${event.kind}-${index}`} className={`receipt-calendar-event ${event.kind}`} to={`/orders?view=orders#order-${encodeURIComponent(event.orderId)}`}>
-          {event.label} · {event.kind === "expected" ? "prévu" : "reçu"}{event.simulated ? " · simulation" : ""}</Link>)}
+          {event.label} · {dateExceeded(event, today) ? "Date prévue dépassée" : event.kind === "expected" ? "prévu" : "reçu"}{event.simulated ? " · simulation" : ""}</Link>)}
       </div>)}
     </div>}
   </section>;

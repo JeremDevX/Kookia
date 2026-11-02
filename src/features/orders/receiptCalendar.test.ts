@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { PurchaseOrder } from "../../services/orderService";
-import { receiptEvents, shiftDays, shiftMonth, startOfWeek } from "./receiptCalendar";
+import { dateExceeded, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "./receiptCalendar";
 
 describe("calendrier des réceptions", () => {
+  it("signale uniquement les dates prévues antérieures à aujourd’hui, y compris en simulation", () => {
+    const event = { date: "2026-11-01", orderId: "order", label: "A", kind: "expected", simulated: true } as const;
+    expect(dateExceeded(event, "2026-11-02")).toBe(true);
+    expect(dateExceeded(event, "2026-11-01")).toBe(false);
+    expect(dateExceeded({ ...event, kind: "received" }, "2026-11-02")).toBe(false);
+  });
   it("calcule les périodes aux changements de mois et d’année", () => {
     expect(startOfWeek("2027-01-01")).toBe("2026-12-28");
     expect(shiftDays("2026-12-28", 7)).toBe("2027-01-04");
