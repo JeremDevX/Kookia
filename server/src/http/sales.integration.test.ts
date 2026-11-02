@@ -13,6 +13,7 @@ async function account() {
     displayName: "Sales test", email: `sales-${randomUUID()}@example.com`, password: "sales test password",
   }).expect(201);
   ids.push(result.body.user.id);
+  agent.set("X-Expected-User-Id", result.body.user.id);
   await ensureWorkspace(result.body.user.id);
   return agent;
 }
@@ -97,6 +98,7 @@ it("keeps service calendar edits simulated in demo workspaces", async () => {
     email: `demo-sales-${randomUUID()}@example.com`, password: "demo sales test password" }).expect(201);
   const userId = registration.body.user.id as string;
   ids.push(userId);
+  owner.set("X-Expected-User-Id", userId);
   await ensureWorkspace(userId);
   await owner.get("/api/workspace/catalog").expect(200);
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: userId } });

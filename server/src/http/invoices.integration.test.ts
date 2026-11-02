@@ -10,6 +10,7 @@ async function account() {
   const agent = request.agent(app);
   const response = await agent.post("/api/auth/register").send({ displayName: "Invoice test", email: `invoice-${randomUUID()}@example.com`, password: "invoice test password" }).expect(201);
   users.push(response.body.user.id);
+  agent.set("X-Expected-User-Id", response.body.user.id);
   await ensureWorkspace(response.body.user.id); return agent;
 }
 it("persists corrected drafts, isolates accounts and receives invoices exactly once", async () => {

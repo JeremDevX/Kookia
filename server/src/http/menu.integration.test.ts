@@ -11,6 +11,7 @@ async function account() {
   const agent = request.agent(app);
   const result = await agent.post("/api/auth/register").send({ displayName: "Menu test", email: `menu-${randomUUID()}@example.com`, password: "menu integration password" }).expect(201);
   ids.push(result.body.user.id);
+  agent.set("X-Expected-User-Id", result.body.user.id);
   await ensureWorkspace(result.body.user.id); return agent;
 }
 it("persists reviewed menus and journals validation once without launching production", async () => {

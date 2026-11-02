@@ -25,6 +25,7 @@ export async function weatherAccount(users: string[], provider: WeatherProvider)
   const result = await agent.post("/api/auth/register").send({ displayName: "Weather isolated fixture",
     email: `weather-${randomUUID()}@example.com`, password: "weather isolated fixture password" }).expect(201);
   const actorId = result.body.user.id as string; users.push(actorId);
+  agent.set("X-Expected-User-Id", actorId);
   await ensureWorkspace(actorId);
   const catalog = (await agent.get("/api/workspace/catalog").expect(200)).body;
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: actorId } });

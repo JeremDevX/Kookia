@@ -14,6 +14,7 @@ async function account() {
   const agent = request.agent(app);
   const response = await agent.post("/api/auth/register").send({ displayName: "Menu fixture", email: `menu-forecast-${randomUUID()}@example.com`, password: "isolated menu fixture password" }).expect(201);
   users.push(response.body.user.id);
+  agent.set("X-Expected-User-Id", response.body.user.id);
   await ensureWorkspace(response.body.user.id); await agent.get("/api/workspace/catalog").expect(200); return agent;
 }
 it("versions a multi-recipe formula and forecasts qualified service sales exactly once", async () => {

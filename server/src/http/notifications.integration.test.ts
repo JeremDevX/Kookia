@@ -11,6 +11,7 @@ async function account() {
   const agent = request.agent(app);
   const response = await agent.post("/api/auth/register").send({ displayName: "Notifications test", email: `notifications-${randomUUID()}@example.com`, password: "notifications test password" }).expect(201);
   users.push(response.body.user.id);
+  agent.set("X-Expected-User-Id", response.body.user.id);
   await ensureWorkspace(response.body.user.id);
   return agent;
 }

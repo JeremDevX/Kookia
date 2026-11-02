@@ -13,6 +13,7 @@ async function account() {
   const result = await agent.post("/api/auth/register").send({ displayName: "Purchase fixture",
     email: `purchase-chain-${randomUUID()}@example.com`, password: "isolated fixture password" }).expect(201);
   ownerIds.push(result.body.user.id);
+  agent.set("X-Expected-User-Id", result.body.user.id);
   await ensureWorkspace(result.body.user.id);
   const catalog = await agent.get("/api/workspace/catalog").expect(200);
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: result.body.user.id } });

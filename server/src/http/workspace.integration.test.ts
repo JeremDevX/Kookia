@@ -20,6 +20,7 @@ async function account() {
     displayName: "Catalog test", email: `catalog-${randomUUID()}@example.com`, password: "catalog integration password",
   }).expect(201);
   ids.push(response.body.user.id);
+  agent.set("X-Expected-User-Id", response.body.user.id);
   await ensureWorkspace(response.body.user.id);
   accountOwnerIds.set(agent, response.body.user.id);
   return agent;

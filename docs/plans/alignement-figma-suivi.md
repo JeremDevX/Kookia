@@ -322,13 +322,14 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
 
 ### Cohérence fonctionnelle à examiner
 
-- Les mutations de l’espace ne vérifient pas encore que le compte affiché est
-  toujours celui de la session. Un changement de compte dans un autre onglet
-  pendant une saisie peut conduire à enregistrer dans le mauvais espace ; le
-  contrôle déjà ajouté à `/setup` ne couvre pas les autres routes. La correction
-  doit aussi protéger les lectures, préserver l’identité liée à l’écran et
-  adapter les clients et tests du contrat serveur. Les invitations et les
-  étapes fournisseurs et horaires ne doivent pas masquer cette limite.
+- Les lectures et mutations `/api/workspace` vérifient désormais que le compte
+  associé au document correspond à la session, avant tout accès à l’espace.
+  L’identité reste fixée pendant la vie du document pour protéger les actions
+  différées ; une transition vers un autre compte recharge le document. Dans
+  Firefox sur base synthétique, une saisie commencée sous A puis soumise après
+  passage à B a été refusée, et les données de B sont restées intactes. Les
+  routes de compte et de déconnexion ne sont pas couvertes par ce contrôle ;
+  elles restent à examiner. Le rechargement efface le brouillon en mémoire.
 - Le contrôle d’origine serveur couvre désormais les requêtes `PUT` en plus de
   `POST`, `PATCH` et `DELETE` ; il ne remplace pas la vérification de session.
 

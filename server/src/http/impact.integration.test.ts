@@ -19,6 +19,7 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   const registration = await agent.post("/api/auth/register").send({ displayName: "Impact test",
     email: `impact-${randomUUID()}@example.com`, password: "impact integration password" }).expect(201);
   ownerIds.push(registration.body.user.id);
+  agent.set("X-Expected-User-Id", registration.body.user.id);
   await ensureWorkspace(registration.body.user.id);
   const catalog = await agent.get("/api/workspace/catalog").expect(200);
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: registration.body.user.id } });

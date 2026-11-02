@@ -13,6 +13,7 @@ async function account() {
   const created = await client.post("/api/auth/register").send({ displayName: "Incident fixture",
     email: `incident-${randomUUID()}@example.com`, password: "isolated incident password" }).expect(201);
   owners.push(created.body.user.id as string);
+  client.set("X-Expected-User-Id", created.body.user.id);
   await ensureWorkspace(created.body.user.id);
   await client.get("/api/workspace/catalog").expect(200);
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: created.body.user.id as string } });

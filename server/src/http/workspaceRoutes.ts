@@ -35,6 +35,7 @@ export const workspaceRoutes = Router();
 workspaceRoutes.use(async (req, res, next) => {
   try {
     const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
+    if (req.get("X-Expected-User-Id") !== user.id) { res.status(409).json({ error: { code: "SESSION_CHANGED", message: "Votre session a changé. Rechargez la page avant de continuer." } }); return; }
     const restaurant = await prisma.restaurant.findUnique({ where: { ownerId: user.id }, select: { id: true } });
     if (!restaurant) { res.status(409).json({ error: { code: "SETUP_REQUIRED", message: "Créez votre établissement pour accéder à votre espace." } }); return; }
     res.locals.workspace = { restaurantId: restaurant.id, actorId: user.id };

@@ -11,6 +11,7 @@ async function account() {
   const agent = request.agent(app);
   const result = await agent.post("/api/auth/register").send({ displayName: "Settings test", email: `settings-${randomUUID()}@example.com`, password: "settings test password" }).expect(201);
   ids.push(result.body.user.id);
+  agent.set("X-Expected-User-Id", result.body.user.id);
   await ensureWorkspace(result.body.user.id); return agent;
 }
 it("persists restaurant and suppliers with validated input and account isolation", async () => {

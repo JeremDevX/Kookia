@@ -1,8 +1,28 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { apiRequest } from "./api";
+import { apiRequest, bindDocumentUser } from "./api";
 
 describe("apiRequest", () => {
   afterEach(() => vi.restoreAllMocks());
+
+  it("blocks workspace requests until the document has an authenticated account", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    await expect(apiRequest("/workspace/sales")).rejects.toThrow("Connectez-vous");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps delayed workspace requests tied to the first account", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+    expect(bindDocumentUser("account-a")).toBe(true);
+    let resume!: () => void;
+    const delay = new Promise<void>((resolve) => { resume = resolve; });
+    const delayed = delay.then(() => apiRequest("/workspace/sales", { headers: { "X-Expected-User-Id": "account-b" } }));
+    expect(bindDocumentUser("account-b")).toBe(false);
+    resume();
+    await delayed;
+    const options = fetchMock.mock.calls[0][1];
+    expect(new Headers(options?.headers).get("X-Expected-User-Id")).toBe("account-a");
+    expect(bindDocumentUser("account-a")).toBe(true);
+  });
 
   it("uses the local API prefix and includes cookies", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ status: "ok" }), { status: 200 }));

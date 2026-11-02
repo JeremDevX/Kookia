@@ -14,6 +14,7 @@ async function account(name: string) {
     email: `${name.toLowerCase().replace(/\s+/g, "-")}-${randomUUID()}@example.com`,
     password: "estimate integration password" }).expect(201);
   ownerIds.push(registered.body.user.id);
+  agent.set("X-Expected-User-Id", registered.body.user.id);
   await ensureWorkspace(registered.body.user.id);
   await agent.get("/api/workspace/catalog").expect(200);
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: registered.body.user.id } });

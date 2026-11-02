@@ -13,6 +13,7 @@ it("requires setup once per authenticated account without creating demo data", a
   const agent = request.agent(app);
   const registered = await agent.post("/api/auth/register").send({ displayName: "Test", email: `setup-${randomUUID()}@example.com`, password: "test setup password" }).expect(201);
   ids.push(registered.body.user.id);
+  agent.set("X-Expected-User-Id", registered.body.user.id);
   const payload = { ...input, expectedUserId: ids[0] };
   await agent.post("/api/setup").send(input).expect(400);
   expect((await agent.get("/api/setup").expect(200)).body).toEqual({ configured: false, userId: ids[0] });
@@ -49,6 +50,7 @@ it("requires setup once per authenticated account without creating demo data", a
   const other = request.agent(app);
   const second = await other.post("/api/auth/register").send({ displayName: "Other", email: `setup-${randomUUID()}@example.com`, password: "test setup password" }).expect(201);
   ids.push(second.body.user.id);
+  other.set("X-Expected-User-Id", second.body.user.id);
   expect((await other.get("/api/setup").expect(200)).body).toEqual({ configured: false, userId: ids[1] });
   expect((await other.get("/api/workspace/catalog").expect(409)).body.error.code).toBe("SETUP_REQUIRED");
   expect((await other.post("/api/setup").send(payload).expect(409)).body.error.code).toBe("SESSION_CHANGED");

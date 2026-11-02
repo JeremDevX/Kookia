@@ -13,6 +13,7 @@ async function account() {
     displayName: "CSV test", email: `sales-csv-${randomUUID()}@example.com`, password: "sales csv test password",
   }).expect(201);
   ids.push(result.body.user.id);
+  agent.set("X-Expected-User-Id", result.body.user.id);
   await ensureWorkspace(result.body.user.id);
   return agent;
 }

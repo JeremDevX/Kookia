@@ -207,6 +207,14 @@ routes `/api/workspace` répondent `409 SETUP_REQUIRED` avant cette création ;
 une création concurrente ou répétée reçoit `409 SETUP_ALREADY_COMPLETED`.
 Les données existantes sont conservées.
 
+Chaque requête `/api/workspace`, y compris en lecture, doit porter l’en-tête
+`X-Expected-User-Id` avec l’identifiant de l’utilisateur associé à l’écran.
+Absent ou différent de la session authentifiée, il provoque `409 SESSION_CHANGED`
+avant l’accès à l’établissement ; sans session la réponse reste `401`. Cet
+identifiant ne donne aucun droit : la session détermine toujours le compte et
+l’établissement. Les clients externes doivent ajouter cet en-tête et ne pas
+rejouer automatiquement une modification après changement de compte.
+
 `GET /api/workspace/analytics` et `GET /api/workspace/activity` renvoient
 `null` si leur document est absent, sans fabriquer de statistiques à zéro ni
 créer de données. Les clients doivent traiter cette absence ; les documents

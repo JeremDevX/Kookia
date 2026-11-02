@@ -17,6 +17,7 @@ it("retains the complete workspace across logout and a new authenticated session
   const first = request.agent(app);
   const registered = await first.post("/api/auth/register").send({ ...credentials, displayName: "Reconnect test" }).expect(201);
   ids.push(registered.body.user.id);
+  first.set("X-Expected-User-Id", registered.body.user.id);
   await ensureWorkspace(registered.body.user.id);
   const catalog = await first.get("/api/workspace/catalog").expect(200);
   const product = catalog.body.products[0];
@@ -41,6 +42,7 @@ it("retains the complete workspace across logout and a new authenticated session
   await first.get("/api/workspace/catalog").expect(401);
   const second = request.agent(app);
   await second.post("/api/auth/login").send(credentials).expect(200);
+  second.set("X-Expected-User-Id", registered.body.user.id);
   for (const [index, path] of paths.entries()) {
     const reread = await second.get(`/api/workspace/${path}`).expect(200);
     if (path.startsWith("report?")) {

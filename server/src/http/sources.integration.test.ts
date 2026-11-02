@@ -19,6 +19,7 @@ it("reports only unconnected sources to an authenticated workspace", async () =>
     password: "sources integration password",
   }).expect(201);
   userIds.push(firstRegistration.body.user.id);
+  first.set("X-Expected-User-Id", firstRegistration.body.user.id);
   await ensureWorkspace(firstRegistration.body.user.id);
 
   const second = request.agent(app);
@@ -28,6 +29,7 @@ it("reports only unconnected sources to an authenticated workspace", async () =>
     password: "other sources integration password",
   }).expect(201);
   userIds.push(secondRegistration.body.user.id);
+  second.set("X-Expected-User-Id", secondRegistration.body.user.id);
   await ensureWorkspace(secondRegistration.body.user.id);
 
   const expected = {
