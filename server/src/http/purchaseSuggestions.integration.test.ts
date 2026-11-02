@@ -195,6 +195,8 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
     .post(`/api/workspace/orders/${order.body.id}/receipts`).send(firstReceiptInput).expect(201)));
   expect(receiptReplays.map((response) => response.body.id)).toEqual([firstReceipt.body.id, firstReceipt.body.id]);
   expect(receiptReplays.map((response) => response.body.replayed)).toEqual([true, true]);
+  const wrongOrderReplay = await owner.agent.post(`/api/workspace/orders/${randomUUID()}/receipts`).send(firstReceiptInput).expect(409);
+  expect(wrongOrderReplay.body.error.code).toBe("RECEIPT_OPERATION_CONFLICT");
   expect(await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId,
     reason: "purchase_receipt", invoiceDocumentId: invoiceId } })).toBe(1);
   await owner.agent.post(`/api/workspace/orders/${order.body.id}/receipts`).send({ ...firstReceiptInput,

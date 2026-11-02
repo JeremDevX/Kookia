@@ -57,7 +57,7 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
       restaurantId, operationId: input.operationId,
     } }, include: { lines: { include: { movement: { select: { id: true } } } } } });
     if (prior) {
-      if (!sameSnapshot(prior.requestSnapshot, input))
+      if (prior.orderId !== orderId || !sameSnapshot(prior.requestSnapshot, input))
         throw new WorkspaceError(409, "RECEIPT_OPERATION_CONFLICT", "Cette opération de réception a déjà été utilisée avec d’autres valeurs.");
       return { ...purchaseReceiptDto(prior), replayed: true };
     }
