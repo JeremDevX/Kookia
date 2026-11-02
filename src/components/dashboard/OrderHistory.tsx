@@ -8,6 +8,7 @@ import { stockMovementHref, type AnalyticsReturnTarget } from "../../utils/analy
 import PurchaseReceiptReview from "./PurchaseReceiptReview";
 import SupplierOrderSheets from "./SupplierOrderSheets";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
+import { matchesSupplier } from "../../features/orders/supplierFilter";
 import "./OrderHistory.css";
 
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
@@ -20,6 +21,7 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
   const location = useLocation();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [supplier, setSupplier] = useState("");
   const [page, setPage] = useState(0);
   const [reload, setReload] = useState(0);
   const requestKey = `${refreshKey}:${reload}`;
@@ -65,7 +67,9 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
     });
   }, [currentError, focusReceiptId, loading, orders]);
   const targetOrder = orders.find((order) => location.hash === `#order-${order.id}` || order.receipts.some((receipt) => receipt.id === focusReceiptId));
-  const filtered = orders.filter((order) => (filter === "all" || (filter === "pending" ? order.status === "validated" || order.status === "partially_received" : order.status === "received")) &&
+  const suppliers = [...new Map(orders.flatMap((order) => order.lines.map((line) => [line.supplierId, line.supplierName] as const))).entries()]
+    .sort((a, b) => a[1].localeCompare(b[1], "fr"));
+  const filtered = orders.filter((order) => matchesSupplier(order, supplier) && (filter === "all" || (filter === "pending" ? order.status === "validated" || order.status === "partially_received" : order.status === "received")) &&
     `${order.id} ${order.lines.map((line) => `${line.productName} ${line.supplierName}`).join(" ")} ${order.receipts.map((receipt) => `${receipt.deliveryReference} ${receipt.invoiceReference}`).join(" ")}`.toLocaleLowerCase("fr").includes(query.trim().toLocaleLowerCase("fr")))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const visible = filtered.slice(page * 10, (page + 1) * 10);
@@ -112,6 +116,7 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
       <p>Ouvrez une commande pour consulter ses produits, préparer les documents fournisseur ou enregistrer une livraison. La validation ne prouve pas l’envoi au fournisseur.</p>
       <div className="orders-toolbar">
         <label>Rechercher une commande<input type="search" placeholder="Produit, fournisseur, référence…" value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} /></label>
+        <label>Fournisseur<select value={supplier} onChange={(event) => { setSupplier(event.target.value); setPage(0); }}><option value="">Tous les fournisseurs</option>{suppliers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
         <label>État de réception<select value={filter} onChange={(event) => { setFilter(event.target.value); setPage(0); }}><option value="all">Toutes les commandes</option><option value="pending">À réceptionner / partielles</option><option value="received">Entièrement réceptionnées</option></select></label>
         <p role="status">{filtered.length} résultat(s)</p>
       </div>
