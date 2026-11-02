@@ -3,14 +3,14 @@ import type { StockFilters } from "../../types/callbacks";
 export type StockFilterKey = "search" | "category" | "stockView" | "stockStatus" | "stockSupplier" | "stockLevel";
 
 export function readStockFilters(params: URLSearchParams): {
-  search: string; category: string; view: "all" | "review" | "out"; advanced: StockFilters;
+  search: string; category: string; view: "all" | "review" | "out" | "count"; advanced: StockFilters;
 } {
   const status = params.get("stockStatus");
   const level = params.get("stockLevel");
   return {
     search: params.get("search") ?? "",
     category: params.get("category") || "all",
-    view: params.get("stockView") === "review" ? "review" : params.get("stockView") === "out" ? "out" : "all",
+    view: params.get("stockView") === "review" ? "review" : params.get("stockView") === "out" ? "out" : params.get("stockView") === "count" ? "count" : "all",
     advanced: {
       status: status === "neutral" || status === "optimal" || status === "moderate" || status === "urgent" ? status : "all",
       supplier: params.get("stockSupplier") || "all",

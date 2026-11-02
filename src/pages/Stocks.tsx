@@ -1,6 +1,8 @@
 import StockLotsAndWaste from "../components/stocks/StockLotsAndWaste";
 import React, { useEffect, useRef, useState } from "react";
 import StockInventoryTable from "../components/stocks/StockInventoryTable";
+import StockCountList from "../components/stocks/StockCountList";
+import StockCountModal from "../components/stocks/StockCountModal";
 import Input from "../components/common/Input";
 import Button from "../components/common/Button";
 import ProductDetail from "../components/stocks/ProductDetail";
@@ -42,6 +44,8 @@ const Stocks: React.FC = () => {
   );
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
+  const [countProductId, setCountProductId] = useState<string | null>(null);
+  const countProduct = products.find((product) => product.id === countProductId);
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? null;
   const categories = Array.from(new Set(products.map((product) => product.category))).sort((a, b) => a.localeCompare(b, "fr"));
@@ -74,7 +78,7 @@ const Stocks: React.FC = () => {
     }
 
     return (
-      (view === "all" || (view === "review" ? needsStockReview(p) : status === "urgent")) &&
+      (view === "all" || view === "count" || (view === "review" ? needsStockReview(p) : status === "urgent")) &&
       matchesSearch &&
       matchesCategory &&
       matchesStatus &&
@@ -126,25 +130,27 @@ const Stocks: React.FC = () => {
       <section className="inventory-panel" aria-label="Inventaire">
       <header className="workspace-header inventory-header">
         <div>
-          <h1 ref={headingRef} tabIndex={-1}>Stocks</h1>
-          <p className="workspace-subtitle">Suivez les quantités et repérez les produits à vérifier.</p>
+          <h1 ref={headingRef} tabIndex={-1}>{view === "count" ? "Inventaire" : "Stocks"}</h1>
+          <p className="workspace-subtitle">{view === "count" ? "Comptez chaque produit pour vérifier son stock." : "Suivez les quantités et repérez les produits à vérifier."}</p>
         </div>
-        <Button
+        <Button variant="outline" onClick={() => updateFilters({ stockView: view === "count" ? "all" : "count" })}>{view === "count" ? "Retour aux stocks" : "Faire l’inventaire"}</Button>
+        {view !== "count" && <Button
           icon={<Plus size={18} />}
           onClick={() => setIsAddModalOpen(true)}
         >
           Ajouter un produit
-        </Button>
+        </Button>}
       </header>
 
-      <div className="inventory-navigation">
+      {view !== "count" && <div className="inventory-navigation">
         <div className="inventory-tabs" role="group" aria-label="Vue des stocks">
           <button type="button" aria-pressed={view === "all"} onClick={() => updateFilters({ stockView: "all" })}>Tous les produits</button>
           <button type="button" aria-pressed={view === "out"} onClick={() => updateFilters({ stockView: "out" })}>Ruptures confirmées</button>
           <button type="button" aria-pressed={view === "review"} onClick={() => updateFilters({ stockView: "review" })}>À traiter</button>
         </div>
         <span className="inventory-result" role="status">{loading ? "Chargement…" : `${filteredProducts.length} produit${filteredProducts.length > 1 ? "s" : ""}`}</span>
-      </div>
+      </div>}
+      {view === "count" && <p className="inventory-footnote">Les stocks sont mis à jour uniquement après validation de chaque comptage.</p>}
       <div className="stocks-toolbar">
         <div className="toolbar-content">
           <div className="search-wrapper">
@@ -184,17 +190,18 @@ const Stocks: React.FC = () => {
         }}>Effacer les filtres</button>}
       </div>
       {!loading && !error && <>
-      <StockInventoryTable products={filteredProducts} selecting={cartLoading}
+      {view === "count" ? <StockCountList products={filteredProducts} onCount={setCountProductId} /> : <><StockInventoryTable products={filteredProducts} selecting={cartLoading}
         onInspect={setSelectedProductId} onSelect={(product) => void handleSelectForOrder(product)} />
       <ul className="stock-inventory-cards" aria-label="Inventaire des produits">
         {filteredProducts.map((product) => <StockInventoryCard key={product.id} product={product} selecting={cartLoading}
           onInspect={() => setSelectedProductId(product.id)} onSelect={() => void handleSelectForOrder(product)} />)}
         {filteredProducts.length === 0 && <li className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</li>}
-      </ul>
+      </ul></>}
       </>}
       <p className="inventory-footnote">Quantités théoriques · Achats à valider avant commande.</p>
       </section>
-      {!loading && !error && <StockLotsAndWaste products={products} onSaved={refetch} />}
+      {view !== "count" && !loading && !error && <StockLotsAndWaste products={products} onSaved={refetch} />}
+      {countProduct && <StockCountModal key={countProduct.id} product={countProduct} isOpen onClose={() => setCountProductId(null)} onRefresh={refetch} onSave={recordCount} />}
       {selectedProduct && <ProductDetail
         key={selectedProduct.id}
         product={selectedProduct}

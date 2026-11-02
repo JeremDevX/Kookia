@@ -22,10 +22,11 @@ export default function SidebarSubnav({ section, onNavigate }: { section: Sectio
     items = [{ id: "week", label: "Semaine", href: "/orders?view=receipts&period=week" },
       { id: "month", label: "Mois", href: "/orders?view=receipts&period=month" }];
   } else if (section === "stocks") {
-    active = params.get("stockView") === "out" ? "out" : params.get("stockView") === "review" ? "review" : "all";
+    active = params.get("stockView") === "out" ? "out" : params.get("stockView") === "review" ? "review" : params.get("stockView") === "count" ? "count" : "all";
     items = [{ id: "all", label: "Tous les produits", href: "/stocks" },
       { id: "out", label: "Ruptures confirmées", href: "/stocks?stockView=out" },
-      { id: "review", label: "À traiter", href: "/stocks?stockView=review" }];
+      { id: "review", label: "À traiter", href: "/stocks?stockView=review" },
+      { id: "count", label: "Inventaire", href: "/stocks?stockView=count" }];
   } else if (section === "analytics") {
     const requested = params.get("view");
     active = pathname === "/predictions" ? "predictions" : hash === "#estimated-outflows-title" ? "estimates" : hash === "#impact-summary-title" ? "overview" : requested === "sales" || requested === "estimates" ? requested : "overview";

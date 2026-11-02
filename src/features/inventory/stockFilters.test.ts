@@ -4,6 +4,7 @@ import { readStockFilters, updateStockFilters } from "./stockFilters";
 describe("filtres de stock dans l’URL", () => {
   it("reconnaît la vue des ruptures confirmées", () => {
     expect(readStockFilters(new URLSearchParams("stockView=out")).view).toBe("out");
+    expect(readStockFilters(new URLSearchParams("stockView=count")).view).toBe("count");
   });
   it("ignore les états inconnus et conserve une recherche littérale", () => {
     expect(readStockFilters(new URLSearchParams("search=all&stockStatus=inconnu&stockLevel=inconnu&stockView=inconnu"))).toEqual({
