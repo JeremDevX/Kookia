@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Clock } from "lucide-react";
 import type { Recipe } from "../../types";
 import Button from "../common/Button";
+import { sortRecipes, type RecipeSort } from "../../features/recipes/recipeSort";
 
 type CatalogRecipe = Recipe & { maxYield: number };
 
@@ -13,16 +14,20 @@ export default function RecipeCatalog({ recipes, loading, onEdit, onProduce }: {
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
+  const [sort, setSort] = useState<RecipeSort>("recent");
   const categories = [...new Set(recipes.map((recipe) => recipe.category))].sort((a, b) => a.localeCompare(b, "fr"));
   const query = search.trim().toLocaleLowerCase("fr");
-  const visible = recipes.filter((recipe) => (category === "all" || recipe.category === category) &&
-    `${recipe.name} ${recipe.ingredients.map((ingredient) => ingredient.productName).join(" ")}`.toLocaleLowerCase("fr").includes(query));
+  const visible = sortRecipes(recipes.filter((recipe) => (category === "all" || recipe.category === category) &&
+    `${recipe.name} ${recipe.ingredients.map((ingredient) => ingredient.productName).join(" ")}`.toLocaleLowerCase("fr").includes(query)), sort);
 
   return <section className="recipe-catalog" aria-label="Catalogue des recettes">
     <div className="recipe-catalog-filters">
       <label>Rechercher une recette ou un ingrédient<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nom ou ingrédient" /></label>
       <label>Catégorie<select value={category} onChange={(event) => setCategory(event.target.value)}>
         <option value="all">Toutes les catégories</option>{categories.map((value) => <option key={value} value={value}>{value}</option>)}
+      </select></label>
+      <label>Trier par<select value={sort} onChange={(event) => setSort(event.target.value as RecipeSort)}>
+        <option value="recent">Plus récentes</option><option value="name">Nom de A à Z</option>
       </select></label>
     </div>
     {loading ? <p role="status">Chargement du catalogue…</p> : visible.length === 0 ? <p role="status" className="recipe-catalog-empty">Aucune recette ne correspond à cette recherche.</p> :
