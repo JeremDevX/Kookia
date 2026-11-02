@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 import type { PurchaseOrder } from "../../services/orderService";
-import { formatLocalISODate, isValidISODate } from "../../utils/date";
-import { dateExceeded, receiptEventHref, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "../../features/orders/receiptCalendar";
+import { formatLocalISODate } from "../../utils/date";
+import { dateExceeded, isCalendarAnchor, receiptEventHref, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "../../features/orders/receiptCalendar";
 import Button from "../common/Button";
 import "./ReceiptCalendar.css";
 
@@ -13,7 +13,7 @@ export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] })
   const period = params.get("period") === "month" ? "month" : "week";
   const today = formatLocalISODate(new Date());
   const requestedDate = params.get("receiptDate");
-  const anchor = isValidISODate(requestedDate) ? requestedDate! : today;
+  const anchor = isCalendarAnchor(requestedDate) ? requestedDate : today;
   const supplier = params.get("receiptSupplier") ?? "";
   const requestedStatus = params.get("receiptStatus");
   const status = requestedStatus === "expected" || requestedStatus === "received" || requestedStatus === "exceeded" ? requestedStatus : "all";
@@ -48,7 +48,7 @@ export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] })
       <strong aria-live="polite">{title}</strong>
       <Button variant="outline" aria-label="Période précédente" onClick={() => move(-1)}>‹</Button>
       <Button variant="outline" aria-label="Période suivante" onClick={() => move(1)}>›</Button>
-      <label>Fournisseur<select value={supplier} onChange={(event) => updateCalendar("receiptSupplier", event.target.value)}><option value="">Tous les fournisseurs</option>{suppliers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+      <label>Fournisseur<select value={supplier} onChange={(event) => updateCalendar("receiptSupplier", event.target.value)}><option value="">Tous les fournisseurs</option>{supplier && !suppliers.some(([id]) => id === supplier) && <option value={supplier}>Fournisseur indisponible</option>}{suppliers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
       <label>Statut<select value={status} onChange={(event) => updateCalendar("receiptStatus", event.target.value === "all" ? "" : event.target.value)}><option value="all">Tous les statuts</option><option value="expected">À recevoir</option><option value="exceeded">Date prévue dépassée</option><option value="received">Réception enregistrée</option></select></label></div>
     {status !== "received" && status !== "exceeded" && undated > 0 && <p className="receipt-calendar-note">{undated} ligne{undated > 1 ? "s" : ""} à recevoir sans date prévue : <Link to="/orders?view=orders">consulter les commandes</Link>.</p>}
     {period === "week" ? <div className="receipt-calendar-table-wrap"><table className="receipt-calendar-table">

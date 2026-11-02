@@ -17,6 +17,12 @@ export function startOfWeek(date: string): string {
   return shiftDays(date, -((dateFromISO(date).getUTCDay() + 6) % 7));
 }
 
+export function isCalendarAnchor(date: string | null): date is string {
+  if (!isValidISODate(date)) return false;
+  const start = startOfWeek(`${date.slice(0, 7)}-01`);
+  return isValidISODate(start) && isValidISODate(shiftDays(start, 41));
+}
+
 export function shiftMonth(date: string, months: number): string {
   const value = dateFromISO(date);
   value.setUTCDate(1);
