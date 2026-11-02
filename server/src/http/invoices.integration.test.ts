@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -8,7 +9,8 @@ afterAll(async () => { await prisma.user.deleteMany({ where: { id: { in: users }
 async function account() {
   const agent = request.agent(app);
   const response = await agent.post("/api/auth/register").send({ displayName: "Invoice test", email: `invoice-${randomUUID()}@example.com`, password: "invoice test password" }).expect(201);
-  users.push(response.body.user.id); return agent;
+  users.push(response.body.user.id);
+  await ensureWorkspace(response.body.user.id); return agent;
 }
 it("persists corrected drafts, isolates accounts and receives invoices exactly once", async () => {
   const agent = await account(); const other = await account();

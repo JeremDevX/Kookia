@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -9,6 +10,7 @@ it("exports database records within the selected interval and excludes another a
   const agent = request.agent(app);
   const result = await agent.post("/api/auth/register").send({ displayName: "Report test", email: `report-${randomUUID()}@example.com`, password: "report integration password" }).expect(201);
   ids.push(result.body.user.id);
+  await ensureWorkspace(result.body.user.id);
   await request(app).get("/api/workspace/report?from=2026-09-01&to=2026-09-30").expect(401);
   await agent.get("/api/workspace/report?from=invalid&to=2026-09-30").expect(400);
   await agent.get("/api/workspace/report?from=2026-10-01&to=2026-09-30").expect(400);
@@ -38,6 +40,7 @@ it("exports database records within the selected interval and excludes another a
   const other = request.agent(app);
   const registration = await other.post("/api/auth/register").send({ displayName: "Other report", email: `report-${randomUUID()}@example.com`, password: "report integration password" }).expect(201);
   ids.push(registration.body.user.id);
+  await ensureWorkspace(registration.body.user.id);
   const isolated = await other.get("/api/workspace/report?from=2026-09-10&to=2026-09-10").expect(200);
   expect(isolated.body.rows.some((row: { metric: string }) => row.metric.includes("Exported production"))).toBe(false);
   expect(isolated.body.declaredLosses.reportedMovementCount).toBe(0);

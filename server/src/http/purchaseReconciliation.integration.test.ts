@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -12,6 +13,7 @@ async function account() {
   const result = await agent.post("/api/auth/register").send({ displayName: "Purchase fixture",
     email: `purchase-chain-${randomUUID()}@example.com`, password: "isolated fixture password" }).expect(201);
   ownerIds.push(result.body.user.id);
+  await ensureWorkspace(result.body.user.id);
   const catalog = await agent.get("/api/workspace/catalog").expect(200);
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: result.body.user.id } });
   return { agent, restaurantId: restaurant.id, actorId: result.body.user.id as string, product: catalog.body.products[0] as { id: string; unit: string; currentStock: number; supplierId: string; pricePerUnit: number } };

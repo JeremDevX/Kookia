@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -12,6 +13,7 @@ async function account() {
     displayName: "Sales test", email: `sales-${randomUUID()}@example.com`, password: "sales test password",
   }).expect(201);
   ids.push(result.body.user.id);
+  await ensureWorkspace(result.body.user.id);
   return agent;
 }
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
@@ -95,6 +97,7 @@ it("keeps service calendar edits simulated in demo workspaces", async () => {
     email: `demo-sales-${randomUUID()}@example.com`, password: "demo sales test password" }).expect(201);
   const userId = registration.body.user.id as string;
   ids.push(userId);
+  await ensureWorkspace(userId);
   await owner.get("/api/workspace/catalog").expect(200);
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: userId } });
   await prisma.restaurant.update({ where: { id: restaurant.id }, data: { mode: "demo" } });

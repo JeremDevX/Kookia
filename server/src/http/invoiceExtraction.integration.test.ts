@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import request from "supertest";
@@ -16,6 +17,7 @@ async function account(label: string, application = fixtureApp) {
   const response = await agent.post("/api/auth/register").send({ displayName: `${label} extraction test`,
     email: `${label}-${randomUUID()}@example.com`, password: "invoice extraction test password" }).expect(201);
   users.push(response.body.user.id);
+  await ensureWorkspace(response.body.user.id);
   await agent.get("/api/workspace/catalog").expect(200);
   const user = await prisma.user.findUniqueOrThrow({ where: { id: response.body.user.id }, include: { restaurant: true } });
   return { agent, userId: user.id, restaurantId: user.restaurant!.id };

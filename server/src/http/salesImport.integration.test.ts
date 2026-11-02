@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -12,6 +13,7 @@ async function account() {
     displayName: "CSV test", email: `sales-csv-${randomUUID()}@example.com`, password: "sales csv test password",
   }).expect(201);
   ids.push(result.body.user.id);
+  await ensureWorkspace(result.body.user.id);
   return agent;
 }
 

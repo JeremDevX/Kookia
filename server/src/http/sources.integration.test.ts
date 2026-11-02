@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -18,6 +19,7 @@ it("reports only unconnected sources to an authenticated workspace", async () =>
     password: "sources integration password",
   }).expect(201);
   userIds.push(firstRegistration.body.user.id);
+  await ensureWorkspace(firstRegistration.body.user.id);
 
   const second = request.agent(app);
   const secondRegistration = await second.post("/api/auth/register").send({
@@ -26,6 +28,7 @@ it("reports only unconnected sources to an authenticated workspace", async () =>
     password: "other sources integration password",
   }).expect(201);
   userIds.push(secondRegistration.body.user.id);
+  await ensureWorkspace(secondRegistration.body.user.id);
 
   const expected = {
     sources: ["pos", "ticket_ocr", "geocoding", "weather", "events"].map((kind) => ({

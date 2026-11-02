@@ -14,6 +14,7 @@ et le fonctionnement complet restent à vérifier ; aucune ligne n'est validée.
 | --- | --- | --- | --- | --- | --- |
 | Connexion | `/login` | `src/features/auth/pages/Login.tsx` | Page présente | P0 | Rendu local observé ; parcours à tester |
 | Inscription | `/register` | `src/features/auth/pages/Register.tsx` | Page présente | P0 | Rendu local observé ; parcours à tester |
+| Configuration restaurant | `/setup` | `src/features/setup/SetupPage.tsx` | Création explicite sans catalogue initial | P0 | Parcours synthétique Firefox et tests locaux ; étapes Figma restantes |
 | Aujourd'hui | `/` | `src/pages/Dashboard.tsx` | Page présente ; démarrage et panneaux conditionnels | P0 | À faire |
 | Stocks | `/stocks` | `src/pages/Stocks.tsx` | Liste, ruptures, revue et comptage dans le code | P0 | À faire |
 | Prévisions | `/predictions` | `src/pages/Predictions.tsx` | Page présente | P1 | À faire |
@@ -42,7 +43,8 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Écran / route | Référence candidate | Structure | Informations | Fonctionnalités | Visuel | Interactions | Statut |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Connexion `/login` | A `673:43390` | À vérifier | À vérifier | À vérifier | À vérifier | Connexion factice vérifiée ; reste à tester | En cours |
-| Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration guidée absente du parcours actuel | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
+| Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration restaurant disponible ; étapes équipe et fournisseurs absentes | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
+| Configuration `/setup` | A `673:43437` à `673:43559` | Formulaire unique, progression Figma absente | Champs restaurant présents ; jours d’ouverture à compléter | Équipe et fournisseurs non inclus dans ce parcours | Divergente | Création, validation clavier et retour testés sur données synthétiques | En cours |
 | Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | Divergente pour `673:43621` | Indicateurs et blocs différents | Planning et notifications à confronter | À vérifier | À vérifier | En cours |
 | Stocks `/stocks` | A `673:44425`, `673:44584` | À vérifier | Ticket Z et OCR divergents | À vérifier | À vérifier | À vérifier | En cours |
 | Prévisions `/predictions` | A `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
@@ -369,17 +371,19 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
 - `Layout.tsx` cherche les ancres au changement d'URL alors que les pages sont
   chargées à la demande. Vérifier au chargement à froid si une cible absente au
   premier rendu empêche le défilement ; ce risque n'est pas encore confirmé.
-- L'inscription ne propose pas les étapes de configuration représentées dans
-  A : le premier accès crée un espace initial prérempli, puis les réglages du
-  restaurant et des fournisseurs se font dans Paramètres. Le modèle actuel lie
-  un restaurant à son propriétaire ; aucun modèle de membres ou d'invitations
-  n'a été trouvé. Un écran d'équipe ne doit pas suggérer un accès partagé qui
-  n'existe pas. Examiner les effets sur les espaces existants avant toute
-  évolution du démarrage ou des permissions.
+- La première connexion sans établissement mène maintenant à `/setup` : les
+  informations du restaurant sont saisies avant création, sans catalogue
+  fictif. Les restaurants existants sont conservés. La maquette A prévoit
+  quatre étapes ; l’application ne propose encore que le formulaire restaurant.
+  Les invitations d’équipe ne sont pas disponibles ; les fournisseurs restent
+  configurables dans Paramètres. Ne pas présenter ces étapes comme livrées.
+  En Firefox sur base jetable, la création revient à la route demandée avec un
+  catalogue vide ; une expiration puis reconnexion conserve la saisie en mémoire
+  pour le même compte. Recharger ou fermer l’onglet efface cette saisie.
 - La consultation du menu sans document enregistré ne crée plus de plats
   d’exemple : un brouillon vide de révision 0 est affiché. La sauvegarde exige
   les trois plats et crée le document sous verrou ; les menus existants restent
-  inchangés. Ce changement ne corrige pas encore le catalogue initial prérempli.
+  inchangés. Les nouveaux établissements ne reçoivent plus de catalogue initial.
   Le contrat et ses valeurs nulles sont précisés dans `docs/technical-development.md`.
 - Une lecture des notifications sans document existant retourne désormais une
   liste vide, sans injecter les alertes d’exemple. Les notifications déjà
@@ -388,20 +392,16 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   cette vérification ne démontre pas à elle seule que la base est jetable.
 - La lecture des indicateurs de démonstration retourne maintenant `null` en
   l’absence de document, sans création implicite. Les documents existants sont
-  conservés ; cette correction ne retire pas encore le catalogue initial.
+  conservés ; les nouveaux établissements ne reçoivent plus de catalogue initial.
 - Les lectures analytics et activity renvoient maintenant `null` si leur
   document manque ; elles ne créent pas de statistiques et les consommateurs
-  concernés acceptent explicitement cette absence. Le catalogue initial reste
-  encore prérempli et doit être séparé du parcours réel.
-- Risque P0 à vérifier sur un compte isolé : `ensureWorkspace.ts` crée pour
-  tout nouveau propriétaire un restaurant nommé « La Pizzeria de Camille » et
-  un catalogue prérempli. Le mode par défaut du restaurant est opérationnel ;
-  les modèles de produit et fournisseur n'indiquent pas la provenance de cet
-  amorçage. Il faut éviter de présenter ces données comme celles du restaurant
-  réel. Toute correction doit préserver les espaces déjà créés et distinguer
-  explicitement données d'exemple et données confirmées. Les stocks initiaux
-  sont injectés sans mouvement initial ; les tests les distinguent d'un
-  comptage et d'une réception démontrés.
+  concernés acceptent explicitement cette absence.
+- Le risque d’injection automatique du catalogue est corrigé pour les nouveaux
+  comptes : les routes workspace exigent un établissement créé par son
+  propriétaire et ne lancent plus le seed. L’ancien peuplement reste réservé à
+  la démo et aux fixtures explicites. Aucun espace existant n’a été vidé ou
+  remplacé ; les données d’exemple déjà persistées doivent encore être
+  identifiées au cas par cas avant toute intervention.
 
 ## Recette et dépendances
 

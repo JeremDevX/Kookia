@@ -161,10 +161,11 @@ tmpfs ; les tests et captures utilisent toujours des lignes synthétiques.
 Le peuplement explicite `npm run db:seed` est réservé au compte temporaire unique
 d’une base locale `kookia_demo`, identifié par `LOCAL_DEMO_USER_ID` en mode
 développement. Le runner `demo:local` fournit ces paramètres. Ce contrôle réduit
-les erreurs de ciblage sans prouver à lui seul que la base est jetable. Les
-nouveaux espaces restent pour l’instant initialisés au premier accès avec un
-catalogue d’exemple : cette limite doit encore être corrigée. Les dates des
-prévisions de démonstration sont figées. Aucun calcul
+les erreurs de ciblage sans prouver à lui seul que la base est jetable. Un
+nouveau compte crée son établissement à partir des informations saisies ; aucun
+catalogue de démonstration n’est ajouté par les routes workspace. Les espaces
+existants ne sont pas modifiés. Les dates des prévisions de démonstration sont
+figées. Aucun calcul
 IA, connecteur POS/OCR réel ou envoi fournisseur n’est impliqué par la persistance.
 Les ventes du restaurant sont saisies, importées ou issues de la simulation locale
 `demo_simulation` ; elles ne sont pas les prévisions de démonstration du seed.
@@ -196,6 +197,15 @@ des commandes/réceptions explicitement simulées. POS et OCR restent non
 connectés ; le Ticket Z manuel produit des candidats relus, jamais des ventes
 automatiques. Le contrôle de fichier, l'absence de stockage brut et la
 conservation du hash sont décrits dans [Sources de données](integrations.md).
+
+`GET /api/setup` indique si le compte possède un établissement et renvoie
+l’identifiant issu de la session. `POST /api/setup` crée un seul établissement
+avec les champs validés et n’ajoute aucune donnée de catalogue. Il compare
+`expectedUserId` à la session et répond `409 SESSION_CHANGED` en cas de
+changement de compte ; l’identité autorisée reste celle de la session. Les
+routes `/api/workspace` répondent `409 SETUP_REQUIRED` avant cette création ;
+une création concurrente ou répétée reçoit `409 SETUP_ALREADY_COMPLETED`.
+Les données existantes sont conservées.
 
 `GET /api/workspace/analytics` et `GET /api/workspace/activity` renvoient
 `null` si leur document est absent, sans fabriquer de statistiques à zéro ni

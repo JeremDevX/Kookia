@@ -12,6 +12,7 @@ import { createOpenMeteo } from "../integrations/openMeteo.js";
 import type { WeatherProvider } from "../integrations/weatherProvider.js";
 
 import { workspaceRoutes } from "./workspaceRoutes.js";
+import { setupRoutes } from "./setupRoutes.js";
 
 const publicUserResponse = (user: Awaited<ReturnType<typeof getUserBySessionToken>>) => ({ user });
 const setSessionCookie = (res: Response, token: string, expiresAt: Date) => res.cookie(sessionCookieName, token, { httpOnly: true, sameSite: "strict", secure: env.NODE_ENV === "production", path: "/", expires: expiresAt });
@@ -76,6 +77,7 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
     res.locals.weatherProvider = weatherProvider;
     next();
   });
+  app.use("/api/setup", setupRoutes);
   app.use("/api/workspace", workspaceRoutes);
 
   app.use((_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Ressource introuvable." } }));

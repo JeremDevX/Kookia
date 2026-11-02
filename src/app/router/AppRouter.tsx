@@ -5,6 +5,8 @@ import { RequireAuth } from "../../features/auth/components/RequireAuth";
 import { PublicOnly } from "../../features/auth/components/PublicOnly";
 import Login from "../../features/auth/pages/Login";
 import Register from "../../features/auth/pages/Register";
+import { SetupGuard } from "../../features/setup/SetupGuard";
+import SetupPage from "../../features/setup/SetupPage";
 
 const Dashboard = lazy(() => import("../../pages/Dashboard"));
 const Stocks = lazy(() => import("../../pages/Stocks"));
@@ -28,7 +30,7 @@ const AppRouter = () => (
     <Suspense fallback={<div className="container">Chargement...</div>}>
       <Routes>
         <Route element={<PublicOnly />}><Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /></Route>
-        <Route element={<RequireAuth />}><Route path="/" element={<Layout />}>
+        <Route element={<RequireAuth />}><Route element={<SetupGuard key="setup" setupPage />}><Route path="/setup" element={<SetupPage />} /></Route><Route element={<SetupGuard key="workspace" />}><Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="stocks" element={<Stocks />} />
           <Route path="predictions" element={<Predictions />} />
@@ -41,7 +43,7 @@ const AppRouter = () => (
           <Route path="more" element={<More />} />
           <Route path="history" element={<Timeline />} />
           <Route path="history/replay/:id" element={<LegacyTimelineReplayRedirect />} />
-        </Route></Route>
+        </Route></Route></Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

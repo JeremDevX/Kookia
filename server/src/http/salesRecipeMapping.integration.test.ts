@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -12,6 +13,7 @@ async function account() {
   const result = await agent.post("/api/auth/register").send({ displayName: "Mapping test",
     email: `mapping-${randomUUID()}@example.com`, password: "mapping integration password" }).expect(201);
   userIds.push(result.body.user.id);
+  await ensureWorkspace(result.body.user.id);
   await agent.get("/api/workspace/catalog").expect(200);
   return agent;
 }

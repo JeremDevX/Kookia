@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { getPurchaseSuggestions } from "../application/workspace/purchaseSuggestionService.js";
 import { addCalendarDays } from "../../../shared/supplierDelivery.js";
 import { getOrderStep } from "../../../shared/orderQuantity.js";
@@ -15,6 +16,7 @@ async function account(name: string) {
   const result = await agent.post("/api/auth/register").send({ displayName: name,
     email: `${name.toLowerCase().replace(/\s+/g, "-")}-${randomUUID()}@example.com`, password: "purchase test password" }).expect(201);
   ownerIds.push(result.body.user.id);
+  await ensureWorkspace(result.body.user.id);
   await agent.get("/api/workspace/catalog").expect(200);
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: result.body.user.id } });
   return { agent, actorId: result.body.user.id as string, restaurantId: restaurant.id };

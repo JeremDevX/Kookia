@@ -22,7 +22,6 @@ import { Router, type Response } from "express";
 import { z } from "zod";
 import { sessionCookieName } from "../config/env.js";
 import { getUserBySessionToken } from "../application/auth/authService.js";
-import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { adjustStock, createProduct, editProduct, getCatalog, WorkspaceError } from "../application/workspace/catalogService.js";
 import { getStockCounts, recordStockCount } from "../application/workspace/stockCountService.js";
 import { createRecipe, getRecipes, recordProduction, updateRecipe } from "../application/workspace/recipeService.js";
@@ -36,7 +35,8 @@ export const workspaceRoutes = Router();
 workspaceRoutes.use(async (req, res, next) => {
   try {
     const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
-    const restaurant = await ensureWorkspace(user.id);
+    const restaurant = await prisma.restaurant.findUnique({ where: { ownerId: user.id }, select: { id: true } });
+    if (!restaurant) { res.status(409).json({ error: { code: "SETUP_REQUIRED", message: "Créez votre établissement pour accéder à votre espace." } }); return; }
     res.locals.workspace = { restaurantId: restaurant.id, actorId: user.id };
     next();
   } catch (error) { next(error); }

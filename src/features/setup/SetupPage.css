@@ -1,0 +1,5 @@
+.setup-card { width: min(var(--unit-100percent), var(--size-600)); }
+.setup-form { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); }
+.setup-wide { grid-column: var(--number-1) / var(--number-negative-1); }
+.setup-form select.input-field { width: var(--unit-100percent); }
+@media (--media-mobile) { .setup-form { grid-template-columns: var(--unit-1fr); } }

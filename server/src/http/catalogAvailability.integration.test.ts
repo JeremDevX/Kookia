@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -11,6 +12,7 @@ it("projects expiry-qualified production availability without changing physical 
   const registered = (await agent.post("/api/auth/register").send({ displayName: "Availability fixture",
     email: `availability-${randomUUID()}@example.com`, password: "isolated availability fixture" }).expect(201)).body;
   users.push(registered.user.id);
+  await ensureWorkspace(registered.user.id);
   const catalog = (await agent.get("/api/workspace/catalog").expect(200)).body;
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: registered.user.id } });
   const product = (await agent.post("/api/workspace/products").send({ operationId: randomUUID(), name: "Expiry fixture",

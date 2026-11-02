@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -16,6 +17,7 @@ it("retains the complete workspace across logout and a new authenticated session
   const first = request.agent(app);
   const registered = await first.post("/api/auth/register").send({ ...credentials, displayName: "Reconnect test" }).expect(201);
   ids.push(registered.body.user.id);
+  await ensureWorkspace(registered.body.user.id);
   const catalog = await first.get("/api/workspace/catalog").expect(200);
   const product = catalog.body.products[0];
   await first.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: randomUUID(), delta: 2 }).expect(200);

@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -13,6 +14,7 @@ async function account(label: string) {
   const response = await agent.post("/api/auth/register").send({ displayName: `${label} menu test`,
     email: `${label}-${randomUUID()}@example.com`, password: "menu idea integration password" }).expect(201);
   users.push(response.body.user.id);
+  await ensureWorkspace(response.body.user.id);
   const catalog = await agent.get("/api/workspace/catalog").expect(200);
   const user = await prisma.user.findUniqueOrThrow({ where: { id: response.body.user.id }, include: { restaurant: true } });
   return { agent, userId: user.id, restaurantId: user.restaurant!.id, suppliers: catalog.body.suppliers as Array<{ id: string }> };

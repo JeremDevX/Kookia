@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -10,7 +11,8 @@ async function account() {
   const agent = request.agent(app);
   const result = await agent.post("/api/auth/register").send({ displayName: "Service calendar test",
     email: `service-calendar-${randomUUID()}@example.com`, password: "isolated calendar test password" }).expect(201);
-  users.push(result.body.user.id); return agent;
+  users.push(result.body.user.id);
+  await ensureWorkspace(result.body.user.id); return agent;
 }
 
 it("keeps opening plans separate from reviewed observations and enforces ownership/revisions", async () => {

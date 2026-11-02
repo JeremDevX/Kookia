@@ -3,6 +3,7 @@ import request from "supertest";
 import { vi } from "vitest";
 import { createApp } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import type { WeatherForecast, WeatherPlace, WeatherLocationState, ServiceWeather } from "../../../shared/serviceWeather.js";
 import type { WeatherProvider } from "../integrations/weatherProvider.js";
 
@@ -24,6 +25,7 @@ export async function weatherAccount(users: string[], provider: WeatherProvider)
   const result = await agent.post("/api/auth/register").send({ displayName: "Weather isolated fixture",
     email: `weather-${randomUUID()}@example.com`, password: "weather isolated fixture password" }).expect(201);
   const actorId = result.body.user.id as string; users.push(actorId);
+  await ensureWorkspace(actorId);
   const catalog = (await agent.get("/api/workspace/catalog").expect(200)).body;
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: actorId } });
   const location = async () => (await agent.get("/api/workspace/weather/location").expect(200)).body as WeatherLocationState;

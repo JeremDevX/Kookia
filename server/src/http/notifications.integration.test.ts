@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -10,6 +11,7 @@ async function account() {
   const agent = request.agent(app);
   const response = await agent.post("/api/auth/register").send({ displayName: "Notifications test", email: `notifications-${randomUUID()}@example.com`, password: "notifications test password" }).expect(201);
   users.push(response.body.user.id);
+  await ensureWorkspace(response.body.user.id);
   return agent;
 }
 it("persists notification reads without changing initial data or another account", async () => {

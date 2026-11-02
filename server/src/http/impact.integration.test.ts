@@ -1,3 +1,4 @@
+import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -18,6 +19,7 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   const registration = await agent.post("/api/auth/register").send({ displayName: "Impact test",
     email: `impact-${randomUUID()}@example.com`, password: "impact integration password" }).expect(201);
   ownerIds.push(registration.body.user.id);
+  await ensureWorkspace(registration.body.user.id);
   const catalog = await agent.get("/api/workspace/catalog").expect(200);
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: registration.body.user.id } });
   const product = catalog.body.products[0];
