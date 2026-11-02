@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Package,
   ShoppingBag,
+  Truck,
   ClipboardList,
   BookOpen,
   BarChart3,
@@ -18,6 +19,7 @@ import {
 import "./Sidebar.css";
 import { useAuth } from "../../features/auth/context/AuthContext";
 import SidebarSubnav from "./SidebarSubnav";
+import { getOrderView } from "../../features/orders/orderNavigation";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -28,7 +30,8 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search, hash } = useLocation();
+  const showingReceipts = pathname === "/orders" && getOrderView(new URLSearchParams(search), hash) === "receipts";
   const inMore = ["/services", "/history"].includes(pathname);
   const sidebarRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
@@ -76,6 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
   const navItems = [
     { icon: LayoutDashboard, label: "Tableau de bord", path: "/" },
     { icon: ShoppingBag, label: "Commandes", path: "/orders" },
+    { icon: Truck, label: "Réceptions", path: "/orders?view=receipts" },
     { icon: Package, label: "Stocks", path: "/stocks" },
     { icon: BookOpen, label: "Recettes", path: "/recipes" },
     { icon: BarChart3, label: "Bilan", path: "/analytics" },
@@ -112,16 +116,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
         <nav className="sidebar-nav" aria-label="Pages du restaurant">
           <p className="sidebar-label">MENU PRINCIPAL</p>
           {navItems.map((item) => {
-            const section = item.path === "/orders" && pathname === "/orders" ? "orders" :
+            const section = item.path === "/orders?view=receipts" && showingReceipts ? "receipts" :
+              item.path === "/orders" && pathname === "/orders" && !showingReceipts ? "orders" :
               item.path === "/recipes" && pathname === "/recipes" ? "recipes" :
               item.path === "/analytics" && (pathname === "/analytics" || pathname === "/predictions") ? "analytics" : null;
             return <React.Fragment key={item.path}>
             <NavLink
               to={item.path}
               onClick={handleNavClick}
-              aria-current={section ? "location" : item.path === "/more" && inMore ? "page" : undefined}
+              aria-current={section ? "location" : item.path === "/orders?view=receipts" || (item.path === "/orders" && showingReceipts) ? false : item.path === "/more" && inMore ? "page" : undefined}
               className={({ isActive }) =>
-                `nav-item ${isActive || (item.path === "/more" && inMore) || (item.path === "/analytics" && pathname === "/predictions") ? "active" : ""}`
+                `nav-item ${item.path === "/orders?view=receipts" ? showingReceipts ? "active" : "" : item.path === "/orders" && showingReceipts ? "" : isActive || (item.path === "/more" && inMore) || (item.path === "/analytics" && pathname === "/predictions") ? "active" : ""}`
               }
             >
               <item.icon size={19} aria-hidden="true" />

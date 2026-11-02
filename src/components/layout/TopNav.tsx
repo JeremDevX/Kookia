@@ -38,9 +38,9 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
   const currentPage = pageLabels[pathname] ?? (pathname.startsWith("/history/") ? "Historique" : "Tableau de bord");
   const params = new URLSearchParams(search);
   const orderView = pathname === "/orders" ? getOrderView(params, hash) : null;
-  const section = pathname === "/predictions" ? "Bilan" : currentPage;
+  const section = orderView === "receipts" ? "Réceptions" : pathname === "/predictions" ? "Bilan" : currentPage;
   const subpage = pathname === "/" ? "Vue d’ensemble" : pathname === "/stocks" ? "Inventaire" :
-    orderView ? { prepare: "Préparer un achat", orders: "Commandes et réceptions", invoices: "Factures et documents" }[orderView] :
+    orderView ? { prepare: "Préparer un achat", orders: "Commandes et réceptions", invoices: "Factures et documents", receipts: params.get("period") === "month" ? "Mois" : "Semaine" }[orderView] :
     pathname === "/predictions" ? "Prévisions" : pathname === "/recipes" ?
       ({ catalog: "Toutes les recettes", "anti-waste": "Réalisables avec le stock", sheets: "Fiches techniques", history: "Produites cette semaine" })[getRecipeView(params)] : pathname === "/settings" ?
       ({ account: "Compte", suppliers: "Fournisseurs", connections: "Connexions" } as Record<string, string>)[params.get("section") ?? ""] ?? "Restaurant" : null;

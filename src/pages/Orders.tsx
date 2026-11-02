@@ -63,13 +63,13 @@ export default function Orders() {
   return <div className="orders-container workspace-page">
     <div className="orders-heading-panel">
     <header className="workspace-header"><div>
-      <h1 ref={headingRef} tabIndex={-1}>Mes commandes</h1>
+      <h1 ref={headingRef} tabIndex={-1}>{view === "receipts" ? "Réceptions fournisseurs" : "Mes commandes"}</h1>
       <p className="workspace-subtitle">{view === "prepare" ? "Examinez les besoins recommandés, puis vérifiez votre sélection." : "Suivez vos commandes et retrouvez vos documents fournisseurs."}</p>
     </div>{view === "prepare" ? <Link className="btn btn-primary orders-cart-link" to="/orders?view=prepare#selection">Voir ma sélection{!cartLoading && !cartError ? ` (${cartItems.length})` : ""}</Link> : <Button onClick={() => changeView("prepare")}>Préparer un achat</Button>}</header>
-    <nav className="orders-views" aria-label="Vues des achats">
+    {view !== "receipts" && <nav className="orders-views" aria-label="Vues des achats">
       {([["orders", "Commandes & réceptions"], ["prepare", "Préparer un achat"], ["invoices", "Factures & documents"]] as const).map(([id, label]) =>
         <Button key={id} variant="outline" aria-pressed={view === id} onClick={() => changeView(id)}>{label}</Button>)}
-    </nav>
+    </nav>}
     </div>
     {view === "prepare" && <>
     <div className="orders-prepare-intro"><span>1 · Choisir et ajuster</span><span>2 · Valider la sélection</span><span>3 · Transmettre aux fournisseurs</span></div>
@@ -107,6 +107,7 @@ export default function Orders() {
       setInvoiceRefresh((value) => value + 1);
       setSuggestionsRevision((value) => value + 1);
     }} />}
+    {view === "receipts" && <OrderHistory refreshKey={historyRevision} calendarOnly />}
 
     <p className="orders-help"><Link to="/stocks">Consulter les stocks</Link> · <Link to="/analytics">Voir le bilan des achats réceptionnés</Link></p>
 

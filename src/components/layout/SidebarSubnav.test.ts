@@ -3,13 +3,21 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import SidebarSubnav from "./SidebarSubnav";
+import { getOrderView } from "../../features/orders/orderNavigation";
 
-function render(path: string, section: "orders" | "analytics" | "settings" | "recipes") {
+function render(path: string, section: "orders" | "receipts" | "analytics" | "settings" | "recipes") {
   return renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] },
     createElement(SidebarSubnav, { section, onNavigate: () => {} })));
 }
 
 describe("sous-navigation", () => {
+  it("identifie la vue mensuelle des réceptions", () => {
+    const html = render("/orders?view=receipts&period=month", "receipts");
+    expect(html).toContain('href="/orders?view=receipts&amp;period=week"');
+    expect(html).toMatch(/<a[^>]*aria-current="page"[^>]*>Mois<\/a>/);
+    expect(getOrderView(new URLSearchParams("view=receipts&period=month"), "")).toBe("receipts");
+    expect(getOrderView(new URLSearchParams("view=receipts"), "#order-123")).toBe("orders");
+  });
   it("identifie la préparation depuis une ancre de commande", () => {
     const html = render("/orders#selection", "orders");
     expect(html).toMatch(/<a[^>]*aria-current="page"[^>]*>Préparer un achat<\/a>/);

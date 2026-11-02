@@ -15,10 +15,10 @@ import "./OrderHistory.css";
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 const orderTotal = (order: PurchaseOrder) => order.lines.reduce((total, line) => total + line.quantity * line.pricePerUnit, 0);
 
-interface OrderHistoryProps { refreshKey?: number; focusReceiptId?: string; returnHref?: string;
+interface OrderHistoryProps { refreshKey?: number; focusReceiptId?: string; returnHref?: string; calendarOnly?: boolean;
   returnTarget?: AnalyticsReturnTarget; onReceiptSaved?: () => void; }
 
-export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHref, returnTarget, onReceiptSaved }: OrderHistoryProps) {
+export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHref, returnTarget, onReceiptSaved, calendarOnly = false }: OrderHistoryProps) {
   const location = useLocation();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
@@ -96,6 +96,10 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
           : status === "simulated_partially_received" ? "Réception partielle — stock inchangé"
             : status === "simulated_received" ? "Réception sans ajout au stock" : status;
 
+  if (calendarOnly) return <section aria-label="Calendrier des réceptions">
+    {loading ? <p role="status">Chargement des réceptions…</p> : currentError ? <div role="alert"><p>{currentError}</p><Button ref={retryButtonRef} type="button" variant="outline" onClick={retryHistory}>Réessayer</Button></div> : <ReceiptCalendar orders={orders} />}
+  </section>;
+
   return <section id="to-transmit" className="orders-history" aria-labelledby="orders-history-title">
     <div className="workspace-section-heading"><h2 ref={headingRef} id="orders-history-title" tabIndex={-1}>Suivre vos commandes</h2><span>{!loading && !currentError && `${orders.length} commande${orders.length > 1 ? "s" : ""}`}</span></div>
     {receiptNotice && <p role="status">{receiptNotice}</p>}
@@ -108,7 +112,6 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
       <p role="status">Cette réception n’est plus présente dans l’historique des commandes. {returnHref &&
         <Link to={returnHref}>Retour au Bilan</Link>}</p>}
     {!loading && !currentError && orders.length === 0 && <p className="orders-empty">Aucune commande enregistrée. <Link to="/orders?view=prepare">Préparer votre première commande</Link></p>}
-    {!loading && !currentError && <ReceiptCalendar orders={orders} />}
     {!loading && !currentError && orders.length > 0 && <>
       <div className="orders-kpis">
         <article><span>À réceptionner</span><strong>{orders.filter((order) => order.status === "validated").length}</strong><small>Commandes validées, sans réception</small></article>
