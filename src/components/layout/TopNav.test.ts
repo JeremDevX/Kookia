@@ -12,6 +12,7 @@ describe("fil d’Ariane du tableau de bord", () => {
     ["/", "Vue d’ensemble"],
     ["/?view=planning", "Planning du jour"],
     ["/?view=inconnue", "Vue d’ensemble"],
+    ["/history", "Historique"],
   ])("indique la page courante pour %s", (url, label) => {
     const html = renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [url] },
       createElement(TopNav, { onMenuClick: () => {}, isSidebarOpen: false, menuButtonRef: createRef<HTMLButtonElement>() })));

@@ -70,7 +70,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
         <nav className="breadcrumbs" aria-label="Fil d’Ariane">
           <Link className="breadcrumb-brand" to="/" aria-label="Accueil">K</Link>
           <ChevronRight size={14} aria-hidden="true" />
-          <span className={subpage ? "breadcrumb-parent" : "current-page"}>{section}</span>
+          <span className={subpage ? "breadcrumb-parent" : "current-page"} aria-current={subpage ? undefined : "page"}>{section}</span>
           {subpage && <><ChevronRight size={14} aria-hidden="true" /><span className="current-page" aria-current="page">{subpage}</span></>}
         </nav>
       </div>
