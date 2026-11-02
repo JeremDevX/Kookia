@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider, useLocation } from "react-router-dom";
 import { WorkspaceLayout, WorkspaceHome, WorkspaceStocks, WorkspaceOrders, OwnerOnly } from "../../features/members/WorkspaceLayout";
 import InvitationAccept from "../../features/invitations/InvitationAccept";
 import { RequireAuth } from "../../features/auth/components/RequireAuth";
@@ -26,10 +26,8 @@ function LegacyTimelineReplayRedirect() {
   return <Navigate to={`/history${location.search}`} replace />;
 }
 
-const AppRouter = () => (
-  <Router>
-    <Suspense fallback={<div className="container">Chargement...</div>}>
-      <Routes>
+const router = createBrowserRouter(createRoutesFromElements(
+      <>
         <Route path="/invite" element={<InvitationAccept onAccepted={() => window.location.replace("/")} />} />
         <Route element={<PublicOnly />}><Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /></Route>
         <Route element={<RequireAuth />}><Route element={<SetupGuard key="setup" setupPage />}><Route path="/setup" element={<SetupPage />} /></Route><Route element={<SetupGuard key="workspace" />}><Route path="/" element={<WorkspaceLayout />}>
@@ -47,9 +45,13 @@ const AppRouter = () => (
           <Route path="history/replay/:id" element={<OwnerOnly><LegacyTimelineReplayRedirect /></OwnerOnly>} />
         </Route></Route></Route>
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Suspense>
-  </Router>
+      </>
+));
+
+const AppRouter = () => (
+  <Suspense fallback={<div className="container">Chargement...</div>}>
+    <RouterProvider router={router} />
+  </Suspense>
 );
 
 export default AppRouter;

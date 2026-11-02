@@ -53,7 +53,7 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Paramètres `/settings` | A `673:46642`, `673:46754`, `673:46843` ; B `25:2`, `26:2` | À vérifier | À vérifier | Équipe et rôles disponibles ; invitations par lien manuel | À vérifier | Météo : erreur différée vérifiée | En cours |
 | Bilan `/analytics` | A `673:46262`, `673:46361` | À vérifier | Données absentes, valorisation partielle et exclusions distinguées | À vérifier | À vérifier | Firefox : accès et absence de débordement desktop/mobile ; tests ciblés | En cours |
 | Ventes `/sales` | B `8:2` ; A `673:44664`, `673:44732` | À vérifier | À vérifier | Transcription manuelle ; OCR absent | À vérifier | CSV trop volumineux signalé dans Firefox ; remplacement pendant analyse couvert par test | En cours |
-| Services `/services` | B `16:2` | À vérifier | Saisies de fiche protégées au rechargement et changement de service | Liens et retour navigateur restent à protéger | À vérifier | Annulation et champs en cours vérifiés dans Firefox synthétique | En cours |
+| Services `/services` | B `16:2` | À vérifier | Saisies de fiche protégées avant départ | Navigation interne et retour demandent confirmation | À vérifier | Firefox synthétique : lien, retour, changement de service et annulation vérifiés | En cours |
 | Plus `/more` | B `22:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
 | Historique `/history` | B `18:2`, `21:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
 | Ancien historique `/history/replay/:id` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |

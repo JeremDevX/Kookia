@@ -56,6 +56,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged, onDirtyChange
       const [result, catalog] = await Promise.all([getServiceSheet(date, slot), getRecipes()]);
       if (loadRevision.current !== requestRevision) return;
       apply(result); setLoadedMenuChange(requestedMenuChange); setRecipes(catalog); setOperationId(crypto.randomUUID()); pendingInput.current = null; setDirty(false);
+      setRecipeId(""); setPortions(0); setFromRecipeId(""); setToRecipeId(""); setReplacementPortions(1); setReplacementNote("");
     } catch (cause) { if (loadRevision.current === requestRevision) setError(cause instanceof Error ? cause.message : "Fiche indisponible."); }
     finally { if (loadRevision.current === requestRevision) setBusy(false); }
   }, [date, slot]);
@@ -118,7 +119,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged, onDirtyChange
     <p>Prévu → plan validé par le chef → préparations et compléments enregistrés → ventes → invendus conservés ou écartés. Le plan ne déduit pas de stock.</p>
     {busy && <p role="status">Chargement / enregistrement…</p>}
     {error && <p role="alert">{error}</p>}{status && <p role="status">{status}</p>}
-    <Button type="button" variant="outline" disabled={busy} onClick={() => { if (!dirty || window.confirm("Les modifications non enregistrées seront perdues. Recharger le constat ?")) void load(); }}>Recharger le constat enregistré</Button>
+    <Button type="button" variant="outline" disabled={busy} onClick={() => { if (!(dirty || hasPendingFields) || window.confirm("Les modifications non enregistrées seront perdues. Recharger le constat ?")) void load(); }}>Recharger le constat enregistré</Button>
     {sheet && <>
       {loadedMenuChange !== menuChange && <p role="status">La carte a changé. Enregistrez vos modifications, puis rechargez la fiche pour actualiser le constat.</p>}
       <p>État : {closed ? "clôturé" : validated ? "plan validé" : "brouillon"} · révision {sheet.revision}. Carte de référence : {sheet.menuRevision || "non renseignée"}.</p>

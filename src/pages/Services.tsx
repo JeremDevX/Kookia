@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useBlocker, useSearchParams } from "react-router-dom";
 import type { ServiceSlot } from "../../shared/serviceCalendar";
 import ServiceMenuEditor from "../components/services/ServiceMenuEditor";
 import ServiceForecastPanel from "../components/services/ServiceForecastPanel";
@@ -14,9 +14,20 @@ export default function Services() {
   const [, setParams] = useSearchParams();
   const { service: { date, slot }, state: weather } = useSharedServiceWeather();
   const [sheetDirty, setSheetDirty] = useState(false);
+  const blocker = useBlocker(sheetDirty);
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    if (window.confirm("Les modifications non enregistrées de la fiche seront perdues. Quitter cette page ?")) blocker.proceed();
+    else blocker.reset();
+  }, [blocker]);
+  useEffect(() => {
+    if (!sheetDirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [sheetDirty]);
   const select = (nextDate: string, nextSlot: ServiceSlot) => {
-    if (sheetDirty && !window.confirm("Les modifications non enregistrées de la fiche seront perdues. Changer de service ?")) return;
-    setSheetDirty(false); setParams({ serviceDate: nextDate, serviceSlot: nextSlot });
+    setParams({ serviceDate: nextDate, serviceSlot: nextSlot });
   };
   const [revision, setRevision] = useState(0);
   const serviceKey = `${date}:${slot}`;
