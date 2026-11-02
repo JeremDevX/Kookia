@@ -172,6 +172,7 @@ export default function Timeline() {
     </div></header>
 
     <section className="timeline-controls" aria-label="Filtres de chronologie">
+      <h2>Période et date de connaissance</h2>
       <label htmlFor="timeline-from">Du (service ou effet)
         <input id="timeline-from" type="date" max={today} value={from}
           onChange={(event) => { setFrom(event.target.value); updateSearchParams({ from: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
@@ -188,6 +189,7 @@ export default function Timeline() {
     </section>
 
     <section className="timeline-key" aria-label="Origine et niveau de preuve">
+      <h2>Origine et niveau de preuve</h2>
       {(Object.entries(provenanceLabels) as Array<[TimelineProvenance, string]>).map(([key, label]) =>
         <span className={`timeline-badge provenance-${key}`} key={key}>{label}</span>)}
       <p>Une pièce d’archive ne confirme pas une livraison. Les éléments hors bilan et les hypothèses restent distincts des opérations enregistrées.</p>
@@ -201,7 +203,7 @@ export default function Timeline() {
         onClick={retryHistory}>Réessayer</Button>}
     </div>
     {timeline?.truncated && <p className="timeline-truncated" role="status">Période dense : seuls les premiers événements sont affichés. Choisissez une période plus courte pour continuer à parcourir l’historique.</p>}
-    {timeline && timeline.events.length === 0 && <p className="workspace-empty">Aucun événement disponible avec ces dates et ces informations connues.</p>}
+    {timeline && timeline.events.length === 0 && <section className="timeline-empty"><h2>Historique</h2><p>Aucun événement disponible avec ces dates et ces informations connues.</p></section>}
     {timeline && timeline.events.length > 0 && <>
       <form className="timeline-search" onSubmit={applySearch}>
         <label htmlFor="timeline-search">Rechercher dans l’historique</label>

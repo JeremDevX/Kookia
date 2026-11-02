@@ -1,4 +1,11 @@
 .timeline-page { gap: var(--spacing-lg); }
+.timeline-page > .workspace-header, .timeline-key, .timeline-empty, .timeline-read-only { padding: var(--spacing-xl); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
+.timeline-page > .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
+.timeline-page > .workspace-header .workspace-eyebrow { margin-bottom: var(--spacing-xs); }
+.timeline-controls h2, .timeline-key h2, .timeline-empty h2 { font-size: var(--font-size-lg); }
+.timeline-controls h2, .timeline-controls p { grid-column: var(--number-1) / var(--number-negative-1); }
+.timeline-key h2 { flex-basis: var(--unit-100percent); }
+.timeline-empty p { margin-top: var(--spacing-md); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .timeline-controls { display: grid; grid-template-columns: minmax(var(--size-180), var(--size-260)) minmax(var(--size-180), var(--size-260)) minmax(var(--size-220), var(--unit-1fr)); align-items: end; gap: var(--spacing-md); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
 .timeline-controls label { display: flex; flex-direction: column; gap: var(--spacing-xs); color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
 .timeline-controls input { min-height: var(--size-44); padding: var(--spacing-sm) var(--spacing-md); color: var(--color-text-primary); background: var(--color-bg); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); font: inherit; }
@@ -32,7 +39,7 @@
 .timeline-event .timeline-qualifier { color: var(--color-text-primary); }
 .timeline-event .btn { align-self: flex-start; min-height: var(--size-44); height: auto; }
 .timeline-event a { align-self: flex-start; color: var(--color-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
-.timeline-read-only { padding-top: var(--spacing-sm); border-top: var(--size-1) solid var(--color-border); }
+.timeline-read-only { margin: var(--number-0); }
 @media (--media-workspace-compact) {
   .timeline-controls { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); }
   .timeline-controls p { grid-column: var(--number-1) / var(--number-negative-1); }
