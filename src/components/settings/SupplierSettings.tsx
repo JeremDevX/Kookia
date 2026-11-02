@@ -5,12 +5,22 @@ import Input from "../common/Input";
 import { useInventoryCatalog } from "../../features/inventory/useInventoryCatalog";
 import { saveSupplier } from "../../services/restaurantService";
 import type { Supplier } from "../../types";
+import { useAuth } from "../../features/auth/context/AuthContext";
+import { clearSupplierDraft, readSupplierDraft, saveSupplierDraft } from "./supplierDraft";
 
 export default function SupplierSettings({ onEditingChange }: { onEditingChange?: (editing: boolean) => void } = {}) {
   const { suppliers, loading, error, refetch } = useInventoryCatalog();
-  const [editing, setEditing] = useState<Supplier | null>(null);
-  const edit = (supplier: Supplier | null) => { setEditing(supplier); onEditingChange?.(supplier !== null); };
-  const [creating, setCreating] = useState(false);
+  const { user } = useAuth();
+  const [draft] = useState(() => user ? readSupplierDraft(user.id) : null);
+  const [editing, setEditing] = useState<Supplier | null>(draft?.supplier ?? null);
+  const [creating, setCreating] = useState(draft?.creating ?? false);
+  const edit = (supplier: Supplier | null, isCreating = creating) => {
+    if (user) {
+      if (supplier) saveSupplierDraft(user.id, { supplier, creating: isCreating });
+      else clearSupplierDraft(user.id);
+    }
+    setEditing(supplier); onEditingChange?.(supplier !== null);
+  };
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [notice, setNotice] = useState("");
@@ -18,6 +28,11 @@ export default function SupplierSettings({ onEditingChange }: { onEditingChange?
   const firstSupplierActionRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const retryFocusPending = useRef(false);
+
+  useEffect(() => {
+    if (!editing) return;
+    onEditingChange?.(true);
+  }, [editing, onEditingChange]);
 
   useEffect(() => {
     if (loading || !retryFocusPending.current) return;
@@ -51,8 +66,8 @@ export default function SupplierSettings({ onEditingChange }: { onEditingChange?
       <Button ref={retryButtonRef} type="button" variant="outline" disabled={loading || saving} onClick={retryCatalog}>Réessayer</Button>
     </div> : message && <p role="alert">{message}</p>}
     {notice && <p role="status">{notice}</p>}
-    {suppliers.map((supplier, index) => <div key={supplier.id} className="integration-item"><div><strong>{supplier.name}</strong><p>{supplier.email} · {supplier.phone}</p></div><Button ref={index === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving || editing !== null} variant="outline" onClick={() => { edit(supplier); setCreating(false); setMessage(""); setNotice(""); }}>Modifier</Button></div>)}
-    <Button ref={suppliers.length === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving || loading || Boolean(error) || editing !== null} onClick={() => { edit({ id: crypto.randomUUID(), name: "", email: "", phone: "" }); setCreating(true); setMessage(""); setNotice(""); }}>Ajouter un fournisseur</Button>
+    {suppliers.map((supplier, index) => <div key={supplier.id} className="integration-item"><div><strong>{supplier.name}</strong><p>{supplier.email} · {supplier.phone}</p></div><Button ref={index === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving || editing !== null} variant="outline" onClick={() => { edit(supplier, false); setCreating(false); setMessage(""); setNotice(""); }}>Modifier</Button></div>)}
+    <Button ref={suppliers.length === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving || loading || Boolean(error) || editing !== null} onClick={() => { edit({ id: crypto.randomUUID(), name: "", email: "", phone: "" }, true); setCreating(true); setMessage(""); setNotice(""); }}>Ajouter un fournisseur</Button>
     {editing && <form ref={formRef} onSubmit={submit} className="form-grid supplier-form">
       <h3>{creating ? "Nouveau fournisseur" : "Modifier le fournisseur"}</h3>
       <Input id="supplier-name" label="Nom" placeholder="Nom du fournisseur" required value={editing.name} disabled={saving} onChange={(event) => edit({ ...editing, name: event.target.value })} />

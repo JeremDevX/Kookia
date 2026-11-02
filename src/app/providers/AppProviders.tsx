@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ToastProvider } from "../../context/ToastContext";
+import DraftWarning from "./DraftWarning";
 import { AuthProvider } from "../../features/auth/context/AuthContext";
 
 interface AppProvidersProps {
@@ -8,7 +9,7 @@ interface AppProvidersProps {
 
 const AppProviders = ({ children }: AppProvidersProps) => (
   <ToastProvider>
-    <AuthProvider>{children}</AuthProvider>
+    <AuthProvider><DraftWarning />{children}</AuthProvider>
   </ToastProvider>
 );
 

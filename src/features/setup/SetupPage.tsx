@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
@@ -11,7 +11,7 @@ import { setupValues } from "./setupLogic";
 import { createSetup, type SetupProgress } from "./setupApi";
 import SetupSteps from "./SetupSteps";
 import SetupProgressIndicator from "./SetupProgressIndicator";
-import { clearSetupDraft, emptySetupForm, hasSetupDraft, readSetupDraft, saveSetupDraft } from "./setupDraft";
+import { clearSetupDraft, emptySetupForm, readSetupDraft, saveSetupDraft } from "./setupDraft";
 
 type Field = keyof typeof emptySetupForm;
 
@@ -29,12 +29,6 @@ function SetupForm() {
   const [saving, setSaving] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  useEffect(() => {
-    if (!hasSetupDraft(form)) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [form]);
   const set = (field: Field, value: string) => { const next = { ...form, [field]: value }; if (user) saveSetupDraft(user.id, next); setForm(next); setFields((current) => ({ ...current, [field]: "" })); };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
