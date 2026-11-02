@@ -1,8 +1,11 @@
 import type { PurchaseOrder } from "../../services/orderService";
 import { isValidISODate } from "../../utils/date";
 
-export type ReceiptEvent = { date: string; orderId: string; label: string; kind: "expected" | "received"; simulated: boolean };
-export const receiptEventHref = (event: ReceiptEvent) => `/orders?view=orders${event.kind === "expected" ? "&action=receive" : ""}#order-${encodeURIComponent(event.orderId)}`;
+export type ReceiptEvent = { date: string; orderId: string; label: string; simulated: boolean } &
+  ({ kind: "expected" } | { kind: "received"; receiptId: string });
+export const receiptEventHref = (event: ReceiptEvent) => event.kind === "expected"
+  ? `/orders?view=orders&action=receive#order-${encodeURIComponent(event.orderId)}`
+  : `/orders?view=orders&receiptId=${encodeURIComponent(event.receiptId)}#receipt-${encodeURIComponent(event.receiptId)}`;
 export const dateExceeded = (event: ReceiptEvent, today: string) => event.kind === "expected" && event.date < today;
 const dateFromISO = (date: string) => new Date(`${date}T12:00:00Z`);
 const isoFromDate = (date: Date) => date.toISOString().slice(0, 10);
@@ -46,7 +49,7 @@ export function receiptEvents(orders: PurchaseOrder[], supplierId = ""): { event
     for (const receipt of order.receipts) {
       if (!isValidISODate(receipt.deliveryDate)) continue;
       if (supplierId && !receipt.lines.some((receiptLine) => receiptLine.receivedQuantity > 0 && order.lines.some((line) => line.id === receiptLine.orderLineId && line.supplierId === supplierId))) continue;
-      events.push({ date: receipt.deliveryDate, orderId: order.id, label: receipt.deliveryReference, kind: "received", simulated: receipt.simulated });
+      events.push({ date: receipt.deliveryDate, orderId: order.id, receiptId: receipt.id, label: receipt.deliveryReference, kind: "received", simulated: receipt.simulated });
     }
   }
   return { events, undated };

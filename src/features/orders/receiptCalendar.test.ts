@@ -12,13 +12,13 @@ describe("calendrier des réceptions", () => {
   it("ouvre le rapprochement pour une livraison attendue et la commande pour une réception enregistrée", () => {
     const event = { date: "2026-11-02", orderId: "order", label: "A", kind: "expected", simulated: false } as const;
     expect(receiptEventHref(event)).toBe("/orders?view=orders&action=receive#order-order");
-    expect(receiptEventHref({ ...event, kind: "received" })).toBe("/orders?view=orders#order-order");
+    expect(receiptEventHref({ ...event, kind: "received", receiptId: "receipt-1" })).toBe("/orders?view=orders&receiptId=receipt-1#receipt-receipt-1");
   });
   it("signale uniquement les dates prévues antérieures à aujourd’hui, y compris en simulation", () => {
     const event = { date: "2026-11-01", orderId: "order", label: "A", kind: "expected", simulated: true } as const;
     expect(dateExceeded(event, "2026-11-02")).toBe(true);
     expect(dateExceeded(event, "2026-11-01")).toBe(false);
-    expect(dateExceeded({ ...event, kind: "received" }, "2026-11-02")).toBe(false);
+    expect(dateExceeded({ ...event, kind: "received", receiptId: "receipt-1" }, "2026-11-02")).toBe(false);
   });
   it("calcule les périodes aux changements de mois et d’année", () => {
     expect(startOfWeek("2027-01-01")).toBe("2026-12-28");
@@ -31,10 +31,10 @@ describe("calendrier des réceptions", () => {
       { supplierName: "A", remainingQuantity: 1, expectedDeliveryDate: "2026-11-02" },
       { supplierName: "B", remainingQuantity: 1, expectedDeliveryDate: null },
       { supplierName: "C", remainingQuantity: 0, expectedDeliveryDate: "2026-11-03" },
-    ], receipts: [{ deliveryDate: "2026-11-01", deliveryReference: "BL-1", simulated: false }] } as PurchaseOrder;
+    ], receipts: [{ id: "receipt-1", deliveryDate: "2026-11-01", deliveryReference: "BL-1", simulated: false }] } as PurchaseOrder;
     expect(receiptEvents([order])).toEqual({ undated: 1, events: [
       { date: "2026-11-02", orderId: "order", label: "A", kind: "expected", simulated: false },
-      { date: "2026-11-01", orderId: "order", label: "BL-1", kind: "received", simulated: false },
+      { date: "2026-11-01", orderId: "order", receiptId: "receipt-1", label: "BL-1", kind: "received", simulated: false },
     ] });
   });
   it("filtre les lignes attendues et les réceptions par fournisseur, même sur une commande mixte", () => {
@@ -42,10 +42,19 @@ describe("calendrier des réceptions", () => {
       { id: "a", supplierId: "a", supplierName: "A", remainingQuantity: 1, expectedDeliveryDate: "2026-11-02" },
       { id: "b", supplierId: "b", supplierName: "B", remainingQuantity: 1, expectedDeliveryDate: "2026-11-02" },
       { id: "c", supplierId: "b", supplierName: "B", remainingQuantity: 1, expectedDeliveryDate: null },
-    ], receipts: [{ deliveryDate: "2026-11-01", deliveryReference: "BL-A", simulated: false, lines: [{ orderLineId: "a", receivedQuantity: 1 }, { orderLineId: "b", receivedQuantity: 0 }] }] } as PurchaseOrder;
+    ], receipts: [{ id: "receipt-a", deliveryDate: "2026-11-01", deliveryReference: "BL-A", simulated: false, lines: [{ orderLineId: "a", receivedQuantity: 1 }, { orderLineId: "b", receivedQuantity: 0 }] }] } as PurchaseOrder;
     expect(receiptEvents([order], "b")).toEqual({ undated: 1, events: [
       { date: "2026-11-02", orderId: "mixed", label: "B", kind: "expected", simulated: false },
     ] });
     expect(receiptEvents([order], "a").events.map((event) => event.label)).toEqual(["A", "BL-A"]);
+  });
+  it("distingue deux réceptions portant la même référence", () => {
+    const receipt = { invoiceReference: "FACT", invoiceDocumentId: "invoice", deliveryDate: "2026-11-02", deliveryReference: "BL", simulated: false, provenance: "recorded", invoiceComplete: false, lines: [] };
+    const order: PurchaseOrder = { id: "order", status: "partially_received", createdAt: "2026-11-02", lines: [], receipts: [
+      { ...receipt, id: "r1" }, { ...receipt, id: "r2" },
+    ] };
+    expect(receiptEvents([order]).events.map(receiptEventHref)).toEqual([
+      "/orders?view=orders&receiptId=r1#receipt-r1", "/orders?view=orders&receiptId=r2#receipt-r2",
+    ]);
   });
 });
