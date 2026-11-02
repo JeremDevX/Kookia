@@ -68,9 +68,15 @@ export async function validateInventorySession(restaurantId: string, actorId: st
     if (counted.some((line) => line.countedQuantity !== line.theoreticalQuantity && !line.reason.trim()))
       throw new WorkspaceError(400, "MISSING_REASON", "Justifiez chaque écart avant validation.");
     for (const line of counted) {
-      await recordStockCountInTransaction(tx, restaurantId, actorId, line.productId, {
-        operationId: line.operationId, expectedStockRevision: line.stockRevision, expectedUnit: line.unit, countedQuantity: line.countedQuantity!,
-      });
+      try {
+        await recordStockCountInTransaction(tx, restaurantId, actorId, line.productId, {
+          operationId: line.operationId, expectedStockRevision: line.stockRevision, expectedUnit: line.unit, countedQuantity: line.countedQuantity!,
+        });
+      } catch (error) {
+        if (error instanceof WorkspaceError && error.code === "NOT_FOUND")
+          throw new WorkspaceError(409, "STOCK_CHANGED", "Un produit n’est plus disponible. Actualisez les stocks.");
+        throw error;
+      }
       if (line.reason) await tx.$executeRaw(Prisma.sql`UPDATE "StockCount" SET "inventoryReason" = ${line.reason} WHERE "restaurantId" = ${restaurantId} AND id = ${line.operationId}`);
     }
     await tx.$executeRaw(Prisma.sql`UPDATE "InventorySession" SET status = 'validated', "validatedAt" = CURRENT_TIMESTAMP WHERE id = ${id} AND "restaurantId" = ${restaurantId}`);

@@ -1,13 +1,17 @@
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
-import { app } from "./app.js";
+import { createApp } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
+const app = createApp();
+app.set("trust proxy", true);
+let client = 0;
 const users: string[] = [];
 afterAll(async () => { await prisma.user.deleteMany({ where: { id: { in: users } } }); await prisma.$disconnect(); });
 async function setup() {
   const agent = request.agent(app);
+  agent.set("X-Forwarded-For", `10.0.0.${++client}`);
   const account = await agent.post("/api/auth/register").send({ displayName: "Test", email: `${randomUUID()}@example.test`, password: "test password for inventory" }).expect(201);
   const id = account.body.user.id as string; users.push(id); agent.set("X-Expected-User-Id", id);
   await agent.post("/api/setup").send({ expectedUserId: id, name: "Test", type: "Restaurant", address: "", city: "Test", phone: "", email: "test@example.test", dailyCovers: 20 }).expect(201);
@@ -44,6 +48,24 @@ it("annule toute la validation si un stock a changé et garde le brouillon", asy
   expect(refreshed.lines.map((line: { countedQuantity: number | null }) => line.countedQuantity)).toEqual([8, null]);
   await agent.post(`/api/workspace/inventory-session/${draft.id}/validate`).send({ revision: refreshed.revision }).expect(200);
   expect((await agent.get(`/api/workspace/products/${productIds[0]}/counts`).expect(200)).body).toHaveLength(1);
+});
+it("permet d’actualiser le brouillon si un produit compté a été supprimé", async () => {
+  const { agent, productIds, id } = await setup();
+  const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: id } });
+  const supplier = await prisma.supplier.findFirstOrThrow({ where: { restaurantId: restaurant.id } });
+  const deletedId = randomUUID();
+  await prisma.product.create({ data: { id: deletedId, restaurantId: restaurant.id, name: "Produit supprimé", category: "Test",
+    currentStock: 10, unit: "kg", minThreshold: 1, supplierId: supplier.id, pricePerUnit: 1 } });
+  const draft = (await agent.post("/api/workspace/inventory-session").expect(200)).body;
+  const lines = draft.lines.map((line: { productId: string }) => ({ productId: line.productId, countedQuantity: 8, reason: "Écart" }));
+  const saved = (await agent.put(`/api/workspace/inventory-session/${draft.id}`).send({ revision: draft.revision, lines }).expect(200)).body;
+  await prisma.product.delete({ where: { restaurantId_id: { restaurantId: restaurant.id, id: deletedId } } });
+  const response = await agent.post(`/api/workspace/inventory-session/${draft.id}/validate`).send({ revision: saved.revision }).expect(409);
+  expect(response.body.error.code).toBe("STOCK_CHANGED");
+  expect((await agent.get(`/api/workspace/products/${productIds[0]}/counts`).expect(200)).body).toHaveLength(0);
+  const refreshed = (await agent.post(`/api/workspace/inventory-session/${draft.id}/refresh`).send({ revision: saved.revision }).expect(200)).body;
+  expect(refreshed.lines.find((line: { productId: string }) => line.productId === deletedId)).toMatchObject({ available: false, countedQuantity: null });
+  await agent.post(`/api/workspace/inventory-session/${draft.id}/validate`).send({ revision: refreshed.revision }).expect(200);
 });
 it("protège les brouillons entre établissements et exige une justification des écarts", async () => {
   const { agent } = await setup();
