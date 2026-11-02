@@ -1,5 +1,7 @@
-.sales-page { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-lg); min-width: var(--number-0); padding: var(--size-36) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)) var(--spacing-2xl); }
-.sales-panel { min-width: var(--number-0); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--spacing-lg); }
+.sales-page { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-lg); min-width: var(--number-0); padding: var(--size-36) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)) var(--spacing-2xl); background: var(--color-auth-field); }
+.sales-page > .workspace-header, .sales-panel { min-width: var(--number-0); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); padding: var(--spacing-xl); box-shadow: var(--shadow-figma-panel); }
+.sales-page > .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
+.sales-page > .workspace-header .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); }
 .sales-form, .sales-filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--spacing-md); }
 .sales-form label, .sales-filters label { display: grid; gap: var(--spacing-sm); min-width: min(var(--unit-100percent), var(--size-180)); }
 .sales-form input, .sales-form select, .sales-form textarea, .sales-filters input { width: var(--unit-100percent); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
@@ -14,7 +16,13 @@
 .sales-start { display: flex; flex-direction: column; gap: var(--spacing-md); scroll-margin-top: var(--spacing-lg); }
 .sales-start h2 { font-size: var(--font-size-lg); }
 .sales-start small { color: var(--color-text-muted); }
-.sales-start .sales-actions a { color: var(--color-primary); text-decoration: underline; text-underline-offset: var(--size-3); }
+.sales-start .sales-actions a { display: inline-flex; align-items: center; min-height: var(--size-44); padding: var(--spacing-sm) var(--spacing-md); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-md); color: var(--color-text-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-decoration: none; }
+.sales-start .sales-actions a:first-child { background: var(--color-nav-text); border-color: var(--color-nav-text); color: var(--color-surface); }
+.sales-start .sales-actions a:hover { background: var(--color-surface-hover); }
+.sales-start .sales-actions a:first-child:hover { background: var(--color-auth-icon-border); }
+.sales-ticket-import { display: grid; gap: var(--spacing-md); }
+.sales-ticket-import h2 { font-size: var(--font-size-lg); }
+.sales-ticket-import > p { color: var(--color-text-secondary); line-height: var(--number-1_7); }
 .sales-page :is(summary, a, button):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 .sales-disclosure { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
 .sales-disclosure summary { padding: var(--spacing-lg); cursor: pointer; font-weight: var(--font-weight-medium); }
