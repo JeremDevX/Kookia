@@ -5,7 +5,7 @@ import { stockCountDto } from "./stockCountDto.js";
 import { purchaseAvailability } from "./purchaseAvailability.js";
 
 export class WorkspaceError extends Error {
-  constructor(public readonly status: number, public readonly code: string, message: string) { super(message); }
+  constructor(public readonly status: number, public readonly code: string, message: string, public readonly duplicates?: Array<{ id: string; version: string; date: string }>) { super(message); }
 }
 
 export const productDto = (product: Awaited<ReturnType<typeof prisma.product.findMany>>[number]) => ({

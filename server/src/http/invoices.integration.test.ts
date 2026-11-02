@@ -85,3 +85,37 @@ it("lists source invoices only within the authenticated restaurant", async () =>
   await other.get(`/api/workspace/source-invoices/${id}`).expect(404);
   await owner.get("/api/workspace/source-invoices/invalid-id").expect(400);
 });
+
+
+it("signale les références déjà reçues sans empêcher une livraison distincte confirmée", async () => {
+  const agent = await account(); const other = await account();
+  const products = (await agent.get("/api/workspace/catalog").expect(200)).body.products;
+  const product = products[0];
+  const differentSupplierProduct = products.find((candidate: { supplierId: string }) => candidate.supplierId !== product.supplierId);
+  expect(differentSupplierProduct).toBeDefined();
+  const otherProduct = (await other.get("/api/workspace/catalog").expect(200)).body.products[0];
+  const draft = { reference: "  Facture   123 ", date: "2026-09-11", supplierId: product.supplierId,
+    lines: [{ productId: product.id, quantity: 1, unitPrice: 2, unit: product.unit }] };
+  await agent.post(`/api/workspace/invoices/${randomUUID()}`).send({ revision: 0, receive: true, draft: { ...draft,
+    supplierId: differentSupplierProduct.supplierId, lines: [{ ...draft.lines[0], productId: differentSupplierProduct.id,
+      unit: differentSupplierProduct.unit }] } }).expect(200);
+  const ids = [randomUUID(), randomUUID()];
+  const receive = (id: string, body: object) => agent.post(`/api/workspace/invoices/${id}`).send(body);
+  const input = { draft, revision: 0, receive: true };
+  const concurrent = await Promise.all(ids.map((id) => receive(id, input)));
+  expect(concurrent.map((result) => result.status).sort()).toEqual([200, 409]);
+  const duplicate = concurrent.find((result) => result.status === 409)!;
+  expect(duplicate.body.error.code).toBe("POSSIBLE_DUPLICATE_INVOICE");
+  const firstConfirmation = duplicate.body.error.duplicates.map(({ id, version }: { id: string; version: string }) => ({ id, version }));
+  const blockedId = ids[concurrent.findIndex((result) => result.status === 409)];
+  const thirdId = randomUUID();
+  await receive(thirdId, { ...input, confirmedDuplicates: firstConfirmation }).expect(200);
+  const stale = await receive(blockedId, { ...input, confirmedDuplicates: firstConfirmation }).expect(409);
+  expect(stale.body.error.duplicates).toHaveLength(2);
+  const confirmedDuplicates = stale.body.error.duplicates.map(({ id, version }: { id: string; version: string }) => ({ id, version }));
+  const accepted = await receive(blockedId, { ...input, confirmedDuplicates }).expect(200);
+  await receive(blockedId, { ...input, confirmedDuplicates }).expect(200);
+  expect(accepted.body.status).toBe("received");
+  await other.post(`/api/workspace/invoices/${randomUUID()}`).send({ ...input, draft: { ...draft, supplierId: otherProduct.supplierId,
+    lines: [{ ...draft.lines[0], productId: otherProduct.id, unit: otherProduct.unit }] } }).expect(200);
+});

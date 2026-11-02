@@ -360,12 +360,12 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
 - La réception directe d'une facture et le rapprochement d'une commande avec
   facture peuvent tous deux alimenter le stock. Le rapprochement enregistre en
   plus les lignes de réception et l'état de commande. Le serveur vérifie les
-  réceptions existantes et les quantités. Risque confirmé : deux factures
-  manuelles distinctes portant les mêmes fournisseur et référence peuvent
-  chacune créditer le stock, notamment par réception directe et rapprochement.
-  Cette correspondance ne prouve pas à elle seule un doublon : plusieurs
-  livraisons peuvent partager une référence. Le traitement de cette ambiguïté
-  reste à définir avant toute consolidation ou règle de blocage.
+  réceptions existantes et les quantités. Pour deux factures manuelles de même
+  fournisseur et référence, une confirmation explicite est désormais demandée
+  avant crédit, sans bloquer les livraisons distinctes. La vérification est
+  atomique et couvre réception directe et rapprochement. Sans fournisseur,
+  aucun doublon ne peut être détecté ; le formulaire le signale. Tests
+  d’intégration et parcours Firefox synthétique vérifiés.
 - Une correction locale vérifie l’unité explicitement renseignée sur une facture
   manuelle avant crédit du stock. Un test d’intégration a été ajouté pour le
   refus d’une unité incompatible et l’acceptation d’une unité compatible ; il a

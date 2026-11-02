@@ -1,3 +1,5 @@
+import { ApiError } from "../../config/api";
+import { confirmInvoiceDuplicates } from "../../services/invoiceDuplicates";
 import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { getInvoices, type Invoice } from "../../services/invoiceService";
@@ -28,7 +30,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [invoiceLoadError, setInvoiceLoadError] = useState("");
-  const operation = useRef<{ signature: string; id: string } | null>(null);
+  const operation = useRef<{ signature: string; id: string; confirmedDuplicates?: Array<{ id: string; version: string }> } | null>(null);
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const invoiceSelectRef = useRef<HTMLSelectElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
@@ -126,7 +128,16 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
       operation.current = { signature, id: crypto.randomUUID() };
     setSaving(true); onSavingChange(true); setError(""); onNotice("");
     try {
-      const saved = await reconcilePurchaseReceipt(order.id, { ...payload, operationId: operation.current.id });
+      let saved;
+      try { saved = await reconcilePurchaseReceipt(order.id, { ...payload, operationId: operation.current.id, ...(operation.current.confirmedDuplicates ? { confirmedDuplicates: operation.current.confirmedDuplicates } : {}) }); } catch (cause) {
+        const confirmed = confirmInvoiceDuplicates(cause);
+        if (!confirmed) {
+          if (cause instanceof ApiError && cause.details.code === "POSSIBLE_DUPLICATE_INVOICE") return;
+          throw cause;
+        }
+        operation.current.confirmedDuplicates = confirmed;
+        saved = await reconcilePurchaseReceipt(order.id, { ...payload, operationId: operation.current.id, confirmedDuplicates: confirmed });
+      }
       const notice = saved.simulated
         ? `Rapprochement enregistré${saved.invoiceComplete ? "; facture complète" : "; facture encore à compléter"}. Aucune quantité n’a été ajoutée au stock.`
         : `Réception enregistrée${saved.invoiceComplete ? "; facture rapprochée" : "; rapprochement partiel, facture conservée en brouillon"}.`;

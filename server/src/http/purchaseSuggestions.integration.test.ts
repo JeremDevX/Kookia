@@ -166,6 +166,10 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
   const firstReceipt = await owner.agent.post(`/api/workspace/orders/${order.body.id}/receipts`).send(firstReceiptInput).expect(201);
   expect(firstReceipt.body).toMatchObject({ simulated: false, invoiceComplete: false, replayed: false,
     lines: [{ invoiceQuantity: 3, receivedQuantity: 2, quantityDifference: 1 }] });
+  const possibleDuplicate = await owner.agent.post(`/api/workspace/invoices/${randomUUID()}`).send({ revision: 0, receive: true,
+    draft: { reference: "  facture-o2-1  ", date: parisToday(), supplierId: product.supplierId,
+      lines: [{ productId: product.id, quantity: 1, unit: product.unit, unitPrice: invoicePrice }] } }).expect(409);
+  expect(possibleDuplicate.body.error).toMatchObject({ code: "POSSIBLE_DUPLICATE_INVOICE", duplicates: [{ id: invoiceId }] });
   expect(Number((await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: {
     restaurantId: owner.restaurantId, id: product.id } } })).currentStock)).toBe(stockBeforeOrder + 2);
   const afterReceiptSuggestions = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
@@ -322,3 +326,33 @@ it("covers the supplier horizon, keeps inbound conditional, and blocks incomplet
   await prisma.supplier.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.supplierId } }, data: { leadTimeDays: null } });
   expect((await getPurchaseSuggestions(owner.restaurantId, prisma, inputDate)).suggestions.find((item) => item.productId === product.id)).toMatchObject({ status: "supplier_constraints_missing", canAdd: false, estimatedQuantity: null, estimatedCost: null, deliveryHorizon: { status: "unknown" } });
 }, 15_000);
+
+
+it("signale une réception directe avant rapprochement et conserve les livraisons successives", async () => {
+  const owner = await account("Duplicate receipt");
+  await prisma.restaurant.update({ where: { id: owner.restaurantId }, data: { mode: "operational" } });
+  const product = (await owner.agent.get("/api/workspace/catalog").expect(200)).body.products[0];
+  const storedProduct = await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.id } } });
+  const step = getOrderStep(storedProduct);
+  const invoice = { reference: "FACT-CROSS", date: parisToday(), supplierId: product.supplierId,
+    lines: [{ productId: product.id, quantity: step * 2, unit: product.unit, unitPrice: product.pricePerUnit }] };
+  const directId = randomUUID();
+  await owner.agent.post(`/api/workspace/invoices/${directId}`).send({ draft: invoice, revision: 0, receive: true }).expect(200);
+  const invoiceId = randomUUID();
+  const saved = await owner.agent.post(`/api/workspace/invoices/${invoiceId}`).send({ draft: invoice, revision: 0, receive: false }).expect(200);
+  const order = await owner.agent.post("/api/workspace/orders").send({ operationId: randomUUID(),
+    lines: [{ productId: product.id, quantity: step * 2 }] }).expect(201);
+  const receipt = { operationId: randomUUID(), invoiceDocumentId: invoiceId, invoiceDocumentRevision: saved.body.revision,
+    deliveryReference: "BL-CROSS-1", deliveryDate: parisToday(),
+    lines: [{ invoiceLineIndex: 0, orderLineId: order.body.lines[0].id, receivedQuantity: step }] };
+  const endpoint = `/api/workspace/orders/${order.body.id}/receipts`;
+  const warning = await owner.agent.post(endpoint).send(receipt).expect(409);
+  expect(warning.body.error.code).toBe("POSSIBLE_DUPLICATE_INVOICE");
+  const confirmedDuplicates = warning.body.error.duplicates.map(({ id, version }: { id: string; version: string }) => ({ id, version }));
+  const confirmed = { ...receipt, confirmedDuplicates };
+  const first = await owner.agent.post(endpoint).send(confirmed).expect(201);
+  expect(first.body.invoiceComplete).toBe(false);
+  expect((await owner.agent.post(endpoint).send(confirmed).expect(201)).body.replayed).toBe(true);
+  const second = await owner.agent.post(endpoint).send({ ...confirmed, operationId: randomUUID(), deliveryReference: "BL-CROSS-2" }).expect(201);
+  expect(second.body.invoiceComplete).toBe(true);
+});

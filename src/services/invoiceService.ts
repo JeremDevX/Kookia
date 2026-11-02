@@ -41,8 +41,8 @@ export const extractInvoiceFixture = (file: Blob) => apiRequest<{ id: string }>(
 export const createInvoiceDraftFromSource = (id: string) => apiRequest<Invoice>(`/workspace/invoices/from-source/${encodeURIComponent(id)}`, {
   method: "POST", body: JSON.stringify({}),
 });
-export const saveInvoice = (invoice: Invoice, receive: boolean) => apiRequest<Invoice>(`/workspace/invoices/${encodeURIComponent(invoice.id)}`, {
-  method: "POST", body: JSON.stringify({ revision: invoice.revision, receive, draft: {
+export const saveInvoice = (invoice: Invoice, receive: boolean, confirmedDuplicates?: Array<{ id: string; version: string }>) => apiRequest<Invoice>(`/workspace/invoices/${encodeURIComponent(invoice.id)}`, {
+  method: "POST", body: JSON.stringify({ revision: invoice.revision, receive, ...(confirmedDuplicates ? { confirmedDuplicates } : {}), draft: {
     reference: invoice.reference, date: invoice.date, lines: invoice.lines,
     ...(invoice.supplierId ? { supplierId: invoice.supplierId } : {}),
     ...(invoice.sourceTypeConfirmed !== undefined ? { sourceTypeConfirmed: invoice.sourceTypeConfirmed } : {}),

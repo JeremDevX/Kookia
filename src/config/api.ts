@@ -1,4 +1,4 @@
-export interface ApiErrorPayload { code: string; message: string; fields?: Record<string, string>; }
+export interface ApiErrorPayload { code: string; message: string; fields?: Record<string, string>; duplicates?: Array<{ id: string; version: string; date: string }>; }
 export class ApiError extends Error {
   readonly status: number;
   readonly details: ApiErrorPayload;

@@ -1,3 +1,4 @@
+import { checkInvoiceDuplicates } from "./invoiceDuplicates.js";
 import { recordLotMovement } from "./lotService.js";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -215,7 +216,7 @@ export function validateSourceReview(source: z.infer<typeof sourceInvoiceDocumen
 }
 
 export async function saveInvoice(restaurantId: string, actorId: string, id: string, revision: number,
-  draft: z.infer<typeof invoiceDraftSchema>, receive: boolean) {
+  draft: z.infer<typeof invoiceDraftSchema>, receive: boolean, confirmedDuplicates?: Array<{ id: string; version: string }>) {
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
     const kind = `invoice:${id}`;
@@ -256,6 +257,9 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
     if (!linkedSourceId && new Set(draft.lines.map((line) => line.productId)).size !== draft.lines.length) {
       throw new WorkspaceError(400, "DUPLICATE_PRODUCT", "Une facture manuelle ne peut contenir qu’une ligne par produit.");
     }
+
+    if (receive && !linkedSourceId && id !== "demo")
+      await checkInvoiceDuplicates(tx, restaurantId, id, draft.supplierId, draft.reference, confirmedDuplicates);
 
     if (receive && source) {
       validateSourceReview(source, draft);

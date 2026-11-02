@@ -89,8 +89,8 @@ invoiceRoutes.post("/invoices/from-source/:id", async (req, res, next) => {
 invoiceRoutes.post("/invoices/:id", async (req, res, next) => {
   try {
     const id = z.union([z.literal("demo"), z.uuid(), z.string().regex(/^source:[a-f0-9]{24}$/)]).parse(req.params.id);
-    const { draft, revision, receive } = z.object({ draft: invoiceDraftSchema, revision: z.number().int().nonnegative(), receive: z.boolean() }).strict().parse(req.body);
+    const { draft, revision, receive, confirmedDuplicates } = z.object({ draft: invoiceDraftSchema, revision: z.number().int().nonnegative(), receive: z.boolean(), confirmedDuplicates: z.array(z.object({ id: z.string().max(100), version: z.string().max(50) }).strict()).max(100).optional() }).strict().parse(req.body);
     const { restaurantId, actorId } = context(res);
-    res.json(invoiceResponse(await saveInvoice(restaurantId, actorId, id, revision, draft, receive)));
+    res.json(invoiceResponse(await saveInvoice(restaurantId, actorId, id, revision, draft, receive, confirmedDuplicates)));
   } catch (error) { next(error); }
 });

@@ -1,3 +1,4 @@
+import { checkInvoiceDuplicates, invoiceKey } from "./invoiceDuplicates.js";
 import { recordLotMovement } from "./lotService.js";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma, type PurchaseReceipt as PurchaseReceiptRecord, type PurchaseReceiptLine as PurchaseReceiptLineRecord,
@@ -16,6 +17,7 @@ type PurchaseOrderWithReceipts = Prisma.PurchaseOrderGetPayload<{ include: {
 
 export interface PurchaseReceiptInput {
   operationId: string;
+  confirmedDuplicates?: Array<{ id: string; version: string }>;
   invoiceDocumentId: string;
   invoiceDocumentRevision: number;
   deliveryReference: string;
@@ -26,7 +28,6 @@ export interface PurchaseReceiptInput {
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
   month: "2-digit", day: "2-digit" }).format(new Date());
-const invoiceKey = (value: string) => value.trim().normalize("NFKC").replace(/\s+/g, " ").toLocaleUpperCase("fr-FR");
 
 export function purchaseReceiptDto(receipt: ReceiptWithLines) {
   return { id: receipt.id, orderId: receipt.orderId, supplierId: receipt.supplierId,
@@ -75,6 +76,7 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
     if (invoice.status !== "draft") throw new WorkspaceError(409, "INVOICE_ALREADY_RECEIVED", "Cette facture est déjà réceptionnée.");
     if (!invoice.reference.trim() || !invoice.date || !invoice.supplierId)
       throw new WorkspaceError(409, "INVOICE_REVIEW_REQUIRED", "Enregistrez la référence, la date et le fournisseur de la facture avant rapprochement.");
+    if (invoice.source === "manual") await checkInvoiceDuplicates(tx, restaurantId, invoice.id, invoice.supplierId, invoice.reference, input.confirmedDuplicates);
     if (invoice.source === "demo" && workspace.mode !== "demo")
       throw new WorkspaceError(409, "DEMO_INVOICE_IN_OPERATIONAL_WORKSPACE", "Une facture d’exemple ne peut pas être utilisée dans un espace réel.");
     if (invoice.source === "source_document" && workspace.mode !== "demo")
@@ -246,6 +248,7 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
 }
 
 export const purchaseReceiptSchema = z.object({
+  confirmedDuplicates: z.array(z.object({ id: z.string().max(100), version: z.string().max(50) }).strict()).max(100).optional(),
   operationId: z.uuid(), invoiceDocumentId: z.string().trim().min(1).max(100),
   invoiceDocumentRevision: z.number().int().positive(), deliveryReference: z.string().trim().min(1).max(120),
   deliveryDate: z.iso.date(), lines: z.array(z.object({ invoiceLineIndex: z.number().int().min(0).max(99),

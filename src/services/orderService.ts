@@ -69,6 +69,7 @@ export interface PurchaseSuggestions {
 }
 
 export interface PurchaseReceiptInput {
+  confirmedDuplicates?: Array<{ id: string; version: string }>;
   operationId: string;
   invoiceDocumentId: string;
   invoiceDocumentRevision: number;

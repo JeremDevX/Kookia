@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import Modal from "../common/Modal";
+import { confirmInvoiceDuplicates } from "../../services/invoiceDuplicates";
 import { ApiError } from "../../config/api";
 import { getInvoices, saveInvoice, type Invoice, type InvoiceLine, type SourceLineDisposition } from "../../services/invoiceService";
 import type { Product, Supplier } from "../../types";
@@ -141,7 +142,15 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
     persistFocusPending.current = document.activeElement === actionButton ? (receive ? "receive" : "draft") : null;
     setSaving(true); setError(""); setNotice("");
     try {
-      const saved = await saveInvoice(invoice, receive);
+      let saved: Invoice;
+      try { saved = await saveInvoice(invoice, receive); } catch (cause) {
+        const confirmed = confirmInvoiceDuplicates(cause);
+        if (!confirmed) {
+          if (cause instanceof ApiError && cause.details.code === "POSSIBLE_DUPLICATE_INVOICE") return;
+          throw cause;
+        }
+        saved = await saveInvoice(invoice, receive, confirmed);
+      }
       setInvoice(saved);
       setInvoices((previous) => [saved, ...previous.filter((item) => item.id !== saved.id)]);
       setReloadConflictInvoice(false);
@@ -229,6 +238,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
       </select>
       <Button variant="outline" onClick={createDraft} disabled={saving || sourceConflict}>Nouvelle facture manuelle</Button>
       {invoice && <>
+        {invoice.source === "manual" && !invoice.supplierId && <p>Sans fournisseur, les factures similaires ne peuvent pas être repérées.</p>}
         {invoice.source === "demo" && <p>Brouillon prérempli à contrôler avant tout rapprochement.</p>}
         {sourceLinked && <section className="invoice-source-note" aria-label="Provenance de la pièce source">
           <h3>Pièce source liée — transcription</h3>
