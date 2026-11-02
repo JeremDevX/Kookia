@@ -134,6 +134,7 @@ model Restaurant {
   suppliers    Supplier[]
   products     Product[]
   stockCounts  StockCount[]
+  inventorySessions InventorySession[]
   recipes      Recipe[]
   predictions  Prediction[]
   movements    StockMovement[]
@@ -300,6 +301,18 @@ model StockMovement {
   @@index([restaurantId, stockCountId])
 }
 
+model InventorySession {
+  id           String @id
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  actorId      String
+  status       String @default("draft")
+  revision     Int @default(1)
+  lines        Json
+  createdAt    DateTime @default(now())
+  validatedAt  DateTime?
+}
+
 model StockCount {
   id                  String
   restaurantId        String
@@ -307,6 +320,7 @@ model StockCount {
   productId           String
   product             Product @relation(fields: [restaurantId, productId], references: [restaurantId, id], onDelete: NoAction)
   countedQuantity     Decimal @db.Decimal(14, 3)
+  inventoryReason     String?
   theoreticalQuantity Decimal @db.Decimal(14, 3)
   delta               Decimal @db.Decimal(14, 3)
   unit                String

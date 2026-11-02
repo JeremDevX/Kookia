@@ -40,6 +40,7 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   const allowedOrigins = env.APP_ORIGIN === "http://127.0.0.1:5173"
     ? new Set(["http://localhost:5173", env.APP_ORIGIN])
     : new Set([env.APP_ORIGIN]);
+  app.use("/api/workspace/inventory-session", express.json({ limit: "2mb", type: "application/json" }));
   app.use("/api/workspace/sales/imports", express.json({ limit: "512kb", type: "application/json" }));
   app.use(express.json({ limit: "16kb", type: "application/json" }));
   app.use(cookieParser());
@@ -104,6 +105,7 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   app.use((_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Ressource introuvable." } }));
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     void _next;
+    if (error && typeof error === "object" && "type" in error && error.type === "entity.too.large") { res.status(413).json({ error: { code: "TOO_LARGE", message: "Les données sont trop volumineuses pour être enregistrées." } }); return; }
     if (error instanceof AuthError) { const status = error.code === "EMAIL_ALREADY_USED" ? 409 : error.code === "UNAUTHENTICATED" || error.code === "INVALID_CREDENTIALS" || error.code === "INVALID_CURRENT_PASSWORD" ? 401 : 400; res.status(status).json({ error: { code: error.code, message: error.message } }); return; }
     console.error("Unhandled API error", error instanceof Error ? error.message : "unknown error");
     res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Une erreur interne est survenue." } });

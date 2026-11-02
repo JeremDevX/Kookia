@@ -5,6 +5,7 @@ export interface StockCountSummary {
   id: string;
   productId: string;
   countedQuantity: number;
+  inventoryReason?: string | null;
   theoreticalQuantity: number;
   delta: number;
   unit: Unit;

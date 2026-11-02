@@ -2,6 +2,7 @@ export type WorkspaceRole = "owner" | "chef" | "kitchen";
 
 // Paths are the encoded HTTP pathname, including /api/workspace, without a query string.
 const allRoles = [
+  "GET /inventory-session", "POST /inventory-session", "PUT /inventory-session/:id", "POST /inventory-session/:id/validate", "POST /inventory-session/:id/refresh", "POST /inventory-session/:id/discard",
   "GET /catalog", "GET /stock-lots", "GET /products/:id/lots", "GET /products/:id/counts",
   "GET /products/:id/movements", "POST /products/:id/counts",
   "GET /orders", "POST /orders/:id/receipts", "GET /orders/:id/receipt-invoices",

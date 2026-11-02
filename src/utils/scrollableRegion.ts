@@ -1,6 +1,7 @@
 import type { KeyboardEvent } from "react";
 
 export function scrollScrollableRegionWithArrowKeys(event: KeyboardEvent<HTMLDivElement>) {
+  if (event.target !== event.currentTarget) return;
   if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
   const region = event.currentTarget;
   const maximum = Math.max(0, region.scrollWidth - region.clientWidth);

@@ -10,6 +10,7 @@ export default function StockCountHistory({ counts, error }: StockCountHistoryPr
         <div className="history-item" key={count.id}>
           <span className="date">{count.countDate}</span>
           <span className="action">Compté {count.countedQuantity} {count.unit} · théorique {count.theoreticalQuantity} {count.unit} · écart {count.delta > 0 ? "+" : ""}{count.delta} {count.unit}</span>
+          {count.inventoryReason && <small>Justification : {count.inventoryReason}</small>}
           <small>Enregistré par le compte connecté · {new Date(count.countedAt).toLocaleTimeString("fr-FR", { timeZone: "Europe/Paris" })} (Europe/Paris)</small>
         </div>
       ))}

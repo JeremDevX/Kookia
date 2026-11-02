@@ -116,3 +116,15 @@
   .stock-inventory-card { padding: var(--spacing-md); }
   .inventory-footnote { padding: var(--spacing-md); }
 }
+.inventory-session { padding: var(--spacing-lg); }
+.inventory-session > p { margin-bottom: var(--spacing-md); }
+.inventory-session input { max-width: var(--size-120); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
+.inventory-session-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--spacing-sm); margin-top: var(--spacing-lg); }
+.inventory-mobile-label { display: none; }
+@media (--media-workspace-compact) {
+  .inventory-session .stocks-table thead { display: none; }
+  .inventory-session .stocks-table, .inventory-session .stocks-table tbody, .inventory-session .stocks-table tr { display: block; }
+  .inventory-session .stocks-table th, .inventory-session .stocks-table td { display: flex; width: auto; justify-content: space-between; gap: var(--spacing-md); text-align: left; }
+  .inventory-mobile-label { display: inline; color: var(--color-text-secondary); }
+  .inventory-session .stocks-table tr { padding-block: var(--spacing-sm); border-bottom: var(--size-1) solid var(--color-border); }
+}

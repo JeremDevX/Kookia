@@ -1,8 +1,7 @@
 import StockLotsAndWaste from "../components/stocks/StockLotsAndWaste";
 import React, { useEffect, useRef, useState } from "react";
 import StockInventoryTable from "../components/stocks/StockInventoryTable";
-import StockCountList from "../components/stocks/StockCountList";
-import StockCountModal from "../components/stocks/StockCountModal";
+import InventorySessionPanel from "../components/stocks/InventorySessionPanel";
 import Input from "../components/common/Input";
 import Button from "../components/common/Button";
 import ProductDetail from "../components/stocks/ProductDetail";
@@ -49,8 +48,6 @@ const Stocks: React.FC = () => {
   );
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
-  const [countProductId, setCountProductId] = useState<string | null>(null);
-  const countProduct = products.find((product) => product.id === countProductId);
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? null;
   const categories = Array.from(new Set(products.map((product) => product.category))).sort((a, b) => a.localeCompare(b, "fr"));
@@ -139,7 +136,7 @@ const Stocks: React.FC = () => {
       <section className="inventory-panel" aria-label="Inventaire">
       <header className="workspace-header inventory-header">
         <div>
-          <h1 ref={headingRef} tabIndex={-1}>{view === "count" ? "Inventaire" : "Stocks"}</h1>
+          <h1 ref={headingRef} tabIndex={-1}>{view === "count" ? "Inventaire mensuel" : "Stocks"}</h1>
           <p className="workspace-subtitle">{view === "count" ? "Comptez chaque produit pour vérifier son stock." : "Suivez les quantités et repérez les produits à vérifier."}</p>
         </div>
         <Button variant="outline" onClick={() => updateFilters({ stockView: view === "count" ? "all" : "count" })}>{view === "count" ? "Retour aux stocks" : "Faire l’inventaire"}</Button>
@@ -159,7 +156,7 @@ const Stocks: React.FC = () => {
         </div>
         <span className="inventory-result" role="status">{loading ? "Chargement…" : `${filteredProducts.length} produit${filteredProducts.length > 1 ? "s" : ""}`}</span>
       </div>}
-      {view === "count" && <p className="inventory-footnote">Les stocks sont mis à jour uniquement après validation de chaque comptage.</p>}
+      {view === "count" && <p className="inventory-footnote">Le brouillon ne modifie pas les stocks. Les produits non renseignés restent à compter.</p>}
       <div className="stocks-toolbar">
         <div className="toolbar-content">
           <div className="search-wrapper">
@@ -184,13 +181,13 @@ const Stocks: React.FC = () => {
               {categories.map((category) => <option key={category} value={category}>{category}</option>)}
             </select>
             </label>
-            <Button
+            {view !== "count" && <Button
               variant="outline"
               icon={<Filter size={18} />}
               onClick={() => setIsFiltersModalOpen(true)}
             >
               Filtres{advancedFilterCount > 0 ? ` (${advancedFilterCount})` : ""}
-            </Button>
+            </Button>}
           </div>
         </div>
         {view !== "count" && !loading && !error && pageCount > 1 && <nav className="inventory-pagination" aria-label="Pages des produits">
@@ -203,16 +200,14 @@ const Stocks: React.FC = () => {
           document.getElementById("stock-search")?.focus();
         }}>Effacer les filtres</button>}
       </div>
-      {!loading && !error && <>
-      {view === "count" ? <StockCountList products={filteredProducts} onCount={setCountProductId} /> : <><StockInventoryTable products={visibleProducts} selecting={cartLoading}
+      {!error && (view === "count" ? <InventorySessionPanel search={searchTerm} category={categoryFilter} onRefresh={refetch} onClearFilters={() => updateFilters({ search: "", category: "all" })} /> : !loading && <><StockInventoryTable products={visibleProducts} selecting={cartLoading}
         onInspect={setSelectedProductId} onSelect={(product) => void handleSelectForOrder(product)} />
       <ul className="stock-inventory-cards" aria-label="Inventaire des produits">
         {visibleProducts.map((product) => <StockInventoryCard key={product.id} product={product} selecting={cartLoading}
           onInspect={() => setSelectedProductId(product.id)} onSelect={() => void handleSelectForOrder(product)} />)}
         {filteredProducts.length === 0 && <li className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</li>}
-      </ul></>}
-      </>}
-      <p className="inventory-footnote">Quantités théoriques · Achats à valider avant commande.</p>
+      </ul></>)}
+      {view !== "count" && <p className="inventory-footnote">Quantités théoriques · Achats à valider avant commande.</p>}
       </section>
       {view !== "count" && <section className="stock-ticket-panel" aria-labelledby="stock-ticket-title">
         <h2 id="stock-ticket-title">Importer un Ticket Z</h2>
@@ -220,7 +215,6 @@ const Stocks: React.FC = () => {
         <Link className="btn btn-outline" to="/sales#sales-ticket-title">Transcrire un Ticket Z</Link>
       </section>}
       {view !== "count" && !loading && !error && <StockLotsAndWaste products={products} onSaved={async () => { await refetch(); }} />}
-      {countProduct && <StockCountModal key={countProduct.id} product={countProduct} isOpen onClose={() => setCountProductId(null)} onRefresh={refetch} onSave={recordCount} />}
       {selectedProduct && <ProductDetail
         key={selectedProduct.id}
         product={selectedProduct}
