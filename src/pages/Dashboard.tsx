@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, Calendar } from "lucide-react";
 import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import TodayPurchaseForecast from "../components/dashboard/TodayPurchaseForecast";
 import TodayContext from "../components/dashboard/TodayContext";
+import TodayPlanning from "../components/dashboard/TodayPlanning";
 import TodayStockPreview from "../components/dashboard/TodayStockPreview";
 import { purchaseForecastIndicator } from "../features/orders/purchaseForecastPresentation";
 import { purchasePreparationHref } from "../features/orders/orderNavigation";
@@ -21,6 +22,11 @@ import { formatLocalISODate } from "../utils/date";
 import "./Dashboard.css";
 
 export default function Dashboard() {
+  const [params] = useSearchParams();
+  return params.get("view") === "planning" ? <TodayPlanning /> : <DashboardOverview />;
+}
+
+function DashboardOverview() {
   const today = formatLocalISODate(new Date());
   const thirtyDaysAgo = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
   const { addToast } = useToast();
@@ -102,7 +108,7 @@ export default function Dashboard() {
   return <div className="dashboard-container">
     <header className="dashboard-header"><div><h1>Tableau de bord</h1>
       <span className="dashboard-date"><Calendar size={16} aria-hidden="true" />{new Date().toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long" })}</span></div>
-      <Link to="/sales#sales-start" className="btn btn-primary dashboard-import">Ajouter des ventes</Link>
+      <div className="dashboard-header-actions"><Link to="/?view=planning" className="btn btn-outline">Planning du jour</Link><Link to="/sales#sales-start" className="btn btn-primary dashboard-import">Ajouter des ventes</Link></div>
     </header>
 
     <div className="dashboard-metrics" aria-label="Situation du restaurant">

@@ -1,0 +1,7 @@
+.dashboard-header-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.today-planning-grid { display: grid; grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-lg); align-items: start; }
+.today-planning-list { list-style: none; padding: var(--number-0); margin: var(--spacing-md) var(--number-0); }
+.today-planning-list li { display: flex; justify-content: space-between; align-items: start; gap: var(--spacing-md); padding: var(--spacing-md) var(--number-0); border-bottom: var(--size-1) solid var(--color-nav-border); }
+.today-planning-list p { margin: var(--spacing-sm) var(--number-0) var(--number-0); }
+.today-planning-links { margin-top: var(--spacing-lg); }
+@media (--media-mobile) { .today-planning-grid { grid-template-columns: var(--unit-1fr); } .today-planning-list li { flex-direction: column; } }

@@ -171,6 +171,12 @@ source opérationnelle ne les établit. Un rendu à données synthétiques a ét
 observé dans Firefox ; ouverture clavier des réglages, fermeture par Échap et
 retour du focus vérifiés. Comparaison géométrique et états météo réels restent
 à vérifier.
+La maquette Stocks `673:44425` prévoit une valeur par produit. Le prix actuel
+ne conserve ni base fiscale ni provenance ; le détail indique désormais que
+son calcul à partir du stock théorique est indicatif. La colonne de liste reste
+à définir avec un contrat de prix fiable, sans présenter une somme mélangée
+comme une valorisation comptable. Le libellé du détail a été vérifié dans
+Firefox sur mobile, en lecture seule.
 La carte « Stock critique » de A `673:43621` montre trois produits, leurs
 quantités, seuils et besoins estimés. Le tableau de bord présente maintenant
 jusqu’à trois produits à vérifier, classés selon les statuts métier existants,
@@ -186,9 +192,13 @@ le focus. Aucune opération métier n’a été enregistrée ; la météo extern
 désactivée. Ces contrôles ne constituent pas une comparaison pixel à pixel.
 La frame A `673:43793` ajoute une vue « Planning du jour » : indicateurs,
 graphique par service, prochaines revues avec créneaux et participants, action
-prioritaire et raccourcis. `Dashboard.tsx` n'expose pas cette sous-vue ; les
-horaires et services existants ne démontrent pas l'existence d'un agenda de
-revues ou de participants. Une adaptation doit rendre les absences explicites.
+prioritaire et raccourcis. L’application propose maintenant `/?view=planning`,
+avec horaires de service et réceptions datées issus des données enregistrées ;
+elles distinguent les simulations et les lignes sans date. Les réunions,
+participants et prévisions du visuel restent absents faute de sources. Les
+états d’erreur sont indépendants ; le jour suit le fuseau de Paris. Firefox a
+vérifié l’ouverture, le focus et l’absence de débordement mobile sur le compte
+local, en lecture seule. Cette vue n’est pas encore conforme à la maquette.
 Le nœud `673:44425` « Stocks — Liste des produits » mesure 1440 × 1374 px
 et utilise le même fond `bg/app` `#F7F9FB`.
 Le nœud `673:45326` « Fiches techniques — Import CSV » mesure 1440 × 1024 px.

@@ -39,3 +39,12 @@ it("distingue les prévisions indisponibles des données réelles", () => {
   expect(html).toContain("Produits suggérés</span><strong>—</strong><small>Chargement");
   expect(html).toContain('href="/orders?view=prepare#purchase-suggestions-title"');
 });
+
+it("ouvre le planning demandé et permet de revenir au tableau de bord", () => {
+  const html = renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: ["/?view=planning"] }, createElement(Dashboard)));
+  expect(html).toContain("Planning du jour");
+  expect(html).toContain('href="/"');
+  expect(html).toContain("Chargement des horaires");
+  expect(html).toContain("Chargement des réceptions");
+  expect(html).not.toContain("Ajouter des ventes");
+});
