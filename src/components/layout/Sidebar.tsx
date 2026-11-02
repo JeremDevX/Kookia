@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, type RefObject } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -20,6 +20,7 @@ import "./Sidebar.css";
 import { useAuth } from "../../features/auth/context/AuthContext";
 import SidebarSubnav from "./SidebarSubnav";
 import { getOrderView } from "../../features/orders/orderNavigation";
+import { getRestaurant, type Restaurant } from "../../services/restaurantService";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -34,6 +35,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
   const showingReceipts = pathname === "/orders" && getOrderView(new URLSearchParams(search), hash) === "receipts";
   const inMore = ["/services", "/history"].includes(pathname);
   const sidebarRef = useRef<HTMLElement>(null);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  useEffect(() => {
+    let active = true;
+    let request = 0;
+    const refresh = () => {
+      const current = ++request;
+      getRestaurant().then((data) => { if (active && current === request) setRestaurant(data); }, () => { if (active && current === request) setRestaurant(null); });
+    };
+    refresh();
+    window.addEventListener("restaurant-saved", refresh);
+    return () => { active = false; window.removeEventListener("restaurant-saved", refresh); };
+  }, []);
   useLayoutEffect(() => {
     if (!isOpen) return;
     const menuButton = returnFocusRef.current;
@@ -156,6 +169,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
             <LogOut size={20} />
             <span>Déconnexion</span>
           </button>
+          {restaurant?.name.trim() && <div className="sidebar-restaurant">
+            <span className="sidebar-restaurant-avatar" aria-hidden="true">{restaurant.name.trim().charAt(0).toUpperCase()}</span>
+            <span className="sidebar-restaurant-details"><strong>{restaurant.name}</strong>{restaurant.city && <small>{restaurant.city}</small>}</span>
+          </div>}
         </div>
       </aside>
     </>

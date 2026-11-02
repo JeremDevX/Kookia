@@ -19,6 +19,12 @@
 .sidebar .support-arrow { margin-left: auto; }
 .sidebar .logout-btn { width: var(--unit-100percent); text-align: left; }
 .sidebar .logout-btn:hover { color: var(--color-urgent-text); background: var(--color-bg); }
+.sidebar-restaurant { display: flex; align-items: center; gap: var(--size-12); padding: var(--spacing-md); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); }
+.sidebar-restaurant-avatar { width: var(--size-36); height: var(--size-36); flex-shrink: var(--number-0); display: grid; place-items: center; border-radius: var(--unit-100percent); background: var(--color-nav-text); color: var(--color-surface); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+.sidebar-restaurant-details { min-width: var(--number-0); }
+.sidebar-restaurant-details strong, .sidebar-restaurant-details small { display: block; overflow-wrap: anywhere; }
+.sidebar-restaurant-details strong { font-size: var(--font-size-sm); color: var(--color-nav-text); }
+.sidebar-restaurant-details small { font-size: var(--font-size-caption); color: var(--color-nav-muted); }
 .sidebar-close-btn { display: none; width: var(--size-40); height: var(--size-40); align-items: center; justify-content: center; color: var(--color-primary-text); border-radius: var(--radius-compact); }
 .sidebar-close-btn:hover { background: var(--color-surface-active); }
 .sidebar-overlay { display: none; position: fixed; inset: var(--number-0); background: rgba(var(--rgb-palette-sage-15), var(--number-0_4)); backdrop-filter: blur(var(--size-3)); z-index: var(--number-90); }

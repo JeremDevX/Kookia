@@ -37,7 +37,7 @@ export default function RestaurantSettings({ onSaved }: { onSaved?: () => void }
     event.preventDefault();
     if (!restaurant || saving) return;
     setSaving(true); setError(""); setNotice("");
-    try { setRestaurant(await saveRestaurant(restaurant)); setNotice("Informations du restaurant enregistrées."); onSaved?.(); }
+    try { setRestaurant(await saveRestaurant(restaurant)); window.dispatchEvent(new Event("restaurant-saved")); setNotice("Informations du restaurant enregistrées."); onSaved?.(); }
     catch (error) { setError(error instanceof Error ? error.message : "Enregistrement impossible."); }
     finally { setSaving(false); }
   };
