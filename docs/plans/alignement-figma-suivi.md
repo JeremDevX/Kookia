@@ -43,8 +43,8 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Écran / route | Référence candidate | Structure | Informations | Fonctionnalités | Visuel | Interactions | Statut |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Connexion `/login` | A `673:43390` | À vérifier | À vérifier | À vérifier | À vérifier | Connexion factice vérifiée ; reste à tester | En cours |
-| Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration en quatre étapes ; invitations d’équipe indisponibles | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
-| Configuration `/setup` | A `673:43437` à `673:43559` | Quatre étapes avec progression et reprise | Champs restaurant présents ; jours d’ouverture à compléter | Fournisseurs et récapitulatif disponibles ; invitations d’équipe indisponibles | Rapprochement partiel ; comparaison précise à faire | Création, reprise, ajout fournisseur et retour testés sur données synthétiques | En cours |
+| Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration en quatre étapes ; invitations par lien manuel | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
+| Configuration `/setup` | A `673:43437` à `673:43559` | Quatre étapes avec progression et reprise | Champs restaurant présents ; jours d’ouverture à compléter | Fournisseurs, récapitulatif et invitations manuelles disponibles | Rapprochement partiel ; comparaison précise à faire | Création, reprise, ajout fournisseur et retour testés sur données synthétiques | En cours |
 | Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | Divergente pour `673:43621` | Indicateurs et blocs différents | Planning et notifications à confronter | À vérifier | À vérifier | En cours |
 | Stocks `/stocks` | A `673:44425`, `673:44584` | À vérifier | Ticket Z et OCR divergents | À vérifier | À vérifier | À vérifier | En cours |
 | Prévisions `/predictions` | A `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
@@ -400,8 +400,10 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   informations du restaurant sont saisies avant création, sans catalogue
   fictif. La progression restaurant, équipe, fournisseurs et récapitulatif est
   enregistrée sans migration et peut reprendre après rechargement. L’étape
-  équipe indique que les invitations sont indisponibles ; les rôles et leur
-  gestion restent à construire. Les fournisseurs utilisent les données réelles.
+  équipe propose des liens d’invitation à usage unique, à transmettre par le
+  propriétaire ; aucun e-mail n’est envoyé automatiquement. Les rôles chef et
+  cuisine sont contrôlés côté serveur et le propriétaire peut retirer un accès.
+  Les fournisseurs utilisent les données réelles.
   Les établissements existants sans progression restent accessibles. Dans Firefox
   sur base jetable : reprise à l’étape équipe après rechargement, ajout d’un
   fournisseur, récapitulatif, retour à la route demandée et catalogue sans
@@ -430,6 +432,21 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   la démo et aux fixtures explicites. Aucun espace existant n’a été vidé ou
   remplacé ; les données d’exemple déjà persistées doivent encore être
   identifiées au cas par cas avant toute intervention.
+
+## Équipe : limites et validation
+
+- La migration additive `20261102000000_invitations` a été appliquée à la base
+  locale restaurée après accord explicite et sauvegarde vérifiée. Elle ajoute
+  les tables d’invitations et d’appartenance sans modifier les données existantes.
+- Sur base synthétique dans Firefox, les parcours chef et cuisine, leur accès
+  aux stocks et la révocation ont été vérifiés ; les requêtes interdites sont
+  refusées. Une opération déjà en cours lors d’une révocation peut encore
+  aboutir. Les droits restants de la matrice Figma sont à préciser.
+- Le lien est transférable et expire après sept jours ; l’adresse du compte
+  n’est pas vérifiée et aucun envoi automatique n’est effectué. Une facture
+  brouillon correspondant à une commande est visible en entier pendant sa
+  réception. Un lien perdu avant copie doit être révoqué et recréé ; la
+  navigation interne n’avertit pas systématiquement avant sa perte.
 
 ## Recette et dépendances
 

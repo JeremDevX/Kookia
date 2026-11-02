@@ -48,8 +48,8 @@ export default function SidebarSubnav({ section, onNavigate }: { section: Sectio
     items = views.map(({ id, label }) => ({ id, label, href: recipeViewHref(params, id) }));
   } else {
     const requested = params.get("section");
-    active = requested === "account" || requested === "suppliers" || requested === "connections" ? requested : "restaurant";
-    items = [["restaurant", "Restaurant"], ["account", "Compte"], ["suppliers", "Fournisseurs"], ["connections", "Connexions"]].map(([id, label]) => {
+    active = requested === "account" || requested === "team" || requested === "suppliers" || requested === "connections" ? requested : "restaurant";
+    items = [["restaurant", "Restaurant"], ["account", "Compte"], ["team", "Équipe"], ["suppliers", "Fournisseurs"], ["connections", "Connexions"]].map(([id, label]) => {
       const query = new URLSearchParams(params); query.set("section", id);
       return { id, label, href: `/settings?${query}` };
     });

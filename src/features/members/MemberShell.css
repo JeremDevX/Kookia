@@ -1,0 +1,8 @@
+.member-shell { min-height: var(--unit-100dvh); background: var(--color-bg); color: var(--color-nav-text); }
+.member-header { display: flex; justify-content: space-between; padding: var(--spacing-md) var(--spacing-xl); background: var(--color-surface); border-bottom: var(--size-1) solid var(--color-border); }
+.member-nav { display: flex; flex-wrap: wrap; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-xl); background: var(--color-surface); }
+.member-nav a[aria-current="page"] { font-weight: var(--font-weight-bold); }
+.member-page { padding: var(--spacing-xl); }
+.member-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--unit-100percent), var(--size-290)), var(--unit-1fr))); gap: var(--spacing-lg); margin-top: var(--spacing-lg); }
+.member-cards section { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-compact); padding: var(--spacing-lg); }
+@media (--media-mobile) { .member-header, .member-nav, .member-page { padding: var(--spacing-md); } }

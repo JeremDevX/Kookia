@@ -16,7 +16,7 @@ it("requires setup once per authenticated account without creating demo data", a
   agent.set("X-Expected-User-Id", registered.body.user.id);
   const payload = { ...input, expectedUserId: ids[0] };
   await agent.post("/api/setup").send(input).expect(400);
-  expect((await agent.get("/api/setup").expect(200)).body).toEqual({ configured: false, userId: ids[0], step: null, revision: 0 });
+  expect((await agent.get("/api/setup").expect(200)).body).toMatchObject({ configured: false, userId: ids[0], step: null, revision: 0 });
   expect((await agent.get("/api/workspace/catalog").expect(409)).body.error.code).toBe("SETUP_REQUIRED");
   expect(await prisma.restaurant.count({ where: { ownerId: ids[0] } })).toBe(0);
   await agent.post("/api/setup").send({ ...payload, dailyCovers: -1 }).expect(400);
@@ -24,7 +24,7 @@ it("requires setup once per authenticated account without creating demo data", a
   const results = await Promise.all([agent.post("/api/setup").send(payload), agent.post("/api/setup").send(payload)]);
   expect(results.map(result => result.status).sort()).toEqual([201, 409]);
   expect(results.find(result => result.status === 409)?.body.error.code).toBe("SETUP_ALREADY_COMPLETED");
-  expect((await agent.get("/api/setup").expect(200)).body).toEqual({ configured: true, userId: ids[0], step: "team", revision: 1 });
+  expect((await agent.get("/api/setup").expect(200)).body).toMatchObject({ configured: true, userId: ids[0], step: "team", revision: 1 });
   expect((await agent.get("/api/workspace/restaurant").expect(200)).body).toEqual(input);
   expect((await agent.get("/api/workspace/catalog").expect(200)).body).toEqual({ products: [], suppliers: [] });
   for (const path of ["recipes", "predictions", "notifications"]) {
@@ -51,7 +51,7 @@ it("requires setup once per authenticated account without creating demo data", a
   const second = await other.post("/api/auth/register").send({ displayName: "Other", email: `setup-${randomUUID()}@example.com`, password: "test setup password" }).expect(201);
   ids.push(second.body.user.id);
   other.set("X-Expected-User-Id", second.body.user.id);
-  expect((await other.get("/api/setup").expect(200)).body).toEqual({ configured: false, userId: ids[1], step: null, revision: 0 });
+  expect((await other.get("/api/setup").expect(200)).body).toMatchObject({ configured: false, userId: ids[1], step: null, revision: 0 });
   expect((await other.get("/api/workspace/catalog").expect(409)).body.error.code).toBe("SETUP_REQUIRED");
   expect((await other.post("/api/setup").send(payload).expect(409)).body.error.code).toBe("SESSION_CHANGED");
   expect(await prisma.restaurant.count({ where: { ownerId: ids[1] } })).toBe(0);
@@ -80,7 +80,7 @@ it("resumes and safely advances setup while preserving legacy workspaces", async
   expect((await agent.patch("/api/setup/step").send({ expectedUserId: owner, expectedStep: "team", nextStep: "suppliers", expectedRevision: 1 }).expect(409)).body.error.code).toBe("SETUP_REQUIRED");
   expect((await agent.post("/api/setup").send({ ...input, expectedUserId: owner }).expect(201)).body).toEqual({ configured: true, userId: owner, step: "team", revision: 1 });
   await prisma.restaurant.create({ data: { ...input, ownerId: legacy } });
-  expect((await other.get("/api/setup").expect(200)).body).toEqual({ configured: true, userId: legacy, step: null, revision: 0 });
+  expect((await other.get("/api/setup").expect(200)).body).toMatchObject({ configured: true, userId: legacy, step: null, revision: 0 });
   expect(await prisma.workspaceDocument.count({ where: { restaurant: { ownerId: legacy }, kind: "onboarding" } })).toBe(0);
   const move = { expectedUserId: owner, expectedStep: "team", nextStep: "suppliers", expectedRevision: 1 };
   expect((await other.patch("/api/setup/step").send(move).expect(409)).body.error.code).toBe("SESSION_CHANGED");
@@ -88,13 +88,13 @@ it("resumes and safely advances setup while preserving legacy workspaces", async
   await agent.patch("/api/setup/step").send({ ...move, expectedRevision: 0 }).expect(400);
   const replies = await Promise.all([agent.patch("/api/setup/step").send(move), agent.patch("/api/setup/step").send(move)]);
   for (const reply of replies) expect(reply.body).toEqual({ configured: true, userId: owner, step: "suppliers", revision: 2 });
-  expect((await agent.get("/api/setup").expect(200)).body).toEqual({ configured: true, userId: owner, step: "suppliers", revision: 2 });
+  expect((await agent.get("/api/setup").expect(200)).body).toMatchObject({ configured: true, userId: owner, step: "suppliers", revision: 2 });
   await agent.patch("/api/setup/step").send({ expectedUserId: owner, expectedStep: "suppliers", nextStep: "team", expectedRevision: 2 }).expect(200);
   expect((await agent.patch("/api/setup/step").send(move).expect(409)).body.error.code).toBe("REVISION_CONFLICT");
   await agent.patch("/api/setup/step").send({ ...move, expectedRevision: 3 }).expect(200);
   await agent.patch("/api/setup/step").send({ expectedUserId: owner, expectedStep: "suppliers", nextStep: "review", expectedRevision: 4 }).expect(200);
   await agent.patch("/api/setup/step").send({ expectedUserId: owner, expectedStep: "review", nextStep: null, expectedRevision: 5 }).expect(200);
-  expect((await agent.get("/api/setup").expect(200)).body).toEqual({ configured: true, userId: owner, step: null, revision: 6 });
+  expect((await agent.get("/api/setup").expect(200)).body).toMatchObject({ configured: true, userId: owner, step: null, revision: 6 });
   expect((await other.patch("/api/setup/step").send({ ...move, expectedUserId: legacy }).expect(409)).body.error.code).toBe("REVISION_CONFLICT");
 });
 

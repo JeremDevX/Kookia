@@ -18,9 +18,10 @@ interface Props {
   saving: boolean;
   onChange: (value: string) => void;
   onDecide: (decision: "added" | "excluded") => void;
+  limited?: boolean;
 }
 
-export default function PurchaseSuggestionCard({ item, value, inCart, busy, saving, onChange, onDecide }: Props) {
+export default function PurchaseSuggestionCard({ item, value, inCart, busy, saving, onChange, onDecide, limited = false }: Props) {
   const valid = isValidOrderQuantity(value, item.orderStep);
   const editable = item.canAdd && !isPurchaseSuggestionHandled(item, inCart);
   return <li className="purchase-suggestion-card">
@@ -49,9 +50,9 @@ export default function PurchaseSuggestionCard({ item, value, inCart, busy, savi
       <Button size="sm" variant="ghost" disabled={busy} title={`Écarter ${item.productName}`} aria-label={`Écarter ${item.productName}`} onClick={() => onDecide("excluded")}><X size={16} aria-hidden="true" /></Button>
     </div>}
     {editable && !valid && <p className="purchase-item-status" role="alert">Respectez le pas de commande, avec une quantité positive jusqu’à 1 000 000.</p>}
-    {item.decision?.orderId ? <p className="purchase-item-status">Commande enregistrée. <Link to={`/orders#order-${item.decision.orderId}`}>Voir la commande</Link></p>
+    {item.decision?.orderId ? <p className="purchase-item-status">Commande enregistrée. <Link to={limited ? `/orders?view=receipts#order-${item.decision.orderId}` : `/orders#order-${item.decision.orderId}`}>Voir la commande</Link></p>
       : inCart ? null
       : item.decision?.kind === "excluded" ? <p className="purchase-item-status">Écarté de cette proposition.</p>
-      : !item.canAdd && <p className="purchase-item-status">{item.status === "covered" ? item.reason : item.status === "needs_stock_count" || item.status === "unit_mismatch" ? <><Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Vérifier {item.status === "unit_mismatch" ? "l’unité" : "le stock"} de {item.productName}</Link> avant de commander.</> : item.status === "supplier_constraints_missing" ? <>{item.reason} <Link to="/settings">Paramètres fournisseur</Link> · <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Conditionnement du produit</Link></> : item.reason}</p>}
+      : !item.canAdd && <p className="purchase-item-status">{item.status === "covered" ? item.reason : item.status === "needs_stock_count" || item.status === "unit_mismatch" ? <><Link to={limited ? "/stocks" : `/stocks?product=${encodeURIComponent(item.productId)}`}>Vérifier {item.status === "unit_mismatch" ? "l’unité" : "le stock"} de {item.productName}</Link> avant de commander.</> : item.status === "supplier_constraints_missing" ? <>{item.reason} {limited ? "Demandez au propriétaire de vérifier les paramètres fournisseur." : <><Link to="/settings">Paramètres fournisseur</Link> · <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Conditionnement du produit</Link></>}</> : item.reason}</p>}
   </li>;
 }

@@ -229,6 +229,16 @@ lorsqu’une session est active. Une déconnexion sans session valide reste
 idempotente (`204`) et ne renvoie pas de cookie. Ces contrôles ne règlent pas
 les réponses `Set-Cookie` concurrentes reçues dans un ordre différent.
 
+Les invitations d’équipe sont des liens manuels à usage unique, valables sept
+jours. Seule l’empreinte du jeton est stockée ; l’adresse e-mail n’est pas
+vérifiée et toute personne possédant le lien peut l’utiliser avec son compte.
+Le serveur limite les membres à un établissement et applique les droits chef
+ou cuisine sur chaque requête. La révocation interdit les nouvelles requêtes ;
+elle n’annule pas une opération déjà en cours. Les brouillons de facture
+compatibles restent visibles en entier pour le rapprochement des réceptions.
+La migration `20261102000000_invitations` est additive. Un retour à l’ancien
+code peut laisser ces tables intactes ; leur suppression détruirait les accès.
+
 `GET /api/workspace/analytics` et `GET /api/workspace/activity` renvoient
 `null` si leur document est absent, sans fabriquer de statistiques à zéro ni
 créer de données. Les clients doivent traiter cette absence ; les documents

@@ -18,10 +18,11 @@ interface OrderGeneratorProps {
   onRetryCatalog: () => Promise<void>;
   onClose: () => void;
   onValidated?: () => void;
+  orderHref?: string;
 }
 
 export default function OrderGenerator({ recommendations, products, suppliers, catalogLoading, catalogError,
-  onRetryCatalog, onClose, onValidated }: OrderGeneratorProps) {
+  onRetryCatalog, onClose, onValidated, orderHref = "/orders#to-transmit" }: OrderGeneratorProps) {
   const [quantities, setQuantities] = useState(() => recommendations.map((item) => String(item.quantity)));
   const [operationId] = useState(() => crypto.randomUUID());
   const [saving, setSaving] = useState(false);
@@ -71,7 +72,7 @@ export default function OrderGenerator({ recommendations, products, suppliers, c
     <h3>{order.status.startsWith("simulated") ? "Commande préparée" : "Commande enregistrée"}</h3>
     <p>{order.status.startsWith("simulated") ? "La commande n’est pas transmise : aucun achat, message fournisseur ou mouvement de stock n’a été créé." : "À transmettre au fournisseur : aucun email n’a été envoyé et le stock n’a pas changé."}</p>
     <p>Référence : {order.id}</p>
-    <Link to="/orders#to-transmit" onClick={onClose}>{order.status.startsWith("simulated") ? "Voir la commande préparée" : "Voir la commande à transmettre"}</Link>
+    <Link to={orderHref} onClick={onClose}>{order.status.startsWith("simulated") ? "Voir la commande préparée" : "Voir la commande à transmettre"}</Link>
     <Button onClick={onClose}>Fermer</Button>
   </div> : <div ref={formRef} className="flex flex-col gap-lg">
     <h3><Package size={20} aria-hidden="true" /> Quantités à commander</h3>

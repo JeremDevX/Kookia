@@ -3,20 +3,18 @@ import SplashScreen from "./components/common/SplashScreen";
 import AppProviders from "./app/providers/AppProviders";
 import AppRouter from "./app/router/AppRouter";
 import { useAuth } from "./features/auth/context/AuthContext";
-import { useCart } from "./context/useCart";
 import "./styles/Brand.css";
 
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const { status } = useAuth();
-  const { loading: cartLoading } = useCart();
   const completeSplash = useCallback(() => setShowSplash(false), []);
-  const loading = status === "loading" || (status === "authenticated" && cartLoading);
+  const loading = status === "loading";
 
   return (
     <>
       {showSplash && <SplashScreen ready={!loading} onComplete={completeSplash}
-        caption={status === "loading" ? "Vérification de votre session…" : "Chargement de votre commande en préparation…"} />}
+        caption="Vérification de votre session…" />}
       <div inert={showSplash}><AppRouter /></div>
     </>
   );

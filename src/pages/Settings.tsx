@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import RestaurantSettings from "../components/settings/RestaurantSettings";
@@ -8,19 +9,23 @@ import SupplierSettings from "../components/settings/SupplierSettings";
 import ConnectionsSettings from "../components/settings/ConnectionsSettings";
 import { Link, useSearchParams } from "react-router-dom";
 import AccountSettings from "../features/account/AccountSettings";
+import InvitationManager from "../features/invitations/InvitationManager";
+import MemberManager from "../features/members/MemberManager";
 import "../styles/Workspace.css";
 import "./InsightsSettings.css";
 import "./Settings.css";
 
 export default function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [pendingInvitation, setPendingInvitation] = useState(false);
   const context = readServiceContext(searchParams);
   const weather = useSharedServiceWeather();
   const requestedSection = searchParams.get("section");
-  const activeTab = requestedSection === "suppliers" || requestedSection === "connections" || requestedSection === "account" ? requestedSection : "restaurant";
+  const activeTab = requestedSection === "team" || requestedSection === "suppliers" || requestedSection === "connections" || requestedSection === "account" ? requestedSection : "restaurant";
   const tabs = [
     { id: "restaurant", label: "Restaurant" },
     { id: "account", label: "Compte" },
+    { id: "team", label: "Équipe" },
     { id: "suppliers", label: "Fournisseurs" },
     { id: "connections", label: "Connexions" },
   ] as const;
@@ -40,6 +45,7 @@ export default function Settings() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                disabled={pendingInvitation && tab.id !== "team"}
                 aria-label={tab.label}
                 aria-pressed={activeTab === tab.id}
                 aria-controls="settings-panel"
@@ -59,6 +65,7 @@ export default function Settings() {
           {activeTab === "suppliers" && <SupplierSettings />}
           {activeTab === "connections" && <ConnectionsSettings onWeatherSettings={weather.openSettings} />}
           {activeTab === "account" && <AccountSettings />}
+          {activeTab === "team" && <>{pendingInvitation && <p>Copiez le lien puis sélectionnez « J’ai terminé » avant de changer de rubrique.</p>}<InvitationManager onPendingLinkChange={setPendingInvitation} /><MemberManager /></>}
         </div>
     </div>
   );

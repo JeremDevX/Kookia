@@ -5,7 +5,7 @@ import { reconcilePurchaseReceipt, type PurchaseOrder, type PurchaseReceiptInput
 import { useToast } from "../../context/ToastContext";
 import "./PurchaseReceiptReview.css";
 
-interface PurchaseReceiptReviewProps { order: PurchaseOrder; orderStateCurrent: boolean; onSaved: () => void; onNotice: (notice: string) => void; onSavingChange: (saving: boolean) => void; }
+interface PurchaseReceiptReviewProps { order: PurchaseOrder; orderStateCurrent: boolean; onSaved: () => void; onNotice: (notice: string) => void; onSavingChange: (saving: boolean) => void; loadReceiptInvoices?: (orderId: string) => Promise<Invoice[]>; }
 interface ReceiptLineDraft { orderLineId: string; receivedQuantity: string; priceDifferenceReason: string; expiresAt: string; }
 
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
@@ -14,7 +14,7 @@ const validQuantity = (value: string) => /^\d+(?:\.\d{1,3})?$/.test(value.trim()
   Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 1_000_000;
 const equalPrice = (left: number, right: number) => Math.round(left * 10_000) === Math.round(right * 10_000);
 
-export default function PurchaseReceiptReview({ order, orderStateCurrent, onSaved, onNotice, onSavingChange }: PurchaseReceiptReviewProps) {
+export default function PurchaseReceiptReview({ order, orderStateCurrent, onSaved, onNotice, onSavingChange, loadReceiptInvoices }: PurchaseReceiptReviewProps) {
   const { addToast } = useToast();
   const mounted = useRef(true);
   const [open, setOpen] = useState(false);
@@ -48,7 +48,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
   const loadInvoices = async () => {
     setLoading(true); setError(""); setInvoiceLoadError("");
     try {
-      const result = await getInvoices();
+      const result = await (loadReceiptInvoices ? loadReceiptInvoices(order.id) : getInvoices());
       setInvoices(result); setLoaded(true);
     } catch (cause) { setInvoiceLoadError(cause instanceof Error ? cause.message : "Factures indisponibles."); }
     finally { setLoading(false); }

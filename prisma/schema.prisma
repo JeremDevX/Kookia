@@ -87,6 +87,7 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   lastLoginAt    DateTime?
+  memberships    Membership[]
   sessions       Session[]
   restaurant     Restaurant?
 }
@@ -119,6 +120,8 @@ model Restaurant {
   hasTerrace   Boolean?
   mode         WorkspaceMode @default(operational)
   seededAt     DateTime @default(now())
+  memberships Membership[]
+  invitations Invitation[]
   serviceSchedules RestaurantServiceSchedule[]
   serviceSessions RestaurantServiceSession[]
   serviceAllocations SaleServiceAllocation[]
@@ -898,4 +901,27 @@ model PurchaseCredit {
   createdAt DateTime @default(now())
   @@unique([restaurantId, operationId])
   @@unique([restaurantId, receiptId, reference])
+}
+
+model Membership {
+  userId String @id
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  role String
+  @@index([restaurantId])
+}
+
+model Invitation {
+  id String @id @default(uuid())
+  restaurantId String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tokenHash String @unique
+  role String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  acceptedAt DateTime?
+  @@index([restaurantId])
 }

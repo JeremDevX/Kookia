@@ -5,6 +5,7 @@ import { restaurantSchema } from "./restaurantSchema.js";
 import { sessionCookieName } from "../config/env.js";
 import { getUserBySessionToken } from "../application/auth/authService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { resolveWorkspace, workspaceCapabilities } from "../application/workspace/workspaceIdentity.js";
 
 const stepSchema = z.enum(["team", "suppliers", "review"]);
 const progressSchema = z.object({ version: z.literal(1), step: stepSchema.nullable() }).strict();
@@ -18,10 +19,11 @@ export const setupRoutes = Router();
 setupRoutes.get("/", async (req, res, next) => {
   try {
     const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
-    const restaurant = await prisma.restaurant.findUnique({ where: { ownerId: user.id }, select: { id: true } });
-    const document = restaurant ? await prisma.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: restaurant.id, kind: "onboarding" } } }) : null;
+    const workspace = await resolveWorkspace(user.id);
+    const document = workspace?.role === "owner" ? await prisma.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: workspace.restaurantId, kind: "onboarding" } } }) : null;
     const step = document ? progressSchema.parse(document.data).step : null;
-    res.json({ configured: restaurant !== null, userId: user.id, step, revision: document?.revision ?? 0 });
+    res.json({ configured: workspace !== null, userId: user.id, step, revision: document?.revision ?? 0,
+      role: workspace?.role ?? null, restaurantName: workspace?.restaurantName ?? null, capabilities: workspace ? workspaceCapabilities(workspace.role) : null });
   } catch (error) { next(error); }
 });
 setupRoutes.post("/", async (req, res, next) => {
@@ -31,10 +33,14 @@ setupRoutes.post("/", async (req, res, next) => {
     if (!input.success) { res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données fournies sont invalides." } }); return; }
     const { expectedUserId, ...restaurant } = input.data;
     if (expectedUserId !== user.id) { sessionChanged(res); return; }
-    await prisma.$transaction(async tx => {
+    const created = await prisma.$transaction(async tx => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM "User" WHERE id = ${user.id} FOR UPDATE`);
+      if (await tx.membership.findUnique({ where: { userId: user.id } })) return false;
       const saved = await tx.restaurant.create({ data: { ownerId: user.id, ...restaurant } });
       await tx.workspaceDocument.create({ data: { restaurantId: saved.id, kind: "onboarding", revision: 1, data: { version: 1, step: "team" } } });
+      return true;
     });
+    if (!created) { res.status(409).json({ error: { code: "ALREADY_MEMBER", message: "Ce compte appartient déjà à un établissement." } }); return; }
     res.status(201).json({ configured: true, userId: user.id, step: "team", revision: 1 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {

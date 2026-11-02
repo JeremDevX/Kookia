@@ -43,7 +43,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
     orderView ? { prepare: "Préparer un achat", orders: "Commandes et réceptions", invoices: "Factures et documents", receipts: params.get("period") === "month" ? "Mois" : "Semaine" }[orderView] :
     pathname === "/predictions" ? "Prévisions" : pathname === "/recipes" ?
       ({ catalog: "Toutes les recettes", "anti-waste": "Réalisables avec le stock", sheets: "Fiches techniques", history: "Produites cette semaine" })[getRecipeView(params)] : pathname === "/settings" ?
-      ({ account: "Compte", suppliers: "Fournisseurs", connections: "Connexions" } as Record<string, string>)[params.get("section") ?? ""] ?? "Restaurant" : null;
+      ({ account: "Compte", team: "Équipe", suppliers: "Fournisseurs", connections: "Connexions" } as Record<string, string>)[params.get("section") ?? ""] ?? "Restaurant" : null;
 
   const searchProducts = (event: React.FormEvent) => {
     event.preventDefault();

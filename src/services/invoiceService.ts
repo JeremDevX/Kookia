@@ -49,3 +49,5 @@ export const saveInvoice = (invoice: Invoice, receive: boolean) => apiRequest<In
     ...(invoice.sourceDateConfirmed !== undefined ? { sourceDateConfirmed: invoice.sourceDateConfirmed } : {}),
   } }),
 });
+
+export const getReceiptInvoices = (orderId: string) => apiRequest<Invoice[]>(`/workspace/orders/${encodeURIComponent(orderId)}/receipt-invoices`);

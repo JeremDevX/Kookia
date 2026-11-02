@@ -7,6 +7,8 @@ import { useAuth } from "../auth/context/AuthContext";
 import { returnTo } from "../auth/returnTo";
 import { changeSetupStep, checkSetup, type SetupProgress, type SetupStep } from "./setupApi";
 import SetupReview from "./SetupReview";
+import InvitationManager from "../invitations/InvitationManager";
+import MemberManager from "../members/MemberManager";
 import SetupProgressIndicator from "./SetupProgressIndicator";
 
 const labels = ["Restaurant", "Équipe", "Fournisseurs", "Récapitulatif"];
@@ -17,6 +19,7 @@ export default function SetupSteps({ initialProgress }: { initialProgress: Setup
   const [progress, setProgress] = useState(initialProgress);
   const [busy, setBusy] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(false);
+  const [pendingLink, setPendingLink] = useState(false);
   const [reviewReady, setReviewReady] = useState(false);
   const [reviewVersion, setReviewVersion] = useState(0);
   const [error, setError] = useState("");
@@ -42,7 +45,7 @@ export default function SetupSteps({ initialProgress }: { initialProgress: Setup
     finally { setBusy(false); }
   };
   const move = async (next: SetupStep | null) => {
-    if (!user || !step || busy || editingSupplier || (step === "review" && !reviewReady && next === null)) return;
+    if (!user || !step || busy || editingSupplier || pendingLink || (step === "review" && !reviewReady && next === null)) return;
     setBusy(true); setError("");
     try { applyProgress(await changeSetupStep(user.id, step, next, progress.revision, refreshUser)); }
     catch (err) { setError(err instanceof Error ? err.message : "Enregistrement impossible. Réessayez."); }
@@ -57,13 +60,14 @@ export default function SetupSteps({ initialProgress }: { initialProgress: Setup
     <div className="setup-content"><h1>Configurez votre restaurant</h1><p className="setup-subtitle">Étape {index + 1} sur 4 · {labels[index]}</p>
       <SetupProgressIndicator index={index} />
       <section className="setup-card" aria-labelledby="setup-step-title"><h2 ref={heading} tabIndex={-1} id="setup-step-title">{labels[index]}</h2>
-        {step === "team" && <><p>Compte propriétaire : {user?.displayName} · {user?.email}</p><p>Les invitations d’équipe ne sont pas encore disponibles.</p></>}
+        {step === "team" && <><p>Compte propriétaire : {user?.displayName} · {user?.email}</p><InvitationManager onPendingLinkChange={setPendingLink} /><MemberManager /></>}
         {step === "suppliers" && <><p>Ajoutez vos fournisseurs maintenant ou continuez sans en ajouter.</p><SupplierSettings onEditingChange={setEditingSupplier} /></>}
         {step === "review" && <SetupReview key={reviewVersion} onReadyChange={setReviewReady} />}
         {error && <div role="alert"><p>{error}</p><Button type="button" variant="outline" disabled={busy} onClick={() => void resync()}>Vérifier l’avancement</Button></div>}
+        {pendingLink && <p>Copiez le lien puis sélectionnez « J’ai terminé » pour continuer.</p>}
         {editingSupplier && <p>Enregistrez ou annulez la modification du fournisseur pour continuer.</p>}
-        <div className="setup-actions"><div>{previous && <Button type="button" variant="outline" disabled={busy || editingSupplier || !!error} onClick={() => void move(previous)}>Retour</Button>}</div>
-          <Button type="button" disabled={busy || editingSupplier || !!error || (step === "review" && !reviewReady)} onClick={() => void move(next)}>{busy ? "Enregistrement…" : step === "team" ? "Continuer sans invitation" : step === "review" ? "Terminer la configuration" : "Continuer"}</Button></div>
-      </section><p className="auth-footer"><button type="button" className="btn btn-ghost" disabled={busy || editingSupplier} onClick={() => { void logout().then(() => navigate("/login", { replace: true, state: location.state })).catch(async (err: unknown) => { if (err instanceof ApiError && (err.status === 401 || (err.status === 409 && err.details.code === "SESSION_CHANGED"))) await refreshUser(); setError(err instanceof Error ? err.message : "Déconnexion impossible. Réessayez."); }); }}>Se déconnecter</button></p>
+        <div className="setup-actions"><div>{previous && <Button type="button" variant="outline" disabled={busy || editingSupplier || pendingLink || !!error} onClick={() => void move(previous)}>Retour</Button>}</div>
+          <Button type="button" disabled={busy || editingSupplier || pendingLink || !!error || (step === "review" && !reviewReady)} onClick={() => void move(next)}>{busy ? "Enregistrement…" : step === "team" ? "Continuer" : step === "review" ? "Terminer la configuration" : "Continuer"}</Button></div>
+      </section><p className="auth-footer"><button type="button" className="btn btn-ghost" disabled={busy || editingSupplier || pendingLink} onClick={() => { void logout().then(() => navigate("/login", { replace: true, state: location.state })).catch(async (err: unknown) => { if (err instanceof ApiError && (err.status === 401 || (err.status === 409 && err.details.code === "SESSION_CHANGED"))) await refreshUser(); setError(err instanceof Error ? err.message : "Déconnexion impossible. Réessayez."); }); }}>Se déconnecter</button></p>
     </div></main>;
 }

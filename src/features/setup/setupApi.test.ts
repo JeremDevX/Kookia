@@ -8,13 +8,15 @@ vi.mock("../../config/api", async (original) => ({
 }));
 import { apiRequest } from "../../config/api";
 const request = vi.mocked(apiRequest);
+const owner = { role: "owner", restaurantName: "Restaurant", capabilities: { viewStock: true, countStock: true, receiveOrders: true, validateOrders: true, manageSettings: true } };
+const noWorkspace = { role: null, restaurantName: null, capabilities: null };
 const restaurant = { name: "Restaurant", type: "Bistrot", address: "", city: "Lyon", phone: "", email: "contact@example.test", dailyCovers: 35, hasTerrace: null };
 const failure = (status: number, code = "ERROR") => new ApiError(status, { code, message: "Erreur" });
 afterEach(() => vi.resetAllMocks());
 
 describe("setup API", () => {
   it("recovers a completed setup after a conflict", async () => {
-    request.mockRejectedValueOnce(failure(409, "SETUP_ALREADY_COMPLETED")).mockResolvedValueOnce({ configured: true, userId: "account-id", step: "team", revision: 1 });
+    request.mockRejectedValueOnce(failure(409, "SETUP_ALREADY_COMPLETED")).mockResolvedValueOnce({ configured: true, userId: "account-id", step: "team", revision: 1, ...owner });
     await expect(createSetup(restaurant, "account-id", vi.fn())).resolves.toBeUndefined();
     expect(request).toHaveBeenLastCalledWith("/setup");
   });
@@ -33,7 +35,7 @@ describe("setup API", () => {
   });
   it("keeps the conflict visible if setup is not configured", async () => {
     const error = failure(409, "SETUP_ALREADY_COMPLETED");
-    request.mockRejectedValueOnce(error).mockResolvedValueOnce({ configured: false, userId: "account-id", step: null, revision: 0 });
+    request.mockRejectedValueOnce(error).mockResolvedValueOnce({ configured: false, userId: "account-id", step: null, revision: 0, ...noWorkspace });
     await expect(createSetup(restaurant, "account-id", vi.fn())).rejects.toBe(error);
   });
   it.each(["POST", "relecture après conflit"])("refreshes an expired session during %s", async (step) => {
@@ -62,21 +64,21 @@ describe("setup API", () => {
   });
   it.each([true, false])("rejects setup status for another account (configured=%s)", async (configured) => {
     const refresh = vi.fn().mockResolvedValue(undefined);
-    request.mockResolvedValueOnce({ configured, userId: "other-account", step: null, revision: 0 });
+    request.mockResolvedValueOnce({ configured, userId: "other-account", step: null, revision: 0, ...(configured ? owner : noWorkspace) });
     await expect(checkSetup("account-id", refresh)).rejects.toThrow("La session a changé");
     expect(refresh).toHaveBeenCalledOnce();
   });
   it("does not recover a conflict using another account's status", async () => {
     const refresh = vi.fn().mockResolvedValue(undefined);
     request.mockRejectedValueOnce(failure(409, "SETUP_ALREADY_COMPLETED"));
-    request.mockResolvedValueOnce({ configured: true, userId: "other-account", step: "team", revision: 1 });
+    request.mockResolvedValueOnce({ configured: true, userId: "other-account", step: "team", revision: 1, ...owner });
     await expect(createSetup(restaurant, "account-id", refresh)).rejects.toThrow("La session a changé");
     expect(refresh).toHaveBeenCalledOnce();
   });
   it("records a revision-checked step transition and rereads the saved state", async () => {
-    request.mockResolvedValueOnce({ configured: true, userId: "account-id", step: "suppliers", revision: 2 });
-    request.mockResolvedValueOnce({ configured: true, userId: "account-id", step: "suppliers", revision: 2 });
-    await expect(changeSetupStep("account-id", "team", "suppliers", 1, vi.fn())).resolves.toEqual({ configured: true, step: "suppliers", revision: 2 });
+    request.mockResolvedValueOnce({ configured: true, userId: "account-id", step: "suppliers", revision: 2, ...owner });
+    request.mockResolvedValueOnce({ configured: true, userId: "account-id", step: "suppliers", revision: 2, ...owner });
+    await expect(changeSetupStep("account-id", "team", "suppliers", 1, vi.fn())).resolves.toEqual({ configured: true, step: "suppliers", revision: 2, ...owner });
     expect(request).toHaveBeenNthCalledWith(1, "/setup/step", { method: "PATCH", body: JSON.stringify({ expectedUserId: "account-id", expectedStep: "team", nextStep: "suppliers", expectedRevision: 1 }) });
   });
   it("never accepts malformed progression as finished", async () => {

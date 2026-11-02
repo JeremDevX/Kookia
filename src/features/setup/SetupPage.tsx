@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import { ApiError } from "../../config/api";
-import { useCart } from "../../context/useCart";
 import { returnTo } from "../auth/returnTo";
 import { useAuth } from "../auth/context/AuthContext";
 import "../auth/pages/AuthPages.css";
@@ -28,7 +27,6 @@ function SetupForm() {
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const { refreshCart } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
   const set = (field: Field, value: string) => { const next = { ...form, [field]: value }; if (user) saveSetupDraft(user.id, next); setForm(next); setFields((current) => ({ ...current, [field]: "" })); };
@@ -40,7 +38,6 @@ function SetupForm() {
     try {
       await createSetup(setupValues(form), user.id, refreshUser);
       if (user) clearSetupDraft(user.id);
-      await refreshCart();
       navigate(returnTo(location.state), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Enregistrement impossible. Réessayez.");

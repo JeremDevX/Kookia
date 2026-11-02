@@ -26,6 +26,13 @@ function AccountSetupGuard({ setupPage, userId }: { setupPage: boolean; userId: 
     );
     return () => { active = false; };
   }, [attempt, refreshUser, userId]);
+  useEffect(() => {
+    if (setupPage) return;
+    const refresh = () => { if (document.visibilityState === "visible") { setError(false); setAttempt((value) => value + 1); } };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
+  }, [setupPage]);
   if (!progress && !error) return <div className="auth-loading" role="status">Chargement de votre établissement…</div>;
   if (error) return <main className="container"><p role="alert">Impossible de vérifier votre établissement.</p><Button onClick={() => { setError(false); setAttempt((value) => value + 1); }}>Réessayer</Button></main>;
   if (!progress) return null;

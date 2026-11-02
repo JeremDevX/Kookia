@@ -3,6 +3,8 @@ import { purchaseDeliverySchema, updatePurchaseDelivery } from "../application/w
 import { Router, type Response } from "express";
 import { z } from "zod";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { getInvoices } from "../application/workspace/invoiceService.js";
+import { WorkspaceError } from "../application/workspace/catalogService.js";
 import { orderDto, validateOrder } from "../application/workspace/orderService.js";
 import { getPurchaseSuggestions, recordPurchaseSuggestionDecision } from "../application/workspace/purchaseSuggestionService.js";
 import { getPurchaseReceiptLineEvidence, listPurchaseOrders, purchaseReceiptSchema, recordPurchaseReceipt } from "../application/workspace/purchaseReceiptService.js";
@@ -24,6 +26,24 @@ orderRoutes.get("/orders/suggestions", async (_req, res, next) => {
   try {
     await refreshForecastWeather(context(res).restaurantId, weatherToday(new Date()), res.locals.weatherProvider as WeatherProvider);
     res.json(await getPurchaseSuggestions(context(res).restaurantId));
+  } catch (error) { next(error); }
+});
+orderRoutes.get("/orders/:orderId/receipt-invoices", async (req, res, next) => {
+  try {
+    const { restaurantId } = context(res);
+    const orderId = z.string().trim().min(1).max(100).parse(req.params.orderId);
+    const order = await prisma.purchaseOrder.findUnique({ where: { restaurantId_id: { restaurantId, id: orderId } },
+      select: { status: true, lines: { select: { productId: true, supplierId: true, unit: true } } } });
+    if (!order) throw new WorkspaceError(404, "NOT_FOUND", "Commande introuvable.");
+    const invoices = await getInvoices(restaurantId);
+    res.json(invoices.filter((invoice) => invoice.status === "draft" && invoice.supplierId &&
+      (order.status.startsWith("simulated") || invoice.source === "manual") &&
+      order.lines.some((line) => line.supplierId === invoice.supplierId && invoice.lines.some((item) =>
+        item.productId === line.productId && item.unit === line.unit)))
+      .map((invoice) => ({ id: invoice.id, revision: invoice.revision, source: invoice.source, status: invoice.status,
+        reference: invoice.reference, date: invoice.date, supplierId: invoice.supplierId, lines: invoice.lines,
+        sourceTypeConfirmed: invoice.sourceTypeConfirmed, sourceDateConfirmed: invoice.sourceDateConfirmed,
+        receiptProgress: invoice.receiptProgress })));
   } catch (error) { next(error); }
 });
 orderRoutes.get("/orders/receipt-lines/:lineId", async (req, res, next) => {

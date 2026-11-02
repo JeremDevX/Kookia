@@ -9,7 +9,7 @@ import "./PurchaseSuggestions.css";
 
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 
-export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number }) {
+export default function PurchaseSuggestions({ refreshKey, salesHref = "/sales#sales-start", stocksHref = "/stocks", limited = false }: { refreshKey: number; salesHref?: string | null; stocksHref?: string; limited?: boolean }) {
   const location = useLocation();
   const { cartItems, addToCart } = useCart();
   const [filter, setFilter] = useState<"toReview" | "needsCheck" | "covered" | "handled">("toReview");
@@ -105,7 +105,7 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
         {data.status === "simulation_only" && <p className="purchase-suggestions-note" role="status">Les ventes disponibles ne sont pas retenues comme ventes enregistrées et ne permettent pas de préparer un achat.</p>}
         {data.status === "no_data" && <p>Aucune vente complète ne permet encore d’estimer le prochain service.</p>}
         {data.status === "insufficient_history" && <p>Complétez les 28 jours de services avant d’utiliser une estimation de besoin.</p>}
-        {(data.status === "no_data" || data.status === "insufficient_history") && <p><Link to="/sales#sales-start">Compléter les ventes et les jours de service</Link> ou <Link to="/stocks">choisir vos produits dans les stocks</Link>.</p>}
+        {(data.status === "no_data" || data.status === "insufficient_history") && <p>{salesHref && <><Link to={salesHref}>Compléter les ventes et les jours de service</Link> ou </>}<Link to={stocksHref}>choisir vos produits dans les stocks</Link>.</p>}
         {data.status === "ready" && <>
           <p className="purchase-suggestions-period">À partir du {new Date(`${data.forecastDate}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} · besoins par service et carte datée, jusqu’à la prochaine livraison de chaque fournisseur. Stock vérifié et attendu conditionnel séparés.</p>
           {data.blockers.length > 0 && <div className="purchase-suggestions-blockers" role="status">
@@ -122,11 +122,11 @@ export default function PurchaseSuggestions({ refreshKey }: { refreshKey: number
               onClick={() => setFilter(key)}>{label} · {summary[key].length}</Button>)}</div>
             <div className="orders-toolbar"><label>Rechercher un produit ou fournisseur<input type="search" value={search} placeholder="Huile, tomates, fournisseur…" onChange={(event) => setSearch(event.target.value)} /></label></div>
             {visible.length === 0 && <div className="purchase-empty" role="status"><strong>{search ? "Aucun résultat" : filter === "toReview" ? "Aucun achat à ajouter pour le moment" : "Aucun produit dans cette vue"}</strong>
-              <p>{search ? "Essayez un autre nom de produit ou fournisseur." : "Consultez les autres vues ou complétez votre sélection depuis les stocks."}</p><Link to="/stocks">Choisir un autre produit</Link></div>}
+              <p>{search ? "Essayez un autre nom de produit ou fournisseur." : "Consultez les autres vues ou complétez votre sélection depuis les stocks."}</p><Link to={stocksHref}>Choisir un autre produit</Link></div>}
             {supplierNames.map((supplierName) => <section className="purchase-supplier-group" key={supplierName} aria-label={supplierName}>
               <header><span>FOURNISSEUR</span><h3>{supplierName}</h3></header>
               <ul className="purchase-suggestion-list">{visible.filter((item) => item.supplierName === supplierName).map((item) => <PurchaseSuggestionCard
-                key={item.productId} item={item} value={quantities[item.productId] ?? ""}
+                key={item.productId} item={item} limited={limited} value={quantities[item.productId] ?? ""}
                 inCart={cartItems.some((cartItem) => cartItem.productId === item.productId)}
                 busy={busyProductId !== ""} saving={busyProductId === item.productId}
                 onChange={(value) => { setQuantities((current) => ({ ...current, [item.productId]: value })); }}

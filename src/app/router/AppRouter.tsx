@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import Layout from "../../components/layout/Layout";
+import { WorkspaceLayout, WorkspaceHome, WorkspaceStocks, WorkspaceOrders, OwnerOnly } from "../../features/members/WorkspaceLayout";
+import InvitationAccept from "../../features/invitations/InvitationAccept";
 import { RequireAuth } from "../../features/auth/components/RequireAuth";
 import { PublicOnly } from "../../features/auth/components/PublicOnly";
 import Login from "../../features/auth/pages/Login";
@@ -29,20 +30,21 @@ const AppRouter = () => (
   <Router>
     <Suspense fallback={<div className="container">Chargement...</div>}>
       <Routes>
+        <Route path="/invite" element={<InvitationAccept onAccepted={() => window.location.replace("/")} />} />
         <Route element={<PublicOnly />}><Route path="/login" element={<Login />} /><Route path="/register" element={<Register />} /></Route>
-        <Route element={<RequireAuth />}><Route element={<SetupGuard key="setup" setupPage />}><Route path="/setup" element={<SetupPage />} /></Route><Route element={<SetupGuard key="workspace" />}><Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="stocks" element={<Stocks />} />
-          <Route path="predictions" element={<Predictions />} />
-          <Route path="recipes" element={<Recipes />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="sales" element={<Sales />} />
-          <Route path="services" element={<Services />} />
-          <Route path="more" element={<More />} />
-          <Route path="history" element={<Timeline />} />
-          <Route path="history/replay/:id" element={<LegacyTimelineReplayRedirect />} />
+        <Route element={<RequireAuth />}><Route element={<SetupGuard key="setup" setupPage />}><Route path="/setup" element={<SetupPage />} /></Route><Route element={<SetupGuard key="workspace" />}><Route path="/" element={<WorkspaceLayout />}>
+          <Route index element={<WorkspaceHome owner={<Dashboard />} />} />
+          <Route path="stocks" element={<WorkspaceStocks owner={<Stocks />} />} />
+          <Route path="predictions" element={<OwnerOnly><Predictions /></OwnerOnly>} />
+          <Route path="recipes" element={<OwnerOnly><Recipes /></OwnerOnly>} />
+          <Route path="orders" element={<WorkspaceOrders owner={<Orders />} />} />
+          <Route path="settings" element={<OwnerOnly><Settings /></OwnerOnly>} />
+          <Route path="analytics" element={<OwnerOnly><Analytics /></OwnerOnly>} />
+          <Route path="sales" element={<OwnerOnly><Sales /></OwnerOnly>} />
+          <Route path="services" element={<OwnerOnly><Services /></OwnerOnly>} />
+          <Route path="more" element={<OwnerOnly><More /></OwnerOnly>} />
+          <Route path="history" element={<OwnerOnly><Timeline /></OwnerOnly>} />
+          <Route path="history/replay/:id" element={<OwnerOnly><LegacyTimelineReplayRedirect /></OwnerOnly>} />
         </Route></Route></Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

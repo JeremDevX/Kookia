@@ -1,3 +1,4 @@
+import { invitationOwnerRoutes, membershipOwnerRoutes } from "./invitationRoutes.js";
 import { reportRoutes } from "./reportRoutes.js";
 import { impactRoutes } from "./impactRoutes.js";
 import { ingredientOutflowEstimateRoutes } from "./ingredientOutflowEstimateRoutes.js";
@@ -27,6 +28,8 @@ import { getStockCounts, recordStockCount } from "../application/workspace/stock
 import { createRecipe, getRecipes, recordProduction, updateRecipe } from "../application/workspace/recipeService.js";
 import { createRecipeCandidate, decideRecipeCandidate, getRecipeCandidates, updateRecipeCandidate } from "../application/workspace/recipeCandidateService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { resolveWorkspace } from "../application/workspace/workspaceIdentity.js";
+import { canAccessWorkspace } from "../application/workspace/workspacePermissions.js";
 
 interface WorkspaceContext { restaurantId: string; actorId: string; }
 const context = (res: Response): WorkspaceContext => res.locals.workspace as WorkspaceContext;
@@ -36,13 +39,16 @@ workspaceRoutes.use(async (req, res, next) => {
   try {
     const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
     if (req.get("X-Expected-User-Id") !== user.id) { res.status(409).json({ error: { code: "SESSION_CHANGED", message: "Votre session a changé. Rechargez la page avant de continuer." } }); return; }
-    const restaurant = await prisma.restaurant.findUnique({ where: { ownerId: user.id }, select: { id: true } });
-    if (!restaurant) { res.status(409).json({ error: { code: "SETUP_REQUIRED", message: "Créez votre établissement pour accéder à votre espace." } }); return; }
-    res.locals.workspace = { restaurantId: restaurant.id, actorId: user.id };
+    const workspace = await resolveWorkspace(user.id);
+    if (!workspace) { res.status(409).json({ error: { code: "SETUP_REQUIRED", message: "Créez votre établissement pour accéder à votre espace." } }); return; }
+    if (!canAccessWorkspace(workspace.role, req.method, `${req.baseUrl}${req.path}`)) { res.status(403).json({ error: { code: "FORBIDDEN", message: "Vous ne pouvez pas effectuer cette action." } }); return; }
+    res.locals.workspace = { restaurantId: workspace.restaurantId, actorId: user.id };
     next();
   } catch (error) { next(error); }
 });
 
+workspaceRoutes.use("/invitations", invitationOwnerRoutes);
+workspaceRoutes.use("/members", membershipOwnerRoutes);
 workspaceRoutes.use(workspaceReadRoutes);
 workspaceRoutes.use(timelineRoutes);
 workspaceRoutes.use(sourceRoutes);
