@@ -22,6 +22,7 @@
 .recipe-sheets-filters { display: flex; flex-wrap: wrap; gap: var(--spacing-md); }
 .recipe-catalog-filters label { display: grid; gap: var(--spacing-xs); color: var(--color-auth-icon-border); font-size: var(--font-size-caption); }
 .recipe-catalog-filters label:first-child { flex: var(--number-1) var(--number-1) var(--size-250); max-width: var(--size-400); }
+.recipe-catalog-filters label:last-child { margin-left: auto; }
 .recipe-catalog-filters :is(input, select) { min-height: var(--size-44); padding: var(--spacing-sm) var(--size-12); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-auth-field); color: var(--color-nav-text); }
 .recipe-catalog-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--unit-100percent), var(--size-290)), var(--unit-1fr))); gap: var(--spacing-lg); }
 .recipe-catalog-card { min-width: var(--number-0); display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-md); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); }
@@ -46,7 +47,7 @@
 .recipe-sheets-table tbody th { color: var(--color-nav-text); font-weight: var(--font-weight-medium); }
 .recipe-sheets-table small { display: block; color: var(--color-nav-muted); font-weight: var(--font-weight-regular); }
 .recipe-sheets-hint { display: none; }
-@media (--media-mobile) { .recipes-heading-panel .workspace-header { padding: var(--spacing-lg); } .recipes-header-actions .btn { max-width: var(--unit-100percent); white-space: normal; } .recipe-tabs { padding-inline: var(--spacing-lg); gap: var(--spacing-md); } .recipe-catalog-filters label { width: var(--unit-100percent); } .recipe-sheets-hint { display: block; } }
+@media (--media-mobile) { .recipes-heading-panel .workspace-header { padding: var(--spacing-lg); } .recipes-header-actions .btn { max-width: var(--unit-100percent); white-space: normal; } .recipe-tabs { padding-inline: var(--spacing-lg); gap: var(--spacing-md); } .recipe-catalog-filters label { width: var(--unit-100percent); } .recipe-catalog-filters label:last-child { margin-left: var(--number-0); } .recipe-sheets-hint { display: block; } }
 .recipes-context { padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); font-size: var(--font-size-sm); }
 .recipes-context a, .empty-week a { color: var(--color-primary); text-underline-offset: var(--size-3); }
 
