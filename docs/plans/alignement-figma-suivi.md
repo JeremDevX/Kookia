@@ -48,9 +48,9 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | Divergente pour `673:43621` | Indicateurs et blocs différents | Planning et notifications à confronter | À vérifier | À vérifier | En cours |
 | Stocks `/stocks` | A `673:44425`, `673:44584` | À vérifier | Ticket Z et OCR divergents | À vérifier | À vérifier | À vérifier | En cours |
 | Prévisions `/predictions` | A `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
-| Recettes `/recipes` | A `673:45740`, `673:45766`, `673:45044` | À vérifier | À vérifier | Import CSV de fiches non trouvé | À vérifier | À vérifier | En cours |
+| Recettes `/recipes` | A `673:45740`, `673:45766`, `673:45044` | À vérifier | À vérifier | Import CSV avec association et revue ; comparaison Figma à poursuivre | À vérifier | À vérifier | En cours |
 | Commandes `/orders` | A `673:43938`, `673:44035`, `673:44142`, `673:44242`, `673:44919` | À vérifier | À vérifier | Rapprochement à comparer | À vérifier | Cas synthétiques partiels | En cours |
-| Paramètres `/settings` | A `673:46642`, `673:46754`, `673:46843` ; B `25:2`, `26:2` | À vérifier | À vérifier | Accès équipe absent du modèle repéré | À vérifier | Météo : erreur différée vérifiée | En cours |
+| Paramètres `/settings` | A `673:46642`, `673:46754`, `673:46843` ; B `25:2`, `26:2` | À vérifier | À vérifier | Équipe et rôles disponibles ; invitations par lien manuel | À vérifier | Météo : erreur différée vérifiée | En cours |
 | Bilan `/analytics` | A `673:46262`, `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
 | Ventes `/sales` | B `8:2` ; A `673:44664`, `673:44732` | À vérifier | À vérifier | Transcription manuelle ; OCR absent | À vérifier | À vérifier | À faire |
 | Services `/services` | B `16:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
@@ -205,11 +205,12 @@ Le nœud `673:45326` « Fiches techniques — Import CSV » mesure 1440 × 1024 
 Il présente trois étapes : dépôt, association des colonnes, puis vérification
 et enregistrement. Les colonnes affichées sont article, fournisseur, unité,
 prix unitaire HT et quantité. L'association, la validation et le brouillon
-mesurent respectivement 1440 × 1326, 1440 × 2125 et 1440 × 2010 px. L'audit
-du code n'a pas trouvé de parcours d'import CSV de fiches : l'import existant
-concerne les ventes et son contrat diffère. Le modèle de recette référence des
-produits et quantités ; fournisseur et prix proviennent du catalogue. Définir
-une correspondance fiable et une revue avant d'enregistrer des données.
+mesurent respectivement 1440 × 1326, 1440 × 2125 et 1440 × 2010 px. Le parcours d’import permet maintenant de choisir les colonnes, d’associer
+chaque ingrédient à un produit du catalogue et de vérifier les quantités et
+unités avant de préremplir l’éditeur. La création reste une action explicite ;
+les prix et fournisseurs du fichier ne modifient pas le catalogue. Firefox a
+vérifié le parcours jusqu’à l’éditeur puis son annulation, sans enregistrement.
+La comparaison visuelle détaillée avec les maquettes reste à faire.
 
 L'arborescence de la section desktop affiche les groupes suivants. Les nombres
 sont les libellés Figma, non un décompte indépendant des variantes :

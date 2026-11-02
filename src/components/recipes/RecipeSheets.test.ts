@@ -23,4 +23,9 @@ describe("fiches techniques", () => {
     }));
     expect(html).toContain("Aucune fiche enregistrée.");
   });
+  it("désactive la modification quand une recette est en cours d’édition", () => {
+    const html = renderToStaticMarkup(createElement(RecipeSheets, { recipes: [recipe], loading: false, editing: true, costPerPortion: () => null, onEdit: () => {} }));
+    expect(html).toMatch(/<button[^>]*disabled[^>]*aria-label="Modifier la fiche Soupe"|<button[^>]*aria-label="Modifier la fiche Soupe"[^>]*disabled/);
+  });
+
 });

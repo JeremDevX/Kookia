@@ -6,6 +6,8 @@ import RecordProductionModal from "../components/recipes/RecordProductionModal";
 import ProductionConfirmModal from "../components/recipes/ProductionConfirmModal";
 import ReportRefusalModal from "../components/recipes/ReportRefusalModal";
 import RecipeEditor from "../components/recipes/RecipeEditor";
+import RecipeCsvImport from "../components/recipes/RecipeCsvImport";
+import type { ImportedIngredient } from "../features/recipes/recipeCsv";
 import RecipeCandidates from "../components/recipes/RecipeCandidates";
 import RecipeSuggestionPanel from "../components/recipes/RecipeSuggestionPanel";
 import RecipeCatalog from "../components/recipes/RecipeCatalog";
@@ -57,6 +59,8 @@ const Recipes: React.FC = () => {
   } | null>(null);
   const [incomingReceiptRetryRevision, setIncomingReceiptRetryRevision] = useState(0);
   const [recipeEditorOpen, setRecipeEditorOpen] = useState(false);
+  const [csvOpen, setCsvOpen] = useState(false);
+  const [csvPrefill, setCsvPrefill] = useState<ImportedIngredient[] | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [recipePrefill, setRecipePrefill] = useState<RecipeSuggestion | null>(null);
   const recipeEditorHeading = React.useRef<HTMLHeadingElement>(null);
@@ -118,12 +122,13 @@ const Recipes: React.FC = () => {
   };
 
   const openRecipeEditor = (recipe: Recipe | null, trigger: HTMLButtonElement, suggestion: RecipeSuggestion | null = null) => {
+    if (recipeEditorOpen) { addToast("info", "Éditeur déjà ouvert", "Enregistrez ou annulez la recette en cours."); recipeEditorHeading.current?.focus(); return; }
     recipeEditOrigin.current = trigger;
-    setEditingRecipe(recipe); setRecipePrefill(suggestion); setRecipeEditorOpen(true);
+    setEditingRecipe(recipe); setRecipePrefill(suggestion); setCsvPrefill(null); setRecipeEditorOpen(true);
     requestAnimationFrame(() => document.getElementById("recipe-editor-section-title")?.scrollIntoView({ block: "nearest" }));
   };
   const closeRecipeEditor = () => {
-    setRecipeEditorOpen(false); setEditingRecipe(null); setRecipePrefill(null);
+    setRecipeEditorOpen(false); setEditingRecipe(null); setRecipePrefill(null); setCsvPrefill(null);
     requestAnimationFrame(() => { if (recipeEditOrigin.current?.isConnected) recipeEditOrigin.current.focus(); });
   };
   const handleRecipeSaved = async () => {
@@ -211,7 +216,8 @@ const Recipes: React.FC = () => {
           <h1 ref={pageHeadingRef} tabIndex={-1}>{productId ? `Recettes avec ${loading ? "ce produit" : getProductName(productId)}` : displayedTab === "sheets" ? "Fiches techniques" : "Mes recettes"}</h1>
           <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, selon les lots proposés. Aucun surstock n'est déduit automatiquement." : displayedTab === "sheets" ? "Retrouvez les coûts et les quantités de vos recettes." : "Faisabilité selon les lots et recettes enregistrés. Les échéances dépassées sont exclues, les échéances inconnues restent à vérifier par le chef. La validation d'une production déduit les ingrédients du stock."}</p>
         </div>
-        <div className="recipes-header-actions"><Button onClick={(event) => openRecipeEditor(null, event.currentTarget)}>Nouvelle recette</Button>
+        <div className="recipes-header-actions"><Button disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(null, event.currentTarget)}>Nouvelle recette</Button>
+          <Button type="button" variant="outline" disabled={recipeEditorOpen || loading || !!error} onClick={(event) => { recipeEditOrigin.current = event.currentTarget; setCsvOpen(true); }}>Importer une fiche CSV</Button>
           {!productId && <Button variant="outline" icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>}</div>
       </header>
       <div className="recipe-tabs" role="group" aria-label="Vues des recettes">
@@ -225,20 +231,22 @@ const Recipes: React.FC = () => {
       {incomingReceiptLineId && incomingReceiptError && <div role="alert"><p>La réception source est indisponible : {incomingReceiptError}</p>
         <Button ref={incomingReceiptRetryButtonRef} type="button" variant="outline" onClick={retryIncomingReceipt}>Réessayer</Button>
       </div>}
-      {incomingReceiptLineId && !loading && !error && !incomingReceiptLoading && !incomingReceiptError && incomingSuggestion && <RecipeSuggestionPanel suggestion={incomingSuggestion}
+      {incomingReceiptLineId && !loading && !error && !incomingReceiptLoading && !incomingReceiptError && incomingSuggestion && <RecipeSuggestionPanel disabled={recipeEditorOpen} suggestion={incomingSuggestion}
         onReview={(trigger) => openRecipeEditor(null, trigger, incomingSuggestion)} />}
       {incomingReceiptLineId && !loading && !error && !incomingReceiptLoading && !incomingReceiptError && !incomingSuggestion && <p role="status">
         Aucune proposition de recette automatique n’est disponible pour cette réception. Vous pouvez créer une recette depuis le catalogue.
       </p>}
+      {recipeEditorOpen && <p role="status">Enregistrez ou annulez la recette en cours avant d’en ouvrir une autre.</p>}
       {recipeEditorOpen && <RecipeEditor open={recipeEditorOpen} recipe={editingRecipe} products={products} headingRef={recipeEditorHeading}
-        initialSuggestion={recipePrefill}
+        initialSuggestion={recipePrefill} initialImport={csvPrefill}
         onClose={closeRecipeEditor} onSaved={handleRecipeSaved} />}
+      {csvOpen && <RecipeCsvImport products={products} onClose={() => setCsvOpen(false)} onApply={(ingredients) => { setCsvOpen(false); setEditingRecipe(null); setRecipePrefill(null); setCsvPrefill(ingredients); setRecipeEditorOpen(true); requestAnimationFrame(() => document.getElementById("recipe-editor-section-title")?.scrollIntoView({ block: "nearest" })); }} />}
       {!productId && !incomingReceiptLineId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
 
       {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to={recipeViewHref(searchParams, "catalog")}>Voir toutes les recettes</Link></p>}
-      {displayedTab === "catalog" && !error && <RecipeCatalog recipes={recipesWithYield} loading={loading}
+      {displayedTab === "catalog" && !error && <RecipeCatalog editing={recipeEditorOpen} recipes={recipesWithYield} loading={loading}
         onEdit={(recipe, trigger) => openRecipeEditor(recipe, trigger)} onProduce={handleStartProduction} />}
-      {displayedTab === "sheets" && !error && <RecipeSheets recipes={recipes} loading={loading} costPerPortion={getIngredientCost}
+      {displayedTab === "sheets" && !error && <RecipeSheets editing={recipeEditorOpen} recipes={recipes} loading={loading} costPerPortion={getIngredientCost}
         onEdit={(recipe, trigger) => openRecipeEditor(recipe, trigger)} />}
 
       {displayedTab === "history" && hasScenarioRecords && <p className="workspace-subtitle" role="note">
@@ -295,7 +303,7 @@ const Recipes: React.FC = () => {
                   >
                     Signaler un refus
                   </Button>
-                  <Button size="sm" variant="outline" onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
+                  <Button size="sm" variant="outline" disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
                 </div>
               </Card>
             ))
@@ -378,7 +386,7 @@ const Recipes: React.FC = () => {
                   >
                     {isProduced ? "Produire à nouveau" : "Produire cette recette"}
                   </Button>
-                  <Button size="sm" variant="outline" className="w-full" onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
+                  <Button size="sm" variant="outline" className="w-full" disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
                 </div>
               </Card>
             );
@@ -395,13 +403,13 @@ const Recipes: React.FC = () => {
               <strong>{recipe.name}</strong>
               {recipeStockWarnings(recipe, products).length > 0 && <ul>{recipeStockWarnings(recipe, products).map(warning => <li key={warning}>{warning}</li>)}</ul>}
               <Button size="sm" variant="outline" onClick={() => setRefusalRecipe(recipe)}>Signaler un refus</Button>
-              <Button size="sm" variant="outline" onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
+              <Button size="sm" variant="outline" disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
             </Card>)}</div>
           </section>}
           {incompleteRecipes.length > 0 && <section className="col-span-full" aria-label="Recettes sans ingrédients renseignés">
             <p role="status">{incompleteRecipes.length} recette{incompleteRecipes.length > 1 ? "s" : ""} sans ingrédients renseignés ne peuvent pas être produites.</p>
             {incompleteRecipes.map((recipe) => <Card key={recipe.id} className="recipe-card"><strong>{recipe.name}</strong>
-              <Button size="sm" variant="outline" onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Compléter la recette</Button>
+              <Button size="sm" variant="outline" disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Compléter la recette</Button>
             </Card>)}
           </section>}
         </div>

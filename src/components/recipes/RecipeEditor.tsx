@@ -3,6 +3,7 @@ import type { Product, Recipe } from "../../types";
 import type { RecipeSuggestion } from "../../domain/recipes/recipeSuggestionPolicy";
 import { createRecipe, updateRecipe, type RecipeMutation } from "../../services/recipeService";
 import Button from "../common/Button";
+import type { ImportedIngredient } from "../../features/recipes/recipeCsv";
 
 interface RecipeDraft {
   name: string; category: Recipe["category"]; prepTime: number; yieldPortions: number;
@@ -14,9 +15,10 @@ const today = () => new Intl.DateTimeFormat("en-CA", {
 const blankDraft = (): RecipeDraft => ({ name: "", category: "Plat", prepTime: 15, yieldPortions: 1,
   effectiveFrom: today(), ingredients: [{ productId: "", quantity: 0.1 }] });
 
-export default function RecipeEditor({ open, recipe, products, headingRef, initialSuggestion, onClose, onSaved }: {
+export default function RecipeEditor({ open, recipe, products, headingRef, initialSuggestion, initialImport = null, onClose, onSaved }: {
   open: boolean; recipe: Recipe | null; products: Product[]; headingRef: RefObject<HTMLHeadingElement | null>;
   initialSuggestion: RecipeSuggestion | null;
+  initialImport?: ImportedIngredient[] | null;
   onClose: () => void; onSaved: () => Promise<void>;
 }) {
   const [draft, setDraft] = useState<RecipeDraft>(blankDraft);
@@ -32,10 +34,10 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
         prepTime: initialSuggestion.prepTime, yieldPortions: initialSuggestion.yieldPortions,
         effectiveFrom: initialSuggestion.effectiveFrom,
         ingredients: initialSuggestion.ingredients.map(({ productId, quantity }) => ({ productId, quantity })) }
-        : blankDraft());
+        : initialImport ? { ...blankDraft(), ingredients: initialImport } : blankDraft());
     setOperationId(crypto.randomUUID()); setError("");
     requestAnimationFrame(() => headingRef.current?.focus());
-  }, [open, recipe, initialSuggestion, headingRef]);
+  }, [open, recipe, initialSuggestion, initialImport, headingRef]);
 
   const setIngredient = (index: number, next: Partial<RecipeDraft["ingredients"][number]>) =>
     setDraft((current) => ({ ...current, ingredients: current.ingredients.map((row, rowIndex) =>
@@ -58,7 +60,8 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
       <h2 id="recipe-editor-section-title">Gestion des recettes</h2>
     </div>
     {open && <form className="recipe-editor-form" onSubmit={(event) => void submit(event)}>
-      <h3 id="recipe-editor-title" ref={headingRef} tabIndex={-1}>{recipe ? `Modifier ${recipe.name}` : initialSuggestion ? "Revoir la proposition" : "Nouvelle recette"}</h3>
+      <h3 id="recipe-editor-title" ref={headingRef} tabIndex={-1}>{recipe ? `Modifier ${recipe.name}` : initialSuggestion ? "Revoir la proposition" : initialImport ? "Revoir la fiche importée" : "Nouvelle recette"}</h3>
+      {initialImport && <p>Vérifiez les quantités, complétez les informations de la recette, puis créez-la si elles sont correctes.</p>}
       {initialSuggestion && <p>Cette proposition part de « {initialSuggestion.sourceProductName} »{initialSuggestion.sourceReceipt
         ? ` — livraison ${initialSuggestion.sourceReceipt.reference}.` : "."} Corrigez les ingrédients, les quantités, le rendement et la date. La créer l’ajoute au catalogue pour alimenter les estimations ; aucune vente, perte ou sortie de stock n’est enregistrée.</p>}
       {recipe && <p>Version actuelle : {recipe.version} · rendement {recipe.yieldPortions} portions · date d’effet {recipe.effectiveFrom ?? "historique antérieur, date inconnue"}.</p>}

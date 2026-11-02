@@ -4,9 +4,10 @@ import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegio
 import Button from "../common/Button";
 import { filterRecipeSheets, type RecipeSheetStatus } from "../../features/recipes/recipeSheetFilter";
 
-export default function RecipeSheets({ recipes, loading, costPerPortion, onEdit }: {
+export default function RecipeSheets({ recipes, loading, costPerPortion, onEdit, editing = false }: {
   recipes: Recipe[];
   loading: boolean;
+  editing?: boolean;
   costPerPortion: (recipe: Recipe) => number | null;
   onEdit: (recipe: Recipe, trigger: HTMLButtonElement) => void;
 }) {
@@ -28,7 +29,7 @@ export default function RecipeSheets({ recipes, loading, costPerPortion, onEdit 
             return <tr key={recipe.id}><th scope="row">{recipe.name}<small>Version {recipe.version} · {recipe.category}</small></th>
               <td>{recipe.yieldPortions}</td><td>{cost === null ? "Indisponible" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(cost)}</td>
               <td>{recipe.ingredients.length ? "Ingrédients renseignés" : "À compléter"}</td>
-              <td><Button size="sm" variant="outline" aria-label={`Modifier la fiche ${recipe.name}`} onClick={(event) => onEdit(recipe, event.currentTarget)}>Modifier</Button></td></tr>;
+              <td><Button size="sm" variant="outline" aria-label={`Modifier la fiche ${recipe.name}`} disabled={editing} onClick={(event) => onEdit(recipe, event.currentTarget)}>Modifier</Button></td></tr>;
           })}</tbody>
         </table>
       </div>

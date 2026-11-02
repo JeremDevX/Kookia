@@ -1,0 +1,6 @@
+.recipe-csv-import { display: grid; gap: var(--spacing-md); }
+.recipe-csv-import label { display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.recipe-csv-import fieldset { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
+.recipe-csv-rows { display: grid; gap: var(--spacing-md); }
+.recipe-csv-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--spacing-sm); }
+@media (--media-mobile) { .recipe-csv-import fieldset { grid-template-columns: var(--unit-1fr); } .recipe-csv-actions { flex-direction: column; } }

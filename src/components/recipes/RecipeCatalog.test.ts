@@ -32,3 +32,9 @@ it("nomme les actions avec la recette concernée", () => {
     expect(html).toContain(`aria-label="Produire ${name}"`);
   }
 });
+
+it("désactive la modification tant qu’un éditeur est ouvert", () => {
+  const recipe = { id: "r1", name: "Soupe", category: "Plat", ingredients: [], versions: [], prepTime: 10, yieldPortions: 1, revision: 1, version: 1, effectiveFrom: null, maxYield: 0 } as Recipe & { maxYield: number };
+  const html = renderToStaticMarkup(createElement(RecipeCatalog, { recipes: [recipe], loading: false, editing: true, onEdit: () => {}, onProduce: () => {} }));
+  expect(html).toMatch(/<button[^>]*disabled[^>]*aria-label="Modifier la recette Soupe"|<button[^>]*aria-label="Modifier la recette Soupe"[^>]*disabled/);
+});
