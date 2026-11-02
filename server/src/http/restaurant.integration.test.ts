@@ -15,9 +15,14 @@ it("persists restaurant and suppliers with validated input and account isolation
   const agent = await account(); const other = await account();
   await request(app).get("/api/workspace/restaurant").expect(401);
   const initialInsights = await agent.get("/api/workspace/insights").expect(200);
-  expect(initialInsights.body).toEqual(insights);
+  expect(initialInsights.body).toBeNull();
+  const workspace = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: ids[0] } });
+  expect(await prisma.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: workspace.id, kind: "insights" } } })).toBeNull();
   const repeatedInsights = await agent.get("/api/workspace/insights").expect(200);
-  expect(repeatedInsights.body).toEqual(initialInsights.body);
+  expect(repeatedInsights.body).toBeNull();
+  await prisma.workspaceDocument.create({ data: { restaurantId: workspace.id, kind: "insights", data: insights } });
+  expect((await agent.get("/api/workspace/insights").expect(200)).body).toEqual(insights);
+  expect((await other.get("/api/workspace/insights").expect(200)).body).toBeNull();
   await request(app).get("/api/workspace/insights").expect(401);
   const initial = await agent.get("/api/workspace/restaurant").expect(200);
   expect(initial.body.ownerId).toBeUndefined();

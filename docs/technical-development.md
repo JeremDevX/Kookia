@@ -197,6 +197,10 @@ connectés ; le Ticket Z manuel produit des candidats relus, jamais des ventes
 automatiques. Le contrôle de fichier, l'absence de stockage brut et la
 conservation du hash sont décrits dans [Sources de données](integrations.md).
 
+`GET /api/workspace/insights` renvoie `null` lorsqu’aucun document n’existe,
+sans initialiser d’indicateurs fictifs. Les documents existants restent lisibles ;
+les clients doivent gérer cette absence explicitement.
+
 `GET /api/workspace/notifications` renvoie une liste vide sans créer de
 notification lorsque le document est absent. Le marquage comme lu conserve
 les documents existants et ne crée pas de document vide. Les alertes d’exemple

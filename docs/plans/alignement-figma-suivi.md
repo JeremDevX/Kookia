@@ -386,6 +386,9 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   enregistrées restent intactes. Le script de peuplement exige désormais une
   base locale `kookia_demo` et un compte temporaire unique explicitement ciblé ;
   cette vérification ne démontre pas à elle seule que la base est jetable.
+- La lecture des indicateurs de démonstration retourne maintenant `null` en
+  l’absence de document, sans création implicite. Les documents existants sont
+  conservés ; cette correction ne retire pas encore le catalogue initial.
 - Risque P0 à vérifier sur un compte isolé : `ensureWorkspace.ts` crée pour
   tout nouveau propriétaire un restaurant nommé « La Pizzeria de Camille » et
   un catalogue prérempli. Le mode par défaut du restaurant est opérationnel ;
