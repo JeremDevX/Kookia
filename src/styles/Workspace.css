@@ -15,8 +15,8 @@
 .workspace-page .btn { min-height: var(--size-40); font-size: var(--font-size-sm); border-radius: var(--radius-md); box-shadow: none; }
 .workspace-page .btn-primary { background: var(--color-primary); color: var(--color-bg); }
 .workspace-page .btn-primary:hover { background: var(--color-primary-hover); }
-.workspace-page .btn-secondary { background: var(--color-teal-light); color: var(--palette-sage-11); }
-.workspace-page .btn-outline { background: var(--color-surface); border-color: var(--color-border); color: var(--palette-sage-11); }
+.workspace-page .btn-secondary { background: var(--color-teal-light); color: var(--color-text-primary); }
+.workspace-page .btn-outline { background: var(--color-surface); border-color: var(--color-border); color: var(--color-text-primary); }
 .workspace-page :is(button, a, input, select, [tabindex]):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--size-3); }
 .workspace-summary { display: flex; align-items: center; gap: var(--size-36); padding: var(--spacing-lg) var(--size-28); border: var(--size-1) solid var(--color-border); background: var(--color-primary-light); border-radius: var(--radius-lg); }
 .workspace-summary > div { min-width: var(--size-180); }

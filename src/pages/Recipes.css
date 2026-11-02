@@ -16,7 +16,7 @@
 .recipes-container .recipes-header-actions .btn-primary:hover, .recipes-container .recipe-catalog-actions .btn-primary:hover { background: var(--color-auth-icon-border); }
 .recipe-tabs { display: flex; flex-wrap: wrap; gap: var(--spacing-lg); padding: var(--number-0) var(--spacing-xl); border-top: var(--size-1) solid var(--color-nav-border); }
 .recipe-tabs button { min-height: var(--size-60); padding: var(--spacing-md) var(--spacing-xs); border: none; border-bottom: var(--size-3) solid transparent; background: transparent; color: var(--color-auth-icon-border); font-size: var(--font-size-sm); cursor: pointer; }
-.recipe-tabs button[aria-pressed="true"] { border-bottom-color: var(--color-auth-link); color: var(--color-auth-link); }
+.recipe-tabs button[aria-pressed="true"] { border-bottom-color: var(--color-auth-link); color: var(--color-accent-text); }
 .recipe-catalog { padding: var(--spacing-lg); }
 .recipe-catalog-filters { display: flex; flex-wrap: wrap; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
 .recipe-catalog-filters label { display: grid; gap: var(--spacing-xs); color: var(--color-auth-icon-border); font-size: var(--font-size-caption); }

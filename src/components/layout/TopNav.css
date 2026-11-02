@@ -11,11 +11,11 @@
 .top-nav-search img { display: block; }
 .top-nav-search input { min-width: var(--number-0); width: var(--unit-100percent); border: none; background: transparent; color: var(--color-nav-text); font-size: var(--font-size-sm); }
 .top-nav .user-profile { display: flex; align-items: center; gap: var(--size-12); padding: var(--size-6) var(--number-0); color: var(--color-nav-text); }
-.top-nav .avatar { width: var(--size-36); height: var(--size-36); display: grid; place-items: center; background: var(--color-accent-subtle); color: var(--color-auth-link); border-radius: var(--radius-full); font-size: var(--font-size-caption); font-weight: var(--font-weight-medium); }
+.top-nav .avatar { width: var(--size-36); height: var(--size-36); display: grid; place-items: center; background: var(--color-accent-subtle); color: var(--color-accent-text); border-radius: var(--radius-full); font-size: var(--font-size-caption); font-weight: var(--font-weight-medium); }
 .profile-copy { display: flex; flex-direction: column; gap: var(--size-2); }
 .top-nav .username { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-nav-text); max-width: var(--size-150); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .profile-copy small { font-size: var(--font-size-caption); color: var(--color-text-muted); }
-.top-nav .user-profile:hover .username { color: var(--color-auth-link); text-decoration: underline; }
+.top-nav .user-profile:hover .username { color: var(--color-accent-text); text-decoration: underline; }
 .hamburger-btn { display: none; width: var(--size-40); height: var(--size-40); border-radius: var(--radius-md); color: var(--color-primary-text); flex-shrink: var(--number-0); }
 .hamburger-btn:hover { background: var(--color-teal-light); }
 .top-nav :is(button, a, input):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--size-3); }

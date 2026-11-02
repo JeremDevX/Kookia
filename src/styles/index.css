@@ -26,9 +26,9 @@
   --white-space-pre-wrap: pre-wrap;
   --overflow-wrap-anywhere: anywhere;
   /* Colors */
-  --color-bg: #f7f8f3;
-  --color-border: #e0e6d9;
-  --color-border-light: #edf0e7;
+  --color-bg: #f7f9fb;
+  --color-border: #e8e8e8;
+  --color-border-light: #f1f2f3;
   --color-focus: #a97824;
   --color-info: #1f212f;
   --color-info-soft: #edf2f7;
@@ -36,28 +36,30 @@
   --color-moderate-text: #8a3d26;
   --color-optimal: #228b5b;
   --color-optimal-text: #1a7048;
-  --color-primary: #264c39;
-  --color-primary-hover: #193d2b;
-  --color-primary-light: #edf3e5;
-  --color-primary-text: #30553c;
+  --color-primary: #111111;
+  --color-primary-hover: #413f3f;
+  --color-primary-light: #e5f3ff;
+  --color-primary-text: #093e8c;
   --color-surface: #ffffff;
-  --color-surface-active: #e8eedf;
-  --color-surface-hover: #f3f6ed;
-  --color-teal: #52725b;
-  --color-teal-light: #eef3e8;
-  --color-text-muted: #6e7c64;
-  --color-text-primary: #2b4133;
-  --color-text-secondary: #63715f;
+  --color-surface-active: #ebeef0;
+  --color-surface-hover: #f7f9fb;
+  --color-teal: #585757;
+  --color-teal-light: #ebeef0;
+  --color-text-muted: #6e6e6e;
+  --color-text-primary: #111111;
+  --color-text-secondary: #585757;
   --color-urgent: #c0152f;
   --color-urgent-hover: #a51228;
   --color-urgent-text: #a01228;
   --color-warning-soft: #f7f0e4;
   --color-nav-text: #111111;
-  --color-nav-muted: #969696;
+  --color-nav-muted: #6e6e6e;
   --color-nav-active: #ebeef0;
   --color-nav-border: #e8e8e8;
   --color-auth-field: #f7f9fb;
   --color-auth-link: #0085ff;
+  --color-accent-text: #006ac7;
+  --color-inverse-muted: #a3a3a3;
   --color-accent-subtle: #e5f3ff;
   --color-auth-icon-border: #585757;
   --color-status-danger-bg: #fde4e4;
@@ -104,8 +106,8 @@
   --rgb-color-info: 31, 33, 47;
   --rgb-color-moderate: 168, 75, 47;
   --rgb-color-optimal: 34, 139, 91;
-  --rgb-color-primary: 38, 76, 57;
-  --rgb-color-primary-hover: 25, 61, 43;
+  --rgb-color-primary: 17, 17, 17;
+  --rgb-color-primary-hover: 65, 63, 63;
   --rgb-color-surface: 255, 255, 255;
   --rgb-color-urgent: 192, 21, 47;
   --rgb-palette-neutral-2: 0, 0, 0;
@@ -332,6 +334,6 @@
 
 /* Scoped brand variations. */
 .dashboard-container {
-    --color-primary: var(--palette-sage-12);
-    --color-primary-text: var(--palette-sage-12);
+    --color-primary: var(--color-nav-text);
+    --color-primary-text: var(--color-info);
 }

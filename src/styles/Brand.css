@@ -12,11 +12,11 @@ body .btn-primary:hover {
 }
 body .btn-secondary {
   background: var(--color-teal-light);
-  color: var(--palette-sage-11);
+  color: var(--color-text-primary);
 }
 body .btn-outline {
   border-color: var(--color-border);
-  color: var(--palette-sage-11);
+  color: var(--color-text-primary);
 }
 body .btn:disabled,
 body .btn:disabled:hover,

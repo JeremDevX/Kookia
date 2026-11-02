@@ -13,7 +13,7 @@
 .dashboard-columns { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-2fr)) minmax(var(--size-280), var(--unit-1fr)); gap: var(--spacing-lg); align-items: start; }
 .dashboard-main-column { min-width: var(--number-0); display: flex; flex-direction: column; gap: var(--spacing-lg); }
 .today-focus { background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); padding: var(--spacing-lg); display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-md); }
-.today-eyebrow { color: var(--color-auth-link); font-size: var(--font-size-caption); font-weight: var(--font-weight-medium); }
+.today-eyebrow { color: var(--color-accent-text); font-size: var(--font-size-caption); font-weight: var(--font-weight-medium); }
 .today-focus h2 { color: var(--color-nav-text); font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); }
 .today-focus p, .today-card p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_8); }
 .today-focus .btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); min-height: var(--size-44); text-decoration: none; }
@@ -24,14 +24,14 @@
 .today-onboarding ol { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); list-style: none; margin: var(--spacing-md) var(--number-0); padding: var(--number-0); }
 .today-onboarding li { display: flex; flex-direction: column; gap: var(--spacing-xs); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border-light); border-radius: var(--radius-md); font-size: var(--font-size-sm); }
 .today-onboarding li span, .today-onboarding p { color: var(--color-text-secondary); line-height: var(--number-1_8); }
-.today-onboarding li a { margin-top: auto; color: var(--color-auth-link); text-underline-offset: var(--size-3); }
+.today-onboarding li a { margin-top: auto; color: var(--color-accent-text); text-underline-offset: var(--size-3); }
 .today-grid { display: flex; flex-direction: column; gap: var(--spacing-lg); }
 .today-card { display: flex; flex-direction: column; gap: var(--spacing-sm); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); padding: var(--spacing-lg); }
 .today-card h2 { color: var(--color-nav-text); font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); }
 .today-card .badge { align-self: flex-start; }
 .today-card small { color: var(--color-text-muted); font-size: var(--font-size-caption); }
 .today-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-md); margin-top: auto; padding-top: var(--spacing-sm); }
-.today-card-actions :is(a, button) { color: var(--color-auth-link); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-decoration: underline; text-underline-offset: var(--size-3); }
+.today-card-actions :is(a, button) { color: var(--color-accent-text); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-decoration: underline; text-underline-offset: var(--size-3); }
 .dashboard-container .today-forecast { border-color: var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
 .dashboard-container .today-forecast h2, .dashboard-container .today-forecast h3 { color: var(--color-nav-text); }
 .dashboard-container .today-forecast-products { grid-template-columns: var(--unit-1fr); }

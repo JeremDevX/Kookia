@@ -30,8 +30,8 @@
   font-weight: var(--font-weight-medium);
   cursor: pointer;
 }
-.inventory-tabs button[aria-pressed="true"] { border-bottom-color: var(--color-auth-link); color: var(--color-auth-link); }
-.inventory-tabs button:hover { color: var(--color-auth-link); }
+.inventory-tabs button[aria-pressed="true"] { border-bottom-color: var(--color-auth-link); color: var(--color-accent-text); }
+.inventory-tabs button:hover { color: var(--color-accent-text); }
 .inventory-result { color: var(--color-text-secondary); font-size: var(--font-size-xs); white-space: nowrap; }
 .stocks-container .stocks-toolbar { padding: var(--spacing-lg); }
 .toolbar-content { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--spacing-md); }
