@@ -14,8 +14,9 @@ import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegio
 import { WeatherDecisionSummary } from "./ServiceWeatherPanel";
 import ForecastWeatherSummary from "./ForecastWeatherSummary";
 import type { ForecastWeatherAdjustment } from "../../../shared/forecastWeather";
+import { hasPendingServiceSheetFields } from "./serviceSheetPendingFields";
 
-export default function ServiceSheetPanel({ date, slot, onChanged, weatherContextRef }: { date: string; slot: ServiceSlot; onChanged?: () => void; weatherContextRef?: string }) {
+export default function ServiceSheetPanel({ date, slot, onChanged, onDirtyChange, menuChange = 0, weatherContextRef }: { date: string; slot: ServiceSlot; onChanged?: () => void; onDirtyChange?: (dirty: boolean) => void; menuChange?: number; weatherContextRef?: string }) {
   const [sheet, setSheet] = useState<ServiceSheet | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [planned, setPlanned] = useState<SheetInput["planned"]>([]);
@@ -29,6 +30,12 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
   const [replacementPortions, setReplacementPortions] = useState(1);
   const [replacementNote, setReplacementNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [loadedMenuChange, setLoadedMenuChange] = useState(menuChange);
+  const menuChangeRef = useRef(menuChange);
+  useEffect(() => { menuChangeRef.current = menuChange; }, [menuChange]);
+  const hasPendingFields = hasPendingServiceSheetFields({ recipeId, portions, fromRecipeId, toRecipeId, replacementPortions, replacementNote });
+  useEffect(() => { onDirtyChange?.(dirty || hasPendingFields); }, [dirty, hasPendingFields, onDirtyChange]);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
@@ -43,11 +50,12 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
   };
   const load = useCallback(async () => {
     const requestRevision = ++loadRevision.current;
+    const requestedMenuChange = menuChangeRef.current;
     setBusy(true); setError(""); setStatus("");
     try {
       const [result, catalog] = await Promise.all([getServiceSheet(date, slot), getRecipes()]);
       if (loadRevision.current !== requestRevision) return;
-      apply(result); setRecipes(catalog); setOperationId(crypto.randomUUID()); pendingInput.current = null;
+      apply(result); setLoadedMenuChange(requestedMenuChange); setRecipes(catalog); setOperationId(crypto.randomUUID()); pendingInput.current = null; setDirty(false);
     } catch (cause) { if (loadRevision.current === requestRevision) setError(cause instanceof Error ? cause.message : "Fiche indisponible."); }
     finally { if (loadRevision.current === requestRevision) setBusy(false); }
   }, [date, slot]);
@@ -55,7 +63,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
     void load(); const revision = loadRevision;
     return () => { revision.current++; };
   }, [load]);
-  const changed = () => { setOperationId(crypto.randomUUID()); pendingInput.current = null; setStatus(""); };
+  const changed = () => { setDirty(true); setOperationId(crypto.randomUUID()); pendingInput.current = null; setStatus(""); };
   const importForecast = async () => {
     if (!sheet) return;
     setBusy(true); setError(""); setStatus("");
@@ -83,15 +91,15 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
         ...(action === "validate_plan" && weatherContextRef ? { weatherContextRef } : {}),
       };
       const result = await saveServiceSheet(pendingInput.current);
-      apply(result); pendingInput.current = null; setOperationId(crypto.randomUUID()); onChanged?.();
+      apply(result); pendingInput.current = null; setDirty(false); setOperationId(crypto.randomUUID()); onChanged?.();
       setStatus(action === "close" ? "Service clôturé ; le constat est conservé sans nouvelle sortie de stock." : action === "validate_plan"
         ? `Plan validé par le chef. ${result.weatherContext?.status === "saved" ? "Contexte météo conservé." : "Contexte météo non conservé."} Enregistrez séparément les préparations réellement réalisées.` : "Brouillon enregistré.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Enregistrement impossible."); }
     finally { setBusy(false); }
   };
   const addPlan = (event: FormEvent) => {
-    event.preventDefault(); if (!recipeId) return;
-    setPlanned(current => [...current.filter(row => row.recipeId !== recipeId), { recipeId, portions }]); changed();
+    event.preventDefault(); if (busy || !recipeId) return;
+    setPlanned(current => [...current.filter(row => row.recipeId !== recipeId), { recipeId, portions }]); setRecipeId(""); setPortions(0); changed();
   };
   const outcome = (id: string, field: "retained" | "discarded" | "note", value: number | string) => {
     setOutcomes(current => {
@@ -100,8 +108,8 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
     }); changed();
   };
   const addSubstitution = (event: FormEvent) => {
-    event.preventDefault(); setSubstitutions(current => [...current, { fromRecipeId, toRecipeId, portions: replacementPortions, note: replacementNote }]);
-    setReplacementNote(""); changed();
+    event.preventDefault(); if (busy) return; setSubstitutions(current => [...current, { fromRecipeId, toRecipeId, portions: replacementPortions, note: replacementNote }]);
+    setFromRecipeId(""); setToRecipeId(""); setReplacementPortions(1); setReplacementNote(""); changed();
   };
   const closed = sheet?.state === "closed", validated = sheet?.state === "validated" || closed;
   const recipeName = (id: string) => recipes.find(recipe => recipe.id === id)?.name ?? sheet?.facts.lines.find(line => line.recipeId === id)?.recipeName ?? "Recette inconnue";
@@ -110,8 +118,9 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
     <p>Prévu → plan validé par le chef → préparations et compléments enregistrés → ventes → invendus conservés ou écartés. Le plan ne déduit pas de stock.</p>
     {busy && <p role="status">Chargement / enregistrement…</p>}
     {error && <p role="alert">{error}</p>}{status && <p role="status">{status}</p>}
-    <Button type="button" variant="outline" disabled={busy} onClick={() => void load()}>Recharger le constat enregistré</Button>
+    <Button type="button" variant="outline" disabled={busy} onClick={() => { if (!dirty || window.confirm("Les modifications non enregistrées seront perdues. Recharger le constat ?")) void load(); }}>Recharger le constat enregistré</Button>
     {sheet && <>
+      {loadedMenuChange !== menuChange && <p role="status">La carte a changé. Enregistrez vos modifications, puis rechargez la fiche pour actualiser le constat.</p>}
       <p>État : {closed ? "clôturé" : validated ? "plan validé" : "brouillon"} · révision {sheet.revision}. Carte de référence : {sheet.menuRevision || "non renseignée"}.</p>
       <WeatherDecisionSummary context={sheet.weatherContext} />
       <div className="sales-actions"><Link to="/recipes">Enregistrer une production ou un complément</Link><Link to="/sales">Ventiler et revoir les ventes</Link><Link to="/stocks">Déclarer les pertes liées aux préparations</Link></div>
@@ -125,7 +134,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
         <label>Portions prévues<input type="number" required min="0" max="10000" step="1" value={portions} onChange={(event) => setPortions(Number(event.target.value))} /></label>
         <Button type="submit" disabled={busy}>Ajouter / actualiser au plan</Button>
       </form>}
-      <ul>{planned.map(row => <li key={row.recipeId}>{recipeName(row.recipeId)} : {row.portions} portions {!validated && <button type="button" onClick={() => { setPlanned(current => current.filter(entry => entry.recipeId !== row.recipeId)); changed(); }}>Retirer {recipeName(row.recipeId)}</button>}</li>)}</ul>
+      <ul>{planned.map(row => <li key={row.recipeId}>{recipeName(row.recipeId)} : {row.portions} portions {!validated && <button type="button" disabled={busy} onClick={() => { setPlanned(current => current.filter(entry => entry.recipeId !== row.recipeId)); changed(); }}>Retirer {recipeName(row.recipeId)}</button>}</li>)}</ul>
       {!planned.length && <p>Aucune quantité prévue enregistrée. Les prévisions restent des suggestions à revoir.</p>}
       <h3>Substitutions et écarts</h3>
       {!closed && <form className="sales-form" onSubmit={addSubstitution}>
@@ -135,7 +144,7 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
         <label>Explication<input required maxLength={500} value={replacementNote} onChange={(event) => setReplacementNote(event.target.value)} /></label>
         <Button type="submit" disabled={busy || fromRecipeId === toRecipeId}>Ajouter la substitution</Button>
       </form>}
-      <ul>{substitutions.map((row, index) => <li key={index}>{recipeName(row.fromRecipeId)} → {recipeName(row.toRecipeId)} : {row.portions} portions. {row.note} {!closed && <button type="button" onClick={() => { setSubstitutions(current => current.filter((_, itemIndex) => itemIndex !== index)); changed(); }}>Retirer la substitution {index + 1}</button>}</li>)}</ul>
+      <ul>{substitutions.map((row, index) => <li key={index}>{recipeName(row.fromRecipeId)} → {recipeName(row.toRecipeId)} : {row.portions} portions. {row.note} {!closed && <button type="button" disabled={busy} onClick={() => { setSubstitutions(current => current.filter((_, itemIndex) => itemIndex !== index)); changed(); }}>Retirer la substitution {index + 1}</button>}</li>)}</ul>
       <h3>Rapprochement courant</h3>
       <p>« Inconnu » signifie que la couverture ou l’attribution est incomplète. Les invendus ne sont pas automatiquement du gaspillage. Les pertes de préparation en kg/L restent distinctes des portions ; les retours d’assiette sont déjà compris dans les ventes.</p>
       {sheet.facts.gaps.length > 0 && <ul>{sheet.facts.gaps.map(gap => <li key={gap}>{gap}</li>)}</ul>}
@@ -157,10 +166,11 @@ export default function ServiceSheetPanel({ date, slot, onChanged, weatherContex
         })}</tbody></table></div>
       <label>Contexte global, sans donnée personnelle<textarea disabled={closed || busy} maxLength={2000} value={note} onChange={(event) => { setNote(event.target.value); changed(); }} /></label>
       {sheet.factsChangedSinceClosure && <p role="status">Des opérations ont changé depuis la clôture. Le constat de clôture reste conservé dans la fiche imprimable ; le tableau présente le rapprochement courant.</p>}
+      {hasPendingFields && <p>Ajoutez ou effacez les champs en cours avant d’enregistrer, valider ou clôturer la fiche.</p>}
       <div className="sales-actions">
-        {!closed && <Button disabled={busy} type="button" onClick={() => void save("save")}>Enregistrer le brouillon / rapprochement</Button>}
-        {!validated && <Button disabled={busy || !planned.length} type="button" onClick={() => void save("validate_plan")}>Chef : valider le plan de préparation</Button>}
-        {validated && !closed && <Button disabled={busy || sheet.facts.gaps.length > 0} type="button" onClick={() => void save("close")}>Chef : confirmer la clôture et les invendus</Button>}
+        {!closed && <Button disabled={busy || hasPendingFields} type="button" onClick={() => void save("save")}>Enregistrer le brouillon / rapprochement</Button>}
+        {!validated && <Button disabled={busy || !planned.length || hasPendingFields} type="button" onClick={() => void save("validate_plan")}>Chef : valider le plan de préparation</Button>}
+        {validated && !closed && <Button disabled={busy || sheet.facts.gaps.length > 0 || hasPendingFields} type="button" onClick={() => void save("close")}>Chef : confirmer la clôture et les invendus</Button>}
         <Button disabled={busy} type="button" variant="outline" onClick={() => downloadServiceSheetPrint(sheet)}>Télécharger la fiche imprimable</Button>
       </div>
       <small>La clôture rapproche les pertes d’invendus déjà déclarées ; elle ne crée ni vente ni production ni seconde déduction de matière. Rechargez après une nouvelle opération.</small>

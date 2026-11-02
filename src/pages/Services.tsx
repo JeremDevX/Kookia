@@ -13,7 +13,11 @@ import "./Sales.css";
 export default function Services() {
   const [, setParams] = useSearchParams();
   const { service: { date, slot }, state: weather } = useSharedServiceWeather();
-  const select = (nextDate: string, nextSlot: ServiceSlot) => setParams({ serviceDate: nextDate, serviceSlot: nextSlot });
+  const [sheetDirty, setSheetDirty] = useState(false);
+  const select = (nextDate: string, nextSlot: ServiceSlot) => {
+    if (sheetDirty && !window.confirm("Les modifications non enregistrées de la fiche seront perdues. Changer de service ?")) return;
+    setSheetDirty(false); setParams({ serviceDate: nextDate, serviceSlot: nextSlot });
+  };
   const [revision, setRevision] = useState(0);
   const serviceKey = `${date}:${slot}`;
   return <div className="workspace-page service-page">
@@ -24,7 +28,7 @@ export default function Services() {
     </div><p><Link to={serviceContextHref("/settings", { date, slot })}>Régler les horaires hebdomadaires</Link> · <Link to="/sales">Déclarer une fermeture exceptionnelle et qualifier les ventes</Link></p></section>
     <ServiceMenuEditor key={`menu:${serviceKey}`} date={date} slot={slot} onChanged={() => setRevision(n => n + 1)} />
     <ServiceForecastPanel key={`forecast:${serviceKey}:${revision}`} date={date} slot={slot} />
-    <ServiceSheetPanel key={`sheet:${serviceKey}:${revision}`} date={date} slot={slot} weatherContextRef={weather.weather?.contextRef ?? undefined} />
+    <ServiceSheetPanel key={`sheet:${serviceKey}`} date={date} slot={slot} onDirtyChange={setSheetDirty} menuChange={revision} weatherContextRef={weather.weather?.contextRef ?? undefined} />
     <OperationalIncidents key={`incidents:${serviceKey}`} date={date} slot={slot} />
   </div>;
 }
