@@ -44,7 +44,7 @@ export default function SupplierSettings() {
     catch (error) { setMessage(error instanceof Error ? error.message : "Enregistrement impossible."); }
     finally { setSaving(false); }
   };
-  return <Card title="Fournisseurs">
+  return <Card title="Fournisseurs" className="suppliers-card">
     {loading && <p role="status">Chargement des fournisseurs…</p>}
     {error ? <div role="alert"><p>{message || error.message}</p>
       <Button ref={retryButtonRef} type="button" variant="outline" disabled={loading || saving} onClick={retryCatalog}>Réessayer</Button>
@@ -54,9 +54,9 @@ export default function SupplierSettings() {
     <Button ref={suppliers.length === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving || loading || Boolean(error)} onClick={() => { setEditing({ id: crypto.randomUUID(), name: "", email: "", phone: "" }); setCreating(true); setMessage(""); setNotice(""); }}>Ajouter un fournisseur</Button>
     {editing && <form ref={formRef} onSubmit={submit} className="form-grid supplier-form">
       <h3>{creating ? "Nouveau fournisseur" : "Modifier le fournisseur"}</h3>
-      <Input id="supplier-name" label="Nom" required value={editing.name} disabled={saving} onChange={(event) => setEditing({ ...editing, name: event.target.value })} />
-      <Input id="supplier-email" label="Email" type="email" required value={editing.email} disabled={saving} onChange={(event) => setEditing({ ...editing, email: event.target.value })} />
-      <Input id="supplier-phone" label="Téléphone" type="tel" value={editing.phone} disabled={saving} onChange={(event) => setEditing({ ...editing, phone: event.target.value })} />
+      <Input id="supplier-name" label="Nom" placeholder="Nom du fournisseur" required value={editing.name} disabled={saving} onChange={(event) => setEditing({ ...editing, name: event.target.value })} />
+      <Input id="supplier-email" label="Email" type="email" placeholder="adresse@exemple.fr" required value={editing.email} disabled={saving} onChange={(event) => setEditing({ ...editing, email: event.target.value })} />
+      <Input id="supplier-phone" label="Téléphone" type="tel" placeholder="Facultatif" value={editing.phone} disabled={saving} onChange={(event) => setEditing({ ...editing, phone: event.target.value })} />
       <fieldset disabled={saving}><legend>Jours de livraison (Europe/Paris)</legend>
         {["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"].map((day, index) => <label key={day}><input type="checkbox" checked={editing.deliveryWeekdays?.includes(index) ?? false} onChange={(event) => setEditing({ ...editing, deliveryWeekdays: event.target.checked ? [...(editing.deliveryWeekdays ?? []), index].sort() : (editing.deliveryWeekdays ?? []).filter((value) => value !== index) })} /> {day} </label>)}
       </fieldset>
