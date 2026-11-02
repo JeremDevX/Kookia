@@ -176,6 +176,12 @@ avec stock théorique, seuil et accès à leur fiche. Une quantité non comptée
 reste « À vérifier », sans être qualifiée de rupture. Aucun besoin d’achat
 n’est affiché sans source. Firefox a vérifié le détail d’un produit et le
 rendu à 390 px sur des données synthétiques ; comparaison géométrique à faire.
+Le 2 novembre 2026, une session du compte local autorisé a également permis
+un contrôle Firefox sur la base restaurée : quatre indicateurs, contexte et
+liens vers les produits présents ; aucun débordement horizontal détecté à
+1440 et 390 px. Les dialogues météo et menu s’ouvrent au clavier et Échap rend
+le focus. Aucune opération métier n’a été enregistrée ; la météo externe était
+désactivée. Ces contrôles ne constituent pas une comparaison pixel à pixel.
 La frame A `673:43793` ajoute une vue « Planning du jour » : indicateurs,
 graphique par service, prochaines revues avec créneaux et participants, action
 prioritaire et raccourcis. `Dashboard.tsx` n'expose pas cette sous-vue ; les
