@@ -8,7 +8,7 @@ interface UseProductsReturn {
   products: Product[];
   loading: boolean;
   error: Error | null;
-  refetch: () => Promise<void>;
+  refetch: () => Promise<boolean>;
   getStatus: (product: Product) => ProductStatus;
 }
 
@@ -26,10 +26,12 @@ export const useProducts = (): UseProductsReturn => {
       setError(null);
       const data = await getProducts();
       setProducts(data);
+      return true;
     } catch (err) {
       setError(
         err instanceof Error ? err : new Error("Failed to fetch products")
       );
+      return false;
     } finally {
       setLoading(false);
     }

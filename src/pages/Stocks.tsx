@@ -205,7 +205,7 @@ const Stocks: React.FC = () => {
         <p>Transcrivez les ventes depuis votre ticket, puis vérifiez-les avant leur enregistrement.</p>
         <Link className="btn btn-outline" to="/sales#sales-ticket-title">Transcrire un Ticket Z</Link>
       </section>}
-      {view !== "count" && !loading && !error && <StockLotsAndWaste products={products} onSaved={refetch} />}
+      {view !== "count" && !loading && !error && <StockLotsAndWaste products={products} onSaved={async () => { await refetch(); }} />}
       {countProduct && <StockCountModal key={countProduct.id} product={countProduct} isOpen onClose={() => setCountProductId(null)} onRefresh={refetch} onSave={recordCount} />}
       {selectedProduct && <ProductDetail
         key={selectedProduct.id}

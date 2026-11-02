@@ -31,7 +31,7 @@ interface ProductDetailProps {
   onAdjustStock: (productId: string, delta: number, reason?: "adjustment" | "loss") => Promise<void>;
   onUpdateProduct: (productId: string, edit: ProductEdit) => Promise<Product>;
   onRecordCount: (productId: string, count: NewStockCount) => Promise<StockCountResult>;
-  onRefresh: () => Promise<void>;
+  onRefresh: () => Promise<boolean>;
   suppliers: Supplier[];
 }
 
