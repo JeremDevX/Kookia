@@ -6,6 +6,12 @@
 .orders-container .receipt-calendar-tabs [aria-pressed="true"] { border-bottom-color: var(--color-auth-link); color: var(--color-accent-text); }
 .receipt-calendar-controls { display: flex; align-items: center; flex-wrap: wrap; gap: var(--spacing-sm); margin-block: var(--spacing-lg); }
 .receipt-calendar-controls strong { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
+.receipt-calendar-table-wrap { overflow-x: auto; }
+.receipt-calendar-table { width: var(--unit-100percent); min-width: var(--size-600); border-collapse: collapse; font-size: var(--font-size-sm); }
+.receipt-calendar-table :is(th, td) { text-align: left; padding: var(--spacing-md); border-bottom: var(--size-1) solid var(--color-border); }
+.receipt-calendar-table thead th { color: var(--color-text-secondary); font-weight: var(--font-weight-regular); }
+.receipt-calendar-status { display: inline-flex; padding: var(--spacing-xs); border-radius: var(--radius-sm); background: var(--color-warning-soft); }
+.receipt-calendar-status.received { background: var(--color-primary-light); color: var(--color-primary-text); }
 .receipt-calendar-days { display: grid; gap: var(--number-0); border-top: var(--size-1) solid var(--color-border); }
 .receipt-calendar-days > div { min-width: var(--number-0); border-bottom: var(--size-1) solid var(--color-border); padding: var(--spacing-sm); }
 .receipt-calendar-days time { display: block; font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
