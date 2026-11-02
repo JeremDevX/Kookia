@@ -74,7 +74,7 @@ export default function Dashboard() {
                 : productsLoading
                   ? { title: "Retrouvez vos données", detail: "L'inventaire est en cours de chargement.", to: "/stocks", action: "Ouvrir les stocks" }
                   : stockToReview.length > 0
-                    ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique. Les niveaux de stock initiaux doivent être confirmés.`, to: "/stocks", action: "Voir les stocks" }
+                    ? { title: "Vérifiez les stocks à surveiller", detail: `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique. Les niveaux de stock initiaux doivent être confirmés.`, to: "/stocks?stockView=review", action: "Voir les stocks" }
                     : { title: "Aucune alerte de stock enregistrée", detail: "Vérifiez les ventes du dernier service ou préparez vos prochains achats.", to: "/orders", action: "Ouvrir les achats" };
 
   return <div className="dashboard-container">
@@ -84,8 +84,8 @@ export default function Dashboard() {
     </header>
 
     <div className="dashboard-metrics" aria-label="Situation du restaurant">
-      <Link to="/stocks" className="dashboard-metric"><span>Stocks à vérifier</span><strong>{productsLoading || productsError ? "—" : stockToReview.length}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : "Produits à examiner"}</small></Link>
-      <Link to="/stocks" className="dashboard-metric"><span>Ruptures confirmées</span><strong>{productsLoading || productsError ? "—" : confirmedStockoutCount}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : "D’après les quantités enregistrées"}</small></Link>
+      <Link to="/stocks?stockView=review" className="dashboard-metric"><span>Stocks à vérifier</span><strong>{productsLoading || productsError ? "—" : stockToReview.length}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : "Produits à examiner"}</small></Link>
+      <Link to="/stocks?stockView=out" className="dashboard-metric"><span>Ruptures confirmées</span><strong>{productsLoading || productsError ? "—" : confirmedStockoutCount}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : "D’après les quantités enregistrées"}</small></Link>
       <Link to="/orders#selection" className="dashboard-metric"><span>Commande en préparation</span><strong>{cartLoading || cartError ? "—" : cartItems.length}</strong><small>{cartError ? "Commande indisponible" : cartLoading ? "Chargement…" : "Articles à revoir"}</small></Link>
       <Link to="/sales" className="dashboard-metric"><span>Dernier service enregistré</span><strong className="dashboard-metric-date">{salesError || !latestService ? "—" : new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</strong><small>{salesError ? "Ventes indisponibles" : latestService === undefined ? "Chargement…" : latestService === null ? "Aucune vente enregistrée" : "Ventes enregistrées"}</small></Link>
     </div>
