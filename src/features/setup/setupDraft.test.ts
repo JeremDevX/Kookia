@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { clearSetupDraft, emptySetupForm, readSetupDraft, saveSetupDraft } from "./setupDraft";
+import { clearSetupDraft, emptySetupForm, hasSetupDraft, readSetupDraft, saveSetupDraft } from "./setupDraft";
 
 describe("saisie de configuration en mémoire", () => {
+  it("repère une saisie non enregistrée, y compris une réponse de terrasse", () => {
+    expect(hasSetupDraft(emptySetupForm)).toBe(false);
+    expect(hasSetupDraft({ ...emptySetupForm, name: "Restaurant" })).toBe(true);
+    expect(hasSetupDraft({ ...emptySetupForm, hasTerrace: "no" })).toBe(true);
+    expect(hasSetupDraft({ ...emptySetupForm, dailyCovers: "0" })).toBe(true);
+  });
   it("retrouve la saisie après reconnexion uniquement pour le même compte", () => {
     const form = { ...emptySetupForm, name: "Restaurant", email: "contact@example.test", dailyCovers: "35" };
     saveSetupDraft("account-a", form);
