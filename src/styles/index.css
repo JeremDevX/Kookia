@@ -52,6 +52,10 @@
   --color-urgent-hover: #a51228;
   --color-urgent-text: #a01228;
   --color-warning-soft: #f7f0e4;
+  --color-nav-text: #111111;
+  --color-nav-muted: #969696;
+  --color-nav-active: #ebeef0;
+  --color-nav-border: #e8e8e8;
   --palette-blue-1: #9ca3af;
   --palette-blue-2: #56718b;
   --palette-blue-3: #4b5563;
@@ -179,6 +183,7 @@
   --size-220: 220px;
   --size-230: 230px;
   --size-240: 240px;
+  --size-248: 248px;
   --size-250: 250px;
   --size-260: 260px;
   --size-280: 280px;

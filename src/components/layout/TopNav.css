@@ -1,4 +1,4 @@
-.top-nav { height: var(--size-76); min-height: var(--size-76); background: var(--color-surface); border-bottom: var(--size-1) solid var(--color-border); display: flex; align-items: center; justify-content: space-between; padding: var(--number-0) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)); gap: var(--spacing-md); position: sticky; top: var(--number-0); z-index: var(--number-50); }
+.top-nav { height: var(--size-72); min-height: var(--size-72); background: var(--color-surface); border-bottom: var(--size-1) solid var(--color-nav-border); display: flex; align-items: center; justify-content: space-between; padding: var(--number-0) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)); gap: var(--spacing-md); position: sticky; top: var(--number-0); z-index: var(--number-50); }
 .top-nav-left { display: flex; align-items: center; gap: var(--size-12); min-width: var(--number-0); }
 .top-nav .breadcrumbs { display: flex; align-items: center; gap: var(--size-12); min-width: var(--number-0); font-size: var(--font-size-sm); }
 .breadcrumb-parent { color: var(--color-text-muted); white-space: nowrap; }

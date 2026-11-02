@@ -5,11 +5,13 @@ import {
   Package,
   ShoppingBag,
   ClipboardList,
+  BookOpen,
+  BarChart3,
+  Settings,
   HelpCircle,
   LogOut,
   Ellipsis,
   X,
-  Leaf,
   ArrowUpRight,
 } from "lucide-react";
 // Styles are imported in Sidebar.css
@@ -26,7 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const inMore = ["/recipes", "/analytics", "/settings", "/predictions", "/services"].includes(pathname);
+  const inMore = ["/predictions", "/services", "/history"].includes(pathname);
   const sidebarRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     if (!isOpen) return;
@@ -71,9 +73,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
     };
   }, [isOpen, onClose, returnFocusRef]);
   const navItems = [
-    { icon: LayoutDashboard, label: "Aujourd'hui", path: "/" },
-    { icon: ShoppingBag, label: "Achats", path: "/orders" },
+    { icon: LayoutDashboard, label: "Tableau de bord", path: "/" },
+    { icon: ShoppingBag, label: "Commandes", path: "/orders" },
     { icon: Package, label: "Stocks", path: "/stocks" },
+    { icon: BookOpen, label: "Recettes", path: "/recipes" },
+    { icon: BarChart3, label: "Bilan", path: "/analytics" },
     { icon: ClipboardList, label: "Ventes", path: "/sales" },
     { icon: Ellipsis, label: "Plus", path: "/more" },
   ];
@@ -104,9 +108,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
           </button>
         </div>
 
-        <div className="sidebar-workspace"><span className="workspace-icon"><Leaf size={19} aria-hidden="true" /></span><div><strong>Mon restaurant</strong></div></div>
         <nav className="sidebar-nav" aria-label="Pages du restaurant">
-          <p className="sidebar-label">NAVIGATION</p>
+          <p className="sidebar-label">MENU PRINCIPAL</p>
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -124,6 +127,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
         </nav>
 
         <div className="sidebar-footer">
+          <NavLink to="/settings" onClick={handleNavClick} className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
+            <Settings size={20} aria-hidden="true" />
+            <span>Paramètres</span>
+          </NavLink>
           <a
             href="mailto:support@kookia.app?subject=Support%20KookiA"
             className="nav-item"
