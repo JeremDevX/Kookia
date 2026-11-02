@@ -5,6 +5,9 @@ import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import TodayPurchaseForecast from "../components/dashboard/TodayPurchaseForecast";
+import { purchaseForecastIndicator } from "../features/orders/purchaseForecastPresentation";
+import { purchasePreparationHref } from "../features/orders/orderNavigation";
+import { getPurchaseSuggestions, type PurchaseSuggestions } from "../services/orderService";
 import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
 import { getProductStatus, needsStockReview } from "../domain/inventory/product.policies";
@@ -29,11 +32,27 @@ export default function Dashboard() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [restaurantError, setRestaurantError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [purchaseForecast, setPurchaseForecast] = useState<PurchaseSuggestions | null>(null);
+  const [purchaseLoading, setPurchaseLoading] = useState(true);
+  const [purchaseError, setPurchaseError] = useState("");
+  const [purchaseRevision, setPurchaseRevision] = useState(0);
+  const purchaseIndicator = purchaseForecastIndicator(purchaseForecast, cartItems.map((item) => item.productId),
+    purchaseLoading || cartLoading, !!purchaseError || !!cartError);
   const stockToReview = products.filter(needsStockReview);
   const confirmedStockoutCount = stockToReview.filter((product) => getProductStatus(product) === "urgent").length;
   const hasExampleItem = cartItems.some((item) => !!item.predictionId);
   const isFirstRun = latestService === null;
   const showSalesStartActions = isFirstRun && !cartLoading && !cartError && cartItems.length === 0 && !salesError;
+
+  useEffect(() => {
+    let active = true;
+    getPurchaseSuggestions().then((result) => {
+      if (active) { setPurchaseForecast(result); setPurchaseError(""); setPurchaseLoading(false); }
+    }, () => {
+      if (active) { setPurchaseError("Les prévisions d’achat n’ont pas pu être chargées."); setPurchaseLoading(false); }
+    });
+    return () => { active = false; };
+  }, [purchaseRevision]);
 
   useEffect(() => {
     let active = true;
@@ -85,10 +104,10 @@ export default function Dashboard() {
     </header>
 
     <div className="dashboard-metrics" aria-label="Situation du restaurant">
-      <Link to="/stocks?stockView=review" className="dashboard-metric"><span>Stocks à vérifier</span><strong>{productsLoading || productsError || products.length === 0 ? "—" : stockToReview.length}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : products.length === 0 ? "Aucun produit enregistré" : "Produits à examiner"}</small></Link>
-      <Link to="/stocks?stockView=out" className="dashboard-metric"><span>Ruptures confirmées</span><strong>{productsLoading || productsError || products.length === 0 ? "—" : confirmedStockoutCount}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : products.length === 0 ? "Aucun produit enregistré" : "D’après les quantités enregistrées"}</small></Link>
-      <Link to="/orders#selection" className="dashboard-metric"><span>Commande en préparation</span><strong>{cartLoading || cartError ? "—" : cartItems.length}</strong><small>{cartError ? "Commande indisponible" : cartLoading ? "Chargement…" : "Articles à revoir"}</small></Link>
-      <Link to="/sales" className="dashboard-metric"><span>Dernier service enregistré</span><strong className="dashboard-metric-date">{salesError || !latestService ? "—" : new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</strong><small>{salesError ? "Ventes indisponibles" : latestService === undefined ? "Chargement…" : latestService === null ? "Aucune vente enregistrée" : "Ventes enregistrées"}</small></Link>
+      <div className="dashboard-metric"><span>Couverts prévus</span><strong>—</strong><small>Prévision indisponible</small></div>
+      <div className="dashboard-metric"><span>Chiffre d’affaires estimé</span><strong>—</strong><small>Estimation indisponible</small></div>
+      <Link to="/stocks?stockView=review" className="dashboard-metric"><span>Alertes de stock</span><strong>{productsLoading || productsError || products.length === 0 ? "—" : stockToReview.length}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : products.length === 0 ? "Aucun produit enregistré" : "Produits à vérifier"}</small></Link>
+      <Link to={purchasePreparationHref} className="dashboard-metric"><span>Produits suggérés</span><strong>{purchaseIndicator.value}</strong><small>{purchaseIndicator.detail}</small></Link>
     </div>
 
     <div className="dashboard-columns"><div className="dashboard-main-column">
@@ -109,7 +128,9 @@ export default function Dashboard() {
       <p>Les prévisions et besoins d'achat nécessitent 28 jours de service complets et un comptage de stock récent ; chaque suggestion reste à revoir.</p>
     </section>}
 
-    <TodayPurchaseForecast />
+    <TodayPurchaseForecast data={purchaseForecast} loading={purchaseLoading} error={purchaseError} retry={() => {
+      setPurchaseLoading(true); setPurchaseError(""); setPurchaseRevision((value) => value + 1);
+    }} />
     </div><div className="today-grid">
       <section className="today-card" aria-labelledby="today-stock-title"><h2 id="today-stock-title" ref={stockHeading} tabIndex={-1}>Stocks</h2>
         {productsLoading ? <p role="status">Chargement du stock…</p> : productsError ? <div role="alert"><p>Stock indisponible.</p><Button variant="outline" onClick={() => {

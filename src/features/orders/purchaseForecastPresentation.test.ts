@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import PurchaseSuggestionCard from "../../components/dashboard/PurchaseSuggestionCard";
 import { describe, expect, it } from "vitest";
 import type { PurchaseSuggestion, PurchaseSuggestions } from "../../services/orderService";
-import { summarizePurchaseForecast } from "./purchaseForecastPresentation";
+import { purchaseForecastIndicator, summarizePurchaseForecast } from "./purchaseForecastPresentation";
 
 const item = (productId: string, values: Partial<PurchaseSuggestion> = {}): PurchaseSuggestion => ({
   productId, productName: productId, supplierName: "Primeur", unit: "kg", suggestionKey: productId,
@@ -92,4 +92,14 @@ describe("purchase forecast overview", () => {
   it("does not display a partial price as a complete budget", () => {
     expect(summarizePurchaseForecast(data([item("Tomates"), item("Riz", { estimatedCost: null })]), []).estimatedCost).toBeNull();
   });
+});
+
+it("affiche un nombre seulement pour les suggestions disponibles et non traitées", () => {
+  const forecast = data([item("Tomates"), item("Riz")]);
+  expect(purchaseForecastIndicator(forecast, ["Riz"], false, false)).toEqual({ value: 1, detail: "Produits à examiner" });
+  expect(purchaseForecastIndicator(forecast, ["Riz", "Tomates"], false, false).value).toBe(0);
+  expect(purchaseForecastIndicator(forecast, [], true, false).detail).toBe("Chargement…");
+  expect(purchaseForecastIndicator(forecast, [], false, true).detail).toBe("Suggestions indisponibles");
+  expect(purchaseForecastIndicator(data([item("Riz")], { status: "simulation_only" }), [], false, false).value).toBe("—");
+  expect(purchaseForecastIndicator(data([item("Riz")], { blockers: ["Recette manquante"] }), [], false, false).value).toBe("—");
 });

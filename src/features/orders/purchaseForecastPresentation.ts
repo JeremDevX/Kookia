@@ -27,3 +27,10 @@ export function purchaseForecastItemStatus(item: PurchaseSuggestion) {
   if (item.decision?.kind === "excluded") return "Écarté de la proposition";
   return "En cours de préparation";
 }
+
+export function purchaseForecastIndicator(data: PurchaseSuggestions | null, cartProductIds: string[], loading: boolean, unavailable: boolean) {
+  if (loading) return { value: "—", detail: "Chargement…" };
+  if (unavailable) return { value: "—", detail: "Suggestions indisponibles" };
+  if (!data || data.status !== "ready" || data.blockers.length > 0) return { value: "—", detail: "Données insuffisantes" };
+  return { value: summarizePurchaseForecast(data, cartProductIds).toReview.length, detail: "Produits à examiner" };
+}

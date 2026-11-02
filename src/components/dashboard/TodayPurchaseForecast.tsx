@@ -1,12 +1,12 @@
 import { purchasePreparationHref } from "../../features/orders/orderNavigation";
 import { orderStepLabel } from "../../../shared/orderQuantity.js";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ShoppingBasket } from "lucide-react";
 import Button from "../common/Button";
 import { useCart } from "../../context/useCart";
 import { purchaseForecastItemStatus, summarizePurchaseForecast } from "../../features/orders/purchaseForecastPresentation";
-import { getPurchaseSuggestions, type PurchaseSuggestions } from "../../services/orderService";
+import type { PurchaseSuggestions } from "../../services/orderService";
 import "./TodayPurchaseForecast.css";
 import PurchaseWeatherDetails from "./PurchaseWeatherDetails";
 
@@ -15,23 +15,14 @@ const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "curren
 const date = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
 
 
-export default function TodayPurchaseForecast() {
+export default function TodayPurchaseForecast({ data, loading, error, retry }: {
+  data: PurchaseSuggestions | null;
+  loading: boolean;
+  error: string;
+  retry: () => void;
+}) {
   const { cartItems, loading: cartLoading, loadError: cartError } = useCart();
-  const [data, setData] = useState<PurchaseSuggestions | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [revision, setRevision] = useState(0);
   const headingRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    let active = true;
-    getPurchaseSuggestions().then((result) => {
-      if (active) { setData(result); setError(""); setLoading(false); }
-    }, () => {
-      if (active) { setError("Les prévisions d’achat n’ont pas pu être chargées."); setLoading(false); }
-    });
-    return () => { active = false; };
-  }, [revision]);
 
   const summary = data ? summarizePurchaseForecast(data, cartItems.map((item) => item.productId)) : null;
   const unavailable = error || cartError;
@@ -44,7 +35,7 @@ export default function TodayPurchaseForecast() {
     {loading || cartLoading ? <p role="status">Calcul des besoins à partir de vos ventes, recettes et stocks…</p> : unavailable ?
       <div role="alert"><p>{unavailable}</p>
         {error ? <Button type="button" variant="outline" onClick={() => {
-          setLoading(true); setError(""); setRevision((value) => value + 1); headingRef.current?.focus();
+          retry(); headingRef.current?.focus();
         }}>Réessayer</Button> : <Link to="/orders#selection">Vérifier la commande en préparation</Link>}
       </div> : data && summary && <>
         <p className="today-forecast-period">À partir du <strong>{date(data.forecastDate)}</strong></p>

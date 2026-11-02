@@ -30,3 +30,11 @@ it("conserve les états de chargement et d’erreur du stock", () => {
   expect(html).toContain('role="alert"><p>Stock indisponible.');
   expect(html).not.toContain("Aucun produit enregistré");
 });
+
+it("distingue les prévisions indisponibles des données réelles", () => {
+  const html = render();
+  expect(html).toContain("Couverts prévus</span><strong>—</strong><small>Prévision indisponible");
+  expect(html).toContain("Chiffre d’affaires estimé</span><strong>—</strong><small>Estimation indisponible");
+  expect(html).toContain("Produits suggérés</span><strong>—</strong><small>Chargement");
+  expect(html).toContain('href="/orders?view=prepare#purchase-suggestions-title"');
+});
