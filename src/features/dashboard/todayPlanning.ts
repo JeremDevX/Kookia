@@ -1,5 +1,5 @@
 import type { CalendarService } from "../../../shared/serviceCalendar";
-import { receiptEvents } from "../orders/receiptCalendar";
+import { dateExceeded, receiptEvents } from "../orders/receiptCalendar";
 import type { PurchaseOrder } from "../../services/orderService";
 
 export function serviceSchedule(service: CalendarService): string {
@@ -10,5 +10,6 @@ export function serviceSchedule(service: CalendarService): string {
 export function todayReceipts(orders: PurchaseOrder[], today: string) {
   const { events, undated } = receiptEvents(orders);
   const simulatedUndated = receiptEvents(orders.filter((order) => order.status.startsWith("simulated"))).undated;
-  return { events: events.filter((event) => event.date === today), undated, simulatedUndated };
+  return { events: events.filter((event) => event.date === today || dateExceeded(event, today))
+    .sort((a, b) => a.date.localeCompare(b.date)), undated, simulatedUndated };
 }

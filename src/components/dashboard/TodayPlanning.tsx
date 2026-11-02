@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { CalendarService } from "../../../shared/serviceCalendar";
 import { serviceSlotLabels } from "../../../shared/serviceCalendar";
-import { receiptEventHref } from "../../features/orders/receiptCalendar";
+import { dateExceeded, receiptEventHref } from "../../features/orders/receiptCalendar";
 import { serviceContextHref } from "../../features/services/serviceNavigation";
 import { serviceSchedule, todayReceipts } from "../../features/dashboard/todayPlanning";
 import { getOrders, type PurchaseOrder } from "../../services/orderService";
@@ -66,7 +66,7 @@ export default function TodayPlanning() {
         {orderError ? <div role="alert"><p>Les réceptions sont indisponibles.</p><Button variant="outline" onClick={() => { setOrders(null); setOrderError(false); setOrderAttempt((value) => value + 1); }}>Réessayer</Button></div>
           : !receipts ? <p role="status">Chargement des réceptions…</p> : <>
             {receipts.events.length === 0 ? <p>Aucune livraison ou réception datée aujourd’hui.</p> : <ul className="today-planning-list">{receipts.events.map((event, index) => <li key={`${event.orderId}-${event.kind}-${index}`}>
-              <div><strong>{event.label}</strong><p>{event.kind === "expected" ? "Livraison attendue" : "Réception enregistrée"}{event.simulated ? " · simulation" : ""}</p>
+              <div><strong>{event.label}</strong><p>{dateExceeded(event, today) ? `Date prévue dépassée : ${new Date(`${event.date}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "UTC" })}` : event.kind === "expected" ? "Livraison attendue" : "Réception enregistrée"}{event.simulated ? " · simulation" : ""}</p>
                 {event.items.length > 0 && <p>{event.items.map((item) => `${item.name} · ${item.quantity.toLocaleString("fr-FR")} ${item.unit}`).join(" ; ")}</p>}</div>
               <Link to={receiptEventHref(event)}>{event.kind === "expected" ? "Rapprocher la livraison" : "Voir la réception"}</Link>
             </li>)}</ul>}
