@@ -20,7 +20,7 @@ export function ServiceMenuHistory({ history }: { history: ServiceMenu[] }) {
     </li>)}</ol>
   </details>;
 }
-export default function ServiceMenuEditor({ date, slot, onChanged }: { date: string; slot: ServiceSlot; onChanged?: () => void }) {
+export default function ServiceMenuEditor({ date, slot, onChanged, onDirtyChange }: { date: string; slot: ServiceSlot; onChanged?: () => void; onDirtyChange?: (dirty: boolean) => void }) {
   const [menu, setMenu] = useState<ServiceMenu | null>(null);
   const [history, setHistory] = useState<ServiceMenu[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -33,6 +33,8 @@ export default function ServiceMenuEditor({ date, slot, onChanged }: { date: str
   const [message, setMessage] = useState("");
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [reload, setReload] = useState(0);
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
   const generation = useRef(0);
   useEffect(() => {
     const request = ++generation.current;
@@ -41,7 +43,7 @@ export default function ServiceMenuEditor({ date, slot, onChanged }: { date: str
       .then(([current, versions, recipeRows, saleRows]) => {
         if (generation.current !== request) return;
         setMenu(current); setHistory(versions); setRecipes(recipeRows); setSales(saleRows);
-        setEntries(menuDraft(current)); setNote(current.note); setOperationId(crypto.randomUUID());
+        setEntries(menuDraft(current)); setNote(current.note); setDirty(false); setOperationId(crypto.randomUUID());
       }).catch((cause: unknown) => { if (generation.current === request) setError(cause instanceof Error ? cause.message : "Carte indisponible."); })
       .finally(() => { if (generation.current === request) setLoading(false); });
     return () => { generation.current = request + 1; };
@@ -57,7 +59,7 @@ export default function ServiceMenuEditor({ date, slot, onChanged }: { date: str
       const saved = await saveServiceMenu(parsed.data);
       if (generation.current !== request) return;
       setMenu(saved); setEntries(menuDraft(saved)); setHistory((current) => [saved, ...current.filter((row) => row.id !== saved.id)]);
-      setOperationId(crypto.randomUUID()); setMessage("Carte validée et enregistrée. Stock inchangé."); onChanged?.();
+      setDirty(false); setOperationId(crypto.randomUUID()); setMessage("Carte validée et enregistrée. Stock inchangé."); onChanged?.();
     } catch (cause) { if (generation.current === request) setError(cause instanceof Error ? cause.message : "Carte non enregistrée."); }
     finally { if (generation.current === request) setSaving(false); }
   };
@@ -67,15 +69,15 @@ export default function ServiceMenuEditor({ date, slot, onChanged }: { date: str
     <p>Pour une formule, saisir les ventes de la formule OU celles de ses composants, jamais les deux. Enregistrer la carte ne déduit aucune matière.</p>
     {loading && <p role="status">Chargement de la carte…</p>}
     {error && <p role="alert">{error}</p>}
-    {!loading && <Button type="button" variant="outline" disabled={saving} onClick={() => setReload((value) => value + 1)}>Recharger / annuler les modifications</Button>}
+    {!loading && <Button type="button" variant="outline" disabled={saving} onClick={() => { if (!dirty || window.confirm("Les modifications non enregistrées de la carte seront perdues. Recharger la carte ?")) setReload((value) => value + 1); }}>Recharger / annuler les modifications</Button>}
     {!loading && menu && menu.serviceDate === date && menu.slot === slot && <form onSubmit={(event) => void save(event)}>
       <p>Version actuelle : {menu.revision}. Une modification concurrente sera refusée ; rechargez pour la consulter.</p>
       {entries.length === 0 && <p>Aucun article dans la carte. Ajoutez vos choix ; aucune recette n’est sélectionnée automatiquement.</p>}
       {entries.map((entry, index) => <ServiceMenuEntryEditor key={entry.id} entry={entry} index={index} recipes={recipes} sales={sales} disabled={saving}
-        onChange={(next) => { setMessage(""); setEntries((current) => current.map((row) => row.id === next.id ? next : row)); }}
-        onRemove={() => { setMessage(""); setEntries((current) => current.filter((row) => row.id !== entry.id)); }} />)}
-      <Button type="button" variant="outline" disabled={saving || entries.length >= 60} onClick={() => { setMessage(""); setEntries((current) => [...current, newMenuEntry()]); }}>Ajouter un choix</Button>
-      <label>Notes de la carte<textarea maxLength={2000} value={note} disabled={saving} onChange={(event) => { setMessage(""); setNote(event.target.value); }} /></label>
+        onChange={(next) => { setMessage(""); setDirty(true); setEntries((current) => current.map((row) => row.id === next.id ? next : row)); }}
+        onRemove={() => { setMessage(""); setDirty(true); setEntries((current) => current.filter((row) => row.id !== entry.id)); }} />)}
+      <Button type="button" variant="outline" disabled={saving || entries.length >= 60} onClick={() => { setMessage(""); setDirty(true); setEntries((current) => [...current, newMenuEntry()]); }}>Ajouter un choix</Button>
+      <label>Notes de la carte<textarea maxLength={2000} value={note} disabled={saving} onChange={(event) => { setMessage(""); setDirty(true); setNote(event.target.value); }} /></label>
       <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Valider et enregistrer la carte"}</Button>
     </form>}
     {message && <p role="status">{message}</p>}
