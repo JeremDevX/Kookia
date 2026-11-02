@@ -49,6 +49,9 @@
 }
 .inventory-reset { margin-top: var(--spacing-sm); padding: var(--spacing-xs); background: transparent; border: none; color: var(--color-primary-text); text-decoration: underline; font-size: var(--font-size-xs); cursor: pointer; }
 .stocks-container .stocks-table-card { border: none; border-radius: var(--number-0); }
+.stock-ticket-panel { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-md); padding: var(--spacing-xl); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-compact); background: var(--color-surface); box-shadow: var(--shadow-figma-panel); }
+.stock-ticket-panel h2 { font-size: var(--font-size-lg); }
+.stock-ticket-panel p { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .stocks-container .stock-count-list { display: block; }
 .stocks-container .stocks-table { width: var(--unit-100percent); min-width: var(--number-0); border-collapse: separate; border-spacing: var(--number-0); }
 .stocks-container .stocks-table th {

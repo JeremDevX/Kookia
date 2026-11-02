@@ -10,7 +10,7 @@ import AddProductModal from "../components/stocks/AddProductModal";
 import FiltersModal from "../components/stocks/FiltersModal";
 import StockInventoryCard from "../components/stocks/StockInventoryCard";
 import { Search, Filter, Plus } from "lucide-react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useProductsWithMutations } from "../hooks";
 import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
@@ -200,6 +200,11 @@ const Stocks: React.FC = () => {
       </>}
       <p className="inventory-footnote">Quantités théoriques · Achats à valider avant commande.</p>
       </section>
+      {view !== "count" && <section className="stock-ticket-panel" aria-labelledby="stock-ticket-title">
+        <h2 id="stock-ticket-title">Importer un Ticket Z</h2>
+        <p>Transcrivez les ventes depuis votre ticket, puis vérifiez-les avant leur enregistrement.</p>
+        <Link className="btn btn-outline" to="/sales#sales-ticket-title">Transcrire un Ticket Z</Link>
+      </section>}
       {view !== "count" && !loading && !error && <StockLotsAndWaste products={products} onSaved={refetch} />}
       {countProduct && <StockCountModal key={countProduct.id} product={countProduct} isOpen onClose={() => setCountProductId(null)} onRefresh={refetch} onSave={recordCount} />}
       {selectedProduct && <ProductDetail

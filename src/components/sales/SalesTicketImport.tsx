@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useLocation } from "react-router-dom";
 import Button from "../common/Button";
 import { createTicketZCandidates as saveCandidates, deleteTicketZBatch, getTicketZBatches, uploadTicketZFile, type TicketZBatch } from "../../services/salesService";
 
@@ -29,6 +30,11 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
   const [status, setStatus] = useState("");
   const objectUrl = useRef<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (hash === "#sales-ticket-title") heading.current?.focus();
+  }, [hash]);
 
   const refresh = useCallback(async () => {
     setListLoading(true); setListError("");
