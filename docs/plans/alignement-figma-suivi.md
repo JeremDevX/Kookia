@@ -57,6 +57,21 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Ancien historique `/history/replay/:id` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |
 | Route inconnue `*` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |
 
+## Vérification du workspace et de Firefox
+
+Le 2 novembre 2026, VS Code affichait le dépôt `~/Documents/KookIA/kookia`
+sur `main`. Le dépôt était propre et son dernier commit local correspondait
+à `origin/main` (`101c693`). La copie du projet dans le workspace Codex
+contient des modifications distinctes préexistantes ; elle ne constitue pas
+le workspace VS Code identifié.
+
+La source A a été ouverte en lecture seule avec Firefox MCP. La planche
+présente les composants et les écrans desktop, notamment les parcours
+commandes, réceptions, stocks, recettes et analytics. La consultation
+visuelle est possible ; les propriétés structurées et les interactions
+des maquettes restent à vérifier. Aucune comparaison avec l’application
+locale ne découle de cette seule observation.
+
 ## Références Figma
 
 La source A a été consultée en lecture seule dans le navigateur, sans MCP. La
