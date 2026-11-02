@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { PurchaseOrder } from "../../services/orderService";
 import { formatLocalISODate } from "../../utils/date";
-import { dateExceeded, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "../../features/orders/receiptCalendar";
+import { dateExceeded, receiptEventHref, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "../../features/orders/receiptCalendar";
 import Button from "../common/Button";
 import "./ReceiptCalendar.css";
 
@@ -49,12 +49,12 @@ export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] })
       <tbody>{weekEvents.map((event, index) => <tr key={`${event.orderId}-${event.kind}-${index}`}>
         <td><time dateTime={event.date}>{displayDate(event.date, { weekday: "short", day: "numeric", month: "short" })}</time></td>
         <th scope="row">{event.label}</th><td><span className={`receipt-calendar-status ${event.kind}`}>{dateExceeded(event, today) ? "Date prévue dépassée" : event.kind === "expected" ? "À recevoir" : "Réception enregistrée"}{event.simulated ? " · simulation" : ""}</span></td>
-        <td><Link aria-label={`Voir la commande : ${event.label}, ${displayDate(event.date, { day: "numeric", month: "long", year: "numeric" })}`} to={`/orders?view=orders#order-${encodeURIComponent(event.orderId)}`}>Voir la commande</Link></td>
+        <td><Link aria-label={`${event.kind === "expected" ? "Rapprocher la livraison" : "Voir la commande"} : ${event.label}, ${displayDate(event.date, { day: "numeric", month: "long", year: "numeric" })}`} to={receiptEventHref(event)}>{event.kind === "expected" ? "Rapprocher" : "Voir la commande"}</Link></td>
       </tr>)}</tbody>
     </table>{weekEvents.length === 0 && <p className="receipt-calendar-note">Aucune réception datée cette semaine.</p>}</div> : <div className="receipt-calendar-days receipt-calendar-month">
       {days.map((day) => <div key={day} className={day.slice(0, 7) !== anchor.slice(0, 7) ? "receipt-calendar-outside" : undefined}>
         <time dateTime={day} aria-current={day === today ? "date" : undefined}>{displayDate(day, { weekday: "short", day: "numeric" })}</time>
-        {events.filter((event) => event.date === day).map((event, index) => <Link key={`${event.orderId}-${event.kind}-${index}`} className={`receipt-calendar-event ${event.kind}`} to={`/orders?view=orders#order-${encodeURIComponent(event.orderId)}`}>
+        {events.filter((event) => event.date === day).map((event, index) => <Link key={`${event.orderId}-${event.kind}-${index}`} className={`receipt-calendar-event ${event.kind}`} to={receiptEventHref(event)}>
           {event.label} · {dateExceeded(event, today) ? "Date prévue dépassée" : event.kind === "expected" ? "prévu" : "reçu"}{event.simulated ? " · simulation" : ""}</Link>)}
       </div>)}
     </div>}

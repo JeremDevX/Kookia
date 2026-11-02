@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { PurchaseOrder } from "../../services/orderService";
-import { dateExceeded, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "./receiptCalendar";
+import { dateExceeded, receiptEventHref, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "./receiptCalendar";
 
 describe("calendrier des réceptions", () => {
+  it("ouvre le rapprochement pour une livraison attendue et la commande pour une réception enregistrée", () => {
+    const event = { date: "2026-11-02", orderId: "order", label: "A", kind: "expected", simulated: false } as const;
+    expect(receiptEventHref(event)).toBe("/orders?view=orders&action=receive#order-order");
+    expect(receiptEventHref({ ...event, kind: "received" })).toBe("/orders?view=orders#order-order");
+  });
   it("signale uniquement les dates prévues antérieures à aujourd’hui, y compris en simulation", () => {
     const event = { date: "2026-11-01", orderId: "order", label: "A", kind: "expected", simulated: true } as const;
     expect(dateExceeded(event, "2026-11-02")).toBe(true);

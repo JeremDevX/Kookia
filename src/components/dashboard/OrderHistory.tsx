@@ -77,14 +77,19 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
   const visible = filtered.slice(page * 10, (page + 1) * 10);
   if (targetOrder && !visible.some((order) => order.id === targetOrder.id)) visible.unshift(targetOrder);
   useEffect(() => {
-    if (loading || currentError || !location.hash.startsWith("#order-") || focusedOrder.current === location.hash) return;
+    const focusKey = `${location.search}${location.hash}`;
+    if (loading || currentError || !location.hash.startsWith("#order-") || focusedOrder.current === focusKey) return;
     const element = document.getElementById(location.hash.slice(1));
     if (!(element instanceof HTMLDetailsElement)) return;
-    focusedOrder.current = location.hash;
+    focusedOrder.current = focusKey;
     element.open = true;
-    element.scrollIntoView({ block: "center" });
-    element.querySelector("summary")?.focus({ preventScroll: true });
-  }, [loading, currentError, location.hash, orders]);
+    const review = new URLSearchParams(location.search).get("action") === "receive"
+      ? element.querySelector<HTMLDetailsElement>(".purchase-receipt-review") : null;
+    if (review) review.open = true;
+    const target = review ?? element;
+    target.scrollIntoView({ block: "center" });
+    target.querySelector("summary")?.focus({ preventScroll: true });
+  }, [loading, currentError, location.hash, location.search, orders]);
   const refreshAfterReceipt = () => { setReload((value) => value + 1); onReceiptSaved?.(); };
   const retryHistory = () => {
     retryFocusPending.current = document.activeElement === retryButtonRef.current;
