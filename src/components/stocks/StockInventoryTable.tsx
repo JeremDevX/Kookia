@@ -16,6 +16,7 @@ export default function StockInventoryTable({ products, selecting, onInspect, on
     <table className="stocks-table" aria-label="Inventaire des produits">
       <thead><tr>
         <th scope="col">Produit</th>
+        <th scope="col">Catégorie</th>
         <th scope="col">Stock théorique</th>
         <th scope="col">Situation</th>
         <th scope="col">Actions</th>
@@ -27,8 +28,8 @@ export default function StockInventoryTable({ products, selecting, onInspect, on
           return <tr key={product.id} className={`stock-level-${status}`}>
             <td>
               <button className="product-name stock-product-link" aria-label={`Voir la fiche ${product.name}`} onClick={() => onInspect(product.id)}>{product.name}</button>
-              <small className="stock-cell-note">{product.category}</small>
             </td>
+            <td>{product.category}</td>
             <td>
               <span className="stock-quantity"><strong className="stock-value">{product.currentStock.toLocaleString("fr-FR")}</strong><span className="unit">{product.unit}</span></span>
               <small className="stock-cell-note">Seuil : {product.minThreshold.toLocaleString("fr-FR")} {product.unit}</small>
@@ -41,7 +42,7 @@ export default function StockInventoryTable({ products, selecting, onInspect, on
               onClick={() => unverified ? onInspect(product.id) : onSelect(product)}>{unverified ? "Vérifier" : "Préparer l’achat"}</Button></td>
           </tr>;
         })}
-        {products.length === 0 && <tr><td colSpan={4}><div className="workspace-empty">Aucun produit à afficher.</div></td></tr>}
+        {products.length === 0 && <tr><td colSpan={5}><div className="workspace-empty">Aucun produit à afficher.</div></td></tr>}
       </tbody>
     </table>
   </div>;

@@ -126,9 +126,11 @@ const Stocks: React.FC = () => {
         void Promise.all([refetch(), refetchCatalog()]);
         requestAnimationFrame(() => headingRef.current?.focus());
       }}>Réessayer</Button></div>}
-      <header className="workspace-header">
+      <section className="inventory-panel" aria-label="Inventaire">
+      <header className="workspace-header inventory-header">
         <div>
           <h1 ref={headingRef} tabIndex={-1}>Stocks</h1>
+          <p className="workspace-subtitle">Suivez les quantités et repérez les produits à vérifier.</p>
         </div>
         <Button
           icon={<Plus size={18} />}
@@ -138,10 +140,9 @@ const Stocks: React.FC = () => {
         </Button>
       </header>
 
-      <section className="inventory-panel" aria-label="Inventaire">
       <div className="inventory-navigation">
         <div className="inventory-tabs" role="group" aria-label="Vue des stocks">
-          <button type="button" aria-pressed={view === "all"} onClick={() => setView("all")}>Tout l’inventaire</button>
+          <button type="button" aria-pressed={view === "all"} onClick={() => setView("all")}>Tous les produits</button>
           <button type="button" aria-pressed={view === "review"} onClick={() => setView("review")}>À traiter</button>
         </div>
         <span className="inventory-result" role="status">{loading ? "Chargement…" : `${filteredProducts.length} produit${filteredProducts.length > 1 ? "s" : ""}`}</span>
@@ -193,10 +194,10 @@ const Stocks: React.FC = () => {
           onInspect={() => setSelectedProductId(product.id)} onSelect={() => void handleSelectForOrder(product)} />)}
         {filteredProducts.length === 0 && <li className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</li>}
       </ul>
-      <StockLotsAndWaste products={products} onSaved={refetch} />
       </>}
       <p className="inventory-footnote">Quantités théoriques · Achats à valider avant commande.</p>
       </section>
+      {!loading && !error && <StockLotsAndWaste products={products} onSaved={refetch} />}
       {selectedProduct && <ProductDetail
         key={selectedProduct.id}
         product={selectedProduct}

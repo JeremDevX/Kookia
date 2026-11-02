@@ -59,6 +59,12 @@
   --color-auth-field: #f7f9fb;
   --color-auth-link: #0085ff;
   --color-auth-icon-border: #585757;
+  --color-status-danger-bg: #fde4e4;
+  --color-status-danger-text: #c21f1f;
+  --color-status-warning-bg: #fbf5c4;
+  --color-status-warning-text: #8b5401;
+  --color-status-success-bg: #dcf7e3;
+  --color-status-success-text: #0e7a32;
   --palette-blue-1: #9ca3af;
   --palette-blue-2: #56718b;
   --palette-blue-3: #4b5563;
