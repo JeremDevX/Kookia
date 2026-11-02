@@ -22,7 +22,7 @@
 .today-onboarding { padding: var(--spacing-lg); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-surface); box-shadow: var(--shadow-figma-panel); }
 .today-onboarding h2 { color: var(--color-nav-text); font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); }
 .today-onboarding ol { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); list-style: none; margin: var(--spacing-md) var(--number-0); padding: var(--number-0); }
-.today-onboarding li { display: flex; flex-direction: column; gap: var(--spacing-xs); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border-light); border-radius: var(--radius-md); font-size: var(--font-size-sm); }
+.today-onboarding li { display: flex; flex-direction: column; gap: var(--spacing-xs); font-size: var(--font-size-sm); }
 .today-onboarding li span, .today-onboarding p { color: var(--color-text-secondary); line-height: var(--number-1_8); }
 .today-onboarding li a { margin-top: auto; color: var(--color-accent-text); text-underline-offset: var(--size-3); }
 .today-grid { display: flex; flex-direction: column; gap: var(--spacing-lg); }
