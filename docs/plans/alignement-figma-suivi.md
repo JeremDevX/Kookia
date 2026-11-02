@@ -31,7 +31,7 @@ et le fonctionnement complet restent à vérifier ; aucune ligne n'est validée.
 
 Les routes privées passent par `RequireAuth` ; les pages publiques par
 `PublicOnly`. Les sous-vues et états de chaque page restent à inventorier et
-valider individuellement. La matrice des composants utilisés reste à compléter.
+valider individuellement. La matrice des composants transversaux utilisés figure ci-dessous ; leurs états restent à confronter aux maquettes.
 
 ### Correspondances à vérifier
 
@@ -288,20 +288,26 @@ comparaison avec l'application.
 Inventaire des composants `common` et `layout`, établi par recherche d'imports
 de production. Leurs correspondances Figma et états rendus restent à vérifier.
 
-| Composant | Responsabilité et états repérés | Tests directs repérés dans `src` |
+| Composant | Usages de production et états repérés | Tests directs repérés dans `src` |
 | --- | --- | --- |
-| `Button` | Variantes, tailles, icône et états natifs | Aucun |
-| `Input` | Libellé, icône et erreur | Aucun |
-| `Card`, `Badge` | Conteneur et statut | Aucun |
-| `Modal` | Ouverture, quatre largeurs, focus, Échap et défilement | Aucun |
-| `SplashScreen` | Chargement et disparition après durée minimale | Aucun |
-| `Layout`, `Sidebar`, `TopNav` | Structure, navigation, recherche et menu mobile | Aucun |
-| `SidebarSubnav` | Sous-navigation et état actif | `SidebarSubnav.test.ts` |
-| `RouteErrorBoundary` | Affichage d'erreur et rechargement | Aucun |
-| `WeatherNavButton`, `WeatherSettingsModal`, `WeatherSettingsContent` | Météo et réglages | `WeatherNavButton.test.ts` couvre aussi le contenu |
+| `Button` | Authentification, pages et composants métier ; cinq variantes, trois tailles, icône et attributs natifs | Aucun fichier direct repéré |
+| `Input` | Authentification, configuration, stocks, compte et fournisseurs ; libellé, icône, aide et erreur | `common/Input.test.ts` : association de l’aide et de l’erreur, `aria-invalid` (rendu statique) |
+| `Card` | Recettes, paramètres et composants analytics ; titre et action facultatifs | Aucun fichier direct repéré |
+| `Badge` | Tableau de bord, recettes, stocks et connexions ; statut, libellé et couleur | Aucun fichier direct repéré |
+| `Modal` | Compte, stocks, recettes, analytics, tableau de bord et réglages météo ; ouverture, largeurs, focus, Échap, défilement et fermeture bloquée | `common/Modal.test.ts` : bouton de fermeture désactivé ou actif (rendu statique) |
+| `SplashScreen` | `App.tsx` ; attend la disponibilité et une durée minimale, puis disparaît | Aucun fichier direct repéré |
+| `Layout` | `features/members/WorkspaceLayout.tsx` ; structure, menu mobile, zone de contenu et météo | Aucun fichier direct repéré ; `WorkspaceLayout.test.ts` substitue `Layout` par un mock |
+| `Sidebar` | `Layout` ; navigation, sous-navigation, menu mobile et déconnexion | `layout/Sidebar.test.ts` : succès et échec de déconnexion avec dépendances simulées |
+| `TopNav` | `Layout` ; fil d’Ariane, recherche produit, menu mobile et météo | `layout/TopNav.test.ts` : fil d’Ariane du tableau de bord selon l’URL (rendu statique) |
+| `SidebarSubnav` | `Sidebar` ; sous-navigation et état actif | `layout/SidebarSubnav.test.ts` : liens, contexte et état actif pour plusieurs sections (rendu statique) |
+| `RouteErrorBoundary` | `Layout` ; affichage d'erreur et rechargement | Aucun fichier direct repéré |
+| `WeatherNavButton` | `TopNav` ; résumé météo et ouverture des réglages | `layout/WeatherNavButton.test.ts` : résumé, états et attributs du bouton (rendu statique) |
+| `WeatherSettingsModal`, `WeatherSettingsContent` | `Layout` et modale météo ; réglage de commune et prévisions à la demande | `layout/WeatherNavButton.test.ts` vérifie aussi le rendu du contenu ; aucun test direct de la modale repéré |
+| `ToastContext` / `Toast.css` | Messages temporaires et fermeture ; fournisseur de contexte partagé | Aucun fichier direct `ToastContext.test` repéré |
 
-Ces recherches n'excluent pas une couverture indirecte par d'autres tests.
-`Toast.css` est utilisé par `ToastContext`.
+La recherche couvre les imports de production et les fichiers de tests directs ;
+elle n'exclut pas les tests indirects. Les tests de rendu statique ne démontrent
+pas le comportement dans un navigateur, le focus ou l'accessibilité réelle.
 
 ## Sous-vues et parcours identifiés dans le code
 
@@ -322,9 +328,9 @@ conditionnels et composants indiqués restent à confronter aux maquettes.
 
 Les écrans de notifications existent dans A. Aucun client ni panneau de
 notifications n'a été repéré dans `src/` ; le serveur expose une lecture et un
-marquage comme lu, alimentés initialement par des alertes statiques. Vérifier
-leur provenance et leur actualité avant de les présenter comme des alertes
-opérationnelles. Les messages temporaires `ToastContext` ont un autre rôle.
+marquage comme lu. Une lecture sans document retourne désormais une liste vide ;
+des alertes d’exemple déjà enregistrées peuvent subsister. Vérifier leur
+provenance et leur actualité avant de les présenter comme opérationnelles. Les messages temporaires `ToastContext` ont un autre rôle.
 La frame A `673:46700` prévoit des filtres Stocks, Recommandations et Livraisons
 et une action « Tout marquer comme lu ». Le contrat actuel classe les alertes
 en `warning`, `alert` et `info`, sans catégorie métier équivalente ; le marquage
@@ -354,8 +360,17 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
 - La réception directe d'une facture et le rapprochement d'une commande avec
   facture peuvent tous deux alimenter le stock. Le rapprochement enregistre en
   plus les lignes de réception et l'état de commande. Le serveur vérifie les
-  réceptions existantes et les quantités ; vérifier les parcours et leur
-  présentation avant toute consolidation.
+  réceptions existantes et les quantités. Risque confirmé : deux factures
+  manuelles distinctes portant les mêmes fournisseur et référence peuvent
+  chacune créditer le stock, notamment par réception directe et rapprochement.
+  Cette correspondance ne prouve pas à elle seule un doublon : plusieurs
+  livraisons peuvent partager une référence. Le traitement de cette ambiguïté
+  reste à définir avant toute consolidation ou règle de blocage.
+- Une correction locale vérifie l’unité explicitement renseignée sur une facture
+  manuelle avant crédit du stock. Un test d’intégration a été ajouté pour le
+  refus d’une unité incompatible et l’acceptation d’une unité compatible ; il a
+  réussi dans `npm run verify:local-delivery` (75 tests d’intégration, dont ceux
+  des factures). Une unité absente reste admise pour ce parcours.
 - Le détail produit permet un ajustement négatif motivé par une perte ; la
   déclaration de perte structurée recueille davantage de contexte et utilise
   un autre service. Les effets et besoins diffèrent : comparer les parcours
@@ -472,15 +487,16 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   documentaire ; la suite complète relancée seule a réussi (358 tests Vitest
   et 35 tests de scripts).
 - Le navigateur local a affiché les pages de connexion et d'inscription et le
-  lien de l'une vers l'autre. L'authentification, les parcours privés, le clavier,
-  le responsive et le lecteur d'écran ne sont pas encore validés.
+  lien de l'une vers l'autre. Des parcours ciblés, dont l'authentification avec
+  API factice, ont été vérifiés comme indiqué plus haut ; les sessions réelles,
+  l'ensemble des parcours, le responsive et le lecteur d'écran restent à valider.
 - Les tests d'intégration PostgreSQL et la démo isolée exigent Docker ; le
   daemon était inaccessible sans permissions supplémentaires lors du premier
   audit. La recette ci-dessus a été exécutée avec cet accès.
 - Après autorisation explicite de lecture MCP sur A, un essai le 2 novembre
   2026 a échoué : limite d'appels du siège View atteinte. A reste consultable
-  dans Arc. B a été inventoriée via MCP. Aucune comparaison visuelle ni création
-  Figma n'a encore été validée. A ne doit jamais être modifiée.
+  dans Arc. B a été inventoriée via MCP. Des rapprochements partiels sont décrits ci-dessus ;
+  aucune comparaison visuelle exhaustive ni création Figma n'a été validée. A ne doit jamais être modifiée.
 - Le dépôt local contient des changements préexistants sur le comptage des
   stocks. Les préserver et ne pas les inclure dans un lot sans vérification de
   leur provenance et de leur état.

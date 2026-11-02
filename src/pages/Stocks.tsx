@@ -37,7 +37,12 @@ const Stocks: React.FC = () => {
   const { suppliers, error: catalogError, refetch: refetchCatalog } = useInventoryCatalog();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const { search: searchTerm, category: categoryFilter, view, advanced: advancedFilters } = readStockFilters(searchParams);
-  const updateFilters = (updates: Partial<Record<StockFilterKey, string>>) => setSearchParams(updateStockFilters(searchParams, updates), { replace: true });
+  const [pagination, setPagination] = useState({ filters: searchParams.toString(), page: 0 });
+  const updateFilters = (updates: Partial<Record<StockFilterKey, string>>) => {
+    const nextFilters = updateStockFilters(searchParams, updates);
+    setPagination({ filters: nextFilters.toString(), page: 0 });
+    setSearchParams(nextFilters, { replace: true });
+  };
   useEffect(() => { if (hash === "#stock-search") document.getElementById("stock-search")?.focus(); }, [hash]);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     () => searchParams.get("product")
@@ -86,6 +91,10 @@ const Stocks: React.FC = () => {
       matchesStockLevel
     );
   });
+
+  const pageCount = Math.max(1, Math.ceil(filteredProducts.length / 7));
+  const currentPage = Math.min(pagination.filters === searchParams.toString() ? pagination.page : 0, pageCount - 1);
+  const visibleProducts = filteredProducts.slice(currentPage * 7, (currentPage + 1) * 7);
 
   const handleDrawerAdjustStock = async (productId: string, delta: number, reason?: "adjustment" | "loss") => {
     await updateStock(productId, delta, reason);
@@ -184,16 +193,21 @@ const Stocks: React.FC = () => {
             </Button>
           </div>
         </div>
+        {view !== "count" && !loading && !error && pageCount > 1 && <nav className="inventory-pagination" aria-label="Pages des produits">
+          <span>Page {currentPage + 1} sur {pageCount}</span>
+          <Button variant="outline" size="sm" disabled={currentPage === 0} onClick={() => setPagination({ filters: searchParams.toString(), page: currentPage - 1 })}>Précédente</Button>
+          <Button variant="outline" size="sm" disabled={currentPage === pageCount - 1} onClick={() => setPagination({ filters: searchParams.toString(), page: currentPage + 1 })}>Suivante</Button>
+        </nav>}
         {hasFilters && <button type="button" className="inventory-reset" onClick={() => {
           updateFilters({ search: "", category: "all", stockStatus: "all", stockSupplier: "all", stockLevel: "all" });
           document.getElementById("stock-search")?.focus();
         }}>Effacer les filtres</button>}
       </div>
       {!loading && !error && <>
-      {view === "count" ? <StockCountList products={filteredProducts} onCount={setCountProductId} /> : <><StockInventoryTable products={filteredProducts} selecting={cartLoading}
+      {view === "count" ? <StockCountList products={filteredProducts} onCount={setCountProductId} /> : <><StockInventoryTable products={visibleProducts} selecting={cartLoading}
         onInspect={setSelectedProductId} onSelect={(product) => void handleSelectForOrder(product)} />
       <ul className="stock-inventory-cards" aria-label="Inventaire des produits">
-        {filteredProducts.map((product) => <StockInventoryCard key={product.id} product={product} selecting={cartLoading}
+        {visibleProducts.map((product) => <StockInventoryCard key={product.id} product={product} selecting={cartLoading}
           onInspect={() => setSelectedProductId(product.id)} onSelect={() => void handleSelectForOrder(product)} />)}
         {filteredProducts.length === 0 && <li className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</li>}
       </ul></>}
