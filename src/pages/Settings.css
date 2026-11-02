@@ -9,29 +9,25 @@
 .workspace-page.settings-container { background: var(--color-auth-field); }
 .settings-container .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); letter-spacing: normal; }
 .settings-container .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); line-height: var(--number-1_5); }
-.settings-heading-panel {
-  padding: var(--spacing-lg);
-  background: var(--color-surface);
-  border: var(--size-1) solid var(--color-nav-border);
-  border-radius: var(--radius-compact);
-}
 .settings-nav {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-lg);
+  border-bottom: var(--size-1) solid var(--color-nav-border);
 }
 
 .nav-tab {
   min-height: var(--size-44);
   padding: var(--spacing-sm) var(--spacing-xs);
   border: none;
+  border-bottom: var(--size-2) solid transparent;
   background: transparent;
   font-size: var(--font-size-sm);
   color: var(--color-auth-icon-border);
   cursor: pointer;
 }
 .nav-tab:hover, .nav-tab.active { color: var(--color-accent-text); }
-.nav-tab.active { font-weight: var(--font-weight-medium); }
+.nav-tab.active { border-bottom-color: var(--color-auth-link); font-weight: var(--font-weight-medium); }
 .settings-content { min-width: var(--number-0); display: grid; gap: var(--spacing-lg); }
 .settings-container .settings-content .card { border-color: var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
 .settings-container .settings-content .card-title { color: var(--color-nav-text); font-size: var(--font-size-md); }
