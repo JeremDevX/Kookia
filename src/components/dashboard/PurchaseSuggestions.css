@@ -15,7 +15,7 @@
 .purchase-supplier-group > header > span { font-size: var(--font-size-xs); letter-spacing: var(--tracking-0_15); color: var(--color-text-muted); }
 .purchase-supplier-group > header h3 { font-size: var(--font-size-base); margin-top: var(--spacing-xs); }
 .purchase-suggestion-list { display: grid; gap: var(--spacing-sm); margin: var(--number-0); padding: var(--number-0); list-style: none; }
-.purchase-suggestion-card { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)) var(--size-144) var(--size-100) auto; align-items: center; gap: var(--spacing-md); padding: var(--spacing-md); border-bottom: var(--size-1) solid var(--color-nav-border); background: var(--color-surface); }
+.purchase-list-heading, .purchase-suggestion-card { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)) var(--size-100) var(--size-144) var(--size-100) var(--size-180); align-items: center; gap: var(--spacing-md); padding: var(--spacing-md); border-bottom: var(--size-1) solid var(--color-nav-border); background: var(--color-surface); }
 .purchase-suggestion-card p, .purchase-suggestion-card h4 { margin: var(--number-0); }
 .purchase-product-summary { display: flex; flex-direction: column; gap: var(--spacing-xs); min-width: var(--number-0); }
 .purchase-product-summary h4 { color: var(--color-nav-text); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); overflow-wrap: var(--overflow-wrap-anywhere); }
@@ -44,4 +44,17 @@
   .purchase-product-summary { grid-column: var(--number-1) / var(--number-negative-1); }
   .purchase-line-budget { grid-column: var(--number-2); }
   .purchase-suggestion-actions { grid-column: var(--number-1) / var(--number-negative-1); grid-row: auto; justify-content: flex-end; }
+}
+
+.purchase-list-heading { gap: var(--spacing-md); padding: var(--spacing-md); color: var(--color-text-muted); font-size: var(--font-size-xs); }
+.purchase-quantity-read { grid-column: var(--number-2); }
+.purchase-quantity-edit { grid-column: var(--number-3); }
+.purchase-line-budget { grid-column: var(--number-4); }
+.purchase-suggestion-actions { grid-column: auto / var(--number-negative-1); }
+@media (--media-desktop-compact) {
+  .purchase-list-heading { display: none; }
+  .purchase-quantity-read, .purchase-quantity-edit, .purchase-line-budget, .purchase-suggestion-actions { grid-column: auto; grid-row: auto; }
+}
+@media (--media-compact) {
+  .purchase-suggestion-actions { grid-column: var(--number-1) / var(--number-negative-1); }
 }

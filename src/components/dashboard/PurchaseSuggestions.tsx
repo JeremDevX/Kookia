@@ -125,6 +125,7 @@ export default function PurchaseSuggestions({ refreshKey, salesHref = "/sales#sa
               <p>{search ? "Essayez un autre nom de produit ou fournisseur." : "Consultez les autres vues ou complétez votre sélection depuis les stocks."}</p><Link to={stocksHref}>Choisir un autre produit</Link></div>}
             {supplierNames.map((supplierName) => <section className="purchase-supplier-group" key={supplierName} aria-label={supplierName}>
               <header><span>FOURNISSEUR</span><h3>{supplierName}</h3></header>
+              <div className="purchase-list-heading" aria-hidden="true"><span>Produit et contexte</span><span>Proposition</span><span>Quantité</span><span>Estimation HT</span><span>Action</span></div>
               <ul className="purchase-suggestion-list">{visible.filter((item) => item.supplierName === supplierName).map((item) => <PurchaseSuggestionCard
                 key={item.productId} item={item} limited={limited} value={quantities[item.productId] ?? ""}
                 inCart={cartItems.some((cartItem) => cartItem.productId === item.productId)}

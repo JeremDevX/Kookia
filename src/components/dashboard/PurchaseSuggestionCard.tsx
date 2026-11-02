@@ -37,13 +37,14 @@ export default function PurchaseSuggestionCard({ item, value, inCart, busy, savi
       {(item.shortages?.length ?? 0) > 0 && <details><summary>Manques estimés par date, après stock et attendu conditionnel</summary><ul>{item.shortages!.map((shortage, index) => <li key={`${shortage.date}:${index}`}>{shortage.date}{shortage.slot === "lunch" ? " midi" : shortage.slot === "dinner" ? " soir" : ""} : {number(shortage.quantity)} {item.unit}</li>)}</ul></details>}
       {inCart && <span className="purchase-added"><Check size={14} aria-hidden="true" /> Dans ma sélection</span>}
     </div>
-      {editable ? <div className="purchase-quantity-edit">
+      <div className="purchase-quantity-read"><span>Achat proposé</span><strong>{item.estimatedQuantity === null ? "À vérifier" : `${number(item.estimatedQuantity)} ${item.unit}`}</strong></div>
+      {editable && <div className="purchase-quantity-edit">
         <label htmlFor={`suggested-quantity-${item.productId}`}>À commander ({item.unit})</label>
         <input className="input-field" id={`suggested-quantity-${item.productId}`} type="number" min={item.orderStep}
           step={item.orderStep} max={1000000} value={value} disabled={busy} aria-invalid={!valid}
           aria-describedby={`suggested-step-${item.productId}`} onChange={(event) => onChange(event.target.value)} />
         <small id={`suggested-step-${item.productId}`}>{orderStepLabel(item.orderStep, item.unit)}</small>
-      </div> : item.estimatedQuantity !== null && <div className="purchase-quantity-read"><span>Achat proposé</span><strong>{number(item.estimatedQuantity)} {item.unit}</strong></div>}
+      </div>}
       {editable && <div className="purchase-line-budget"><span>Estimation HT</span><strong>{valid ? money(Number(value) * item.currentUnitPrice) : "—"}</strong></div>}
     {editable && <div className="purchase-suggestion-actions">
       <Button size="sm" disabled={busy || !valid} icon={<Plus size={16} aria-hidden="true" />} aria-label={`Ajouter ${item.productName} à ma sélection`} onClick={() => onDecide("added")}>{saving ? "Ajout…" : "Ajouter"}</Button>
