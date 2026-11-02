@@ -17,6 +17,7 @@ import {
 // Styles are imported in Sidebar.css
 import "./Sidebar.css";
 import { useAuth } from "../../features/auth/context/AuthContext";
+import SidebarSubnav from "./SidebarSubnav";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -98,7 +99,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
 
       <aside id="main-sidebar" ref={sidebarRef} className={`sidebar ${isOpen ? "open" : ""}`} aria-label="Navigation principale">
         <div className="sidebar-header">
-          <NavLink to="/" onClick={handleNavClick} aria-label="KookiA — accueil"><img src="/logo_kookia.svg" alt="KookiA" className="logo-img" /></NavLink>
+          <NavLink to="/" onClick={handleNavClick} aria-label="KookIA — accueil" className="sidebar-brand"><span className="sidebar-brand-mark" aria-hidden="true">K</span><span><strong>KookIA</strong><small>Restaurant</small></span></NavLink>
           <button
             className="sidebar-close-btn"
             onClick={onClose}
@@ -110,12 +111,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
 
         <nav className="sidebar-nav" aria-label="Pages du restaurant">
           <p className="sidebar-label">MENU PRINCIPAL</p>
-          {navItems.map((item) => (
+          {navItems.map((item) => {
+            const section = item.path === "/orders" && pathname === "/orders" ? "orders" :
+              item.path === "/analytics" && (pathname === "/analytics" || pathname === "/predictions") ? "analytics" : null;
+            return <React.Fragment key={item.path}>
             <NavLink
-              key={item.path}
               to={item.path}
               onClick={handleNavClick}
-              aria-current={(item.path === "/more" && inMore) || (item.path === "/analytics" && pathname === "/predictions") ? "page" : undefined}
+              aria-current={section ? "location" : item.path === "/more" && inMore ? "page" : undefined}
               className={({ isActive }) =>
                 `nav-item ${isActive || (item.path === "/more" && inMore) || (item.path === "/analytics" && pathname === "/predictions") ? "active" : ""}`
               }
@@ -123,14 +126,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, returnFocusRef }) =>
               <item.icon size={19} aria-hidden="true" />
               <span>{item.label}</span>
             </NavLink>
-          ))}
+            {section && <SidebarSubnav section={section} onNavigate={handleNavClick} />}
+            </React.Fragment>;
+          })}
         </nav>
 
         <div className="sidebar-footer">
-          <NavLink to="/settings" onClick={handleNavClick} className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
+          <NavLink to="/settings" onClick={handleNavClick} aria-current={pathname === "/settings" ? "location" : undefined} className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
             <Settings size={20} aria-hidden="true" />
             <span>Paramètres</span>
           </NavLink>
+          {pathname === "/settings" && <SidebarSubnav section="settings" onNavigate={handleNavClick} />}
           <a
             href="mailto:support@kookia.app?subject=Support%20KookiA"
             className="nav-item"

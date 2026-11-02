@@ -1,0 +1,42 @@
+import { Link, useLocation } from "react-router-dom";
+import { getOrderView, orderViewHref } from "../../features/orders/orderNavigation";
+
+type Section = "orders" | "analytics" | "settings";
+
+export default function SidebarSubnav({ section, onNavigate }: { section: Section; onNavigate: () => void }) {
+  const { pathname, search, hash } = useLocation();
+  const params = new URLSearchParams(search);
+  let active: string;
+  let items: Array<{ id: string; label: string; href: string }>;
+
+  if (section === "orders") {
+    active = getOrderView(params, hash);
+    items = [
+      { id: "prepare", label: "Préparer un achat", href: orderViewHref("prepare") },
+      { id: "orders", label: "Commandes et réceptions", href: orderViewHref("orders") },
+      { id: "invoices", label: "Factures et documents", href: orderViewHref("invoices") },
+    ];
+  } else if (section === "analytics") {
+    const requested = params.get("view");
+    active = pathname === "/predictions" ? "predictions" : hash === "#estimated-outflows-title" ? "estimates" : hash === "#impact-summary-title" ? "overview" : requested === "sales" || requested === "estimates" ? requested : "overview";
+    const period = new URLSearchParams();
+    for (const key of ["from", "to"]) { const value = params.get(key); if (value) period.set(key, value); }
+    const href = (view: string) => { const query = new URLSearchParams(period); query.set("view", view); return `/analytics?${query}`; };
+    items = [
+      { id: "overview", label: "Vue d’ensemble", href: href("overview") },
+      { id: "sales", label: "Ventes", href: href("sales") },
+      { id: "estimates", label: "Sorties estimées", href: href("estimates") },
+      { id: "predictions", label: "Prévisions", href: `/predictions${period.size ? `?${period}` : ""}` },
+    ];
+  } else {
+    const requested = params.get("section");
+    active = requested === "account" || requested === "suppliers" || requested === "connections" ? requested : "restaurant";
+    items = [["restaurant", "Restaurant"], ["account", "Compte"], ["suppliers", "Fournisseurs"], ["connections", "Connexions"]].map(([id, label]) => {
+      const query = new URLSearchParams(params); query.set("section", id);
+      return { id, label, href: `/settings?${query}` };
+    });
+  }
+
+  return <div className="sidebar-subnav">{items.map((item) => <Link key={item.id} to={item.href} onClick={onNavigate}
+    aria-current={active === item.id ? "page" : undefined} className={active === item.id ? "active" : ""}>{item.label}</Link>)}</div>;
+}
