@@ -2,9 +2,10 @@
 .sales-page > .workspace-header, .sales-panel { min-width: var(--number-0); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); padding: var(--spacing-xl); box-shadow: var(--shadow-figma-panel); }
 .sales-page > .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
 .sales-page > .workspace-header .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); }
+.sales-panel h2 { font-size: var(--font-size-lg); }
 .sales-form, .sales-filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--spacing-md); }
 .sales-form label, .sales-filters label { display: grid; gap: var(--spacing-sm); min-width: min(var(--unit-100percent), var(--size-180)); }
-.sales-form input, .sales-form select, .sales-form textarea, .sales-filters input { width: var(--unit-100percent); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
+.sales-form input, .sales-form select, .sales-form textarea, .sales-filters input { width: var(--unit-100percent); min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
 .sales-form textarea, .sales-reconciliation-card textarea, .sales-outcome-actions textarea { min-height: var(--size-80); }
 .sales-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
 .sales-file-label, .sales-mapping-label { display: grid; gap: var(--spacing-sm); }
