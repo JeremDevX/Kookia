@@ -1,8 +1,8 @@
-.sales-page { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-lg); min-width: var(--number-0); padding: var(--size-36) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)) var(--spacing-2xl); background: var(--color-auth-field); }
-.sales-page > .workspace-header, .sales-panel { min-width: var(--number-0); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); padding: var(--spacing-xl); box-shadow: var(--shadow-figma-panel); }
-.sales-page > .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
-.sales-page > .workspace-header .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); }
-.sales-panel h2 { font-size: var(--font-size-lg); }
+:is(.sales-page, .service-page) { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-lg); min-width: var(--number-0); padding: var(--size-36) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)) var(--spacing-2xl); background: var(--color-auth-field); }
+:is(.sales-page, .service-page) > .workspace-header, .sales-panel, .service-page .service-operation-panel { min-width: var(--number-0); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); padding: var(--spacing-xl); box-shadow: var(--shadow-figma-panel); }
+:is(.sales-page, .service-page) > .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
+:is(.sales-page, .service-page) > .workspace-header .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); }
+.sales-panel h2, .service-page .service-operation-panel h2 { font-size: var(--font-size-lg); }
 .sales-form, .sales-filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--spacing-md); }
 .sales-form label, .sales-filters label { display: grid; gap: var(--spacing-sm); min-width: min(var(--unit-100percent), var(--size-180)); }
 .sales-form input, .sales-form select, .sales-form textarea, .sales-filters input { width: var(--unit-100percent); min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
@@ -53,5 +53,5 @@
 .ticket-transcription-form input { width: var(--unit-100percent); min-width: var(--number-0); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
 .ticket-transcription-lines fieldset { display: grid; gap: var(--spacing-sm); min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
 @media (--media-compact) { .ticket-transcription-layout { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); } }
-@media (--media-compact) { .sales-page { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); } }
+@media (--media-compact) { :is(.sales-page, .service-page) { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); } }
 @media (--media-mobile) { .sales-table-hint { display: block; margin: var(--spacing-sm) var(--number-0); color: var(--color-text-muted); font-size: var(--font-size-caption); } }

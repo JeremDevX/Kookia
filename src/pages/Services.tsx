@@ -16,7 +16,7 @@ export default function Services() {
   const select = (nextDate: string, nextSlot: ServiceSlot) => setParams({ serviceDate: nextDate, serviceSlot: nextSlot });
   const [revision, setRevision] = useState(0);
   const serviceKey = `${date}:${slot}`;
-  return <div className="workspace-page">
+  return <div className="workspace-page service-page">
     <header className="workspace-header"><div><h1>Services et carte</h1><p className="workspace-subtitle">Préparer, suivre et clôturer chaque service sans confondre estimation et opération enregistrée.</p></div></header>
     <section className="sales-panel" aria-label="Service sélectionné"><div className="sales-form">
       <label>Date du service<input required type="date" value={date} onChange={e => { if (e.target.value) select(e.target.value, slot); }} /></label>
