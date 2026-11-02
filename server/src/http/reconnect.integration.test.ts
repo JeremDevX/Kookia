@@ -3,6 +3,7 @@ import request from "supertest";
 import { afterAll, expect, it } from "vitest";
 import { app } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
+import initialNotifications from "../infrastructure/database/seed/notifications.json" with { type: "json" };
 
 const ids: string[] = [];
 afterAll(async () => {
@@ -19,6 +20,8 @@ it("retains the complete workspace across logout and a new authenticated session
   const product = catalog.body.products[0];
   await first.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: randomUUID(), delta: 2 }).expect(200);
   await first.post("/api/workspace/preferences").send({ settings: { wasteTarget: "42", alertThreshold: "75", showTrends: false, showAI: true, showROI: false } }).expect(200);
+  const workspace = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: registered.body.user.id } });
+  await prisma.workspaceDocument.create({ data: { restaurantId: workspace.id, kind: "notifications", data: initialNotifications } });
   const notifications = await first.get("/api/workspace/notifications").expect(200);
   await first.post("/api/workspace/notifications/read").send({ ids: [notifications.body[0].id] }).expect(200);
   await first.post("/api/workspace/cart").send({ action: "add", items: [{ id: "retained-item", productId: product.id, productName: product.name, quantity: 3, unit: product.unit, source: "stocks" }] }).expect(200);

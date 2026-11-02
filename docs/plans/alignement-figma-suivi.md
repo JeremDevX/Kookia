@@ -381,6 +381,10 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   les trois plats et crée le document sous verrou ; les menus existants restent
   inchangés. Ce changement ne corrige pas encore le catalogue initial prérempli.
   Le contrat et ses valeurs nulles sont précisés dans `docs/technical-development.md`.
+- Une lecture des notifications sans document existant retourne désormais une
+  liste vide, sans injecter les alertes d’exemple. Les notifications déjà
+  enregistrées restent intactes ; le script de peuplement global peut encore
+  ajouter des exemples et doit être isolé avant utilisation sur une base réelle.
 - Risque P0 à vérifier sur un compte isolé : `ensureWorkspace.ts` crée pour
   tout nouveau propriétaire un restaurant nommé « La Pizzeria de Camille » et
   un catalogue prérempli. Le mode par défaut du restaurant est opérationnel ;
