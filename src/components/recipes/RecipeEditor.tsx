@@ -90,7 +90,7 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
               onChange={(event) => {
                 const productId = event.target.value;
                 const product = products.find((candidate) => candidate.id === productId);
-                setIngredient(index, { productId, ...(product?.unit === "pcs" ? { quantity: Math.max(1, Math.ceil(ingredient.quantity)) } : {}) });
+                setIngredient(index, { productId, netQuantity: null, ...(product?.unit === "pcs" ? { quantity: Math.max(1, Math.ceil(ingredient.quantity)) } : {}) });
               }}>
               <option value="">Choisir un produit</option>
               {products.map((product) => <option key={product.id} value={product.id}
