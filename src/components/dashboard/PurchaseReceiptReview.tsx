@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import { getInvoices, type Invoice } from "../../services/invoiceService";
 import { reconcilePurchaseReceipt, type PurchaseOrder, type PurchaseReceiptInput } from "../../services/orderService";
+import { useToast } from "../../context/ToastContext";
 import "./PurchaseReceiptReview.css";
 
-interface PurchaseReceiptReviewProps { order: PurchaseOrder; orderStateCurrent: boolean; onSaved: () => void; onNotice: (notice: string) => void; }
+interface PurchaseReceiptReviewProps { order: PurchaseOrder; orderStateCurrent: boolean; onSaved: () => void; onNotice: (notice: string) => void; onSavingChange: (saving: boolean) => void; }
 interface ReceiptLineDraft { orderLineId: string; receivedQuantity: string; priceDifferenceReason: string; expiresAt: string; }
 
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
@@ -13,7 +14,9 @@ const validQuantity = (value: string) => /^\d+(?:\.\d{1,3})?$/.test(value.trim()
   Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 1_000_000;
 const equalPrice = (left: number, right: number) => Math.round(left * 10_000) === Math.round(right * 10_000);
 
-export default function PurchaseReceiptReview({ order, orderStateCurrent, onSaved, onNotice }: PurchaseReceiptReviewProps) {
+export default function PurchaseReceiptReview({ order, orderStateCurrent, onSaved, onNotice, onSavingChange }: PurchaseReceiptReviewProps) {
+  const { addToast } = useToast();
+  const mounted = useRef(true);
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -33,6 +36,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
   const retryFocusPending = useRef(false);
   const saveFocusPending = useRef(false);
   const invoice = invoices.find((candidate) => candidate.id === invoiceId);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const demoOrder = order.status.startsWith("simulated");
   const eligibleInvoices = invoices.filter((candidate) => candidate.status === "draft" && !!candidate.supplierId &&
     (demoOrder || candidate.source === "manual") && order.lines.some((line) => line.supplierId === candidate.supplierId &&
@@ -120,24 +124,30 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
     const signature = JSON.stringify(payload);
     if (!operation.current || operation.current.signature !== signature)
       operation.current = { signature, id: crypto.randomUUID() };
-    setSaving(true); setError(""); onNotice("");
+    setSaving(true); onSavingChange(true); setError(""); onNotice("");
     try {
       const saved = await reconcilePurchaseReceipt(order.id, { ...payload, operationId: operation.current.id });
-      onNotice(saved.simulated
+      const notice = saved.simulated
         ? `Rapprochement enregistré${saved.invoiceComplete ? "; facture complète" : "; facture encore à compléter"}. Aucune quantité n’a été ajoutée au stock.`
-        : `Réception enregistrée${saved.invoiceComplete ? "; facture rapprochée" : "; rapprochement partiel, facture conservée en brouillon"}.`);
+        : `Réception enregistrée${saved.invoiceComplete ? "; facture rapprochée" : "; rapprochement partiel, facture conservée en brouillon"}.`;
+      if (!mounted.current) { onSaved(); addToast("success", "Réception enregistrée", notice); return; }
       operation.current = null;
       await loadInvoices();
+      if (!mounted.current) { onSaved(); addToast("success", "Réception enregistrée", notice); return; }
+      onNotice(notice);
       if (saveFocusPending.current && document.activeElement === document.body) {
         document.getElementById(`order-${order.id}`)?.querySelector("summary")?.focus();
       }
       saveFocusPending.current = false;
       onSaved();
     } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Réception non enregistrée.";
+      if (!mounted.current) { addToast("info", "Réception non enregistrée", message); return; }
+      if (saveFocusPending.current && document.activeElement === document.body) summaryRef.current?.focus();
       saveFocusPending.current = false;
-      setError(cause instanceof Error ? cause.message : "Réception non enregistrée.");
+      setError(message);
     }
-    finally { setSaving(false); }
+    finally { setSaving(false); onSavingChange(false); }
   };
 
   return <details className="purchase-receipt-review" onToggle={(event) => {
@@ -145,9 +155,11 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
     setOpen(nextOpen);
     if (nextOpen && !loaded && !loading) void loadInvoices();
   }}>
-    <summary ref={summaryRef}>Rapprocher une facture et une livraison</summary>
+    <summary ref={summaryRef} aria-disabled={saving || undefined}
+      onClick={(event) => { if (saving) event.preventDefault(); }}>Rapprocher une facture et une livraison</summary>
     {open && <div className="purchase-receipt-form">
       {demoOrder && <p className="purchase-receipt-note">Dans cet espace, le rapprochement ne modifie pas le stock. Vérifiez la livraison avant tout ajout de quantité.</p>}
+      {saving && <p role="status">Enregistrement en cours…</p>}
       {loading && <p role="status">Chargement des factures brouillon…</p>}
       {invoiceLoadError && <div role="alert"><p>Factures brouillon indisponibles : {invoiceLoadError}</p>
         <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryInvoices}>Recharger les factures</Button>

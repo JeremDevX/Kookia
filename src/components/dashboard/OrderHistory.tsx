@@ -11,6 +11,7 @@ import SupplierOrderSheets from "./SupplierOrderSheets";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 import { matchesSupplier } from "../../features/orders/supplierFilter";
 import { matchesReceiptStatus, type ReceiptStatusFilter } from "../../features/orders/receiptStatus";
+import { visibleOrders } from "../../features/orders/visibleOrders";
 import "./OrderHistory.css";
 
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
@@ -30,6 +31,8 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [error, setError] = useState("");
   const [receiptNotice, setReceiptNotice] = useState("");
+  const [savingReceipts, setSavingReceipts] = useState<string[]>([]);
+  const [pinnedReceipts, setPinnedReceipts] = useState<string[]>([]);
   const [loadedRequestKey, setLoadedRequestKey] = useState("");
   const loading = loadedRequestKey !== requestKey;
   const currentError = loading ? "" : error;
@@ -74,8 +77,7 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
   const filtered = orders.filter((order) => matchesSupplier(order, supplier) && matchesReceiptStatus(order.status, filter) &&
     `${order.id} ${order.lines.map((line) => `${line.productName} ${line.supplierName}`).join(" ")} ${order.receipts.map((receipt) => `${receipt.deliveryReference} ${receipt.invoiceReference}`).join(" ")}`.toLocaleLowerCase("fr").includes(query.trim().toLocaleLowerCase("fr")))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const visible = filtered.slice(page * 10, (page + 1) * 10);
-  if (targetOrder && !visible.some((order) => order.id === targetOrder.id)) visible.unshift(targetOrder);
+  const visible = visibleOrders(orders, filtered, page, targetOrder, pinnedReceipts);
   useEffect(() => {
     const focusKey = `${location.search}${location.hash}`;
     if (loading || currentError || !location.hash.startsWith("#order-") || focusedOrder.current === focusKey) return;
@@ -135,8 +137,15 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
       {!filtered.length && <p>Aucune commande ne correspond à ces filtres.</p>}
     </>}
     {visible.map((order) => <details className="order-record" key={order.id} id={`order-${order.id}`} open={location.hash === `#order-${order.id}` ? true : undefined}>
-      <summary><span className="order-record-main"><strong>{new Date(order.createdAt).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}</strong><span>{[...new Set(order.lines.map((line) => line.supplierName))].join(" · ")}</span><small>{order.lines.length} article{order.lines.length > 1 ? "s" : ""} · {statusLabel(order.status)}</small></span><strong className="order-record-total">{money.format(orderTotal(order))}</strong></summary>
+      <summary aria-disabled={savingReceipts.includes(order.id) || undefined}
+        onClick={(event) => {
+          if (savingReceipts.includes(order.id)) event.preventDefault();
+          else if (event.currentTarget.parentElement instanceof HTMLDetailsElement && event.currentTarget.parentElement.open)
+            setPinnedReceipts((current) => current.filter((id) => id !== order.id));
+        }}><span className="order-record-main"><strong>{new Date(order.createdAt).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}</strong><span>{[...new Set(order.lines.map((line) => line.supplierName))].join(" · ")}</span><small>{order.lines.length} article{order.lines.length > 1 ? "s" : ""} · {statusLabel(order.status)}</small></span><strong className="order-record-total">{money.format(orderTotal(order))}</strong></summary>
       <div className="order-record-body">
+        {pinnedReceipts.includes(order.id) && !filtered.slice(page * 10, (page + 1) * 10).some((item) => item.id === order.id) &&
+          <p role="status">Cette commande reste affichée pour conserver le rapprochement.</p>}
         <p>Référence : {order.id}</p>
         <p>{order.status.startsWith("simulated") ? "Aucun achat ni envoi fournisseur n’a été confirmé et le stock n’a pas changé." : "Prix enregistrés à la validation. Aucun envoi fournisseur."}</p>
         <div className="orders-table-wrap" role="region" aria-label="Produits de la commande — défilement horizontal avec les flèches" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
@@ -165,7 +174,13 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
           </article>)}
         </section>}
         {order.status !== "received" && order.status !== "simulated_received" && <PurchaseReceiptReview order={order}
-          orderStateCurrent={!loading && !currentError} onSaved={refreshAfterReceipt} onNotice={setReceiptNotice} />}
+          orderStateCurrent={!loading && !currentError} onSaved={() => {
+            setPinnedReceipts((current) => current.filter((id) => id !== order.id));
+            refreshAfterReceipt();
+          }} onNotice={setReceiptNotice} onSavingChange={(saving) => {
+            if (saving) setPinnedReceipts((current) => current.includes(order.id) ? current : [...current, order.id]);
+            setSavingReceipts((current) => saving ? [...current, order.id] : current.filter((id) => id !== order.id));
+          }} />}
       </div>
     </details>)}
     {filtered.length > 10 && <nav className="orders-pagination" aria-label="Pages des commandes">
