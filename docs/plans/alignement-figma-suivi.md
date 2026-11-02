@@ -51,7 +51,7 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Recettes `/recipes` | A `673:45740`, `673:45766`, `673:45044` | À vérifier | À vérifier | Import CSV avec association et revue ; comparaison Figma à poursuivre | À vérifier | À vérifier | En cours |
 | Commandes `/orders` | A `673:43938`, `673:44035`, `673:44142`, `673:44242`, `673:44919` | À vérifier | À vérifier | Rapprochement à comparer | À vérifier | Cas synthétiques partiels | En cours |
 | Paramètres `/settings` | A `673:46642`, `673:46754`, `673:46843` ; B `25:2`, `26:2` | À vérifier | À vérifier | Équipe et rôles disponibles ; invitations par lien manuel | À vérifier | Météo : erreur différée vérifiée | En cours |
-| Bilan `/analytics` | A `673:46262`, `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
+| Bilan `/analytics` | A `673:46262`, `673:46361` | À vérifier | Données absentes, valorisation partielle et exclusions distinguées | À vérifier | À vérifier | Firefox : accès et absence de débordement desktop/mobile ; tests ciblés | En cours |
 | Ventes `/sales` | B `8:2` ; A `673:44664`, `673:44732` | À vérifier | À vérifier | Transcription manuelle ; OCR absent | À vérifier | À vérifier | À faire |
 | Services `/services` | B `16:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
 | Plus `/more` | B `22:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |

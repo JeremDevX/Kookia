@@ -6,6 +6,7 @@ import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegio
 import { receiptDetailsHref, stockMovementHref } from "../../utils/analyticsNavigation";
 
 import BilanOverview from "./BilanOverview";
+import { comparisonValues, formatLossValue } from "./comparisonValues";
 
 interface Props { from: string; to: string }
 const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
@@ -21,7 +22,6 @@ const displayMonth = (value: string) => new Intl.DateTimeFormat("fr-FR", { month
 function periodRange(period: ImpactPeriod) {
   return `${displayDate(period.from)} – ${displayDate(period.to)} (${period.calendarDays} jours calendaires)`;
 }
-const recordedValue = (period: ImpactPeriod, value: number | string) => period.hasRecordedData ? value : "Aucune donnée";
 
 function LossMovementReferences({ item, from, to }: { item: ImpactBucket["lossesByProduct"][number]; from: string; to: string }) {
   if (!item.movementIds.length) return null;
@@ -37,20 +37,21 @@ function ReceiptReferences({ ids, from, to }: { ids: string[]; from: string; to:
   </li>)}</ul></details>;
 }
 
-function RecordedOperations({ bucket, currency, from, to }: { bucket: ImpactBucket; currency: string; from: string; to: string }) {
+export function RecordedOperations({ bucket, currency, from, to, excludedLosses }: { bucket: ImpactBucket; currency: string; from: string; to: string; excludedLosses: number }) {
+  const lossValue = !bucket.lossMovementCount && excludedLosses ? "Pertes exclues pour unité incompatible" : formatLossValue(bucket.lossMovementCount, bucket.unpricedLossMovementCount, bucket.knownLossCost, currency);
   return <>
-    <details className="bilan-drilldown"><summary>Pertes par produit <span>{bucket.lossesByProduct.length} lignes · {formatMoney(bucket.knownLossCost, currency)}</span></summary>
+    <details className="bilan-drilldown"><summary>Pertes par produit <span>{bucket.lossesByProduct.length} lignes · {lossValue}</span></summary>
     {bucket.lossesByProduct.length ? <div className="sales-table-wrap" role="region" aria-label="Pertes déclarées par produit" aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
       <table className="sales-table"><thead><tr><th>Produit</th><th>Quantité déclarée perdue</th><th>Coût connu</th><th>Traçabilité</th></tr></thead><tbody>
         {bucket.lossesByProduct.map((item) => <tr key={`${item.productId}:${item.unit}`}>
           <td>{item.productName}</td><td>{formatQuantity(item.quantity)} {item.unit}</td>
-          <td>{formatMoney(item.knownCost, currency)}{item.unpricedMovementCount ? ` · ${item.unpricedMovementCount} mouvement(s) sans prix historique` : ""}</td>
+          <td>{formatLossValue(item.movementCount, item.unpricedMovementCount, item.knownCost, currency)}{item.unpricedMovementCount ? ` · ${item.unpricedMovementCount} mouvement(s) sans prix historique` : ""}</td>
           <td><LossMovementReferences item={item} from={from} to={to} /></td>
         </tr>)}
-      </tbody></table></div> : <p>Aucun mouvement de perte déclarée dans les données mesurables de cette période.</p>}
-    <p>Coût connu des pertes : <strong>{formatMoney(bucket.knownLossCost, currency)}</strong> · {bucket.unpricedLossMovementCount} mouvement(s) de perte sans valorisation historique.</p>
+      </tbody></table></div> : <p>{excludedLosses ? "Des mouvements de perte ont été écartés pour unité incompatible." : "Aucun mouvement de perte déclarée dans les données mesurables de cette période."}</p>}
+    <p>Coût connu des pertes : <strong>{lossValue}</strong> · {bucket.unpricedLossMovementCount} mouvement(s) de perte sans valorisation historique.</p>
     </details>
-    <details className="bilan-drilldown"><summary>Achats par produit <span>{bucket.receiptsByProduct.length} lignes · {formatMoney(bucket.receivedCost, currency)}</span></summary>
+    <details className="bilan-drilldown"><summary>Achats par produit <span>{bucket.receiptsByProduct.length} lignes · {bucket.receiptCount ? formatMoney(bucket.receivedCost, currency) : "Aucune réception enregistrée"}</span></summary>
     {bucket.receiptsByProduct.length ? <div className="sales-table-wrap" role="region" aria-label="Achats réellement réceptionnés par produit" aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
       <table className="sales-table"><thead><tr><th>Produit</th><th>Quantité reçue</th><th>Coût constaté</th><th>Traçabilité</th></tr></thead><tbody>
         {bucket.receiptsByProduct.map((item) => <tr key={`${item.productId}:${item.unit}`}>
@@ -58,7 +59,7 @@ function RecordedOperations({ bucket, currency, from, to }: { bucket: ImpactBuck
           <td>{formatMoney(item.cost, currency)}</td><td><ReceiptReferences ids={item.receiptIds} from={from} to={to} /></td>
         </tr>)}
       </tbody></table></div> : <p>Aucune quantité réceptionnée enregistrée pour cette période.</p>}
-    <p>Dépenses de produits réceptionnés : <strong>{formatMoney(bucket.receivedCost, currency)}</strong> · {bucket.receiptCount} réception(s) confirmée(s).</p>
+    <p>Dépenses de produits réceptionnés : <strong>{bucket.receiptCount ? formatMoney(bucket.receivedCost, currency) : "Indisponible"}</strong> · {bucket.receiptCount} réception(s) confirmée(s).</p>
     </details>
   </>;
 }
@@ -68,7 +69,7 @@ function monthlySales(period: ImpactMonthlyPeriod) {
   if (!period.hasRecordedData) return "Aucune vente enregistrée";
   if (bucket.menuItemUnits > 0) return `${formatQuantity(bucket.menuItemUnits)} unité(s) saisie(s)`;
   if (bucket.serviceDays.complete > 0) return `0 unité saisie · ${bucket.serviceDays.complete} service(s) complet(s)`;
-  return "0 unité déclarée · aucun service complet pour confirmer un zéro";
+  return "Aucune vente enregistrée · aucun service complet pour confirmer un zéro";
 }
 
 function monthlyCoverage(bucket: ImpactMonthlyPeriod["recorded"]) {
@@ -87,7 +88,7 @@ interface MonthlyReconciliationProps {
   headingRef: RefObject<HTMLHeadingElement | null>;
 }
 
-function MonthlyReconciliation({ periods, currency, pagination, open, onOpenChange, onOlder, onNewer, headingRef }: MonthlyReconciliationProps) {
+export function MonthlyReconciliation({ periods, currency, pagination, open, onOpenChange, onOlder, onNewer, headingRef }: MonthlyReconciliationProps) {
   const displayedStart = periods[0]?.month ?? "";
   const displayedEnd = periods[periods.length - 1]?.month ?? "";
   return <details className="impact-monthly-summary bilan-drilldown" open={open} onToggle={(event) => onOpenChange(event.currentTarget.open)}>
@@ -108,10 +109,10 @@ function MonthlyReconciliation({ periods, currency, pagination, open, onOpenChan
         <th scope="row">{displayMonth(period.month)}<br /><small>{displayDate(period.from)} – {displayDate(period.to)} ({period.calendarDays} j)</small></th>
         <td><p>{monthlySales(period)}</p></td>
         <td>{period.recorded.serviceDays.complete} complets<details><summary>Détail des services</summary><p>{monthlyCoverage(period.recorded)}</p></details></td>
-        <td><p>{period.hasRecordedData ? `${period.recorded.lossMovementCount} mouvement(s) · ${formatMoney(period.recorded.knownLossCost, currency)} connu(s) · ${period.recorded.unpricedLossMovementCount} sans prix` : "Aucune donnée"}</p>
+        <td><p>{period.recorded.lossMovementCount > 0 && `${period.recorded.lossMovementCount} mouvement(s) · `}{!period.recorded.lossMovementCount && period.excluded.lossUnitMismatch ? "Pertes exclues pour unité incompatible" : formatLossValue(period.recorded.lossMovementCount, period.recorded.unpricedLossMovementCount, period.recorded.knownLossCost, currency)}</p>
           {period.excluded.lossUnitMismatch > 0 && <p>{period.excluded.lossUnitMismatch} mouvement(s) de perte écarté(s) pour unité incompatible</p>}
           {period.excluded.receiptUnitMismatch > 0 && <p>{period.excluded.receiptUnitMismatch} ligne(s) de réception écartée(s) pour unité incompatible</p>}</td>
-        <td><p>{period.hasRecordedData ? `${period.recorded.receiptCount} réception(s) · ${formatMoney(period.recorded.receivedCost, currency)}` : "Aucune donnée"}</p>
+        <td><p>{period.recorded.receiptCount ? `${period.recorded.receiptCount} réception(s) · ${formatMoney(period.recorded.receivedCost, currency)}` : "Aucune réception enregistrée"}</p>
         </td>
       </tr>)}</tbody></table>
     </div>
@@ -178,10 +179,10 @@ export default function ImpactSummary({ from, to }: Props) {
       <p>Période actuelle : {periodRange(report.current)} · précédente : {periodRange(report.prior)}.</p>
       <div className="sales-table-wrap" role="region" aria-label="Comparaison des périodes" aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
         <table className="sales-table"><thead><tr><th>Indicateur observé</th><th>Période actuelle</th><th>Période précédente</th></tr></thead><tbody>
-          <tr><th scope="row">Unités d’articles vendues (pas des couverts)</th><td>{recordedValue(report.current, report.current.recorded.menuItemUnits)}</td><td>{recordedValue(report.prior, report.prior.recorded.menuItemUnits)}</td></tr>
-          <tr><th scope="row">Coût connu des pertes déclarées</th><td>{recordedValue(report.current, formatMoney(report.current.recorded.knownLossCost, report.currency))}</td><td>{recordedValue(report.prior, formatMoney(report.prior.recorded.knownLossCost, report.currency))}</td></tr>
-          <tr><th scope="row">Achats réceptionnés (coût constaté)</th><td>{recordedValue(report.current, formatMoney(report.current.recorded.receivedCost, report.currency))}</td><td>{recordedValue(report.prior, formatMoney(report.prior.recorded.receivedCost, report.currency))}</td></tr>
-          <tr><th scope="row">Services ouverts complets enregistrés</th><td>{recordedValue(report.current, report.current.recorded.serviceDays.complete)}</td><td>{recordedValue(report.prior, report.prior.recorded.serviceDays.complete)}</td></tr>
+          <tr><th scope="row">Unités d’articles vendues (pas des couverts)</th><td>{comparisonValues(report.current, report.currency).sales}</td><td>{comparisonValues(report.prior, report.currency).sales}</td></tr>
+          <tr><th scope="row">Coût connu des pertes déclarées</th><td>{comparisonValues(report.current, report.currency).losses}</td><td>{comparisonValues(report.prior, report.currency).losses}</td></tr>
+          <tr><th scope="row">Achats réceptionnés (coût constaté)</th><td>{comparisonValues(report.current, report.currency).receipts}</td><td>{comparisonValues(report.prior, report.currency).receipts}</td></tr>
+          <tr><th scope="row">Services ouverts complets enregistrés</th><td>{comparisonValues(report.current, report.currency).services}</td><td>{comparisonValues(report.prior, report.currency).services}</td></tr>
         </tbody></table></div>
       </details>
       {!report.current.hasRecordedData && <p role="status">Aucune donnée opérationnelle mesurable dans la période actuelle.</p>}
@@ -189,7 +190,7 @@ export default function ImpactSummary({ from, to }: Props) {
         pagination={report.monthlyPagination} open={monthlyOpen} onOpenChange={setMonthlyOpen} headingRef={monthlyHeadingRef}
         onOlder={() => { monthlyPageFocusPending.current = true; setMonthlyPage((page) => page + 1); }}
         onNewer={() => { monthlyPageFocusPending.current = true; setMonthlyPage((page) => Math.max(0, page - 1)); }} />}
-      <RecordedOperations bucket={report.current.recorded} currency={report.currency} from={from} to={to} />
+      <RecordedOperations bucket={report.current.recorded} currency={report.currency} from={from} to={to} excludedLosses={report.current.excluded.lossUnitMismatch} />
       <details className="impact-reading-guide"><summary>Comprendre les chiffres et leurs limites</summary>
       <p>La comparaison porte sur des périodes de même durée calendaire, pas nécessairement de même activité. Les ventes suivent la date de service (Europe/Paris), les pertes leur date d’enregistrement (UTC) et les achats leur date de livraison. Les unités restent séparées par produit.</p>
       <p className="impact-unmeasured"><strong>Non mesuré dans le système :</strong> ruptures de stock et inventaire complet des invendus. Seuls les invendus explicitement déclarés sont disponibles. Un seuil de stock bas ou une production ne prouvent pas une rupture ou un invendu. Les économies réalisées ne sont pas calculées.</p>

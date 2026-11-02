@@ -1,4 +1,5 @@
 import DeclaredWastePanel from "./DeclaredWastePanel";
+import { formatLossValue, hasPricedLoss } from "./comparisonValues";
 import { Link } from "react-router-dom";
 import type { ImpactReport } from "../../services/impactService";
 
@@ -15,9 +16,9 @@ export default function BilanOverview({ report }: { report: Pick<ImpactReport, "
         <p>{current.receiptCount ? `${current.receiptCount} réceptions confirmées` : "Aucune réception enregistrée"}</p>
         <small>Période précédente : {prior.receiptCount ? money(prior.receivedCost) : "non renseignée"}</small>
       </article>
-      <article><h3>Coût connu des pertes</h3><p className="bilan-kpi-value">{current.lossMovementCount ? money(current.knownLossCost) : "—"}</p>
-        <p>{current.lossMovementCount ? `${current.lossMovementCount} pertes déclarées` : "Aucune perte déclarée"}</p>
-        <small>{current.unpricedLossMovementCount ? `${current.unpricedLossMovementCount} pertes restent à valoriser` : "Uniquement les pertes enregistrées"}</small>
+      <article><h3>Coût connu des pertes</h3><p className="bilan-kpi-value">{!current.lossMovementCount ? "—" : hasPricedLoss(current) ? money(current.knownLossCost) : "Indisponible"}</p>
+        <p>{current.lossMovementCount ? `${current.lossMovementCount} pertes déclarées` : report.current.excluded.lossUnitMismatch ? "Pertes exclues pour unité incompatible" : "Aucune perte déclarée"}</p>
+        <small>{current.unpricedLossMovementCount ? `${hasPricedLoss(current) ? "Valorisation partielle : " : ""}${current.unpricedLossMovementCount} pertes restent à valoriser` : "Uniquement les pertes enregistrées"}</small>
       </article>
       <article><h3>Articles vendus</h3><p className="bilan-kpi-value">{current.menuItemUnits || current.serviceDays.complete ? quantity(current.menuItemUnits) : "—"}</p>
         <p>Unités saisies, pas des couverts</p>
@@ -35,10 +36,10 @@ export default function BilanOverview({ report }: { report: Pick<ImpactReport, "
     </section>
     {losses.length > 0 && <section className="bilan-loss-priorities" aria-labelledby="bilan-loss-priorities-title">
       <h3 id="bilan-loss-priorities-title">Où se concentrent les pertes ?</h3>
-      <p>Les 5 produits au coût de perte connu le plus élevé. Les quantités restent séparées par unité.</p>
+      <p>Jusqu’à 5 produits, classés selon le coût connu. Les quantités restent séparées par unité.</p>
       <ol>{losses.map((loss) => <li key={`${loss.productId}:${loss.unit}`}>
-        <div><strong>{loss.productName}</strong><span>{quantity(loss.quantity)} {loss.unit} déclarés perdus{loss.unpricedMovementCount ? " · valorisation partielle" : ""}</span></div>
-        <strong>{money(loss.knownCost)}</strong>
+        <div><strong>{loss.productName}</strong><span>{quantity(loss.quantity)} {loss.unit} déclarés perdus</span></div>
+        <strong>{formatLossValue(loss.movementCount, loss.unpricedMovementCount, loss.knownCost, report.currency)}</strong>
       </li>)}</ol>
     </section>}
     <DeclaredWastePanel summary={current.declaredWaste} />

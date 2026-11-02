@@ -35,9 +35,24 @@ describe("Bilan overview reading safeguards", () => {
     expect(html).toContain("Historique de ventes incomplet");
     expect(html).not.toContain("Aucun achat réceptionné sur cette période");
   });
+  it("distingue une perte sans prix d’un coût connu nul", () => {
+    const unpriced = render({ ...bucket(), lossMovementCount: 1, unpricedLossMovementCount: 1 });
+    expect(unpriced).toContain('class="bilan-kpi-value">Indisponible');
+    const zero = render({ ...bucket(), lossMovementCount: 1, knownLossCost: 0 });
+    expect(zero).toMatch(/class="bilan-kpi-value">0,00/);
+  });
   it("does not present a partial loss valuation as complete", () => {
     const html = render({ ...bucket(), lossMovementCount: 2, unpricedLossMovementCount: 1, knownLossCost: 15 });
-    expect(html).toContain("1 pertes restent à valoriser");
+    expect(html).toContain("Valorisation partielle : 1 pertes restent à valoriser");
     expect(html).toContain("Le montant affiché ne couvre pas toutes les pertes déclarées");
   });
+});
+
+it("ne classe pas une perte sans prix comme une valeur nulle", () => {
+  const item = { productId: "p1", productName: "Tomate", unit: "kg", quantity: 2, knownCost: 0,
+    unpricedMovementCount: 1, movementCount: 1, operationIds: [], movementIds: [] };
+  const html = render({ ...bucket(), lossMovementCount: 1, unpricedLossMovementCount: 1, lossesByProduct: [item] });
+  expect(html).toContain("Tomate");
+  expect(html).toContain("<strong>Indisponible</strong>");
+  expect(html).not.toContain("0,00");
 });
