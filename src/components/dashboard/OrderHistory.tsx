@@ -1,5 +1,6 @@
 import PurchaseReconciliation from "./PurchaseReconciliation";
 import PurchaseDeliveryReview from "./PurchaseDeliveryReview";
+import ReceiptCalendar from "./ReceiptCalendar";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
@@ -107,6 +108,7 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
       <p role="status">Cette réception n’est plus présente dans l’historique des commandes. {returnHref &&
         <Link to={returnHref}>Retour au Bilan</Link>}</p>}
     {!loading && !currentError && orders.length === 0 && <p className="orders-empty">Aucune commande enregistrée. <Link to="/orders?view=prepare">Préparer votre première commande</Link></p>}
+    {!loading && !currentError && <ReceiptCalendar orders={orders} />}
     {!loading && !currentError && orders.length > 0 && <>
       <div className="orders-kpis">
         <article><span>À réceptionner</span><strong>{orders.filter((order) => order.status === "validated").length}</strong><small>Commandes validées, sans réception</small></article>

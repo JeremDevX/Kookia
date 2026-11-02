@@ -1,0 +1,18 @@
+.receipt-calendar { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); padding: var(--spacing-xl); }
+.receipt-calendar-heading h2 { font-size: var(--font-size-lg); }
+.receipt-calendar-heading p, .receipt-calendar-note { color: var(--color-text-secondary); font-size: var(--font-size-sm); margin-top: var(--spacing-sm); }
+.receipt-calendar-tabs { display: flex; gap: var(--spacing-lg); border-bottom: var(--size-1) solid var(--color-border); margin-top: var(--spacing-lg); }
+.orders-container .receipt-calendar-tabs .btn { border: none; border-bottom: var(--size-3) solid transparent; border-radius: var(--number-0); padding-inline: var(--spacing-xs); background: transparent; }
+.orders-container .receipt-calendar-tabs [aria-pressed="true"] { border-bottom-color: var(--color-auth-link); color: var(--color-accent-text); }
+.receipt-calendar-controls { display: flex; align-items: center; flex-wrap: wrap; gap: var(--spacing-sm); margin-block: var(--spacing-lg); }
+.receipt-calendar-controls strong { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
+.receipt-calendar-days { display: grid; gap: var(--number-0); border-top: var(--size-1) solid var(--color-border); }
+.receipt-calendar-days > div { min-width: var(--number-0); border-bottom: var(--size-1) solid var(--color-border); padding: var(--spacing-sm); }
+.receipt-calendar-days time { display: block; font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
+.receipt-calendar-days time[aria-current="date"] { color: var(--color-accent-text); }
+.receipt-calendar-month { grid-template-columns: repeat(var(--number-7), minmax(var(--number-0), var(--unit-1fr))); }
+.receipt-calendar-month > div { border-right: var(--size-1) solid var(--color-border); min-height: var(--size-80); }
+.receipt-calendar-outside time { color: var(--color-text-muted); }
+.orders-container .receipt-calendar-event { display: block; overflow-wrap: var(--overflow-wrap-anywhere); margin-top: var(--spacing-xs); padding: var(--spacing-xs); border-radius: var(--radius-sm); background: var(--color-warning-soft); color: var(--color-text-primary); font-size: var(--font-size-xs); }
+.orders-container .receipt-calendar-event.received { background: var(--color-primary-light); color: var(--color-primary-text); }
+@media (--media-workspace-compact) { .receipt-calendar { padding: var(--spacing-md); } .receipt-calendar-month { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); } .receipt-calendar-month > div { min-height: auto; border-right: none; } }
