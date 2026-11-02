@@ -49,12 +49,13 @@ describe("weather in the top navigation", () => {
     expect(html).toContain('aria-hidden="true"');
   });
   it("only asks for a commune, keeping forecasts on demand and schedules outside the dialog", () => {
-    const render = (value: SharedServiceWeather) => renderToStaticMarkup(createElement(ServiceWeatherContext.Provider, { value }, createElement(WeatherSettingsContent)));
+    const render = (value: SharedServiceWeather, confirming = false) => renderToStaticMarkup(createElement(ServiceWeatherContext.Provider, { value }, createElement(WeatherSettingsContent, { confirming, onConfirmingChange: () => {} })));
     const html = render(context);
     expect(html).toContain("Commune pour la météo");
     expect(html).not.toContain("horaires"); expect(html).toContain("Terminer");
     expect(html).not.toContain("/settings"); expect(html).not.toContain("Prévision d’aujourd’hui");
     expect(html).not.toContain("<select"); expect(html).not.toContain("service-weather-metrics");
     expect(html).toContain("Voir les prévisions de la journée"); expect(html).toContain('aria-expanded="false"');
+    expect(render(context, true)).toMatch(/<button[^>]*disabled[^>]*>Terminer<\/button>/);
   });
 });

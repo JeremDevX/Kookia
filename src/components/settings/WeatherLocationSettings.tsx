@@ -5,7 +5,7 @@ import { confirmWeatherLocation, getWeatherLocation, searchWeatherPlaces } from 
 import type { WeatherLocationState, WeatherPlace } from "../../../shared/serviceWeather";
 import "../services/ServiceWeather.css";
 
-export default function WeatherLocationSettings({ onConfirmed }: { onConfirmed: () => void }) {
+export default function WeatherLocationSettings({ onConfirmed, onConfirmingChange }: { onConfirmed: () => void; onConfirmingChange: (value: boolean) => void }) {
   const [location, setLocation] = useState<WeatherLocationState | null>(null);
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<WeatherPlace[] | null>(null);
@@ -45,6 +45,8 @@ export default function WeatherLocationSettings({ onConfirmed }: { onConfirmed: 
   const confirm = async () => {
     if (!location || selectedId === null || busy) return;
     const request = ++requestId.current;
+    locationHeading.current?.focus();
+    onConfirmingChange(true);
     setBusy(true); setError(""); setStatus("");
     try {
       const saved = await confirmWeatherLocation({ placeId: selectedId, expectedRevision: location.revision, addressFingerprint: location.addressFingerprint });
@@ -53,7 +55,7 @@ export default function WeatherLocationSettings({ onConfirmed }: { onConfirmed: 
       setLocation(saved); setEditing(false); setPlaces(null); setSelectedId(null); setStatus("Commune enregistrée.");
       requestAnimationFrame(() => { if (request === requestId.current) locationHeading.current?.focus(); });
     } catch (cause) { if (request === requestId.current) setError(cause instanceof Error ? cause.message : "Confirmation impossible."); }
-    finally { if (request === requestId.current) setBusy(false); }
+    finally { if (request === requestId.current) { setBusy(false); onConfirmingChange(false); } }
   };
   return <Card>
     <h2 id="weather-location-title" ref={locationHeading} tabIndex={-1}>Commune pour la météo</h2>
