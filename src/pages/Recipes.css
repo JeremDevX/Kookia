@@ -19,6 +19,7 @@
 .recipe-tabs button[aria-pressed="true"] { border-bottom-color: var(--color-auth-link); color: var(--color-accent-text); }
 .recipe-catalog { padding: var(--spacing-lg); }
 .recipe-catalog-filters { display: flex; flex-wrap: wrap; gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
+.recipe-sheets-filters { display: flex; flex-wrap: wrap; gap: var(--spacing-md); }
 .recipe-catalog-filters label { display: grid; gap: var(--spacing-xs); color: var(--color-auth-icon-border); font-size: var(--font-size-caption); }
 .recipe-catalog-filters label:first-child { flex: var(--number-1) var(--number-1) var(--size-250); max-width: var(--size-400); }
 .recipe-catalog-filters :is(input, select) { min-height: var(--size-44); padding: var(--spacing-sm) var(--size-12); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-auth-field); color: var(--color-nav-text); }
@@ -37,7 +38,7 @@
 .recipe-sheets h2 { color: var(--color-nav-text); font-size: var(--font-size-md); }
 .recipe-sheets > p { color: var(--color-auth-icon-border); font-size: var(--font-size-sm); }
 .recipe-sheets-search { display: grid; gap: var(--spacing-xs); width: min(var(--unit-100percent), var(--size-320)); color: var(--color-auth-icon-border); font-size: var(--font-size-caption); }
-.recipe-sheets-search input { min-height: var(--size-44); padding: var(--spacing-sm) var(--size-12); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-auth-field); color: var(--color-nav-text); }
+.recipe-sheets-search :is(input, select) { min-height: var(--size-44); padding: var(--spacing-sm) var(--size-12); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-auth-field); color: var(--color-nav-text); }
 .recipe-sheets-table-wrap { min-width: var(--number-0); overflow-x: auto; }
 .recipe-sheets-table { width: var(--unit-100percent); min-width: var(--size-720); border-collapse: collapse; font-size: var(--font-size-sm); }
 .recipe-sheets-table :is(th, td) { padding: var(--spacing-md); border-bottom: var(--size-1) solid var(--color-nav-border); text-align: left; }
