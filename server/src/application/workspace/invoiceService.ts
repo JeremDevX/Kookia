@@ -286,7 +286,7 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
         const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: line.productId } },
           include: { supplier: { select: { name: true } } } });
         if (!product) throw new WorkspaceError(400, "INVALID_PRODUCT", "Un produit est absent de votre catalogue.");
-        if (source && line.unit !== product.unit) throw new WorkspaceError(409, "UNIT_MISMATCH", `L’unité choisie ne correspond pas au stock de ${product.name}.`);
+        if ((source || line.unit) && line.unit !== product.unit) throw new WorkspaceError(409, "UNIT_MISMATCH", `L’unité choisie ne correspond pas au stock de ${product.name}.`);
         const stockUpdated = await tx.product.updateMany({ where: { restaurantId, id: product.id }, data: {
           currentStock: { increment: line.quantity },
           stockRevision: { increment: 1 },

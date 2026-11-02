@@ -47,6 +47,18 @@ it("persists corrected drafts, isolates accounts and receives invoices exactly o
   expect(reread.body.find((item: { id: string }) => item.id === id).status).toBe("received");
 });
 
+it("vérifie l’unité renseignée avant de créditer une facture manuelle", async () => {
+  const agent = await account();
+  const catalog = (await agent.get("/api/workspace/catalog").expect(200)).body;
+  const product = catalog.products[0];
+  const draft = { reference: "Unit test", date: "2026-09-11", lines: [{ productId: product.id, quantity: 1, unitPrice: 2, unit: product.unit === "kg" ? "L" : "kg" }] };
+  const result = await agent.post(`/api/workspace/invoices/${randomUUID()}`).send({ draft, revision: 0, receive: true }).expect(409);
+  expect(result.body.error.code).toBe("UNIT_MISMATCH");
+  expect((await agent.get("/api/workspace/catalog").expect(200)).body).toEqual(catalog);
+  draft.lines[0].unit = product.unit;
+  await agent.post(`/api/workspace/invoices/${randomUUID()}`).send({ draft, revision: 0, receive: true }).expect(200);
+});
+
 it("lists source invoices only within the authenticated restaurant", async () => {
   const owner = await account();
   const other = await account();
