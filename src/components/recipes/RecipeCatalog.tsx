@@ -16,6 +16,7 @@ export default function RecipeCatalog({ recipes, loading, onEdit, onProduce }: {
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState<RecipeSort>("recent");
   const categories = [...new Set(recipes.map((recipe) => recipe.category))].sort((a, b) => a.localeCompare(b, "fr"));
+  if (category !== "all" && !loading && !categories.some((value) => value === category)) setCategory("all");
   const query = search.trim().toLocaleLowerCase("fr");
   const visible = sortRecipes(recipes.filter((recipe) => (category === "all" || recipe.category === category) &&
     `${recipe.name} ${recipe.ingredients.map((ingredient) => ingredient.productName).join(" ")}`.toLocaleLowerCase("fr").includes(query)), sort);
