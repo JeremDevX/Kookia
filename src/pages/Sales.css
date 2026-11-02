@@ -12,6 +12,10 @@
 .sales-form textarea, .sales-reconciliation-card textarea, .sales-outcome-actions textarea { min-height: var(--size-80); }
 .sales-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
 .sales-file-label, .sales-mapping-label { display: grid; gap: var(--spacing-sm); }
+.sales-file-label input { width: fit-content; max-width: var(--unit-100percent); color: var(--color-text-secondary); font: inherit; }
+.sales-file-label input::file-selector-button { min-height: var(--size-44); margin-right: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-md); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-surface); color: var(--color-nav-text); font: inherit; cursor: pointer; }
+.sales-file-label input:disabled::file-selector-button { cursor: not-allowed; opacity: var(--number-0_5); }
+.sales-file-label input:focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 .sales-mapping-label select { max-width: var(--size-180); }
 .sales-table-wrap { overflow-x: auto; }
 .sales-table { width: var(--unit-100percent); border-collapse: collapse; }
