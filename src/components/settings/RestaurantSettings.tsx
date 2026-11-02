@@ -41,11 +41,11 @@ export default function RestaurantSettings({ onSaved }: { onSaved?: () => void }
     catch (error) { setError(error instanceof Error ? error.message : "Enregistrement impossible."); }
     finally { setSaving(false); }
   };
-  return <Card title="Établissement">
+  return <Card title="Informations du restaurant">
     <p>Vérifiez les informations de l’établissement avant de les utiliser pour vos achats.</p>
     {error && <div role="alert"><p>{error}</p>{!restaurant && <Button ref={retryButtonRef} type="button" variant="outline" disabled={loading} onClick={retryLoad}>Réessayer</Button>}</div>}
     {notice && <p role="status">{notice}</p>}
-    {!restaurant ? loading && <p role="status">Chargement du restaurant…</p> : <form ref={formRef} onSubmit={submit} className="form-grid">
+    {!restaurant ? loading && <p role="status">Chargement du restaurant…</p> : <form ref={formRef} onSubmit={submit} className="form-grid restaurant-form">
       {([['name', 'Nom du restaurant'], ['type', 'Type d’établissement'], ['address', 'Adresse'], ['city', 'Ville'], ['phone', 'Téléphone'], ['email', 'Email de contact']] as const).map(([field, label]) => <Input key={field} id={`restaurant-${field}`} label={label} type={field === "email" ? "email" : field === "phone" ? "tel" : "text"} value={restaurant[field]} required={field !== "phone" && field !== "address"} disabled={saving} onChange={(event) => setRestaurant({ ...restaurant, [field]: event.target.value })} />)}
       <Input id="restaurant-covers" label="Couverts moyens par jour" type="number" min={0} max={100000} step={1} required value={restaurant.dailyCovers} disabled={saving} onChange={(event) => setRestaurant({ ...restaurant, dailyCovers: Number(event.target.value) })} />
       <div className="input-wrapper">

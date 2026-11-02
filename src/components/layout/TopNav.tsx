@@ -21,7 +21,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
     "/stocks": "Stocks",
     "/predictions": "Prévisions",
     "/recipes": "Recettes",
-    "/settings": "Réglages",
+    "/settings": "Paramètres",
     "/analytics": "Bilan",
     "/history": "Historique",
     "/orders": "Commandes",
