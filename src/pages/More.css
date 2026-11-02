@@ -1,9 +1,13 @@
 .more-grid { display: grid; grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
-.more-card { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
+.more-page > .workspace-header, .more-card { padding: var(--spacing-xl); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
+.more-page > .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
+.more-page > .workspace-header .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); }
+.more-card { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.more-card:last-child:nth-child(odd) { grid-column: var(--number-1) / var(--number-negative-1); }
 .more-card h2 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); }
 .more-card p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_8); }
-.more-card a { margin-top: auto; padding-top: var(--spacing-sm); color: var(--color-primary); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
+.more-card a { margin-top: auto; padding-top: var(--spacing-sm); color: var(--color-accent-text); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
 .more-help { margin-top: var(--spacing-lg); }
-.more-help a { color: var(--color-primary); }
+.more-help a { color: var(--color-accent-text); }
 .more-page a:focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 @media (--media-compact) { .more-grid { grid-template-columns: var(--unit-1fr); } }

@@ -4,7 +4,7 @@ import "./More.css";
 
 const destinations = [
   { title: "Services et carte", detail: "Préparez la carte, suivez les incidents et rapprochez chaque service.", to: "/services" },
-  { title: "Recettes réalisables", detail: "Consultez les recettes possibles avec les quantités enregistrées.", to: "/recipes" },
+  { title: "Recettes réalisables", detail: "Consultez les recettes possibles avec les quantités enregistrées.", to: "/recipes?view=anti-waste" },
   { title: "Bilan", detail: "Retrouvez vos ventes enregistrées et les rapports disponibles.", to: "/analytics" },
   { title: "Prévisions", detail: "Consultez les sorties estimées et les ventes prévisionnelles disponibles.", to: "/predictions" },
   { title: "Historique", detail: "Parcourez documents, stock, recettes et services avec leur niveau de preuve.", to: "/history" },
