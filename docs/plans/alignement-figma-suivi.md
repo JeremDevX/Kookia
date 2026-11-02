@@ -46,13 +46,13 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration en quatre étapes ; invitations par lien manuel | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
 | Configuration `/setup` | A `673:43437` à `673:43559` | Quatre étapes avec progression et reprise | Champs restaurant présents ; jours d’ouverture à compléter | Fournisseurs, récapitulatif et invitations manuelles disponibles | Rapprochement partiel ; comparaison précise à faire | Création, reprise, ajout fournisseur et retour testés sur données synthétiques | En cours |
 | Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | Divergente pour `673:43621` | Indicateurs et blocs différents | Planning et notifications à confronter | À vérifier | À vérifier | En cours |
-| Stocks `/stocks` | A `673:44425`, `673:44584` | À vérifier | Ticket Z et OCR divergents | À vérifier | À vérifier | À vérifier | En cours |
+| Stocks `/stocks` | A `673:44425`, `673:44584` | À vérifier | Dernier comptage distingué du stock théorique ; Ticket Z et OCR divergents | À vérifier | À vérifier | Liste inventaire ouverte dans Firefox ; autres interactions à vérifier | En cours |
 | Prévisions `/predictions` | A `673:46361` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
 | Recettes `/recipes` | A `673:45740`, `673:45766`, `673:45044` | À vérifier | À vérifier | Import CSV avec association et revue ; comparaison Figma à poursuivre | À vérifier | À vérifier | En cours |
 | Commandes `/orders` | A `673:43938`, `673:44035`, `673:44142`, `673:44242`, `673:44919` | À vérifier | À vérifier | Rapprochement à comparer | À vérifier | Cas synthétiques partiels | En cours |
 | Paramètres `/settings` | A `673:46642`, `673:46754`, `673:46843` ; B `25:2`, `26:2` | À vérifier | À vérifier | Équipe et rôles disponibles ; invitations par lien manuel | À vérifier | Météo : erreur différée vérifiée | En cours |
 | Bilan `/analytics` | A `673:46262`, `673:46361` | À vérifier | Données absentes, valorisation partielle et exclusions distinguées | À vérifier | À vérifier | Firefox : accès et absence de débordement desktop/mobile ; tests ciblés | En cours |
-| Ventes `/sales` | B `8:2` ; A `673:44664`, `673:44732` | À vérifier | À vérifier | Transcription manuelle ; OCR absent | À vérifier | À vérifier | À faire |
+| Ventes `/sales` | B `8:2` ; A `673:44664`, `673:44732` | À vérifier | À vérifier | Transcription manuelle ; OCR absent | À vérifier | CSV trop volumineux signalé dans Firefox ; remplacement pendant analyse couvert par test | En cours |
 | Services `/services` | B `16:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
 | Plus `/more` | B `22:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
 | Historique `/history` | B `18:2`, `21:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
