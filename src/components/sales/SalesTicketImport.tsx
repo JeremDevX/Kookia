@@ -140,9 +140,9 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
             <label>Quantité vendue<input type="number" required min="1" max="1000000" step="1" value={line.quantity} onChange={(event) => setLines((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, quantity: Number(event.target.value) } : row))} /></label>
             <Button type="button" variant="outline" disabled={saving} onClick={() => setLines((current) => current.filter((_, rowIndex) => rowIndex !== index))}>Retirer cette ligne</Button>
           </fieldset>)}
-          <Button type="button" variant="outline" disabled={saving || lines.length >= 200} onClick={() => setLines((current) => [...current, { itemLabel: "", quantity: 1 }])}>Ajouter une ligne</Button>
         </div>
-        <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : lines.length ? "Enregistrer les lignes à réconcilier" : "Enregistrer sans détail article"}</Button>
+        <div className="sales-actions"><Button type="button" variant="outline" disabled={saving || lines.length >= 200} onClick={() => setLines((current) => [...current, { itemLabel: "", quantity: 1 }])}>Ajouter une ligne</Button>
+          <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : lines.length ? "Enregistrer les lignes à réconcilier" : "Enregistrer sans détail article"}</Button></div>
       </form> : <p>{statusLabel[batch.status]} · {batch.recordCount} ligne(s). L’original reste visible uniquement jusqu’à ce que vous quittiez cette page.</p>}
     </div>}
     {!listError && batches.length > 0 && <details className="sales-disclosure"><summary>Tickets et transcriptions récents ({batches.length})</summary>

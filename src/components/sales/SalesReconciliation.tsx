@@ -96,6 +96,8 @@ function PendingContribution({ row, items, ticketPreview, onReview }: {
   const lookupError = selectedSaleItemId !== row.saleItemId && lookupResult?.itemId === selectedSaleItemId && lookupResult.state === "error" ? lookupResult.message : "";
   const currentSale = selectedSaleItemId === row.saleItemId ? row.currentSale :
     lookupResult?.itemId === selectedSaleItemId && lookupResult.state === "loaded" ? lookupResult.sale : null;
+  const saleChecked = Boolean(selectedSaleItemId) && (selectedSaleItemId === row.saleItemId ||
+    (lookupResult?.itemId === selectedSaleItemId && lookupResult.state === "loaded"));
   const ticketOriginalMissing = Boolean(row.ticketBatch && ticketPreview?.contentHash !== row.ticketBatch.contentHash);
 
   const selectSaleItem = (itemId: string) => {
@@ -150,7 +152,7 @@ function PendingContribution({ row, items, ticketPreview, onReview }: {
     {lookup && <p role="status">Vérification d’une vente déjà enregistrée…</p>}
     {lookupError && <p role="alert">Ventes du jour indisponibles : {lookupError} Aucune décision de remplacement ne peut être prise sans cette vérification.</p>}
     {currentSale ? <p>Vente actuellement enregistrée : {currentSale.quantity} unité(s), {sourceLabel(currentSale.source)}.</p> :
-      !row.sourceRefunded && !lookupError && <p>Aucune vente enregistrée pour cet article et ce service ; l’apport restera en attente tant que vous ne le confirmez pas.</p>}
+      !row.sourceRefunded && saleChecked && <p>Aucune vente enregistrée pour cet article et ce service ; l’apport restera en attente tant que vous ne le confirmez pas.</p>}
     <label htmlFor={`pos-review-reason-${row.id}`}>Motif de réconciliation, sans donnée personnelle<textarea id={`pos-review-reason-${row.id}`} required maxLength={240} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
     <div className="sales-actions">
       {!row.sourceRefunded && <Button type="button" disabled={saving || lookup || Boolean(lookupError) || ticketOriginalMissing || Boolean((row.posBatch || row.ticketBatch) && !selectedSaleItemId)}
