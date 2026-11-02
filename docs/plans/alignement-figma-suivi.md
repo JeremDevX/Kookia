@@ -53,13 +53,39 @@ libellés de groupes ne constituent pas un inventaire exhaustif des écrans.
 | --- | --- |
 | Ensemble des écrans desktop | `673:43388` |
 | Connexion et inscription (1440 × 1024) | `673:43390` |
+| Configuration du restaurant | `673:43437` |
+| Configuration — Équipe | `673:43467` |
+| Configuration — Fournisseurs | `673:43514` |
+| Configuration — Finalisation | `673:43559` |
 | Tableau de bord — Vue d'ensemble | `673:43621` |
+| Tableau de bord — Planning du jour | `673:43793` |
 | Commandes — Recommandations | `673:43938` |
+| Commandes — Panier | `673:44035` |
+| Commandes — Commande confirmée | `673:44115` |
 | Réceptions — Semaine | `673:44142` |
+| Réceptions — Mois | `673:44242` |
 | Stocks — Liste des produits | `673:44425` |
+| Stocks — Inventaire mensuel | `673:44584` |
+| Import — Validation des données extraites | `673:44664` |
+| Import — Analyse en cours | `673:44732` |
+| Commandes — Prévision et recommandations | `673:44765` |
+| Commandes — Contrôle de réception | `673:44919` |
 | Mes recettes — Toutes les recettes | `673:45740` |
+| Fiches techniques — Liste | `673:45044` |
+| Fiches techniques — Choix de création | `673:45095` |
+| Fiches techniques — Saisie manuelle | `673:45172` |
+| Fiches techniques — Import CSV | `673:45326` |
+| Fiches techniques — Association CSV | `673:45368` |
+| Fiches techniques — Validation CSV | `673:45427` |
+| Fiches techniques — Brouillon enregistré | `673:45582` |
 | Analytics — Vue d'ensemble | `673:46262` |
 | Analytics — Prévisions | `673:46361` |
+| Paramètres | `673:46642` |
+| Notifications et alertes | `673:46700` |
+| Paramètres — Compte | `673:46754` |
+| Paramètres — Équipe | `673:46843` |
+| Tableau de bord — Notifications ouvertes | `673:46996` |
+| Overlay — Notifications | `673:47169` |
 
 Le nœud `673:43938`, sélectionné dans Arc le 2 novembre 2026, est intitulé
 « Commandes — Recommandations » : largeur fixe 1440 px, hauteur 1024 px,
@@ -68,6 +94,42 @@ des quantités modifiables et un accès au panier. Ces propriétés constituent
 une référence, pas une comparaison avec le rendu de l'application.
 Le nœud `673:44425` « Stocks — Liste des produits » mesure 1440 × 1374 px
 et utilise le même fond `bg/app` `#F7F9FB`.
+Le nœud `673:45326` « Fiches techniques — Import CSV » mesure 1440 × 1024 px.
+Il présente trois étapes : dépôt, association des colonnes, puis vérification
+et enregistrement. Les colonnes affichées sont article, fournisseur, unité,
+prix unitaire HT et quantité. L'association, la validation et le brouillon
+mesurent respectivement 1440 × 1326, 1440 × 2125 et 1440 × 2010 px. L'audit
+du code n'a pas trouvé de parcours d'import CSV de fiches : l'import existant
+concerne les ventes et son contrat diffère. Le modèle de recette référence des
+produits et quantités ; fournisseur et prix proviennent du catalogue. Définir
+une correspondance fiable et une revue avant d'enregistrer des données.
+
+L'arborescence de la section desktop affiche les groupes suivants. Les nombres
+sont les libellés Figma, non un décompte indépendant des variantes :
+
+| Groupe A | Écrans annoncés | Contenu repéré |
+| --- | ---: | --- |
+| Connexion et onboarding | 5 | Connexion et quatre étapes de configuration du restaurant |
+| Tableau de bord | 2 | Vue d'ensemble et planning du jour |
+| Commandes et réceptions | 5 | Recommandations, panier, confirmation, calendriers semaine et mois |
+| Stocks et import des ventes | 4 | Liste, inventaire mensuel, analyse et validation de l'import |
+| Achats et contrôle des réceptions | 2 | Prévision et recommandations, contrôle de réception |
+| Fiches techniques | 7 | Liste, choix, saisie manuelle, import, association et validation CSV, brouillon |
+| Recettes et anti-gaspillage | 6 | Deux listes et quatre fiches de recette |
+| Analytics et AGEC | 4 | Vue d'ensemble, prévisions, historique des prédictions, rapport AGEC |
+| Paramètres et notifications | 4 | Paramètres, compte, équipe et notifications ; un overlay et un tableau de bord avec notifications apparaissent aussi dans l'arborescence |
+
+Les identifiants, états, dimensions et correspondances des éléments non listés
+dans le tableau des nœuds ci-dessus restent à relever. Les fonctions figurant
+sur une maquette ne prouvent pas leur disponibilité technique.
+
+Sur la frame Stocks, la zone Ticket Z affirme que les ventes mettent les stocks à
+jour automatiquement et propose une lecture OCR. Le parcours actuel demande
+une transcription puis une revue humaine (`SalesTicketImport.tsx` et
+`ticketZService.ts`) ; aucun OCR n'est connecté. La maquette ne suffit pas à
+justifier l'invention d'un fournisseur OCR ou d'une déduction automatique de
+stock. Conserver une formulation et un parcours conformes aux capacités réelles
+et aux invariants, puis documenter l'écart dans la recette de cette vue.
 
 La source B (`zEnZ9HLwjcw2D5PUw9Phk0`), consultée via MCP sans modification,
 contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
@@ -113,6 +175,26 @@ comparaison avec l'application.
   usage affecté n'a été confirmé lors du premier audit ; vérifier les appels et
   les besoins avant correction.
 
+### Composants transversaux utilisés
+
+Inventaire des composants `common` et `layout`, établi par recherche d'imports
+de production. Leurs correspondances Figma et états rendus restent à vérifier.
+
+| Composant | Responsabilité et états repérés | Tests directs repérés dans `src` |
+| --- | --- | --- |
+| `Button` | Variantes, tailles, icône et états natifs | Aucun |
+| `Input` | Libellé, icône et erreur | Aucun |
+| `Card`, `Badge` | Conteneur et statut | Aucun |
+| `Modal` | Ouverture, quatre largeurs, focus, Échap et défilement | Aucun |
+| `SplashScreen` | Chargement et disparition après durée minimale | Aucun |
+| `Layout`, `Sidebar`, `TopNav` | Structure, navigation, recherche et menu mobile | Aucun |
+| `SidebarSubnav` | Sous-navigation et état actif | `SidebarSubnav.test.ts` |
+| `RouteErrorBoundary` | Affichage d'erreur et rechargement | Aucun |
+| `WeatherNavButton`, `WeatherSettingsModal`, `WeatherSettingsContent` | Météo et réglages | `WeatherNavButton.test.ts` couvre aussi le contenu |
+
+Ces recherches n'excluent pas une couverture indirecte par d'autres tests.
+`Toast.css` est utilisé par `ToastContext`.
+
 ## Sous-vues et parcours identifiés dans le code
 
 Inventaire statique, sans validation du rendu ni des interactions. Les états
@@ -127,6 +209,19 @@ conditionnels et composants indiqués restent à confronter aux maquettes.
 | Services | Sélection du service, carte, prévisions, fiche et incidents ; plan, substitutions, validation et clôture | `src/pages/Services.tsx`, `src/components/services/` |
 | Prévisions | Sorties estimées et prévisions de ventes ; filtres, détails, pagination, hypothèses et états sans données | `src/pages/Predictions.tsx`, `src/components/analytics/EstimatedOutflows.tsx`, `src/components/sales/SalesBaseline.tsx` |
 | Bilan | Vue d'ensemble, ventes, sorties estimées et prévisions ; périodes, détails et export | `src/pages/Analytics.tsx`, `src/components/analytics/` |
+| Tableau de bord | Indicateurs, action prioritaire, mise en route, prévision d'achat et idées de menu ; chargement, erreurs et données absentes | `src/pages/Dashboard.tsx`, `src/components/dashboard/` |
+| Paramètres | Restaurant et horaires, compte, fournisseurs, connexions ; météo partagée dans une modale | `src/pages/Settings.tsx`, `src/components/settings/`, `src/features/account/` |
+
+Les écrans de notifications existent dans A. Aucun client ni panneau de
+notifications n'a été repéré dans `src/` ; le serveur expose une lecture et un
+marquage comme lu, alimentés initialement par des alertes statiques. Vérifier
+leur provenance et leur actualité avant de les présenter comme des alertes
+opérationnelles. Les messages temporaires `ToastContext` ont un autre rôle.
+La frame A `673:46700` prévoit des filtres Stocks, Recommandations et Livraisons
+et une action « Tout marquer comme lu ». Le contrat actuel classe les alertes
+en `warning`, `alert` et `info`, sans catégorie métier équivalente ; le marquage
+accepte une liste d'identifiants. Un alignement nécessite donc d'établir des
+sources et catégories fiables, sans transformer les alertes seedées en faits.
 
 ### Cohérence fonctionnelle à examiner
 
@@ -147,6 +242,44 @@ conditionnels et composants indiqués restent à confronter aux maquettes.
   risque est identifié notamment pour les factures et les exports ; vérifier
   les appels et le comportement rendu avant correction. Les modales de
   production protègent déjà leur fermeture pendant l'enregistrement.
+- `SalesMetrics` est utilisé dans Ventes et dans Bilan : même composant et
+  service, donc pas de règle dupliquée. Examiner si ces accès répondent à des
+  besoins distincts avant de modifier la navigation. Les totaux du bilan et
+  des métriques ne sont pas systématiquement interchangeables : ils distinguent
+  différemment les données simulées et leur provenance.
+- La prévision de ventes par article et la prévision d'un service utilisent
+  des contextes et hypothèses distincts. La fiche de service conserve un
+  instantané de la prévision validée. Les sorties estimées à partir des
+  réceptions ne sont pas des ventes ; ne pas les fusionner par ressemblance.
+- Après accès à une route protégée, la redirection après authentification a été
+  corrigée localement pour préserver chemin, paramètres et fragment, y compris
+  lors du passage entre connexion et inscription. Tests ciblés et TypeScript
+  réussis ; en navigateur avec une API factice isolée, le passage connexion →
+  inscription → connexion puis la connexion conservent l'URL complète. Une
+  inscription soumise à la même API factice conserve aussi l'URL complète ;
+  une session réelle reste à tester. Une correction locale distingue désormais
+  session absente et erreur de vérification, avec réessai. Avec une API factice,
+  le navigateur affiche l'erreur sur une route protégée puis ouvre la connexion
+  après réessai et réponse 401. Tests ciblés réussis ; session réelle à vérifier.
+- `Layout.tsx` cherche les ancres au changement d'URL alors que les pages sont
+  chargées à la demande. Vérifier au chargement à froid si une cible absente au
+  premier rendu empêche le défilement ; ce risque n'est pas encore confirmé.
+- L'inscription ne propose pas les étapes de configuration représentées dans
+  A : le premier accès crée un espace initial prérempli, puis les réglages du
+  restaurant et des fournisseurs se font dans Paramètres. Le modèle actuel lie
+  un restaurant à son propriétaire ; aucun modèle de membres ou d'invitations
+  n'a été trouvé. Un écran d'équipe ne doit pas suggérer un accès partagé qui
+  n'existe pas. Examiner les effets sur les espaces existants avant toute
+  évolution du démarrage ou des permissions.
+- Risque P0 à vérifier sur un compte isolé : `ensureWorkspace.ts` crée pour
+  tout nouveau propriétaire un restaurant nommé « La Pizzeria de Camille » et
+  un catalogue prérempli. Le mode par défaut du restaurant est opérationnel ;
+  les modèles de produit et fournisseur n'indiquent pas la provenance de cet
+  amorçage. Il faut éviter de présenter ces données comme celles du restaurant
+  réel. Toute correction doit préserver les espaces déjà créés et distinguer
+  explicitement données d'exemple et données confirmées. Les stocks initiaux
+  sont injectés sans mouvement initial ; les tests les distinguent d'un
+  comptage et d'une réception démontrés.
 
 ## Recette et dépendances
 
