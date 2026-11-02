@@ -38,7 +38,7 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   app.use(express.json({ limit: "16kb", type: "application/json" }));
   app.use(cookieParser());
   app.use((req, res, next) => {
-    if (["POST", "PATCH", "DELETE"].includes(req.method)) {
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
       const origin = req.get("origin");
       if (origin && !allowedOrigins.has(origin)) {
         res.status(403).json({ error: { code: "FORBIDDEN_ORIGIN", message: "Origine de requête refusée." } });

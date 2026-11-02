@@ -29,7 +29,7 @@ const Input: React.FC<InputProps> = ({
           })}
           {...props}
           aria-invalid={error ? true : undefined}
-          aria-describedby={errorId}
+          aria-describedby={[props["aria-describedby"], errorId].filter(Boolean).join(" ") || undefined}
         />
       </div>
       {error && <span className="input-error" id={errorId}>{error}</span>}

@@ -268,9 +268,9 @@ comparaison avec l'application.
   et `TopNav.tsx`. Le code ne déplace pas explicitement le focus vers le contenu
   après changement de route ; vérifier au clavier et avec lecteur d'écran avant
   de qualifier l'incident et sa correction.
-- `Input` remplace la valeur `aria-describedby` fournie par l'appelant. Aucun
-  usage affecté n'a été confirmé lors du premier audit ; vérifier les appels et
-  les besoins avant correction.
+- `Input` conserve désormais les descriptions fournies et leur ajoute le message
+  d’erreur. Les indications de mot de passe sont reliées aux champs d’inscription
+  et de compte ; association vérifiée dans Firefox, sans lecteur d’écran réel.
 
 ### Composants transversaux utilisés
 
@@ -321,6 +321,16 @@ accepte une liste d'identifiants. Un alignement nécessite donc d'établir des
 sources et catégories fiables, sans transformer les alertes seedées en faits.
 
 ### Cohérence fonctionnelle à examiner
+
+- Les mutations de l’espace ne vérifient pas encore que le compte affiché est
+  toujours celui de la session. Un changement de compte dans un autre onglet
+  pendant une saisie peut conduire à enregistrer dans le mauvais espace ; le
+  contrôle déjà ajouté à `/setup` ne couvre pas les autres routes. La correction
+  doit aussi protéger les lectures, préserver l’identité liée à l’écran et
+  adapter les clients et tests du contrat serveur. Les invitations et les
+  étapes fournisseurs et horaires ne doivent pas masquer cette limite.
+- Le contrôle d’origine serveur couvre désormais les requêtes `PUT` en plus de
+  `POST`, `PATCH` et `DELETE` ; il ne remplace pas la vérification de session.
 
 - Le calendrier des réceptions et le suivi des commandes présentent des vues
   différentes des mêmes commandes ; le calendrier renvoie au suivi pour agir.
