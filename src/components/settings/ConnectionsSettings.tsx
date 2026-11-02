@@ -36,7 +36,7 @@ export default function ConnectionsSettings({ onWeatherSettings }: { onWeatherSe
     return () => { active = false; };
   }, [reload]);
 
-  return <Card title="Sources de données">
+  return <Card title="Sources de données" className="connections-card">
     <p className="settings-section-intro">Vérifiez les sources disponibles et leur dernière récupération réussie. Les imports et corrections manuels restent disponibles.</p>
     <p id="connections-status" role="status">
       {result.state === "loading" ? "Chargement de l'état des sources…" : result.state === "loaded" ? "État des sources à jour." : ""}

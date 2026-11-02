@@ -76,6 +76,10 @@
   margin-bottom: var(--spacing-sm);
 }
 .connection-list { list-style: none; padding: var(--number-0); margin: var(--spacing-md) var(--number-0); }
+.connections-card .card-content { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-md); }
+.connections-card .connection-list { width: var(--unit-100percent); margin: var(--number-0); }
+.connections-card .connection-list .integration-item:last-child { margin-bottom: var(--number-0); }
+.connections-card a { color: var(--color-accent-text); text-decoration: underline; text-underline-offset: var(--size-3); }
 .int-info {
   display: flex;
   align-items: center;
