@@ -160,6 +160,15 @@ d'achat peuvent être issus respectivement du catalogue et du service de
 suggestions, avec leurs limites, leur provenance et validation humaine. La
 météo exige une commune confirmée et des données fraîches ; les événements ne
 sont pas connectés. Ne pas confondre articles au panier et suggestions.
+Le 2 novembre 2026, la carte « Contexte du jour » de A `673:43621` a été
+observée dans Firefox : météo, événement et avis y sont regroupés. Le tableau
+de bord réutilise désormais la météo partagée, indique les données partielles,
+anciennes ou de test, et signale les événements et avis indisponibles. Les
+impacts chiffrés et le badge IA de la maquette ne sont pas affichés : aucune
+source opérationnelle ne les établit. Un rendu à données synthétiques a été
+observé dans Firefox ; ouverture clavier des réglages, fermeture par Échap et
+retour du focus vérifiés. Comparaison géométrique et états météo réels restent
+à vérifier.
 La frame A `673:43793` ajoute une vue « Planning du jour » : indicateurs,
 graphique par service, prochaines revues avec créneaux et participants, action
 prioritaire et raccourcis. `Dashboard.tsx` n'expose pas cette sous-vue ; les

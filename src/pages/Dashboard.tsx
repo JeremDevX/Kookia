@@ -5,6 +5,7 @@ import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
 import TodayPurchaseForecast from "../components/dashboard/TodayPurchaseForecast";
+import TodayContext from "../components/dashboard/TodayContext";
 import { purchaseForecastIndicator } from "../features/orders/purchaseForecastPresentation";
 import { purchasePreparationHref } from "../features/orders/orderNavigation";
 import { getPurchaseSuggestions, type PurchaseSuggestions } from "../services/orderService";
@@ -132,6 +133,7 @@ export default function Dashboard() {
       setPurchaseLoading(true); setPurchaseError(""); setPurchaseRevision((value) => value + 1);
     }} />
     </div><div className="today-grid">
+      <TodayContext />
       <section className="today-card" aria-labelledby="today-stock-title"><h2 id="today-stock-title" ref={stockHeading} tabIndex={-1}>Stocks</h2>
         {productsLoading ? <p role="status">Chargement du stock…</p> : productsError ? <div role="alert"><p>Stock indisponible.</p><Button variant="outline" onClick={() => {
           void refreshProducts();

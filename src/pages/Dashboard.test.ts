@@ -9,6 +9,7 @@ vi.mock("../hooks", () => ({ useProducts: () => ({ products: [], loading: state.
 vi.mock("../context/useCart", () => ({ useCart: () => ({ cartItems: [], loading: false, loadError: null, refreshCart: vi.fn() }) }));
 vi.mock("../context/ToastContext", () => ({ useToast: () => ({ addToast: vi.fn() }) }));
 vi.mock("../components/dashboard/TodayPurchaseForecast", () => ({ default: () => null }));
+vi.mock("../components/dashboard/TodayContext", () => ({ default: () => null }));
 
 const render = () => renderToStaticMarkup(createElement(MemoryRouter, null, createElement(Dashboard)));
 beforeEach(() => { state.productsLoading = false; state.productsError = null; });
