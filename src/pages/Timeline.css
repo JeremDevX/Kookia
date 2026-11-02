@@ -20,7 +20,7 @@
 .provenance-unknown { border-color: var(--color-urgent); color: var(--color-urgent); }
 .timeline-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-sm); min-height: var(--size-20); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .timeline-truncated { padding: var(--spacing-md); border-left: var(--size-3) solid var(--color-urgent); background: var(--color-surface); color: var(--color-text-secondary); }
-.timeline-search { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); }
+.timeline-search { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-xl); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
 .timeline-search label { color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
 .timeline-search-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
 .timeline-search input { flex: var(--number-1) var(--number-1) var(--size-220); min-width: var(--number-0); min-height: var(--size-44); padding: var(--spacing-sm) var(--spacing-md); color: var(--color-text-primary); background: var(--color-bg); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); font: inherit; }
@@ -38,7 +38,7 @@
 .timeline-event-times { display: flex; flex-wrap: wrap; gap: var(--spacing-md); font-size: var(--font-size-xs) !important; }
 .timeline-event .timeline-qualifier { color: var(--color-text-primary); }
 .timeline-event .btn { align-self: flex-start; min-height: var(--size-44); height: auto; }
-.timeline-event a { align-self: flex-start; color: var(--color-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
+.timeline-event a { align-self: flex-start; color: var(--color-accent-text); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
 .timeline-read-only { margin: var(--number-0); }
 @media (--media-workspace-compact) {
   .timeline-controls { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); }
