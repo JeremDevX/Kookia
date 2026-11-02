@@ -25,7 +25,7 @@ it("retains the complete workspace across logout and a new authenticated session
   await first.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{ productId: product.id, quantity: 1 }] }).expect(201);
   await first.post(`/api/workspace/invoices/${randomUUID()}`).send({ draft: { reference: "Persistent receipt", date: "2026-09-11", lines: [{ productId: product.id, quantity: 1.5, unitPrice: 2 }] }, revision: 0, receive: true }).expect(200);
   const menu = await first.get("/api/workspace/menu").expect(200);
-  await first.post("/api/workspace/menu").send({ starter: "Entrée persistée", main: menu.body.main, dessert: menu.body.dessert, revision: menu.body.revision, validate: true }).expect(200);
+  await first.post("/api/workspace/menu").send({ starter: "Entrée persistée", main: "Plat persisté", dessert: "Dessert persisté", revision: menu.body.revision, validate: true }).expect(200);
   const restaurant = await first.get("/api/workspace/restaurant").expect(200);
   await first.patch("/api/workspace/restaurant").send({ ...restaurant.body, city: "Lyon" }).expect(200);
   await first.post("/api/workspace/productions").send({ operationId: randomUUID(), recipeName: "Déclaration persistée", portions: 2, prepTime: 10, notes: "Audit", date: "2026-09-11", kind: "record" }).expect(201);

@@ -1,7 +1,7 @@
 import { apiRequest } from "../config/api";
 export interface MenuSuggestion {
-  starter: string; main: string; dessert: string; stockOptimizationText: string;
-  reclaimedStockKg: number; criticalWindowHours: number; source: "demo";
+  starter: string; main: string; dessert: string; stockOptimizationText: string | null;
+  reclaimedStockKg: number | null; criticalWindowHours: number | null; source: "demo" | "manual";
   status: "draft" | "validated"; revision: number; validatedAt?: string;
 }
 export interface MenuSurplusOptions {

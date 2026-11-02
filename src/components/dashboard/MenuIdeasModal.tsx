@@ -61,6 +61,10 @@ export default function MenuIdeasModal({ onValidate, onClose }: MenuIdeasModalPr
   };
   const persist = async (validate: boolean) => {
     if (!menu || saving) return;
+    if (![menu.starter, menu.main, menu.dessert].every((value) => value.trim())) {
+      setError("Renseignez l’entrée, le plat et le dessert avant d’enregistrer.");
+      return;
+    }
     setSaving(true); setError(""); setNotice("");
     try {
       setMenu(await saveMenu(menu, validate)); setDirty(false);

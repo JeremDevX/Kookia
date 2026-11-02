@@ -193,6 +193,13 @@ connectés ; le Ticket Z manuel produit des candidats relus, jamais des ventes
 automatiques. Le contrôle de fichier, l'absence de stockage brut et la
 conservation du hash sont décrits dans [Sources de données](integrations.md).
 
+`GET /api/workspace/menu` retourne un brouillon virtuel vide de révision 0
+lorsqu’aucun menu n’existe, sans créer de document. Dans cet état, `source`
+vaut `manual` et les anciennes métriques d’optimisation valent `null` ; les
+clients doivent accepter ces valeurs. Le premier `POST` exige trois plats non
+vides et la révision 0, puis crée la révision 1 sous verrou. Les menus déjà
+enregistrés sont conservés, y compris ceux de source `demo`.
+
 L'aide **Voir le menu d'exemple** est limitée au tenant démo. Elle propose des
 recettes depuis un comptage positif dont la révision est encore actuelle, après
 que le responsable a explicitement désigné une quantité comme surstock. Elle

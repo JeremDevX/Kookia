@@ -370,6 +370,11 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
   n'a été trouvé. Un écran d'équipe ne doit pas suggérer un accès partagé qui
   n'existe pas. Examiner les effets sur les espaces existants avant toute
   évolution du démarrage ou des permissions.
+- La consultation du menu sans document enregistré ne crée plus de plats
+  d’exemple : un brouillon vide de révision 0 est affiché. La sauvegarde exige
+  les trois plats et crée le document sous verrou ; les menus existants restent
+  inchangés. Ce changement ne corrige pas encore le catalogue initial prérempli.
+  Le contrat et ses valeurs nulles sont précisés dans `docs/technical-development.md`.
 - Risque P0 à vérifier sur un compte isolé : `ensureWorkspace.ts` crée pour
   tout nouveau propriétaire un restaurant nommé « La Pizzeria de Camille » et
   un catalogue prérempli. Le mode par défaut du restaurant est opérationnel ;
