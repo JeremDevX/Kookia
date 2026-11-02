@@ -43,11 +43,13 @@ describe("persistent catalog HTTP", () => {
     }
     expect(initial.body.suppliers).toEqual(catalog.suppliers.map((supplier) => ({ ...supplier, deliveryWeekdays: [], leadTimeDays: null, orderCutoffTime: null })));
     const product = initial.body.products[0];
-    const created = await first.post("/api/workspace/products").send({
+    const productInput = {
       operationId: randomUUID(), name: "Test product", category: "Légumes", currentStock: 10,
       unit: "kg", minThreshold: 2, pricePerUnit: 1.25, supplierId: product.supplierId,
-    }).expect(201);
+    };
+    const created = await first.post("/api/workspace/products").send(productInput).expect(201);
     const id = created.body.id;
+    expect((await first.post("/api/workspace/products").send(productInput).expect(201)).body.id).toBe(id);
     const original = { productName: created.body.name, supplierName: initial.body.suppliers.find((supplier: { id: string }) => supplier.id === created.body.supplierId).name,
       unit: created.body.unit, pricePerUnit: created.body.pricePerUnit };
     await first.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{ productId: id, quantity: 2 }] }).expect(201);
@@ -75,6 +77,7 @@ describe("persistent catalog HTTP", () => {
     await first.patch(`/api/workspace/products/${id}`).send({ ...edits[0], expectedRevision: 2, unit: "L" }).expect(400);
     const operationId = randomUUID();
     await first.post(`/api/workspace/products/${id}/stock`).send({ operationId, delta: -2.5 }).expect(200);
+    await first.post("/api/workspace/products").send({ ...productInput, operationId }).expect(409);
     const repeated = await first.post(`/api/workspace/products/${id}/stock`).send({ operationId, delta: -2.5 }).expect(200);
     expect(repeated.body.currentStock).toBe(7.5);
     await first.post(`/api/workspace/products/${id}/stock`).send({ operationId, delta: 4 }).expect(409);

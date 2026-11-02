@@ -44,7 +44,12 @@ interface NewProductInput {
 export async function createProduct(restaurantId: string, actorId: string, data: NewProductInput, operationId: string) {
   return prisma.$transaction(async (tx) => {
     const prior = await tx.stockMovement.findFirst({ where: { restaurantId, operationId } });
-    if (prior) return productDto(await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: prior.productId } } }));
+    if (prior) {
+      if (prior.reason !== "initial" || prior.productId !== operationId) {
+        throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération a déjà été utilisée pour une autre action.");
+      }
+      return productDto(await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: prior.productId } } }));
+    }
     const supplier = await tx.supplier.findUnique({ where: { restaurantId_id: { restaurantId, id: data.supplierId } } });
     if (!supplier) throw new WorkspaceError(400, "INVALID_SUPPLIER", "Fournisseur introuvable dans votre espace.");
     const product = await tx.product.create({ data: { ...data, id: operationId, restaurantId } });
