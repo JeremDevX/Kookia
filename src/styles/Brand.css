@@ -29,7 +29,7 @@ body .btn[aria-disabled="true"]:hover {
   box-shadow: none;
   transform: none;
 }
-body :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+body :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: var(--size-3) solid var(--color-focus);
   outline-offset: var(--size-3);
 }
