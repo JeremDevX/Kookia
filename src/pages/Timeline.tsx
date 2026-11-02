@@ -185,7 +185,7 @@ export default function Timeline() {
         <input id="timeline-as-of" type="date" max={today} value={asOf}
           onChange={(event) => { setAsOf(event.target.value); updateSearchParams({ asOf: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
       </label>
-      <p>{rangeDays.toLocaleString("fr-FR")} jours affichés. La période n’a pas de limite de durée. « Connu au » masque les pièces modifiées après la date choisie.</p>
+      <p>{validRequest && `${rangeDays.toLocaleString("fr-FR")} jours affichés. `}La période n’a pas de limite de durée. « Connu au » masque les pièces modifiées après la date choisie.</p>
     </section>
 
     <section className="timeline-key" aria-label="Origine et niveau de preuve">
@@ -208,7 +208,7 @@ export default function Timeline() {
       <form className="timeline-search" onSubmit={applySearch}>
         <label htmlFor="timeline-search">Rechercher dans l’historique</label>
         <div className="timeline-search-actions">
-          <input ref={searchInputRef} id="timeline-search" type="search" value={searchDraft}
+          <input ref={searchInputRef} id="timeline-search" type="search" placeholder="Libellé, détail ou précision" value={searchDraft}
             onChange={(event) => { setSearchDraft(event.target.value); updateSearchParams({ qDraft: event.target.value }); }} aria-describedby="timeline-search-help" />
           <Button type="submit" variant="outline">Rechercher</Button>
           {(search || searchDraft) && <Button type="button" variant="outline" onClick={clearSearch}>Effacer</Button>}
@@ -248,6 +248,6 @@ export default function Timeline() {
         </div>}
       </>}
     </>}
-    <p className="timeline-read-only">Lecture seule : les liens ouvrent les espaces actuels sans rejouer une décision ni modifier les données. Les documents n’ont pas de journal de versions ; leur première saisie et leurs états antérieurs restent inconnus.</p>
+    <section className="timeline-read-only"><h2>Lecture seule</h2><p>Les liens ouvrent les espaces actuels sans rejouer une décision ni modifier les données. Les documents n’ont pas de journal de versions ; leur première saisie et leurs états antérieurs restent inconnus.</p></section>
   </div>;
 }
