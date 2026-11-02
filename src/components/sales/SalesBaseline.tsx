@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { getSalesBaseline, type SalesBaseline as Baseline } from "../../services/salesService";
+import { baselineSourceLabels } from "./baselineSourceLabels";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 
 const PAGE_SIZE = 50;
@@ -33,6 +34,7 @@ export default function SalesBaseline() {
   const [error, setError] = useState("");
   const [loadedRequestKey, setLoadedRequestKey] = useState("");
   const loading = loadedRequestKey !== requestKey;
+  const sourceLabels = baselineSourceLabels(baseline?.provenance ?? "recorded_sales");
   const [page, setPage] = useState(0);
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -60,7 +62,7 @@ export default function SalesBaseline() {
 
   return <section className="sales-panel" aria-labelledby="sales-baseline-title">
     <h2 ref={headingRef} id="sales-baseline-title" tabIndex={-1}>Prévision des ventes</h2>
-    <p className="sales-baseline-intro">Cette prévision porte sur les ventes enregistrées. Les réceptions servent aux sorties estimées par recette ci-dessus ; elles ne remplacent pas l’historique de ventes.</p>
+    <p className="sales-baseline-intro">Cette prévision utilise un historique de ventes. Les réceptions servent aux sorties estimées par recette ci-dessus ; elles ne remplacent pas l’historique de ventes.</p>
     {loading ? <p role="status">Calcul de la prévision…</p> : error ?
       <div role="alert"><p>Prévision indisponible : {error}</p>
         <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryBaseline}>Recharger la prévision</Button>
@@ -70,7 +72,7 @@ export default function SalesBaseline() {
           <div><dt>Services complets</dt><dd>{baseline.completeServiceDays} / {baseline.requiredConsecutiveDays} · {baseline.openServiceDays} ouverts</dd></div>
           <div><dt>Prévision visée</dt><dd>{displayDate(baseline.forecastDate)}</dd></div>
         </dl>
-        {baseline.provenance === "mixed" && <p className="sales-baseline-note">Certaines lignes ne sont pas retenues parmi les ventes enregistrées et ne complètent pas le calendrier de service.</p>}
+        {sourceLabels.note && <p className="sales-baseline-note">{sourceLabels.note}</p>}
         {baseline.excludedSimulationRows > 0 && <p className="sales-baseline-note">{baseline.excludedSimulationRows} ligne(s) ne sont pas retenues dans le calcul des ventes.</p>}
         <details className="sales-baseline-method">
           <summary>Méthode et contexte</summary>
@@ -96,8 +98,8 @@ export default function SalesBaseline() {
             <p id="sales-baseline-table-hint" className="sales-baseline-table-hint">Sur petit écran, les résultats sont présentés en fiches. Sur grand écran, faites défiler le tableau horizontalement ; au clavier, placez le focus sur la zone puis utilisez ← et →.</p>
             <div className="sales-baseline-table"><div className="sales-table-wrap" role="region" aria-label="Prévision des ventes par article" aria-describedby="sales-baseline-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="sales-table">
               <thead><tr>
-              <th>Article vendu</th><th>Prévision pour le {baseline.forecastDate}</th>
-              <th>Volume observé · {baseline.evaluationDays} j</th><th>EAM · moyenne 7 j</th><th>EAM · même jour J−7</th>
+              <th>Article</th><th>Prévision pour le {baseline.forecastDate}</th>
+              <th>{sourceLabels.volume} · {baseline.evaluationDays} j</th><th>EAM · moyenne 7 j</th><th>EAM · même jour J−7</th>
               <th>WAPE · moyenne 7 j</th><th>WAPE · même jour J−7</th><th>Projection recette datée</th>
             </tr></thead><tbody>{baseline.items.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((item) => <tr key={item.saleItemId}>
               <td>{item.saleItemName}</td><td>{formatQuantity(item.forecastQuantity)} unités</td>
@@ -114,7 +116,7 @@ export default function SalesBaseline() {
                 <h3>{item.saleItemName}</h3>
                 <dl>
                   <div><dt>Prévision pour le {baseline.forecastDate}</dt><dd>{formatQuantity(item.forecastQuantity)} unités</dd></div>
-                  <div><dt>Volume observé · {baseline.evaluationDays} j</dt><dd>{formatQuantity(item.backtest.observedQuantity)} unités</dd></div>
+                  <div><dt>{sourceLabels.volume} · {baseline.evaluationDays} j</dt><dd>{formatQuantity(item.backtest.observedQuantity)} unités</dd></div>
                   <div><dt>EAM · moyenne 7 j</dt><dd>{formatQuantity(item.backtest.rollingMean7.meanAbsoluteError)} unités · WAPE {item.backtest.rollingMean7.weightedAbsolutePercentageError === null ? "non calculable" : `${formatQuantity(item.backtest.rollingMean7.weightedAbsolutePercentageError)} %`}</dd></div>
                   <div><dt>EAM · même jour J−7</dt><dd>{formatQuantity(item.backtest.previousWeekday.meanAbsoluteError)} unités · WAPE {item.backtest.previousWeekday.weightedAbsolutePercentageError === null ? "non calculable" : `${formatQuantity(item.backtest.previousWeekday.weightedAbsolutePercentageError)} %`}</dd></div>
                   <div><dt>Projection recette datée</dt><dd><RecipeProjectionDetails item={item} /></dd></div>

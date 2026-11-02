@@ -29,7 +29,7 @@ function PredictionsContent({ requestedFrom, requestedTo }: { requestedFrom: str
       <div>
         <h1>Prévisions</h1>
         <p className="workspace-subtitle">
-          Deux calculs distincts : sorties estimées d’ingrédients et ventes prévisionnelles fondées sur les ventes enregistrées.
+          Deux calculs distincts : sorties estimées d’ingrédients et ventes prévisionnelles fondées sur un historique de ventes.
         </p>
       </div>
     </header>
