@@ -27,6 +27,7 @@ export default function Settings() {
 
   return (
     <div className="settings-container workspace-page">
+      <div className="settings-heading-panel">
       <header className="workspace-header">
         <div>
           <h1>Paramètres</h1>
@@ -49,6 +50,7 @@ export default function Settings() {
               </button>
             ))}
           </nav>
+      </div>
 
         <div className="settings-content" id="settings-panel">
           {activeTab === "restaurant" && <><RestaurantSettings onSaved={weather.state.reload} />
