@@ -1,12 +1,14 @@
-:is(.sales-page, .service-page) { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-lg); min-width: var(--number-0); padding: var(--size-36) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)) var(--spacing-2xl); background: var(--color-auth-field); }
-:is(.sales-page, .service-page) > .workspace-header, .sales-panel, .service-page .service-operation-panel { min-width: var(--number-0); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); padding: var(--spacing-xl); box-shadow: var(--shadow-figma-panel); }
+:is(.sales-page, .service-page) { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--size-20); min-width: var(--number-0); padding: var(--size-36) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)) var(--spacing-2xl); background: var(--color-auth-field); }
+:is(.sales-page, .service-page) > .workspace-header, .sales-panel, .service-page .service-operation-panel { min-width: var(--number-0); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); padding: var(--spacing-lg); }
 :is(.sales-page, .service-page) > .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
 :is(.sales-page, .service-page) > .workspace-header .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); }
 .sales-panel h2, .service-page .service-operation-panel h2 { font-size: var(--font-size-lg); }
 .service-page .sales-panel a { color: var(--color-accent-text); text-decoration: underline; text-underline-offset: var(--size-3); }
 .sales-form, .sales-filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--spacing-md); }
 .sales-form label, .sales-filters label { display: grid; gap: var(--spacing-sm); min-width: min(var(--unit-100percent), var(--size-180)); }
-.sales-form input, .sales-form select, .sales-form textarea, .sales-filters input { width: var(--unit-100percent); min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); }
+.sales-form input, .sales-form select, .sales-form textarea, .sales-filters input { width: var(--unit-100percent); min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-auth-field); color: var(--color-text-primary); }
+.dated-service-note, .dated-service-submit { flex-basis: var(--unit-100percent); }
+.dated-service-note label { max-width: var(--size-320); }
 .sales-form textarea, .sales-reconciliation-card textarea, .sales-outcome-actions textarea { min-height: var(--size-80); }
 .sales-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
 .sales-file-label, .sales-mapping-label { display: grid; gap: var(--spacing-sm); }

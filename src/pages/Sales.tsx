@@ -142,7 +142,7 @@ export default function Sales() {
           {latestService.status === "closed" ? " Aucune activité n’était prévue." : latestService.coverage === "complete" && latestService.salesCount === 0 ? " Zéro vente observé après revue complète." : latestService.coverage !== "complete" ? " " + latestService.salesCount + " ligne(s) enregistrée(s) ; les absences restent inconnues." : " " + latestService.salesCount + " ligne(s) enregistrée(s)."}
           {latestService.salesCount > 0 ? ` Sources : ${describeServiceSources(latestService.sources)}.` : ""}</p> :
         <p>Aucun jour de service renseigné. Une absence de donnée n'est ni un jour fermé ni zéro vente.</p>}
-      <div className="sales-actions"><a href="#sales-ticket-title">Transcrire un Ticket Z</a><a href="#sales-import-title">Importer un CSV Kookia</a><a href="#sales-entry-title">Saisir une vente</a>
+      <div className="sales-actions"><a href="#sales-import-title">Importer un CSV Kookia</a><a href="#sales-ticket-title">Transcrire un Ticket Z</a><a href="#sales-entry-title">Saisir une vente</a>
         <Link to="/predictions">Voir les prévisions</Link></div>
       <small>Ces ventes alimentent les indicateurs, pas encore les achats suggérés.</small>
     </section>

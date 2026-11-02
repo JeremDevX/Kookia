@@ -45,8 +45,8 @@ export default function DatedServices({ today, refreshToken }: { today: string; 
       <label>Ouverture prévue<select disabled={busy} value={plannedOpen ? "open" : "closed"} onChange={(event) => setPlannedOpen(event.target.value === "open")}><option value="open">Ouvert</option><option value="closed">Fermé</option></select></label>
       <label>Ventes revues<select disabled={busy || date > today} value={coverage} onChange={(event) => setCoverage(event.target.value as SalesCoverage)}><option value="missing">Non renseignées</option><option value="partial">Partielles</option><option value="complete">Complètes, après revue</option></select></label>
       <label>Couverts observés (facultatif)<input type="number" min="0" max="100000" step="1" disabled={busy || date > today} value={covers} onChange={(event) => setCovers(event.target.value)} /></label>
-      <label>Motif / contexte, sans donnée personnelle<input maxLength={1000} value={note} onChange={(event) => setNote(event.target.value)} /></label>
-      <Button disabled={busy || Boolean(error)} type="submit">{busy ? "Chargement…" : "Enregistrer le service"}</Button>
+      <div className="dated-service-note"><label>Motif / contexte, sans donnée personnelle<input maxLength={1000} value={note} onChange={(event) => setNote(event.target.value)} /></label></div>
+      <div className="dated-service-submit"><Button disabled={busy || Boolean(error)} type="submit">{busy ? "Chargement…" : "Enregistrer le service"}</Button></div>
     </form>
     {error && <p role="alert">{error} <button type="button" onClick={() => void load()}>Réessayer</button></p>}{status && <p role="status">{status}</p>}
     <ul>{services.map((service) => <li key={service.slot}><strong>{serviceSlotLabels[service.slot]}</strong> · {service.plannedOpen ? "ouverture prévue" : "fermeture prévue"}
