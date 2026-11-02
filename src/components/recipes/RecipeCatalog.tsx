@@ -32,7 +32,7 @@ export default function RecipeCatalog({ recipes, loading, onEdit, onProduce, edi
         <option value="recent">Plus récentes</option><option value="name">Nom de A à Z</option>
       </select></label>
     </div>
-    {loading ? <p role="status">Chargement du catalogue…</p> : visible.length === 0 ? <p role="status" className="recipe-catalog-empty">Aucune recette ne correspond à cette recherche.</p> :
+    {loading ? <p role="status">Chargement du catalogue…</p> : visible.length === 0 ? <p role="status" className="recipe-catalog-empty">{recipes.length === 0 ? "Aucune recette enregistrée." : "Aucune recette ne correspond à ces filtres."}</p> :
       <div className="recipe-catalog-grid">{visible.map((recipe) => <article className="recipe-catalog-card" key={recipe.id}>
         <div className="recipe-catalog-card-heading"><h3>{recipe.name}</h3><span>{recipe.category}</span></div>
         <p className="recipe-catalog-meta"><Clock size={14} aria-hidden="true" /> {recipe.prepTime} min · {recipe.yieldPortions} portions par lot</p>

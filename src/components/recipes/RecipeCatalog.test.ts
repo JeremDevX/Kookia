@@ -38,3 +38,10 @@ it("désactive la modification tant qu’un éditeur est ouvert", () => {
   const html = renderToStaticMarkup(createElement(RecipeCatalog, { recipes: [recipe], loading: false, editing: true, onEdit: () => {}, onProduce: () => {} }));
   expect(html).toMatch(/<button[^>]*disabled[^>]*aria-label="Modifier la recette Soupe"|<button[^>]*aria-label="Modifier la recette Soupe"[^>]*disabled/);
 });
+
+
+it("distingue un catalogue vide d’une recherche sans résultat", () => {
+  const html = renderToStaticMarkup(createElement(RecipeCatalog, { recipes: [], loading: false, onEdit: () => {}, onProduce: () => {} }));
+  expect(html).toContain("Aucune recette enregistrée.");
+  expect(html).not.toContain("Aucune recette ne correspond");
+});
