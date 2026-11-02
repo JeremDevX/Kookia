@@ -1,7 +1,7 @@
 import type { PurchaseOrder } from "../../services/orderService";
 import { isValidISODate } from "../../utils/date";
 
-export type ReceiptEvent = { date: string; orderId: string; label: string; simulated: boolean } &
+export type ReceiptEvent = { date: string; orderId: string; label: string; simulated: boolean; items: Array<{ name: string; quantity: number; unit: string }> } &
   ({ kind: "expected" } | { kind: "received"; receiptId: string });
 export const receiptEventHref = (event: ReceiptEvent) => event.kind === "expected"
   ? `/orders?view=orders&action=receive#order-${encodeURIComponent(event.orderId)}`
@@ -37,19 +37,23 @@ export function receiptEvents(orders: PurchaseOrder[], supplierId = ""): { event
   const events: ReceiptEvent[] = [];
   let undated = 0;
   for (const order of orders) {
-    const pending = new Map<string, Set<string>>();
+    const pending = new Map<string, Map<string, { name: string; items: ReceiptEvent["items"] }>>();
     for (const line of order.lines) {
       if (line.remainingQuantity <= 0 || (supplierId && line.supplierId !== supplierId)) continue;
       if (!isValidISODate(line.expectedDeliveryDate ?? null)) { undated++; continue; }
-      const suppliers = pending.get(line.expectedDeliveryDate!) ?? new Set<string>();
-      suppliers.add(line.supplierName);
+      const suppliers = pending.get(line.expectedDeliveryDate!) ?? new Map();
+      const group = suppliers.get(line.supplierId) ?? { name: line.supplierName, items: [] };
+      group.items.push({ name: line.productName, quantity: line.remainingQuantity, unit: line.unit });
+      suppliers.set(line.supplierId, group);
       pending.set(line.expectedDeliveryDate!, suppliers);
     }
-    for (const [date, suppliers] of pending) events.push({ date, orderId: order.id, label: [...suppliers].join(" · "), kind: "expected", simulated: order.status.startsWith("simulated") });
+    for (const [date, suppliers] of pending) for (const group of suppliers.values()) events.push({ date, orderId: order.id, label: group.name, items: group.items, kind: "expected", simulated: order.status.startsWith("simulated") });
     for (const receipt of order.receipts) {
       if (!isValidISODate(receipt.deliveryDate)) continue;
-      if (supplierId && !receipt.lines.some((receiptLine) => receiptLine.receivedQuantity > 0 && order.lines.some((line) => line.id === receiptLine.orderLineId && line.supplierId === supplierId))) continue;
-      events.push({ date: receipt.deliveryDate, orderId: order.id, receiptId: receipt.id, label: receipt.deliveryReference, kind: "received", simulated: receipt.simulated });
+      const lines = receipt.lines.filter((receiptLine) => receiptLine.receivedQuantity > 0 && (!supplierId || order.lines.some((line) => line.id === receiptLine.orderLineId && line.supplierId === supplierId)));
+      if (supplierId && lines.length === 0) continue;
+      const items = lines.map((line) => ({ name: line.productName, quantity: line.receivedQuantity, unit: line.unit }));
+      events.push({ date: receipt.deliveryDate, orderId: order.id, receiptId: receipt.id, label: receipt.deliveryReference, items, kind: "received", simulated: receipt.simulated });
     }
   }
   return { events, undated };

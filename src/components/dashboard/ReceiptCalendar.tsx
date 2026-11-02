@@ -7,6 +7,8 @@ import "./ReceiptCalendar.css";
 
 const displayDate = (date: string, options: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat("fr-FR", { ...options, timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
+const displayItems = (items: Array<{ name: string; quantity: number; unit: string }>) => items.length
+  ? items.map((item) => `${item.name} · ${item.quantity.toLocaleString("fr-FR")} ${item.unit}`).join(" ; ") : "Aucun produit reçu";
 
 export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] }) {
   const [params, setParams] = useSearchParams();
@@ -52,10 +54,10 @@ export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] })
       <label>Statut<select value={status} onChange={(event) => updateCalendar("receiptStatus", event.target.value === "all" ? "" : event.target.value)}><option value="all">Tous les statuts</option><option value="expected">À recevoir</option><option value="exceeded">Date prévue dépassée</option><option value="received">Réception enregistrée</option></select></label></div>
     {status !== "received" && status !== "exceeded" && undated > 0 && <p className="receipt-calendar-note">{undated} ligne{undated > 1 ? "s" : ""} à recevoir sans date prévue : <Link to="/orders?view=orders">consulter les commandes</Link>.</p>}
     {period === "week" ? <div className="receipt-calendar-table-wrap"><table className="receipt-calendar-table">
-      <thead><tr><th scope="col">Date</th><th scope="col">Fournisseur ou référence</th><th scope="col">Statut</th><th scope="col">Action</th></tr></thead>
+      <thead><tr><th scope="col">Date</th><th scope="col">Fournisseur ou référence</th><th scope="col">Contenu</th><th scope="col">Statut</th><th scope="col">Action</th></tr></thead>
       <tbody>{weekEvents.map((event, index) => <tr key={`${event.orderId}-${event.kind}-${index}`}>
         <td><time dateTime={event.date}>{displayDate(event.date, { weekday: "short", day: "numeric", month: "short" })}</time></td>
-        <th scope="row">{event.label}</th><td><span className={`receipt-calendar-status ${event.kind}`}>{dateExceeded(event, today) ? "Date prévue dépassée" : event.kind === "expected" ? "À recevoir" : "Réception enregistrée"}{event.simulated ? " · simulation" : ""}</span></td>
+        <th scope="row">{event.label}</th><td>{displayItems(event.items)}</td><td><span className={`receipt-calendar-status ${event.kind}`}>{dateExceeded(event, today) ? "Date prévue dépassée" : event.kind === "expected" ? "À recevoir" : "Réception enregistrée"}{event.simulated ? " · simulation" : ""}</span></td>
         <td><Link aria-label={`${event.kind === "expected" ? "Rapprocher la livraison" : "Voir la réception"} : ${event.label}, ${displayDate(event.date, { day: "numeric", month: "long", year: "numeric" })}`} to={receiptEventHref(event)}>{event.kind === "expected" ? "Rapprocher" : "Voir la réception"}</Link></td>
       </tr>)}</tbody>
     </table>{weekEvents.length === 0 && <p className="receipt-calendar-note">Aucune réception datée cette semaine.</p>}</div> : <div className="receipt-calendar-days receipt-calendar-month">
