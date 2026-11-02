@@ -54,8 +54,8 @@ export default function InvitationAccept({ onAccepted }: { onAccepted?: () => vo
       <form className="auth-form" onSubmit={(event) => void authenticate(event)}>
         {registering && <Input id="invite-name" label="Nom affiché" required autoComplete="name" value={form.displayName} disabled={busy} onChange={set("displayName")} />}
         <Input id="invite-email" label="Email" type="email" required autoComplete="email" value={form.email} disabled={busy} onChange={set("email")} />
-        <Input id="invite-password" label="Mot de passe" type="password" required minLength={registering ? 10 : undefined} autoComplete={registering ? "new-password" : "current-password"} value={form.password} disabled={busy} onChange={set("password")} />
-        {registering && <><small>10 caractères minimum.</small><Input id="invite-confirmation" label="Confirmation du mot de passe" type="password" required autoComplete="new-password" value={form.confirmation} disabled={busy} onChange={set("confirmation")} /></>}
+        <Input id="invite-password" aria-describedby={registering ? "invite-password-help" : undefined} label="Mot de passe" type="password" required minLength={registering ? 10 : undefined} autoComplete={registering ? "new-password" : "current-password"} value={form.password} disabled={busy} onChange={set("password")} />
+        {registering && <><small id="invite-password-help">10 caractères minimum.</small><Input id="invite-confirmation" label="Confirmation du mot de passe" type="password" required autoComplete="new-password" value={form.confirmation} disabled={busy} onChange={set("confirmation")} /></>}
         <Button type="submit" disabled={busy}>{busy ? "Veuillez patienter…" : registering ? "Créer mon compte" : "Se connecter"}</Button>
       </form><p className="auth-footer"><button type="button" className="btn btn-ghost" disabled={busy} onClick={() => { setRegistering((value) => !value); setError(""); }}>{registering ? "J’ai déjà un compte" : "Créer un compte"}</button></p></>}
   </section></AuthLayout>;
