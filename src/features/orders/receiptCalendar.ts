@@ -22,13 +22,13 @@ export function shiftMonth(date: string, months: number): string {
   return isoFromDate(value);
 }
 
-export function receiptEvents(orders: PurchaseOrder[]): { events: ReceiptEvent[]; undated: number } {
+export function receiptEvents(orders: PurchaseOrder[], supplierId = ""): { events: ReceiptEvent[]; undated: number } {
   const events: ReceiptEvent[] = [];
   let undated = 0;
   for (const order of orders) {
     const pending = new Map<string, Set<string>>();
     for (const line of order.lines) {
-      if (line.remainingQuantity <= 0) continue;
+      if (line.remainingQuantity <= 0 || (supplierId && line.supplierId !== supplierId)) continue;
       if (!isValidISODate(line.expectedDeliveryDate ?? null)) { undated++; continue; }
       const suppliers = pending.get(line.expectedDeliveryDate!) ?? new Set<string>();
       suppliers.add(line.supplierName);
@@ -37,6 +37,7 @@ export function receiptEvents(orders: PurchaseOrder[]): { events: ReceiptEvent[]
     for (const [date, suppliers] of pending) events.push({ date, orderId: order.id, label: [...suppliers].join(" · "), kind: "expected", simulated: order.status.startsWith("simulated") });
     for (const receipt of order.receipts) {
       if (!isValidISODate(receipt.deliveryDate)) continue;
+      if (supplierId && !receipt.lines.some((receiptLine) => receiptLine.receivedQuantity > 0 && order.lines.some((line) => line.id === receiptLine.orderLineId && line.supplierId === supplierId))) continue;
       events.push({ date: receipt.deliveryDate, orderId: order.id, label: receipt.deliveryReference, kind: "received", simulated: receipt.simulated });
     }
   }
