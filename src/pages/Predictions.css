@@ -55,3 +55,10 @@
     padding: var(--spacing-md);
   }
 }
+
+.forecast-needs-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--spacing-sm); }
+.forecast-needs-heading span { padding: var(--spacing-xs) var(--spacing-sm); border-radius: var(--radius-compact); background: var(--color-primary-light); color: var(--color-accent-text); font-size: var(--font-size-caption); white-space: nowrap; }
+
+.forecast-needs-table .sales-table { font-size: var(--font-size-sm); }
+.forecast-needs-table .sales-table th { font-weight: var(--font-weight-regular); }
+.forecast-needs-table .sales-table thead th { color: var(--color-text-muted); }

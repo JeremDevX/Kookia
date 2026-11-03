@@ -23,7 +23,7 @@ export function ForecastNeedsContent({ result, retry }: { result: Result; retry:
       <p>Certains besoins ne peuvent pas être calculés. Vérifiez les horaires, les cartes et les ventes des services.</p>
       <details><summary>Voir les limites</summary><ul>{forecast.blockers.map((blocker, index) => <li key={index}>{blocker}</li>)}</ul></details>
       <Link to="/services">Vérifier les services</Link></div>}
-    {forecast.ingredientNeeds.length ? <div className="sales-table-wrap" role="region" aria-label="Besoins estimés en ingrédients" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
+    {forecast.ingredientNeeds.length ? <div className="sales-table-wrap forecast-needs-table" role="region" aria-label="Besoins estimés en ingrédients" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
       <table className="sales-table"><thead><tr><th scope="col">Produit</th><th scope="col">Besoin estimé</th></tr></thead>
         <tbody>{forecast.ingredientNeeds.map((ingredient) => <tr key={ingredient.productId}>
           <th scope="row">{ingredient.productName}</th><td>{ingredient.quantity.toLocaleString("fr-FR", { maximumFractionDigits: 3 })} {ingredient.unit}</td>
@@ -64,7 +64,8 @@ export default function ForecastNeeds() {
     return () => { active = false; };
   }, [range, key]);
   return <section className="sales-panel" aria-labelledby="forecast-needs-title">
-    <h2 id="forecast-needs-title">Besoins prévus · 7 prochains jours</h2>
+    <div className="forecast-needs-heading"><h2 id="forecast-needs-title">Besoins prévus · 7 prochains jours</h2>
+      {result.status === "success" && result.forecast.ingredientNeeds.length > 0 && <span>{result.forecast.ingredientNeeds.length} produit{result.forecast.ingredientNeeds.length > 1 ? "s" : ""}</span>}</div>
     <ForecastNeedsContent result={result} retry={() => setRevision((value) => value + 1)} />
   </section>;
 }
