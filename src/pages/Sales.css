@@ -7,7 +7,15 @@
 .sales-form, .sales-filters { display: flex; flex-wrap: wrap; align-items: end; gap: var(--spacing-md); }
 .sales-form label, .sales-filters label { display: grid; gap: var(--spacing-sm); min-width: min(var(--unit-100percent), var(--size-180)); }
 .sales-form input, .sales-form select, .sales-form textarea, .sales-filters input { width: var(--unit-100percent); min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-auth-field); color: var(--color-text-primary); }
-.dated-service-note, .dated-service-submit { flex-basis: var(--unit-100percent); }
+.dated-services { display: grid; gap: var(--spacing-md); }
+.dated-services h2 { font-size: var(--font-size-md); }
+.dated-services > p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_5); }
+.dated-service-form { display: grid; grid-template-columns: repeat(var(--number-4), minmax(var(--number-0), var(--unit-1fr))) minmax(var(--number-0), var(--unit-1fr)); }
+.dated-service-form > label { min-width: var(--number-0); font-size: var(--font-size-caption); }
+.dated-service-note, .dated-service-submit { grid-column: var(--number-1) / var(--number-negative-1); }
+.dated-service-note label { font-size: var(--font-size-caption); }
+@media (--media-tablet) { .dated-service-form { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); } }
+@media (--media-phone) { .dated-service-form { grid-template-columns: var(--unit-1fr); } }
 .dated-service-note label { max-width: var(--size-320); }
 .sales-form textarea, .sales-reconciliation-card textarea, .sales-outcome-actions textarea { min-height: var(--size-80); }
 .sales-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }

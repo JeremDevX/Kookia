@@ -36,10 +36,10 @@ export default function DatedServices({ today, refreshToken }: { today: string; 
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Enregistrement impossible."); }
     finally { setBusy(false); }
   };
-  return <section className="sales-panel" aria-labelledby="dated-service-title">
+  return <section className="sales-panel dated-services" aria-labelledby="dated-service-title">
     <h2 id="dated-service-title">Services midi et soir</h2>
     <p><Link to="/settings">Renseigner les horaires hebdomadaires</Link>. Ici, déclarez une fermeture exceptionnelle ou revoyez les ventes du service. Les anciennes ventes restent non ventilées tant que vous ne les attribuez pas.</p>
-    <form className="sales-form" onSubmit={(event) => void submit(event)}>
+    <form className="sales-form dated-service-form" onSubmit={(event) => void submit(event)}>
       <label>Date<input type="date" required value={date} onChange={(event) => { setDate(event.target.value); setStatus(""); }} /></label>
       <label>Service<select value={slot} onChange={(event) => { setSlot(event.target.value as ServiceSlot); setStatus(""); }}><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
       <label>Ouverture prévue<select disabled={busy} value={plannedOpen ? "open" : "closed"} onChange={(event) => setPlannedOpen(event.target.value === "open")}><option value="open">Ouvert</option><option value="closed">Fermé</option></select></label>
