@@ -305,6 +305,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Champ de saisie — normal, focus, erreur | `86:28` | 360 × 172 |
 | Sélecteur — normal, focus, erreur et aperçu | `146:365`, `146:378` | 360 × 172 chacun |
 | Présentation authentification — panneau réutilisable | `126:47` | 600 × 900 |
+| Recettes — fiches candidates : panneau fermé et ouvert | `159:423`, `159:425` | 900 × 71 ; 900 × 492 |
 | Configuration — équipe : lien créé et lien masqué | `152:408`, `153:416` | 1440 × 1420 chacun |
 | Invitation — connexion, inscription, acceptation, confirmation, lien invalide, session indisponible | `120:30`, `123:33`, `117:29`, `120:56`, `117:45`, `123:63` | 1440 × 900 chacun |
 
@@ -313,6 +314,8 @@ Le 3 novembre 2026, les éléments de B ont été regroupés en dix sections num
 Le 3 novembre 2026, la frame A `673:43390` observée dans Firefox montre la connexion, pas un formulaire d’inscription autonome. B comporte désormais la section « 11 · Inscription — accès » et la frame `128:232`, créée à partir du formulaire réel et des composants d’authentification existants. Le rendu et la police Poppins ont été contrôlés. La frame `130:268` représente l’erreur de confirmation différente, observée dans Firefox sur la démo avec données fictives ; les autres erreurs et liens de prototype restent à compléter.
 
 Le 3 novembre 2026, l’état d’inscription « serveur indisponible » a été ajouté dans B (`138:305`). Placé initialement hors de sa section par erreur, il a été déplacé sous les deux états existants dans « 11 · Inscription — accès ». Le contrôle structurel ne détecte aucun débordement ni chevauchement entre sections ou entre leurs éléments directs. Le texte correspond au repli de l’application ; le rendu a été contrôlé par capture Figma. Dans Firefox, le canevas Figma est resté noir : le contrôle visuel dans ce navigateur reste à refaire.
+
+La section B « 13 · Recettes — fiches candidates » présente le panneau fermé (`159:423`) et ouvert (`159:425`) avec une hypothèse fictive à revoir. Les deux états sont constitués de calques modifiables et utilisent les boutons existants. Le rendu ouvert a été contrôlé par capture Figma ; dans Firefox, le canevas est resté noir. Les clics du prototype restent à vérifier.
 
 La section B « 12 · Configuration — invitations » contient l’état Équipe avec lien créé (`152:408`), absent de A. Il reprend le propriétaire, le rôle, la copie du lien et le blocage de la progression observés dans Firefox sur base jetable ; le lien représenté est fictif. La capture Figma montre des calques modifiables et sept instances, sans image intégrée ; aucun chevauchement de sections détecté. L’état suivant (`153:416`) masque le lien et réactive les actions ; « J’ai terminé » y est relié dans les propriétés du prototype. Cela ne prouve pas que le lien a été transmis. Le clic et la comparaison visuelle de B dans Firefox restent à vérifier.
 
