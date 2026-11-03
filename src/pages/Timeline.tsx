@@ -5,11 +5,9 @@ import Button from "../components/common/Button";
 import { getTimeline, type TimelineEvent, type TimelineProvenance, type TimelineResult } from "../services/timelineService";
 import { formatLocalISODate } from "../utils/date";
 import { filterTimelineEvents, TIMELINE_VISIBLE_BATCH_SIZE } from "./timelineSelectors";
+import { watchTimelineToday } from "./timelineToday";
 import "../styles/Workspace.css";
 import "./Timeline.css";
-
-const today = formatLocalISODate(new Date());
-const initialFrom = `${today.slice(0, 4)}-01-01`;
 
 const provenanceLabels: Record<TimelineProvenance, string> = {
   source: "Pièce source",
@@ -56,7 +54,8 @@ function eventTime(event: TimelineEvent) {
 
 export default function Timeline() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [from, setFrom] = useState(() => dateParam(searchParams, "from", initialFrom));
+  const [today, setToday] = useState(() => formatLocalISODate(new Date()));
+  const [from, setFrom] = useState(() => dateParam(searchParams, "from", `${today.slice(0, 4)}-01-01`));
   const [to, setTo] = useState(() => dateParam(searchParams, "to", today));
   const [asOf, setAsOf] = useState(() => dateParam(searchParams, "asOf", today));
   const [requestAttempt, setRequestAttempt] = useState(0);
@@ -106,6 +105,8 @@ export default function Timeline() {
     }
     return [...groups.entries()];
   }, [visibleEvents]);
+
+  useEffect(() => watchTimelineToday(setToday), []);
 
   useEffect(() => {
     if (!requestKey) return;

@@ -55,7 +55,7 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Ventes `/sales` | B `8:2` ; A `673:44664`, `673:44732` | À vérifier | À vérifier | Transcription manuelle ; OCR absent | À vérifier | CSV trop volumineux signalé dans Firefox ; remplacement pendant analyse couvert par test | En cours |
 | Services `/services` | B `16:2` | À vérifier | Saisies de fiche protégées avant départ | Navigation interne et retour demandent confirmation | À vérifier | Firefox synthétique : lien, retour, changement de service et annulation vérifiés | En cours |
 | Plus `/more` | B `22:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
-| Historique `/history` | B `18:2`, `21:2` | À vérifier | À vérifier | À vérifier | À vérifier | À vérifier | À faire |
+| Historique `/history` | B `18:2`, `21:2` | Filtres, légende, recherche et chronologie présents | Provenance et dates distinguées | Lecture seule ; date maximale actualisée | Comparaison partielle | Firefox : accès et mobile sans débordement ; autres états à vérifier | En cours |
 | Ancien historique `/history/replay/:id` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |
 | Route inconnue `*` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |
 
