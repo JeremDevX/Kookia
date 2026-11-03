@@ -27,8 +27,8 @@ et le fonctionnement complet restent à vérifier ; aucune ligne n'est validée.
 | Services | `/services` | `src/pages/Services.tsx` | Carte, prévision, fiche et incidents dans le code | P1 | À faire |
 | Plus | `/more` | `src/pages/More.tsx` | Page présente | P2 | À faire |
 | Historique | `/history` | `src/pages/Timeline.tsx` | Page présente | P1 | À faire |
-| Ancien lien historique | `/history/replay/:id` | `src/app/router/AppRouter.tsx` | Redirection vers `/history`, query conservée | P2 | À faire |
-| Route inconnue | `*` | `src/app/router/AppRouter.tsx` | Redirection vers `/` dans le code | P2 | À faire |
+| Ancien lien historique | `/history/replay/:id` | `src/app/router/AppRouter.tsx` | Redirection vers `/history`, query conservée | P2 | Vérifiée dans Firefox sur démo synthétique |
+| Route inconnue | `*` | `src/app/router/AppRouter.tsx` | Redirection vers `/` | P2 | Vérifiée dans Firefox sur démo synthétique |
 
 Les routes privées passent par `RequireAuth` ; les pages publiques par
 `PublicOnly`. Les sous-vues et états de chaque page restent à inventorier et
@@ -57,8 +57,8 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Services `/services` | B `16:2` | À vérifier | Saisies de fiche protégées avant départ | Navigation interne et retour demandent confirmation | À vérifier | Firefox synthétique : lien, retour, changement de service et annulation vérifiés | En cours |
 | Plus `/more` | B `22:2` | Cinq destinations et aide regroupées | Descriptions à confronter aux fonctions réelles | Destinations présentes | Espacements et titres rapprochés de B ; fil d’Ariane encore différent | Firefox : lien Recettes et mobile 390 px vérifiés ; autres liens à tester | En cours |
 | Historique `/history` | B `18:2`, `21:2` | Filtres, légende, recherche et chronologie présents | Provenance et dates distinguées | Lecture seule ; date maximale actualisée | Comparaison partielle | Firefox : accès et mobile sans débordement ; autres états à vérifier | En cours |
-| Ancien historique `/history/replay/:id` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |
-| Route inconnue `*` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |
+| Ancien historique `/history/replay/:id` | Sans écran propre | Redirection vers Historique | Paramètre de recherche conservé | Ancien lien maintenu | Sans écran propre | Firefox : `/history/replay/ancien?type=stock` redirige vers `/history?type=stock` | Conforme pour la redirection |
+| Route inconnue `*` | Sans écran propre | Redirection vers le tableau de bord | Sans contenu propre | Repli vers `/` | Sans écran propre | Firefox : `/route-inexistante` redirige vers `/` et affiche le tableau de bord | Conforme pour la redirection |
 
 Le 3 novembre 2026, une inscription fictive complète dans Firefox a confirmé la séquence `/register` → restaurant → équipe → fournisseurs → finalisation → tableau de bord. Les frames A `673:43437` et `673:43467` montrent bien que ces étapes font partie du parcours d’inscription. L’étape Équipe a été espacée et son indicateur rapproché de A. Écarts restants : A prévoit des invitations par adresse et un envoi en fin de configuration ; l’application produit un lien à transmettre manuellement. Le retour depuis Équipe vers Restaurant n’est pas disponible après création de l’établissement ; sa prise en charge exige une modification du parcours enregistré. Les frames Fournisseurs `673:43514` et Finalisation `673:43559` ont été comparées dans Firefox à la démo : suppression de la carte Fournisseurs imbriquée, indicateur des étapes terminées et récapitulatif en cartes Restaurant, Équipe et Fournisseurs. Le formulaire fournisseur s’ouvre et bloque la progression pendant l’édition ; aucun débordement horizontal à 390 px. La maquette liste les membres et propose des modifications directes depuis le récapitulatif ; l’application n’affiche ici que le propriétaire et nécessite de revenir aux étapes précédentes.
 
