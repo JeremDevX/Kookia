@@ -35,6 +35,7 @@
 .settings-container .settings-content .input-field:focus { border-color: var(--color-auth-link); }
 .settings-container .settings-content .btn-primary:not(:disabled) { background: var(--color-nav-text); color: var(--color-surface); }
 .settings-container .settings-content .btn-primary:not(:disabled):hover { background: var(--color-auth-icon-border); }
+.settings-content .restaurant-intro { color: var(--color-nav-muted); font-size: var(--font-size-sm); margin-bottom: var(--spacing-lg); }
 .settings-content .restaurant-form { display: grid; grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); }
 .restaurant-form > .btn { grid-column: var(--number-1) / var(--number-negative-1); justify-self: end; }
 
@@ -138,7 +139,8 @@
   }
 
   .settings-nav { gap: var(--spacing-md); }
-  .settings-content .restaurant-form { grid-template-columns: var(--unit-1fr); }
+  .settings-content .restaurant-intro { color: var(--color-nav-muted); font-size: var(--font-size-sm); margin-bottom: var(--spacing-lg); }
+.settings-content .restaurant-form { grid-template-columns: var(--unit-1fr); }
   .restaurant-form > .btn { width: var(--unit-100percent); }
 
   .grid-2 {

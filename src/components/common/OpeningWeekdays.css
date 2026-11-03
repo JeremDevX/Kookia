@@ -1,0 +1,9 @@
+.opening-weekdays { grid-column: var(--number-1) / var(--number-negative-1); display: grid; gap: var(--spacing-sm); min-width: var(--number-0); margin: var(--number-0); padding: var(--number-0); border: none; }
+.opening-weekdays legend { font-size: var(--font-size-caption); font-weight: var(--font-weight-medium); }
+.opening-weekdays > label { font-size: var(--font-size-sm); }
+.opening-weekdays-options { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.opening-weekdays-options label { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: var(--size-40); padding: var(--spacing-sm) var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-compact); font-size: var(--font-size-sm); cursor: pointer; }
+.opening-weekdays-options label:has(input:checked) { background: var(--color-nav-text); border-color: var(--color-nav-text); color: var(--color-surface); }
+.opening-weekdays-options label:has(input:focus-visible) { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
+.opening-weekdays-options input { position: absolute; opacity: var(--number-0); }
+.opening-weekdays small { color: var(--color-nav-muted); font-size: var(--font-size-caption); }

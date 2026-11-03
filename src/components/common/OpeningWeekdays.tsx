@@ -1,4 +1,5 @@
 import { weekdays } from "./openingWeekdaysUtils";
+import "./OpeningWeekdays.css";
 
 export default function OpeningWeekdays({ value, onChange, disabled }: { value?: number[] | null; onChange: (value: number[] | null) => void; disabled?: boolean }) {
   return <fieldset className="opening-weekdays" disabled={disabled}>
