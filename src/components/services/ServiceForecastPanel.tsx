@@ -41,9 +41,11 @@ export function ForecastPanelContent({ forecast, date, slot }: { forecast: Opera
   return <>
     <p>Source : {provenanceLabels[forecast.provenance]} · calcul au {forecast.asOfDate} · {forecast.excludedServices} services exclus de l’historique qualifié.</p>
     <ForecastServiceView service={selectedForecastService(forecast, date, slot)} />
-    <h3>Hypothèses et limites du calcul</h3>
-    <ul>{[...forecast.assumptions, ...forecast.blockers].map((limit, index) => <li key={index}>{limit}</li>)}</ul>
-    <p>Les prévisions restent des suggestions à revoir par le chef. Les ventes incomplètes et l’absence de carte peuvent limiter le résultat ; la dispersion observée n’est pas une garantie de précision.</p>
+    {forecast.blockers.length > 0 && <ul aria-label="Limites de la prévision">{forecast.blockers.map((limit, index) => <li key={index}>{limit}</li>)}</ul>}
+    <details><summary>Hypothèses et méthode de calcul</summary>
+      <ul>{forecast.assumptions.map((assumption, index) => <li key={index}>{assumption}</li>)}</ul>
+      <p>Les prévisions restent des suggestions à revoir par le chef. Les ventes incomplètes et l’absence de carte peuvent limiter le résultat ; la dispersion observée n’est pas une garantie de précision.</p>
+    </details>
     <details><summary>Besoins matières estimés pour la journée entière (midi et soir)</summary>
       <p>Ce total couvre tous les services inclus du {forecast.fromDate} au {forecast.throughDate}, pas uniquement le service sélectionné. Il ne réserve ni ne déduit de stock.</p>
       <IngredientNeeds ingredients={forecast.ingredientNeeds} />

@@ -30,6 +30,8 @@ describe("service forecasts", () => {
     expect(html).toContain("prévision indisponible"); expect(html).toContain("dispersion inconnue"); expect(html).toContain("2 services observés");
     expect(html).toContain("Ventes enregistrées"); expect(html).toContain("3 services exclus"); expect(html).toContain("ne sont pas des pourcentages exclusifs");
     expect(html).toContain("midi et soir"); expect(html).toContain("n’est pas une garantie de précision");
+    expect(html).toContain('<ul aria-label="Limites de la prévision"><li>Carte à qualifier</li></ul>');
+    expect(html).toContain("<details><summary>Hypothèses et méthode de calcul</summary>");
   });
   it("does not offer a retrospective forecast as an observed fact", () => {
     const html = renderToStaticMarkup(createElement(ServiceForecastPanel, { date: "2020-01-01", slot: "lunch" }));
