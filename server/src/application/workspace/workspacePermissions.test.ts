@@ -7,7 +7,7 @@ const allowed = (role: unknown, method: string, path: string) => canAccessWorksp
 describe("workspace permissions", () => {
   it.each(["owner", "chef", "kitchen"])("allows %s the stock and receipt workflow", (role) => {
     for (const [method, path] of [
-      ["GET", "/catalog"], ["GET", "/stock-lots"], ["GET", "/products/p1/lots"],
+      ["GET", "/inventory-session/context"], ["GET", "/catalog"], ["GET", "/stock-lots"], ["GET", "/products/p1/lots"],
       ["GET", "/products/p1/counts"], ["GET", "/products/p1/movements"], ["POST", "/products/p1/counts"],
       ["GET", "/orders"], ["POST", "/orders/abc/receipts"], ["GET", "/orders/abc/receipt-invoices"],
     ]) expect(allowed(role, method, path), `${method} ${path}`).toBe(true);

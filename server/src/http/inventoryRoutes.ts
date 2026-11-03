@@ -30,6 +30,16 @@ const sessionLine = z.object({ productId: z.string().min(1).max(100),
   countedQuantity: z.number().finite().min(0).max(1_000_000).multipleOf(0.001).nullable(), reason: z.string().trim().max(1000) }).strict();
 const sessionSave = z.object({ revision: z.number().int().positive(), lines: z.array(sessionLine).max(10000) }).strict();
 const sessionRevision = z.object({ revision: z.number().int().positive() }).strict();
+inventoryRoutes.get("/inventory-session/context", (_req, res) => {
+  res.json({ restaurantId: context(res).restaurantId });
+});
+inventoryRoutes.use("/inventory-session", (req, res, next) => {
+  const expected = req.get("X-Expected-Restaurant-Id");
+  if (expected && expected !== context(res).restaurantId) {
+    res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return;
+  }
+  next();
+});
 inventoryRoutes.get("/inventory-session", async (_req, res, next) => {
   try { res.json(await getInventorySession(context(res).restaurantId)); } catch (error) { next(error); }
 });

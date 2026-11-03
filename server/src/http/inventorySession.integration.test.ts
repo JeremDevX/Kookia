@@ -21,6 +21,37 @@ async function setup() {
   for (const [index, productId] of productIds.entries()) await agent.post("/api/workspace/products").send({ operationId: productId, name: `Test ${index}`, category: "Test", currentStock: 10, unit: "kg", minThreshold: 1, pricePerUnit: 1, supplierId }).expect(201);
   return { agent, productIds, id };
 }
+it("protège le contexte de l’établissement pour le propriétaire et les membres", async () => {
+  const { agent, id, productIds } = await setup();
+  const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: id } });
+  const member = request.agent(app);
+  member.set("X-Forwarded-For", `10.0.0.${++client}`);
+  const account = await member.post("/api/auth/register").send({ displayName: "Membre", email: `${randomUUID()}@example.test`, password: "test password for inventory" }).expect(201);
+  const memberId = account.body.user.id as string; users.push(memberId); member.set("X-Expected-User-Id", memberId);
+  await prisma.membership.create({ data: { userId: memberId, restaurantId: restaurant.id, role: "kitchen" } });
+  const wrongRestaurant = randomUUID();
+  expect((await agent.get("/api/workspace/inventory-session/context").expect(200)).body).toEqual({ restaurantId: restaurant.id });
+  const deniedOpen = await agent.post("/api/workspace/inventory-session").set("X-Expected-Restaurant-Id", wrongRestaurant).expect(409);
+  expect(deniedOpen.body.error.code).toBe("WORKSPACE_CHANGED");
+  expect((await agent.get("/api/workspace/inventory-session").expect(200)).body).toBeNull();
+  const draft = (await agent.post("/api/workspace/inventory-session").set("X-Expected-Restaurant-Id", restaurant.id).expect(200)).body;
+  const lines = draft.lines.map((line: { productId: string }) => ({ productId: line.productId, countedQuantity: 8, reason: "Écart" }));
+  for (const role of ["kitchen", "chef"] as const) {
+    await prisma.membership.update({ where: { userId: memberId }, data: { role } });
+    expect((await member.get("/api/workspace/inventory-session/context").expect(200)).body).toEqual({ restaurantId: restaurant.id });
+    for (const [method, path, body] of [
+      ["put", `/api/workspace/inventory-session/${draft.id}`, { revision: draft.revision, lines }],
+      ["post", `/api/workspace/inventory-session/${draft.id}/validate`, { revision: draft.revision }],
+      ["post", `/api/workspace/inventory-session/${draft.id}/refresh`, { revision: draft.revision }],
+      ["post", `/api/workspace/inventory-session/${draft.id}/discard`, { revision: draft.revision }],
+    ] as const) {
+      const response = await member[method](path).set("X-Expected-Restaurant-Id", wrongRestaurant).send(body).expect(409);
+      expect(response.body.error.code).toBe("WORKSPACE_CHANGED");
+    }
+  }
+  expect((await agent.get("/api/workspace/inventory-session").expect(200)).body).toEqual(draft);
+  expect((await agent.get(`/api/workspace/products/${productIds[0]}/counts`).expect(200)).body).toHaveLength(0);
+});
 it("conserve le brouillon sans mouvement puis valide une seule fois les produits comptés", async () => {
   const { agent, productIds } = await setup();
   const draft = (await agent.post("/api/workspace/inventory-session").expect(200)).body;
