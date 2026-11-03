@@ -24,6 +24,9 @@ it("présente au plus trois produits en distinguant rupture, seuil et stock non 
   expect(html).toContain("À surveiller");
   expect(html).toContain("À vérifier");
   expect(html).toContain("Stock théorique : 2 kg · seuil : 5 kg");
+  expect(html).toContain('data-status="urgent"');
+  expect(html).toContain('data-status="moderate"');
+  expect(html).toContain('data-status="neutral"');
   expect(html).toContain('href="/stocks?product=A%20rupture"');
 });
 it("ne trace pas de jauge lorsque le seuil est nul", () => {

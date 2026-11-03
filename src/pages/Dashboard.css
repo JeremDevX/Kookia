@@ -43,7 +43,13 @@
 .today-stock-products { display: flex; flex-direction: column; gap: var(--spacing-md); list-style: none; margin: var(--spacing-sm) var(--number-0); padding: var(--number-0); }
 .today-stock-product-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spacing-sm); }
 .today-stock-product-heading a { color: var(--color-accent-text); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
-.today-stock-products meter { display: block; width: var(--unit-100percent); }
+.today-stock-products meter { display: block; width: var(--unit-100percent); height: var(--spacing-sm); appearance: none; border: none; border-radius: var(--radius-full); background: var(--color-nav-active); color: var(--color-text-secondary); }
+.today-stock-products meter[data-status="urgent"] { color: var(--color-urgent); }
+.today-stock-products meter[data-status="moderate"] { color: var(--color-moderate); }
+.today-stock-products meter[data-status="optimal"] { color: var(--color-optimal); }
+.today-stock-products meter::-moz-meter-bar { border-radius: var(--radius-full); background: currentColor; }
+.today-stock-products meter::-webkit-meter-bar { border: none; border-radius: var(--radius-full); background: var(--color-nav-active); }
+.today-stock-products meter::-webkit-meter-optimum-value { border-radius: var(--radius-full); background: currentColor; }
 .today-card .badge { align-self: flex-start; }
 .today-card small { color: var(--color-text-muted); font-size: var(--font-size-caption); }
 .today-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-md); margin-top: auto; padding-top: var(--spacing-sm); }

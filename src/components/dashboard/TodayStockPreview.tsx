@@ -18,7 +18,7 @@ export default function TodayStockPreview({ products }: { products: Product[] })
         <div className="today-stock-product-heading"><Link to={`/stocks?product=${encodeURIComponent(product.id)}`}>{product.name}</Link>
           <Badge status={status} label={getProductStatusLabel(status)} /></div>
         <p>Stock théorique : {stock} {product.unit} · seuil : {threshold} {product.unit}</p>
-        {product.minThreshold > 0 && <meter min={0} max={product.minThreshold} value={Math.max(0, Math.min(product.currentStock, product.minThreshold))}
+        {product.minThreshold > 0 && <meter data-status={status} min={0} max={product.minThreshold} value={Math.max(0, Math.min(product.currentStock, product.minThreshold))}
           aria-label={`Stock théorique de ${product.name} par rapport au seuil`} />}
       </li>;
     })}
