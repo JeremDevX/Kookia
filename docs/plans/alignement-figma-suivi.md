@@ -66,6 +66,8 @@ La première étape Restaurant a été rapprochée de A `673:43437` : couverts e
 
 La frame A `673:46642` a été comparée aux paramètres Restaurant sur la démo : la grille et les champs gris correspondent, mais A montre aussi des préférences de notifications, langue et devise absentes de cette rubrique ; leur comportement doit être défini avant de proposer des contrôles fonctionnels. Le sélecteur des jours d’ouverture utilise désormais le même style dans la configuration initiale et les paramètres.
 
+La frame A `673:46843` a été comparée à la rubrique Équipe dans Firefox : la liste des membres précède désormais les invitations, regroupées dans des cartes. Sur base jetable, création d’un lien, blocage des autres rubriques jusqu’à « J’ai terminé » et affichage à 390 px ont été vérifiés. Différences : A présente le propriétaire, les activités, un tableau des permissions et des invitations envoyées par email ; l’application liste les membres ajoutés et utilise des liens manuels, sans ces informations ni ces actions.
+
 ## Vérification du workspace et de Firefox
 
 Le 2 novembre 2026, VS Code affichait le dépôt `~/Documents/KookIA/kookia`

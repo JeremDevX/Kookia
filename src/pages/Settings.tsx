@@ -71,7 +71,7 @@ export default function Settings() {
           {activeTab === "suppliers" && <SupplierSettings />}
           {activeTab === "connections" && <ConnectionsSettings onWeatherSettings={weather.openSettings} />}
           {activeTab === "account" && <AccountSettings />}
-          {activeTab === "team" && <>{pendingInvitation && <p>Copiez le lien puis sélectionnez « J’ai terminé » avant de changer de rubrique.</p>}<InvitationManager onPendingLinkChange={setPendingInvitation} /><MemberManager /></>}
+          {activeTab === "team" && <>{pendingInvitation && <p>Copiez le lien puis sélectionnez « J’ai terminé » avant de changer de rubrique.</p>}<MemberManager /><InvitationManager onPendingLinkChange={setPendingInvitation} /></>}
         </div>
     </div>
   );

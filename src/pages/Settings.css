@@ -222,3 +222,14 @@
     font-size: var(--font-size-sm);
   }
 }
+
+.settings-content > :is(.invitation-manager, .member-manager) { display: flex; flex-direction: column; gap: var(--spacing-md); min-width: var(--number-0); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
+.settings-content > :is(.invitation-manager, .member-manager) :is(h2, h3) { margin: var(--number-0); color: var(--color-nav-text); font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); }
+.settings-content > :is(.invitation-manager, .member-manager) p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_5); }
+.settings-content > :is(.invitation-manager, .member-manager) ul { display: grid; gap: var(--spacing-sm); margin: var(--number-0); padding: var(--number-0); list-style: none; }
+.settings-content > :is(.invitation-manager, .member-manager) li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spacing-sm); padding: var(--spacing-md) var(--number-0); border-top: var(--size-1) solid var(--color-nav-border); font-size: var(--font-size-sm); overflow-wrap: var(--overflow-wrap-anywhere); }
+.settings-content .invitation-create { display: flex; align-items: end; gap: var(--spacing-md); }
+.settings-content .invitation-create label { display: grid; gap: var(--spacing-xs); width: min(var(--unit-100percent), var(--size-320)); font-size: var(--font-size-sm); }
+.settings-content .invitation-create select { width: var(--unit-100percent); }
+.settings-content .invitation-manager > div input { width: var(--unit-100percent); }
+@media (--media-mobile) { .settings-content .invitation-create { flex-direction: column; align-items: stretch; } }
