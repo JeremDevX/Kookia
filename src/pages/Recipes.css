@@ -440,3 +440,5 @@
 .recipe-detail-panel ul li { display: flex; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-sm) var(--number-0); border-bottom: var(--size-1) solid var(--color-nav-border); }
 
 .recipe-detail-panel ul li strong { white-space: nowrap; }
+
+.recipe-candidates-link { display: inline-flex; margin-top: var(--spacing-sm); color: var(--color-accent-text); font-size: var(--font-size-sm); text-underline-offset: var(--size-3); }

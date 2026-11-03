@@ -157,7 +157,7 @@ export default function RecipeCandidates({ products, onRecipeConfirmed }: Props)
   const eligibleSources = sources;
   if (available !== true && !error) return null;
 
-  return <details className="recipe-candidates">
+  return <details id="recipe-candidates" className="recipe-candidates">
     <summary>{error ? "Fiches candidates indisponibles" : `Fiches candidates issues de pièces · ${candidates.length}`}</summary>
     <section className="recipe-candidates-content" aria-labelledby="recipe-candidates-title">
     <div className="recipe-candidates-heading">

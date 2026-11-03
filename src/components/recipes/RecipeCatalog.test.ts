@@ -16,6 +16,7 @@ it("affiche toutes les recettes lorsque la catégorie sélectionnée disparaît"
     recipes: [recipe], loading: false, onEdit: () => {}, onProduce: () => {},
   }));
   expect(html).toContain("Soupe");
+  expect(html).toContain("1 portion par lot");
   expect(html).toContain('value="all" selected');
   expect(html).not.toContain("Aucune recette ne correspond");
 });
