@@ -157,7 +157,9 @@ export default function RecipeCandidates({ products, onRecipeConfirmed }: Props)
   const eligibleSources = sources;
   if (available !== true && !error) return null;
 
-  return <section className="recipe-candidates" aria-labelledby="recipe-candidates-title">
+  return <details className="recipe-candidates">
+    <summary>{error ? "Fiches candidates indisponibles" : `Fiches candidates issues de pièces · ${candidates.length}`}</summary>
+    <section className="recipe-candidates-content" aria-labelledby="recipe-candidates-title">
     <div className="recipe-candidates-heading">
       <div><h2 id="recipe-candidates-title">Candidates depuis des pièces</h2>
         <p>Créez une hypothèse éditable à partir de lignes identifiées. Une facture ne prouve ni le plat, ni ses quantités ou son rendement.</p></div>
@@ -260,5 +262,6 @@ export default function RecipeCandidates({ products, onRecipeConfirmed }: Props)
         <Button type="button" variant="outline" disabled={saving} onClick={closeEditor}>Annuler</Button>
       </div>
     </form>}
-  </section>;
+    </section>
+  </details>;
 }

@@ -1,13 +1,13 @@
 .recipe-candidates {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
   margin-top: var(--spacing-lg);
   padding: var(--spacing-lg);
   border: var(--size-1) solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
 }
+
+.recipe-candidates > summary { cursor: pointer; font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+.recipe-candidates-content { display: flex; flex-direction: column; gap: var(--spacing-md); margin-top: var(--spacing-lg); }
 
 .recipe-candidates-heading,
 .recipe-candidate-title {
