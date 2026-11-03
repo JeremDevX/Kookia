@@ -71,6 +71,7 @@
   border-bottom: var(--size-1) solid var(--color-border-light);
   vertical-align: middle;
 }
+.stocks-container .stocks-table-card .stocks-table td { padding-block: var(--spacing-sm); }
 .stocks-table td:first-child { width: var(--unit-20percent); }
 .stocks-table td:last-child, .stocks-container .stocks-table th:last-child { text-align: right; }
 .stocks-table td:last-child .btn { white-space: nowrap; }
