@@ -21,7 +21,7 @@ export default function ServiceMenuEntryEditor({ entry, index, recipes, sales, d
         <option value="">Sans correspondance</option>{sales.map((sale) => <option key={sale.id} value={sale.id}>{sale.name}</option>)}
       </select></label>
       <label>Prix historique (centimes)<input type="number" required min="0" max="1000000" step="1" value={Number.isFinite(entry.priceCents) ? entry.priceCents : ""} onChange={(event) => onChange({ ...entry, priceCents: event.target.value === "" ? Number.NaN : Number(event.target.value) })} /></label>
-      <label><input type="checkbox" checked={entry.available} onChange={(event) => onChange({ ...entry, available: event.target.checked })} />Disponible pour ce service</label>
+      <label className="service-availability"><input type="checkbox" checked={entry.available} onChange={(event) => onChange({ ...entry, available: event.target.checked })} />Disponible pour ce service</label>
     </div>
     <h4>{entry.category === "Formule" ? "Composition de la formule" : "Recette consommée"}</h4>
     {entry.components.map((value, row) => <div className="service-operation-fields" key={row}>
