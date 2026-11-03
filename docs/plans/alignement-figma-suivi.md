@@ -263,8 +263,9 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Réceptions — écart de prix à justifier (exemple fictif) | `78:115` | 1440 × 1500 |
 | Réceptions — rapprocher un avoir (exemple fictif) | `83:88` | 1440 × 1500 |
 | Bouton moyen — variantes et aperçu | `73:10`, `73:11` | 430 × 190 ; 580 × 290 |
+| Champ de saisie — normal, focus, erreur | `86:28` | 360 × 172 |
 
-La bibliothèque B comprend désormais un bouton moyen à quatre variantes et ses variables, utilisé dans les états ajoutés. Les écrans et l’aperçu sont constitués de calques modifiables et ont été contrôlés visuellement dans Firefox. Les liens de prototype, les autres composants, les états manquants et la fidélité complète à A restent à vérifier.
+La bibliothèque B comprend un bouton moyen à quatre variantes et un champ de saisie à trois états, liés aux variables. Trois instances du champ sont utilisées dans la maquette d’avoir ; libellés et messages restent séparés. Les écrans et l’aperçu sont constitués de calques modifiables et ont été contrôlés visuellement dans Firefox. Les liens de prototype, les autres composants, les états manquants et la fidélité complète à A restent à vérifier.
 
 Sur l'écran Ventes (`8:2`), l'inspection relève notamment une navigation de
 240 px, une barre supérieure de 61 px, un fond `#F7F9FB`, du texte principal
