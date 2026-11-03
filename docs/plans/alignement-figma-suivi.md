@@ -68,6 +68,8 @@ La frame A `673:46642` a été comparée aux paramètres Restaurant sur la démo
 
 La frame A `673:46843` a été comparée à la rubrique Équipe dans Firefox : la liste des membres précède désormais les invitations, regroupées dans des cartes. Sur base jetable, création d’un lien, blocage des autres rubriques jusqu’à « J’ai terminé » et affichage à 390 px ont été vérifiés. Différences : A présente le propriétaire, les activités, un tableau des permissions et des invitations envoyées par email ; l’application liste les membres ajoutés et utilise des liens manuels, sans ces informations ni ces actions.
 
+La frame Compte A `673:46754` a été comparée dans Firefox à la démo : la carte Profil affiche désormais une identité avec initiales issues du nom enregistré. La modification d’un nom fictif a actualisé ce repère ; aucun débordement à 390 px. La maquette prévoit photo, champs prénom/nom distincts, téléphone, fuseau, double authentification, gestion des sessions et abonnement ; ces fonctions ne figurent pas dans la rubrique actuelle. Le changement d’email et de mot de passe reste accessible dans des cartes distinctes.
+
 ## Vérification du workspace et de Firefox
 
 Le 2 novembre 2026, VS Code affichait le dépôt `~/Documents/KookIA/kookia`
