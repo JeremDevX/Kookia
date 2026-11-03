@@ -615,3 +615,5 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
    distant et la CI.
 
 La fenêtre météo des connexions est présente dans Figma B (`186:597`). Le champ de commune utilise les styles partagés ; ouverture, activation de la recherche et retour du focus vérifiés dans Firefox à 390 px. Les cinq sources et leur actualisation ont été vérifiées.
+
+Contrôle structurel de Figma B : les 15 sections numérotées sont distinctes, sans chevauchement entre sections ni entre leurs cadres directs ; aucun cadre direct ne dépasse sa section. La fenêtre météo `186:597` est rangée dans « 09 · Paramètres et équipe ». Ce contrôle ne remplace pas la revue visuelle et fonctionnelle des contenus.
