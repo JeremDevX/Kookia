@@ -11,7 +11,7 @@
 .dated-service-note label { max-width: var(--size-320); }
 .sales-form textarea, .sales-reconciliation-card textarea, .sales-outcome-actions textarea { min-height: var(--size-80); }
 .sales-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
-.sales-file-label, .sales-mapping-label { display: grid; gap: var(--spacing-sm); }
+.sales-file-label, .sales-mapping-label { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-sm); min-width: var(--number-0); }
 .sales-file-label input { width: fit-content; max-width: var(--unit-100percent); color: var(--color-text-secondary); font: inherit; }
 .sales-file-label input::file-selector-button { min-height: var(--size-44); margin-right: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-md); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-surface); color: var(--color-nav-text); font: inherit; cursor: pointer; }
 .sales-file-label input:disabled::file-selector-button { cursor: not-allowed; opacity: var(--number-0_5); }
@@ -28,7 +28,7 @@
 .sales-start .sales-actions a:first-child { background: var(--color-nav-text); border-color: var(--color-nav-text); color: var(--color-surface); }
 .sales-start .sales-actions a:hover { background: var(--color-surface-hover); }
 .sales-start .sales-actions a:first-child:hover { background: var(--color-auth-icon-border); }
-.sales-ticket-import { display: grid; gap: var(--spacing-md); }
+.sales-ticket-import { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-md); }
 .sales-ticket-import h2 { font-size: var(--font-size-lg); }
 .sales-ticket-import > p { color: var(--color-text-secondary); line-height: var(--number-1_7); }
 .sales-page :is(summary, a, button):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
@@ -57,6 +57,7 @@
 .ticket-original-preview iframe { width: var(--unit-100percent); height: var(--size-400); border: var(--size-1) solid var(--color-border); }
 .ticket-original-preview img { max-width: var(--unit-100percent); max-height: var(--size-400); border: var(--size-1) solid var(--color-border); }
 .ticket-transcription-form, .ticket-transcription-form label, .ticket-transcription-lines { display: grid; gap: var(--spacing-md); min-width: var(--number-0); }
+.ticket-transcription-form > fieldset { min-width: var(--number-0); }
 .ticket-transcription-form input { width: var(--unit-100percent); min-width: var(--number-0); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-auth-field); color: var(--color-text-primary); }
 .ticket-transcription-lines fieldset { display: grid; gap: var(--spacing-sm); min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
 @media (--media-compact) { .ticket-transcription-layout { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); } }
