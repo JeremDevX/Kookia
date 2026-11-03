@@ -305,6 +305,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Nouveau fournisseur | `25:77` | 1440 × 1450 |
 | Connexions | `26:2` | 1440 × 1450 |
 | Météo — choisir une commune | `186:597` | 600 × 570 |
+| Météo — recherche sans résultat (exemple fictif) | `189:620` | 600 × 658 |
 | Tableau de bord première utilisation | `29:2` | 1440 × 1500 |
 | Menu — préparation et surstock | `149:396` | 600 × 999 |
 | Menu — quantité renseignée et idées calculées sur données fictives | `179:583`, `178:566` | 600 × 1189 ; 600 × 2267 |
@@ -617,3 +618,5 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
 La fenêtre météo des connexions est présente dans Figma B (`186:597`). Le champ de commune utilise les styles partagés ; ouverture, activation de la recherche et retour du focus vérifiés dans Firefox à 390 px. Les cinq sources et leur actualisation ont été vérifiées.
 
 Contrôle structurel de Figma B : les 15 sections numérotées sont distinctes, sans chevauchement entre sections ni entre leurs cadres directs ; aucun cadre direct ne dépasse sa section. La fenêtre météo `186:597` est rangée dans « 09 · Paramètres et équipe ». Ce contrôle ne remplace pas la revue visuelle et fonctionnelle des contenus.
+
+L’état météo sans résultat `189:620` est rangé à côté de la recherche dans Figma B. Il reprend le message et les actions prévus par le formulaire existant ; son contenu est fictif et son rendu a été contrôlé par capture Figma. Le parcours de recherche sans résultat reste à vérifier dans Firefox.
