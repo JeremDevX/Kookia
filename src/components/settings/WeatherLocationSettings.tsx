@@ -38,7 +38,7 @@ export default function WeatherLocationSettings({ onConfirmed, onConfirmingChang
       const result = await searchWeatherPlaces(query.trim());
       if (request !== requestId.current) return;
       setPlaces(result.places);
-      requestAnimationFrame(() => { if (request === requestId.current && document.activeElement === origin) resultsHeading.current?.focus(); });
+      requestAnimationFrame(() => { if (request === requestId.current && (document.activeElement === origin || document.activeElement === document.body)) resultsHeading.current?.focus(); });
     } catch (cause) { if (request === requestId.current) setError(cause instanceof Error ? cause.message : "Recherche indisponible."); }
     finally { if (request === requestId.current) setBusy(false); }
   };

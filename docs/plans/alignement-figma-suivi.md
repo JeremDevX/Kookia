@@ -620,3 +620,5 @@ La fenêtre météo des connexions est présente dans Figma B (`186:597`). Le ch
 Contrôle structurel de Figma B : les 15 sections numérotées sont distinctes, sans chevauchement entre sections ni entre leurs cadres directs ; aucun cadre direct ne dépasse sa section. La fenêtre météo `186:597` est rangée dans « 09 · Paramètres et équipe ». Ce contrôle ne remplace pas la revue visuelle et fonctionnelle des contenus.
 
 L’état météo sans résultat `189:620` est rangé à côté de la recherche dans Figma B. Il reprend le message et les actions prévus par le formulaire existant ; son contenu est fictif et son rendu a été contrôlé par capture Figma. Le parcours de recherche sans résultat reste à vérifier dans Firefox.
+
+Firefox : une réponse météo vide simulée affiche le message représenté dans B `189:620`, sans débordement à 390 px. La désactivation du champ pendant la recherche faisait perdre le focus ; il revient désormais au titre des résultats lorsque le navigateur le déplace sur le corps de page, sans interrompre un changement volontaire vers un autre bouton. Le fournisseur externe réel n’a pas été sollicité.
