@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useEffectEvent, useRef } from "react";
 import Button from "../common/Button";
+import Input from "../common/Input";
 import {
   X,
   Package,
@@ -295,6 +296,18 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             </div>
           </section>
 
+          {pendingAdjustment && <p role="alert">Un ajustement de {pendingAdjustment.delta} {pendingAdjustment.expectedUnit} ({pendingAdjustment.reason === "loss" ? "perte" : "correction"}) reste à vérifier. Reprenez-le avant toute nouvelle saisie.</p>}
+          {adjustmentError && <p role="alert">{adjustmentError}</p>}
+          {showAdjustModal && !pendingAdjustment && (
+            <section className="drawer-section">
+              <p role="status">Motif : {adjustReason === "loss" ? "perte déclarée" : "correction d'inventaire"}. Ce mouvement sera enregistré dans l'historique.</p>
+              <Input id="stock-adjustment" type="text" inputMode="decimal"
+                label={adjustReason === "loss" ? `Quantité perdue (${product.unit})` : `Variation du stock (${product.unit})`}
+                placeholder={adjustReason === "loss" ? "Ex. : 2,5" : "Ex. : +10 ou -5"}
+                value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value)} autoFocus />
+            </section>
+          )}
+
           <section className="drawer-section">
             <h3 ref={movementHeadingRef} className="section-heading" tabIndex={-1}>
               <History size={18} /> Mouvements de stock
@@ -320,27 +333,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             </div>
           </section>
 
-          {pendingAdjustment && <p role="alert">Un ajustement de {pendingAdjustment.delta} {pendingAdjustment.expectedUnit} ({pendingAdjustment.reason === "loss" ? "perte" : "correction"}) reste à vérifier. Reprenez-le avant toute nouvelle saisie.</p>}
-          {adjustmentError && <p role="alert">{adjustmentError}</p>}
-          {showAdjustModal && !pendingAdjustment && (
-            <section className="drawer-section">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <p role="status">Motif : {adjustReason === "loss" ? "perte déclarée" : "correction d'inventaire"}. Ce mouvement sera enregistré dans l'historique.</p>
-                <label htmlFor="stock-adjustment" className="block text-sm font-medium mb-2">
-                  {adjustReason === "loss" ? `Quantité perdue (${product.unit})` : `Variation du stock (${product.unit})`}
-                </label>
-                <input
-                  id="stock-adjustment"
-                  type="text"
-                  className="w-full px-3 py-2 border rounded-md"
-                  placeholder="Ex. : +10 ou -5"
-                  value={adjustAmount}
-                  onChange={(e) => setAdjustAmount(e.target.value)}
-                  autoFocus
-                />
-              </div>
-            </section>
-          )}
+
         </div>
 
         <footer className="drawer-footer">
