@@ -21,7 +21,7 @@
 .sales-baseline-card dd { margin: var(--spacing-xs) var(--number-0) var(--number-0); font-weight: var(--font-weight-medium); overflow-wrap: var(--overflow-wrap-anywhere); }
 .predictions-container .sales-panel { display: flex; flex-direction: column; gap: var(--spacing-md); }
 .predictions-container .sales-panel h2, .predictions-container .sales-panel h3 { margin-block: var(--number-0); }
-.predictions-container .sales-panel > p { max-width: var(--size-800); line-height: var(--number-1_7); }
+.predictions-container .sales-panel > p { max-width: var(--size-800); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
 .sales-baseline-summary { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); margin: var(--number-0); }
 .sales-baseline-summary > div { min-width: var(--number-0); padding: var(--spacing-md); background: var(--color-bg); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
 .sales-baseline-summary dt { color: var(--color-text-muted); font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); }
@@ -31,8 +31,10 @@
 .sales-baseline-method > p { max-width: var(--size-800); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
 .sales-baseline-guidance { display: grid; gap: var(--spacing-sm); padding: var(--spacing-md) var(--spacing-lg); border-inline-start: var(--size-3) solid var(--color-primary); background: var(--color-primary-light); border-radius: var(--radius-md); }
 .sales-baseline-guidance h3, .sales-baseline-guidance p { margin: var(--number-0); }
+.sales-baseline-guidance h3 { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+.sales-baseline-guidance :is(p, details, a) { font-size: var(--font-size-sm); }
 .sales-baseline-guidance p { color: var(--color-text-secondary); line-height: var(--number-1_7); }
-.sales-baseline-guidance a { width: fit-content; color: var(--color-primary); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
+.sales-baseline-guidance a { width: fit-content; color: var(--color-accent-text); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
 .predictions-container :is(summary, a, button, input):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 
 @media (--media-tablet) {

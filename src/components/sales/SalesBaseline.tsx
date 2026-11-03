@@ -62,7 +62,7 @@ export default function SalesBaseline() {
 
   return <section className="sales-panel" aria-labelledby="sales-baseline-title">
     <h2 ref={headingRef} id="sales-baseline-title" tabIndex={-1}>Prévision des ventes</h2>
-    <p className="sales-baseline-intro">Cette prévision utilise un historique de ventes. Les réceptions servent aux sorties estimées par recette ci-dessus ; elles ne remplacent pas l’historique de ventes.</p>
+    <p className="sales-baseline-intro">Cette prévision utilise un historique de ventes. Les réceptions servent aux sorties estimées par recette ; elles ne remplacent pas l’historique de ventes.</p>
     {loading ? <p role="status">Calcul de la prévision…</p> : error ?
       <div role="alert"><p>Prévision indisponible : {error}</p>
         <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryBaseline}>Recharger la prévision</Button>

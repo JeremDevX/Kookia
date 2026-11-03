@@ -24,7 +24,7 @@ export default function Predictions() {
       </div>
     </header>
     <BilanNavigation active="predictions" from={from} to={to} />
-    <ForecastNeeds />
     <SalesBaseline />
+    <ForecastNeeds />
   </div>;
 }
