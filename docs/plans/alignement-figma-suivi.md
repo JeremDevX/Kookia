@@ -305,6 +305,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Champ de saisie — normal, focus, erreur | `86:28` | 360 × 172 |
 | Sélecteur — normal, focus, erreur et aperçu | `146:365`, `146:378` | 360 × 172 chacun |
 | Présentation authentification — panneau réutilisable | `126:47` | 600 × 900 |
+| Accès — vérification de session indisponible | `171:497` | 1440 × 900 |
 | Recettes — fiches candidates : panneau, formulaires et décisions | `159:423`, `159:425`, `164:426`, `167:431`, `168:452`, `169:495`, `169:514` | 900 × 71 à 900 × 1540 |
 | Configuration — équipe : lien créé et lien masqué | `152:408`, `153:416` | 1440 × 1420 chacun |
 | Invitation — connexion, inscription, acceptation, confirmation, lien invalide, session indisponible | `120:30`, `123:33`, `117:29`, `120:56`, `117:45`, `123:63` | 1440 × 900 chacun |
@@ -312,6 +313,8 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 Le 3 novembre 2026, les éléments de B ont été regroupés en dix sections numérotées : composants, tableau de bord, ventes, services, historique et navigation, stocks, réceptions, avoirs, paramètres et équipe, invitations. Les cadres conservent leurs identifiants ; aucun dépassement des limites de section détecté. Les sections Réceptions, Avoirs et Invitations ont été observées dans Firefox ; les autres états et les liens du prototype d’invitation restent à vérifier. Le rangement reste à compléter avec les nouveaux éléments à créer.
 
 Le 3 novembre 2026, la frame A `673:43390` observée dans Firefox montre la connexion, pas un formulaire d’inscription autonome. B comporte désormais la section « 11 · Inscription — accès » et la frame `128:232`, créée à partir du formulaire réel et des composants d’authentification existants. Le rendu et la police Poppins ont été contrôlés. La frame `130:268` représente l’erreur de confirmation différente, observée dans Firefox sur la démo avec données fictives ; les autres erreurs et liens de prototype restent à compléter.
+
+L’état global de vérification de session indisponible (`171:497`) est rangé dans la section Accès. Il reprend le message et le bouton Réessayer observés dans Firefox lorsque l’API locale était arrêtée ; il est distinct de l’erreur de session du parcours d’invitation. La capture Figma a été contrôlée ; le résultat du réessai dépend du service et n’est pas simulé dans le prototype. La vue B reste à vérifier dans Firefox, dont le canevas est noir.
 
 Le 3 novembre 2026, l’état d’inscription « serveur indisponible » a été ajouté dans B (`138:305`). Placé initialement hors de sa section par erreur, il a été déplacé sous les deux états existants dans « 11 · Inscription — accès ». Le contrôle structurel ne détecte aucun débordement ni chevauchement entre sections ou entre leurs éléments directs. Le texte correspond au repli de l’application ; le rendu a été contrôlé par capture Figma. Dans Firefox, le canevas Figma est resté noir : le contrôle visuel dans ce navigateur reste à refaire.
 
