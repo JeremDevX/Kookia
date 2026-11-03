@@ -1,13 +1,14 @@
+.workspace-page.more-page { padding-top: var(--spacing-xl); gap: var(--size-20); }
 .more-grid { display: grid; grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
 .more-page > .workspace-header, .more-card { padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); }
-.more-page > .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
-.more-page > .workspace-header .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); }
-.more-card { display: flex; flex-direction: column; gap: var(--spacing-sm); }
+.more-page > .workspace-header h1 { color: var(--color-nav-text); font-size: calc(var(--font-size-lg) + var(--size-2)); font-weight: var(--font-weight-bold); }
+.more-page > .workspace-header .workspace-subtitle { margin-top: var(--size-12); color: var(--color-nav-muted); }
+.more-card { display: flex; flex-direction: column; gap: var(--size-12); }
 .more-card:last-child:nth-child(odd) { grid-column: var(--number-1) / var(--number-negative-1); }
-.more-card h2 { font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); }
-.more-card p { color: var(--color-text-secondary); font-size: var(--font-size-caption); line-height: var(--number-1_8); }
+.more-card h2 { font-size: calc(var(--font-size-base) + var(--size-1)); font-weight: var(--font-weight-semibold); }
+.more-card p { color: var(--color-text-secondary); font-size: var(--font-size-caption); line-height: var(--number-1_5); }
 .more-card a { margin-top: auto; color: var(--color-accent-text); font-size: var(--font-size-caption); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
-.more-help { margin-top: var(--spacing-lg); }
+.more-help { margin: var(--number-0); }
 .more-help a { color: var(--color-accent-text); }
 .more-page a:focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
-@media (--media-compact) { .more-grid { grid-template-columns: var(--unit-1fr); } }
+@media (--media-compact) { .workspace-page.more-page { padding-top: var(--spacing-lg); } .more-grid { grid-template-columns: var(--unit-1fr); } }
