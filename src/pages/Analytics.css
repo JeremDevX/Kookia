@@ -33,7 +33,7 @@
 .conditional-recipe-outflow h4 { margin-block: var(--number-0) var(--spacing-sm); }
 .conditional-recipe-outflow ul { padding-inline-start: var(--spacing-lg); }
 .analytics-container .impact-summary .btn { min-height: var(--size-44); }
-.analytics-container .estimated-outflows .btn, .predictions-container .estimated-outflows .btn { min-height: var(--size-44); }
+.analytics-container .estimated-outflows .btn { min-height: var(--size-44); }
 .impact-summary .impact-monthly-table { min-width: var(--size-1000); }
 .impact-monthly-summary { margin-block: var(--spacing-lg); }
 .impact-monthly-summary > summary { cursor: pointer; font-weight: var(--font-weight-medium); }

@@ -7,12 +7,6 @@
   padding-top: var(--spacing-lg);
 }
 
-.predictions-period { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
-.predictions-period h2, .predictions-period p { margin: var(--number-0); }
-.predictions-period p { max-width: var(--size-800); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
-.predictions-period-fields { display: flex; flex-wrap: wrap; gap: var(--spacing-md); }
-.predictions-period-fields label { display: flex; align-items: center; gap: var(--spacing-sm); font-size: var(--font-size-sm); }
-.predictions-period-fields input { min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
 
 .sales-baseline-table .sales-table { min-width: var(--size-1000); }
 .sales-baseline-table-hint, .sales-baseline-cards-hint { margin: var(--spacing-sm) var(--number-0); color: var(--color-text-muted); font-size: var(--font-size-caption); }
@@ -58,5 +52,4 @@
     gap: var(--spacing-md);
     padding: var(--spacing-md);
   }
-  .predictions-period { padding: var(--spacing-md); }
 }
