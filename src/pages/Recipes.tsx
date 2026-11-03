@@ -28,7 +28,7 @@ import { formatLocalISODate } from "../utils/date";
 import type { ProductionRecord } from "../types/callbacks";
 import { ApiError } from "../config/api";
 import type { ServiceSlot } from "../../shared/serviceCalendar";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useBlocker, useSearchParams } from "react-router-dom";
 import "../styles/Workspace.css";
 import "./Recipes.css";
 
@@ -61,6 +61,18 @@ const Recipes: React.FC = () => {
   const [incomingReceiptRetryRevision, setIncomingReceiptRetryRevision] = useState(0);
   const [recipeEditorOpen, setRecipeEditorOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
+  const csvBlocker = useBlocker(csvOpen);
+  useEffect(() => {
+    if (csvBlocker.state !== "blocked") return;
+    if (window.confirm("L’import en cours sera perdu. Quitter cette page ?")) { setCsvOpen(false); csvBlocker.proceed(); }
+    else csvBlocker.reset();
+  }, [csvBlocker]);
+  useEffect(() => {
+    if (!csvOpen) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [csvOpen]);
   const [csvPrefill, setCsvPrefill] = useState<ImportedIngredient[] | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [recipePrefill, setRecipePrefill] = useState<RecipeSuggestion | null>(null);
@@ -242,7 +254,7 @@ const Recipes: React.FC = () => {
       {recipeEditorOpen && <RecipeEditor open={recipeEditorOpen} recipe={editingRecipe} products={products} headingRef={recipeEditorHeading}
         initialSuggestion={recipePrefill} initialImport={csvPrefill}
         onClose={closeRecipeEditor} onSaved={handleRecipeSaved} />}
-      {csvOpen && <RecipeCsvImport products={products} onClose={() => setCsvOpen(false)} onApply={(ingredients) => { setCsvOpen(false); setEditingRecipe(null); setRecipePrefill(null); setCsvPrefill(ingredients); setRecipeEditorOpen(true); requestAnimationFrame(() => document.getElementById("recipe-editor-section-title")?.scrollIntoView({ block: "nearest" })); }} />}
+      {csvOpen && <RecipeCsvImport products={products} onClose={() => { setCsvOpen(false); requestAnimationFrame(() => recipeEditOrigin.current?.focus()); }} onApply={(ingredients) => { setCsvOpen(false); setEditingRecipe(null); setRecipePrefill(null); setCsvPrefill(ingredients); setRecipeEditorOpen(true); requestAnimationFrame(() => document.getElementById("recipe-editor-section-title")?.scrollIntoView({ block: "nearest" })); }} />}
       {!productId && !incomingReceiptLineId && displayedTab !== "sheets" && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
 
       {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to={recipeViewHref(searchParams, "catalog")}>Voir toutes les recettes</Link></p>}

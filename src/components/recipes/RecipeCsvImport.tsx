@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import Button from "../common/Button";
-import Modal from "../common/Modal";
 import type { Product } from "../../types";
 import { mapRecipeColumns, readRecipeCsvFile, validateImportRows, type CsvDocument, type ImportedIngredient, type ImportRow } from "../../features/recipes/recipeCsv";
 import "./RecipeCsvImport.css";
@@ -15,7 +14,7 @@ export default function RecipeCsvImport({ products, onClose, onApply }: { produc
   const [reading, setReading] = useState(false);
   const request = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { if (document) heading.current?.focus(); }, [document, reviewing]);
+  useEffect(() => { heading.current?.focus(); }, [document, reviewing]);
   useEffect(() => () => { request.current++; }, []);
   const read = async (event: ChangeEvent<HTMLInputElement>) => {
     const current = ++request.current;
@@ -42,19 +41,26 @@ export default function RecipeCsvImport({ products, onClose, onApply }: { produc
   };
   const update = (index: number, patch: Partial<ImportRow>) => setRows((current) => current?.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row) ?? null);
   const validation = rows ? validateImportRows(rows, products) : null;
-  return <Modal isOpen onClose={onClose} title="Importer une fiche CSV" width="xl">
+  const step = reviewing ? 3 : document ? 2 : 1;
+  return <section className="recipe-csv-page" aria-labelledby="recipe-csv-title">
+    <header><h1 id="recipe-csv-title" ref={!document ? heading : undefined} tabIndex={-1}>Importer une fiche CSV</h1>
+      <p>Importez les ingrédients d’une fiche, puis vérifiez-les avant de créer la recette.</p></header>
+    <ol className="recipe-csv-steps" aria-label="Étapes de l’import">
+      {['Déposer le CSV', 'Associer les colonnes', 'Vérifier les ingrédients'].map((label, index) =>
+        <li key={label} aria-current={step === index + 1 ? "step" : undefined}><span>{index + 1}</span>{label}</li>)}
+    </ol>
     <div className="recipe-csv-import">
       <p>Importez les ingrédients d’une fiche. Les prix et fournisseurs du fichier ne modifient pas le catalogue.</p>
       <p>Colonnes nécessaires : produit, quantité brute et unité. Une recette ne sera créée qu’après vérification dans l’éditeur.</p>
       {!reviewing && <><label>Fichier CSV<input type="file" accept=".csv,text/csv" onChange={(event) => void read(event)} /></label>
         {reading && <p role="status">Lecture du fichier…</p>}
-        {document && <><h3 ref={heading} tabIndex={-1}>Associer les colonnes</h3><p>Fichier chargé : {fileName}</p><fieldset><legend>Colonnes du fichier</legend>
+        {document && <><h2 ref={heading} tabIndex={-1}>Associer les colonnes</h2><p>Fichier chargé : {fileName}</p><fieldset><legend>Colonnes du fichier</legend>
           {([['product', 'Produit'], ['quantity', 'Quantité brute'], ['unit', 'Unité']] as const).map(([key, label]) => <label key={key}>{label}<select value={columns[key]} onChange={(event) => { setRows(null); setColumns((current) => ({ ...current, [key]: event.target.value })); }}>
             <option value="">Choisir une colonne</option>{document.headers.map((header, index) => <option key={index} value={index}>{header}</option>)}
           </select></label>)}
         </fieldset></>}
       </>}
-      {reviewing && rows && <><h3 ref={heading} tabIndex={-1}>Vérifier les ingrédients</h3><p>Associez chaque ligne à un produit existant. L’unité doit être identique à celle du catalogue ; aucune conversion n’est faite.</p>
+      {reviewing && rows && <><h2 ref={heading} tabIndex={-1}>Vérifier les ingrédients</h2><p>Associez chaque ligne à un produit existant. L’unité doit être identique à celle du catalogue ; aucune conversion n’est faite.</p>
         {!products.length && <p role="status">Aucun produit dans le catalogue. Ajoutez les produits nécessaires avant d’importer cette fiche.</p>}
         <div className="recipe-csv-rows">{rows.map((row, index) => <fieldset key={index}><legend>Ligne {row.line} · {row.source || "produit manquant"}</legend>
           <label>Désignation du fichier<input value={row.source} onChange={(event) => update(index, { source: event.target.value })} /></label>
@@ -73,5 +79,5 @@ export default function RecipeCsvImport({ products, onClose, onApply }: { produc
           <Button type="button" disabled={!document || reading} onClick={review}>Associer les produits</Button>}
       </div>
     </div>
-  </Modal>;
+  </section>;
 }
