@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Clock } from "lucide-react";
 import type { Recipe } from "../../types";
 import Button from "../common/Button";
+import RecipeDetail from "./RecipeDetail";
 import { sortRecipes, type RecipeSort } from "../../features/recipes/recipeSort";
 
 type CatalogRecipe = Recipe & { maxYield: number };
@@ -13,6 +14,7 @@ export default function RecipeCatalog({ recipes, loading, onEdit, onProduce, edi
   onEdit: (recipe: Recipe, trigger: HTMLButtonElement) => void;
   onProduce: (recipe: Recipe) => void;
 }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState<RecipeSort>("recent");
@@ -21,6 +23,9 @@ export default function RecipeCatalog({ recipes, loading, onEdit, onProduce, edi
   const query = search.trim().toLocaleLowerCase("fr");
   const visible = sortRecipes(recipes.filter((recipe) => (category === "all" || recipe.category === category) &&
     `${recipe.name} ${recipe.ingredients.map((ingredient) => ingredient.productName).join(" ")}`.toLocaleLowerCase("fr").includes(query)), sort);
+
+  const selected = recipes.find((recipe) => recipe.id === selectedId);
+  if (selected) return <RecipeDetail recipe={selected} editing={editing} onBack={() => { setSelectedId(null); requestAnimationFrame(() => document.getElementById(`recipe-detail-trigger-${selected.id}`)?.focus()); }} onEdit={onEdit} onProduce={onProduce} />;
 
   return <section className="recipe-catalog" aria-label="Catalogue des recettes">
     <div className="recipe-catalog-filters">
@@ -37,7 +42,7 @@ export default function RecipeCatalog({ recipes, loading, onEdit, onProduce, edi
         <div className="recipe-catalog-card-heading"><h3>{recipe.name}</h3><span>{recipe.category}</span></div>
         <p className="recipe-catalog-meta"><Clock size={14} aria-hidden="true" /> {recipe.prepTime} min · {recipe.yieldPortions} portions par lot</p>
         <div className="recipe-catalog-availability"><span>Disponibilité</span><strong className={recipe.ingredients.length === 0 ? undefined : recipe.maxYield > 0 ? "is-available" : "is-limited"}>{recipe.ingredients.length === 0 ? "Ingrédients à renseigner" : recipe.maxYield > 0 ? `Jusqu’à ${recipe.maxYield} portions sous réserve` : "Stock insuffisant ou à vérifier"}</strong></div>
-        <div className="recipe-catalog-actions"><Button size="sm" variant="outline" aria-label={`Modifier la recette ${recipe.name}`} disabled={editing} onClick={(event) => onEdit(recipe, event.currentTarget)}>Modifier</Button>
+        <div className="recipe-catalog-actions"><Button id={`recipe-detail-trigger-${recipe.id}`} size="sm" variant="outline" aria-label={`Voir la recette ${recipe.name}`} onClick={() => setSelectedId(recipe.id)}>Voir la recette</Button><Button size="sm" variant="outline" aria-label={`Modifier la recette ${recipe.name}`} disabled={editing} onClick={(event) => onEdit(recipe, event.currentTarget)}>Modifier</Button>
           {recipe.maxYield > 0 && <Button size="sm" aria-label={`Produire ${recipe.name}`} onClick={() => onProduce(recipe)}>Produire</Button>}</div>
       </article>)}</div>}
   </section>;
