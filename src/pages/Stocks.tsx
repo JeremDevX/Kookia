@@ -140,13 +140,13 @@ const Stocks: React.FC = () => {
           <h1 ref={headingRef} tabIndex={-1}>{view === "count" ? "Inventaire mensuel" : "Stocks"}</h1>
           <p className="workspace-subtitle">{view === "count" ? "Comptez chaque produit pour vérifier son stock." : "Suivez les quantités et repérez les produits à vérifier."}</p>
         </div>
-        <Button variant="outline" onClick={() => updateFilters({ stockView: view === "count" ? "all" : "count" })}>{view === "count" ? "Retour aux stocks" : "Faire l’inventaire"}</Button>
+        <div className="inventory-header-actions"><Button variant="outline" onClick={() => updateFilters({ stockView: view === "count" ? "all" : "count" })}>{view === "count" ? "Retour aux stocks" : "Faire l’inventaire"}</Button>
         {view !== "count" && <Button
           icon={<Plus size={18} />}
           onClick={() => setIsAddModalOpen(true)}
         >
           Ajouter un produit
-        </Button>}
+        </Button>}</div>
       </header>
 
       {view !== "count" && <div className="inventory-navigation">
@@ -190,12 +190,12 @@ const Stocks: React.FC = () => {
               Filtres{advancedFilterCount > 0 ? ` (${advancedFilterCount})` : ""}
             </Button>}
           </div>
+          {view !== "count" && !loading && !error && pageCount > 1 && <nav className="inventory-pagination" aria-label="Pages des produits">
+            <span>Page {currentPage + 1} sur {pageCount}</span>
+            <Button variant="outline" size="sm" disabled={currentPage === 0} onClick={() => setPagination({ filters: searchParams.toString(), page: currentPage - 1 })}>Précédente</Button>
+            <Button variant="outline" size="sm" disabled={currentPage === pageCount - 1} onClick={() => setPagination({ filters: searchParams.toString(), page: currentPage + 1 })}>Suivante</Button>
+          </nav>}
         </div>
-        {view !== "count" && !loading && !error && pageCount > 1 && <nav className="inventory-pagination" aria-label="Pages des produits">
-          <span>Page {currentPage + 1} sur {pageCount}</span>
-          <Button variant="outline" size="sm" disabled={currentPage === 0} onClick={() => setPagination({ filters: searchParams.toString(), page: currentPage - 1 })}>Précédente</Button>
-          <Button variant="outline" size="sm" disabled={currentPage === pageCount - 1} onClick={() => setPagination({ filters: searchParams.toString(), page: currentPage + 1 })}>Suivante</Button>
-        </nav>}
         {hasFilters && <button type="button" className="inventory-reset" onClick={() => {
           updateFilters({ search: "", category: "all", stockStatus: "all", stockSupplier: "all", stockLevel: "all" });
           document.getElementById("stock-search")?.focus();

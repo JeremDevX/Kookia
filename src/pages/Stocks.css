@@ -7,6 +7,7 @@
   overflow: hidden;
 }
 .inventory-header { padding: var(--spacing-xl); border-bottom: var(--size-1) solid var(--color-nav-border); }
+.inventory-header-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--spacing-sm); }
 .inventory-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); letter-spacing: normal; }
 .inventory-header .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); line-height: var(--number-1_5); }
 .stocks-container .inventory-header .btn-primary { background: var(--color-nav-text); color: var(--color-surface); }
@@ -47,7 +48,7 @@
   font-size: var(--font-size-sm);
   cursor: pointer;
 }
-.inventory-pagination { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--spacing-sm); margin-top: var(--spacing-md); color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+.inventory-pagination { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--spacing-sm); margin-left: auto; align-self: flex-end; color: var(--color-text-secondary); font-size: var(--font-size-xs); }
 .inventory-reset { margin-top: var(--spacing-sm); padding: var(--spacing-xs); background: transparent; border: none; color: var(--color-primary-text); text-decoration: underline; font-size: var(--font-size-xs); cursor: pointer; }
 .stocks-container .stocks-table-card { border: none; border-radius: var(--number-0); }
 .stock-ticket-panel { display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-md); padding: var(--spacing-xl); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-compact); background: var(--color-surface); box-shadow: var(--shadow-figma-panel); }
@@ -103,6 +104,7 @@
 }
 @media (--media-mobile) {
   .inventory-header { padding: var(--spacing-lg) var(--spacing-md); }
+  .inventory-header-actions { justify-content: flex-start; }
   .inventory-navigation { padding-inline: var(--spacing-md); gap: var(--spacing-sm); flex-wrap: wrap; }
   .inventory-tabs { gap: var(--spacing-md); }
   .inventory-tabs button { padding-block: var(--spacing-md); }

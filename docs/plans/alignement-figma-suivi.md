@@ -200,6 +200,8 @@ retour du focus vérifiés. Comparaison géométrique et états météo réels r
 à vérifier.
 Le 3 novembre 2026, comparaison Firefox de la frame A `673:43621` et du tableau de bord connecté à la démo synthétique : les pictogrammes du contexte retrouvent leur fond gris et leur format carré. La grille générale est présente, mais le graphique des couverts manque faute de prévisions horaires et les cartes de recommandations et de tâches diffèrent encore de la maquette.
 Le bloc « Tâches du jour » présente désormais des lignes compactes avec pictogrammes sur fond gris, dans l’esprit de A. Firefox sur données synthétiques a confirmé l’ouverture du menu et l’absence de débordement à 390 px ; les tâches affichées restent différentes de celles de la maquette, faute de sources équivalentes.
+La liste Stocks a été comparée à A `673:44425` dans Firefox : les actions du titre sont regroupées et la pagination rejoint les filtres lorsque la largeur le permet. Sur démo synthétique, le passage à la page suivante et la recherche ont été vérifiés ; aucun débordement horizontal à 390 px. La colonne Valeur et le panneau de synthèse d’inventaire restent différents de A ; les garanties sur la provenance des stocks et les actions existantes sont conservées.
+
 La maquette Stocks `673:44425` prévoit une valeur par produit. Le prix actuel
 ne conserve ni base fiscale ni provenance ; le détail indique désormais que
 son calcul à partir du stock théorique est indicatif. La colonne de liste reste
