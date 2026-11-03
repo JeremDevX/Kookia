@@ -60,7 +60,7 @@ export default function SetupSteps({ initialProgress }: { initialProgress: Setup
     <div className="setup-content"><h1>Configurez votre restaurant</h1><p className="setup-subtitle">Étape {index + 1} sur 4 · {labels[index]}</p>
       <SetupProgressIndicator index={index} />
       <section className={`setup-card setup-step setup-step-${step}`} aria-labelledby="setup-step-title"><h2 ref={heading} tabIndex={-1} id="setup-step-title">{labels[index]}</h2>
-        {step === "team" && <><p>Compte propriétaire : {user?.displayName} · {user?.email}</p><InvitationManager onPendingLinkChange={setPendingLink} /><MemberManager /></>}
+        {step === "team" && <><div className="setup-owner"><span className="setup-owner-avatar" aria-hidden="true">{user?.displayName.trim().charAt(0).toLocaleUpperCase("fr-FR")}</span><div><strong>{user?.displayName}</strong><span>{user?.email}</span></div><span className="setup-owner-role">Propriétaire</span></div><InvitationManager onPendingLinkChange={setPendingLink} /><MemberManager /></>}
         {step === "suppliers" && <><p>Ajoutez vos fournisseurs maintenant ou continuez sans en ajouter.</p><SupplierSettings onEditingChange={setEditingSupplier} /></>}
         {step === "review" && <SetupReview key={reviewVersion} onReadyChange={setReviewReady} />}
         {error && <div role="alert"><p>{error}</p><Button type="button" variant="outline" disabled={busy} onClick={() => void resync()}>Vérifier l’avancement</Button></div>}

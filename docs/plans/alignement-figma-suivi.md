@@ -64,6 +64,8 @@ Le 3 novembre 2026, une inscription fictive complète dans Firefox a confirmé l
 
 Le 3 novembre 2026, les traits reliant les étapes de configuration ont été ajoutés sur bureau, comme sur A `673:43437`. Ils disparaissent sur mobile pour conserver la grille sur deux lignes. Firefox a confirmé l’affichage à 1280, 390 et 320 px, puis le passage Restaurant → Équipe sur un établissement fictif ; les étapes terminée et courante restent identifiées.
 
+L’étape Équipe présente désormais le propriétaire avec identité et rôle dans une ligne dédiée, dans l’esprit de A `673:43467` ; le trait suivant une étape terminée est noir. Firefox a vérifié le passage depuis Restaurant, le rendu mobile à 320 px et les informations du compte fictif. Le mode d’invitation reste un lien manuel, contrairement à l’envoi par adresse montré dans A.
+
 La première étape Restaurant a été rapprochée de A `673:43437` : couverts et adresse suivent les deux premiers champs, et les jours d’ouverture sont présentés sous forme de choix visibles. La distinction entre jours non renseignés et aucun jour ouvert est conservée. Sur données fictives, Firefox a vérifié la sélection, l’absence de débordement à 390 px et le passage à Équipe. Le brouillon est conservé en mémoire pendant la session de l’application, mais pas après un rechargement complet.
 
 La frame A `673:46642` a été comparée aux paramètres Restaurant sur la démo : la grille et les champs gris correspondent, mais A montre aussi des préférences de notifications, langue et devise absentes de cette rubrique ; leur comportement doit être défini avant de proposer des contrôles fonctionnels. Le sélecteur des jours d’ouverture utilise désormais le même style dans la configuration initiale et les paramètres.

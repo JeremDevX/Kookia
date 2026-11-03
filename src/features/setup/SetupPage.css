@@ -57,3 +57,11 @@ body .setup-actions .btn-primary { width: auto; }
 .setup-progress li[data-completed] { color: var(--color-nav-text); }
 .setup-progress li[data-completed] > span:first-child { background: var(--color-nav-text); color: var(--color-surface); border-color: var(--color-nav-text); }
 @media (--media-mobile) { .setup-review-columns, .setup-review dl > div { grid-template-columns: var(--unit-1fr); } }
+
+.setup-progress li[data-completed]::after { background: var(--color-nav-text); }
+.setup-owner { display: flex; align-items: center; gap: var(--spacing-md); padding: var(--spacing-md) var(--number-0); border-bottom: var(--size-1) solid var(--color-border); }
+.setup-owner-avatar { flex-shrink: var(--number-0); display: grid; place-items: center; width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-accent-text); font-weight: var(--font-weight-semibold); }
+.setup-owner > div { display: flex; flex-direction: column; flex: var(--number-1); min-width: var(--number-0); font-size: var(--font-size-sm); }
+.setup-owner > div span { color: var(--color-text-secondary); overflow-wrap: var(--overflow-wrap-anywhere); }
+.setup-owner-role { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+@media (--media-mobile) { .setup-owner { display: grid; grid-template-columns: var(--size-36) minmax(var(--number-0), var(--unit-1fr)); } .setup-owner > div span { font-size: var(--font-size-xs); } .setup-owner-role { grid-column: var(--number-2); } }
