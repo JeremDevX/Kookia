@@ -60,7 +60,7 @@ export default function TodayPurchaseForecast({ data, loading, error, retry }: {
             {summary.toReview.length > 0 && <>
               <div className="today-forecast-overview">
                 <p><strong>{summary.toReview.length} produits à commander</strong><span>· {summary.supplierCount} fournisseur{summary.supplierCount > 1 ? "s" : ""}</span></p>
-                {summary.estimatedCost !== null && <p><span>Estimation{summary.needsCheck.length > 0 ? " de cette liste" : ""} :</span><strong>{money(summary.estimatedCost)} HT</strong></p>}
+                {summary.estimatedCost !== null && <p><span>Estimation{summary.needsCheck.length > 0 ? " de cette liste" : ""} :</span><strong>{money(summary.estimatedCost)}</strong><span>Base fiscale non renseignée</span></p>}
               </div>
               <ul className="today-forecast-products" aria-label="Quantités d’achat proposées">
                 {summary.toReview.map((item) => <li key={item.productId}>
@@ -99,7 +99,7 @@ export default function TodayPurchaseForecast({ data, loading, error, retry }: {
             <p>Les estimations utilisent les ventes complètes ventilées par service jusqu’au {date(data.asOfDate)}, le jour de semaine et les cartes datées. L’historique insuffisant bloque la suggestion.</p>
             <p>Chaque fournisseur détermine l’horizon : jours de livraison, délai et heure limite Europe/Paris. Les besoins couvrent les services planifiés jusqu’à la veille de la livraison suivante. Les jours d’ouverture reflètent la semaine type, sans exceptions datées ni réceptions hors ouverture. Le jour d’arrivée ne garantit pas une disponibilité avant le service.</p>
             <p>Les commandes attendues sont distinguées du stock disponible et déduites uniquement sous réserve de réception, avec date confirmée. Les colis réels renseignés déterminent l’arrondi. Le chef vérifie et valide la commande.</p>
-            <p>Le coût est estimé avec les prix HT de vos fiches produits. Une météo récente et complète peut ajuster les besoins selon la présence d’une terrasse ; ces règles sont indicatives. Les événements ne sont pas pris en compte.</p>
+            <p>Le coût est estimé avec les prix de vos fiches produits, dont la base fiscale n’est pas renseignée. Une météo récente et complète peut ajuster les besoins selon la présence d’une terrasse ; ces règles sont indicatives. Les événements ne sont pas pris en compte.</p>
             <Link to="/predictions">Voir le détail des prévisions de ventes</Link>
           </details>
         </>}

@@ -118,7 +118,7 @@ export default function PurchaseSuggestions({ refreshKey, salesHref = "/sales#sa
           </div>}
           {summary && <>
             <div className="purchase-overview"><div><span>Achats recommandés restants</span><strong>{summary.toReview.length} produit{summary.toReview.length > 1 ? "s" : ""}</strong></div>
-              <div><span>Budget proposé HT</span><strong>{summary.estimatedCost === null ? "—" : money.format(summary.estimatedCost)}</strong></div>
+              <div><span>Budget proposé · base fiscale non renseignée</span><strong>{summary.estimatedCost === null ? "—" : money.format(summary.estimatedCost)}</strong></div>
             </div>
             <div className="purchase-filters" aria-label="Filtrer les recommandations">{([
               ["toReview", "À acheter"], ["needsCheck", "À vérifier"], ["covered", "Besoin couvert / conditionnel"], ["handled", "Déjà traités"],
@@ -128,7 +128,7 @@ export default function PurchaseSuggestions({ refreshKey, salesHref = "/sales#sa
             {visible.length === 0 && <div className="purchase-empty" role="status"><strong>{search ? "Aucun résultat" : filter === "toReview" ? "Aucun achat à ajouter pour le moment" : "Aucun produit dans cette vue"}</strong>
               <p>{search ? "Essayez un autre nom de produit ou fournisseur." : "Consultez les autres vues ou complétez votre sélection depuis les stocks."}</p><Link to={stocksHref}>Choisir un autre produit</Link></div>}
             {visible.length > 0 && <div className="purchase-table-wrap" role="region" aria-label="Recommandations d’achat — défilement horizontal avec les flèches" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}><table className="purchase-table">
-              <thead><tr><th scope="col">Produit</th><th scope="col">Proposition</th><th scope="col">Quantité</th><th scope="col">Estimation HT</th><th scope="col">Action</th></tr></thead>
+              <thead><tr><th scope="col">Produit</th><th scope="col">Proposition</th><th scope="col">Quantité</th><th scope="col">Estimation · base fiscale non renseignée</th><th scope="col">Action</th></tr></thead>
               <tbody>{visible.map((item) => <PurchaseSuggestionCard
                 key={item.productId} item={item} limited={limited} value={quantities[item.productId] ?? ""}
                 inCart={cartItems.some((cartItem) => cartItem.productId === item.productId)}
