@@ -20,4 +20,14 @@ describe("supplier delivery horizon", () => {
     expect(supplierDeliveryHorizon({}, new Date())).toMatchObject({ status: "unknown" });
     expect(supplierDeliveryHorizon({ ...supplier, deliveryWeekdays: [7] }, new Date())).toMatchObject({ status: "unknown" });
   });
+  it("filters supplier days using known restaurant opening days", () => {
+    const now = new Date("2026-09-27T09:00:00Z");
+    expect(supplierDeliveryHorizon(supplier, now, [4])).toMatchObject({ status: "known", openingDays: "known",
+      nextDeliveryDate: "2026-10-01", followingDeliveryDate: "2026-10-08", throughDate: "2026-10-07" });
+    expect(supplierDeliveryHorizon(supplier, now, [2])).toMatchObject({ status: "unknown", code: "opening_days_incompatible" });
+    expect(supplierDeliveryHorizon(supplier, now, [])).toMatchObject({ status: "unknown", code: "opening_days_incompatible" });
+    expect(supplierDeliveryHorizon(supplier, now, null)).toMatchObject({ status: "known", openingDays: "unknown", nextDeliveryDate: "2026-09-28" });
+    expect(supplierDeliveryHorizon(supplier, now, [7])).toMatchObject({ status: "known", openingDays: "unknown" });
+  });
+
 });

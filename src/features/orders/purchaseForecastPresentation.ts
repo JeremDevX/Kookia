@@ -6,14 +6,14 @@ export function isPurchaseSuggestionHandled(item: PurchaseSuggestion, inCart: bo
 
 export function summarizePurchaseForecast(data: PurchaseSuggestions, cartProductIds: string[]) {
   const inCart = new Set(cartProductIds);
-  const actionable = data.status === "ready" && data.blockers.length === 0;
+  const actionable = data.status === "ready";
   const toReview = actionable ? data.suggestions.filter((item) => item.canAdd &&
     item.estimatedQuantity !== null && item.estimatedQuantity > 0 &&
     !isPurchaseSuggestionHandled(item, inCart.has(item.productId))) : [];
   toReview.sort((a, b) => a.supplierName.localeCompare(b.supplierName, "fr") ||
     a.productName.localeCompare(b.productName, "fr"));
   const needsCheck = data.suggestions.filter((item) => !isPurchaseSuggestionHandled(item, inCart.has(item.productId)) &&
-    (item.status === "needs_stock_count" || item.status === "unit_mismatch" || item.status === "supplier_constraints_missing" || item.status === "availability_conflict"));
+    ((item.status === "ready" && !item.canAdd) || item.status === "needs_stock_count" || item.status === "unit_mismatch" || item.status === "supplier_constraints_missing" || item.status === "availability_conflict"));
   const covered = data.suggestions.filter((item) => item.status === "covered" && !isPurchaseSuggestionHandled(item, inCart.has(item.productId)));
   const handled = data.suggestions.filter((item) => isPurchaseSuggestionHandled(item, inCart.has(item.productId)));
   const estimatedCost = toReview.length > 0 && toReview.every((item) => item.estimatedCost !== null)
@@ -31,6 +31,6 @@ export function purchaseForecastItemStatus(item: PurchaseSuggestion) {
 export function purchaseForecastIndicator(data: PurchaseSuggestions | null, cartProductIds: string[], loading: boolean, unavailable: boolean) {
   if (loading) return { value: "—", detail: "Chargement…" };
   if (unavailable) return { value: "—", detail: "Suggestions indisponibles" };
-  if (!data || data.status !== "ready" || data.blockers.length > 0) return { value: "—", detail: "Données insuffisantes" };
+  if (!data || data.status !== "ready") return { value: "—", detail: "Données insuffisantes" };
   return { value: summarizePurchaseForecast(data, cartProductIds).toReview.length, detail: "Produits à examiner" };
 }

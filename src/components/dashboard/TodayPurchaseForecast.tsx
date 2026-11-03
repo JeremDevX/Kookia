@@ -38,6 +38,10 @@ export default function TodayPurchaseForecast({ data, loading, error, retry }: {
           retry(); headingRef.current?.focus();
         }}>Réessayer</Button> : <Link to="/orders#selection">Vérifier la commande en préparation</Link>}
       </div> : data && summary && <>
+        {data.deliveryWarnings.map((warning) => <div className="today-forecast-guidance" role="status" key={`${warning.code}:${warning.message}`}>
+          <p>{warning.message}</p>
+          <Link to="/settings?section=restaurant">Paramètres du restaurant</Link>{warning.code === "opening_days_incompatible" && <> · <Link to="/settings?section=suppliers">Paramètres fournisseurs</Link></>}
+        </div>)}
         <p className="today-forecast-period">À partir du <strong>{date(data.forecastDate)}</strong></p>
         {data.status !== "ready" ? <div className="today-forecast-guidance">
           <h3>{data.status === "no_data" ? "Renseignez vos ventes pour obtenir une liste de courses" :
@@ -47,12 +51,12 @@ export default function TodayPurchaseForecast({ data, loading, error, retry }: {
             : "Kookia s’appuie sur vos ventes et vos recettes pour estimer ce qu’il faudra en cuisine, puis tient compte de votre stock."}</p>
           <Link to="/sales#sales-start">Renseigner mes ventes<ArrowRight size={16} aria-hidden="true" /></Link>
         </div> : <>
-          {data.blockers.length > 0 ? <div className="today-forecast-guidance">
+          {data.blockers.length > 0 && <div className="today-forecast-guidance">
             <h3>Complétez les données des services pour préparer la liste</h3>
-            <p>Vérifiez les horaires, les cartes datées, les recettes et l’historique ventilé par service. Un horizon incomplet ne permet pas de valider une suggestion.</p>
+            <p>Vérifiez les horaires, les cartes datées, les recettes et l’historique ventilé par service. Un horizon incomplet bloque les propositions qui en dépendent.</p>
             <details><summary>Voir ce qu’il manque</summary><ul>{data.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul></details>
             <Link to="/sales">Vérifier les services et leurs cartes</Link>
-          </div> : <>
+          </div>}
             {summary.toReview.length > 0 && <>
               <div className="today-forecast-overview">
                 <p><strong>{summary.toReview.length} produits à commander</strong><span>· {summary.supplierCount} fournisseur{summary.supplierCount > 1 ? "s" : ""}</span></p>
@@ -77,24 +81,23 @@ export default function TodayPurchaseForecast({ data, loading, error, retry }: {
                 <small>Quantités ajustables, sans envoi automatique.</small></div>
             </>}
             {summary.toReview.length === 0 && summary.needsCheck.length === 0 && summary.handled.length === 0 &&
-              <p>{summary.covered.length > 0 ? "Le besoin estimé est couvert par le stock ou conditionnellement par des commandes attendues. Vérifiez les réceptions."
+              <p>{summary.covered.length > 0 ? "Aucune quantité à commander n’est proposée pour ces produits. Consultez les précisions ci-dessous."
                 : "La liste ne peut pas encore être calculée. Vérifiez les ventes et les recettes de vos plats."}</p>}
             {summary.needsCheck.length > 0 && <div className="today-forecast-guidance">
               <h3>Vérifiez les données de {summary.needsCheck.length} produit{summary.needsCheck.length > 1 ? "s" : ""} pour compléter la liste</h3>
-              <ul>{summary.needsCheck.map((item) => <li key={item.productId}><Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>
-                {item.productName} — {item.status === "unit_mismatch" ? "vérifier l’unité" : item.status === "supplier_constraints_missing" ? "renseigner fournisseur et conditionnement" : item.status === "availability_conflict" ? "résoudre un manque avant livraison ou rapprocher les lots" : "compter le stock"}</Link></li>)}</ul>
+              <ul>{summary.needsCheck.map((item) => <li key={item.productId}>{item.status === "ready" ? <>{item.productName} — {item.reason}</> : item.status === "supplier_constraints_missing" ? <>{item.productName} — {item.deliveryHorizon.status === "unknown" ? item.deliveryHorizon.reason : item.reason} <Link to="/settings?section=suppliers">Paramètres fournisseur</Link> · <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Conditionnement</Link></> : <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>
+                {item.productName} — {item.status === "unit_mismatch" ? "vérifier l’unité" : item.status === "availability_conflict" ? "résoudre un manque avant livraison ou rapprocher les lots" : "compter le stock"}</Link>}</li>)}</ul>
             </div>}
-            {summary.covered.length > 0 && <details><summary>Besoin couvert ou conditionnel pour {summary.covered.length} produits</summary>
-              <ul>{summary.covered.map((item) => <li key={item.productId}>{item.productName} : {quantity(item.usableStock ?? item.countedStock!)} {item.unit} en stock pour {quantity(item.forecastNeed)} {item.unit} prévus. {item.expectedQuantity > 0 && `${quantity(item.expectedQuantity)} ${item.unit} attendus, non disponibles — couverture sous réserve de réception.`}</li>)}</ul>
+            {summary.covered.length > 0 && <details><summary>Produits sans quantité à commander : {summary.covered.length}</summary>
+              <ul>{summary.covered.map((item) => <li key={item.productId}>{item.productName} : {item.reason}</li>)}</ul>
             </details>}
             {summary.handled.length > 0 && <details><summary>{summary.handled.length} produits déjà traités dans vos commandes</summary>
               <ul>{summary.handled.map((item) => <li key={item.productId}>{item.productName} — {purchaseForecastItemStatus(item)}</li>)}</ul>
               <Link to={purchasePreparationHref}>Reprendre la préparation</Link>
             </details>}
-          </>}
           <details className="today-forecast-method"><summary>Comment Kookia prépare cette liste ?</summary>
             <p>Les estimations utilisent les ventes complètes ventilées par service jusqu’au {date(data.asOfDate)}, le jour de semaine et les cartes datées. L’historique insuffisant bloque la suggestion.</p>
-            <p>Chaque fournisseur détermine l’horizon : jours de livraison, délai et heure limite Europe/Paris. Les besoins couvrent les services planifiés jusqu’à la veille de la livraison suivante. Le jour d’arrivée ne garantit pas une disponibilité avant le service.</p>
+            <p>Chaque fournisseur détermine l’horizon : jours de livraison, délai et heure limite Europe/Paris. Les besoins couvrent les services planifiés jusqu’à la veille de la livraison suivante. Les jours d’ouverture reflètent la semaine type, sans exceptions datées ni réceptions hors ouverture. Le jour d’arrivée ne garantit pas une disponibilité avant le service.</p>
             <p>Les commandes attendues sont distinguées du stock disponible et déduites uniquement sous réserve de réception, avec date confirmée. Les colis réels renseignés déterminent l’arrondi. Le chef vérifie et valide la commande.</p>
             <p>Le coût est estimé avec les prix HT de vos fiches produits. Une météo récente et complète peut ajuster les besoins selon la présence d’une terrasse ; ces règles sont indicatives. Les événements ne sont pas pris en compte.</p>
             <Link to="/predictions">Voir le détail des prévisions de ventes</Link>

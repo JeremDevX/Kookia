@@ -52,6 +52,7 @@ export interface PurchaseSuggestions {
   forecastDate: string;
   completeServiceDays: number;
   blockers: string[];
+  deliveryWarnings: Array<{ code: "opening_days_unknown" | "opening_days_incompatible"; message: string }>;
   suggestions: PurchaseSuggestion[];
   assumptions: string[];
 }
@@ -62,8 +63,7 @@ function suggestionFor(need: ForecastIngredient & { forecastNeed: number }, prod
   id: string; name: string; category: string; unit: string; stockRevision: number; currentStock: Prisma.Decimal;
   pricePerUnit: Prisma.Decimal; orderPackQuantity?: Prisma.Decimal | null; supplier: { name: string; deliveryWeekdays: number[]; leadTimeDays: number | null; orderCutoffTime: string | null };
 }, count: { countedQuantity: Prisma.Decimal; countDate: Date; stockRevisionAfter: number; unit: string } | undefined,
-workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, projectionComplete: boolean, now: Date, expectedQuantity: number, availability: ReturnType<typeof purchaseAvailability> | null, weatherAdjustments: ForecastWeatherReference[]): PurchaseSuggestion {
-  const deliveryHorizon = supplierDeliveryHorizon(product.supplier, now);
+workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, projectionComplete: boolean, expectedQuantity: number, availability: ReturnType<typeof purchaseAvailability> | null, weatherAdjustments: ForecastWeatherReference[], deliveryHorizon: SupplierDeliveryHorizon): PurchaseSuggestion {
   const packKnown = product.orderPackQuantity !== null && product.orderPackQuantity !== undefined;
   const constraintsKnown = deliveryHorizon.status === "known" && packKnown;
   const unitMatches = need.unit === product.unit;
@@ -88,7 +88,7 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
     sources: need.sources, weatherAdjustments,
   };
   const suggestionKey = createHash("sha256").update(JSON.stringify(input)).digest("hex");
-  const reason = !constraintsKnown ? "Renseignez les contraintes de livraison et le conditionnement réel avant de valider une suggestion." : !unitMatches ? "L’unité de la recette ne correspond plus à l’unité du produit."
+  const reason = deliveryHorizon.status === "unknown" && deliveryHorizon.code === "opening_days_incompatible" ? deliveryHorizon.reason : !constraintsKnown ? "Renseignez les contraintes de livraison et le conditionnement réel avant de valider une suggestion." : !unitMatches ? "L’unité de la recette ne correspond plus à l’unité du produit."
     : !countVerified ? "Faites un comptage à jour avant de calculer ce qui reste à acheter."
     : availability?.lotMismatch ? "Les lots dépassent le dernier comptage : rapprochez les quantités avant de commander."
     : (availability?.beforeDeliveryShortage ?? 0) > 0 ? `Manque estimé de ${availability!.beforeDeliveryShortage} ${product.unit} avant la prochaine livraison. Le colis proposé ne résout que les besoins ultérieurs : confirmez une livraison avancée ou une alternative avec le chef.`
@@ -111,7 +111,7 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(inputDate);
   const [baseline, restaurant, products, counts, pendingLines, lots] = await Promise.all([
     getSalesBaseline(restaurantId, addCalendarDays(today, -1), db),
-    db.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } }),
+    db.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true, openingWeekdays: true } }),
     db.product.findMany({ where: { restaurantId }, include: { supplier: true }, orderBy: { name: "asc" } }),
     db.stockCount.findMany({ where: { restaurantId }, orderBy: [{ countedAt: "desc" }, { id: "desc" }],
       select: { productId: true, countedQuantity: true, countDate: true, stockRevisionAfter: true, unit: true } }),
@@ -127,11 +127,16 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
   const expectedLines = pendingLines.map((line) => ({ productId: line.productId, unit: line.unit, quantity: Number(line.quantity),
     receivedQuantity: line.receiptLines.reduce((sum, receipt) => sum + Number(receipt.receivedQuantity), 0),
     expectedDeliveryDate: line.expectedDeliveryDate?.toISOString().slice(0, 10) ?? null }));
-  const horizons = new Map(products.map((product) => [product.supplierId, supplierDeliveryHorizon(product.supplier, inputDate)]));
+  const horizons = new Map(products.map((product) => [product.supplierId, supplierDeliveryHorizon(product.supplier, inputDate, restaurant.openingWeekdays)]));
   const throughDates = [...new Set([...horizons.values()].map((horizon) => horizon.status === "known" ? horizon.throughDate : today))];
   const forecasts = new Map(await Promise.all(throughDates.map(async (throughDate) => [throughDate,
     await getOperationalForecast(restaurantId, today, throughDate, db, context.asOfDate)] as const)));
+  const deliveryBlockers = products.flatMap((product) => {
+    const horizon = horizons.get(product.supplierId)!;
+    return horizon.status === "unknown" && horizon.code === "opening_days_incompatible" ? [`${product.supplier.name} : ${horizon.reason}`] : [];
+  });
   const blockers = [...new Set([...forecasts.values()].flatMap((forecast) => forecast.blockers))];
+  const openingDaysKnown = Array.isArray(restaurant.openingWeekdays) && restaurant.openingWeekdays.every(day => Number.isInteger(day) && Number(day) >= 0 && Number(day) <= 6);
   const suggestions = products.flatMap((product) => {
     const horizon = horizons.get(product.supplierId)!;
     const forecast = forecasts.get(horizon.status === "known" ? horizon.throughDate : today)!;
@@ -147,10 +152,10 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
       forecast.services.flatMap((service) => service.ingredientNeeds.filter((ingredient) => ingredient.productId === product.id && ingredient.unit === product.unit)
         .map((ingredient) => ({ date: service.date, slot: service.slot, quantity: ingredient.quantity }))), arrivals, today, horizon.status === "known" ? horizon.nextDeliveryDate : today) : null;
     return [suggestionFor(need, product, count, workspaceMode, context,
-      forecast.provenance === "recorded_sales", blockers.length === 0, inputDate,
+      forecast.provenance === "recorded_sales", forecast.blockers.length === 0,
       roundQuantity(arrivals.reduce((sum, arrival) => sum + arrival.quantity, 0)), availability,
       forecast.services.flatMap(service => service.weatherAdjustment && service.ingredientNeeds.some(ingredient => ingredient.productId === product.id)
-        ? [{ date: service.date, slot: service.slot, adjustment: service.weatherAdjustment }] : []))];
+        ? [{ date: service.date, slot: service.slot, adjustment: service.weatherAdjustment }] : []), horizon)];
   });
   const decisionRows = await db.recommendationDecision.findMany({
     where: { restaurantId, decision: { in: ["purchase_suggestion_added", "purchase_suggestion_excluded"] } },
@@ -174,10 +179,12 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
   return { status: "ready", provenance: context.provenance,
     workspaceMode, model: context.model, asOfDate: context.asOfDate, forecastDate: context.forecastDate,
     completeServiceDays: baseline.completeServiceDays, blockers,
+    deliveryWarnings: [...(openingDaysKnown ? [] : [{ code: "opening_days_unknown" as const, message: "Jours d’ouverture du restaurant non renseignés : les dates de livraison ne sont pas vérifiées par rapport à l’ouverture." }]),
+      ...[...new Set(deliveryBlockers)].map(message => ({ code: "opening_days_incompatible" as const, message }))],
     suggestions: suggestions.map((suggestion) => ({ ...suggestion, decision: decisionsBySuggestion.get(
       `${suggestion.productId}\u0000${suggestion.suggestionKey}`) ?? null })),
     assumptions: ["Les besoins cumulent les services planifiés et leurs cartes jusqu’à la veille de la livraison suivante; l’arrivée le jour de livraison reste à confirmer.",
-      "Les contraintes de livraison inconnues et les conditionnements non renseignés bloquent la suggestion.",
+      "Les jours d’ouverture sont ceux de la semaine type ; les fermetures exceptionnelles et réceptions hors ouverture ne sont pas prises en compte. Les contraintes fournisseur inconnues et les conditionnements non renseignés bloquent la suggestion.",
       "La couverture est simulée par date et FEFO : les lots à échéance dépassée ne couvrent pas un service ultérieur. Une échéance inconnue reste à vérifier par le chef.",
       "Les commandes attendues ne sont pas du stock disponible. Le besoin conditionnel reste soumis à leur réception.",
       "Le prix utilise le catalogue actuel, à titre indicatif; ce n’est pas un prix historique ni un montant comptable.", forecastWeatherNotice] };

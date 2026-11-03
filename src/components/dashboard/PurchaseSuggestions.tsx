@@ -101,6 +101,10 @@ export default function PurchaseSuggestions({ refreshKey, salesHref = "/sales#sa
     </header>
     {loading ? <p role="status">Vérification des services, recettes et comptages…</p> : error && !data
       ? <div role="alert"><p>{error}</p><Button ref={retryButtonRef} type="button" variant="outline" onClick={retrySuggestions}>Recharger les propositions</Button></div> : data && <>
+        {data.deliveryWarnings.map((warning) => <div className="purchase-suggestions-note" role="status" key={`${warning.code}:${warning.message}`}>
+          <p>{warning.message}</p>
+          {limited ? "Demandez au propriétaire de vérifier les paramètres." : <><Link to="/settings?section=restaurant">Paramètres du restaurant</Link>{warning.code === "opening_days_incompatible" && <> · <Link to="/settings?section=suppliers">Paramètres fournisseurs</Link></>}</>}
+        </div>)}
         {data.workspaceMode === "demo" && <p className="purchase-suggestions-note">Les commandes de cet espace ne sont pas envoyées au fournisseur et ne modifient pas le stock.</p>}
         {data.status === "simulation_only" && <p className="purchase-suggestions-note" role="status">Les ventes disponibles ne sont pas retenues comme ventes enregistrées et ne permettent pas de préparer un achat.</p>}
         {data.status === "no_data" && <p>Aucune vente complète ne permet encore d’estimer le prochain service.</p>}
@@ -109,7 +113,7 @@ export default function PurchaseSuggestions({ refreshKey, salesHref = "/sales#sa
         {data.status === "ready" && <>
           <p className="purchase-suggestions-period">À partir du {new Date(`${data.forecastDate}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} · besoins par service et carte datée, jusqu’à la prochaine livraison de chaque fournisseur. Stock vérifié et attendu conditionnel séparés.</p>
           {data.blockers.length > 0 && <div className="purchase-suggestions-blockers" role="status">
-            <strong>Besoin incomplet — aucune proposition ne peut être ajoutée.</strong>
+            <strong>Certaines prévisions sont incomplètes : seules les propositions disponibles peuvent être ajoutées.</strong>
             <ul>{data.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>
           </div>}
           {summary && <>

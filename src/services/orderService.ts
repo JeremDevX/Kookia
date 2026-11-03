@@ -64,6 +64,7 @@ export interface PurchaseSuggestions {
   forecastDate: string;
   completeServiceDays: number;
   blockers: string[];
+  deliveryWarnings: Array<{ code: "opening_days_unknown" | "opening_days_incompatible"; message: string }>;
   suggestions: PurchaseSuggestion[];
   assumptions: string[];
 }
