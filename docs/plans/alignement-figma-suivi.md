@@ -84,6 +84,8 @@ La frame Prévisions A `673:46361` a été comparée à la démo Firefox : la pr
 
 Dans Recettes, les fiches candidates issues de pièces sont désormais regroupées dans un panneau replié avec leur nombre : le catalogue est visible dès l’ouverture. Firefox sur démo synthétique a vérifié ouverture et fermeture au clavier, ouverture de l’éditeur et focus ; aucun débordement à 390 px. La frame A Recettes n’a pas pu être comparée lors de ce contrôle : son canevas est resté noir. Les états fermé et ouvert figurent dans B (`159:423` et `159:425`) ; leur comparaison visuelle dans Firefox reste à faire.
 
+L’état Historique sans résultat (`182:596`) représente la recherche et le bouton Effacer observés dans Firefox sur démo synthétique. Effacer est relié à l’état de chronologie dans les propriétés du prototype ; la capture Figma a été contrôlée. Le clic du prototype et le rendu de B dans Firefox restent à vérifier.
+
 L’état Historique sur période dense (`180:597`) montre le nombre d’événements et l’avertissement de résultats limités observés dans Firefox sur démo synthétique ; la carte d’événement est un exemple fictif. La capture Figma a été contrôlée ; le rendu de B dans Firefox reste à vérifier.
 
 L’historique a été confronté à la capture B `21:2` : l’en-tête et les cartes ont été compactés et le surtitre absent de B a été retiré. Sur démo synthétique dans Firefox, une recherche sans résultat puis son effacement ont été vérifiés ; 20 événements réapparaissent et aucun débordement horizontal n’a été mesuré à 390 px. Le contrôle CSS passe. La comparaison de B directement dans Firefox reste bloquée par le canevas noir.
@@ -291,7 +293,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Services — incident : lot écarté ; livraison reportée | `147:364`, `147:484` | 1440 × 2000 chacun |
 | Historique vide | `18:2` | 1440 × 1250 |
 | Historique avec événements | `21:2` | 1440 × 1450 |
-| Historique — période dense (exemple fictif) | `180:597` | 1440 × 1450 |
+| Historique — période dense et recherche sans résultat (exemples fictifs) | `180:597`, `182:596` | 1440 × 1450 chacun |
 | Plus | `22:2` | 1440 × 1250 |
 | Fournisseurs | `25:2` | 1440 × 1100 |
 | Nouveau fournisseur | `25:77` | 1440 × 1450 |
