@@ -26,8 +26,16 @@ describe("Bilan overview reading safeguards", () => {
     const html = render(bucket());
     expect(html.match(/class="bilan-kpi-value">—/g)).toHaveLength(3);
     expect(html).toContain("30 jours à compléter");
+    expect(html).toContain("Services complets enregistrés</h3><p class=\"bilan-kpi-value\">0</p>");
+    expect(html).toContain("30 jours restent à compléter");
+    expect(html).not.toContain("Calendrier de service renseigné");
     expect(html).toContain('href="/sales#sales-start"');
     expect(html).toContain('href="/orders"');
+  });
+  it("shows recorded complete services with calendar coverage", () => {
+    const html = render({ ...bucket(), serviceDays: { complete: 22, partial: 0, coverageMissing: 0, closed: 8, unregistered: 0 } });
+    expect(html).toContain("Services complets enregistrés</h3><p class=\"bilan-kpi-value\">22</p>");
+    expect(html).toContain("Calendrier de service renseigné");
   });
   it("shows entered sales while keeping incomplete coverage explicit", () => {
     const html = render({ ...bucket(), menuItemUnits: 120, receiptCount: 2, receivedCost: 450 });

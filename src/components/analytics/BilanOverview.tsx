@@ -24,6 +24,10 @@ export default function BilanOverview({ report }: { report: Pick<ImpactReport, "
         <p>Unités saisies, pas des couverts</p>
         <small>{missingDays ? "Historique de ventes incomplet" : "Calendrier de service renseigné"}</small>
       </article>
+      <article><h3>Services complets enregistrés</h3><p className="bilan-kpi-value">{current.serviceDays.complete}</p>
+        <p>Jours ouverts déclarés complets</p>
+        <small>{missingDays ? `${missingDays} jours restent à compléter` : "Calendrier de service renseigné"}</small>
+      </article>
     </div>
     <section className="bilan-attention" aria-labelledby="bilan-attention-title">
       <h3 id="bilan-attention-title">Pour fiabiliser votre bilan</h3>
