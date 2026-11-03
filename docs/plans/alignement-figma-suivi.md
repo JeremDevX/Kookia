@@ -306,7 +306,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Sélecteur — normal, focus, erreur et aperçu | `146:365`, `146:378` | 360 × 172 chacun |
 | Présentation authentification — panneau réutilisable | `126:47` | 600 × 900 |
 | Accès — vérification de session indisponible | `171:497` | 1440 × 900 |
-| Recettes — fiches candidates : panneau, formulaires et décisions | `159:423`, `159:425`, `164:426`, `167:431`, `168:452`, `169:495`, `169:514` | 900 × 71 à 900 × 1540 |
+| Recettes — fiches candidates : panneau, formulaires et décisions | `159:423`, `159:425`, `164:426`, `167:431`, `168:452`, `169:495`, `169:514` | 900 × 71 à 900 × 2000 |
 | Configuration — équipe : lien créé et lien masqué | `152:408`, `153:416` | 1440 × 1420 chacun |
 | Invitation — connexion, inscription, acceptation, confirmation, lien invalide, session indisponible | `120:30`, `123:33`, `117:29`, `120:56`, `117:45`, `123:63` | 1440 × 900 chacun |
 
@@ -319,6 +319,8 @@ L’état global de vérification de session indisponible (`171:497`) est rangé
 Le 3 novembre 2026, l’état d’inscription « serveur indisponible » a été ajouté dans B (`138:305`). Placé initialement hors de sa section par erreur, il a été déplacé sous les deux états existants dans « 11 · Inscription — accès ». Le contrôle structurel ne détecte aucun débordement ni chevauchement entre sections ou entre leurs éléments directs. Le texte correspond au repli de l’application ; le rendu a été contrôlé par capture Figma. Dans Firefox, le canevas Figma est resté noir : le contrôle visuel dans ce navigateur reste à refaire.
 
 Les résultats de confirmation (`169:495`) et d’écartement (`169:514`) reprennent les messages et statuts du code, avec des données fictives. Les actions correspondantes sont reliées dans les propriétés du prototype. Les captures Figma ont été contrôlées ; le canevas reste noir dans Firefox et les clics ne sont pas vérifiés.
+
+Les deux formulaires de fiches candidates conservent désormais le panneau et l’hypothèse visible au-dessus, comme dans l’application ; le bouton Nouvelle candidate est masqué pendant l’édition. La section a été réalignée : sept cadres, aucun chevauchement ni débordement détecté. Captures Figma contrôlées ; les interactions dans Firefox restent à vérifier.
 
 La modification d’une hypothèse (`168:452`) illustre trois ingrédients et pièces fictifs, avec les champs et actions de l’application. Les boutons Modifier et Annuler sont reliés dans les propriétés du prototype. La capture Figma a permis de corriger le débordement du nom et l’espacement des actions ; la vérification des clics dans Firefox reste à faire.
 
