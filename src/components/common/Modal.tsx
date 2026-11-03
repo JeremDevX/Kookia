@@ -66,7 +66,7 @@ const Modal: React.FC<ModalProps> = ({
         modalRef.current.querySelectorAll<HTMLElement>(focusableSelector),
       ).filter(
         (element) =>
-          !element.hasAttribute("disabled") &&
+          !element.matches(":disabled") &&
           element.getAttribute("aria-hidden") !== "true",
       );
     };
