@@ -12,6 +12,7 @@ import { setupValues } from "./setupLogic";
 import { createSetup, type SetupProgress } from "./setupApi";
 import SetupSteps from "./SetupSteps";
 import SetupProgressIndicator from "./SetupProgressIndicator";
+import SetupHeader from "./SetupHeader";
 import { clearSetupDraft, emptySetupForm, readSetupDraft, saveSetupDraft } from "./setupDraft";
 
 type Field = keyof typeof emptySetupForm;
@@ -46,10 +47,7 @@ function SetupForm() {
     } finally { setSaving(false); }
   };
   return <main className="setup-page">
-    <header className="setup-header">
-      <div className="auth-logo setup-logo"><span aria-hidden="true">K</span><strong>KookIA</strong></div>
-      <a href="mailto:support@kookia.app?subject=Support%20KookiA">Besoin d’aide ?</a>
-    </header>
+    <SetupHeader step={1} />
     <div className="setup-content">
       <h1 id="setup-title">Configurez votre restaurant</h1>
       <p className="setup-subtitle">Étape 1 sur 4 · Renseignez les informations de votre établissement.</p>

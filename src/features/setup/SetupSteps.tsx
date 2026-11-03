@@ -10,6 +10,7 @@ import SetupReview from "./SetupReview";
 import InvitationManager from "../invitations/InvitationManager";
 import MemberManager from "../members/MemberManager";
 import SetupProgressIndicator from "./SetupProgressIndicator";
+import SetupHeader from "./SetupHeader";
 
 const labels = ["Restaurant", "Équipe", "Fournisseurs", "Finalisation"];
 const indices: Record<SetupStep, number> = { team: 1, suppliers: 2, review: 3 };
@@ -55,8 +56,7 @@ export default function SetupSteps({ initialProgress }: { initialProgress: Setup
   const index = indices[step];
   const previous: SetupStep | null = step === "review" ? "suppliers" : step === "suppliers" ? "team" : null;
   const next: SetupStep | null = step === "team" ? "suppliers" : step === "suppliers" ? "review" : null;
-  return <main className="setup-page"><header className="setup-header"><div className="auth-logo setup-logo"><span aria-hidden="true">K</span><strong>KookIA</strong></div>
-    <a href="mailto:support@kookia.app?subject=Support%20KookiA">Besoin d’aide ?</a></header>
+  return <main className="setup-page"><SetupHeader step={index + 1} />
     <div className="setup-content"><h1>Configurez votre restaurant</h1><p className="setup-subtitle">Étape {index + 1} sur 4 · {labels[index]}</p>
       <SetupProgressIndicator index={index} />
       <section className={`setup-card setup-step setup-step-${step}`} aria-labelledby="setup-step-title"><h2 ref={heading} tabIndex={-1} id="setup-step-title">{labels[index]}</h2>
