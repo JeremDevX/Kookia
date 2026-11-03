@@ -7,6 +7,7 @@ import { saveSupplier } from "../../services/restaurantService";
 import type { Supplier } from "../../types";
 import { useAuth } from "../../features/auth/context/AuthContext";
 import { clearSupplierDraft, readSupplierDraft, saveSupplierDraft } from "./supplierDraft";
+import "./SupplierSettings.css";
 
 export default function SupplierSettings({ onEditingChange }: { onEditingChange?: (editing: boolean) => void } = {}) {
   const { suppliers, loading, error, refetch } = useInventoryCatalog();
@@ -27,6 +28,7 @@ export default function SupplierSettings({ onEditingChange }: { onEditingChange?
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const firstSupplierActionRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const editOriginRef = useRef<HTMLButtonElement>(null);
   const retryFocusPending = useRef(false);
   const editingActive = editing !== null;
 
@@ -71,8 +73,8 @@ export default function SupplierSettings({ onEditingChange }: { onEditingChange?
       <Button ref={retryButtonRef} type="button" variant="outline" disabled={loading || saving} onClick={retryCatalog}>Réessayer</Button>
     </div> : message && <p role="alert">{message}</p>}
     {notice && <p role="status">{notice}</p>}
-    {suppliers.map((supplier, index) => <div key={supplier.id} className="integration-item"><div><strong>{supplier.name}</strong><p>{supplier.email} · {supplier.phone}</p></div><Button ref={index === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving || editing !== null} variant="outline" onClick={() => { edit(supplier, false); setCreating(false); setMessage(""); setNotice(""); }}>Modifier</Button></div>)}
-    <Button ref={suppliers.length === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving || loading || Boolean(error) || editing !== null} onClick={() => { edit({ id: crypto.randomUUID(), name: "", email: "", phone: "" }, true); setCreating(true); setMessage(""); setNotice(""); }}>Ajouter un fournisseur</Button>
+    {suppliers.map((supplier, index) => <div key={supplier.id} className="integration-item"><div><strong>{supplier.name}</strong><p>{supplier.email} · {supplier.phone}</p></div><Button ref={index === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving || editing !== null} variant="outline" onClick={(event) => { editOriginRef.current = event.currentTarget; edit(supplier, false); setCreating(false); setMessage(""); setNotice(""); }}>Modifier</Button></div>)}
+    <Button ref={suppliers.length === 0 ? firstSupplierActionRef : undefined} type="button" disabled={saving || loading || Boolean(error) || editing !== null} onClick={(event) => { editOriginRef.current = event.currentTarget; edit({ id: crypto.randomUUID(), name: "", email: "", phone: "" }, true); setCreating(true); setMessage(""); setNotice(""); }}>Ajouter un fournisseur</Button>
     {editing && <form ref={formRef} onSubmit={submit} className="form-grid supplier-form">
       <h3>{creating ? "Nouveau fournisseur" : "Modifier le fournisseur"}</h3>
       <Input id="supplier-name" label="Nom" placeholder="Nom du fournisseur" required value={editing.name} disabled={saving} onChange={(event) => edit({ ...editing, name: event.target.value })} />
@@ -84,7 +86,7 @@ export default function SupplierSettings({ onEditingChange }: { onEditingChange?
       <Input id="supplier-lead" label="Délai de commande (jours calendaires)" type="number" min="0" max="60" value={editing.leadTimeDays ?? ""} disabled={saving} onChange={(event) => edit({ ...editing, leadTimeDays: event.target.value === "" ? null : Number(event.target.value) })} />
       <Input id="supplier-cutoff" label="Heure limite de commande (Europe/Paris)" type="time" value={editing.orderCutoffTime ?? ""} disabled={saving} onChange={(event) => edit({ ...editing, orderCutoffTime: event.target.value || null })} />
       <p>Sans contraintes renseignées, l’horizon d’achat reste à confirmer. Après l’heure limite, le calcul part du lendemain.</p>
-      <div className="flex gap-sm"><Button type="submit" disabled={saving}>Enregistrer</Button><Button type="button" variant="outline" disabled={saving} onClick={() => edit(null)}>Annuler</Button></div>
+      <div className="flex gap-sm"><Button type="submit" disabled={saving}>Enregistrer</Button><Button type="button" variant="outline" disabled={saving} onClick={() => { edit(null); requestAnimationFrame(() => editOriginRef.current?.focus()); }}>Annuler</Button></div>
     </form>}
   </Card>;
 }

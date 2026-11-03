@@ -1,0 +1,4 @@
+.supplier-form h3 { font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); }
+.supplier-form fieldset { display: flex; flex-wrap: wrap; gap: var(--spacing-sm) var(--spacing-md); padding: var(--number-0); border: none; }
+.supplier-form legend { padding: var(--number-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
+.supplier-form fieldset label { display: inline-flex; align-items: center; gap: var(--spacing-xs); min-height: var(--size-40); font-size: var(--font-size-sm); }
