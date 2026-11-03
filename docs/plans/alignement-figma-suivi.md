@@ -76,6 +76,8 @@ La frame Prévisions A `673:46361` a été comparée à la démo Firefox : la pr
 
 La vue Ventes B `8:2` a été comparée à la démo dans Firefox : les cinq champs de service sont regroupés sur grand écran et passent en colonne sur mobile. Changement midi/soir et absence de débordement à 390 px vérifiés sans enregistrement. La maquette A de Ticket Z montre une extraction automatique ; le parcours actuel reste une transcription manuelle à vérifier.
 
+La revue Ticket Z B `35:143` a été comparée dans Firefox à un ticket image fictif : aperçu local et transcription restent côte à côte sur bureau ; le formulaire est désormais espacé et sans bordure native parasite. Une ligne fictive a été ajoutée puis enregistrée pour rapprochement ; affichage sans débordement à 390 px. L’extraction automatique reste absente, conformément au fonctionnement actuel.
+
 ## Vérification du workspace et de Firefox
 
 Le 2 novembre 2026, VS Code affichait le dépôt `~/Documents/KookIA/kookia`

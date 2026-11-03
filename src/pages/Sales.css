@@ -61,12 +61,17 @@
 .sales-recipe-mapping-details li { overflow-wrap: var(--overflow-wrap-anywhere); }
 .ticket-transcription-layout { display: grid; grid-template-columns: minmax(var(--number-0), var(--size-360)) minmax(var(--number-0), var(--unit-1fr)); gap: var(--spacing-lg); align-items: start; }
 .ticket-original-preview { display: grid; gap: var(--spacing-sm); min-width: var(--number-0); margin: var(--number-0); }
-.ticket-original-preview figcaption, .ticket-original-preview a { overflow-wrap: var(--overflow-wrap-anywhere); }
+.ticket-original-preview figcaption, .ticket-original-preview a { overflow-wrap: var(--overflow-wrap-anywhere); font-size: var(--font-size-sm); }
+.ticket-original-preview figcaption { color: var(--color-text-secondary); }
+.ticket-original-preview a { color: var(--color-accent-text); text-underline-offset: var(--size-3); }
 .ticket-original-preview iframe { width: var(--unit-100percent); height: var(--size-400); border: var(--size-1) solid var(--color-border); }
 .ticket-original-preview img { max-width: var(--unit-100percent); max-height: var(--size-400); border: var(--size-1) solid var(--color-border); }
 .ticket-transcription-form, .ticket-transcription-form label, .ticket-transcription-lines { display: grid; gap: var(--spacing-md); min-width: var(--number-0); }
-.ticket-transcription-form > fieldset { min-width: var(--number-0); }
-.ticket-transcription-form input { width: var(--unit-100percent); min-width: var(--number-0); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-auth-field); color: var(--color-text-primary); }
+.ticket-transcription-form > fieldset { display: grid; gap: var(--spacing-md); min-width: var(--number-0); margin: var(--number-0); padding: var(--number-0); border: none; }
+.ticket-transcription-form h3, .ticket-transcription-lines h4 { margin: var(--number-0); font-size: var(--font-size-md); }
+.ticket-transcription-form label { font-size: var(--font-size-sm); }
+.ticket-transcription-form p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_5); }
+.ticket-transcription-form input { min-height: var(--size-44); width: var(--unit-100percent); min-width: var(--number-0); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); background: var(--color-auth-field); color: var(--color-text-primary); }
 .ticket-transcription-lines fieldset { display: grid; gap: var(--spacing-sm); min-width: var(--number-0); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
 @media (--media-compact) { .ticket-transcription-layout { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); } }
 @media (--media-compact) { :is(.sales-page, .service-page) { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); } }
