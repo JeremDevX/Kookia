@@ -144,7 +144,7 @@ export default function Sales() {
         <p>Aucun jour de service renseigné. Une absence de donnée n'est ni un jour fermé ni zéro vente.</p>}
       <div className="sales-actions"><a href="#sales-import-title">Importer un CSV Kookia</a><a href="#sales-ticket-title">Transcrire un Ticket Z</a><a href="#sales-entry-title">Saisir une vente</a>
         <Link to="/predictions">Voir les prévisions</Link></div>
-      <small>Ces ventes alimentent les indicateurs, pas encore les achats suggérés.</small>
+      <small>Les ventes alimentent les indicateurs et peuvent contribuer aux achats suggérés lorsque les services, cartes, recettes et stocks nécessaires sont renseignés.</small>
     </section>
     <DatedServices today={parisToday()} refreshToken={salesRevision} />
     <details className="sales-disclosure"><summary>Couverture quotidienne historique (non ventilée)</summary><ServiceCalendar from={from} to={to} today={parisToday()} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} /></details>
