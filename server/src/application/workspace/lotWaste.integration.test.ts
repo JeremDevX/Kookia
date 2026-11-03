@@ -26,7 +26,7 @@ describe("lot and waste mutations", () => {
     await expect(recordProduction(restaurantId, owner.id, { operationId: randomUUID(), recipeId: expiredRecipe.id, expectedRecipeRevision: 1, recipeName: expiredRecipe.name, portions: 1, prepTime: 1, notes: "", date: "2026-01-01", kind: "production" })).rejects.toMatchObject({ code: "INSUFFICIENT_LOT_STOCK" });
     expect(Number((await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: product.id } } })).currentStock)).toBe(10);
     await prisma.stockLot.update({ where: { id: initial.id }, data: { expiresAt: new Date("2026-02-01"), unitCost: 2 } });
-    await adjustStock(restaurantId, owner.id, product.id, -2, randomUUID(), "adjustment");
+    await adjustStock(restaurantId, owner.id, product.id, -2, randomUUID(), "adjustment", product.stockRevision, product.unit);
     expect(Number((await prisma.stockLot.findUniqueOrThrow({ where: { id: initial.id } })).remainingQuantity)).toBe(8);
     const current = await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: product.id } } });
     await recordStockCount(restaurantId, owner.id, product.id, { operationId: randomUUID(), expectedStockRevision: current.stockRevision, expectedUnit: "kg", countedQuantity: 9 });

@@ -86,13 +86,16 @@ export async function editProduct(restaurantId: string, productId: string, data:
   });
 }
 
-export async function adjustStock(restaurantId: string, actorId: string, productId: string, delta: number, operationId: string, reason: string) {
+export async function adjustStock(restaurantId: string, actorId: string, productId: string, delta: number, operationId: string, reason: string, expectedStockRevision: number, expectedUnit: string) {
   return prisma.$transaction(async (tx) => {
     // Serialize mutations of the same product; the idempotency lookup occurs after the lock.
-    const locked = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`SELECT id FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${productId} FOR UPDATE`);
+    const locked = await tx.$queryRaw<{ id: string; stockRevision: number; unit: string }[]>(Prisma.sql`SELECT id, "stockRevision", unit FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${productId} FOR UPDATE`);
     if (!locked.length) throw new WorkspaceError(404, "NOT_FOUND", "Produit introuvable.");
     const prior = await tx.stockMovement.findUnique({ where: { restaurantId_operationId_productId: { restaurantId, operationId, productId } } });
     if (!prior) {
+      if (locked[0].stockRevision !== expectedStockRevision || locked[0].unit !== expectedUnit) {
+        throw new WorkspaceError(409, "STOCK_CHANGED", "Le stock ou son unité a changé. Rechargez la fiche avant de recommencer.");
+      }
       const updated = await tx.product.updateMany({ where: {
         restaurantId, id: productId, ...(delta < 0 ? { currentStock: { gte: -delta } } : {}),
       }, data: { currentStock: { increment: delta }, stockRevision: { increment: 1 } } });
@@ -103,7 +106,7 @@ export async function adjustStock(restaurantId: string, actorId: string, product
         productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: product.supplier.name,
         unitPriceSnapshot: product.pricePerUnit } });
       await recordLotMovement(tx, restaurantId, productId, product.currentStock.minus(delta), movement, actorId);
-    } else if (!prior.delta.equals(delta) || prior.reason !== reason) {
+    } else if (!prior.delta.equals(delta) || prior.reason !== reason || prior.productUnitSnapshot !== expectedUnit) {
       throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération a déjà été utilisée avec d’autres valeurs.");
     }
     return productDto(await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: productId } } }));

@@ -56,7 +56,7 @@ it("generates reviewable menu ideas only from an explicitly labelled current cou
     expectedStockRevision: tomatoCount.product.stockRevision, quantity: 2 };
   const stockBeforeStaleMutation = await demo.agent.get("/api/workspace/catalog").expect(200);
   const tomatoCurrent = stockBeforeStaleMutation.body.products.find((item: { id: string }) => item.id === tomato.id);
-  await demo.agent.post(`/api/workspace/products/${tomato.id}/stock`).send({ operationId: randomUUID(), delta: 1 }).expect(200);
+  await demo.agent.post(`/api/workspace/products/${tomato.id}/stock`).send({ operationId: randomUUID(), delta: 1, expectedStockRevision: tomatoCurrent.stockRevision, expectedUnit: tomatoCurrent.unit }).expect(200);
   await demo.agent.post("/api/workspace/menu/ideas").send({ operationId: randomUUID(), surplus: [staleSelection] })
     .expect(409).expect(({ body }) => expect(body.error.code).toBe("STOCK_COUNT_STALE"));
   const recounted = await count(demo.agent, { id: tomato.id, unit: tomato.unit, stockRevision: tomatoCurrent.stockRevision + 1 }, 3);

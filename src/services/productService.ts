@@ -25,8 +25,9 @@ export const createStockCount = (id: string, data: NewStockCount) =>
   apiRequest<StockCountResult>(`/workspace/products/${encodeURIComponent(id)}/counts`, { method: "POST", body: JSON.stringify(data) });
 export const getProductStockCounts = (id: string) =>
   apiRequest<StockCountSummary[]>(`/workspace/products/${encodeURIComponent(id)}/counts`);
-export const adjustProductStock = (id: string, delta: number, reason: "adjustment" | "loss" = "adjustment") =>
-  apiRequest<Product>(`/workspace/products/${encodeURIComponent(id)}/stock`, { method: "POST", body: JSON.stringify({ delta, reason, operationId: crypto.randomUUID() }) });
+export interface StockAdjustment { operationId: string; delta: number; reason: "adjustment" | "loss"; expectedStockRevision: number; expectedUnit: Unit; }
+export const adjustProductStock = (id: string, data: StockAdjustment, restaurantId: string) =>
+  apiRequest<Product>(`/workspace/products/${encodeURIComponent(id)}/stock`, { method: "POST", headers: { "X-Expected-Restaurant-Id": restaurantId }, body: JSON.stringify(data) });
 export interface StockMovement {
   id: string; delta: number; reason: string; createdAt: string; sourceDocumentId?: string;
   sourceContentHash?: string; sourceDocumentRevision?: number; invoiceDocumentId?: string; invoiceRevision?: number;

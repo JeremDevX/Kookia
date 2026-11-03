@@ -30,7 +30,7 @@ it("exports database records within the selected interval and excludes another a
   expect(withSales.body.rows).toContainEqual(expect.objectContaining({ section: "Ventes enregistrées", metric: "Plat du jour — unités vendues", value: 4, source: "Saisie manuelle" }));
   const catalog = await agent.get("/api/workspace/catalog").expect(200);
   const product = catalog.body.products[0];
-  await agent.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: randomUUID(), delta: 1.5 }).expect(200);
+  await agent.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: randomUUID(), delta: 1.5, expectedStockRevision: product.stockRevision, expectedUnit: product.unit }).expect(200);
   const today = new Date().toISOString().slice(0, 10);
   const operational = await agent.get(`/api/workspace/report?from=${today}&to=${today}`).expect(200);
   expect(operational.body.rows).toContainEqual(expect.objectContaining({

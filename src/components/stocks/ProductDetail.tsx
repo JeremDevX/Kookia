@@ -12,9 +12,13 @@ import {
 } from "lucide-react";
 import type { Product, StockCountSummary, Supplier } from "../../types";
 import { useToast } from "../../context/ToastContext";
+import { ApiError } from "../../config/api";
+import { useAuth } from "../../features/auth/context/AuthContext";
+import { getInventoryWorkspace } from "../../services/inventorySessionService";
+import { readPendingAdjustment, submitAdjustment } from "../../features/inventory/pendingAdjustment";
 import { getSuggestedOrderQuantity } from "../../domain/inventory/product.policies";
 
-import { getProductStockCounts, getStockMovements, type StockMovement, type NewStockCount, type ProductEdit, type StockCountResult } from "../../services/productService";
+import { getProductStockCounts, getStockMovements, type StockMovement, type NewStockCount, type ProductEdit, type StockCountResult, type StockAdjustment } from "../../services/productService";
 import EditProductModal from "./EditProductModal";
 import StockCountModal from "./StockCountModal";
 import StockVerificationSummary from "./StockVerificationSummary";
@@ -28,7 +32,7 @@ interface ProductDetailProps {
   focusedMovementId: string | null;
   returnHref?: string;
   onClose: () => void;
-  onAdjustStock: (productId: string, delta: number, reason?: "adjustment" | "loss") => Promise<void>;
+  onAdjustStock: (productId: string, input: StockAdjustment, restaurantId: string) => Promise<void>;
   onUpdateProduct: (productId: string, edit: ProductEdit) => Promise<Product>;
   onRecordCount: (productId: string, count: NewStockCount) => Promise<StockCountResult>;
   onRefresh: () => Promise<boolean>;
@@ -55,6 +59,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   suppliers,
 }) => {
   const { addToast } = useToast();
+  const { user } = useAuth();
+  const [restaurantId, setRestaurantId] = useState("");
+  const [pendingAdjustment, setPendingAdjustment] = useState<StockAdjustment | null>(null);
+  const [adjustmentError, setAdjustmentError] = useState("");
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [movements, setMovements] = useState<StockMovement[]>([]);
@@ -78,6 +86,17 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     if (!showEditModal && !showCountModal) onClose();
   });
   const productId = product?.id;
+  useEffect(() => {
+    if (!productId || !user) return;
+    let active = true;
+    void getInventoryWorkspace().then(({ restaurantId: id }) => {
+      if (!active) return;
+      const pending = readPendingAdjustment(user.id, id, productId);
+      setRestaurantId(id); setPendingAdjustment(pending);
+    }).catch(() => { if (active) setAdjustmentError("Impossible de vérifier un ajustement en attente. Rechargez la page."); });
+    return () => { active = false; };
+  }, [productId, user]);
+
   useEffect(() => {
     if (!productId) return;
     const previous = document.activeElement;
@@ -160,27 +179,31 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   };
 
   const handleAdjustStock = async () => {
-    if (saving) return;
-    if (!showAdjustModal) { setAdjustReason("adjustment"); setShowAdjustModal(true); return; }
+    if (saving || !user || !restaurantId) return;
+    if (!pendingAdjustment && !showAdjustModal) { setAdjustReason("adjustment"); setShowAdjustModal(true); return; }
     const normalizedAmount = adjustAmount.trim().replace(",", ".");
     const amount = Number(normalizedAmount);
     const delta = adjustReason === "loss" ? -Math.abs(amount) : amount;
-    if (!/^[+-]?(?:\d+(?:\.\d{1,3})?|\.\d{1,3})$/.test(normalizedAmount) || !Number.isFinite(delta) || delta === 0 || Math.abs(delta) > 1_000_000) {
+    if (!pendingAdjustment && (!/^[+-]?(?:\d+(?:\.\d{1,3})?|\.\d{1,3})$/.test(normalizedAmount) || !Number.isFinite(delta) || delta === 0 || Math.abs(delta) > 1_000_000)) {
       addToast("info", "Ajustement invalide", "Entrez une quantité non nulle, de 3 décimales au maximum (ex. +10 ou -2,5).");
       return;
     }
-    if (product.currentStock + delta < 0) {
+    if (!pendingAdjustment && product.currentStock + delta < 0) {
       addToast("info", "Ajustement invalide", "La quantité retirée dépasse le stock disponible.");
       return;
     }
-    setSaving(true);
+    const input = pendingAdjustment ?? { operationId: crypto.randomUUID(), delta, reason: adjustReason, expectedStockRevision: product.stockRevision, expectedUnit: product.unit };
+    setSaving(true); setAdjustmentError("");
     try {
-      await onAdjustStock(product.id, delta, adjustReason);
-      addToast("success", "Stock ajusté", `${product.name}: ${delta > 0 ? "+" : ""}${delta} ${product.unit}`);
-      setShowAdjustModal(false);
-      setAdjustAmount("");
+      await submitAdjustment(user.id, restaurantId, product.id, input, !!pendingAdjustment, () => onAdjustStock(product.id, input, restaurantId));
+      setPendingAdjustment(null);
+      addToast("success", "Stock ajusté", `${product.name}: ${input.delta > 0 ? "+" : ""}${input.delta} ${product.unit}`);
+      setShowAdjustModal(false); setAdjustAmount("");
     } catch (error) {
-      addToast("info", "Stock non modifié", error instanceof Error ? error.message : "Réessayez.");
+      try { setPendingAdjustment(readPendingAdjustment(user.id, restaurantId, product.id)); }
+      catch { setAdjustmentError("Impossible de vérifier l’ajustement. Consultez l’historique avant de continuer."); return; }
+      setAdjustmentError(error instanceof Error ? error.message : "Impossible de vérifier l’ajustement.");
+      if (error instanceof ApiError && error.details.code === "STOCK_CHANGED") await onRefresh();
     } finally { setSaving(false); }
   };
 
@@ -297,7 +320,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             </div>
           </section>
 
-          {showAdjustModal && (
+          {pendingAdjustment && <p role="alert">Un ajustement de {pendingAdjustment.delta} {pendingAdjustment.expectedUnit} ({pendingAdjustment.reason === "loss" ? "perte" : "correction"}) reste à vérifier. Reprenez-le avant toute nouvelle saisie.</p>}
+          {adjustmentError && <p role="alert">{adjustmentError}</p>}
+          {showAdjustModal && !pendingAdjustment && (
             <section className="drawer-section">
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <p role="status">Motif : {adjustReason === "loss" ? "perte déclarée" : "correction d'inventaire"}. Ce mouvement sera enregistré dans l'historique.</p>
@@ -322,12 +347,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <Button
             variant="danger"
             icon={<AlertTriangle size={16} />}
-            onClick={handleReportLoss} disabled={saving}
+            onClick={handleReportLoss} disabled={saving || !!pendingAdjustment || !restaurantId}
           >
             Signaler une perte
           </Button>
-          <Button variant="secondary" onClick={handleAdjustStock} disabled={saving}>
-            {showAdjustModal ? "Enregistrer l’ajustement" : "Ajuster le stock"}
+          <Button variant="secondary" onClick={handleAdjustStock} disabled={saving || !restaurantId}>
+            {pendingAdjustment ? "Vérifier l’ajustement" : showAdjustModal ? "Enregistrer l’ajustement" : "Ajuster le stock"}
           </Button>
         </footer>
       </div>

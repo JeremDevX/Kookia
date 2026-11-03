@@ -21,7 +21,7 @@ it("retains the complete workspace across logout and a new authenticated session
   await ensureWorkspace(registered.body.user.id);
   const catalog = await first.get("/api/workspace/catalog").expect(200);
   const product = catalog.body.products[0];
-  await first.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: randomUUID(), delta: 2 }).expect(200);
+  await first.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: randomUUID(), delta: 2, expectedStockRevision: product.stockRevision, expectedUnit: product.unit }).expect(200);
   await first.post("/api/workspace/preferences").send({ settings: { wasteTarget: "42", alertThreshold: "75", showTrends: false, showAI: true, showROI: false } }).expect(200);
   const workspace = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: registered.body.user.id } });
   await prisma.workspaceDocument.create({ data: { restaurantId: workspace.id, kind: "notifications", data: initialNotifications } });

@@ -51,9 +51,10 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
 
   await prisma.product.update({ where: { restaurantId_id: { restaurantId: restaurant.id, id: product.id } },
     data: { currentStock: 2, stockRevision: { increment: 1 } } });
+  const lossProduct = await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId: restaurant.id, id: product.id } } });
   const reportedLossOperationId = randomUUID();
   await agent.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: reportedLossOperationId,
-    delta: -0.5, reason: "loss" }).expect(200);
+    delta: -0.5, reason: "loss", expectedStockRevision: lossProduct.stockRevision, expectedUnit: lossProduct.unit }).expect(200);
   const unpricedLossOperationId = `loss-unpriced-${randomUUID()}`;
   const mismatchLossOperationId = `loss-unit-${randomUUID()}`;
   const simulatedLossOperationId = `restaurant-simulation-v1:loss:${randomUUID()}`;

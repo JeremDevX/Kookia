@@ -81,6 +81,7 @@ const newProductSchema = z.object({
 const stockSchema = z.object({
   operationId: z.uuid(), delta: z.number().finite().min(-1_000_000).max(1_000_000).multipleOf(0.001).refine((value) => value !== 0),
   reason: z.enum(["adjustment", "loss"]).default("adjustment"),
+  expectedStockRevision: z.number().int().positive(), expectedUnit: z.enum(["kg", "L", "dz", "pcs"]),
 }).strict().refine((data) => data.reason !== "loss" || data.delta < 0);
 const editProductSchema = z.object({
   expectedRevision: z.number().int().positive(), name: z.string().trim().min(1).max(120),
@@ -124,7 +125,8 @@ workspaceRoutes.post("/products/:id/stock", async (req, res, next) => {
   try {
     const data = stockSchema.parse(req.body);
     const { restaurantId, actorId } = context(res);
-    res.json(await adjustStock(restaurantId, actorId, String(req.params.id), data.delta, data.operationId, data.reason));
+    if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== restaurantId) { res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return; }
+    res.json(await adjustStock(restaurantId, actorId, String(req.params.id), data.delta, data.operationId, data.reason, data.expectedStockRevision, data.expectedUnit));
   } catch (error) { next(error); }
 });
 workspaceRoutes.get("/products/:id/movements", async (req, res, next) => {

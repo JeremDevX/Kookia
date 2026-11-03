@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Product } from "../types";
 import type { NewProduct } from "../types/callbacks";
-import { getProducts, getProductStatus, createProduct, createStockCount, editProduct, adjustProductStock, type NewStockCount, type ProductEdit } from "../services/productService";
+import { getProducts, getProductStatus, createProduct, createStockCount, editProduct, adjustProductStock, type NewStockCount, type ProductEdit, type StockAdjustment } from "../services/productService";
 import type { ProductStatus } from "../types";
 
 interface UseProductsReturn {
@@ -62,9 +62,9 @@ export const useProductsWithMutations = () => {
     setProducts(initialProducts);
   }, [initialProducts]);
 
-  const updateStock = useCallback((id: string, amount: number, reason: "adjustment" | "loss" = "adjustment") => {
+  const updateStock = useCallback((id: string, input: StockAdjustment, restaurantId: string) => {
     const operation = stockQueue.current.then(async () => {
-      const updated = await adjustProductStock(id, amount, reason);
+      const updated = await adjustProductStock(id, input, restaurantId);
       setProducts((prev) => prev.map((product) => product.id === id ? { ...product, ...updated } : product));
     });
     stockQueue.current = operation.catch(() => undefined);

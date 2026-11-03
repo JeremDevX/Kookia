@@ -14,6 +14,7 @@ import { useProductsWithMutations } from "../hooks";
 import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
 import type { Product } from "../types";
+import type { StockAdjustment } from "../services/productService";
 import type { NewProduct, StockFilters } from "../types/callbacks";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { readStockFilters, updateStockFilters, type StockFilterKey } from "../features/inventory/stockFilters";
@@ -93,8 +94,8 @@ const Stocks: React.FC = () => {
   const currentPage = Math.min(pagination.filters === searchParams.toString() ? pagination.page : 0, pageCount - 1);
   const visibleProducts = filteredProducts.slice(currentPage * 7, (currentPage + 1) * 7);
 
-  const handleDrawerAdjustStock = async (productId: string, delta: number, reason?: "adjustment" | "loss") => {
-    await updateStock(productId, delta, reason);
+  const handleDrawerAdjustStock = async (productId: string, input: StockAdjustment, restaurantId: string) => {
+    await updateStock(productId, input, restaurantId);
   };
 
   const handleAddProduct = async (newProduct: NewProduct) => {

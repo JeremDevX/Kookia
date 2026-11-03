@@ -201,9 +201,10 @@ it("relie quatre chapitres, le choix manuel quand la prévision est bloquée, la
   expect(historic.body.events.some((event: { id: string }) => event.id === `purchase-order:${order.body.id}`)).toBe(false);
   expect(historic.body.events.some((event: { id: string }) => event.id === `purchase-receipt:${receipt.body.id}`)).toBe(false);
 
+  const adjustmentProduct = await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.id } } });
   const adjustmentOperationId = randomUUID();
   await owner.agent.post(`/api/workspace/products/${product.id}/stock`).send({ operationId: adjustmentOperationId,
-    delta: 0.001, reason: "adjustment" }).expect(200);
+    delta: 0.001, reason: "adjustment", expectedStockRevision: adjustmentProduct.stockRevision, expectedUnit: adjustmentProduct.unit }).expect(200);
   const adjustment = await prisma.stockMovement.findUniqueOrThrow({ where: { restaurantId_operationId_productId: {
     restaurantId: owner.restaurantId, operationId: adjustmentOperationId, productId: product.id,
   } } });
