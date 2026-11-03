@@ -307,8 +307,8 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Météo — choisir une commune | `186:597` | 600 × 570 |
 | Météo — recherche sans résultat (exemple fictif) | `189:620` | 600 × 658 |
 | Tableau de bord première utilisation | `29:2` | 1440 × 1500 |
-| Menu — préparation et surstock | `149:396` | 600 × 999 |
-| Menu — quantité renseignée et idées calculées sur données fictives | `179:583`, `178:566` | 600 × 1189 ; 600 × 2267 |
+| Menu — préparation et surstock | `149:396` | 600 × 900, défilant |
+| Menu — quantité renseignée et idées calculées sur données fictives | `179:583`, `178:566` | 600 × 900 chacun, défilants |
 | Services — article, formule et vue intégrée | `175:504`, `176:517`, `177:545`, `176:551` | 900 × 550 ; 900 × 610 ; 900 × 820 ; 1440 × 2600 |
 | Revue Ticket Z fictif | `35:143` | 1440 × 1600 |
 | Réception partielle fictive | `36:2` | 1440 × 1500 |
@@ -631,4 +631,6 @@ Le canevas Figma B s’affiche à nouveau dans Firefox. Contrôle visuel réalis
 
 Le planning du jour a été examiné dans Firefox sur démo synthétique : ses liens sont désormais bleus et soulignés comme les autres actions textuelles, et le retour au tableau de bord fonctionne. Aucun débordement horizontal à 390 px. La maquette A prévoit des couverts horaires et des revues dont les sources restent à définir.
 
-Dans Firefox, des clics simulés sur le canevas du prototype B ont vérifié trois transitions : « J’ai terminé » masque le lien d’invitation (`152:408` vers `153:416`) ; « Effacer » revient à la chronologie (`182:596` vers `180:597`) ; « Calculer les idées » affiche les résultats fictifs (`179:583` vers `178:566`). Ce contrôle valide ces transitions, pas une interaction au pointeur physique. Le résultat du menu est très réduit lorsque le prototype adapte sa grande hauteur à l’écran : prévoir une fenêtre défilante avant une présentation confortable.
+Dans Firefox, des clics simulés sur le canevas du prototype B ont vérifié trois transitions : « J’ai terminé » masque le lien d’invitation (`152:408` vers `153:416`) ; « Effacer » revient à la chronologie (`182:596` vers `180:597`) ; « Calculer les idées » affiche les résultats fictifs (`179:583` vers `178:566`). Ce contrôle valide ces transitions, pas une interaction au pointeur physique. Le résultat du menu était très réduit lorsque le prototype adaptait sa hauteur à l’écran ; ce point a ensuite été corrigé par le défilement décrit ci-dessous.
+
+Les trois fenêtres de menu `149:396`, `179:583` et `178:566` ont été ramenées à 600 × 900 avec défilement vertical ; tous leurs calques restent présents. Dans Firefox, le clic simulé sur Calculer ouvre le résultat à une taille lisible, puis une molette simulée atteint les recettes et les actions finales. La section Historique a été remontée ; aucun chevauchement de sections détecté.
