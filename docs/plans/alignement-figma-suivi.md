@@ -293,6 +293,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Connexions | `26:2` | 1440 × 1450 |
 | Tableau de bord première utilisation | `29:2` | 1440 × 1500 |
 | Menu — préparation et surstock | `149:396` | 600 × 999 |
+| Menu — idées calculées sur données fictives | `178:566` | 600 × 2267 |
 | Services — article, formule et vue intégrée | `175:504`, `176:517`, `177:545`, `176:551` | 900 × 550 ; 900 × 610 ; 900 × 820 ; 1440 × 2600 |
 | Revue Ticket Z fictif | `35:143` | 1440 × 1600 |
 | Réception partielle fictive | `36:2` | 1440 × 1500 |
@@ -334,6 +335,8 @@ Le formulaire de nouvelle fiche candidate (`167:431`) reprend les champs et acti
 La section B « 13 · Recettes — fiches candidates » présente le panneau fermé (`159:423`) et ouvert (`159:425`) avec une hypothèse fictive à revoir. Les deux états sont constitués de calques modifiables et utilisent les boutons existants. Le rendu ouvert a été contrôlé par capture Figma ; dans Firefox, le canevas est resté noir. L’état de confirmation d’écartement (`164:426`) reprend le texte et les actions de l’application. Les boutons Écarter et Annuler sont reliés aux deux états dans les propriétés du prototype ; le rendu a été contrôlé par capture Figma. Les clics du prototype restent à vérifier dans Firefox, dont le canevas demeure noir.
 
 La section B « 12 · Configuration — invitations » contient l’état Équipe avec lien créé (`152:408`), absent de A. Il reprend le propriétaire, le rôle, la copie du lien et le blocage de la progression observés dans Firefox sur base jetable ; le lien représenté est fictif. La capture Figma montre des calques modifiables et sept instances, sans image intégrée ; aucun chevauchement de sections détecté. L’état suivant (`153:416`) masque le lien et réactive les actions ; « J’ai terminé » y est relié dans les propriétés du prototype. Cela ne prouve pas que le lien a été transmis. Le clic et la comparaison visuelle de B dans Firefox restent à vérifier.
+
+Le résultat d’idées de menu (`178:566`) représente cinq recettes non réalisables sur une démo synthétique, avec leurs stocks non vérifiés, l’avertissement de péremption et les actions désactivées. Le calcul a été observé dans Firefox après sélection d’un comptage et de 2 kg fictifs ; le rendu Figma a été contrôlé par capture. Le passage vers ce résultat et la vérification visuelle de B dans Firefox restent à faire.
 
 La fenêtre B « Menu — préparation et surstock » (`149:396`) représente le brouillon, le choix d’un produit compté et les actions du menu, après observation de l’application dans Firefox sur démo synthétique. La fenêtre est rangée dans Tableau de bord, en calques modifiables avec neuf instances, sans image intégrée ; ses textes utilisent Poppins. Le rendu a été contrôlé par capture Figma. Le texte complet sur les limites du surstock est conservé ; l’ouverture depuis le tableau de bord et les deux fermetures sont reliées dans les propriétés du prototype. Les états de calcul, de résultat et d’erreur, le test des clics et le contrôle visuel du fichier B dans Firefox restent à compléter.
 
