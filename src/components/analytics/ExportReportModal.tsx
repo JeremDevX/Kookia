@@ -66,6 +66,8 @@ export default function ExportReportModal({ isOpen, onClose, initialFrom, initia
       </select>
       <label htmlFor="report-from">Date de début</label><input className="input-field" id="report-from" type="date" value={from} disabled={loading} onChange={(event) => setFrom(event.target.value)} />
       <label htmlFor="report-to">Date de fin incluse</label><input className="input-field" id="report-to" type="date" value={to} disabled={loading} onChange={(event) => setTo(event.target.value)} />
+      {(!from || !to) && <p role="status">Indiquez les deux dates pour préparer l’export.</p>}
+      {from && to && from > to && <p role="status">La date de fin doit être égale ou postérieure à la date de début.</p>}
       {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}
       <div className="export-actions"><Button variant="outline" onClick={onClose} disabled={loading}>Fermer</Button><Button onClick={exportReport} disabled={loading || !from || !to || from > to}>{loading ? "Préparation…" : format === "pdf" ? "Préparer le PDF" : "Télécharger"}</Button></div>
     </div>
