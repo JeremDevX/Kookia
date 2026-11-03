@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "rea
 import Button from "../common/Button";
 import Input from "../common/Input";
 import Modal from "../common/Modal";
+import "./StockCountModal.css";
 import type { Product } from "../../types";
 import type { NewStockCount, StockCountResult } from "../../services/productService";
 
@@ -62,12 +63,12 @@ const StockCountModal = ({ product, isOpen, onClose, onRefresh, onSave }: StockC
   };
 
   return <Modal isOpen={isOpen} onClose={close} closeDisabled={saving} title={`Compter ${product.name}`}>
-    <form onSubmit={(event) => void submit(event)} className="space-y-4">
+    <form onSubmit={(event) => void submit(event)} className="stock-count-form">
       <p role="status">Stock théorique à l’ouverture : <strong>{expectedStock} {expectedUnit}</strong>. Le comptage est daté par le serveur au jour courant Europe/Paris.</p>
       <Input id="physical-stock-count" label={`Quantité réellement comptée (${expectedUnit})`} type="number" min="0" max="1000000" step="0.001" value={countedQuantity} disabled={saving} onChange={(event) => setCountedQuantity(event.target.value)} required />
       <p className="text-sm text-secondary">Si le stock change avant validation, le comptage sera refusé et devra être repris après rechargement.</p>
       {error && <div role="alert"><p>{error}</p><Button type="button" size="sm" variant="outline" onClick={() => void reload()} disabled={saving}>Recharger la fiche</Button></div>}
-      <div className="flex justify-end gap-2"><Button type="button" variant="secondary" onClick={close} disabled={saving}>Annuler</Button><Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer le comptage"}</Button></div>
+      <div className="stock-count-actions"><Button type="button" variant="secondary" onClick={close} disabled={saving}>Annuler</Button><Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer le comptage"}</Button></div>
     </form>
   </Modal>;
 };

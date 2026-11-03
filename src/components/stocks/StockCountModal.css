@@ -1,0 +1,2 @@
+.stock-count-form { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.stock-count-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--spacing-sm); }
