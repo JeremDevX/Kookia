@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
-import { z } from "zod";
 import Button from "../../components/common/Button";
 import { apiRequest } from "../../config/api";
-
-const memberSchema = z.object({ userId: z.uuid(), role: z.enum(["chef", "kitchen"]), createdAt: z.iso.datetime({ offset: true }), user: z.object({ displayName: z.string(), email: z.email() }) });
-type Member = z.infer<typeof memberSchema>;
+import { listMembers, type Member } from "./memberApi";
 
 export default function MemberManager() {
   const [members, setMembers] = useState<Member[] | null>(null);
@@ -14,7 +11,7 @@ export default function MemberManager() {
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let active = true;
-    apiRequest<unknown>("/workspace/members").then((result) => z.array(memberSchema).parse(result)).then(
+    listMembers().then(
       (result) => { if (active) setMembers(result); },
       () => { if (active) setError("Impossible de charger les membres."); },
     );

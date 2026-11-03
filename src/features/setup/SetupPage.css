@@ -72,3 +72,8 @@ body .setup-actions .btn-primary { width: auto; }
 @media (--media-mobile) { .setup-owner { display: grid; grid-template-columns: var(--size-36) minmax(var(--number-0), var(--unit-1fr)); } .setup-owner > div span { font-size: var(--font-size-xs); } .setup-owner-role { grid-column: var(--number-2); } }
 
 @media (--media-mobile) { .setup-header-actions > span { display: none; } .setup-header a { padding: var(--spacing-sm); font-size: var(--font-size-xs); white-space: nowrap; } }
+
+.setup-review-columns .setup-review-members { display: grid; gap: var(--spacing-md); padding: var(--number-0); margin: var(--number-0) var(--number-0) var(--spacing-md); list-style: none; }
+.setup-review-members li { display: flex; align-items: center; gap: var(--spacing-sm); min-width: var(--number-0); }
+.setup-review-members li > div { display: grid; min-width: var(--number-0); overflow-wrap: var(--overflow-wrap-anywhere); }
+.setup-review-members li > div span { color: var(--color-text-secondary); }
