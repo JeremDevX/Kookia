@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, BookOpen, Calendar, ClipboardList, ShoppingCart } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpen, Calendar, ClipboardList, ShoppingCart } from "lucide-react";
 import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
@@ -144,6 +144,11 @@ function DashboardOverview() {
     </div>
 
     <div className="dashboard-columns"><div className="dashboard-main-column">
+    <section className="today-card today-covers" aria-labelledby="today-covers-title">
+      <h2 id="today-covers-title">Prévision des couverts</h2>
+      <p>Répartition prévue par heure pour les services du jour.</p>
+      <div className="today-covers-empty"><BarChart3 size={24} aria-hidden="true" /><strong>Prévision horaire indisponible</strong><span>Les données nécessaires ne sont pas encore disponibles.</span></div>
+    </section>
     <section className="today-focus" aria-labelledby="today-focus-title">
       <span className="today-eyebrow">À faire</span>
       <h2 id="today-focus-title">{focus.title}</h2>

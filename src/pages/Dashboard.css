@@ -67,3 +67,6 @@
   .today-focus .btn { width: var(--unit-100percent); justify-content: center; }
   .today-focus-actions { width: var(--unit-100percent); }
 }
+
+.today-covers-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--spacing-xs); min-height: var(--size-180); padding: var(--spacing-lg); border-radius: var(--radius-compact); background: var(--color-bg); color: var(--color-text-secondary); text-align: center; font-size: var(--font-size-sm); }
+.today-covers-empty strong { color: var(--color-nav-text); }
