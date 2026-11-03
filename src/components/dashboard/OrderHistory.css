@@ -14,3 +14,7 @@
 .order-receipt [data-receipt-heading]:focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--size-3); }
 .order-receipt [data-receipt-heading]:focus { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--size-3); }
 @media (--media-compact) { .order-record summary { padding: var(--spacing-md); } .order-record-body { padding: var(--spacing-md); } }
+
+.purchase-credit-form { display: grid; gap: var(--spacing-md); max-width: var(--size-720); margin-top: var(--spacing-lg); }
+.purchase-credit-form h4 { margin: var(--number-0); }
+.purchase-credit-form button { justify-self: start; }

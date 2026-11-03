@@ -39,10 +39,10 @@ export default function PurchaseReconciliation({ orderId, disabled }: { orderId:
       <ul>{receipt.credits.map((credit) => <li key={credit.id}>Avoir {credit.reference} : {credit.amount.toFixed(2)} € · {credit.reason}</li>)}</ul>
     </li>)}</ul>{data.receipts.length === 0 && <p>Aucune livraison rapprochée pour cette commande.</p>}
     {data.assumptions.map((assumption) => <p key={assumption}>{assumption}</p>)}
-    {data.receipts.some((receipt) => !receipt.simulated) && <form onSubmit={(event) => void submit(event)} className="form-grid">
+    {data.receipts.some((receipt) => !receipt.simulated) && <form onSubmit={(event) => void submit(event)} className="purchase-credit-form">
       <h4>Rapprocher un avoir reçu</h4>
-      <label htmlFor={`credit-receipt-${orderId}`}>Livraison / facture concernée</label>
-      <select id={`credit-receipt-${orderId}`} required disabled={disabled || saving} value={receiptId} onChange={(event) => change(() => setReceiptId(event.target.value))}><option value="">Choisir</option>{data.receipts.filter((receipt) => !receipt.simulated).map((receipt) => <option key={receipt.receiptId} value={receipt.receiptId}>{receipt.deliveryReference} · {receipt.invoiceReference}</option>)}</select>
+      <label className="input-wrapper" htmlFor={`credit-receipt-${orderId}`}><span className="input-label">Livraison / facture concernée</span>
+      <select className="input-field" id={`credit-receipt-${orderId}`} required disabled={disabled || saving} value={receiptId} onChange={(event) => change(() => setReceiptId(event.target.value))}><option value="">Choisir</option>{data.receipts.filter((receipt) => !receipt.simulated).map((receipt) => <option key={receipt.receiptId} value={receipt.receiptId}>{receipt.deliveryReference} · {receipt.invoiceReference}</option>)}</select></label>
       <Input id={`credit-ref-${orderId}`} label="Référence de l’avoir" required maxLength={120} value={reference} disabled={disabled || saving} onChange={(event) => change(() => setReference(event.target.value))} />
       <Input id={`credit-amount-${orderId}`} label="Montant de l’avoir (€)" type="number" min="0.01" max="1000000" step="0.01" required value={amount} disabled={disabled || saving} onChange={(event) => change(() => setAmount(event.target.value))} />
       <Input id={`credit-reason-${orderId}`} label="Motif et rapprochement" required maxLength={500} value={reason} disabled={disabled || saving} onChange={(event) => change(() => setReason(event.target.value))} />
