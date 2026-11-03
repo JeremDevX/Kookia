@@ -9,12 +9,14 @@ import {
 } from "lucide-react";
 import type { Recipe } from "../../types";
 import { validateProductionQuantity } from "../../utils/formValidation";
+import { productionIngredientAmount } from "../../domain/recipes/productionIngredientAmount";
 
 interface ProductionConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   recipe: Recipe | null;
   maxYield: number;
+  initialPortions?: number;
   availabilityWarnings?: string[];
   costPerPortion: number | null;
   getProductName: (productId: string) => string;
@@ -27,6 +29,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   onClose,
   recipe,
   maxYield,
+  initialPortions = 1,
   availabilityWarnings = [],
   costPerPortion,
   getProductName,
@@ -37,21 +40,24 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [operationId] = useState(() => crypto.randomUUID());
   const safeMaxYield = Math.min(10_000, Math.max(0, maxYield));
-  const [quantity, setQuantity] = useState("1");
+  const [quantity, setQuantity] = useState(String(initialPortions));
   const [quantityError, setQuantityError] = useState<string | undefined>();
 
   if (!recipe) return null;
 
   const quantityValidation = validateProductionQuantity(quantity, safeMaxYield);
   const clampedQuantity = quantityValidation.normalizedQuantity;
-  const visibleQuantityError = quantityError ?? (quantity && !quantityValidation.isValid ? quantityValidation.error : undefined);
+  const amounts = quantityValidation.isValid ? recipe.ingredients.map((ing) =>
+    productionIngredientAmount(ing.quantity, clampedQuantity, recipe.yieldPortions, ing.unit || getProductUnit(ing.productId))) : [];
+  const precisionError = amounts.includes(null) ? "Les portions choisies génèrent une fraction de pièce ou une quantité inférieure à la précision du stock. Ajustez les portions." : undefined;
+  const visibleQuantityError = quantityError ?? (quantity && !quantityValidation.isValid ? quantityValidation.error : precisionError);
 
   const totalCost = costPerPortion === null ? null : costPerPortion * clampedQuantity;
 
   const handleConfirm = async () => {
     if (saving) return;
-    if (!quantityValidation.isValid) {
-      setQuantityError(quantityValidation.error);
+    if (!quantityValidation.isValid || precisionError) {
+      setQuantityError(quantityValidation.error ?? precisionError);
       return;
     }
 
@@ -132,13 +138,13 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
         <div className="bg-white p-4 rounded-lg border">
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle size={18} className="text-optimal" />
-              <h4 className="font-semibold">Ingrédients du lot ({recipe.yieldPortions} portions)</h4>
+              <h4 className="font-semibold">Ingrédients à déduire</h4>
           </div>
           <div className="space-y-2">
-            {recipe.ingredients.map((ing) => (
+            {recipe.ingredients.map((ing, index) => (
               <div key={ing.productId} className="flex justify-between text-sm">
                 <span>{ing.productName || getProductName(ing.productId)}</span>
-                <span>{ing.quantity} {ing.unit || getProductUnit(ing.productId)} pour le lot</span>
+                <span>{amounts[index] == null ? "—" : `${amounts[index]} ${ing.unit || getProductUnit(ing.productId)}`}</span>
               </div>
             ))}
           </div>
@@ -159,7 +165,7 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={saving || !quantityValidation.isValid}
+            disabled={saving || !quantityValidation.isValid || Boolean(precisionError)}
           >
             Confirmer et déduire du stock
           </Button>

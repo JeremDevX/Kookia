@@ -12,7 +12,7 @@ export default function RecipeCatalog({ recipes, loading, onEdit, onProduce, edi
   loading: boolean;
   editing?: boolean;
   onEdit: (recipe: Recipe, trigger: HTMLButtonElement) => void;
-  onProduce: (recipe: Recipe) => void;
+  onProduce: (recipe: Recipe, portions?: number) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");

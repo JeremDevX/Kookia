@@ -49,6 +49,7 @@ const Recipes: React.FC = () => {
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [isProductionModalOpen, setIsProductionModalOpen] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [initialProductionPortions, setInitialProductionPortions] = useState(1);
   const [refusalRecipe, setRefusalRecipe] = useState<Recipe | null>(null);
   const [productions, setProductions] = useState<Production[]>([]);
   const [productionError, setProductionError] = useState("");
@@ -156,8 +157,9 @@ const Recipes: React.FC = () => {
     );
   };
 
-  const handleStartProduction = (recipe: Recipe) => {
+  const handleStartProduction = (recipe: Recipe, portions = 1) => {
     setSelectedRecipe(recipe);
+    setInitialProductionPortions(portions);
     setIsProductionModalOpen(true);
   };
 
@@ -437,6 +439,7 @@ const Recipes: React.FC = () => {
         isOpen={isProductionModalOpen}
         onClose={() => setIsProductionModalOpen(false)}
         recipe={selectedRecipe}
+        initialPortions={initialProductionPortions}
         maxYield={selectedRecipe ? getMaxYield(selectedRecipe) : 0}
         availabilityWarnings={selectedRecipe ? recipeStockWarnings(selectedRecipe, products) : []}
         costPerPortion={selectedRecipe ? getIngredientCost(selectedRecipe) : null}
