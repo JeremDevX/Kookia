@@ -78,8 +78,13 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
     : estimatedQuantity === 0 ? "covered" : "ready";
   const sourceEligible = canUseProvenance && workspaceMode === "operational" || workspaceMode === "demo";
   const canAdd = status === "ready" && sourceEligible && projectionComplete;
+  const hashHorizon = deliveryHorizon.status === "known" && deliveryHorizon.openingDays === "unknown"
+    ? { status: deliveryHorizon.status, orderDate: deliveryHorizon.orderDate, nextDeliveryDate: deliveryHorizon.nextDeliveryDate,
+      followingDeliveryDate: deliveryHorizon.followingDeliveryDate, throughDate: deliveryHorizon.throughDate, timeZone: deliveryHorizon.timeZone }
+    : deliveryHorizon.status === "unknown" && deliveryHorizon.code === "supplier_constraints_missing"
+      ? { status: deliveryHorizon.status, reason: deliveryHorizon.reason } : deliveryHorizon;
   const input = {
-    deliveryHorizon, expectedQuantity, availability, orderPackQuantity: product.orderPackQuantity?.toString() ?? null,
+    deliveryHorizon: hashHorizon, expectedQuantity, availability, orderPackQuantity: product.orderPackQuantity?.toString() ?? null,
     productId: product.id, forecastNeed: roundQuantity(need.forecastNeed), countedStock,
     countDate: countVerified ? count!.countDate.toISOString().slice(0, 10) : null,
     orderStep, stockRevision: product.stockRevision, unit: product.unit, unitMatches,

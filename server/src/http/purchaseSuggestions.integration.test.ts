@@ -7,6 +7,7 @@ import request from "supertest";
 import { afterAll, expect, it } from "vitest";
 import { app } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { Prisma } from "@prisma/client";
 
 const ownerIds: string[] = [];
 afterAll(async () => { await prisma.user.deleteMany({ where: { id: { in: ownerIds } } }); await prisma.$disconnect(); });
@@ -51,6 +52,11 @@ it("rounds net oil needs, budgets the purchase, and enforces steps at every purc
     quantity: 0.5, purchaseSuggestionOperationId: decision.body.operationId }] }).expect(200);
   expect(added.body[0]).toMatchObject({ unit: "L", quantity: 0.5 });
   const orderInput = { operationId: randomUUID(), lines: [{ productId: product.id, cartId: cartItem.id, quantity: 0.5 }] };
+  const tomorrowWeekday = (new Date(`${parisToday()}T00:00:00Z`).getUTCDay() + 1) % 7;
+  await prisma.restaurant.update({ where: { id: owner.restaurantId }, data: { openingWeekdays: [tomorrowWeekday] } });
+  const changed = await owner.agent.post("/api/workspace/orders").send(orderInput).expect(409);
+  expect(changed.body.error.code).toBe("SUGGESTION_CHANGED");
+  await prisma.restaurant.update({ where: { id: owner.restaurantId }, data: { openingWeekdays: Prisma.DbNull } });
   const order = await owner.agent.post("/api/workspace/orders").send(orderInput).expect(201);
   expect(order.body.lines[0]).toMatchObject({ quantity: 0.5, unit: "L", pricePerUnit: product.pricePerUnit });
   expect((await owner.agent.post("/api/workspace/orders").send(orderInput).expect(201)).body.id).toBe(order.body.id);
@@ -356,7 +362,10 @@ it("covers the supplier horizon, keeps inbound conditional, and blocks incomplet
   expect(incomplete.blockers.some((blocker) => blocker.includes("Carte du service"))).toBe(true);
   expect(incomplete.suggestions.find(item => item.productId === product.id)?.canAdd).toBe(false);
   await prisma.supplier.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.supplierId } }, data: { leadTimeDays: null } });
-  expect((await getPurchaseSuggestions(owner.restaurantId, prisma, inputDate)).suggestions.find((item) => item.productId === product.id)).toMatchObject({ status: "supplier_constraints_missing", canAdd: false, estimatedQuantity: null, estimatedCost: null, deliveryHorizon: { status: "unknown" } });
+  const missing = (await owner.agent.get("/api/workspace/orders/suggestions").expect(200)).body.suggestions.find((item: { productId: string }) => item.productId === product.id);
+  expect(missing).toMatchObject({ status: "supplier_constraints_missing", canAdd: false, estimatedQuantity: null, estimatedCost: null, deliveryHorizon: { status: "unknown" } });
+  await owner.agent.post(`/api/workspace/orders/suggestions/${product.id}/decision`).send({ operationId: randomUUID(), suggestionKey: missing.suggestionKey, decision: "excluded" }).expect(201);
+  expect((await owner.agent.get("/api/workspace/orders/suggestions").expect(200)).body.suggestions.find((item: { productId: string }) => item.productId === product.id)).toMatchObject({ suggestionKey: missing.suggestionKey, decision: { kind: "excluded" } });
   await prisma.supplier.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.supplierId } }, data: { leadTimeDays: 0 } });
   await prisma.restaurant.update({ where: { id: owner.restaurantId }, data: { openingWeekdays: [] } });
   await prisma.serviceMenuVersion.deleteMany({ where: { restaurantId: owner.restaurantId, serviceDate: new Date(`${today}T00:00:00Z`) } });
