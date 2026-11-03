@@ -328,6 +328,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Réceptions — pièces indisponibles (exemple fictif) | `90:22` | 1440 × 1500 |
 | Réceptions — avoir rapproché (exemple fictif) | `96:23` | 1440 × 1500 |
 | Réceptions — avoir : enregistrement à vérifier (exemple fictif) | `99:27` | 1440 × 1500 |
+| Badge de stock — quatre variantes et aperçu | `255:732`, `257:711` | 125 × 208 ; 213 × 208 |
 | Bouton moyen — variantes et aperçu | `73:10`, `73:11` | 430 × 190 ; 580 × 290 |
 | Champ de saisie — normal, focus, erreur | `86:28` | 360 × 172 |
 | Sélecteur — normal, focus, erreur et aperçu | `146:365`, `146:378` | 360 × 172 chacun |
@@ -697,3 +698,5 @@ L’état « Configuration — ajout d’un fournisseur » `253:708`, absent des
 Le formulaire fournisseur partage désormais ses styles entre configuration et paramètres : le groupe des jours de livraison n’affiche plus de bordure native. Sur démo jetable dans Firefox, son ouverture place le focus sur Nom, Annuler le rend à Ajouter un fournisseur, et la page reste sans débordement horizontal à 390 px. Cinq tests ciblés, les types et le contrôle CSS passent.
 
 La carte Stocks du tableau de bord a été comparée à A `673:43621` dans Firefox. Les jauges utilisent maintenant la couleur du statut réel : gris pour un stock à vérifier, rouge pour une rupture confirmée, couleur d’alerte pour un seuil atteint et vert pour un stock confirmé suffisant. Auparavant, Firefox les affichait toutes en vert. Les couleurs ont été vérifiées dans Firefox en simulant les quatre statuts ; la démo affichait effectivement les stocks non vérifiés en gris. Aucun débordement à 390 px ; deux tests ciblés et le contrôle CSS passent. Le graphique horaire et les autres écarts de la vue restent à traiter.
+
+La bibliothèque B comprend le composant « Badge de stock » `255:732` : rupture confirmée, à surveiller, à vérifier et bon. Les couleurs, fonds et bordures sont liés à des variables ; le libellé est modifiable et un aperçu avec quatre instances figure à proximité `257:711`. Les transparences et le rendu ont été contrôlés dans Firefox après correction ; les badges restent accompagnés de texte. Aucun écran existant n’a encore été remplacé par ces instances.
