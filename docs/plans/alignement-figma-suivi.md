@@ -276,6 +276,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Nouveau fournisseur | `25:77` | 1440 × 1450 |
 | Connexions | `26:2` | 1440 × 1450 |
 | Tableau de bord première utilisation | `29:2` | 1440 × 1500 |
+| Menu — préparation et surstock | `149:396` | 600 × 959 |
 | Revue Ticket Z fictif | `35:143` | 1440 × 1600 |
 | Réception partielle fictive | `36:2` | 1440 × 1500 |
 | Inventaire — saisies à comparer (exemple fictif) | `62:2` | 1440 × 1500 |
@@ -299,6 +300,8 @@ Le 3 novembre 2026, les éléments de B ont été regroupés en dix sections num
 Le 3 novembre 2026, la frame A `673:43390` observée dans Firefox montre la connexion, pas un formulaire d’inscription autonome. B comporte désormais la section « 11 · Inscription — accès » et la frame `128:232`, créée à partir du formulaire réel et des composants d’authentification existants. Le rendu et la police Poppins ont été contrôlés. La frame `130:268` représente l’erreur de confirmation différente, observée dans Firefox sur la démo avec données fictives ; les autres erreurs et liens de prototype restent à compléter.
 
 Le 3 novembre 2026, l’état d’inscription « serveur indisponible » a été ajouté dans B (`138:305`). Placé initialement hors de sa section par erreur, il a été déplacé sous les deux états existants dans « 11 · Inscription — accès ». Le contrôle structurel ne détecte aucun débordement ni chevauchement entre sections ou entre leurs éléments directs. Le texte correspond au repli de l’application ; le rendu a été contrôlé par capture Figma. Dans Firefox, le canevas Figma est resté noir : le contrôle visuel dans ce navigateur reste à refaire.
+
+La fenêtre B « Menu — préparation et surstock » (`149:396`) représente le brouillon, le choix d’un produit compté et les actions du menu, après observation de l’application dans Firefox sur démo synthétique. La fenêtre est rangée dans Tableau de bord, en calques modifiables avec neuf instances, sans image intégrée ; ses textes utilisent Poppins. Le rendu a été contrôlé par capture Figma. Les états de calcul, de résultat et d’erreur, les liens de prototype et le contrôle visuel du fichier B dans Firefox restent à compléter.
 
 La vue B « Services — déclaration d’incident ouverte » (`144:342`) a été ajoutée après observation du formulaire réel dans Firefox sur démo synthétique. Elle présente la situation, le produit, la recette, la quantité facultative et le constat, sans prétendre modifier stocks ou achats. Les états ouvert et fermé sont reliés dans le prototype ; les réactions sont vérifiées dans Figma, mais pas les clics. Le rendu a été contrôlé par capture Figma : police Poppins, calques modifiables, sept instances et aucune image intégrée. Les trois sélecteurs utilisent maintenant le composant `146:365` : valeur éditable, chevron et états normal, focus et erreur ; couleurs et rayon reprennent les variables existantes. Aperçu et formulaire contrôlés par captures Figma. Les variantes « lot écarté » et « livraison reportée » ont été ajoutées après contrôle de leurs champs dans Firefox sur démo synthétique ; elles ont été vérifiées par captures Figma et restent à relier à une sélection interactive. Le contrôle visuel du fichier B dans Firefox reste à compléter.
 
