@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Button from "../common/Button";
 import Input from "../common/Input";
 import Modal from "../common/Modal";
+import "./EditProductModal.css";
 import type { Product, Supplier } from "../../types";
 import type { ProductEdit } from "../../services/productService";
 
@@ -49,20 +50,22 @@ const EditProductModal = ({ product, suppliers, isOpen, onClose, onSave }: EditP
   };
 
   return <Modal isOpen={isOpen} onClose={onClose} closeDisabled={saving} title={`Modifier ${product.name}`}>
-    <form onSubmit={(event) => void submit(event)} className="space-y-4">
+    <form onSubmit={(event) => void submit(event)} className="edit-product-form">
       <Input id="edit-product-name" label="Nom" value={name} maxLength={120} onChange={(event) => setName(event.target.value)} required />
       <Input id="edit-product-category" label="Catégorie" value={category} maxLength={80} onChange={(event) => setCategory(event.target.value)} required />
-      <label className="block text-sm font-medium" htmlFor="edit-product-supplier">Fournisseur</label>
-      <select id="edit-product-supplier" className="w-full px-3 py-2 border rounded-md" value={supplierId} onChange={(event) => setSupplierId(event.target.value)} required>
-        {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
-      </select>
+      <div className="input-wrapper">
+        <label className="input-label" htmlFor="edit-product-supplier">Fournisseur</label>
+        <select id="edit-product-supplier" className="input-field" value={supplierId} onChange={(event) => setSupplierId(event.target.value)} required>
+          {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
+        </select>
+      </div>
       <Input id="edit-product-threshold" label={`Seuil d’alerte (${product.unit})`} type="number" min="0" max="1000000" step="0.001" value={minThreshold} onChange={(event) => setMinThreshold(event.target.value)} required />
       <Input id="edit-product-price" label={`Prix unitaire par ${product.unit} (€)`} type="number" min="0" max="1000000" step="0.0001" value={pricePerUnit} onChange={(event) => setPricePerUnit(event.target.value)} required />
       <Input id="edit-product-pack" label={`Conditionnement fournisseur réel (${product.unit})`} type="number" min="0.001" max="1000000" step="0.001" value={orderPack} onChange={(event) => setOrderPack(event.target.value)} />
       <p>Renseignez la quantité par colis réellement proposée par le fournisseur. Une valeur absente bloque les suggestions automatiques.</p>
       <p className="text-sm text-secondary">L’unité ({product.unit}) ne se modifie pas ici : les mouvements et recettes existants en dépendent.</p>
       {error && <p role="alert">{error}</p>}
-      <div className="flex justify-end gap-2"><Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Annuler</Button><Button type="submit" disabled={saving || suppliers.length === 0}>{saving ? "Enregistrement…" : "Enregistrer"}</Button></div>
+      <div className="edit-product-actions"><Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Annuler</Button><Button type="submit" disabled={saving || suppliers.length === 0}>{saving ? "Enregistrement…" : "Enregistrer"}</Button></div>
     </form>
   </Modal>;
 };

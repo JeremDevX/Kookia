@@ -1,0 +1,2 @@
+.edit-product-form { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.edit-product-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--spacing-sm); }

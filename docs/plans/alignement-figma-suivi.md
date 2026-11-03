@@ -317,6 +317,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Stocks — compter un produit (exemple fictif) | `218:611` | 600 × 400 |
 | Stocks — ajuster un produit (exemple fictif) | `227:614` | 450 × 900 ; contenu défilant |
 | Stocks — signaler une perte (exemple fictif) | `233:621` | 450 × 900 ; contenu défilant |
+| Stocks — modifier un produit (exemple fictif) | `236:628` | 600 × 742 |
 | Inventaire — validation à vérifier (exemple fictif) | `62:109` | 1440 × 1500 |
 | Équipe — lien d’invitation créé (exemple fictif) | `65:2` | 1440 × 1500 |
 | Équipe — confirmer la révocation (exemple fictif) | `65:101` | 1440 × 1500 |
@@ -662,3 +663,5 @@ La fiche recette a été comparée dans Firefox à A `673:45809`. L’en-tête d
 La saisie d’ajustement utilise désormais le champ partagé et précède l’historique des mouvements, qui peut être très long. Les motifs correction et perte ont été vérifiés dans Firefox sur démo synthétique sans enregistrement ; aucun débordement à 390 px. L’état correction figure dans B `227:614`, relié au bouton Ajuster de la fiche `214:605` ; navigation et défilement ont été simulés dans Firefox. Son enregistrement et l’état perte ne sont pas simulés dans le prototype. Huit tests des ajustements en attente et le contrôle CSS passent.
 
 L’état de perte `233:621` a été ajouté dans la section Stocks de B, avec motif et quantité perdue ; il est relié au bouton Signaler une perte de la fiche et de l’état d’ajustement. Le clic depuis la fiche, le défilement et le rendu ont été vérifiés dans Firefox par événements simulés. Les sections ne se chevauchent pas. L’enregistrement de la perte n’est pas simulé dans le prototype.
+
+La modification d’un produit dispose d’une fenêtre B `236:628`, avec champs et informations observés sur démo synthétique. Son ouverture depuis la fiche et son annulation ont été vérifiées par clics simulés dans Firefox ; l’enregistrement n’est pas simulé. Dans l’application, les champs et boutons sont espacés et le fournisseur utilise le style des autres champs. À 390 px, aucun débordement et le focus revient à Modifier la fiche après annulation. Contrôle CSS réussi.
