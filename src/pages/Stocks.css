@@ -101,7 +101,7 @@
   .stock-inventory-card-heading h3 { min-width: var(--number-0); }
   .stock-inventory-card-heading .product-name { text-align: left; white-space: normal; overflow-wrap: var(--overflow-wrap-anywhere); }
   .inventory-card-quantity { text-align: right; flex-shrink: var(--number-0); }
-  .inventory-card-footer { flex-wrap: wrap; }
+  .inventory-card-footer { flex-wrap: wrap; gap: var(--spacing-sm); }
 }
 @media (--media-mobile) {
   .inventory-header { padding: var(--spacing-lg) var(--spacing-md); }
