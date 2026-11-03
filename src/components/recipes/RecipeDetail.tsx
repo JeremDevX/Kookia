@@ -25,7 +25,7 @@ export default function RecipeDetail({ recipe, editing, onBack, onEdit, onProduc
         {recipe.maxYield > 0 && <Button disabled={!producible} onClick={() => onProduce(recipe, count)}>Produire</Button>}</div>
     </div>
     <div className="recipe-detail-panel">
-      <span>{recipe.category}</span><h2 id="recipe-detail-title" ref={heading} tabIndex={-1}>{recipe.name}</h2>
+      <span>{recipe.category}</span><h1 id="recipe-detail-title" ref={heading} tabIndex={-1}>{recipe.name}</h1>
       <div className="recipe-detail-metrics"><p>Durée<strong>{recipe.prepTime} min</strong></p><p>Portions<strong>{recipe.yieldPortions} par lot</strong></p><p>Disponibilité<strong>{recipe.ingredients.length === 0 ? "Ingrédients à renseigner" : recipe.maxYield > 0 ? `Jusqu’à ${recipe.maxYield} portions sous réserve` : "Stock insuffisant ou à vérifier"}</strong></p></div>
     </div>
     <div className="recipe-detail-columns">

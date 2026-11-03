@@ -6,6 +6,7 @@
   padding-top: var(--spacing-lg);
 }
 .workspace-page.recipes-container { background: var(--color-auth-field); }
+.recipes-container:has(.recipe-detail) > .recipes-heading-panel, .recipes-container:has(.recipe-detail) > .recipe-candidates:not([open]) { display: none; }
 .recipes-heading-panel, .recipe-catalog, .recipe-sheets { background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
 .recipes-heading-panel .workspace-header { padding: var(--spacing-xl); }
 .recipes-heading-panel h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); letter-spacing: normal; }
@@ -429,7 +430,10 @@
 .recipe-detail-actions, .recipe-detail-actions > div { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
 .recipe-detail-actions { justify-content: space-between; }
 .recipe-detail-panel { min-width: var(--number-0); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
-.recipe-detail-panel h2, .recipe-detail-panel h3 { margin-bottom: var(--spacing-md); }
+.recipe-detail-panel h1, .recipe-detail-panel h3 { margin-bottom: var(--spacing-md); }
+.recipe-detail-panel h1 { font-size: var(--font-size-xl); }
+.recipe-detail-panel h3 { font-size: var(--font-size-md); }
+.recipe-detail-panel input[type="number"] { width: var(--size-120); min-height: var(--size-44); padding: var(--spacing-sm); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-auth-field); }
 .recipe-detail-metrics, .recipe-detail-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--unit-100percent), var(--size-260)), var(--unit-1fr))); gap: var(--spacing-md); }
 .recipe-detail-metrics p { display: grid; gap: var(--spacing-xs); padding: var(--spacing-sm); background: var(--color-auth-field); }
 .recipe-detail-panel ul { list-style: none; padding: var(--number-0); margin: var(--number-0); }
