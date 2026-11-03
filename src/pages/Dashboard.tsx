@@ -44,6 +44,7 @@ function DashboardOverview() {
   const [purchaseLoading, setPurchaseLoading] = useState(true);
   const [purchaseError, setPurchaseError] = useState("");
   const [purchaseRevision, setPurchaseRevision] = useState(0);
+  const purchaseRequest = useRef(0);
   const purchaseIndicator = purchaseForecastIndicator(purchaseForecast, cartItems.map((item) => item.productId),
     purchaseLoading || cartLoading, !!purchaseError || !!cartError);
   const stockToReview = products.filter(needsStockReview);
@@ -52,12 +53,36 @@ function DashboardOverview() {
   const isFirstRun = latestService === null;
   const showSalesStartActions = isFirstRun && !cartLoading && !cartError && cartItems.length === 0 && !salesError;
 
+  const refreshPurchase = () => {
+    purchaseRequest.current += 1;
+    setPurchaseLoading(true);
+    setPurchaseError("");
+    setPurchaseRevision((value) => value + 1);
+  };
+
+  useEffect(() => {
+    let date = formatLocalISODate(new Date());
+    const checkDate = () => {
+      const next = formatLocalISODate(new Date());
+      if (next !== date) { date = next; refreshPurchase(); }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      date = formatLocalISODate(new Date());
+      refreshPurchase();
+    };
+    const timer = window.setInterval(checkDate, 60_000);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisibility); };
+  }, []);
+
   useEffect(() => {
     let active = true;
+    const request = purchaseRequest.current;
     getPurchaseSuggestions().then((result) => {
-      if (active) { setPurchaseForecast(result); setPurchaseError(""); setPurchaseLoading(false); }
+      if (active && request === purchaseRequest.current) { setPurchaseForecast(result); setPurchaseError(""); setPurchaseLoading(false); }
     }, () => {
-      if (active) { setPurchaseError("Les prévisions d’achat n’ont pas pu être chargées."); setPurchaseLoading(false); }
+      if (active && request === purchaseRequest.current) { setPurchaseError("Les prévisions d’achat n’ont pas pu être chargées."); setPurchaseLoading(false); }
     });
     return () => { active = false; };
   }, [purchaseRevision]);
@@ -136,9 +161,7 @@ function DashboardOverview() {
       <p>Les prévisions et besoins d'achat nécessitent 28 jours de service complets et un comptage de stock récent ; chaque suggestion reste à revoir.</p>
     </section>}
 
-    <TodayPurchaseForecast data={purchaseForecast} loading={purchaseLoading} error={purchaseError} retry={() => {
-      setPurchaseLoading(true); setPurchaseError(""); setPurchaseRevision((value) => value + 1);
-    }} />
+    <TodayPurchaseForecast data={purchaseForecast} loading={purchaseLoading} error={purchaseError} retry={refreshPurchase} />
     </div><div className="today-grid">
       <TodayContext />
       <section className="today-card" aria-labelledby="today-tasks-title"><h2 id="today-tasks-title">Tâches du jour</h2>
