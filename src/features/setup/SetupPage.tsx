@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { Fragment, useState, type FormEvent } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
@@ -65,8 +65,8 @@ function SetupForm() {
         ["city", "Ville", "text", 120, true],
         ["email", "Email de contact", "email", 254, true],
         ["phone", "Téléphone (facultatif)", "tel", 40, false],
-      ] as const).map(([field, label, type, maxLength, required]) => <Input key={field} id={`setup-${field}`} label={label} type={type} maxLength={maxLength} required={required} disabled={saving} value={form[field]} error={fields[field]} onChange={(event) => set(field, event.target.value)} />)}
-      <Input id="setup-covers" label="Couverts moyens par jour" type="number" min={0} max={100000} step={1} required disabled={saving} value={form.dailyCovers} error={fields.dailyCovers} onChange={(event) => set("dailyCovers", event.target.value)} />
+      ] as const).map(([field, label, type, maxLength, required]) => <Fragment key={field}><Input id={`setup-${field}`} label={label} type={type} maxLength={maxLength} required={required} disabled={saving} value={form[field]} error={fields[field]} onChange={(event) => set(field, event.target.value)} />
+        {field === "type" && <Input id="setup-covers" label="Couverts moyens par jour" type="number" min={0} max={100000} step={1} required disabled={saving} value={form.dailyCovers} error={fields.dailyCovers} onChange={(event) => set("dailyCovers", event.target.value)} />}</Fragment>)}
       <div className="input-wrapper"><label className="input-label" htmlFor="setup-terrace">Terrasse</label>
         <select id="setup-terrace" className="input-field" disabled={saving} value={form.hasTerrace} onChange={(event) => set("hasTerrace", event.target.value)}>
           <option value="">Non renseigné</option><option value="yes">Oui</option><option value="no">Non</option>
