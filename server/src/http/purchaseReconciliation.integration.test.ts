@@ -40,7 +40,19 @@ it("validates supplier constraints and keeps confirmed ETA and credit separate f
     invoiceReferenceNormalized: "fact-fixture", invoiceDocumentId: randomUUID(), invoiceDocumentRevision: 1,
     deliveryReference: "BL-FIXTURE", deliveryDate: new Date("2026-10-01T00:00:00Z"), requestSnapshot: {} } });
   const credit = { operationId: randomUUID(), receiptId, reference: "AV-FIXTURE", amount: 3.25, reason: "Écart facture confirmé" };
-  const saved = await owner.agent.post("/api/workspace/orders/credits").send(credit).expect(201);
+  const wrongContext = await owner.agent.post("/api/workspace/orders/credits")
+    .set("X-Expected-Restaurant-Id", other.restaurantId).send(credit).expect(409);
+  expect(wrongContext.body.error.code).toBe("WORKSPACE_CHANGED");
+  expect(await prisma.purchaseCredit.count({ where: { restaurantId: owner.restaurantId } })).toBe(0);
+  const wrongRead = await owner.agent.get(`/api/workspace/orders/${order.body.id}/reconciliation`)
+    .set("X-Expected-Restaurant-Id", other.restaurantId).expect(409);
+  expect(wrongRead.body.error.code).toBe("WORKSPACE_CHANGED");
+  const saved = await owner.agent.post("/api/workspace/orders/credits")
+    .set("X-Expected-Restaurant-Id", owner.restaurantId).send(credit).expect(201);
+  const concurrent = await Promise.all([1, 2].map(() => owner.agent.post("/api/workspace/orders/credits")
+    .set("X-Expected-Restaurant-Id", owner.restaurantId).send(credit).expect(201)));
+  expect(concurrent.map((response) => response.body)).toEqual([{ id: saved.body.id, replayed: true }, { id: saved.body.id, replayed: true }]);
+  expect(await prisma.purchaseCredit.count({ where: { restaurantId: owner.restaurantId } })).toBe(1);
   expect((await owner.agent.post("/api/workspace/orders/credits").send(credit).expect(201)).body).toEqual({ id: saved.body.id, replayed: true });
   await owner.agent.post("/api/workspace/orders/credits").send({ ...credit, amount: 2 }).expect(409);
   await owner.agent.post("/api/workspace/orders/credits").send({ ...credit, operationId: randomUUID() }).expect(409);

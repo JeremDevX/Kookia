@@ -87,10 +87,16 @@ orderRoutes.patch("/orders/lines/:lineId/delivery", async (req, res, next) => {
   } catch (error) { next(error); }
 });
 orderRoutes.get("/orders/:orderId/reconciliation", async (req, res, next) => {
+  if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== context(res).restaurantId) {
+    res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return;
+  }
   try { res.json(await getPurchaseReconciliation(context(res).restaurantId, z.uuid().parse(req.params.orderId))); }
   catch (error) { next(error); }
 });
 orderRoutes.post("/orders/credits", async (req, res, next) => {
+  if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== context(res).restaurantId) {
+    res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return;
+  }
   try {
     const { restaurantId, actorId } = context(res);
     res.status(201).json(await recordPurchaseCredit(restaurantId, actorId, purchaseCreditSchema.parse(req.body)));

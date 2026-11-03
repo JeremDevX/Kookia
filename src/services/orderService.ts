@@ -106,6 +106,10 @@ export interface PurchaseReconciliation {
     credits: Array<{ id: string; reference: string; amount: number; reason: string }> }>;
   assumptions: string[];
 }
-export const getPurchaseReconciliation = (orderId: string) => apiRequest<PurchaseReconciliation>(`/workspace/orders/${encodeURIComponent(orderId)}/reconciliation`);
-export const recordPurchaseCredit = (input: { operationId: string; receiptId: string; reference: string; amount: number; reason: string }) =>
-  apiRequest<{ id: string; replayed: boolean }>("/workspace/orders/credits", { method: "POST", body: JSON.stringify(input) });
+export interface PurchaseCreditInput { operationId: string; receiptId: string; reference: string; amount: number; reason: string; }
+export const getPurchaseReconciliation = (orderId: string, restaurantId: string) => apiRequest<PurchaseReconciliation>(
+  `/workspace/orders/${encodeURIComponent(orderId)}/reconciliation`, { headers: { "X-Expected-Restaurant-Id": restaurantId } });
+export const recordPurchaseCredit = (input: PurchaseCreditInput, restaurantId: string) =>
+  apiRequest<{ id: string; replayed: boolean }>("/workspace/orders/credits", {
+    method: "POST", headers: { "X-Expected-Restaurant-Id": restaurantId }, body: JSON.stringify(input),
+  });
