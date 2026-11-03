@@ -628,3 +628,5 @@ Nouvelle comparaison de la frame A `673:46361` dans Firefox : l’en-tête de Pr
 Connexion : comparaison Firefox avec A `673:43390` à 1440 × 1024. Le formulaire a été remonté pour correspondre à la position de la maquette ; le parcours mobile conserve son espacement. Les deux champs et le lien vers l’inscription restent disponibles sans débordement à 390 px. Le souvenir de session et la récupération de mot de passe restent des écarts métier documentés.
 
 Le canevas Figma B s’affiche à nouveau dans Firefox. Contrôle visuel réalisé pour Services `16:2`, la section Configuration — invitations `152:407`, l’état météo sans résultat `189:620` et les erreurs d’accès `138:305` et `171:497`. Les clics du prototype et les autres vues restent à recetter.
+
+Le planning du jour a été examiné dans Firefox sur démo synthétique : ses liens sont désormais bleus et soulignés comme les autres actions textuelles, et le retour au tableau de bord fonctionne. Aucun débordement horizontal à 390 px. La maquette A prévoit des couverts horaires et des revues dont les sources restent à définir.
