@@ -262,6 +262,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Réceptions — ligne sans correspondance (exemple fictif) | `78:16` | 1440 × 1500 |
 | Réceptions — écart de prix à justifier (exemple fictif) | `78:115` | 1440 × 1500 |
 | Réceptions — rapprocher un avoir (exemple fictif) | `83:88` | 1440 × 1500 |
+| Réceptions — pièces indisponibles (exemple fictif) | `90:22` | 1440 × 1500 |
 | Bouton moyen — variantes et aperçu | `73:10`, `73:11` | 430 × 190 ; 580 × 290 |
 | Champ de saisie — normal, focus, erreur | `86:28` | 360 × 172 |
 
