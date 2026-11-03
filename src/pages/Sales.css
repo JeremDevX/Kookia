@@ -76,3 +76,9 @@
 @media (--media-compact) { .ticket-transcription-layout { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); } }
 @media (--media-compact) { :is(.sales-page, .service-page) { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); } }
 @media (--media-mobile) { .sales-table-hint { display: block; margin: var(--spacing-sm) var(--number-0); color: var(--color-text-muted); font-size: var(--font-size-caption); } }
+
+.service-page > .sales-panel[aria-label="Service sélectionné"] { display: grid; gap: var(--spacing-md); }
+.service-page > .sales-panel[aria-label="Service sélectionné"] label { font-size: var(--font-size-sm); }
+.service-page > .sales-panel[aria-label="Service sélectionné"] p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_5); }
+.service-page .service-operation-panel h2 { font-size: var(--font-size-md); }
+.service-page .service-operation-panel > p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_5); }

@@ -67,7 +67,7 @@ export default function ServiceForecastPanel({ date, slot }: { date: string; slo
     return () => { cancelled = true; };
   }, [date, key, past]);
   return <section className="service-operation-panel" aria-labelledby="service-forecast-title">
-    <h2 id="service-forecast-title">Prévisions du {date} · {slot === "lunch" ? "midi" : "soir"}</h2>
+    <h2 id="service-forecast-title">Prévisions du {new Date(`${date}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "long" })} · {slot === "lunch" ? "midi" : "soir"}</h2>
     {past ? <p>Les prévisions sont proposées pour aujourd’hui et les dates futures. Consultez la fiche de service pour le résultat historique.</p> : <>
       {loading && <p role="status">Calcul des prévisions…</p>}
       {error && <p role="alert">{error}</p>}

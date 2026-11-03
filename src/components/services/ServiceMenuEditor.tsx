@@ -64,7 +64,7 @@ export default function ServiceMenuEditor({ date, slot, onChanged, onDirtyChange
     finally { if (generation.current === request) setSaving(false); }
   };
   return <section className="service-operation-panel" aria-labelledby="service-menu-title">
-    <h2 id="service-menu-title">Carte du {date} · {slot === "lunch" ? "midi" : "soir"}</h2>
+    <h2 id="service-menu-title">Carte du {new Date(`${date}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "long" })} · {slot === "lunch" ? "midi" : "soir"}</h2>
     <p>Plusieurs choix, prix et disponibilités sont enregistrés pour ce service. Les versions de recettes applicables à la date seront conservées.</p>
     <p>Pour une formule, saisir les ventes de la formule OU celles de ses composants, jamais les deux. Enregistrer la carte ne déduit aucune matière.</p>
     {loading && <p role="status">Chargement de la carte…</p>}
