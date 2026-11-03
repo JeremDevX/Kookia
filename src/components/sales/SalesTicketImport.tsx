@@ -30,6 +30,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
   const [listError, setListError] = useState("");
   const [status, setStatus] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const mounted = useRef(true);
   const objectUrl = useRef<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const { hash } = useLocation();
@@ -54,13 +55,17 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
 
   const refresh = useCallback(async () => {
     setListLoading(true); setListError("");
-    try { setBatches(await getTicketZBatches()); }
-    catch (cause) { setListError(errorMessage(cause)); }
-    finally { setListLoading(false); }
+    try { const result = await getTicketZBatches(); if (mounted.current) setBatches(result); }
+    catch (cause) { if (mounted.current) setListError(errorMessage(cause)); }
+    finally { if (mounted.current) setListLoading(false); }
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
-  useEffect(() => () => {
-    if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
+    };
   }, []);
 
   const selectFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -75,6 +80,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
     setLoading(true);
     try {
       const saved = await uploadTicketZFile(file);
+      if (!mounted.current) { URL.revokeObjectURL(url); return; }
       const nextPreview = { contentHash: saved.contentHash, url, mimeType: saved.mimeType };
       if (objectUrl.current) URL.revokeObjectURL(objectUrl.current);
       objectUrl.current = url;
@@ -85,14 +91,15 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
       setStatus(saved.duplicate ? "Cette pièce existe déjà dans cet espace ; aucune nouvelle ligne n’a été ajoutée." :
         "Pièce reçue. L’original n’est pas conservé ; vous pouvez le lire ici pour transcrire les lignes.");
       await refresh();
+      if (!mounted.current) return;
       if (saved.status === "candidates" && saved.serviceDate) {
         try { await onCandidatesSaved(saved.serviceDate); }
-        catch { setError("Ticket retrouvé, mais les ventes n’ont pas pu être actualisées. Actualisez la page."); }
+        catch { if (mounted.current) setError("Ticket retrouvé, mais les ventes n’ont pas pu être actualisées. Actualisez la page."); }
       }
     } catch (cause) {
       if (objectUrl.current !== url) URL.revokeObjectURL(url);
-      setError(errorMessage(cause));
-    } finally { setLoading(false); }
+      if (mounted.current) setError(errorMessage(cause));
+    } finally { if (mounted.current) setLoading(false); }
   };
 
   const submitCandidates = async (event: FormEvent) => {

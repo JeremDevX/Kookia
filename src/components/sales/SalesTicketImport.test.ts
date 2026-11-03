@@ -7,7 +7,7 @@ const api = vi.hoisted(() => ({ createTicketZCandidates: vi.fn(), deleteTicketZB
 vi.mock("../../services/salesService", () => api);
 vi.mock("react", async (original) => ({ ...await original<typeof import("react")>(),
   useState: () => { const i = state.index++; return [state.values[i], state.setters[i]]; },
-  useEffect: (effect: () => unknown) => { state.effects.push(effect); }, useCallback: (fn: unknown) => fn, useRef: () => ({ current: null }),
+  useEffect: (effect: () => unknown) => { state.effects.push(effect); }, useCallback: (fn: unknown) => fn, useRef: (initial: unknown) => ({ current: initial }),
 }));
 vi.mock("react-router-dom", () => ({ useLocation: () => ({ hash: "" }), useBlocker: (fn: unknown) => { state.block = fn; return state.blocker; } }));
 
@@ -101,4 +101,21 @@ it("refuse la navigation pendant l’enregistrement sans demander de confirmatio
   render(); state.effects[0]();
   expect(reset).toHaveBeenCalledOnce(); expect(proceed).not.toHaveBeenCalled();
   expect(window.confirm).not.toHaveBeenCalled();
+});
+
+it("libère l’aperçu si le téléversement se termine après le départ", async () => {
+  let complete!: (value: typeof batch) => void;
+  api.uploadTicketZFile.mockReturnValue(new Promise((resolve) => { complete = resolve; }));
+  const onPreviewChanged = vi.fn(), onCandidatesSaved = vi.fn();
+  const tree = SalesTicketImport({ onCandidatesSaved, onPreviewChanged });
+  const cleanup = state.effects[4]() as () => void;
+  const file = find(tree, (e) => e.type === "input" && e.props.type === "file")!;
+  (file.props.onChange as (e: unknown) => void)({ target: { files: [{ size: 1, type: "application/pdf" }], value: "" } });
+  cleanup();
+  state.setters.forEach((setter) => setter.mockClear());
+  complete(batch);
+  await vi.waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:new"));
+  expect(state.setters.every((setter) => !setter.mock.calls.length)).toBe(true);
+  expect(onPreviewChanged).not.toHaveBeenCalled();
+  expect(onCandidatesSaved).not.toHaveBeenCalled();
 });
