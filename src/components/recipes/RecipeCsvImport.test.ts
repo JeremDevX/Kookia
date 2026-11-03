@@ -13,11 +13,23 @@ function fileInput(node: unknown): ReactElement<{ onChange: (event: unknown) => 
   if (node.type === "input" && node.props.type === "file") return node as ReactElement<{ onChange: (event: unknown) => void }>;
   for (const child of Children.toArray(node.props.children as never)) { const found = fileInput(child); if (found) return found; }
 }
+function dropZone(node: unknown): ReactElement<{ onDrop: (event: unknown) => void }> | undefined {
+  if (!isValidElement<{ className?: string; children?: unknown; onDrop?: (event: unknown) => void }>(node)) return;
+  if (node.props.className === "recipe-csv-drop") return node as ReactElement<{ onDrop: (event: unknown) => void }>;
+  for (const child of Children.toArray(node.props.children as never)) { const found = dropZone(child); if (found) return found; }
+}
 const deferred = () => { let resolve!: (value: ArrayBuffer) => void; const promise = new Promise<ArrayBuffer>((done) => { resolve = done; }); return { promise, resolve }; };
 const csv = (name: string) => new TextEncoder().encode(`Produit,Quantité,Unité\n${name},1,kg`).buffer;
 beforeEach(() => vi.clearAllMocks());
 
 describe("sélection CSV", () => {
+  it("lit un fichier déposé avec les mêmes contrôles que le sélecteur", async () => {
+    const tree = RecipeCsvImport({ products: [], onClose: vi.fn(), onApply: vi.fn() });
+    const preventDefault = vi.fn();
+    dropZone(tree)!.props.onDrop({ preventDefault, dataTransfer: { files: [{ name: "fiche.csv", size: 10, arrayBuffer: async () => csv("Tomate") }] } });
+    await vi.waitFor(() => expect(vi.mocked(useState).mock.results[0].value[1]).toHaveBeenCalledWith(expect.objectContaining({ rows: [expect.objectContaining({ fields: ["Tomate", "1", "kg"] })] })));
+    expect(preventDefault).toHaveBeenCalled();
+  });
   it("ignore une lecture antérieure terminée après la nouvelle sélection", async () => {
     const old = deferred(), next = deferred();
     const tree = RecipeCsvImport({ products: [], onClose: vi.fn(), onApply: vi.fn() });

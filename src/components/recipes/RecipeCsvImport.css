@@ -8,6 +8,13 @@
 .recipe-csv-steps span { display: grid; place-items: center; width: var(--size-28); height: var(--size-28); border: var(--size-1) solid currentColor; border-radius: var(--radius-full); }
 .recipe-csv-import { display: grid; gap: var(--spacing-md); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
 .recipe-csv-import label { display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.recipe-csv-import .recipe-csv-drop { position: relative; display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-xl); border: var(--size-1) dashed var(--color-nav-muted); border-radius: var(--radius-compact); background: var(--color-auth-field); text-align: center; cursor: pointer; }
+.recipe-csv-drop:focus-within { outline: var(--size-2) solid var(--color-accent-text); outline-offset: var(--size-2); }
+.recipe-csv-drop input { position: absolute; width: var(--size-1); height: var(--size-1); opacity: var(--number-0); }
+.recipe-csv-drop > span:not(.recipe-csv-choose) { color: var(--color-nav-muted); }
+.recipe-csv-choose { padding: var(--spacing-sm) var(--spacing-md); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-surface); }
+.recipe-csv-preparation { display: grid; gap: var(--spacing-xs); padding-top: var(--spacing-md); border-top: var(--size-1) solid var(--color-nav-border); }
+.recipe-csv-preparation p { color: var(--color-nav-muted); }
 .recipe-csv-import fieldset { min-width: var(--number-0); margin: var(--number-0); padding: var(--number-0); border: var(--number-0); display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
 .recipe-csv-import legend { margin-bottom: var(--spacing-sm); color: var(--color-nav-text); font-weight: var(--font-weight-semibold); }
 .recipe-csv-import h2 { color: var(--color-nav-text); font-size: var(--font-size-md); }
