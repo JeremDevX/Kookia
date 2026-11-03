@@ -333,6 +333,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Sélecteur — normal, focus, erreur et aperçu | `146:365`, `146:378` | 360 × 172 chacun |
 | Présentation authentification — panneau réutilisable | `126:47` | 600 × 900 |
 | Accès — vérification de session indisponible | `171:497` | 1440 × 900 |
+| Recettes — import CSV : choix du fichier | `242:654` | 960 × 326 |
 | Recettes — fiches candidates : panneau, formulaires et décisions | `159:423`, `159:425`, `164:426`, `167:431`, `168:452`, `169:495`, `169:514` | 900 × 71 à 900 × 900 ; formulaires défilants |
 | Configuration — équipe : lien créé et lien masqué | `152:408`, `153:416` | 1440 × 1420 chacun |
 | Invitation — connexion, inscription, acceptation, confirmation, lien invalide, session indisponible | `120:30`, `123:33`, `117:29`, `120:56`, `117:45`, `123:63` | 1440 × 900 chacun |
@@ -672,3 +673,5 @@ Le planning a été comparé dans Firefox à A `673:43793` : la colonne Services
 La fenêtre Ajouter un produit `239:638`, absente des écrans repérés dans A, est ajoutée dans la section Stocks de B avec les valeurs initiales observées sur démo synthétique. Le rendu a été vérifié dans Firefox ; le prototype représente l’état vide et ne crée pas de produit. Dans l’application, les champs et boutons sont espacés, la grille s’empile sur mobile et le prix utilise une icône euro. À 390 px, une saisie fictive active le bouton ; Annuler rend le focus à Ajouter un produit sans enregistrer. Douze tests de validation et le contrôle CSS passent.
 
 La liste des fiches techniques a été comparée dans Firefox à A `673:45044`. Le bouton principal indique « Créer une fiche » et les fiches candidates restent accessibles après le tableau. La recherche « Pizza » affiche deux fiches sur démo synthétique ; quatre tests ciblés passent. Les statuts de A correspondent à un cycle de brouillon absent du modèle actuel : le filtre conserve donc l’état réel des ingrédients. Les cartes de création et les autres écarts visuels restent à traiter.
+
+L’état initial de l’import CSV des recettes figure dans B `242:654`, section « 16 · Recettes — import CSV », à partir du formulaire observé sur démo synthétique. Il utilise des calques modifiables et les boutons partagés ; le rendu a été comparé dans Firefox. Les étapes d’association des colonnes et de vérification des ingrédients restent à représenter ; le prototype de cet état ne sélectionne pas de fichier.
