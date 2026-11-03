@@ -305,7 +305,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Champ de saisie — normal, focus, erreur | `86:28` | 360 × 172 |
 | Sélecteur — normal, focus, erreur et aperçu | `146:365`, `146:378` | 360 × 172 chacun |
 | Présentation authentification — panneau réutilisable | `126:47` | 600 × 900 |
-| Recettes — fiches candidates : panneau fermé, ouvert, confirmation d’écartement, création et modification | `159:423`, `159:425`, `164:426`, `167:431`, `168:452` | 900 × 71 ; 900 × 492 ; 900 × 600 ; 900 × 1010 ; 900 × 1540 |
+| Recettes — fiches candidates : panneau, formulaires et décisions | `159:423`, `159:425`, `164:426`, `167:431`, `168:452`, `169:495`, `169:514` | 900 × 71 à 900 × 1540 |
 | Configuration — équipe : lien créé et lien masqué | `152:408`, `153:416` | 1440 × 1420 chacun |
 | Invitation — connexion, inscription, acceptation, confirmation, lien invalide, session indisponible | `120:30`, `123:33`, `117:29`, `120:56`, `117:45`, `123:63` | 1440 × 900 chacun |
 
@@ -314,6 +314,8 @@ Le 3 novembre 2026, les éléments de B ont été regroupés en dix sections num
 Le 3 novembre 2026, la frame A `673:43390` observée dans Firefox montre la connexion, pas un formulaire d’inscription autonome. B comporte désormais la section « 11 · Inscription — accès » et la frame `128:232`, créée à partir du formulaire réel et des composants d’authentification existants. Le rendu et la police Poppins ont été contrôlés. La frame `130:268` représente l’erreur de confirmation différente, observée dans Firefox sur la démo avec données fictives ; les autres erreurs et liens de prototype restent à compléter.
 
 Le 3 novembre 2026, l’état d’inscription « serveur indisponible » a été ajouté dans B (`138:305`). Placé initialement hors de sa section par erreur, il a été déplacé sous les deux états existants dans « 11 · Inscription — accès ». Le contrôle structurel ne détecte aucun débordement ni chevauchement entre sections ou entre leurs éléments directs. Le texte correspond au repli de l’application ; le rendu a été contrôlé par capture Figma. Dans Firefox, le canevas Figma est resté noir : le contrôle visuel dans ce navigateur reste à refaire.
+
+Les résultats de confirmation (`169:495`) et d’écartement (`169:514`) reprennent les messages et statuts du code, avec des données fictives. Les actions correspondantes sont reliées dans les propriétés du prototype. Les captures Figma ont été contrôlées ; le canevas reste noir dans Firefox et les clics ne sont pas vérifiés.
 
 La modification d’une hypothèse (`168:452`) illustre trois ingrédients et pièces fictifs, avec les champs et actions de l’application. Les boutons Modifier et Annuler sont reliés dans les propriétés du prototype. La capture Figma a permis de corriger le débordement du nom et l’espacement des actions ; la vérification des clics dans Firefox reste à faire.
 
