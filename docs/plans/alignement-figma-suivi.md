@@ -43,7 +43,7 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 
 | Écran / route | Référence candidate | Structure | Informations | Fonctionnalités | Visuel | Interactions | Statut |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Connexion `/login` | A `673:43390` | À vérifier | À vérifier | À vérifier | À vérifier | Connexion factice vérifiée ; reste à tester | En cours |
+| Connexion `/login` | A `673:43390` | Panneau de présentation et formulaire côte à côte | Textes adaptés aux capacités réelles | Souvenir de session et mot de passe oublié non disponibles | Comparaison Firefox partielle : structure et éléments principaux proches ; détails et proportions à affiner | Connexion factice vérifiée ; récupération de mot de passe absente | Écart métier |
 | Inscription `/register` | A `673:43390` | À vérifier | À vérifier | Configuration en quatre étapes ; invitations par lien manuel | À vérifier | Inscription factice vérifiée ; reste à tester | En cours |
 | Configuration `/setup` | A `673:43437` à `673:43559` | Quatre étapes avec progression et reprise | Jours d’ouverture distincts des horaires de service, utilisés pour les livraisons hebdomadaires ; exceptions non intégrées | Fournisseurs, récapitulatif et invitations manuelles disponibles | Rapprochement partiel ; comparaison précise à faire | Création, reprise, ajout fournisseur et retour testés sur données synthétiques | En cours |
 | Aujourd'hui `/` | A `673:43621`, `673:43793` ; B `29:2` | Tâches regroupées ; autres écarts à vérifier | Indicateurs indisponibles explicités | Planning et notifications à confronter | Comparaison partielle | Firefox bureau et mobile ; autres états à vérifier | En cours |
@@ -268,6 +268,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Réceptions — avoir : enregistrement à vérifier (exemple fictif) | `99:27` | 1440 × 1500 |
 | Bouton moyen — variantes et aperçu | `73:10`, `73:11` | 430 × 190 ; 580 × 290 |
 | Champ de saisie — normal, focus, erreur | `86:28` | 360 × 172 |
+| Présentation authentification — panneau réutilisable | `126:47` | 600 × 900 |
 | Invitation — connexion, inscription, acceptation, confirmation, lien invalide, session indisponible | `120:30`, `123:33`, `117:29`, `120:56`, `117:45`, `123:63` | 1440 × 900 chacun |
 
 Le 3 novembre 2026, les éléments de B ont été regroupés en dix sections numérotées : composants, tableau de bord, ventes, services, historique et navigation, stocks, réceptions, avoirs, paramètres et équipe, invitations. Les cadres conservent leurs identifiants ; aucun dépassement des limites de section détecté. Les sections Réceptions, Avoirs et Invitations ont été observées dans Firefox ; les autres états et les liens du prototype d’invitation restent à vérifier. Le rangement reste à compléter avec les nouveaux éléments à créer.
