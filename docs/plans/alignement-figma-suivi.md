@@ -261,6 +261,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Équipe — confirmer la révocation (exemple fictif) | `65:101` | 1440 × 1500 |
 | Réceptions — ligne sans correspondance (exemple fictif) | `78:16` | 1440 × 1500 |
 | Réceptions — écart de prix à justifier (exemple fictif) | `78:115` | 1440 × 1500 |
+| Réceptions — rapprocher un avoir (exemple fictif) | `83:88` | 1440 × 1500 |
 | Bouton moyen — variantes et aperçu | `73:10`, `73:11` | 430 × 190 ; 580 × 290 |
 
 La bibliothèque B comprend désormais un bouton moyen à quatre variantes et ses variables, utilisé dans les états ajoutés. Les écrans et l’aperçu sont constitués de calques modifiables et ont été contrôlés visuellement dans Firefox. Les liens de prototype, les autres composants, les états manquants et la fidélité complète à A restent à vérifier.
