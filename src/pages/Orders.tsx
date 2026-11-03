@@ -60,7 +60,7 @@ export default function Orders() {
     setInvoiceOpen(true);
   };
 
-  return <div className={`orders-container workspace-page${view === "receipts" ? " orders-receipts" : ""}`}>
+  return <div className={`orders-container workspace-page${view === "receipts" ? " orders-receipts" : view === "prepare" ? " orders-prepare" : ""}`}>
     <div className="orders-heading-panel">
     <header className="workspace-header"><div>
       <h1 ref={headingRef} tabIndex={-1}>{view === "receipts" ? "Réceptions fournisseurs" : "Mes commandes"}</h1>

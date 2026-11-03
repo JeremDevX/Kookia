@@ -66,3 +66,14 @@
 .orders-receipts .orders-heading-panel { border-radius: var(--radius-compact) var(--radius-compact) var(--number-0) var(--number-0); box-shadow: none; }
 .orders-receipts .receipt-calendar { border-top: none; border-radius: var(--number-0) var(--number-0) var(--radius-compact) var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
 .orders-receipts .orders-help { margin-top: var(--spacing-lg); }
+
+.workspace-page.orders-prepare { gap: var(--number-0); }
+.orders-prepare .orders-heading-panel { border-radius: var(--radius-compact) var(--radius-compact) var(--number-0) var(--number-0); box-shadow: none; }
+.orders-prepare .orders-prepare-intro { padding: var(--spacing-lg) var(--spacing-xl) var(--number-0); background: var(--color-surface); border-inline: var(--size-1) solid var(--color-nav-border); }
+.orders-prepare .orders-prepare-layout { background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-top: none; border-radius: var(--number-0) var(--number-0) var(--radius-compact) var(--radius-compact); }
+.orders-prepare .orders-prepare-layout :is(.purchase-suggestions, .orders-selection) { padding: var(--spacing-xl); border: none; border-radius: var(--number-0); box-shadow: none; }
+.orders-prepare .orders-help { margin-top: var(--spacing-lg); }
+@media (--media-mobile) {
+  .orders-prepare .orders-prepare-intro { padding-inline: var(--spacing-lg); }
+  .orders-prepare .orders-prepare-layout :is(.purchase-suggestions, .orders-selection) { padding: var(--spacing-lg); }
+}
