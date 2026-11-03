@@ -333,7 +333,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Sélecteur — normal, focus, erreur et aperçu | `146:365`, `146:378` | 360 × 172 chacun |
 | Présentation authentification — panneau réutilisable | `126:47` | 600 × 900 |
 | Accès — vérification de session indisponible | `171:497` | 1440 × 900 |
-| Recettes — import CSV : choix du fichier, association des colonnes, vérification des ingrédients | `242:654`, `244:655`, `244:696` | 960 × 326 à 960 × 577 |
+| Recettes — import CSV : choix du fichier, association des colonnes, vérification des ingrédients | `242:654`, `244:655`, `244:696`, `247:675` | 960 × 326 à 960 × 577 |
 | Recettes — fiches candidates : panneau, formulaires et décisions | `159:423`, `159:425`, `164:426`, `167:431`, `168:452`, `169:495`, `169:514` | 900 × 71 à 900 × 900 ; formulaires défilants |
 | Configuration — équipe : lien créé et lien masqué | `152:408`, `153:416` | 1440 × 1420 chacun |
 | Invitation — connexion, inscription, acceptation, confirmation, lien invalide, session indisponible | `120:30`, `123:33`, `117:29`, `120:56`, `117:45`, `123:63` | 1440 × 900 chacun |
@@ -676,4 +676,6 @@ La liste des fiches techniques a été comparée dans Firefox à A `673:45044`. 
 
 L’état initial de l’import CSV des recettes figure dans B `242:654`, section « 16 · Recettes — import CSV », à partir du formulaire observé sur démo synthétique. Il utilise des calques modifiables et les boutons partagés ; le rendu a été comparé dans Firefox. Les étapes suivantes sont décrites ci-dessous ; la sélection du fichier est simulée dans le prototype.
 
-Les étapes « Associer les colonnes » `244:655` et « Vérifier les ingrédients » `244:696` complètent la section Import CSV de B. Elles reprennent un fichier fictif et l’erreur de produit non associé observés dans Firefox sur démo synthétique ; les champs et boutons sont des instances partagées. Les trois états sont alignés et leur rendu a été contrôlé dans Firefox. Les liens de prototype simulent la sélection du fichier, le passage à la vérification et le retour ; ils restent à tester par clic dans le prototype. Aucun fichier réel n’est importé par la maquette.
+Les étapes « Associer les colonnes » `244:655` et « Vérifier les ingrédients » `244:696` complètent la section Import CSV de B. Elles reprennent un fichier fictif et l’erreur de produit non associé observés dans Firefox sur démo synthétique ; les champs et boutons sont des instances partagées. Les trois états sont alignés et leur rendu a été contrôlé dans Firefox. Les liens de prototype simulent la sélection du fichier, le passage à la vérification et le retour ; ces trois liens ont été vérifiés par clics simulés dans Firefox. Aucun fichier réel n’est importé par la maquette.
+
+L’état « ingrédient associé » `247:675` complète l’import CSV : le produit fictif Tomates est sélectionné, l’erreur disparaît et « Revoir dans l’éditeur » devient disponible. Le passage depuis le sélecteur a été vérifié par clic simulé dans Firefox. Le bouton vers l’éditeur n’est pas encore relié dans le prototype.
