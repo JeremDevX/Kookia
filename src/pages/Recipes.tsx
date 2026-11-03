@@ -218,7 +218,7 @@ const Recipes: React.FC = () => {
           <h1 ref={pageHeadingRef} tabIndex={-1}>{productId ? `Recettes avec ${loading ? "ce produit" : getProductName(productId)}` : displayedTab === "sheets" ? "Fiches techniques" : "Mes recettes"}</h1>
           <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, selon les lots proposés. Aucun surstock n'est déduit automatiquement." : displayedTab === "sheets" ? "Retrouvez les coûts et les quantités de vos recettes." : "Faisabilité selon les lots et recettes enregistrés. Les échéances dépassées sont exclues, les échéances inconnues restent à vérifier par le chef. La validation d'une production déduit les ingrédients du stock."}</p>
         </div>
-        <div className="recipes-header-actions"><Button disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(null, event.currentTarget)}>Nouvelle recette</Button>
+        <div className="recipes-header-actions"><Button disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(null, event.currentTarget)}>{displayedTab === "sheets" ? "Créer une fiche" : "Nouvelle recette"}</Button>
           <Button type="button" variant="outline" disabled={recipeEditorOpen || loading || !!error} onClick={(event) => { recipeEditOrigin.current = event.currentTarget; setCsvOpen(true); }}>Importer une fiche CSV</Button>
           {!productId && <Button variant="outline" icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>}</div>
       </header>
@@ -243,13 +243,14 @@ const Recipes: React.FC = () => {
         initialSuggestion={recipePrefill} initialImport={csvPrefill}
         onClose={closeRecipeEditor} onSaved={handleRecipeSaved} />}
       {csvOpen && <RecipeCsvImport products={products} onClose={() => setCsvOpen(false)} onApply={(ingredients) => { setCsvOpen(false); setEditingRecipe(null); setRecipePrefill(null); setCsvPrefill(ingredients); setRecipeEditorOpen(true); requestAnimationFrame(() => document.getElementById("recipe-editor-section-title")?.scrollIntoView({ block: "nearest" })); }} />}
-      {!productId && !incomingReceiptLineId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
+      {!productId && !incomingReceiptLineId && displayedTab !== "sheets" && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
 
       {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to={recipeViewHref(searchParams, "catalog")}>Voir toutes les recettes</Link></p>}
       {displayedTab === "catalog" && !error && <RecipeCatalog editing={recipeEditorOpen} recipes={recipesWithYield} loading={loading}
         onEdit={(recipe, trigger) => openRecipeEditor(recipe, trigger)} onProduce={handleStartProduction} />}
       {displayedTab === "sheets" && !error && <RecipeSheets editing={recipeEditorOpen} recipes={recipes} loading={loading} costPerPortion={getIngredientCost}
         onEdit={(recipe, trigger) => openRecipeEditor(recipe, trigger)} />}
+      {!productId && !incomingReceiptLineId && displayedTab === "sheets" && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
 
       {displayedTab === "history" && hasScenarioRecords && <p className="workspace-subtitle" role="note">
         Le journal contient des enregistrements de QA isolés ; ils ne décrivent pas des productions observées du restaurant.
