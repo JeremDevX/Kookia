@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, Calendar } from "lucide-react";
+import { ArrowRight, BookOpen, Calendar, ClipboardList, ShoppingCart } from "lucide-react";
 import Button from "../components/common/Button";
 import Badge from "../components/common/Badge";
 import MenuIdeasModal from "../components/dashboard/MenuIdeasModal";
@@ -165,7 +165,7 @@ function DashboardOverview() {
     </div><div className="today-grid">
       <TodayContext />
       <section className="today-card" aria-labelledby="today-tasks-title"><h2 id="today-tasks-title">Tâches du jour</h2>
-      <section className="today-task" aria-labelledby="today-sales-title"><h3 id="today-sales-title" ref={salesHeading} tabIndex={-1}>Ventes</h3>
+      <section className="today-task" aria-labelledby="today-sales-title"><ClipboardList aria-hidden="true" size={20} /><h3 id="today-sales-title" ref={salesHeading} tabIndex={-1}>Ventes</h3>
         {salesError ? <div role="alert"><p>{salesError}</p><Button variant="outline" onClick={() => {
           setLatestService(undefined); setSalesError(""); setSalesReload((value) => value + 1);
           requestAnimationFrame(() => salesHeading.current?.focus());
@@ -174,13 +174,13 @@ function DashboardOverview() {
         {latestService && <small>Source : {describeServiceSources(latestService.sources)}.</small>}
         <div className="today-card-actions"><Link to="/sales#sales-start">Ajouter ou corriger des ventes</Link></div>
       </section>
-      <section className="today-task" aria-labelledby="today-order-title"><h3 id="today-order-title">Commande en préparation</h3>
+      <section className="today-task" aria-labelledby="today-order-title"><ShoppingCart aria-hidden="true" size={20} /><h3 id="today-order-title">Commande en préparation</h3>
         {cartLoading ? <p role="status">Chargement…</p> : cartError ? <div role="alert"><p>Commande indisponible : {cartError}</p>
           <Button type="button" variant="outline" onClick={() => void refreshCart()}>Réessayer</Button></div> :
           <p aria-live="polite">{cartItems.length === 0 ? "Aucun article sélectionné." : `${cartItems.length} article${cartItems.length > 1 ? "s" : ""} à revoir.`}</p>}
         <div className="today-card-actions"><Link to="/orders#selection">Ouvrir les achats</Link></div>
       </section>
-    <section className="today-task" aria-labelledby="today-menu-title"><h3 id="today-menu-title">Préparer le menu</h3>
+    <section className="today-task" aria-labelledby="today-menu-title"><BookOpen aria-hidden="true" size={20} /><h3 id="today-menu-title">Préparer le menu</h3>
       <p>Trouvez des idées de recettes pour utiliser les produits disponibles en stock.</p>
       <div className="today-card-actions"><button type="button" onClick={() => setMenuOpen(true)}>Voir les idées de menu</button></div>
     </section>

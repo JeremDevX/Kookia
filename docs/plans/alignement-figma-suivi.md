@@ -173,6 +173,7 @@ observé dans Firefox ; ouverture clavier des réglages, fermeture par Échap et
 retour du focus vérifiés. Comparaison géométrique et états météo réels restent
 à vérifier.
 Le 3 novembre 2026, comparaison Firefox de la frame A `673:43621` et du tableau de bord connecté à la démo synthétique : les pictogrammes du contexte retrouvent leur fond gris et leur format carré. La grille générale est présente, mais le graphique des couverts manque faute de prévisions horaires et les cartes de recommandations et de tâches diffèrent encore de la maquette.
+Le bloc « Tâches du jour » présente désormais des lignes compactes avec pictogrammes sur fond gris, dans l’esprit de A. Firefox sur données synthétiques a confirmé l’ouverture du menu et l’absence de débordement à 390 px ; les tâches affichées restent différentes de celles de la maquette, faute de sources équivalentes.
 La maquette Stocks `673:44425` prévoit une valeur par produit. Le prix actuel
 ne conserve ni base fiscale ni provenance ; le détail indique désormais que
 son calcul à partir du stock théorique est indicatif. La colonne de liste reste

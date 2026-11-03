@@ -27,8 +27,13 @@
 .today-onboarding li a { margin-top: auto; color: var(--color-accent-text); text-underline-offset: var(--size-3); }
 .today-grid { display: flex; flex-direction: column; gap: var(--spacing-lg); }
 .today-card { display: flex; flex-direction: column; gap: var(--spacing-sm); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); padding: var(--spacing-lg); }
-.today-card h2, .today-task h3 { color: var(--color-nav-text); font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); }
-.today-task { display: flex; flex-direction: column; gap: var(--spacing-sm); padding-top: var(--spacing-md); border-top: var(--size-1) solid var(--color-nav-border); }
+.today-card h2 { color: var(--color-nav-text); font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); }
+.today-task { display: grid; grid-template-columns: var(--size-40) minmax(var(--number-0), var(--unit-1fr)); column-gap: var(--spacing-sm); row-gap: var(--spacing-xs); padding-top: var(--spacing-md); border-top: var(--size-1) solid var(--color-nav-border); }
+.today-task > svg { grid-column: var(--number-1); grid-row: var(--number-1) / span var(--number-4); width: var(--size-40); height: var(--size-40); padding: var(--size-10); border-radius: var(--radius-compact); background: var(--color-nav-active); }
+.today-task > :not(svg) { grid-column: var(--number-2); min-width: var(--number-0); }
+.today-task h3 { color: var(--color-nav-text); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+.today-task p { line-height: var(--number-1_5); }
+.today-task .today-card-actions { padding-top: var(--number-0); }
 .today-context ul { display: flex; flex-direction: column; gap: var(--spacing-md); list-style: none; margin: var(--spacing-sm) var(--number-0) var(--number-0); padding: var(--number-0); }
 .today-context li { display: flex; gap: var(--spacing-md); align-items: flex-start; }
 .today-context li > svg { flex-shrink: var(--number-0); width: var(--size-40); height: var(--size-40); padding: var(--size-10); border-radius: var(--radius-compact); background: var(--color-nav-active); color: var(--color-nav-text); }
