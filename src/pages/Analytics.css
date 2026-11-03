@@ -70,8 +70,8 @@
 .bilan-kpis article { padding: var(--spacing-lg); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-surface); box-shadow: var(--shadow-figma-panel); }
 .bilan-kpis h3 { font-size: var(--font-size-sm); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); }
 .bilan-kpis .bilan-kpi-value { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--color-nav-text); margin-block: var(--spacing-md) var(--spacing-sm); overflow-wrap: var(--overflow-wrap-anywhere); }
-.bilan-kpis p { margin-block: var(--spacing-sm); }
-.bilan-kpis small { color: var(--color-text-secondary); }
+.bilan-kpis p:not(.bilan-kpi-value) { margin-block: var(--spacing-sm); color: var(--color-text-secondary); font-size: var(--font-size-caption); line-height: var(--number-1_5); }
+.bilan-kpis small { color: var(--color-nav-muted); font-size: var(--font-size-caption); line-height: var(--number-1_5); }
 .bilan-attention, .bilan-loss-priorities { padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
 .bilan-action-rows > div { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-lg); padding-block: var(--spacing-md); }
 .bilan-action-rows > div + div { border-top: var(--size-1) solid var(--color-border); }
