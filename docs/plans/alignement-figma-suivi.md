@@ -327,7 +327,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Sélecteur — normal, focus, erreur et aperçu | `146:365`, `146:378` | 360 × 172 chacun |
 | Présentation authentification — panneau réutilisable | `126:47` | 600 × 900 |
 | Accès — vérification de session indisponible | `171:497` | 1440 × 900 |
-| Recettes — fiches candidates : panneau, formulaires et décisions | `159:423`, `159:425`, `164:426`, `167:431`, `168:452`, `169:495`, `169:514` | 900 × 71 à 900 × 2000 |
+| Recettes — fiches candidates : panneau, formulaires et décisions | `159:423`, `159:425`, `164:426`, `167:431`, `168:452`, `169:495`, `169:514` | 900 × 71 à 900 × 900 ; formulaires défilants |
 | Configuration — équipe : lien créé et lien masqué | `152:408`, `153:416` | 1440 × 1420 chacun |
 | Invitation — connexion, inscription, acceptation, confirmation, lien invalide, session indisponible | `120:30`, `123:33`, `117:29`, `120:56`, `117:45`, `123:63` | 1440 × 900 chacun |
 
@@ -634,3 +634,5 @@ Le planning du jour a été examiné dans Firefox sur démo synthétique : ses l
 Dans Firefox, des clics simulés sur le canevas du prototype B ont vérifié trois transitions : « J’ai terminé » masque le lien d’invitation (`152:408` vers `153:416`) ; « Effacer » revient à la chronologie (`182:596` vers `180:597`) ; « Calculer les idées » affiche les résultats fictifs (`179:583` vers `178:566`). Ce contrôle valide ces transitions, pas une interaction au pointeur physique. Le résultat du menu était très réduit lorsque le prototype adaptait sa hauteur à l’écran ; ce point a ensuite été corrigé par le défilement décrit ci-dessous.
 
 Les trois fenêtres de menu `149:396`, `179:583` et `178:566` ont été ramenées à 600 × 900 avec défilement vertical ; tous leurs calques restent présents. Dans Firefox, le clic simulé sur Calculer ouvre le résultat à une taille lisible, puis une molette simulée atteint les recettes et les actions finales. La section Historique a été remontée ; aucun chevauchement de sections détecté.
+
+Les formulaires de fiches candidates `167:431` et `168:452` sont limités à 900 × 900 avec défilement vertical ; leurs calques restent présents. Dans Firefox, l’ouverture d’une nouvelle fiche et les annulations depuis les deux formulaires ont été vérifiées par clics simulés ; une molette simulée atteint les actions finales. Les sept cadres restent rangés dans leur section sans chevauchement ni débordement.
