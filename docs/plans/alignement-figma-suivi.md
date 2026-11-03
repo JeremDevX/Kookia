@@ -336,6 +336,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Recettes — rapprochement du catalogue : produit à associer et associé | `244:696`, `247:675` | 960 × 577 et 960 × 540 |
 | Recettes — fiches candidates : panneau, formulaires et décisions | `159:423`, `159:425`, `164:426`, `167:431`, `168:452`, `169:495`, `169:514` | 900 × 71 à 900 × 900 ; formulaires défilants |
 | Configuration — équipe : lien créé et lien masqué | `152:408`, `153:416` | 1440 × 1420 chacun |
+| Inscription — adresse email déjà utilisée (exemple fictif) | `251:671` | 1440 × 900 |
 | Invitation — connexion, inscription, acceptation, confirmation, lien invalide, session indisponible | `120:30`, `123:33`, `117:29`, `120:56`, `117:45`, `123:63` | 1440 × 900 chacun |
 
 Le 3 novembre 2026, les éléments de B ont été regroupés en dix sections numérotées : composants, tableau de bord, ventes, services, historique et navigation, stocks, réceptions, avoirs, paramètres et équipe, invitations. Les cadres conservent leurs identifiants ; aucun dépassement des limites de section détecté. Les sections Réceptions, Avoirs et Invitations ont été observées dans Firefox ; les autres états et les liens du prototype d’invitation restent à vérifier. Le rangement reste à compléter avec les nouveaux éléments à créer.
@@ -685,3 +686,5 @@ Une confirmation protège désormais l’import ouvert en cas de navigation ; Fi
 La première étape CSV reprend la zone de dépôt de A `673:45326` : glisser-déposer ou choisir un fichier, indication du fichier chargé et des contraintes réelles. L’association des colonnes commence désormais par une action explicite et permet de revenir au fichier. Dans Firefox, un dépôt simulé d’un CSV fictif a chargé une ligne, puis le bouton a ouvert l’étape 2 avec le focus sur son titre ; aucun débordement horizontal à 390 px. Neuf tests CSV, les types et le contrôle CSS passent. Les colonnes prix/fournisseur de A ne sont pas proposées : le parcours actuel ne les importe pas.
 
 Un modèle CSV UTF-8 à trois colonnes est téléchargeable depuis la préparation de l’import. Firefox a confirmé le téléchargement et l’absence de débordement à 390 px ; un test ajoute une ligne au modèle et vérifie sa lecture et son association. Dix tests CSV et le contrôle CSS passent. Le modèle ne contient pas de prix ni de fournisseur, que ce parcours ne traite pas.
+
+L’état d’inscription « adresse email déjà utilisée » `251:671` a été ajouté dans la section Inscription de B. L’erreur a été reproduite dans Firefox avec le compte de la démo synthétique, puis la maquette a été contrôlée dans Firefox ; aucune création de compte n’a eu lieu. La section agrandie ne chevauche aucune autre section. Le prototype représente l’erreur et ne crée pas de compte.
