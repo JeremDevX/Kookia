@@ -41,7 +41,7 @@ const TopNav: React.FC<TopNavProps> = ({ onMenuClick, isSidebarOpen, menuButtonR
   const section = orderView === "receipts" ? "Réceptions" : pathname === "/predictions" ? "Bilan" : currentPage;
   const subpage = pathname === "/" ? params.get("view") === "planning" ? "Planning du jour" : "Vue d’ensemble" : pathname === "/stocks" ? params.get("stockView") === "out" ? "Ruptures confirmées" : params.get("stockView") === "review" ? "À traiter" : params.get("stockView") === "count" ? "Inventaire" : "Tous les produits" :
     orderView ? { prepare: "Préparer un achat", orders: "Commandes et réceptions", invoices: "Factures et documents", receipts: params.get("period") === "month" ? "Mois" : "Semaine" }[orderView] :
-    pathname === "/predictions" ? "Prévisions" : pathname === "/more" ? "Fonctions" : pathname === "/recipes" ?
+    pathname === "/predictions" ? "Prévisions" : pathname === "/more" ? "Fonctions" : pathname === "/history" ? "Chronologie" : pathname === "/recipes" ?
       ({ catalog: "Toutes les recettes", "anti-waste": "Réalisables avec le stock", sheets: "Fiches techniques", history: "Produites cette semaine" })[getRecipeView(params)] : pathname === "/settings" ?
       ({ account: "Compte", team: "Équipe", suppliers: "Fournisseurs", connections: "Connexions" } as Record<string, string>)[params.get("section") ?? ""] ?? "Restaurant" : null;
 

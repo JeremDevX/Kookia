@@ -84,7 +84,7 @@ La frame Prévisions A `673:46361` a été comparée à la démo Firefox : la pr
 
 Dans Recettes, les fiches candidates issues de pièces sont désormais regroupées dans un panneau replié avec leur nombre : le catalogue est visible dès l’ouverture. Firefox sur démo synthétique a vérifié ouverture et fermeture au clavier, ouverture de l’éditeur et focus ; aucun débordement à 390 px. La frame A Recettes n’a pas pu être comparée lors de ce contrôle : son canevas est resté noir. Les états fermé et ouvert figurent dans B (`159:423` et `159:425`) ; leur comparaison visuelle dans Firefox reste à faire.
 
-L’état Historique sans résultat (`182:596`) représente la recherche et le bouton Effacer observés dans Firefox sur démo synthétique. Effacer est relié à l’état de chronologie dans les propriétés du prototype ; la capture Figma a été contrôlée. Le clic du prototype et le rendu de B dans Firefox restent à vérifier.
+L’état Historique sans résultat (`182:596`) représente la recherche et le bouton Effacer observés dans Firefox sur démo synthétique. Effacer est relié à l’état de chronologie dans les propriétés du prototype ; la capture Figma a été contrôlée. Dans Firefox, le clic simulé sur Effacer affiche la chronologie et retire le terme de recherche.
 
 L’état Historique sur période dense (`180:597`) montre le nombre d’événements et l’avertissement de résultats limités observés dans Firefox sur démo synthétique ; la carte d’événement est un exemple fictif. La capture Figma a été contrôlée ; le rendu de B dans Firefox reste à vérifier.
 
@@ -646,3 +646,5 @@ La fiche produit `214:605`, absente des écrans repérés dans A, a été ajout�
 La fenêtre de comptage, absente des écrans repérés dans A, est ajoutée dans la section Stocks de B. Le prototype vérifie son ouverture et son annulation par interactions simulées ; l’enregistrement n’y est pas simulé. Dans l’application, les champs et les actions sont espacés ; à 390 px, aucun débordement et le focus revient sur Compter après annulation.
 
 Dans le prototype d’inscription B `128:232`, « Créer mon compte » ouvre désormais l’étape Restaurant de A `673:43437` dans un nouvel onglet, au lieu de mener à tort à l’acceptation d’une invitation. Le lien a été vérifié par clic simulé dans Firefox. « Se connecter » pointe vers la connexion de A ; dans les deux exemples d’erreur, la soumission ne déclenche plus de navigation. Ces liens ouvrent la maquette de référence : ils ne constituent pas une inscription réelle ni un prototype continu entre les deux fichiers.
+
+La vue Historique a été comparée dans Firefox à l’état B `182:596` : le fil d’Ariane affiche maintenant « Historique › Chronologie ». Le clic simulé sur Effacer ouvre l’état de chronologie `180:597`. À 390 px, le libellé courant reste présent et aucun débordement horizontal n’a été mesuré. Cinq tests du fil d’Ariane passent. Les différences de contenu et de barre supérieure restent à examiner.
