@@ -56,4 +56,3 @@ body .setup-actions .btn-primary { width: auto; }
 .setup-progress li[data-completed] { color: var(--color-nav-text); }
 .setup-progress li[data-completed] > span:first-child { background: var(--color-nav-text); color: var(--color-surface); border-color: var(--color-nav-text); }
 @media (--media-mobile) { .setup-review-columns, .setup-review dl > div { grid-template-columns: var(--unit-1fr); } }
-
