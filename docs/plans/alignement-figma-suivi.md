@@ -313,6 +313,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Revue Ticket Z fictif | `35:143` | 1440 × 1600 |
 | Réception partielle fictive | `36:2` | 1440 × 1500 |
 | Inventaire — saisies à comparer (exemple fictif) | `62:2` | 1440 × 1500 |
+| Stocks — fiche produit et mouvements (exemple fictif) | `214:605` | 450 × 900 ; contenu défilant |
 | Inventaire — validation à vérifier (exemple fictif) | `62:109` | 1440 × 1500 |
 | Équipe — lien d’invitation créé (exemple fictif) | `65:2` | 1440 × 1500 |
 | Équipe — confirmer la révocation (exemple fictif) | `65:101` | 1440 × 1500 |
@@ -638,3 +639,5 @@ Les trois fenêtres de menu `149:396`, `179:583` et `178:566` ont été ramenée
 Les formulaires de fiches candidates `167:431` et `168:452` sont limités à 900 × 900 avec défilement vertical ; leurs calques restent présents. Dans Firefox, l’ouverture d’une nouvelle fiche et les annulations depuis les deux formulaires ont été vérifiées par clics simulés ; une molette simulée atteint les actions finales. Les sept cadres restent rangés dans leur section sans chevauchement ni débordement.
 
 Stocks : comparaison Firefox avec A `673:44425`. Les lignes de la liste bureau sont compactées à 62 px sur la démo, tout en conservant le seuil et les actions. À 390 px, les fiches restent visibles sans débordement et la recherche « Tomates » renvoie un résultat. Les valeurs et statuts dépendent des données réelles, sans inventer les indicateurs absents de la maquette.
+
+La fiche produit `214:605`, absente des écrans repérés dans A, a été ajoutée dans la section Stocks de B à partir de la démo synthétique. Elle présente le stock, le comptage, les recettes, la valorisation indicative, le fournisseur et des mouvements fictifs ; son en-tête et ses actions restent fixes pendant le défilement. Firefox a vérifié le rendu et le défilement simulé. Les boutons de cette fiche ne sont pas encore reliés dans le prototype. Dans l’application, le lien vers les recettes utilise désormais la couleur et le soulignement des actions textuelles ; aucun débordement à 390 px.
