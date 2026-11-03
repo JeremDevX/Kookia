@@ -316,6 +316,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Stocks — fiche produit et mouvements (exemple fictif) | `214:605` | 450 × 900 ; contenu défilant |
 | Stocks — compter un produit (exemple fictif) | `218:611` | 600 × 400 |
 | Stocks — ajuster un produit (exemple fictif) | `227:614` | 450 × 900 ; contenu défilant |
+| Stocks — signaler une perte (exemple fictif) | `233:621` | 450 × 900 ; contenu défilant |
 | Inventaire — validation à vérifier (exemple fictif) | `62:109` | 1440 × 1500 |
 | Équipe — lien d’invitation créé (exemple fictif) | `65:2` | 1440 × 1500 |
 | Équipe — confirmer la révocation (exemple fictif) | `65:101` | 1440 × 1500 |
@@ -659,3 +660,5 @@ Le catalogue Recettes a été comparé dans Firefox à A `673:45740`. Sa grille 
 La fiche recette a été comparée dans Firefox à A `673:45809`. L’en-tête du catalogue et le panneau de candidates fermé sont masqués pendant sa consultation ; un panneau de candidates ouvert reste visible pour préserver son travail. Le titre et les rubriques sont redimensionnés, le champ de portions reprend le style des formulaires. Sur démo synthétique, passage de 1 à 2 portions, retour au catalogue et restitution du focus vérifiés ; aucun débordement à 390 px. Neuf tests ciblés et le contrôle CSS passent. La photo, la difficulté et les indicateurs de valorisation de A restent absents : les données correspondantes ne sont pas établies dans la fiche actuelle.
 
 La saisie d’ajustement utilise désormais le champ partagé et précède l’historique des mouvements, qui peut être très long. Les motifs correction et perte ont été vérifiés dans Firefox sur démo synthétique sans enregistrement ; aucun débordement à 390 px. L’état correction figure dans B `227:614`, relié au bouton Ajuster de la fiche `214:605` ; navigation et défilement ont été simulés dans Firefox. Son enregistrement et l’état perte ne sont pas simulés dans le prototype. Huit tests des ajustements en attente et le contrôle CSS passent.
+
+L’état de perte `233:621` a été ajouté dans la section Stocks de B, avec motif et quantité perdue ; il est relié au bouton Signaler une perte de la fiche et de l’état d’ajustement. Le clic depuis la fiche, le défilement et le rendu ont été vérifiés dans Firefox par événements simulés. Les sections ne se chevauchent pas. L’enregistrement de la perte n’est pas simulé dans le prototype.
