@@ -318,6 +318,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Stocks — ajuster un produit (exemple fictif) | `227:614` | 450 × 900 ; contenu défilant |
 | Stocks — signaler une perte (exemple fictif) | `233:621` | 450 × 900 ; contenu défilant |
 | Stocks — modifier un produit (exemple fictif) | `236:628` | 600 × 742 |
+| Stocks — ajouter un produit | `239:638` | 600 × 550 |
 | Inventaire — validation à vérifier (exemple fictif) | `62:109` | 1440 × 1500 |
 | Équipe — lien d’invitation créé (exemple fictif) | `65:2` | 1440 × 1500 |
 | Équipe — confirmer la révocation (exemple fictif) | `65:101` | 1440 × 1500 |
@@ -667,3 +668,5 @@ L’état de perte `233:621` a été ajouté dans la section Stocks de B, avec m
 La modification d’un produit dispose d’une fenêtre B `236:628`, avec champs et informations observés sur démo synthétique. Son ouverture depuis la fiche et son annulation ont été vérifiées par clics simulés dans Firefox ; l’enregistrement n’est pas simulé. Dans l’application, les champs et boutons sont espacés et le fournisseur utilise le style des autres champs. À 390 px, aucun débordement et le focus revient à Modifier la fiche après annulation. Contrôle CSS réussi.
 
 Le planning a été comparé dans Firefox à A `673:43793` : la colonne Services occupe désormais deux tiers de la grille sur bureau, les livraisons un tiers ; à 390 px les cartes restent empilées sans débordement. Le lien vers les réceptions ouvre `/orders?view=receipts`. La maquette présente prévisions horaires et revues avec participants ; le planning actuel montre horaires et réceptions disponibles. Ces données et leur provenance doivent être définies avant d’afficher les éléments manquants. Le panneau de notifications de A `673:46996` est absent de l’application ; les sources et catégories décrites dans la section notifications restent à établir. Contrôle CSS réussi.
+
+La fenêtre Ajouter un produit `239:638`, absente des écrans repérés dans A, est ajoutée dans la section Stocks de B avec les valeurs initiales observées sur démo synthétique. Le rendu a été vérifié dans Firefox ; le prototype représente l’état vide et ne crée pas de produit. Dans l’application, les champs et boutons sont espacés, la grille s’empile sur mobile et le prix utilise une icône euro. À 390 px, une saisie fictive active le bouton ; Annuler rend le focus à Ajouter un produit sans enregistrer. Douze tests de validation et le contrôle CSS passent.

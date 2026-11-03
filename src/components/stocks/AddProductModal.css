@@ -1,0 +1,4 @@
+.add-product-form { display: flex; flex-direction: column; gap: var(--spacing-md); }
+.add-product-grid { display: grid; grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
+.add-product-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--spacing-sm); }
+@media (--media-mobile) { .add-product-grid { grid-template-columns: var(--unit-1fr); } }

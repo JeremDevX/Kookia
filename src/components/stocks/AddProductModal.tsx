@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import Modal from "../common/Modal";
 import Button from "../common/Button";
 import Input from "../common/Input";
-import { Package, DollarSign, AlertCircle } from "lucide-react";
+import "./AddProductModal.css";
+import { Package, Euro, AlertCircle } from "lucide-react";
 import type { NewProduct } from "../../types/callbacks";
 import type { Supplier, Unit } from "../../types";
 import {
@@ -84,12 +85,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       title="Ajouter un produit"
       width="md"
     >
-      <div className="flex flex-col gap-4">
+      <div className="add-product-form">
         {saveError && <p role="alert">{saveError}</p>}
         {suppliers.length === 0 && <p role="status">Aucun fournisseur disponible. L’ajout d’un produit est indisponible.</p>}
-        <div><label htmlFor="product-supplier">Fournisseur</label><select id="product-supplier" value={supplierId || suppliers[0]?.id || ""} onChange={(event) => setSupplierId(event.target.value)}>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></div>
+        <div className="input-wrapper"><label className="input-label" htmlFor="product-supplier">Fournisseur</label><select className="input-field" id="product-supplier" value={supplierId || suppliers[0]?.id || ""} onChange={(event) => setSupplierId(event.target.value)}>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></div>
         <div>
-          <label htmlFor="addproductmodal-1" className="block text-sm font-medium mb-2">
+          <label htmlFor="addproductmodal-1" className="input-label">
             Nom du produit *
           </label>
           <Input id="addproductmodal-1"
@@ -100,11 +101,11 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="add-product-grid">
           <div>
-            <label htmlFor="addproductmodal-2" className="block text-sm font-medium mb-2">Catégorie</label>
+            <label htmlFor="addproductmodal-2" className="input-label">Catégorie</label>
             <select id="addproductmodal-2"
-              className="w-full px-3 py-2 border rounded-md"
+              className="input-field"
               value={formData.category}
               onChange={(e) =>
                 setFormData({ ...formData, category: e.target.value })
@@ -120,9 +121,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           </div>
 
           <div>
-            <label htmlFor="addproductmodal-3" className="block text-sm font-medium mb-2">Unité</label>
+            <label htmlFor="addproductmodal-3" className="input-label">Unité</label>
             <select id="addproductmodal-3"
-              className="w-full px-3 py-2 border rounded-md"
+              className="input-field"
               value={formData.unit}
               onChange={(e) =>
                 setFormData({ ...formData, unit: e.target.value as Unit })
@@ -136,9 +137,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="add-product-grid">
           <div>
-            <label htmlFor="addproductmodal-4" className="block text-sm font-medium mb-2">
+            <label htmlFor="addproductmodal-4" className="input-label">
               Stock initial *
             </label>
             <Input id="addproductmodal-4"
@@ -156,7 +157,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           </div>
 
           <div>
-            <label htmlFor="addproductmodal-5" className="block text-sm font-medium mb-2">
+            <label htmlFor="addproductmodal-5" className="input-label">
               Seuil d’alerte (10 par défaut)
             </label>
             <Input id="addproductmodal-5"
@@ -175,7 +176,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
         </div>
 
         <div>
-          <label htmlFor="addproductmodal-6" className="block text-sm font-medium mb-2">
+          <label htmlFor="addproductmodal-6" className="input-label">
             Prix unitaire (€) *
           </label>
             <Input id="addproductmodal-6"
@@ -183,7 +184,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
               min="0"
               step="0.0001"
             placeholder="0.00"
-            icon={<DollarSign size={16} />}
+            icon={<Euro size={16} />}
             value={formData.pricePerUnit}
             error={errors.pricePerUnit}
             onChange={(e) =>
@@ -192,7 +193,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           />
         </div>
 
-        <div className="flex justify-end gap-3 mt-4">
+        <div className="add-product-actions">
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Annuler
           </Button>
