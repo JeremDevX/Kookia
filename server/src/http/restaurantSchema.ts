@@ -5,4 +5,5 @@ export const restaurantSchema = z.object({
   address: z.string().trim().max(300), city: z.string().trim().min(1).max(120),
   phone: z.string().trim().max(40), email: z.email().max(254), dailyCovers: z.number().int().min(0).max(100000),
   hasTerrace: z.boolean().nullable().optional(),
+  openingWeekdays: z.array(z.number().int().min(0).max(6)).max(7).refine(days => new Set(days).size === days.length).nullable().optional(),
 }).strict();

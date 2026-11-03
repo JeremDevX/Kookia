@@ -4,6 +4,7 @@ import { clearSetupDraft, emptySetupForm, hasSetupDraft, readSetupDraft, saveSet
 describe("saisie de configuration en mémoire", () => {
   it("repère une saisie non enregistrée, y compris une réponse de terrasse", () => {
     expect(hasSetupDraft(emptySetupForm)).toBe(false);
+    expect(hasSetupDraft({ ...emptySetupForm, openingWeekdays: [] })).toBe(true);
     expect(hasSetupDraft({ ...emptySetupForm, name: "Restaurant" })).toBe(true);
     expect(hasSetupDraft({ ...emptySetupForm, hasTerrace: "no" })).toBe(true);
     expect(hasSetupDraft({ ...emptySetupForm, dailyCovers: "0" })).toBe(true);

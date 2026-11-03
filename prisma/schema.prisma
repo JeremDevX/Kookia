@@ -118,6 +118,7 @@ model Restaurant {
   email        String
   dailyCovers  Int
   hasTerrace   Boolean?
+  openingWeekdays Json?
   mode         WorkspaceMode @default(operational)
   seededAt     DateTime @default(now())
   memberships Membership[]

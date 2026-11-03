@@ -14,18 +14,19 @@ it("requires setup once per authenticated account without creating demo data", a
   const registered = await agent.post("/api/auth/register").send({ displayName: "Test", email: `setup-${randomUUID()}@example.com`, password: "test setup password" }).expect(201);
   ids.push(registered.body.user.id);
   agent.set("X-Expected-User-Id", registered.body.user.id);
-  const payload = { ...input, expectedUserId: ids[0] };
+  const payload = { ...input, openingWeekdays: [1, 2, 3, 4, 5], expectedUserId: ids[0] };
   await agent.post("/api/setup").send(input).expect(400);
   expect((await agent.get("/api/setup").expect(200)).body).toMatchObject({ configured: false, userId: ids[0], step: null, revision: 0 });
   expect((await agent.get("/api/workspace/catalog").expect(409)).body.error.code).toBe("SETUP_REQUIRED");
   expect(await prisma.restaurant.count({ where: { ownerId: ids[0] } })).toBe(0);
   await agent.post("/api/setup").send({ ...payload, dailyCovers: -1 }).expect(400);
+  await agent.post("/api/setup").send({ ...payload, openingWeekdays: [1, 1] }).expect(400);
   await agent.post("/api/setup").send({ ...payload, ownerId: randomUUID() }).expect(400);
   const results = await Promise.all([agent.post("/api/setup").send(payload), agent.post("/api/setup").send(payload)]);
   expect(results.map(result => result.status).sort()).toEqual([201, 409]);
   expect(results.find(result => result.status === 409)?.body.error.code).toBe("SETUP_ALREADY_COMPLETED");
   expect((await agent.get("/api/setup").expect(200)).body).toMatchObject({ configured: true, userId: ids[0], step: "team", revision: 1 });
-  expect((await agent.get("/api/workspace/restaurant").expect(200)).body).toEqual(input);
+  expect((await agent.get("/api/workspace/restaurant").expect(200)).body).toEqual({ ...input, openingWeekdays: [1, 2, 3, 4, 5] });
   expect((await agent.get("/api/workspace/catalog").expect(200)).body).toEqual({ products: [], suppliers: [] });
   for (const path of ["recipes", "predictions", "notifications"]) {
     expect((await agent.get(`/api/workspace/${path}`).expect(200)).body).toEqual([]);

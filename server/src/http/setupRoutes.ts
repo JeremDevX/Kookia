@@ -36,7 +36,7 @@ setupRoutes.post("/", async (req, res, next) => {
     const created = await prisma.$transaction(async tx => {
       await tx.$queryRaw(Prisma.sql`SELECT id FROM "User" WHERE id = ${user.id} FOR UPDATE`);
       if (await tx.membership.findUnique({ where: { userId: user.id } })) return false;
-      const saved = await tx.restaurant.create({ data: { ownerId: user.id, ...restaurant } });
+      const saved = await tx.restaurant.create({ data: { ownerId: user.id, ...restaurant, openingWeekdays: restaurant.openingWeekdays === null ? Prisma.DbNull : restaurant.openingWeekdays } });
       await tx.workspaceDocument.create({ data: { restaurantId: saved.id, kind: "onboarding", revision: 1, data: { version: 1, step: "team" } } });
       return true;
     });

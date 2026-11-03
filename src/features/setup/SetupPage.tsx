@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
+import OpeningWeekdays from "../../components/common/OpeningWeekdays";
 import { ApiError } from "../../config/api";
 import { returnTo } from "../auth/returnTo";
 import { useAuth } from "../auth/context/AuthContext";
@@ -29,7 +30,7 @@ function SetupForm() {
   const [saving, setSaving] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const set = (field: Field, value: string) => { const next = { ...form, [field]: value }; if (user) saveSetupDraft(user.id, next); setForm(next); setFields((current) => ({ ...current, [field]: "" })); };
+  const set = <K extends Field,>(field: K, value: (typeof form)[K]) => { const next = { ...form, [field]: value }; if (user) saveSetupDraft(user.id, next); setForm(next); setFields((current) => ({ ...current, [field]: "" })); };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (saving || !user) return;
@@ -71,6 +72,7 @@ function SetupForm() {
           <option value="">Non renseigné</option><option value="yes">Oui</option><option value="no">Non</option>
         </select>
       </div>
+      <OpeningWeekdays value={form.openingWeekdays} disabled={saving} onChange={value => set("openingWeekdays", value)} />
           <div className="setup-actions setup-wide">
             <button type="button" className="btn btn-ghost" disabled={saving} onClick={() => { void logout().then(() => { if (user) clearSetupDraft(user.id); navigate("/login", { replace: true, state: location.state }); }).catch((err: unknown) => setError(err instanceof Error ? err.message : "Déconnexion impossible. Réessayez.")); }}>Se déconnecter</button>
             <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Créer mon établissement"}</Button>

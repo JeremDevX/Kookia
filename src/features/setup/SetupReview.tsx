@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Button from "../../components/common/Button";
+import { formatOpeningWeekdays } from "../../components/common/openingWeekdaysUtils";
 import { getRestaurant, type Restaurant } from "../../services/restaurantService";
 import { getSuppliers } from "../../services/productService";
 import type { Supplier } from "../../types";
@@ -21,6 +22,7 @@ export default function SetupReview({ onReadyChange }: { onReadyChange: (ready: 
   return <div className="setup-review"><h3>Restaurant</h3><p><strong>{restaurant.name}</strong> · {restaurant.type}</p>
     <p>{[restaurant.address, restaurant.city].filter(Boolean).join(", ")}</p><p>{restaurant.email}{restaurant.phone && ` · ${restaurant.phone}`}</p>
     <p>{restaurant.dailyCovers} couverts moyens par jour · Terrasse : {restaurant.hasTerrace === null ? "non renseignée" : restaurant.hasTerrace ? "oui" : "non"}</p>
+    <p>Jours d’ouverture : {formatOpeningWeekdays(restaurant.openingWeekdays)}</p>
     <h3>Fournisseurs</h3>{suppliers.length ? <ul>{suppliers.map((supplier) => <li key={supplier.id}>{supplier.name}</li>)}</ul> : <p>Aucun fournisseur enregistré.</p>}
   </div>;
 }

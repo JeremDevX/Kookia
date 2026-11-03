@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Card from "../common/Card";
 import Button from "../common/Button";
 import Input from "../common/Input";
+import OpeningWeekdays from "../common/OpeningWeekdays";
 import { getRestaurant, saveRestaurant, type Restaurant } from "../../services/restaurantService";
 
 export default function RestaurantSettings({ onSaved }: { onSaved?: () => void }) {
@@ -59,6 +60,7 @@ export default function RestaurantSettings({ onSaved }: { onSaved?: () => void }
         </select>
         <small id="restaurant-terrace-help">Avec une terrasse, la météo pèse davantage dans les estimations. Ces ajustements indicatifs restent à revoir avant validation. Sans réponse, aucun ajustement météo.</small>
       </div>
+      <OpeningWeekdays value={restaurant.openingWeekdays} disabled={saving} onChange={value => setRestaurant({ ...restaurant, openingWeekdays: value })} />
       <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button>
     </form>}
   </Card>;

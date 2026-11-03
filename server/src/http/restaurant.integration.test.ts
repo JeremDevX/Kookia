@@ -30,6 +30,7 @@ it("persists restaurant and suppliers with validated input and account isolation
   const initial = await agent.get("/api/workspace/restaurant").expect(200);
   expect(initial.body.ownerId).toBeUndefined();
   expect(initial.body.hasTerrace).toBeNull();
+  expect(initial.body.openingWeekdays).toBeNull();
   const changed = { ...initial.body, name: "Restaurant Test", city: "Lyon", dailyCovers: 200, hasTerrace: true };
   await agent.patch("/api/workspace/restaurant").send(changed).expect(200);
   const read = await agent.get("/api/workspace/restaurant").expect(200);
@@ -53,6 +54,19 @@ it("persists restaurant and suppliers with validated input and account isolation
   expect((await other.get("/api/workspace/restaurant").expect(200)).body.hasTerrace).toBeNull();
   await agent.patch("/api/workspace/restaurant").send({ ...changed, dailyCovers: -1 }).expect(400);
   await agent.patch("/api/workspace/restaurant").send({ ...changed, ownerId: randomUUID() }).expect(400);
+  for (const openingWeekdays of [[0, 2, 6], [], null]) {
+    expect((await agent.patch("/api/workspace/restaurant").send({ ...changed, openingWeekdays }).expect(200)).body.openingWeekdays).toEqual(openingWeekdays);
+    expect((await agent.get("/api/workspace/restaurant").expect(200)).body.openingWeekdays).toEqual(openingWeekdays);
+  }
+  await agent.patch("/api/workspace/restaurant").send({ ...changed, openingWeekdays: [1, 5] }).expect(200);
+  const { openingWeekdays: _openingWeekdays, ...legacyRestaurant } = changed;
+  expect(_openingWeekdays).toBeNull();
+  expect((await agent.patch("/api/workspace/restaurant").send(legacyRestaurant).expect(200)).body.openingWeekdays).toEqual([1, 5]);
+  for (const openingWeekdays of [[1, 1], [-1], [7], [1.5], ["1"], "1", {}]) {
+    await agent.patch("/api/workspace/restaurant").send({ ...changed, openingWeekdays }).expect(400);
+  }
+  expect((await agent.get("/api/workspace/restaurant").expect(200)).body.openingWeekdays).toEqual([1, 5]);
+  expect((await other.get("/api/workspace/restaurant").expect(200)).body.openingWeekdays).toBeNull();
   const supplier = { id: randomUUID(), name: "Supplier Test", email: "supplier@example.com", phone: "0123456789" };
   await agent.post("/api/workspace/suppliers").send(supplier).expect(201);
   const { id, ...details } = supplier;

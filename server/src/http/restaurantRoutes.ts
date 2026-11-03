@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { Router, type Response } from "express";
 import { z } from "zod";
 import { restaurantSchema } from "./restaurantSchema.js";
@@ -8,7 +9,7 @@ import { lockWeatherWorkspace } from "../application/workspace/weatherStorage.js
 
 export const restaurantRoutes = Router();
 const restaurantId = (res: Response) => (res.locals.workspace as { restaurantId: string }).restaurantId;
-const restaurantSelect = { name: true, type: true, address: true, city: true, phone: true, email: true, dailyCovers: true, hasTerrace: true } as const;
+const restaurantSelect = { name: true, type: true, address: true, city: true, phone: true, email: true, dailyCovers: true, hasTerrace: true, openingWeekdays: true } as const;
 const supplierSchema = z.object({ name: z.string().trim().min(1).max(120), email: z.email().max(254), phone: z.string().trim().max(40),
   deliveryWeekdays: z.array(z.number().int().min(0).max(6)).max(7).refine((days) => new Set(days).size === days.length).optional(),
   leadTimeDays: z.number().int().min(0).max(60).nullable().optional(),
@@ -26,7 +27,7 @@ restaurantRoutes.patch("/restaurant", async (req, res, next) => {
       const id = restaurantId(res);
       await lockWeatherWorkspace(tx, id);
       const previous = await tx.restaurant.findUniqueOrThrow({ where: { id } });
-      const updated = await tx.restaurant.update({ where: { id }, data: input, select: restaurantSelect });
+      const updated = await tx.restaurant.update({ where: { id }, data: { ...input, openingWeekdays: input.openingWeekdays === null ? Prisma.DbNull : input.openingWeekdays }, select: restaurantSelect });
       if (locationFingerprint(previous) !== locationFingerprint(input)) await invalidateWeatherLocation(tx, id);
       return updated;
     });
