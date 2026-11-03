@@ -40,13 +40,13 @@ export default function InvitationManager({ onPendingLinkChange }: { onPendingLi
     catch (err) { setError(err instanceof Error ? err.message : "Impossible de révoquer l’invitation."); setRetry((value) => value + 1); }
     finally { setBusy(false); }
   };
-  return <section aria-labelledby="invitations-title"><h2 id="invitations-title">Inviter un membre</h2>
+  return <section className="invitation-manager" aria-labelledby="invitations-title"><h2 id="invitations-title">Inviter un membre</h2>
     <p>Créez un lien à transmettre vous-même. Toute personne possédant le lien peut accéder au restaurant après connexion.</p>
     {error && <div role="alert"><p>{error}</p>{!invitations && <Button type="button" variant="outline" onClick={() => { setError(""); setRetry((value) => value + 1); }}>Réessayer</Button>}</div>}
     {notice && <p role="status">{notice}</p>}
     {!invitations ? !error && <p role="status">Chargement des invitations…</p> : <>
-      <label htmlFor="invite-role">Rôle</label><select id="invite-role" className="input-field" value={role} disabled={busy} onChange={(event) => setRole(event.target.value as InvitationRole)}><option value="kitchen">Cuisine</option><option value="chef">Chef</option></select>
-      <Button type="button" disabled={busy || !!link} onClick={() => void create()}>{busy ? "Veuillez patienter…" : "Créer un lien"}</Button>
+      <div className="invitation-create"><label htmlFor="invite-role">Rôle<select id="invite-role" className="input-field" value={role} disabled={busy} onChange={(event) => setRole(event.target.value as InvitationRole)}><option value="kitchen">Cuisine</option><option value="chef">Chef</option></select></label>
+      <Button type="button" disabled={busy || !!link} onClick={() => void create()}>{busy ? "Veuillez patienter…" : "Créer un lien"}</Button></div>
       {link && <div><label htmlFor="invitation-link">Lien à transmettre</label><input id="invitation-link" className="input-field" readOnly value={link.value} onFocus={(event) => event.currentTarget.select()} />
         <p>Copiez ce lien maintenant : il ne pourra pas être affiché à nouveau. Si vous quittez la page, vous pourrez révoquer l’invitation et créer un autre lien.</p><Button type="button" variant="outline" onClick={() => { if (!navigator.clipboard) { setNotice("Sélectionnez le lien pour le copier."); return; } void navigator.clipboard.writeText(link.value).then(() => setNotice("Lien copié.")).catch(() => setNotice("Sélectionnez le lien pour le copier.")); }}>Copier le lien</Button><Button type="button" variant="ghost" onClick={() => updateLink(null)}>J’ai terminé</Button></div>}
       <h3>Invitations</h3>{invitations.length === 0 ? <p>Aucune invitation créée.</p> : <ul>{invitations.map((invitation) => <li key={invitation.id}>

@@ -60,6 +60,8 @@ figurent dans le tableau précédent ; les sous-vues demandent des lignes propre
 | Ancien historique `/history/replay/:id` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |
 | Route inconnue `*` | À déterminer | Redirection dans le code | À vérifier | À vérifier | Sans écran propre | À vérifier | À faire |
 
+Le 3 novembre 2026, une inscription fictive complète dans Firefox a confirmé la séquence `/register` → restaurant → équipe → fournisseurs → finalisation → tableau de bord. Les frames A `673:43437` et `673:43467` montrent bien que ces étapes font partie du parcours d’inscription. L’étape Équipe a été espacée et son indicateur rapproché de A. Écarts restants : A prévoit des invitations par adresse et un envoi en fin de configuration ; l’application produit un lien à transmettre manuellement. Le retour depuis Équipe vers Restaurant n’est pas disponible après création de l’établissement ; sa prise en charge exige une modification du parcours enregistré. Les écrans Fournisseurs et Finalisation doivent encore être comparés visuellement à A.
+
 ## Vérification du workspace et de Firefox
 
 Le 2 novembre 2026, VS Code affichait le dépôt `~/Documents/KookIA/kookia`

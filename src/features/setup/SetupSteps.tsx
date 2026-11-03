@@ -11,7 +11,7 @@ import InvitationManager from "../invitations/InvitationManager";
 import MemberManager from "../members/MemberManager";
 import SetupProgressIndicator from "./SetupProgressIndicator";
 
-const labels = ["Restaurant", "Équipe", "Fournisseurs", "Récapitulatif"];
+const labels = ["Restaurant", "Équipe", "Fournisseurs", "Finalisation"];
 const indices: Record<SetupStep, number> = { team: 1, suppliers: 2, review: 3 };
 
 export default function SetupSteps({ initialProgress }: { initialProgress: SetupProgress }) {
@@ -59,7 +59,7 @@ export default function SetupSteps({ initialProgress }: { initialProgress: Setup
     <a href="mailto:support@kookia.app?subject=Support%20KookiA">Besoin d’aide ?</a></header>
     <div className="setup-content"><h1>Configurez votre restaurant</h1><p className="setup-subtitle">Étape {index + 1} sur 4 · {labels[index]}</p>
       <SetupProgressIndicator index={index} />
-      <section className="setup-card" aria-labelledby="setup-step-title"><h2 ref={heading} tabIndex={-1} id="setup-step-title">{labels[index]}</h2>
+      <section className={`setup-card setup-step setup-step-${step}`} aria-labelledby="setup-step-title"><h2 ref={heading} tabIndex={-1} id="setup-step-title">{labels[index]}</h2>
         {step === "team" && <><p>Compte propriétaire : {user?.displayName} · {user?.email}</p><InvitationManager onPendingLinkChange={setPendingLink} /><MemberManager /></>}
         {step === "suppliers" && <><p>Ajoutez vos fournisseurs maintenant ou continuez sans en ajouter.</p><SupplierSettings onEditingChange={setEditingSupplier} /></>}
         {step === "review" && <SetupReview key={reviewVersion} onReadyChange={setReviewReady} />}

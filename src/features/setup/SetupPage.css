@@ -24,3 +24,16 @@ body .setup-actions .btn-primary { width: auto; }
 .setup-page .integration-item { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); margin-bottom: var(--spacing-md); }
 .setup-review h3 { margin-top: var(--spacing-lg); }
 @media (--media-mobile) { .setup-progress { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); } .setup-page .integration-item { align-items: flex-start; flex-direction: column; } }
+
+.setup-step > p { color: var(--color-nav-muted); font-size: var(--font-size-sm); }
+.setup-step :is(.invitation-manager, .member-manager) { display: flex; flex-direction: column; gap: var(--spacing-md); margin-top: var(--spacing-lg); }
+.setup-step :is(.invitation-manager, .member-manager) h2, .setup-step .invitation-manager h3 { margin: var(--number-0); font-size: var(--font-size-md); }
+.setup-step :is(.invitation-manager, .member-manager) p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_5); }
+.setup-step :is(.invitation-manager, .member-manager) ul { display: grid; gap: var(--spacing-sm); padding-left: var(--spacing-lg); font-size: var(--font-size-sm); }
+.setup-step .invitation-create { display: flex; align-items: end; gap: var(--spacing-md); }
+.setup-step .invitation-create label { display: grid; gap: var(--spacing-xs); flex: var(--number-1); font-size: var(--font-size-sm); }
+.setup-step .invitation-create select { width: var(--unit-100percent); }
+.setup-step .setup-actions { margin-top: var(--spacing-xl); }
+.setup-progress li[aria-current="step"] { color: var(--color-accent-text); }
+.setup-progress li[aria-current="step"] > span:first-child { background: var(--color-accent-text); border-color: var(--color-accent-text); }
+@media (--media-mobile) { .setup-step .invitation-create { align-items: stretch; flex-direction: column; } }

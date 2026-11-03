@@ -27,7 +27,7 @@ export default function MemberManager() {
     catch (err) { setError(err instanceof Error ? err.message : "Impossible de retirer ce membre."); setAttempt((value) => value + 1); }
     finally { setBusy(false); }
   };
-  return <section aria-labelledby="members-title"><h2 id="members-title">Membres de l’équipe</h2>
+  return <section className="member-manager" aria-labelledby="members-title"><h2 id="members-title">Membres de l’équipe</h2>
     {error && <div role="alert"><p>{error}</p>{!members && <Button type="button" variant="outline" onClick={() => { setError(""); setAttempt((value) => value + 1); }}>Réessayer</Button>}</div>}
     {!members ? !error && <p role="status">Chargement des membres…</p> : members.length === 0 ? <p>Aucun membre ajouté.</p> : <ul>{members.map((member) => <li key={member.userId}>
       <strong>{member.user.displayName}</strong> · {member.user.email} · {member.role === "chef" ? "Chef" : "Cuisine"}
