@@ -293,7 +293,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Connexions | `26:2` | 1440 × 1450 |
 | Tableau de bord première utilisation | `29:2` | 1440 × 1500 |
 | Menu — préparation et surstock | `149:396` | 600 × 999 |
-| Services — ajout d’un article à la carte | `175:504` | 900 × 550 |
+| Services — ajout d’un article, variante Formule et vue intégrée | `175:504`, `176:517`, `176:551` | 900 × 550 ; 900 × 610 ; 1440 × 2600 |
 | Revue Ticket Z fictif | `35:143` | 1440 × 1600 |
 | Réception partielle fictive | `36:2` | 1440 × 1500 |
 | Inventaire — saisies à comparer (exemple fictif) | `62:2` | 1440 × 1500 |
@@ -337,7 +337,7 @@ La section B « 12 · Configuration — invitations » contient l’état Équip
 
 La fenêtre B « Menu — préparation et surstock » (`149:396`) représente le brouillon, le choix d’un produit compté et les actions du menu, après observation de l’application dans Firefox sur démo synthétique. La fenêtre est rangée dans Tableau de bord, en calques modifiables avec neuf instances, sans image intégrée ; ses textes utilisent Poppins. Le rendu a été contrôlé par capture Figma. Le texte complet sur les limites du surstock est conservé ; l’ouverture depuis le tableau de bord et les deux fermetures sont reliées dans les propriétés du prototype. Les états de calcul, de résultat et d’erreur, le test des clics et le contrôle visuel du fichier B dans Firefox restent à compléter.
 
-Le formulaire Services « ajouter un article à la carte » (`175:504`) reprend les champs et valeurs initiales observés dans Firefox sur démo synthétique. Il utilise sept instances de champs, sélecteurs et bouton. La capture Figma a été contrôlée ; la variante Formule et l’intégration interactive au panneau restent à représenter, ainsi que la vérification visuelle de B dans Firefox.
+Le formulaire Services « ajouter un article à la carte » (`175:504`) reprend les champs et valeurs initiales observés dans Firefox sur démo synthétique. Il utilise sept instances de champs, sélecteurs et bouton. La variante Formule (`176:517`) ajoute la composition et l’action d’ajout de recette. La vue intégrée (`176:551`) replace le formulaire dans la carte avec les notes et la version ; les boutons Ajouter un choix et Retirer sont reliés dans les propriétés du prototype. Captures Figma contrôlées ; clics et vérification visuelle de B dans Firefox restent à faire.
 
 La vue B « Services — déclaration d’incident ouverte » (`144:342`) a été ajoutée après observation du formulaire réel dans Firefox sur démo synthétique. Elle présente la situation, le produit, la recette, la quantité facultative et le constat, sans prétendre modifier stocks ou achats. Les états ouvert et fermé sont reliés dans le prototype ; les réactions sont vérifiées dans Figma, mais pas les clics. Le rendu a été contrôlé par capture Figma : police Poppins, calques modifiables, sept instances et aucune image intégrée. Les trois sélecteurs utilisent maintenant le composant `146:365` : valeur éditable, chevron et états normal, focus et erreur ; couleurs et rayon reprennent les variables existantes. Aperçu et formulaire contrôlés par captures Figma. Les variantes « lot écarté » et « livraison reportée » ont été ajoutées après contrôle de leurs champs dans Firefox sur démo synthétique ; elles ont été vérifiées par captures Figma et restent à relier à une sélection interactive. Le contrôle visuel du fichier B dans Firefox reste à compléter.
 
