@@ -19,8 +19,8 @@ export default function Predictions() {
   return <div className="workspace-page predictions-container">
     <header className="workspace-header">
       <div>
-        <h1>Prévisions</h1>
-        <p className="workspace-subtitle">Anticipez les besoins des prochains services à partir des ventes et des cartes renseignées.</p>
+        <h1>Bilan</h1>
+        <p className="workspace-subtitle">Comprenez votre activité, repérez les pertes et retrouvez les points à compléter.</p>
       </div>
     </header>
     <BilanNavigation active="predictions" from={from} to={to} />

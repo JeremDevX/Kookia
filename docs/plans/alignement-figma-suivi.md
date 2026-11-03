@@ -622,3 +622,5 @@ Contrôle structurel de Figma B : les 15 sections numérotées sont distinctes, 
 L’état météo sans résultat `189:620` est rangé à côté de la recherche dans Figma B. Il reprend le message et les actions prévus par le formulaire existant ; son contenu est fictif et son rendu a été contrôlé par capture Figma. Le parcours de recherche sans résultat reste à vérifier dans Firefox.
 
 Firefox : une réponse météo vide simulée affiche le message représenté dans B `189:620`, sans débordement à 390 px. La désactivation du champ pendant la recherche faisait perdre le focus ; il revient désormais au titre des résultats lorsque le navigateur le déplace sur le corps de page, sans interrompre un changement volontaire vers un autre bouton. Le fournisseur externe réel n’a pas été sollicité.
+
+Nouvelle comparaison de la frame A `673:46361` dans Firefox : l’en-tête de Prévisions reprend maintenant le titre et le sous-titre communs du Bilan, comme les autres vues de ce parcours. L’onglet Prévisions reste actif ; aucun débordement horizontal à 390 px. Les couverts horaires, la confiance et le stock disponible exigent des sources ou règles supplémentaires et ne sont pas inventés.
