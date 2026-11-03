@@ -69,8 +69,8 @@ export default function WeatherLocationSettings({ onConfirmed, onConfirmingChang
       {!location.configured ? <p>La connexion météo n’est pas activée. Vos services restent accessibles sans météo.</p> : location.status === "confirmed" && !editing ?
         <Button type="button" variant="outline" onClick={() => { setEditing(true); setStatus(""); requestAnimationFrame(() => queryInput.current?.focus()); }}>Changer de commune</Button> : <>
         <form className="weather-location-form" onSubmit={event => void search(event)}>
-          <label htmlFor="weather-place-query">Commune ou code postal</label>
-          <input id="weather-place-query" ref={queryInput} required minLength={2} maxLength={120} value={query} disabled={busy}
+          <label className="input-label" htmlFor="weather-place-query">Commune ou code postal</label>
+          <input className="input-field" id="weather-place-query" ref={queryInput} required minLength={2} maxLength={120} value={query} disabled={busy}
             onChange={event => { setQuery(event.target.value); setPlaces(null); setSelectedId(null); setStatus(""); }} />
           <Button type="submit" variant="outline" disabled={busy || query.trim().length < 2}>Rechercher une commune</Button>
         </form>

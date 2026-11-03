@@ -304,6 +304,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Fournisseurs | `25:2` | 1440 × 1100 |
 | Nouveau fournisseur | `25:77` | 1440 × 1450 |
 | Connexions | `26:2` | 1440 × 1450 |
+| Météo — choisir une commune | `186:597` | 600 × 570 |
 | Tableau de bord première utilisation | `29:2` | 1440 × 1500 |
 | Menu — préparation et surstock | `149:396` | 600 × 999 |
 | Menu — quantité renseignée et idées calculées sur données fictives | `179:583`, `178:566` | 600 × 1189 ; 600 × 2267 |
@@ -612,3 +613,5 @@ sources et catégories fiables, sans transformer les alertes seedées en faits.
    créer dans B seulement les éléments manquants justifiés.
 4. Exécuter les recettes, intégrer chaque lot validé et vérifier le résultat
    distant et la CI.
+
+La fenêtre météo des connexions est présente dans Figma B (`186:597`). Le champ de commune utilise les styles partagés ; ouverture, activation de la recherche et retour du focus vérifiés dans Firefox à 390 px. Les cinq sources et leur actualisation ont été vérifiées.
