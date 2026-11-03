@@ -31,7 +31,7 @@
 .today-task { display: flex; flex-direction: column; gap: var(--spacing-sm); padding-top: var(--spacing-md); border-top: var(--size-1) solid var(--color-nav-border); }
 .today-context ul { display: flex; flex-direction: column; gap: var(--spacing-md); list-style: none; margin: var(--spacing-sm) var(--number-0) var(--number-0); padding: var(--number-0); }
 .today-context li { display: flex; gap: var(--spacing-md); align-items: flex-start; }
-.today-context li > svg { flex-shrink: var(--number-0); color: var(--color-nav-text); }
+.today-context li > svg { flex-shrink: var(--number-0); width: var(--size-40); height: var(--size-40); padding: var(--size-10); border-radius: var(--radius-compact); background: var(--color-nav-active); color: var(--color-nav-text); }
 .today-context li strong { font-size: var(--font-size-sm); }
 .today-context li small { display: block; }
 .today-context li button { color: var(--color-accent-text); font-size: var(--font-size-sm); text-decoration: underline; text-underline-offset: var(--size-3); }
