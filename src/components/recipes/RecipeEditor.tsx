@@ -7,13 +7,13 @@ import type { ImportedIngredient } from "../../features/recipes/recipeCsv";
 
 interface RecipeDraft {
   name: string; category: Recipe["category"]; prepTime: number; yieldPortions: number;
-  effectiveFrom: string; steps: string; ingredients: Array<{ productId: string; quantity: number; netQuantity?: number | null }>;
+  effectiveFrom: string; steps: string[]; ingredients: Array<{ productId: string; quantity: number; netQuantity?: number | null }>;
 }
 const today = () => new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
 }).format(new Date());
 const blankDraft = (): RecipeDraft => ({ name: "", category: "Plat", prepTime: 15, yieldPortions: 1,
-  effectiveFrom: today(), steps: "", ingredients: [{ productId: "", quantity: 0.1 }] });
+  effectiveFrom: today(), steps: [], ingredients: [{ productId: "", quantity: 0.1 }] });
 
 export default function RecipeEditor({ open, recipe, products, headingRef, initialSuggestion, initialImport = null, onClose, onSaved }: {
   open: boolean; recipe: Recipe | null; products: Product[]; headingRef: RefObject<HTMLHeadingElement | null>;
@@ -28,11 +28,11 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
   useEffect(() => {
     if (!open) return;
     setDraft(recipe ? { name: recipe.name, category: recipe.category, prepTime: recipe.prepTime,
-      yieldPortions: recipe.yieldPortions, effectiveFrom: today(), steps: (recipe.steps ?? []).join("\n"),
+      yieldPortions: recipe.yieldPortions, effectiveFrom: today(), steps: recipe.steps ?? [],
       ingredients: recipe.ingredients.map(({ productId, quantity, netQuantity }) => ({ productId, quantity, netQuantity })) }
       : initialSuggestion ? { name: initialSuggestion.name, category: initialSuggestion.category,
         prepTime: initialSuggestion.prepTime, yieldPortions: initialSuggestion.yieldPortions,
-        effectiveFrom: initialSuggestion.effectiveFrom, steps: "",
+        effectiveFrom: initialSuggestion.effectiveFrom, steps: [],
         ingredients: initialSuggestion.ingredients.map(({ productId, quantity }) => ({ productId, quantity })) }
         : initialImport ? { ...blankDraft(), ingredients: initialImport } : blankDraft());
     setOperationId(crypto.randomUUID()); setError("");
@@ -45,7 +45,7 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
 
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setError("");
-    const steps = draft.steps.split("\n").map((step) => step.trim()).filter(Boolean);
+    const steps = draft.steps.map((step) => step.trim()).filter(Boolean);
     if (steps.length > 100) { setError("La recette peut contenir 100 étapes maximum."); return; }
     if (steps.some((step) => step.length > 2000)) { setError("Chaque étape peut contenir 2 000 caractères maximum."); return; }
     setSaving(true);
@@ -116,8 +116,18 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
         <Button type="button" size="sm" variant="outline" onClick={() => setDraft((current) => ({ ...current,
           ingredients: [...current.ingredients, { productId: "", quantity: 0.1 }] }))}>Ajouter un ingrédient</Button>
       </fieldset>
-      <label>Étapes de préparation (une par ligne)<textarea value={draft.steps} rows={5}
-        onChange={(event) => setDraft({ ...draft, steps: event.target.value })} /></label>
+      <fieldset>
+        <legend>Étapes de préparation</legend>
+        {draft.steps.map((step, index) => <div key={index}>
+          <label>Étape {index + 1}<textarea value={step} rows={3}
+            onChange={(event) => setDraft((current) => ({ ...current, steps: current.steps.map((value, rowIndex) =>
+              rowIndex === index ? event.target.value : value) }))} /></label>
+          <Button type="button" size="sm" variant="outline" aria-label={`Retirer l’étape ${index + 1}`}
+            onClick={() => setDraft((current) => ({ ...current, steps: current.steps.filter((_, rowIndex) => rowIndex !== index) }))}>Retirer</Button>
+        </div>)}
+        <Button type="button" size="sm" variant="outline" onClick={() => setDraft((current) => ({ ...current,
+          steps: [...current.steps, ""] }))}>Ajouter une étape</Button>
+      </fieldset>
       {recipe && <details className="recipe-version-history"><summary>Historique des versions ({recipe.versions.length})</summary>
         <ol>{recipe.versions.map((version) => <li key={version.version}>
           <strong>Version {version.version} · effet {version.effectiveFrom ?? "inconnu"} · {version.yieldPortions} portions</strong>
