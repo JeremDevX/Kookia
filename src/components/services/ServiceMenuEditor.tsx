@@ -69,7 +69,6 @@ export default function ServiceMenuEditor({ date, slot, onChanged, onDirtyChange
     <p>Pour une formule, saisir les ventes de la formule OU celles de ses composants, jamais les deux. Enregistrer la carte ne déduit aucune matière.</p>
     {loading && <p role="status">Chargement de la carte…</p>}
     {error && <p role="alert">{error}</p>}
-    {!loading && <Button type="button" variant="outline" disabled={saving} onClick={() => { if (!dirty || window.confirm("Les modifications non enregistrées de la carte seront perdues. Recharger la carte ?")) setReload((value) => value + 1); }}>Recharger / annuler les modifications</Button>}
     {!loading && menu && menu.serviceDate === date && menu.slot === slot && <form onSubmit={(event) => void save(event)}>
       <p>Version actuelle : {menu.revision}. Une modification concurrente sera refusée ; rechargez pour la consulter.</p>
       {entries.length === 0 && <p>Aucun article dans la carte. Ajoutez vos choix ; aucune recette n’est sélectionnée automatiquement.</p>}
@@ -80,6 +79,7 @@ export default function ServiceMenuEditor({ date, slot, onChanged, onDirtyChange
       <label>Notes de la carte<textarea maxLength={2000} value={note} disabled={saving} onChange={(event) => { setMessage(""); setDirty(true); setNote(event.target.value); }} /></label>
       <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Valider et enregistrer la carte"}</Button>
     </form>}
+    {!loading && <Button type="button" variant="outline" disabled={saving} onClick={() => { if (!dirty || window.confirm("Les modifications non enregistrées de la carte seront perdues. Recharger la carte ?")) setReload((value) => value + 1); }}>Recharger / annuler les modifications</Button>}
     {message && <p role="status">{message}</p>}
     {!loading && menu && menu.serviceDate === date && menu.slot === slot && <ServiceMenuHistory history={history} />}
   </section>;
