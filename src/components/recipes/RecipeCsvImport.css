@@ -13,7 +13,7 @@
 .recipe-csv-drop input { position: absolute; width: var(--size-1); height: var(--size-1); opacity: var(--number-0); }
 .recipe-csv-drop > span:not(.recipe-csv-choose) { color: var(--color-nav-muted); }
 .recipe-csv-choose { padding: var(--spacing-sm) var(--spacing-md); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); background: var(--color-surface); }
-.recipe-csv-preparation { display: grid; gap: var(--spacing-xs); padding-top: var(--spacing-md); border-top: var(--size-1) solid var(--color-nav-border); }
+.recipe-csv-preparation { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--spacing-md); padding-top: var(--spacing-md); border-top: var(--size-1) solid var(--color-nav-border); }
 .recipe-csv-preparation p { color: var(--color-nav-muted); }
 .recipe-csv-import fieldset { min-width: var(--number-0); margin: var(--number-0); padding: var(--number-0); border: var(--number-0); display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); }
 .recipe-csv-import legend { margin-bottom: var(--spacing-sm); color: var(--color-nav-text); font-weight: var(--font-weight-semibold); }

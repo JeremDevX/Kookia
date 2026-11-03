@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Upload } from "lucide-react";
+import { Download, Upload } from "lucide-react";
 import Button from "../common/Button";
 import type { Product } from "../../types";
 import { mapRecipeColumns, readRecipeCsvFile, validateImportRows, type CsvDocument, type ImportedIngredient, type ImportRow } from "../../features/recipes/recipeCsv";
@@ -61,7 +61,7 @@ export default function RecipeCsvImport({ products, onClose, onApply }: { produc
         </label>
         {reading && <p role="status">Lecture du fichier…</p>}
         {document && <p role="status">Fichier chargé : {fileName} · {document.rows.length} ingrédient{document.rows.length > 1 ? "s" : ""}</p>}
-        <div className="recipe-csv-preparation"><h2>Préparer votre import</h2><p>Colonnes nécessaires : produit, quantité brute et unité. Fichier CSV en UTF-8, 256 Ko maximum.</p></div>
+        <div className="recipe-csv-preparation"><div><h2>Préparer votre import</h2><p>Colonnes nécessaires : produit, quantité brute et unité. Fichier CSV en UTF-8, 256 Ko maximum.</p><p>Ajoutez au moins une ligne au modèle avant de l’importer.</p></div><a className="btn btn-outline btn-md" href="/modele-fiche-technique.csv" download><span className="btn-icon"><Download size={16} aria-hidden="true" /></span>Télécharger le modèle CSV</a></div>
       </>}
       {mapping && !reviewing && document && <><h2 ref={heading} tabIndex={-1}>Associer les colonnes</h2><p>Fichier chargé : {fileName}</p><fieldset><legend>Colonnes du fichier</legend>
           {([['product', 'Produit'], ['quantity', 'Quantité brute'], ['unit', 'Unité']] as const).map(([key, label]) => <label key={key}>{label}<select value={columns[key]} onChange={(event) => { setRows(null); setColumns((current) => ({ ...current, [key]: event.target.value })); }}>

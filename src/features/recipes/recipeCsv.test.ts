@@ -1,9 +1,17 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Product } from "../../types";
 import { mapRecipeColumns, parseRecipeCsv, readRecipeCsvFile, validateImportRows } from "./recipeCsv";
 
 const products = [{ id: "a", name: "Farine", unit: "kg" }, { id: "b", name: "Œuf", unit: "pcs" }] as Product[];
 describe("import CSV de fiche", () => {
+  it("accepte le modèle téléchargé après ajout d’une ligne", () => {
+    const template = readFileSync("public/modele-fiche-technique.csv", "utf8");
+    const document = parseRecipeCsv(`${template}Farine;1,25;kg\n`);
+    const rows = mapRecipeColumns(document, { product: 0, quantity: 1, unit: 2 });
+    rows[0].productId = "a";
+    expect(validateImportRows(rows, products)).toEqual({ errors: [], ingredients: [{ productId: "a", quantity: 1.25 }] });
+  });
   it("refuse un fichier trop volumineux, mal encodé ou de plus de 100 lignes", async () => {
     const arrayBuffer = async () => new Uint8Array([0xff]).buffer;
     await expect(readRecipeCsvFile({ size: 256_001, arrayBuffer })).rejects.toThrow("256 Ko");
