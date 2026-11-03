@@ -335,6 +335,7 @@ contient une page « Dev Jerem Manquant » (`0:1`) et les écrans suivants :
 | Accès — vérification de session indisponible | `171:497` | 1440 × 900 |
 | Recettes — rapprochement du catalogue : produit à associer et associé | `244:696`, `247:675` | 960 × 577 et 960 × 540 |
 | Recettes — fiches candidates : panneau, formulaires et décisions | `159:423`, `159:425`, `164:426`, `167:431`, `168:452`, `169:495`, `169:514` | 900 × 71 à 900 × 900 ; formulaires défilants |
+| Configuration — ajout d’un fournisseur | `253:708` | 1440 × 1600 |
 | Configuration — équipe : lien créé et lien masqué | `152:408`, `153:416` | 1440 × 1420 chacun |
 | Inscription — adresse email déjà utilisée (exemple fictif) | `251:671` | 1440 × 900 |
 | Invitation — connexion, inscription, acceptation, confirmation, lien invalide, session indisponible | `120:30`, `123:33`, `117:29`, `120:56`, `117:45`, `123:63` | 1440 × 900 chacun |
@@ -690,3 +691,5 @@ Un modèle CSV UTF-8 à trois colonnes est téléchargeable depuis la préparati
 L’état d’inscription « adresse email déjà utilisée » `251:671` a été ajouté dans la section Inscription de B. L’erreur a été reproduite dans Firefox avec le compte de la démo synthétique, puis la maquette a été contrôlée dans Firefox ; aucune création de compte n’a eu lieu. La section agrandie ne chevauche aucune autre section. Le prototype représente l’erreur et ne crée pas de compte.
 
 Les jours d’ouverture sont désormais visibles dès la première étape de configuration et dans les paramètres, comme sur A `673:43437`. Une sélection renseigne les jours ; la case permet toujours de distinguer des jours non renseignés d’une fermeture tous les jours. Sur inscription fictive, Firefox a vérifié la sélection directe du lundi et l’absence de débordement à 390 px. Huit tests des jours et du parcours passent. Le test du modèle CSV a aussi été corrigé : son import utilisait une API Node indisponible dans le contrôle TypeScript ; les cinq tests CSV et les types passent après correction.
+
+L’état « Configuration — ajout d’un fournisseur » `253:708`, absent des écrans consultés dans A, est ajouté dans B à côté du parcours Équipe. Il reprend le formulaire fournisseur existant et les actions de progression désactivées pendant la saisie. Sur inscription fictive, Firefox a vérifié l’ouverture et le blocage de Continuer ; le focus arrive désormais sur le nom du fournisseur et aucun débordement horizontal n’a été constaté à 390 px. Le rendu de B et le rangement sans chevauchement ont été vérifiés ; la maquette ne simule pas l’enregistrement. Cinq tests ciblés et les types passent.

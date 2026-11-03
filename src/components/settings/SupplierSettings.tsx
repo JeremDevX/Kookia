@@ -28,6 +28,11 @@ export default function SupplierSettings({ onEditingChange }: { onEditingChange?
   const firstSupplierActionRef = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const retryFocusPending = useRef(false);
+  const editingActive = editing !== null;
+
+  useEffect(() => {
+    if (editingActive) formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }, [editingActive]);
 
   useEffect(() => {
     if (!editing) return;
