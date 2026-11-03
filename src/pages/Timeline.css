@@ -1,7 +1,6 @@
 .timeline-page { gap: var(--spacing-lg); }
-.timeline-page > .workspace-header, .timeline-key, .timeline-empty, .timeline-read-only { padding: var(--spacing-xl); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
+.timeline-page > .workspace-header, .timeline-key, .timeline-empty, .timeline-read-only { padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
 .timeline-page > .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
-.timeline-page > .workspace-header .workspace-eyebrow { margin-bottom: var(--spacing-xs); }
 .timeline-controls h2, .timeline-key h2, .timeline-empty h2 { font-size: var(--font-size-lg); }
 .timeline-controls h2, .timeline-controls p { grid-column: var(--number-1) / var(--number-negative-1); }
 .timeline-key h2 { flex-basis: var(--unit-100percent); }
@@ -21,7 +20,7 @@
 .provenance-unknown { border-color: var(--color-urgent); color: var(--color-urgent); }
 .timeline-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-sm); min-height: var(--size-20); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .timeline-truncated { padding: var(--spacing-md); border-left: var(--size-3) solid var(--color-urgent); background: var(--color-surface); color: var(--color-text-secondary); }
-.timeline-search { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-xl); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
+.timeline-search { display: flex; flex-direction: column; gap: var(--spacing-sm); padding: var(--spacing-lg); background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); }
 .timeline-search label { color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
 .timeline-search-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
 .timeline-search input { flex: var(--number-0) var(--number-1) var(--size-220); min-width: var(--number-0); min-height: var(--size-44); padding: var(--spacing-sm) var(--spacing-md); color: var(--color-text-primary); background: var(--color-bg); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); font: inherit; }

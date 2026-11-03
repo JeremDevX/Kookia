@@ -167,7 +167,6 @@ export default function Timeline() {
 
   return <div className="workspace-page timeline-page">
     <header className="workspace-header"><div>
-      <p className="workspace-eyebrow">Historique consultable</p>
       <h1 ref={headingRef} tabIndex={-1}>Historique</h1>
       <p className="workspace-subtitle">Parcourez les pièces, le stock, les recettes, les services et les décisions sans modifier les données actuelles.</p>
     </div></header>
