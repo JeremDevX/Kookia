@@ -22,7 +22,6 @@ export default function SetupReview({ onReadyChange }: { onReadyChange: (ready: 
   if (!data) return <p role="status">Chargement des informations enregistrées…</p>;
   const { restaurant, suppliers } = data;
   return <div className="setup-review">
-    <p>Vérifiez vos informations avant de finaliser la configuration.</p>
     <section className="setup-review-restaurant" aria-labelledby="review-restaurant"><h3 id="review-restaurant">{restaurant.name}</h3>
       <dl><div><dt>Type d’établissement</dt><dd>{restaurant.type}</dd></div>
         <div><dt>Couverts moyens par jour</dt><dd>{restaurant.dailyCovers}</dd></div>

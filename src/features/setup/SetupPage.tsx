@@ -53,7 +53,7 @@ function SetupForm() {
       <p className="setup-subtitle">Étape 1 sur 4 · Renseignez les informations de votre établissement.</p>
       <SetupProgressIndicator index={0} />
       <section className="setup-card" aria-labelledby="setup-card-title">
-        <h2 id="setup-card-title">Votre restaurant</h2>
+        <header className="setup-card-heading"><h2 id="setup-card-title">Votre restaurant</h2><p>Renseignez les informations utiles à votre établissement.</p></header>
         <form className="auth-form setup-form" onSubmit={submit}>
       {error && <p className="auth-error setup-wide" role="alert">{error}</p>}
       {([

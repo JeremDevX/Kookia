@@ -9,6 +9,9 @@
 .setup-subtitle { color: var(--color-nav-muted); margin: var(--spacing-sm) var(--number-0) var(--spacing-xl); }
 .setup-card { background: var(--color-surface); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-lg); padding: var(--spacing-xl); }
 .setup-card h2 { font-size: var(--font-size-lg); margin: var(--number-0) var(--number-0) var(--spacing-xl); }
+.setup-card-heading { padding-bottom: var(--spacing-lg); margin-bottom: var(--spacing-lg); border-bottom: var(--size-1) solid var(--color-border); }
+.setup-card-heading h2 { margin: var(--number-0); }
+.setup-card-heading p { margin: var(--spacing-xs) var(--number-0) var(--number-0); color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_5); }
 .setup-form { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); }
 .setup-wide { grid-column: var(--number-1) / var(--number-negative-1); }
 .setup-form select.input-field { width: var(--unit-100percent); }
