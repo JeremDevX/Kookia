@@ -229,3 +229,8 @@
 .settings-content .invitation-create select { width: var(--unit-100percent); }
 .settings-content .invitation-manager > div input { width: var(--unit-100percent); }
 @media (--media-mobile) { .settings-content .invitation-create { flex-direction: column; align-items: stretch; } }
+
+.settings-content .member-identity { display: flex; align-items: center; gap: var(--spacing-sm); min-width: var(--number-0); }
+.settings-content .member-identity > div { display: grid; min-width: var(--number-0); overflow-wrap: var(--overflow-wrap-anywhere); }
+.settings-content .member-identity > div span { color: var(--color-text-secondary); }
+.settings-content .member-avatar { display: grid; place-items: center; flex-shrink: var(--number-0); width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-accent-text); font-weight: var(--font-weight-semibold); }

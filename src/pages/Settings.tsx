@@ -11,11 +11,13 @@ import { Link, useBlocker, useSearchParams } from "react-router-dom";
 import AccountSettings from "../features/account/AccountSettings";
 import InvitationManager from "../features/invitations/InvitationManager";
 import MemberManager from "../features/members/MemberManager";
+import { useAuth } from "../features/auth/context/AuthContext";
 import "../styles/Workspace.css";
 import "./InsightsSettings.css";
 import "./Settings.css";
 
 export default function Settings() {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [pendingInvitation, setPendingInvitation] = useState(false);
   const [pendingSchedule, setPendingSchedule] = useState(false);
@@ -71,7 +73,7 @@ export default function Settings() {
           {activeTab === "suppliers" && <SupplierSettings />}
           {activeTab === "connections" && <ConnectionsSettings onWeatherSettings={weather.openSettings} />}
           {activeTab === "account" && <AccountSettings />}
-          {activeTab === "team" && <>{pendingInvitation && <p>Copiez le lien puis sélectionnez « J’ai terminé » avant de changer de rubrique.</p>}<MemberManager /><InvitationManager onPendingLinkChange={setPendingInvitation} /></>}
+          {activeTab === "team" && <>{pendingInvitation && <p>Copiez le lien puis sélectionnez « J’ai terminé » avant de changer de rubrique.</p>}<MemberManager owner={user} /><InvitationManager onPendingLinkChange={setPendingInvitation} /></>}
         </div>
     </div>
   );

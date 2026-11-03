@@ -3,7 +3,7 @@ import Button from "../../components/common/Button";
 import { apiRequest } from "../../config/api";
 import { listMembers, type Member } from "./memberApi";
 
-export default function MemberManager() {
+export default function MemberManager({ owner }: { owner?: { displayName: string; email: string } | null }) {
   const [members, setMembers] = useState<Member[] | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,9 +26,13 @@ export default function MemberManager() {
   };
   return <section className="member-manager" aria-labelledby="members-title"><h2 id="members-title">Membres de l’équipe</h2>
     {error && <div role="alert"><p>{error}</p>{!members && <Button type="button" variant="outline" onClick={() => { setError(""); setAttempt((value) => value + 1); }}>Réessayer</Button>}</div>}
-    {!members ? !error && <p role="status">Chargement des membres…</p> : members.length === 0 ? <p>Aucun membre ajouté.</p> : <ul>{members.map((member) => <li key={member.userId}>
-      <strong>{member.user.displayName}</strong> · {member.user.email} · {member.role === "chef" ? "Chef" : "Cuisine"}
-      {confirmId === member.userId ? <span> Retirer cet accès ? <Button type="button" disabled={busy} onClick={() => void revoke(member.userId)}>Retirer l’accès</Button><Button type="button" variant="outline" disabled={busy} onClick={() => setConfirmId(null)}>Annuler</Button></span> : <Button type="button" variant="outline" disabled={busy} onClick={() => setConfirmId(member.userId)}>Retirer l’accès de {member.user.displayName}</Button>}
-    </li>)}</ul>}
+    {(owner || members?.length) ? <ul>
+      {owner && <li><div className="member-identity"><span className="member-avatar" aria-hidden="true">{owner.displayName.trim().charAt(0).toLocaleUpperCase("fr-FR")}</span><div><strong>{owner.displayName}</strong><span>{owner.email}</span></div></div><span>Propriétaire</span></li>}
+      {members?.map((member) => <li key={member.userId}>
+        <div className="member-identity"><span className="member-avatar" aria-hidden="true">{member.user.displayName.trim().charAt(0).toLocaleUpperCase("fr-FR")}</span><div><strong>{member.user.displayName}</strong><span>{member.user.email}</span></div></div><span>{member.role === "chef" ? "Chef" : "Cuisine"}</span>
+        {confirmId === member.userId ? <span>Retirer cet accès ? <Button type="button" disabled={busy} onClick={() => void revoke(member.userId)}>Retirer l’accès</Button><Button type="button" variant="outline" disabled={busy} onClick={() => setConfirmId(null)}>Annuler</Button></span> : <Button type="button" variant="outline" disabled={busy} onClick={() => setConfirmId(member.userId)}>Retirer l’accès de {member.user.displayName}</Button>}
+      </li>)}
+    </ul> : null}
+    {!members ? !error && <p role="status">Chargement des membres…</p> : members.length === 0 && <p>{owner ? "Aucun autre membre ajouté." : "Aucun membre ajouté."}</p>}
   </section>;
 }

@@ -65,7 +65,7 @@ body .setup-actions .btn-primary { width: auto; }
 
 .setup-progress li[data-completed]::after { background: var(--color-nav-text); }
 .setup-owner { display: flex; align-items: center; gap: var(--spacing-md); padding: var(--spacing-md) var(--number-0); border-bottom: var(--size-1) solid var(--color-border); }
-.setup-owner-avatar { flex-shrink: var(--number-0); display: grid; place-items: center; width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-accent-text); font-weight: var(--font-weight-semibold); }
+.setup-owner-avatar, .setup-step .member-avatar { flex-shrink: var(--number-0); display: grid; place-items: center; width: var(--size-36); height: var(--size-36); border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-accent-text); font-weight: var(--font-weight-semibold); }
 .setup-owner > div { display: flex; flex-direction: column; flex: var(--number-1); min-width: var(--number-0); font-size: var(--font-size-sm); }
 .setup-owner > div span { color: var(--color-text-secondary); overflow-wrap: var(--overflow-wrap-anywhere); }
 .setup-owner-role { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
@@ -77,3 +77,7 @@ body .setup-actions .btn-primary { width: auto; }
 .setup-review-members li { display: flex; align-items: center; gap: var(--spacing-sm); min-width: var(--number-0); }
 .setup-review-members li > div { display: grid; min-width: var(--number-0); overflow-wrap: var(--overflow-wrap-anywhere); }
 .setup-review-members li > div span { color: var(--color-text-secondary); }
+
+.setup-step .member-identity { display: flex; align-items: center; gap: var(--spacing-sm); min-width: var(--number-0); }
+.setup-step .member-identity > div { display: grid; min-width: var(--number-0); overflow-wrap: var(--overflow-wrap-anywhere); }
+.setup-step .member-identity > div span { color: var(--color-text-secondary); }
