@@ -26,7 +26,7 @@ export default function RecipeDetail({ recipe, editing, onBack, onEdit, onProduc
       <div className="recipe-detail-panel"><h3>Ingrédients</h3>
         {recipe.ingredients.length ? <ul>{recipe.ingredients.map((ingredient, index) => <li key={`${ingredient.productId}-${index}`}><span>{ingredient.productName}</span><strong>{ingredient.quantity} {ingredient.unit}</strong></li>)}</ul> : <p>Non renseignés</p>}
       </div>
-      <div className="recipe-detail-panel"><h3>Préparation</h3><p>Étapes non renseignées.</p></div>
+      <div className="recipe-detail-panel"><h3>Préparation</h3>{recipe.steps?.length ? <ol>{recipe.steps.map((step, index) => <li key={index}>{step}</li>)}</ol> : <p>Étapes non renseignées.</p>}</div>
     </div>
   </section>;
 }

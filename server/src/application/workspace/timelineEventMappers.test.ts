@@ -24,7 +24,7 @@ it("labels demo recipe decisions and versions as hypothetical, never as producti
     .toBe("Proposition de recette à valider ; aucune cuisson n’est déclarée.");
   const version: RecipeVersion = { id: "version-id", restaurantId: "restaurant-id", recipeId: "recipe-id",
     version: 1, effectiveFrom: createdAt, operationId: "recipe-operation", actorId: "owner-id",
-    name: "Hypothèse — pizza jambon et champignons", category: "Plat", prepTime: 20, yieldPortions: 4, createdAt };
+    name: "Hypothèse — pizza jambon et champignons", category: "Plat", prepTime: 20, yieldPortions: 4, steps: [], createdAt };
   expect(versionEvent(version, "demo")).toMatchObject({ kind: "recipe", provenance: "simulation",
     qualifier: expect.stringContaining("à confirmer comme recette pratiquée") });
 });

@@ -154,10 +154,18 @@ describe("persistent catalog HTTP", () => {
     }).expect(200)));
     const catalogBefore = await agent.get("/api/workspace/catalog").expect(200);
     const createInput = { operationId: randomUUID(), name: "Recette de test", category: "Plat", prepTime: 12,
-      yieldPortions: 2, effectiveFrom: today, ingredients: [{ productId: firstIngredient.productId, quantity: 1.25 }] };
+      yieldPortions: 2, effectiveFrom: today, steps: ["Laver", "Cuire"], ingredients: [{ productId: firstIngredient.productId, quantity: 1.25 }] };
     const created = await agent.post("/api/workspace/recipes").send(createInput).expect(201);
     const createdReplay = await agent.post("/api/workspace/recipes").send(createInput).expect(201);
     expect(createdReplay.body.id).toBe(created.body.id);
+    expect(created.body.steps).toEqual(["Laver", "Cuire"]);
+    await agent.post("/api/workspace/recipes").send({ ...createInput, steps: ["Cuire", "Laver"] }).expect(409);
+    const changedSteps = await agent.patch(`/api/workspace/recipes/${created.body.id}`).send({ ...createInput,
+      operationId: randomUUID(), expectedRevision: 1, steps: ["Servir"] }).expect(200);
+    expect(changedSteps.body.versions.map((version: { steps: string[] }) => version.steps)).toEqual([["Servir"], ["Laver", "Cuire"]]);
+    const legacyUpdate = await agent.patch(`/api/workspace/recipes/${created.body.id}`).send({ ...createInput,
+      operationId: randomUUID(), expectedRevision: 2, steps: undefined }).expect(200);
+    expect(legacyUpdate.body.steps).toEqual(["Servir"]);
     await agent.post("/api/workspace/recipes").send({ ...createInput, name: "Contenu différent" }).expect(409);
     const piecesProduct = catalogBefore.body.products.find((product: { unit: string }) => product.unit === "pcs");
     expect(piecesProduct).toBeDefined();

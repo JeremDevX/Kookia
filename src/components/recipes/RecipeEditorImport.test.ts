@@ -38,3 +38,24 @@ describe("préremplissage CSV", () => {
   });
 
 });
+
+
+describe("validation des étapes", () => {
+  it.each([
+    [Array(101).fill("Étape").join("\n"), "La recette peut contenir 100 étapes maximum."],
+    ["a".repeat(2001), "Chaque étape peut contenir 2 000 caractères maximum."],
+  ])("signale la limite avant l’enregistrement", async (steps, message) => {
+    const setError = vi.fn();
+    vi.mocked(useState).mockImplementationOnce(() => [{ name: "Test", category: "Plat", prepTime: 1,
+      yieldPortions: 1, effectiveFrom: "2026-01-01", ingredients: [], steps }, vi.fn()] as never)
+      .mockImplementationOnce(() => ["operation", vi.fn()] as never)
+      .mockImplementationOnce(() => [false, vi.fn()] as never)
+      .mockImplementationOnce(() => ["", setError] as never);
+    const tree = RecipeEditor({ open: true, recipe: null, products: [], headingRef: { current: null },
+      initialSuggestion: null, onClose: vi.fn(), onSaved: vi.fn() });
+    const form = Children.toArray(tree.props.children).find((child) => isValidElement(child) && child.type === "form") as ReactElement<{ onSubmit: (event: unknown) => void }>;
+    form.props.onSubmit({ preventDefault: vi.fn() });
+    expect(setError).toHaveBeenCalledWith(message);
+    expect(createRecipe).not.toHaveBeenCalled();
+  });
+});

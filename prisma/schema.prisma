@@ -240,6 +240,7 @@ model RecipeVersion {
   category      String
   prepTime      Int
   yieldPortions Int
+  steps         String[] @default([])
   createdAt     DateTime @default(now())
   restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   recipe        Recipe @relation(fields: [restaurantId, recipeId], references: [restaurantId, id], onDelete: NoAction)

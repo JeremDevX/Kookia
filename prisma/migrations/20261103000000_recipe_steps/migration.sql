@@ -1,0 +1,1 @@
+ALTER TABLE "RecipeVersion" ADD COLUMN "steps" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

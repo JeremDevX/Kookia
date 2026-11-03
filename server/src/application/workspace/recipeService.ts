@@ -16,6 +16,7 @@ export interface RecipeIngredientInput { productId: string; quantity: number; ne
 export interface RecipeValues {
   name: string; category: string; prepTime: number; yieldPortions: number; effectiveFrom: string;
   ingredients: RecipeIngredientInput[];
+  steps?: string[];
 }
 export interface ProductionInput {
   operationId: string; recipeId?: string; expectedRecipeRevision?: number; recipeName: string; portions: number;
@@ -32,7 +33,7 @@ const lockWorkspace = (tx: Prisma.TransactionClient, restaurantId: string) =>
 function versionDto(version: RecipeWithVersions["versions"][number]) {
   return { version: version.version, effectiveFrom: version.effectiveFrom?.toISOString().slice(0, 10) ?? null,
     actorId: version.actorId, createdAt: version.createdAt.toISOString(), name: version.name,
-    category: version.category, prepTime: version.prepTime, yieldPortions: version.yieldPortions,
+    category: version.category, prepTime: version.prepTime, yieldPortions: version.yieldPortions, steps: version.steps,
     ingredients: version.ingredients.map(({ productId, productName, productUnit, quantity, netQuantity }) =>
       ({ productId, productName, unit: productUnit, quantity: Number(quantity), netQuantity: netQuantity == null ? null : Number(netQuantity) })) };
 }
@@ -43,6 +44,7 @@ function recipeDto(recipe: RecipeWithVersions) {
     ({ productId, productName: product.name, unit: product.unit, quantity: Number(quantity), netQuantity: netQuantity == null ? null : Number(netQuantity) }));
   return { id: recipe.id, name: version?.name ?? recipe.name, category: version?.category ?? recipe.category,
     prepTime: version?.prepTime ?? recipe.prepTime, yieldPortions: version?.yieldPortions ?? recipe.yieldPortions,
+    steps: version?.steps ?? [],
     revision: recipe.revision, version: version?.version ?? recipe.revision,
     effectiveFrom: version?.effectiveFrom?.toISOString().slice(0, 10) ?? null,
     ingredients: version?.ingredients.map(({ productId, productName, productUnit, quantity, netQuantity }) =>
@@ -80,11 +82,12 @@ function snapshotIngredients(ingredients: Awaited<ReturnType<typeof productsForI
 }
 
 function sameSnapshot(version: { name: string; category: string; prepTime: number; yieldPortions: number;
-  effectiveFrom: Date | null; ingredients: Array<{ productId: string; quantity: Prisma.Decimal; netQuantity?: Prisma.Decimal | null }> }, input: RecipeValues) {
+  steps: string[]; effectiveFrom: Date | null; ingredients: Array<{ productId: string; quantity: Prisma.Decimal; netQuantity?: Prisma.Decimal | null }> }, input: RecipeValues) {
   const saved = version.ingredients.map((ingredient) => `${ingredient.productId}:${ingredient.quantity.toFixed(3)}:${ingredient.netQuantity == null ? "unknown" : ingredient.netQuantity.toFixed(3)}`).sort();
   const requested = input.ingredients.map((ingredient) => `${ingredient.productId}:${ingredient.quantity.toFixed(3)}:${ingredient.netQuantity == null ? "unknown" : ingredient.netQuantity.toFixed(3)}`).sort();
   return version.name === input.name && version.category === input.category && version.prepTime === input.prepTime &&
     version.yieldPortions === input.yieldPortions && version.effectiveFrom?.toISOString().slice(0, 10) === input.effectiveFrom &&
+    isDeepStrictEqual(version.steps, input.steps ?? []) &&
     saved.length === requested.length && saved.every((value, index) => value === requested[index]);
 }
 
@@ -98,14 +101,14 @@ function versionData(restaurantId: string, recipeId: string, version: number, ac
   input: RecipeValues, ingredients: Awaited<ReturnType<typeof productsForIngredients>>) {
   return { restaurantId, recipeId, version, effectiveFrom: date(input.effectiveFrom), operationId, actorId,
     name: input.name, category: input.category, prepTime: input.prepTime, yieldPortions: input.yieldPortions,
-    ingredients: snapshotIngredients(ingredients) };
+    steps: input.steps ?? [], ingredients: snapshotIngredients(ingredients) };
 }
 
 export async function createRecipeInTransaction(tx: Prisma.TransactionClient, restaurantId: string, actorId: string,
   operationId: string, input: RecipeValues) {
   const replay = await tx.recipeVersion.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { ingredients: true } });
   if (replay) {
-    if (!sameSnapshot(replay, input)) throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération de recette existe déjà avec un autre contenu.");
+    if (!sameSnapshot(replay, { ...input, steps: input.steps ?? [] })) throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération de recette existe déjà avec un autre contenu.");
     return recipeDto(await tx.recipe.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: replay.recipeId } }, include: recipeInclude }));
   }
   assertEffectiveDate(input, null);
@@ -179,7 +182,9 @@ export async function updateRecipe(restaurantId: string, actorId: string, id: st
     await lockWorkspace(tx, restaurantId);
     const replay = await tx.recipeVersion.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } }, include: { ingredients: true } });
     if (replay) {
-      if (replay.recipeId !== id || !sameSnapshot(replay, input))
+      const prior = input.steps === undefined ? await tx.recipeVersion.findFirst({ where: { restaurantId,
+        recipeId: id, version: { lt: replay.version } }, orderBy: { version: "desc" }, select: { steps: true } }) : null;
+      if (replay.recipeId !== id || !sameSnapshot(replay, { ...input, steps: input.steps ?? prior?.steps ?? [] }))
         throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération de recette existe déjà avec un autre contenu.");
       return recipeDto(await tx.recipe.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id } }, include: recipeInclude }));
     }
@@ -188,6 +193,7 @@ export async function updateRecipe(restaurantId: string, actorId: string, id: st
     if (current.revision !== expectedRevision) throw new WorkspaceError(409, "REVISION_CONFLICT", "La recette a changé ; rechargez-la avant de la modifier.");
     const latest = await tx.recipeVersion.findFirst({ where: { restaurantId, recipeId: id }, orderBy: { version: "desc" } });
     assertEffectiveDate(input, latest);
+    input = { ...input, steps: input.steps ?? latest?.steps ?? [] };
     const ingredients = await productsForIngredients(tx, restaurantId, input.ingredients);
     const revision = current.revision + 1;
     await tx.recipe.update({ where: { restaurantId_id: { restaurantId, id } }, data: {

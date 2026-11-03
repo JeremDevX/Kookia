@@ -16,6 +16,7 @@ export interface RecipeVersion {
   prepTime: number;
   yieldPortions: number;
   ingredients: RecipeIngredient[];
+  steps?: string[];
 }
 
 export interface Recipe {
@@ -28,6 +29,7 @@ export interface Recipe {
   version: number;
   effectiveFrom: string | null;
   ingredients: RecipeIngredient[];
+  steps?: string[];
   versions: RecipeVersion[];
   lastMade?: string;
 }

@@ -16,3 +16,13 @@ it("affiche les ingrédients enregistrés et signale les étapes absentes", () =
   expect(html).toContain("Étapes non renseignées.");
   expect(html).toContain("Produire");
 });
+
+
+it("affiche les étapes dans leur ordre", () => {
+  const html = renderToStaticMarkup(createElement(RecipeDetail, {
+    recipe: { id: "r", name: "Soupe", category: "Entrée", prepTime: 20, yieldPortions: 4,
+      revision: 1, version: 1, effectiveFrom: null, versions: [], maxYield: 0, ingredients: [], steps: ["Laver", "Cuire"] },
+    editing: false, onBack: () => {}, onEdit: () => {}, onProduce: () => {},
+  }));
+  expect(html).toContain("<ol><li>Laver</li><li>Cuire</li></ol>");
+});

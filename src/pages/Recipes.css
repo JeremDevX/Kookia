@@ -76,7 +76,7 @@
 }
 .recipe-editor-fields { grid-template-columns: repeat(auto-fit, minmax(var(--size-180), var(--unit-1fr))); }
 .recipe-editor-form label, .recipe-editor-ingredients label { display: grid; gap: var(--spacing-xs); }
-.recipe-editor-form input, .recipe-editor-form select {
+.recipe-editor-form input, .recipe-editor-form select, .recipe-editor-form textarea {
   width: var(--unit-100percent);
   padding: var(--spacing-sm);
   border: var(--size-1) solid var(--color-border);
@@ -433,6 +433,6 @@
 .recipe-detail-metrics, .recipe-detail-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--unit-100percent), var(--size-260)), var(--unit-1fr))); gap: var(--spacing-md); }
 .recipe-detail-metrics p { display: grid; gap: var(--spacing-xs); padding: var(--spacing-sm); background: var(--color-auth-field); }
 .recipe-detail-panel ul { list-style: none; padding: var(--number-0); margin: var(--number-0); }
-.recipe-detail-panel li { display: flex; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-sm) var(--number-0); border-bottom: var(--size-1) solid var(--color-nav-border); }
+.recipe-detail-panel ul li { display: flex; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-sm) var(--number-0); border-bottom: var(--size-1) solid var(--color-nav-border); }
 
-.recipe-detail-panel li strong { white-space: nowrap; }
+.recipe-detail-panel ul li strong { white-space: nowrap; }

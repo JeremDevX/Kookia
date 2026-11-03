@@ -155,10 +155,11 @@ const recipeValuesSchema = z.object({
   name: z.string().trim().min(1).max(120), category: z.enum(["Plat", "Dessert", "Entrée", "Boisson"]),
   prepTime: z.number().int().min(0).max(10080), yieldPortions: z.number().int().min(1).max(10000),
   effectiveFrom: z.iso.date(), ingredients: z.array(recipeIngredientSchema).min(1).max(100),
+  steps: z.array(z.string().trim().min(1).max(2000)).max(100).optional(),
 }).strict();
 const recipeMutationSchema = recipeValuesSchema.extend({ operationId: z.uuid() });
 const recipeCreateSchema = recipeMutationSchema.extend({ sourceReceiptLineId: z.uuid().optional() });
-const recipeCandidateInputSchema = recipeValuesSchema.extend({ ingredients: z.array(z.object({
+const recipeCandidateInputSchema = recipeValuesSchema.omit({ steps: true }).extend({ ingredients: z.array(z.object({
   productId: z.string().trim().min(1).max(100), quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001),
   sourceDocumentId: z.string().regex(/^[a-f0-9]{24}$/), sourceLineNumber: z.number().int().positive(),
 }).strict()).min(1).max(100) }).strict();
