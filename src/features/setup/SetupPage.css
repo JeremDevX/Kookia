@@ -37,3 +37,22 @@ body .setup-actions .btn-primary { width: auto; }
 .setup-progress li[aria-current="step"] { color: var(--color-accent-text); }
 .setup-progress li[aria-current="step"] > span:first-child { background: var(--color-accent-text); border-color: var(--color-accent-text); }
 @media (--media-mobile) { .setup-step .invitation-create { align-items: stretch; flex-direction: column; } }
+
+.setup-step-suppliers .suppliers-card { border: none; box-shadow: none; padding: var(--number-0); margin-top: var(--spacing-lg); }
+.setup-step-suppliers .suppliers-card > .card-header { display: none; }
+.setup-step-suppliers .suppliers-card > .card-content { padding: var(--number-0); }
+.setup-review { display: grid; gap: var(--spacing-lg); }
+.setup-review > p, .setup-review section p { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_5); }
+.setup-review section { border: var(--size-1) solid var(--color-border); border-radius: var(--radius-compact); padding: var(--spacing-lg); }
+.setup-review section h3 { margin: var(--number-0) var(--number-0) var(--spacing-md); font-size: var(--font-size-md); }
+.setup-review dl { display: grid; gap: var(--spacing-sm); margin: var(--number-0); font-size: var(--font-size-sm); }
+.setup-review dl > div { display: grid; grid-template-columns: minmax(var(--size-180), var(--unit-1fr)) var(--unit-2fr); gap: var(--spacing-md); }
+.setup-review dt { color: var(--color-nav-muted); }
+.setup-review dd { margin: var(--number-0); overflow-wrap: var(--overflow-wrap-anywhere); }
+.setup-review-columns { display: grid; grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-lg); }
+.setup-review-columns section { min-width: var(--number-0); }
+.setup-review-columns p + p { margin-top: var(--spacing-sm); }
+.setup-review-columns ul { padding-left: var(--spacing-lg); font-size: var(--font-size-sm); }
+.setup-progress li[data-completed] { color: var(--color-nav-text); }
+.setup-progress li[data-completed] > span:first-child { background: var(--color-nav-text); color: var(--color-surface); border-color: var(--color-nav-text); }
+@media (--media-mobile) { .setup-review-columns, .setup-review dl > div { grid-template-columns: var(--unit-1fr); } }
