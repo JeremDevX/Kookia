@@ -1,14 +1,14 @@
 import { Suspense, lazy } from "react";
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider, useLocation } from "react-router-dom";
 import { WorkspaceLayout, WorkspaceHome, WorkspaceStocks, WorkspaceOrders, OwnerOnly } from "../../features/members/WorkspaceLayout";
-import InvitationAccept from "../../features/invitations/InvitationAccept";
 import { RequireAuth } from "../../features/auth/components/RequireAuth";
 import { PublicOnly } from "../../features/auth/components/PublicOnly";
 import Login from "../../features/auth/pages/Login";
 import Register from "../../features/auth/pages/Register";
 import { SetupGuard } from "../../features/setup/SetupGuard";
-import SetupPage from "../../features/setup/SetupPage";
 
+const InvitationAccept = lazy(() => import("../../features/invitations/InvitationAccept"));
+const SetupPage = lazy(() => import("../../features/setup/SetupPage"));
 const Dashboard = lazy(() => import("../../pages/Dashboard"));
 const Stocks = lazy(() => import("../../pages/Stocks"));
 const Predictions = lazy(() => import("../../pages/Predictions"));
