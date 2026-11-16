@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import type { Product } from "../../domain/inventory/product.types";
 import { estimateIncomingRecipeSuggestion } from "../../domain/recipes/recipeSuggestionOutflowPolicy";
-import type { UnestimatedReceivedIngredient } from "../../services/ingredientOutflowEstimateService";
+import type { UnestimatedReceivedIngredient } from "../../../shared/ingredientOutflowEstimate";
 
 interface Props { entry: UnestimatedReceivedIngredient; products: Product[] }
 const quantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);

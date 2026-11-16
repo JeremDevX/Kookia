@@ -1,18 +1,7 @@
-import { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE, roundEstimatedQuantity, splitEstimatedQuantity }
+import { roundEstimatedQuantity, splitEstimatedQuantity }
   from "../../../../shared/ingredientOutflowAssumptions.js";
-
-export { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE };
-
-export interface ReceivedIngredient {
-  id: string;
-  receiptId: string;
-  receiptReference: string;
-  deliveryDate: string;
-  productId: string;
-  productName: string;
-  unit: string;
-  receivedQuantity: number;
-}
+import type { IngredientOutflowEstimate, ReceivedIngredient, UnestimatedReceivedIngredient }
+  from "../../../../shared/ingredientOutflowEstimate.js";
 
 export interface DatedRecipeVersion {
   recipeId: string;
@@ -21,33 +10,6 @@ export interface DatedRecipeVersion {
   effectiveFrom: string;
   yieldPortions: number;
   ingredients: Array<{ productId: string; productName: string; unit: string; quantity: number }>;
-}
-
-export interface IngredientOutflowEstimate {
-  id: string;
-  receiptId: string;
-  receiptReference: string;
-  deliveryDate: string;
-  productId: string;
-  productName: string;
-  unit: string;
-  receivedQuantity: number;
-  recipeId: string;
-  recipeName: string;
-  recipeVersion: number;
-  recipeEffectiveFrom: string;
-  recipeIngredientQuantity: number;
-  yieldPortions: number;
-  possiblePortions: number;
-  estimatedSoldPortions: number;
-  estimatedLossPortions: number;
-  estimatedSoldQuantity: number;
-  estimatedLossQuantity: number;
-  otherIngredientCount: number;
-}
-
-export interface UnestimatedReceivedIngredient extends ReceivedIngredient {
-  reason: "no_dated_compatible_recipe";
 }
 
 function latestVersionsForDate(versions: DatedRecipeVersion[], deliveryDate: string) {

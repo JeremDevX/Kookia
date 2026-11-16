@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { estimateIngredientOutflows, type DatedRecipeVersion, type ReceivedIngredient } from "./ingredientOutflowEstimatePolicy.js";
+import type { ReceivedIngredient } from "../../../../shared/ingredientOutflowEstimate.js";
+import { estimateIngredientOutflows, type DatedRecipeVersion } from "./ingredientOutflowEstimatePolicy.js";
 
 const receipt: ReceivedIngredient = { id: "line-1", receiptId: "receipt-1", receiptReference: "BL-2026-1",
   deliveryDate: "2026-04-10", productId: "tomato", productName: "Tomate", unit: "kg", receivedQuantity: 10 };

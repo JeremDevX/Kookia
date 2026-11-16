@@ -1,4 +1,4 @@
-import type { IngredientOutflowEstimateReport } from "../../services/ingredientOutflowEstimateService";
+import type { IngredientOutflowEstimateReport } from "../../../shared/ingredientOutflowEstimate";
 
 export type StoredEstimateRequest = {
   requestKey: string;

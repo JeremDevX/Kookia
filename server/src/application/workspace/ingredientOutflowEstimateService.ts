@@ -1,6 +1,8 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE, estimateIngredientOutflows } from "./ingredientOutflowEstimatePolicy.js";
+import { ESTIMATED_LOSS_SHARE, ESTIMATED_SALES_SHARE } from "../../../../shared/ingredientOutflowAssumptions.js";
+import type { IngredientOutflowEstimateReport } from "../../../../shared/ingredientOutflowEstimate.js";
+import { estimateIngredientOutflows } from "./ingredientOutflowEstimatePolicy.js";
 
 type EstimateDatabase = PrismaClient | Prisma.TransactionClient;
 const dateAt = (value: string) => new Date(`${value}T00:00:00.000Z`);
@@ -8,7 +10,7 @@ const nextDate = (value: string) => new Date(dateAt(value).getTime() + 86_400_00
 const dateOnly = (value: Date) => value.toISOString().slice(0, 10);
 
 export async function getIngredientOutflowEstimates(restaurantId: string, from: string, to: string,
-  db: EstimateDatabase = prisma) {
+  db: EstimateDatabase = prisma): Promise<IngredientOutflowEstimateReport> {
   const [receiptLines, recipeVersions] = await Promise.all([
     db.purchaseReceiptLine.findMany({
       where: { restaurantId, receivedQuantity: { gt: 0 }, receipt: {

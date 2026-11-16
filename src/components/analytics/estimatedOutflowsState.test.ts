@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { IngredientOutflowEstimateReport } from "../../services/ingredientOutflowEstimateService";
+import type { IngredientOutflowEstimateReport } from "../../../shared/ingredientOutflowEstimate";
 import { currentEstimateRequest } from "./estimatedOutflowsState";
 
 const report = { from: "2026-01-01", to: "2026-01-31", assumptions: { estimatedSalesShare: 0.9, estimatedLossShare: 0.1 },
