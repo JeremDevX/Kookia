@@ -11,27 +11,20 @@ export const weatherRoutes = Router();
 export const weatherProviderFor = (res: Response) => res.locals.weatherProvider as WeatherProvider;
 const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const query = z.object({ date: z.iso.date(), slot: slotSchema }).strict();
-weatherRoutes.get("/weather/location", async (_req, res, next) => {
-  try { res.json(await getWeatherLocation(context(res).restaurantId, weatherProviderFor(res).configured)); }
-  catch (error) { next(error); }
+weatherRoutes.get("/weather/location", async (_req, res) => {
+  res.json(await getWeatherLocation(context(res).restaurantId, weatherProviderFor(res).configured));
 });
-weatherRoutes.get("/weather/places", rateLimit(30, 60_000), async (req, res, next) => {
-  try {
-    const { q } = z.object({ q: z.string().trim().min(2).max(120) }).strict().parse(req.query);
-    res.json({ places: await weatherProviderFor(res).search(q) });
-  } catch (error) { next(error); }
+weatherRoutes.get("/weather/places", rateLimit(30, 60_000), async (req, res) => {
+  const { q } = z.object({ q: z.string().trim().min(2).max(120) }).strict().parse(req.query);
+  res.json({ places: await weatherProviderFor(res).search(q) });
 });
-weatherRoutes.post("/weather/location", rateLimit(20, 60_000), async (req, res, next) => {
-  try {
-    const { restaurantId, actorId } = context(res);
-    res.json(await confirmWeatherLocation(restaurantId, actorId, confirmWeatherPositionSchema.parse(req.body), weatherProviderFor(res)));
-  } catch (error) { next(error); }
+weatherRoutes.post("/weather/location", rateLimit(20, 60_000), async (req, res) => {
+  const { restaurantId, actorId } = context(res);
+  res.json(await confirmWeatherLocation(restaurantId, actorId, confirmWeatherPositionSchema.parse(req.body), weatherProviderFor(res)));
 });
-weatherRoutes.get("/services/weather", async (req, res, next) => {
-  try {
-    const { date, slot } = query.parse(req.query);
-    res.json(await getServiceWeather(context(res).restaurantId, date, slot, weatherProviderFor(res)));
-  } catch (error) { next(error); }
+weatherRoutes.get("/services/weather", async (req, res) => {
+  const { date, slot } = query.parse(req.query);
+  res.json(await getServiceWeather(context(res).restaurantId, date, slot, weatherProviderFor(res)));
 });
 weatherRoutes.use((error: unknown, _req: import("express").Request, res: Response, next: import("express").NextFunction) => {
   if (!(error instanceof WeatherProviderError)) { next(error); return; }

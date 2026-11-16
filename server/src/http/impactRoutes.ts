@@ -13,11 +13,9 @@ const periodSchema = z.object({ from: z.iso.date(), to: z.iso.date(), monthly: z
     (period.monthlyPage ?? 0) < impactMonthPageCount(period.from, period.to),
   { message: "La page mensuelle est hors de la période sélectionnée.", path: ["monthlyPage"] });
 
-impactRoutes.get("/impact", async (req, res, next) => {
-  try {
-    const period = periodSchema.parse(req.query);
-    const restaurantId = (res.locals.workspace as { restaurantId: string }).restaurantId;
-    res.json(await getImpactReport(restaurantId, period.from, period.to, undefined,
-      { includeMonthly: period.monthly === "true", monthlyPage: period.monthlyPage }));
-  } catch (error) { next(error); }
+impactRoutes.get("/impact", async (req, res) => {
+  const period = periodSchema.parse(req.query);
+  const restaurantId = (res.locals.workspace as { restaurantId: string }).restaurantId;
+  res.json(await getImpactReport(restaurantId, period.from, period.to, undefined,
+    { includeMonthly: period.monthly === "true", monthlyPage: period.monthlyPage }));
 });

@@ -30,174 +30,139 @@ const parsePeriod = (req: Request) => {
   return period.parse({ from: req.query.from ?? start, to: req.query.to ?? end });
 };
 
-salesRoutes.get("/sales", async (req, res, next) => {
-  try {
-    const query = parsePeriod(req);
-    res.json(await listSales(workspace(res).restaurantId, query.from, query.to));
-  } catch (error) { next(error); }
+salesRoutes.get("/sales", async (req, res) => {
+  const query = parsePeriod(req);
+  res.json(await listSales(workspace(res).restaurantId, query.from, query.to));
 });
-salesRoutes.get("/sales/contributions", async (req, res, next) => {
-  try {
-    const { from, to } = parsePeriod(req);
-    res.json(await listSaleContributions(workspace(res).restaurantId, from, to));
-  } catch (error) { next(error); }
+salesRoutes.get("/sales/contributions", async (req, res) => {
+  const { from, to } = parsePeriod(req);
+  res.json(await listSaleContributions(workspace(res).restaurantId, from, to));
 });
-salesRoutes.get("/sales/latest", async (_req, res, next) => {
-  try { res.json(await latestService(workspace(res).restaurantId)); } catch (error) { next(error); }
+salesRoutes.get("/sales/latest", async (_req, res) => {
+  res.json(await latestService(workspace(res).restaurantId));
 });
-salesRoutes.get("/sales/service-days", async (req, res, next) => {
-  try {
-    const { from, to } = parsePeriod(req);
-    res.json(await listServiceDays(workspace(res).restaurantId, from, to));
-  } catch (error) { next(error); }
+salesRoutes.get("/sales/service-days", async (req, res) => {
+  const { from, to } = parsePeriod(req);
+  res.json(await listServiceDays(workspace(res).restaurantId, from, to));
 });
 const serviceDayValues = z.object({ expectedRevision: z.number().int().min(0),
   status: z.enum(["open", "closed"]), coverage: z.enum(["complete", "partial", "missing"]) }).strict()
   .refine((day) => day.status !== "closed" || day.coverage === "complete", { message: "Un jour fermé doit être confirmé comme complet." });
-salesRoutes.put("/sales/service-days/:date", async (req, res, next) => {
-  try {
-    const serviceDate = z.iso.date().parse(req.params.date);
-    if (serviceDate > formatParisDate()) throw new WorkspaceError(400, "FUTURE_SERVICE_DATE", "La date de service ne peut pas être future.");
-    const input = serviceDayValues.parse(req.body);
-    const { restaurantId, actorId } = workspace(res);
-    res.json(await saveServiceDay(restaurantId, actorId, serviceDate, input.expectedRevision, input.status, input.coverage));
-  } catch (error) { next(error); }
+salesRoutes.put("/sales/service-days/:date", async (req, res) => {
+  const serviceDate = z.iso.date().parse(req.params.date);
+  if (serviceDate > formatParisDate()) throw new WorkspaceError(400, "FUTURE_SERVICE_DATE", "La date de service ne peut pas être future.");
+  const input = serviceDayValues.parse(req.body);
+  const { restaurantId, actorId } = workspace(res);
+  res.json(await saveServiceDay(restaurantId, actorId, serviceDate, input.expectedRevision, input.status, input.coverage));
 });
-salesRoutes.get("/sales/metrics", async (req, res, next) => {
-  try {
-    const { from, to } = parsePeriod(req);
-    const duration = Date.parse(to) - Date.parse(from) + 86_400_000;
-    const previousTo = new Date(Date.parse(from) - 86_400_000).toISOString().slice(0, 10);
-    const previousFrom = new Date(Date.parse(from) - duration).toISOString().slice(0, 10);
-    const { restaurantId } = workspace(res);
-    const start = new Date(`${previousFrom}T00:00:00Z`), end = new Date(`${to}T00:00:00Z`);
-    const [rows, serviceDays] = await Promise.all([
-      prisma.dailySale.findMany({ where: { restaurantId, source: { in: ["manual", "csv", "pos", "ticket_z", "demo_simulation"] },
-        serviceDate: { gte: start, lte: end } }, include: { saleItem: { select: { name: true } } } }),
-      prisma.serviceDay.findMany({ where: { restaurantId, serviceDate: { gte: start, lte: end } },
-        select: { serviceDate: true, status: true, coverage: true } }),
-    ]);
-    const mapped = rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
-      saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity,
-      source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : row.source === "pos" ? "pos" as const : row.source === "ticket_z" ? "ticket_z" as const : "manual" as const,
-      revision: row.revision }));
-    const mappedDays = serviceDays.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
-      status: row.status, coverage: row.coverage }));
-    res.json(calculateSalesMetrics(mapped.filter((row) => row.serviceDate >= from),
-      mapped.filter((row) => row.serviceDate < from), mappedDays.filter((row) => row.serviceDate >= from),
-      mappedDays.filter((row) => row.serviceDate < from), from, to, previousFrom, previousTo));
-  } catch (error) { next(error); }
+salesRoutes.get("/sales/metrics", async (req, res) => {
+  const { from, to } = parsePeriod(req);
+  const duration = Date.parse(to) - Date.parse(from) + 86_400_000;
+  const previousTo = new Date(Date.parse(from) - 86_400_000).toISOString().slice(0, 10);
+  const previousFrom = new Date(Date.parse(from) - duration).toISOString().slice(0, 10);
+  const { restaurantId } = workspace(res);
+  const start = new Date(`${previousFrom}T00:00:00Z`), end = new Date(`${to}T00:00:00Z`);
+  const [rows, serviceDays] = await Promise.all([
+    prisma.dailySale.findMany({ where: { restaurantId, source: { in: ["manual", "csv", "pos", "ticket_z", "demo_simulation"] },
+      serviceDate: { gte: start, lte: end } }, include: { saleItem: { select: { name: true } } } }),
+    prisma.serviceDay.findMany({ where: { restaurantId, serviceDate: { gte: start, lte: end } },
+      select: { serviceDate: true, status: true, coverage: true } }),
+  ]);
+  const mapped = rows.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
+    saleItemId: row.saleItemId, saleItemName: row.saleItem.name, quantity: row.quantity,
+    source: row.source === "demo_simulation" ? "demo_simulation" as const : row.source === "csv" ? "csv" as const : row.source === "pos" ? "pos" as const : row.source === "ticket_z" ? "ticket_z" as const : "manual" as const,
+    revision: row.revision }));
+  const mappedDays = serviceDays.map((row) => ({ serviceDate: row.serviceDate.toISOString().slice(0, 10),
+    status: row.status, coverage: row.coverage }));
+  res.json(calculateSalesMetrics(mapped.filter((row) => row.serviceDate >= from),
+    mapped.filter((row) => row.serviceDate < from), mappedDays.filter((row) => row.serviceDate >= from),
+    mappedDays.filter((row) => row.serviceDate < from), from, to, previousFrom, previousTo));
 });
-salesRoutes.get("/sales/baseline", async (_req, res, next) => {
-  try {
-    const { restaurantId } = workspace(res);
-    res.json(await getSalesBaseline(restaurantId, previousParisDay()));
-  } catch (error) { next(error); }
+salesRoutes.get("/sales/baseline", async (_req, res) => {
+  const { restaurantId } = workspace(res);
+  res.json(await getSalesBaseline(restaurantId, previousParisDay()));
 });
-salesRoutes.get("/sales/items", async (_req, res, next) => {
-  try { res.json(await listSaleItems(workspace(res).restaurantId)); } catch (error) { next(error); }
+salesRoutes.get("/sales/items", async (_req, res) => {
+  res.json(await listSaleItems(workspace(res).restaurantId));
 });
-salesRoutes.post("/sales/items", async (req, res, next) => {
-  try {
-    const { name } = z.object({ name: z.string().trim().min(1).max(120) }).strict().parse(req.body);
-    res.status(201).json(await createSaleItem(workspace(res).restaurantId, name));
-  } catch (error) { next(error); }
+salesRoutes.post("/sales/items", async (req, res) => {
+  const { name } = z.object({ name: z.string().trim().min(1).max(120) }).strict().parse(req.body);
+  res.status(201).json(await createSaleItem(workspace(res).restaurantId, name));
 });
-salesRoutes.get("/sales/recipe-mappings", async (_req, res, next) => {
-  try { res.json(await listSaleRecipeMappings(workspace(res).restaurantId)); } catch (error) { next(error); }
+salesRoutes.get("/sales/recipe-mappings", async (_req, res) => {
+  res.json(await listSaleRecipeMappings(workspace(res).restaurantId));
 });
 const saleRecipeMapping = z.object({ saleItemId: z.uuid(), recipeId: z.string().trim().min(1).max(100), expectedRevision: z.number().int().min(0),
   operationId: z.uuid(), effectiveFrom: z.iso.date(), portionsPerItem: z.number().positive().max(1_000_000)
     .refine((value) => Math.abs(value * 1000 - Math.round(value * 1000)) < 1e-7,
       { message: "Le nombre de portions doit avoir au plus trois décimales." }) }).strict();
-salesRoutes.post("/sales/recipe-mappings", async (req, res, next) => {
-  try {
-    const input = saleRecipeMapping.parse(req.body);
-    const { restaurantId, actorId } = workspace(res);
-    res.status(201).json(await createSaleRecipeMapping(restaurantId, actorId, input));
-  } catch (error) { next(error); }
+salesRoutes.post("/sales/recipe-mappings", async (req, res) => {
+  const input = saleRecipeMapping.parse(req.body);
+  const { restaurantId, actorId } = workspace(res);
+  res.status(201).json(await createSaleRecipeMapping(restaurantId, actorId, input));
 });
 const importBody = z.object({ csv: z.string().min(1).max(256_000), mapping: z.record(z.string(), z.uuid()) }).strict();
-salesRoutes.post("/sales/imports/preview", async (req, res, next) => {
-  try {
-    const { csv, mapping } = importBody.parse(req.body);
-    res.json(await previewSalesImport(workspace(res).restaurantId, csv, mapping, formatParisDate()));
-  } catch (error) { next(error); }
+salesRoutes.post("/sales/imports/preview", async (req, res) => {
+  const { csv, mapping } = importBody.parse(req.body);
+  res.json(await previewSalesImport(workspace(res).restaurantId, csv, mapping, formatParisDate()));
 });
-salesRoutes.post("/sales/imports", async (req, res, next) => {
-  try {
-    const { csv, mapping, expectedHash } = importBody.safeExtend({ expectedHash: z.string().regex(/^[0-9a-f]{64}$/) }).parse(req.body);
-    const { restaurantId, actorId } = workspace(res);
-    res.status(201).json(await commitSalesImport(restaurantId, actorId, csv, mapping, expectedHash, formatParisDate()));
-  } catch (error) { next(error); }
+salesRoutes.post("/sales/imports", async (req, res) => {
+  const { csv, mapping, expectedHash } = importBody.safeExtend({ expectedHash: z.string().regex(/^[0-9a-f]{64}$/) }).parse(req.body);
+  const { restaurantId, actorId } = workspace(res);
+  res.status(201).json(await commitSalesImport(restaurantId, actorId, csv, mapping, expectedHash, formatParisDate()));
 });
-salesRoutes.post("/sales", async (req, res, next) => {
-  try {
-    const { operationId, ...input } = saleValues.safeExtend({ operationId: z.uuid() }).parse(req.body);
-    const { restaurantId, actorId } = workspace(res);
-    res.status(201).json(await createSale(restaurantId, actorId, operationId, input));
-  } catch (error) { next(error); }
+salesRoutes.post("/sales", async (req, res) => {
+  const { operationId, ...input } = saleValues.safeExtend({ operationId: z.uuid() }).parse(req.body);
+  const { restaurantId, actorId } = workspace(res);
+  res.status(201).json(await createSale(restaurantId, actorId, operationId, input));
 });
-salesRoutes.patch("/sales/:id", async (req, res, next) => {
-  try {
-    const id = z.uuid().parse(req.params.id);
-    const { revision, operationId, reason, ...input } = saleValues.safeExtend({ revision: z.number().int().min(0),
-      operationId: z.uuid(), reason: z.string().trim().min(1).max(240) }).parse(req.body);
-    const { restaurantId, actorId } = workspace(res);
-    res.json(await correctSale(restaurantId, actorId, id, revision, input, operationId, reason));
-  } catch (error) { next(error); }
+salesRoutes.patch("/sales/:id", async (req, res) => {
+  const id = z.uuid().parse(req.params.id);
+  const { revision, operationId, reason, ...input } = saleValues.safeExtend({ revision: z.number().int().min(0),
+    operationId: z.uuid(), reason: z.string().trim().min(1).max(240) }).parse(req.body);
+  const { restaurantId, actorId } = workspace(res);
+  res.json(await correctSale(restaurantId, actorId, id, revision, input, operationId, reason));
 });
 const contributionReview = z.object({ expectedRevision: z.number().int().min(0),
   decision: z.enum(["replace", "keep", "reject"]), operationId: z.uuid(), reason: z.string().trim().min(1).max(240),
   saleItemId: z.uuid().optional() }).strict();
-salesRoutes.post("/sales/contributions/:id/review", async (req, res, next) => {
-  try {
-    const id = z.uuid().parse(req.params.id), input = contributionReview.parse(req.body);
-    const { restaurantId, actorId } = workspace(res);
-    res.json(await reviewSaleContribution(restaurantId, actorId, id, input.expectedRevision,
-      input.decision, input.operationId, input.reason, input.saleItemId));
-  } catch (error) { next(error); }
+salesRoutes.post("/sales/contributions/:id/review", async (req, res) => {
+  const id = z.uuid().parse(req.params.id), input = contributionReview.parse(req.body);
+  const { restaurantId, actorId } = workspace(res);
+  res.json(await reviewSaleContribution(restaurantId, actorId, id, input.expectedRevision,
+    input.decision, input.operationId, input.reason, input.saleItemId));
 });
-salesRoutes.post("/sales/pos/sync", async (req, res, next) => {
-  try {
-    const { restaurantId, actorId } = workspace(res);
-    const result = await syncPosSales(restaurantId, actorId, req.body, unconfiguredPosAdapter);
-    if (result.status === "unavailable") {
-      res.status(503).json({ status: result.reason === "not_configured" ? "not_connected" : "degraded", reason: result.reason });
-      return;
-    }
-    res.json(result);
-  } catch (error) { next(error); }
+salesRoutes.post("/sales/pos/sync", async (req, res) => {
+  const { restaurantId, actorId } = workspace(res);
+  const result = await syncPosSales(restaurantId, actorId, req.body, unconfiguredPosAdapter);
+  if (result.status === "unavailable") {
+    res.status(503).json({ status: result.reason === "not_configured" ? "not_connected" : "degraded", reason: result.reason });
+    return;
+  }
+  res.json(result);
 });
-salesRoutes.post("/sales/tickets/upload", express.raw({ type: ["application/pdf", "image/jpeg", "image/png"], limit: "4mb", inflate: false }), async (req, res, next) => {
-  try {
-    const { restaurantId, actorId } = workspace(res);
-    const metadata = inspectTicketZUpload(req.get("content-type"), req.body);
-    res.status(201).json(await registerTicketZUpload(restaurantId, actorId, metadata));
-  } catch (error) { next(error); }
+salesRoutes.post("/sales/tickets/upload", express.raw({ type: ["application/pdf", "image/jpeg", "image/png"], limit: "4mb", inflate: false }), async (req, res) => {
+  const { restaurantId, actorId } = workspace(res);
+  const metadata = inspectTicketZUpload(req.get("content-type"), req.body);
+  res.status(201).json(await registerTicketZUpload(restaurantId, actorId, metadata));
 });
-salesRoutes.get("/sales/tickets", async (_req, res, next) => {
-  try { res.json(await listTicketZBatches(workspace(res).restaurantId)); } catch (error) { next(error); }
+salesRoutes.get("/sales/tickets", async (_req, res) => {
+  res.json(await listTicketZBatches(workspace(res).restaurantId));
 });
-salesRoutes.post("/sales/tickets/:id/candidates", async (req, res, next) => {
-  try {
-    const { restaurantId, actorId } = workspace(res);
-    res.status(201).json(await createTicketZCandidates(restaurantId, actorId, z.uuid().parse(req.params.id), req.body));
-  } catch (error) { next(error); }
+salesRoutes.post("/sales/tickets/:id/candidates", async (req, res) => {
+  const { restaurantId, actorId } = workspace(res);
+  res.status(201).json(await createTicketZCandidates(restaurantId, actorId, z.uuid().parse(req.params.id), req.body));
 });
-salesRoutes.delete("/sales/tickets/:id", async (req, res, next) => {
-  try { await deleteUnusedTicketZBatch(workspace(res).restaurantId, z.uuid().parse(req.params.id)); res.status(204).send(); }
-  catch (error) { next(error); }
+salesRoutes.delete("/sales/tickets/:id", async (req, res) => {
+  await deleteUnusedTicketZBatch(workspace(res).restaurantId, z.uuid().parse(req.params.id)); res.status(204).send();
 });
 const outcomeBody = z.object({ expectedRevision: z.number().int().min(0), operationId: z.uuid(),
   reason: z.string().trim().min(1).max(240) }).strict();
 for (const kind of ["voided", "refund_recorded"] as const) {
-  salesRoutes.post(`/sales/:id/${kind === "voided" ? "void" : "refund"}`, async (req, res, next) => {
-    try {
-      const id = z.uuid().parse(req.params.id), input = outcomeBody.parse(req.body);
-      const { restaurantId, actorId } = workspace(res);
-      res.json(await recordSaleOutcome(restaurantId, actorId, id, input.expectedRevision,
-        kind, input.operationId, input.reason));
-    } catch (error) { next(error); }
+  salesRoutes.post(`/sales/:id/${kind === "voided" ? "void" : "refund"}`, async (req, res) => {
+    const id = z.uuid().parse(req.params.id), input = outcomeBody.parse(req.body);
+    const { restaurantId, actorId } = workspace(res);
+    res.json(await recordSaleOutcome(restaurantId, actorId, id, input.expectedRevision,
+      kind, input.operationId, input.reason));
   });
 }

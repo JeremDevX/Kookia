@@ -37,15 +37,13 @@ const context = (res: Response): WorkspaceContext => res.locals.workspace as Wor
 
 export const workspaceRoutes = Router();
 workspaceRoutes.use(async (req, res, next) => {
-  try {
-    const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
-    if (req.get("X-Expected-User-Id") !== user.id) { res.status(409).json({ error: { code: "SESSION_CHANGED", message: "Votre session a changé. Rechargez la page avant de continuer." } }); return; }
-    const workspace = await resolveWorkspace(user.id);
-    if (!workspace) { res.status(409).json({ error: { code: "SETUP_REQUIRED", message: "Créez votre établissement pour accéder à votre espace." } }); return; }
-    if (!canAccessWorkspace(workspace.role, req.method, `${req.baseUrl}${req.path}`)) { res.status(403).json({ error: { code: "FORBIDDEN", message: "Vous ne pouvez pas effectuer cette action." } }); return; }
-    res.locals.workspace = { restaurantId: workspace.restaurantId, actorId: user.id };
-    next();
-  } catch (error) { next(error); }
+  const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
+  if (req.get("X-Expected-User-Id") !== user.id) { res.status(409).json({ error: { code: "SESSION_CHANGED", message: "Votre session a changé. Rechargez la page avant de continuer." } }); return; }
+  const workspace = await resolveWorkspace(user.id);
+  if (!workspace) { res.status(409).json({ error: { code: "SETUP_REQUIRED", message: "Créez votre établissement pour accéder à votre espace." } }); return; }
+  if (!canAccessWorkspace(workspace.role, req.method, `${req.baseUrl}${req.path}`)) { res.status(403).json({ error: { code: "FORBIDDEN", message: "Vous ne pouvez pas effectuer cette action." } }); return; }
+  res.locals.workspace = { restaurantId: workspace.restaurantId, actorId: user.id };
+  next();
 });
 
 workspaceRoutes.use("/invitations", invitationOwnerRoutes);
@@ -96,59 +94,49 @@ const stockCountSchema = z.object({
   expectedUnit: z.enum(["kg", "L", "dz", "pcs"]), countedQuantity: quantity,
 }).strict();
 
-workspaceRoutes.get("/catalog", async (_req, res, next) => {
-  try { res.json(await getCatalog(context(res).restaurantId)); } catch (error) { next(error); }
+workspaceRoutes.get("/catalog", async (_req, res) => {
+  res.json(await getCatalog(context(res).restaurantId));
 });
-workspaceRoutes.post("/products", async (req, res, next) => {
-  try {
-    const { operationId, ...data } = newProductSchema.parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    res.status(201).json(await createProduct(restaurantId, actorId, data, operationId));
-  } catch (error) { next(error); }
+workspaceRoutes.post("/products", async (req, res) => {
+  const { operationId, ...data } = newProductSchema.parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  res.status(201).json(await createProduct(restaurantId, actorId, data, operationId));
 });
-workspaceRoutes.patch("/products/:id", async (req, res, next) => {
-  try {
-    const data = editProductSchema.parse(req.body);
-    res.json(await editProduct(context(res).restaurantId, String(req.params.id), data));
-  } catch (error) { next(error); }
+workspaceRoutes.patch("/products/:id", async (req, res) => {
+  const data = editProductSchema.parse(req.body);
+  res.json(await editProduct(context(res).restaurantId, String(req.params.id), data));
 });
-workspaceRoutes.get("/products/:id/counts", async (req, res, next) => {
-  try { res.json(await getStockCounts(context(res).restaurantId, String(req.params.id))); } catch (error) { next(error); }
+workspaceRoutes.get("/products/:id/counts", async (req, res) => {
+  res.json(await getStockCounts(context(res).restaurantId, String(req.params.id)));
 });
-workspaceRoutes.post("/products/:id/counts", async (req, res, next) => {
-  try {
-    const input = stockCountSchema.parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    res.status(201).json(await recordStockCount(restaurantId, actorId, String(req.params.id), input));
-  } catch (error) { next(error); }
+workspaceRoutes.post("/products/:id/counts", async (req, res) => {
+  const input = stockCountSchema.parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  res.status(201).json(await recordStockCount(restaurantId, actorId, String(req.params.id), input));
 });
-workspaceRoutes.post("/products/:id/stock", async (req, res, next) => {
-  try {
-    const data = stockSchema.parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== restaurantId) { res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return; }
-    res.json(await adjustStock(restaurantId, actorId, String(req.params.id), data.delta, data.operationId, data.reason, data.expectedStockRevision, data.expectedUnit));
-  } catch (error) { next(error); }
+workspaceRoutes.post("/products/:id/stock", async (req, res) => {
+  const data = stockSchema.parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== restaurantId) { res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return; }
+  res.json(await adjustStock(restaurantId, actorId, String(req.params.id), data.delta, data.operationId, data.reason, data.expectedStockRevision, data.expectedUnit));
 });
-workspaceRoutes.get("/products/:id/movements", async (req, res, next) => {
-  try {
-    const data = await prisma.stockMovement.findMany({ where: { restaurantId: context(res).restaurantId, productId: String(req.params.id) }, orderBy: { createdAt: "desc" } });
-    res.json(data.map((movement) => {
-      const legacySourceId = movement.operationId.match(/^restaurant-simulation-v1:invoice:([a-f0-9]{24}):/)?.[1];
-      return { id: movement.id, delta: Number(movement.delta), reason: movement.reason, createdAt: movement.createdAt,
-        ...(movement.sourceDocumentId ?? legacySourceId ? { sourceDocumentId: movement.sourceDocumentId ?? legacySourceId } : {}),
-        ...(movement.sourceContentHash ? { sourceContentHash: movement.sourceContentHash } : {}),
-        ...(movement.sourceDocumentRevision !== null ? { sourceDocumentRevision: movement.sourceDocumentRevision } : {}),
-        ...(movement.invoiceDocumentId ? { invoiceDocumentId: movement.invoiceDocumentId } : {}),
-        ...(movement.invoiceRevision !== null ? { invoiceRevision: movement.invoiceRevision } : {}),
-        ...(movement.stockCountId ? { stockCountId: movement.stockCountId } : {}),
-        ...(movement.purchaseReceiptLineId ? { purchaseReceiptLineId: movement.purchaseReceiptLineId } : {}),
-      };
-    }));
-  } catch (error) { next(error); }
+workspaceRoutes.get("/products/:id/movements", async (req, res) => {
+  const data = await prisma.stockMovement.findMany({ where: { restaurantId: context(res).restaurantId, productId: String(req.params.id) }, orderBy: { createdAt: "desc" } });
+  res.json(data.map((movement) => {
+    const legacySourceId = movement.operationId.match(/^restaurant-simulation-v1:invoice:([a-f0-9]{24}):/)?.[1];
+    return { id: movement.id, delta: Number(movement.delta), reason: movement.reason, createdAt: movement.createdAt,
+      ...(movement.sourceDocumentId ?? legacySourceId ? { sourceDocumentId: movement.sourceDocumentId ?? legacySourceId } : {}),
+      ...(movement.sourceContentHash ? { sourceContentHash: movement.sourceContentHash } : {}),
+      ...(movement.sourceDocumentRevision !== null ? { sourceDocumentRevision: movement.sourceDocumentRevision } : {}),
+      ...(movement.invoiceDocumentId ? { invoiceDocumentId: movement.invoiceDocumentId } : {}),
+      ...(movement.invoiceRevision !== null ? { invoiceRevision: movement.invoiceRevision } : {}),
+      ...(movement.stockCountId ? { stockCountId: movement.stockCountId } : {}),
+      ...(movement.purchaseReceiptLineId ? { purchaseReceiptLineId: movement.purchaseReceiptLineId } : {}),
+    };
+  }));
 });
-workspaceRoutes.get("/recipes", async (_req, res, next) => {
-  try { res.json(await getRecipes(context(res).restaurantId)); } catch (error) { next(error); }
+workspaceRoutes.get("/recipes", async (_req, res) => {
+  res.json(await getRecipes(context(res).restaurantId));
 });
 const recipeIngredientSchema = z.object({ productId: z.string().trim().min(1).max(100),
   quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001),
@@ -166,51 +154,41 @@ const recipeCandidateInputSchema = recipeValuesSchema.omit({ steps: true }).exte
   productId: z.string().trim().min(1).max(100), quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001),
   sourceDocumentId: z.string().regex(/^[a-f0-9]{24}$/), sourceLineNumber: z.number().int().positive(),
 }).strict()).min(1).max(100) }).strict();
-workspaceRoutes.post("/recipes", async (req, res, next) => {
-  try {
-    const { operationId, sourceReceiptLineId, ...input } = recipeCreateSchema.parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    res.status(201).json(await createRecipe(restaurantId, actorId, operationId, input, sourceReceiptLineId));
-  } catch (error) { next(error); }
+workspaceRoutes.post("/recipes", async (req, res) => {
+  const { operationId, sourceReceiptLineId, ...input } = recipeCreateSchema.parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  res.status(201).json(await createRecipe(restaurantId, actorId, operationId, input, sourceReceiptLineId));
 });
-workspaceRoutes.patch("/recipes/:id", async (req, res, next) => {
-  try {
-    const { operationId, expectedRevision, ...values } = recipeMutationSchema.safeExtend({
-      expectedRevision: z.number().int().positive(),
-    }).parse(req.body);
-    const id = z.string().trim().min(1).max(100).parse(req.params.id);
-    const { restaurantId, actorId } = context(res);
-    res.json(await updateRecipe(restaurantId, actorId, id, expectedRevision, operationId, values));
-  } catch (error) { next(error); }
+workspaceRoutes.patch("/recipes/:id", async (req, res) => {
+  const { operationId, expectedRevision, ...values } = recipeMutationSchema.safeExtend({
+    expectedRevision: z.number().int().positive(),
+  }).parse(req.body);
+  const id = z.string().trim().min(1).max(100).parse(req.params.id);
+  const { restaurantId, actorId } = context(res);
+  res.json(await updateRecipe(restaurantId, actorId, id, expectedRevision, operationId, values));
 });
-workspaceRoutes.get("/recipe-candidates", async (_req, res, next) => {
-  try { res.json(await getRecipeCandidates(context(res).restaurantId)); } catch (error) { next(error); }
+workspaceRoutes.get("/recipe-candidates", async (_req, res) => {
+  res.json(await getRecipeCandidates(context(res).restaurantId));
 });
-workspaceRoutes.post("/recipe-candidates", async (req, res, next) => {
-  try {
-    const { operationId, ...input } = recipeCandidateInputSchema.extend({ operationId: z.uuid() }).parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    res.status(201).json(await createRecipeCandidate(restaurantId, actorId, operationId, input));
-  } catch (error) { next(error); }
+workspaceRoutes.post("/recipe-candidates", async (req, res) => {
+  const { operationId, ...input } = recipeCandidateInputSchema.extend({ operationId: z.uuid() }).parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  res.status(201).json(await createRecipeCandidate(restaurantId, actorId, operationId, input));
 });
-workspaceRoutes.patch("/recipe-candidates/:id", async (req, res, next) => {
-  try {
-    const { operationId, expectedRevision, ...input } = recipeCandidateInputSchema.extend({
-      operationId: z.uuid(), expectedRevision: z.number().int().positive(),
-    }).parse(req.body);
-    const id = z.uuid().parse(req.params.id);
-    const { restaurantId, actorId } = context(res);
-    res.json(await updateRecipeCandidate(restaurantId, actorId, id, expectedRevision, operationId, input));
-  } catch (error) { next(error); }
+workspaceRoutes.patch("/recipe-candidates/:id", async (req, res) => {
+  const { operationId, expectedRevision, ...input } = recipeCandidateInputSchema.extend({
+    operationId: z.uuid(), expectedRevision: z.number().int().positive(),
+  }).parse(req.body);
+  const id = z.uuid().parse(req.params.id);
+  const { restaurantId, actorId } = context(res);
+  res.json(await updateRecipeCandidate(restaurantId, actorId, id, expectedRevision, operationId, input));
 });
-workspaceRoutes.post("/recipe-candidates/:id/decision", async (req, res, next) => {
-  try {
-    const { operationId, expectedRevision, action } = z.object({ operationId: z.uuid(),
-      expectedRevision: z.number().int().positive(), action: z.enum(["confirm", "reject"]) }).strict().parse(req.body);
-    const id = z.uuid().parse(req.params.id);
-    const { restaurantId, actorId } = context(res);
-    res.json(await decideRecipeCandidate(restaurantId, actorId, id, expectedRevision, operationId, action));
-  } catch (error) { next(error); }
+workspaceRoutes.post("/recipe-candidates/:id/decision", async (req, res) => {
+  const { operationId, expectedRevision, action } = z.object({ operationId: z.uuid(),
+    expectedRevision: z.number().int().positive(), action: z.enum(["confirm", "reject"]) }).strict().parse(req.body);
+  const id = z.uuid().parse(req.params.id);
+  const { restaurantId, actorId } = context(res);
+  res.json(await decideRecipeCandidate(restaurantId, actorId, id, expectedRevision, operationId, action));
 });
 const productionSchema = z.object({
   operationId: z.uuid(), recipeId: z.string().min(1).max(100).optional(),
@@ -224,17 +202,15 @@ const productionSchema = z.object({
       (data.recipeId !== undefined && data.expectedRecipeRevision !== undefined)
     : data.recipeId !== undefined && data.expectedRecipeRevision !== undefined)
   .refine((data) => data.date <= formatParisDate());
-workspaceRoutes.get("/productions", async (_req, res, next) => {
-  try { res.json(await prisma.production.findMany({ where: { restaurantId: context(res).restaurantId },
+workspaceRoutes.get("/productions", async (_req, res) => {
+  res.json(await prisma.production.findMany({ where: { restaurantId: context(res).restaurantId },
     include: { recipeVersion: { select: { version: true, effectiveFrom: true, yieldPortions: true } } },
-    orderBy: { date: "desc" } })); } catch (error) { next(error); }
+    orderBy: { date: "desc" } }));
 });
-workspaceRoutes.post("/productions", async (req, res, next) => {
-  try {
-    const input = productionSchema.parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    res.status(201).json(await recordProduction(restaurantId, actorId, input));
-  } catch (error) { next(error); }
+workspaceRoutes.post("/productions", async (req, res) => {
+  const input = productionSchema.parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  res.status(201).json(await recordProduction(restaurantId, actorId, input));
 });
 workspaceRoutes.use((error: unknown, _req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
   if (error instanceof z.ZodError) { res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données fournies sont invalides." } }); return; }

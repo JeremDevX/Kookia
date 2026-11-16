@@ -16,15 +16,13 @@ const allowedTransitions: Record<z.infer<typeof stepSchema>, (z.infer<typeof ste
 const sessionChanged = (res: import("express").Response) => res.status(409).json({ error: { code: "SESSION_CHANGED", message: "Votre session a changé. Rechargez la page avant de continuer." } });
 
 export const setupRoutes = Router();
-setupRoutes.get("/", async (req, res, next) => {
-  try {
-    const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
-    const workspace = await resolveWorkspace(user.id);
-    const document = workspace?.role === "owner" ? await prisma.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: workspace.restaurantId, kind: "onboarding" } } }) : null;
-    const step = document ? progressSchema.parse(document.data).step : null;
-    res.json({ configured: workspace !== null, userId: user.id, step, revision: document?.revision ?? 0,
-      role: workspace?.role ?? null, restaurantName: workspace?.restaurantName ?? null, capabilities: workspace ? workspaceCapabilities(workspace.role) : null });
-  } catch (error) { next(error); }
+setupRoutes.get("/", async (req, res) => {
+  const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
+  const workspace = await resolveWorkspace(user.id);
+  const document = workspace?.role === "owner" ? await prisma.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: workspace.restaurantId, kind: "onboarding" } } }) : null;
+  const step = document ? progressSchema.parse(document.data).step : null;
+  res.json({ configured: workspace !== null, userId: user.id, step, revision: document?.revision ?? 0,
+    role: workspace?.role ?? null, restaurantName: workspace?.restaurantName ?? null, capabilities: workspace ? workspaceCapabilities(workspace.role) : null });
 });
 setupRoutes.post("/", async (req, res, next) => {
   try {
@@ -50,29 +48,27 @@ setupRoutes.post("/", async (req, res, next) => {
   }
 });
 
-setupRoutes.patch("/step", async (req, res, next) => {
-  try {
-    const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
-    const input = transitionSchema.safeParse(req.body);
-    if (!input.success || !allowedTransitions[input.data.expectedStep].includes(input.data.nextStep)) {
-      res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données fournies sont invalides." } }); return;
-    }
-    const { expectedUserId, expectedStep, nextStep, expectedRevision } = input.data;
-    if (expectedUserId !== user.id) { sessionChanged(res); return; }
-    const restaurant = await prisma.restaurant.findUnique({ where: { ownerId: user.id }, select: { id: true } });
-    if (!restaurant) { res.status(409).json({ error: { code: "SETUP_REQUIRED", message: "Créez votre établissement pour continuer." } }); return; }
-    const result = await prisma.$transaction(async tx => {
-      await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurant.id} FOR UPDATE`);
-      const where = { restaurantId_kind: { restaurantId: restaurant.id, kind: "onboarding" } };
-      const document = await tx.workspaceDocument.findUnique({ where });
-      if (!document) return false;
-      const current = progressSchema.parse(document.data).step;
-      if (current === nextStep && document.revision === expectedRevision + 1) return true;
-      if (current !== expectedStep || document.revision !== expectedRevision) return false;
-      await tx.workspaceDocument.update({ where, data: { data: { version: 1, step: nextStep }, revision: { increment: 1 } } });
-      return true;
-    });
-    if (!result) { res.status(409).json({ error: { code: "REVISION_CONFLICT", message: "La configuration a changé. Rechargez la page avant de continuer." } }); return; }
-    res.json({ configured: true, userId: user.id, step: nextStep, revision: expectedRevision + 1 });
-  } catch (error) { next(error); }
+setupRoutes.patch("/step", async (req, res) => {
+  const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
+  const input = transitionSchema.safeParse(req.body);
+  if (!input.success || !allowedTransitions[input.data.expectedStep].includes(input.data.nextStep)) {
+    res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données fournies sont invalides." } }); return;
+  }
+  const { expectedUserId, expectedStep, nextStep, expectedRevision } = input.data;
+  if (expectedUserId !== user.id) { sessionChanged(res); return; }
+  const restaurant = await prisma.restaurant.findUnique({ where: { ownerId: user.id }, select: { id: true } });
+  if (!restaurant) { res.status(409).json({ error: { code: "SETUP_REQUIRED", message: "Créez votre établissement pour continuer." } }); return; }
+  const result = await prisma.$transaction(async tx => {
+    await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurant.id} FOR UPDATE`);
+    const where = { restaurantId_kind: { restaurantId: restaurant.id, kind: "onboarding" } };
+    const document = await tx.workspaceDocument.findUnique({ where });
+    if (!document) return false;
+    const current = progressSchema.parse(document.data).step;
+    if (current === nextStep && document.revision === expectedRevision + 1) return true;
+    if (current !== expectedStep || document.revision !== expectedRevision) return false;
+    await tx.workspaceDocument.update({ where, data: { data: { version: 1, step: nextStep }, revision: { increment: 1 } } });
+    return true;
+  });
+  if (!result) { res.status(409).json({ error: { code: "REVISION_CONFLICT", message: "La configuration a changé. Rechargez la page avant de continuer." } }); return; }
+  res.json({ configured: true, userId: user.id, step: nextStep, revision: expectedRevision + 1 });
 });

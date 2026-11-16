@@ -22,27 +22,22 @@ const session = z.object({ serviceDate: z.iso.date(), slot, plannedOpen: z.boole
 const allocation = z.object({ lunchQuantity: z.number().int().min(0).max(1000000),
   dinnerQuantity: z.number().int().min(0).max(1000000), expectedRevision: revision, expectedSaleRevision: revision }).strict();
 
-serviceCalendarRoutes.get("/services/weekly", async (_req, res, next) => {
-  try { res.json(await getWeeklyServices(workspace(res).restaurantId)); } catch (error) { next(error); }
+serviceCalendarRoutes.get("/services/weekly", async (_req, res) => {
+  res.json(await getWeeklyServices(workspace(res).restaurantId));
 });
-serviceCalendarRoutes.put("/services/weekly", async (req, res, next) => {
-  try { const { restaurantId, actorId } = workspace(res); res.json(await saveWeeklyService(restaurantId, actorId, weekly.parse(req.body))); }
-  catch (error) { next(error); }
+serviceCalendarRoutes.put("/services/weekly", async (req, res) => {
+  const { restaurantId, actorId } = workspace(res); res.json(await saveWeeklyService(restaurantId, actorId, weekly.parse(req.body)));
 });
-serviceCalendarRoutes.get("/services/calendar", async (req, res, next) => {
-  try { const { from, to } = period.parse(req.query); res.json(await getServiceCalendar(workspace(res).restaurantId, from, to)); }
-  catch (error) { next(error); }
+serviceCalendarRoutes.get("/services/calendar", async (req, res) => {
+  const { from, to } = period.parse(req.query); res.json(await getServiceCalendar(workspace(res).restaurantId, from, to));
 });
-serviceCalendarRoutes.put("/services/calendar", async (req, res, next) => {
-  try { const { restaurantId, actorId } = workspace(res); res.json(await saveCalendarService(restaurantId, actorId, session.parse(req.body))); }
-  catch (error) { next(error); }
+serviceCalendarRoutes.put("/services/calendar", async (req, res) => {
+  const { restaurantId, actorId } = workspace(res); res.json(await saveCalendarService(restaurantId, actorId, session.parse(req.body)));
 });
-serviceCalendarRoutes.get("/sales/:id/services", async (req, res, next) => {
-  try { res.json(await getSaleAllocation(workspace(res).restaurantId, z.uuid().parse(req.params.id))); }
-  catch (error) { next(error); }
+serviceCalendarRoutes.get("/sales/:id/services", async (req, res) => {
+  res.json(await getSaleAllocation(workspace(res).restaurantId, z.uuid().parse(req.params.id)));
 });
-serviceCalendarRoutes.put("/sales/:id/services", async (req, res, next) => {
-  try { const { restaurantId, actorId } = workspace(res);
-    res.json(await saveSaleAllocation(restaurantId, actorId, z.uuid().parse(req.params.id), allocation.parse(req.body))); }
-  catch (error) { next(error); }
+serviceCalendarRoutes.put("/sales/:id/services", async (req, res) => {
+  const { restaurantId, actorId } = workspace(res);
+  res.json(await saveSaleAllocation(restaurantId, actorId, z.uuid().parse(req.params.id), allocation.parse(req.body)));
 });

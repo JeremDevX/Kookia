@@ -12,10 +12,8 @@ const sources = [
   { kind: "events", state: "not_connected", lastSuccessAt: null },
 ] as const;
 
-sourceRoutes.get("/sources", async (_req, res, next) => {
-  try {
-    const { restaurantId } = res.locals.workspace as { restaurantId: string };
-    const weather = await getWeatherSources(restaurantId, weatherProviderFor(res).configured);
-    res.json({ sources: sources.map(source => weather.find(entry => entry.kind === source.kind) ?? source) });
-  } catch (error) { next(error); }
+sourceRoutes.get("/sources", async (_req, res) => {
+  const { restaurantId } = res.locals.workspace as { restaurantId: string };
+  const weather = await getWeatherSources(restaurantId, weatherProviderFor(res).configured);
+  res.json({ sources: sources.map(source => weather.find(entry => entry.kind === source.kind) ?? source) });
 });

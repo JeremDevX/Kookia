@@ -65,33 +65,31 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
     }
   });
 
-  app.post("/api/auth/register", rateLimit(8, 60_000), async (req, res, next) => {
-    try { const body = parseBody(registerSchema, req, res); if (!body) return; const result = await registerUser(body.displayName, body.email, body.password); setSessionCookie(res, result.token, result.expiresAt); res.status(201).json(publicUserResponse(result.user)); } catch (error) { next(error); }
+  app.post("/api/auth/register", rateLimit(8, 60_000), async (req, res) => {
+    const body = parseBody(registerSchema, req, res); if (!body) return; const result = await registerUser(body.displayName, body.email, body.password); setSessionCookie(res, result.token, result.expiresAt); res.status(201).json(publicUserResponse(result.user));
   });
-  app.post("/api/auth/login", rateLimit(8, 60_000), async (req, res, next) => {
-    try { const body = parseBody(loginSchema, req, res); if (!body) return; const result = await loginUser(body.email, body.password); setSessionCookie(res, result.token, result.expiresAt); res.json(publicUserResponse(result.user)); } catch (error) { next(error); }
+  app.post("/api/auth/login", rateLimit(8, 60_000), async (req, res) => {
+    const body = parseBody(loginSchema, req, res); if (!body) return; const result = await loginUser(body.email, body.password); setSessionCookie(res, result.token, result.expiresAt); res.json(publicUserResponse(result.user));
   });
-  app.post("/api/auth/logout", async (req, res, next) => {
-    try {
-      let user;
-      try { user = await requireUser(req); }
-      catch (error) {
-        if (error instanceof AuthError && error.code === "UNAUTHENTICATED") { res.status(204).send(); return; }
-        throw error;
-      }
-      if (!matchesSession(req, res, user.id)) return;
-      await logout(req.cookies[sessionCookieName]); clearSessionCookie(res); res.status(204).send();
-    } catch (error) { next(error); }
+  app.post("/api/auth/logout", async (req, res) => {
+    let user;
+    try { user = await requireUser(req); }
+    catch (error) {
+      if (error instanceof AuthError && error.code === "UNAUTHENTICATED") { res.status(204).send(); return; }
+      throw error;
+    }
+    if (!matchesSession(req, res, user.id)) return;
+    await logout(req.cookies[sessionCookieName]); clearSessionCookie(res); res.status(204).send();
   });
-  app.get("/api/auth/me", async (req, res, next) => { try { res.json(publicUserResponse(await requireUser(req))); } catch (error) { next(error); } });
+  app.get("/api/auth/me", async (req, res) => { res.json(publicUserResponse(await requireUser(req))); });
 
   app.use("/api/account", async (req, res, next) => {
-    try { const user = await requireUser(req); if (matchesSession(req, res, user.id)) next(); } catch (error) { next(error); }
+    const user = await requireUser(req); if (matchesSession(req, res, user.id)) next();
   });
-  app.patch("/api/account/profile", async (req, res, next) => { try { const body = parseBody(profileSchema, req, res); if (!body) return; const user = await requireUser(req); res.json(publicUserResponse(await updateProfile(user.id, body.displayName))); } catch (error) { next(error); } });
-  app.post("/api/account/change-email", async (req, res, next) => { try { const body = parseBody(changeEmailSchema, req, res); if (!body) return; const user = await requireUser(req); res.json(publicUserResponse(await changeEmail(user.id, body.newEmail, body.currentPassword))); } catch (error) { next(error); } });
-  app.post("/api/account/change-password", rateLimit(8, 60_000), async (req, res, next) => { try { const body = parseBody(changePasswordSchema, req, res); if (!body) return; const user = await requireUser(req); const result = await changePassword(user.id, body.currentPassword, body.newPassword, req.cookies[sessionCookieName]); setSessionCookie(res, result.token, result.expiresAt); res.status(204).send(); } catch (error) { next(error); } });
-  app.delete("/api/account", async (req, res, next) => { try { const body = parseBody(deleteAccountSchema, req, res); if (!body) return; const user = await requireUser(req); await deleteAccount(user.id, body.currentPassword); clearSessionCookie(res); res.status(204).send(); } catch (error) { next(error); } });
+  app.patch("/api/account/profile", async (req, res) => { const body = parseBody(profileSchema, req, res); if (!body) return; const user = await requireUser(req); res.json(publicUserResponse(await updateProfile(user.id, body.displayName))); });
+  app.post("/api/account/change-email", async (req, res) => { const body = parseBody(changeEmailSchema, req, res); if (!body) return; const user = await requireUser(req); res.json(publicUserResponse(await changeEmail(user.id, body.newEmail, body.currentPassword))); });
+  app.post("/api/account/change-password", rateLimit(8, 60_000), async (req, res) => { const body = parseBody(changePasswordSchema, req, res); if (!body) return; const user = await requireUser(req); const result = await changePassword(user.id, body.currentPassword, body.newPassword, req.cookies[sessionCookieName]); setSessionCookie(res, result.token, result.expiresAt); res.status(204).send(); });
+  app.delete("/api/account", async (req, res) => { const body = parseBody(deleteAccountSchema, req, res); if (!body) return; const user = await requireUser(req); await deleteAccount(user.id, body.currentPassword); clearSessionCookie(res); res.status(204).send(); });
 
   app.use((_, res, next) => {
     res.locals.invoiceExtractionAdapter = invoiceExtractionAdapter;

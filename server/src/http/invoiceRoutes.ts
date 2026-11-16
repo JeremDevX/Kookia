@@ -27,70 +27,60 @@ invoiceRoutes.get("/invoice-extraction/status", (_req, res) => {
 invoiceRoutes.post("/invoice-extractions", (req, res, next) => {
   if (extractionAdapter(res).provider === "unconfigured") { extractionUnavailable(res); return; }
   next();
-}, express.raw({ type: () => true, limit: "4mb", inflate: false }), async (req, res, next) => {
-  try {
-    const inspection = inspectInvoiceExtractionUpload(req.get("content-type"), req.body);
-    if (!inspection.valid) {
-      res.status(inspection.status).json({ error: { code: inspection.code, message: inspection.message } });
-      return;
-    }
-    if (!Buffer.isBuffer(req.body)) {
-      res.status(400).json({ error: { code: "INVALID_INVOICE_FILE", message: "Le fichier source est vide ou illisible." } });
-      return;
-    }
-    const { restaurantId } = context(res);
-    const file = describeInvoiceFile(req.body, inspection.metadata.mimeType);
-    const result = await extractInvoiceCandidate(restaurantId, file, req.body, extractionAdapter(res));
-    if (result.status === "unavailable") {
-      extractionUnavailable(res);
-      return;
-    }
-    res.status(result.created ? 201 : 200).json({ id: result.source.id });
-  } catch (error) { next(error); }
+}, express.raw({ type: () => true, limit: "4mb", inflate: false }), async (req, res) => {
+  const inspection = inspectInvoiceExtractionUpload(req.get("content-type"), req.body);
+  if (!inspection.valid) {
+    res.status(inspection.status).json({ error: { code: inspection.code, message: inspection.message } });
+    return;
+  }
+  if (!Buffer.isBuffer(req.body)) {
+    res.status(400).json({ error: { code: "INVALID_INVOICE_FILE", message: "Le fichier source est vide ou illisible." } });
+    return;
+  }
+  const { restaurantId } = context(res);
+  const file = describeInvoiceFile(req.body, inspection.metadata.mimeType);
+  const result = await extractInvoiceCandidate(restaurantId, file, req.body, extractionAdapter(res));
+  if (result.status === "unavailable") {
+    extractionUnavailable(res);
+    return;
+  }
+  res.status(result.created ? 201 : 200).json({ id: result.source.id });
 });
 
-invoiceRoutes.get("/source-invoices", async (_req, res, next) => {
-  try {
-    const { restaurantId } = context(res);
-    const documents = await prisma.workspaceDocument.findMany({ where: { restaurantId, kind: { startsWith: "source-invoice:" } }, select: { data: true } });
-    const invoices = documents.map(({ data }) => sourceInvoiceDocumentSchema.parse(data));
-    const workflow = await getSourceInvoiceWorkflowStates(restaurantId, invoices.map((invoice) => invoice.id));
-    res.json(invoices.map((invoice) => {
-      return { id: invoice.id, title: invoice.title, date: invoice.date,
-        supplier: invoice.supplier, type: invoice.type, status: invoice.status, stockLineCount: invoice.stockLines.length,
-        ...workflow.get(invoice.id) };
-    }).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.title.localeCompare(b.title)));
-  } catch (error) { next(error); }
+invoiceRoutes.get("/source-invoices", async (_req, res) => {
+  const { restaurantId } = context(res);
+  const documents = await prisma.workspaceDocument.findMany({ where: { restaurantId, kind: { startsWith: "source-invoice:" } }, select: { data: true } });
+  const invoices = documents.map(({ data }) => sourceInvoiceDocumentSchema.parse(data));
+  const workflow = await getSourceInvoiceWorkflowStates(restaurantId, invoices.map((invoice) => invoice.id));
+  res.json(invoices.map((invoice) => {
+    return { id: invoice.id, title: invoice.title, date: invoice.date,
+      supplier: invoice.supplier, type: invoice.type, status: invoice.status, stockLineCount: invoice.stockLines.length,
+      ...workflow.get(invoice.id) };
+  }).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.title.localeCompare(b.title)));
 });
-invoiceRoutes.get("/source-invoices/:id", async (req, res, next) => {
-  try {
-    const id = z.string().regex(/^[a-f0-9]{24}$/).parse(req.params.id);
-    const { restaurantId } = context(res);
-    const document = await prisma.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind: `source-invoice:${id}` } } });
-    if (!document) { res.status(404).json({ error: { code: "NOT_FOUND", message: "Pièce introuvable." } }); return; }
-    const invoice = sourceInvoiceDocumentSchema.parse(document.data);
-    const workflow = await getSourceInvoiceWorkflowStates(restaurantId, [invoice.id]);
-    res.json({ id: invoice.id, title: invoice.title, date: invoice.date,
-      supplier: invoice.supplier, type: invoice.type, status: invoice.status,
-      content: sourceInvoiceContentForWorkspace(invoice.content, invoice.date),
-      stockLines: invoice.stockLines, ...workflow.get(invoice.id) });
-  } catch (error) { next(error); }
+invoiceRoutes.get("/source-invoices/:id", async (req, res) => {
+  const id = z.string().regex(/^[a-f0-9]{24}$/).parse(req.params.id);
+  const { restaurantId } = context(res);
+  const document = await prisma.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind: `source-invoice:${id}` } } });
+  if (!document) { res.status(404).json({ error: { code: "NOT_FOUND", message: "Pièce introuvable." } }); return; }
+  const invoice = sourceInvoiceDocumentSchema.parse(document.data);
+  const workflow = await getSourceInvoiceWorkflowStates(restaurantId, [invoice.id]);
+  res.json({ id: invoice.id, title: invoice.title, date: invoice.date,
+    supplier: invoice.supplier, type: invoice.type, status: invoice.status,
+    content: sourceInvoiceContentForWorkspace(invoice.content, invoice.date),
+    stockLines: invoice.stockLines, ...workflow.get(invoice.id) });
 });
-invoiceRoutes.get("/invoices", async (_req, res, next) => {
-  try { res.json((await getInvoices(context(res).restaurantId)).map(invoiceResponse)); } catch (error) { next(error); }
+invoiceRoutes.get("/invoices", async (_req, res) => {
+  res.json((await getInvoices(context(res).restaurantId)).map(invoiceResponse));
 });
-invoiceRoutes.post("/invoices/from-source/:id", async (req, res, next) => {
-  try {
-    const sourceDocumentId = z.string().regex(/^[a-f0-9]{24}$/).parse(req.params.id);
-    const { restaurantId, actorId } = context(res);
-    res.json(invoiceResponse(await createInvoiceDraftFromSource(restaurantId, actorId, sourceDocumentId)));
-  } catch (error) { next(error); }
+invoiceRoutes.post("/invoices/from-source/:id", async (req, res) => {
+  const sourceDocumentId = z.string().regex(/^[a-f0-9]{24}$/).parse(req.params.id);
+  const { restaurantId, actorId } = context(res);
+  res.json(invoiceResponse(await createInvoiceDraftFromSource(restaurantId, actorId, sourceDocumentId)));
 });
-invoiceRoutes.post("/invoices/:id", async (req, res, next) => {
-  try {
-    const id = z.union([z.literal("demo"), z.uuid(), z.string().regex(/^source:[a-f0-9]{24}$/)]).parse(req.params.id);
-    const { draft, revision, receive, confirmedDuplicates } = z.object({ draft: invoiceDraftSchema, revision: z.number().int().nonnegative(), receive: z.boolean(), confirmedDuplicates: z.array(z.object({ id: z.string().max(100), version: z.string().max(50) }).strict()).max(100).optional() }).strict().parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    res.json(invoiceResponse(await saveInvoice(restaurantId, actorId, id, revision, draft, receive, confirmedDuplicates)));
-  } catch (error) { next(error); }
+invoiceRoutes.post("/invoices/:id", async (req, res) => {
+  const id = z.union([z.literal("demo"), z.uuid(), z.string().regex(/^source:[a-f0-9]{24}$/)]).parse(req.params.id);
+  const { draft, revision, receive, confirmedDuplicates } = z.object({ draft: invoiceDraftSchema, revision: z.number().int().nonnegative(), receive: z.boolean(), confirmedDuplicates: z.array(z.object({ id: z.string().max(100), version: z.string().max(50) }).strict()).max(100).optional() }).strict().parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  res.json(invoiceResponse(await saveInvoice(restaurantId, actorId, id, revision, draft, receive, confirmedDuplicates)));
 });

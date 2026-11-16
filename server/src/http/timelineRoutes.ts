@@ -15,9 +15,7 @@ const querySchema = z.object({ from: z.iso.date(), to: z.iso.date(), asOf: z.iso
   },
     { message: "La chronologie ne peut pas inclure de date future." });
 
-timelineRoutes.get("/timeline", async (req, res, next) => {
-  try {
-    const { from, to, asOf } = querySchema.parse(req.query);
-    res.json(await listTimeline(workspace(res), from, to, asOf));
-  } catch (error) { next(error); }
+timelineRoutes.get("/timeline", async (req, res) => {
+  const { from, to, asOf } = querySchema.parse(req.query);
+  res.json(await listTimeline(workspace(res), from, to, asOf));
 });

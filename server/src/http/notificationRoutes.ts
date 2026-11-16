@@ -15,21 +15,19 @@ async function getNotifications(id: string) {
   return document ? notificationsSchema.parse(document.data) : [];
 }
 export const notificationRoutes = Router();
-notificationRoutes.get("/notifications", async (_req, res, next) => {
-  try { res.json(await getNotifications(restaurantId(res))); } catch (error) { next(error); }
+notificationRoutes.get("/notifications", async (_req, res) => {
+  res.json(await getNotifications(restaurantId(res)));
 });
-notificationRoutes.post("/notifications/read", async (req, res, next) => {
-  try {
-    const { ids } = z.object({ ids: z.array(z.string().min(1).max(100)).max(100) }).strict().parse(req.body);
-    const id = restaurantId(res);
-    const result = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${id} FOR UPDATE`);
-      const document = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: id, kind: "notifications" } } });
-      if (!document) return [];
-      const items = notificationsSchema.parse(document.data).map((item) => ids.includes(item.id) ? { ...item, read: true } : item);
-      await tx.workspaceDocument.update({ where: { restaurantId_kind: { restaurantId: id, kind: "notifications" } }, data: { data: items, revision: { increment: 1 } } });
-      return items;
-    });
-    res.json(result);
-  } catch (error) { next(error); }
+notificationRoutes.post("/notifications/read", async (req, res) => {
+  const { ids } = z.object({ ids: z.array(z.string().min(1).max(100)).max(100) }).strict().parse(req.body);
+  const id = restaurantId(res);
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${id} FOR UPDATE`);
+    const document = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: id, kind: "notifications" } } });
+    if (!document) return [];
+    const items = notificationsSchema.parse(document.data).map((item) => ids.includes(item.id) ? { ...item, read: true } : item);
+    await tx.workspaceDocument.update({ where: { restaurantId_kind: { restaurantId: id, kind: "notifications" } }, data: { data: items, revision: { increment: 1 } } });
+    return items;
+  });
+  res.json(result);
 });

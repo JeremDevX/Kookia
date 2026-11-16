@@ -22,89 +22,70 @@ const orderSchema = z.object({ operationId: z.uuid(), lines: z.array(z.object({
 const suggestionDecisionSchema = z.object({ operationId: z.uuid(), suggestionKey: z.string().regex(/^[a-f0-9]{64}$/),
   decision: z.enum(["added", "excluded"]), quantity: z.number().finite().positive().max(1_000_000).multipleOf(0.001).optional() })
   .strict().refine((input) => input.decision === "added" ? input.quantity !== undefined : input.quantity === undefined);
-orderRoutes.get("/orders/suggestions", async (_req, res, next) => {
-  try {
-    await refreshForecastWeather(context(res).restaurantId, formatParisDate(), res.locals.weatherProvider as WeatherProvider);
-    res.json(await getPurchaseSuggestions(context(res).restaurantId));
-  } catch (error) { next(error); }
+orderRoutes.get("/orders/suggestions", async (_req, res) => {
+  await refreshForecastWeather(context(res).restaurantId, formatParisDate(), res.locals.weatherProvider as WeatherProvider);
+  res.json(await getPurchaseSuggestions(context(res).restaurantId));
 });
-orderRoutes.get("/orders/:orderId/receipt-invoices", async (req, res, next) => {
-  try {
-    const { restaurantId } = context(res);
-    const orderId = z.string().trim().min(1).max(100).parse(req.params.orderId);
-    const order = await prisma.purchaseOrder.findUnique({ where: { restaurantId_id: { restaurantId, id: orderId } },
-      select: { status: true, lines: { select: { productId: true, supplierId: true, unit: true } } } });
-    if (!order) throw new WorkspaceError(404, "NOT_FOUND", "Commande introuvable.");
-    const invoices = await getInvoices(restaurantId);
-    res.json(invoices.filter((invoice) => invoice.status === "draft" && invoice.supplierId &&
-      (order.status.startsWith("simulated") || invoice.source === "manual") &&
-      order.lines.some((line) => line.supplierId === invoice.supplierId && invoice.lines.some((item) =>
-        item.productId === line.productId && item.unit === line.unit)))
-      .map((invoice) => ({ id: invoice.id, revision: invoice.revision, source: invoice.source, status: invoice.status,
-        reference: invoice.reference, date: invoice.date, supplierId: invoice.supplierId, lines: invoice.lines,
-        sourceTypeConfirmed: invoice.sourceTypeConfirmed, sourceDateConfirmed: invoice.sourceDateConfirmed,
-        receiptProgress: invoice.receiptProgress })));
-  } catch (error) { next(error); }
+orderRoutes.get("/orders/:orderId/receipt-invoices", async (req, res) => {
+  const { restaurantId } = context(res);
+  const orderId = z.string().trim().min(1).max(100).parse(req.params.orderId);
+  const order = await prisma.purchaseOrder.findUnique({ where: { restaurantId_id: { restaurantId, id: orderId } },
+    select: { status: true, lines: { select: { productId: true, supplierId: true, unit: true } } } });
+  if (!order) throw new WorkspaceError(404, "NOT_FOUND", "Commande introuvable.");
+  const invoices = await getInvoices(restaurantId);
+  res.json(invoices.filter((invoice) => invoice.status === "draft" && invoice.supplierId &&
+    (order.status.startsWith("simulated") || invoice.source === "manual") &&
+    order.lines.some((line) => line.supplierId === invoice.supplierId && invoice.lines.some((item) =>
+      item.productId === line.productId && item.unit === line.unit)))
+    .map((invoice) => ({ id: invoice.id, revision: invoice.revision, source: invoice.source, status: invoice.status,
+      reference: invoice.reference, date: invoice.date, supplierId: invoice.supplierId, lines: invoice.lines,
+      sourceTypeConfirmed: invoice.sourceTypeConfirmed, sourceDateConfirmed: invoice.sourceDateConfirmed,
+      receiptProgress: invoice.receiptProgress })));
 });
-orderRoutes.get("/orders/receipt-lines/:lineId", async (req, res, next) => {
-  try {
-    const lineId = z.uuid().parse(req.params.lineId);
-    res.json(await getPurchaseReceiptLineEvidence(context(res).restaurantId, lineId));
-  } catch (error) { next(error); }
+orderRoutes.get("/orders/receipt-lines/:lineId", async (req, res) => {
+  const lineId = z.uuid().parse(req.params.lineId);
+  res.json(await getPurchaseReceiptLineEvidence(context(res).restaurantId, lineId));
 });
-orderRoutes.post("/orders/suggestions/:productId/decision", async (req, res, next) => {
-  try {
-    const productId = z.string().trim().min(1).max(100).parse(req.params.productId);
-    const input = suggestionDecisionSchema.parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    res.status(201).json(await recordPurchaseSuggestionDecision(restaurantId, actorId, { ...input, productId }));
-  } catch (error) { next(error); }
+orderRoutes.post("/orders/suggestions/:productId/decision", async (req, res) => {
+  const productId = z.string().trim().min(1).max(100).parse(req.params.productId);
+  const input = suggestionDecisionSchema.parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  res.status(201).json(await recordPurchaseSuggestionDecision(restaurantId, actorId, { ...input, productId }));
 });
-orderRoutes.get("/orders", async (_req, res, next) => {
-  try { res.json(await listPurchaseOrders(context(res).restaurantId)); } catch (error) { next(error); }
+orderRoutes.get("/orders", async (_req, res) => {
+  res.json(await listPurchaseOrders(context(res).restaurantId));
 });
-orderRoutes.post("/orders", async (req, res, next) => {
-  try {
-    const input = orderSchema.parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    res.status(201).json(orderDto(await validateOrder(restaurantId, actorId, input)));
-  } catch (error) { next(error); }
+orderRoutes.post("/orders", async (req, res) => {
+  const input = orderSchema.parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  res.status(201).json(orderDto(await validateOrder(restaurantId, actorId, input)));
 });
-orderRoutes.post("/orders/:orderId/receipts", async (req, res, next) => {
-  try {
-    const orderId = z.string().trim().min(1).max(100).parse(req.params.orderId);
-    const input = purchaseReceiptSchema.parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    res.status(201).json(await recordPurchaseReceipt(restaurantId, actorId, orderId, input));
-  } catch (error) { next(error); }
+orderRoutes.post("/orders/:orderId/receipts", async (req, res) => {
+  const orderId = z.string().trim().min(1).max(100).parse(req.params.orderId);
+  const input = purchaseReceiptSchema.parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  res.status(201).json(await recordPurchaseReceipt(restaurantId, actorId, orderId, input));
 });
-orderRoutes.patch("/orders/lines/:lineId/delivery", async (req, res, next) => {
-  try {
-    const lineId = z.uuid().parse(req.params.lineId);
-    const input = purchaseDeliverySchema.parse(req.body);
-    const { restaurantId, actorId } = context(res);
-    res.json(await updatePurchaseDelivery(restaurantId, actorId, lineId, input));
-  } catch (error) { next(error); }
+orderRoutes.patch("/orders/lines/:lineId/delivery", async (req, res) => {
+  const lineId = z.uuid().parse(req.params.lineId);
+  const input = purchaseDeliverySchema.parse(req.body);
+  const { restaurantId, actorId } = context(res);
+  res.json(await updatePurchaseDelivery(restaurantId, actorId, lineId, input));
 });
-orderRoutes.get("/orders/:orderId/reconciliation", async (req, res, next) => {
+orderRoutes.get("/orders/:orderId/reconciliation", async (req, res) => {
   if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== context(res).restaurantId) {
     res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return;
   }
-  try { res.json(await getPurchaseReconciliation(context(res).restaurantId, z.uuid().parse(req.params.orderId))); }
-  catch (error) { next(error); }
+  res.json(await getPurchaseReconciliation(context(res).restaurantId, z.uuid().parse(req.params.orderId)));
 });
-orderRoutes.post("/orders/credits", async (req, res, next) => {
+orderRoutes.post("/orders/credits", async (req, res) => {
   if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== context(res).restaurantId) {
     res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return;
   }
-  try {
-    const { restaurantId, actorId } = context(res);
-    res.status(201).json(await recordPurchaseCredit(restaurantId, actorId, purchaseCreditSchema.parse(req.body)));
-  } catch (error) { next(error); }
+  const { restaurantId, actorId } = context(res);
+  res.status(201).json(await recordPurchaseCredit(restaurantId, actorId, purchaseCreditSchema.parse(req.body)));
 });
-orderRoutes.get("/decisions", async (_req, res, next) => {
-  try {
-    const decisions = await prisma.recommendationDecision.findMany({ where: { restaurantId: context(res).restaurantId }, orderBy: { createdAt: "desc" } });
-    res.json(decisions.map(({ id, actorId, decision, snapshot, createdAt }) => ({ id, actorId, decision, snapshot, createdAt })));
-  } catch (error) { next(error); }
+orderRoutes.get("/decisions", async (_req, res) => {
+  const decisions = await prisma.recommendationDecision.findMany({ where: { restaurantId: context(res).restaurantId }, orderBy: { createdAt: "desc" } });
+  res.json(decisions.map(({ id, actorId, decision, snapshot, createdAt }) => ({ id, actorId, decision, snapshot, createdAt })));
 });
