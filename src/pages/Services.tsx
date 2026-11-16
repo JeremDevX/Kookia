@@ -46,7 +46,7 @@ export default function Services() {
       <label>Service<select value={slot} onChange={e => select(date, e.target.value as ServiceSlot)}><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
     </div><p><Link to={serviceContextHref("/settings", { date, slot })}>Régler les horaires hebdomadaires</Link> · <Link to="/sales">Déclarer une fermeture exceptionnelle et qualifier les ventes</Link></p></section>
     <ServiceMenuEditor key={`menu:${serviceKey}`} date={date} slot={slot} loadRecipes={loadRecipes} onDirtyChange={setMenuDirty} onChanged={() => setRevision(n => n + 1)} />
-    <ServiceForecastPanel key={`forecast:${serviceKey}:${revision}`} date={date} slot={slot} />
+    <ServiceForecastPanel key={`forecast:${date}:${revision}`} date={date} slot={slot} />
     <ServiceSheetPanel key={`sheet:${serviceKey}`} date={date} slot={slot} loadRecipes={loadRecipes} onDirtyChange={setSheetDirty} menuChange={revision} weatherContextRef={weather.weather?.contextRef ?? undefined} />
     <OperationalIncidents key={`incidents:${serviceKey}`} date={date} slot={slot} loadRecipes={loadRecipes} />
   </div>;

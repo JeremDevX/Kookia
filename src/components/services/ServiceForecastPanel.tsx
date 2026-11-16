@@ -57,7 +57,7 @@ export default function ServiceForecastPanel({ date, slot }: { date: string; slo
   const today = formatLocalISODate();
   const past = date < today;
   const [reload, setReload] = useState(0);
-  const key = `${date}:${slot}:${reload}`;
+  const key = `${date}:${reload}`;
   const [response, setResponse] = useState<{ key: string; forecast: OperationalForecast | null; error: string } | null>(null);
   const loading = !past && response?.key !== key;
   const forecast = response?.key === key ? response.forecast : null;
