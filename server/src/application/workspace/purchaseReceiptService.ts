@@ -4,7 +4,7 @@ import { recordLotMovement } from "./lotService.js";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma, type PurchaseReceipt as PurchaseReceiptRecord, type PurchaseReceiptLine as PurchaseReceiptLineRecord,
   type PrismaClient } from "@prisma/client";
-import { z } from "zod";
+import type { PurchaseReceiptInput, PurchaseReceiptLineEvidence } from "../../../../shared/purchaseReceipt.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
 import { invoiceSchema, sourceInvoiceDocumentSchema, validateSourceReview } from "./invoiceService.js";
@@ -15,16 +15,6 @@ type ReceiptWithLines = PurchaseReceiptRecord & { lines: ReceiptLineWithMovement
 type PurchaseOrderWithReceipts = Prisma.PurchaseOrderGetPayload<{ include: {
   lines: true; receipts: { include: { lines: { include: { movement: { select: { id: true } } } } } };
 } }>;
-
-export interface PurchaseReceiptInput {
-  operationId: string;
-  confirmedDuplicates?: Array<{ id: string; version: string }>;
-  invoiceDocumentId: string;
-  invoiceDocumentRevision: number;
-  deliveryReference: string;
-  deliveryDate: string;
-  lines: Array<{ invoiceLineIndex: number; orderLineId: string; receivedQuantity: number; priceDifferenceReason?: string; expiresAt?: string | null }>;
-}
 
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
@@ -246,16 +236,6 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
   });
 }
 
-export const purchaseReceiptSchema = z.object({
-  confirmedDuplicates: z.array(z.object({ id: z.string().max(100), version: z.string().max(50) }).strict()).max(100).optional(),
-  operationId: z.uuid(), invoiceDocumentId: z.string().trim().min(1).max(100),
-  invoiceDocumentRevision: z.number().int().positive(), deliveryReference: z.string().trim().min(1).max(120),
-  deliveryDate: z.iso.date(), lines: z.array(z.object({ invoiceLineIndex: z.number().int().min(0).max(99),
-    orderLineId: z.string().trim().min(1).max(100), receivedQuantity: z.number().finite().min(0).max(1_000_000).multipleOf(0.001),
-    priceDifferenceReason: z.string().trim().min(1).max(240).optional(), expiresAt: z.iso.date().nullable().optional(),
-  }).strict()).min(1).max(100),
-}).strict();
-
 export async function listPurchaseOrders(restaurantId: string, db: ReceiptDatabase = prisma) {
   const orders = await db.purchaseOrder.findMany({ where: { restaurantId }, include: {
     lines: true, receipts: { include: { lines: { include: { movement: { select: { id: true } } } } },
@@ -264,7 +244,7 @@ export async function listPurchaseOrders(restaurantId: string, db: ReceiptDataba
   return orders.map(orderDtoWithReceipts);
 }
 
-export async function getPurchaseReceiptLineEvidence(restaurantId: string, lineId: string, db: ReceiptDatabase = prisma) {
+export async function getPurchaseReceiptLineEvidence(restaurantId: string, lineId: string, db: ReceiptDatabase = prisma): Promise<PurchaseReceiptLineEvidence> {
   const line = await db.purchaseReceiptLine.findFirst({ where: { restaurantId, id: lineId }, include: {
     receipt: { select: { deliveryReference: true, deliveryDate: true, simulated: true, provenance: true } },
     product: { select: { unit: true } },

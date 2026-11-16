@@ -1,6 +1,10 @@
-import type { SupplierDeliveryHorizon } from "../../shared/supplierDelivery";
-import type { ForecastWeatherReference } from "../../shared/forecastWeather";
+import type { PurchaseReceiptInput, PurchaseReceiptLineEvidence } from "../../shared/purchaseReceipt";
+import type { PurchaseSuggestions } from "../../shared/purchaseSuggestions";
 import { apiRequest } from "../config/api";
+
+export type { PurchaseReceiptInput, PurchaseReceiptLineEvidence } from "../../shared/purchaseReceipt";
+export type { PurchaseSuggestion, PurchaseSuggestions } from "../../shared/purchaseSuggestions";
+
 export interface OrderLineInput { productId: string; quantity: number; predictionId?: string; cartId?: string; }
 export interface PurchaseOrder {
   id: string; status: string; createdAt: string;
@@ -13,70 +17,6 @@ export interface PurchaseOrder {
       invoiceLineIndex: number; invoiceQuantity: number; receivedQuantity: number; quantityDifference: number; unit: string;
       stockMovementId: string | null;
       orderedUnitPrice: number; invoiceUnitPrice: number; priceDifferenceReason?: string }> }>;
-}
-
-export interface PurchaseReceiptLineEvidence {
-  receiptLineId: string;
-  productId: string;
-  productName: string;
-  deliveryReference: string;
-  deliveryDate: string;
-  receivedQuantity: number;
-  unit: string;
-}
-
-export interface PurchaseSuggestion {
-  suggestionKey: string;
-  productId: string;
-  productName: string;
-  supplierName: string;
-  unit: string;
-  status: "ready" | "needs_stock_count" | "covered" | "unit_mismatch" | "supplier_constraints_missing" | "availability_conflict";
-  canAdd: boolean;
-  deliveryHorizon: SupplierDeliveryHorizon;
-  usableStock?: number | null;
-  expiredQuantity?: number;
-  unknownExpiryQuantity?: number;
-  beforeDeliveryShortage?: number;
-  shortages?: Array<{ date: string; slot?: "lunch" | "dinner"; quantity: number }>;
-  expectedQuantity: number;
-  conditionalNetNeed: number | null;
-  forecastNeed: number;
-  countedStock: number | null;
-  countDate: string | null;
-  netNeed: number | null;
-  orderStep: number;
-  estimatedQuantity: number | null;
-  currentUnitPrice: number;
-  estimatedCost: number | null;
-  sources: Array<{ saleItemName: string; recipeName: string; recipeVersion: number; quantity: number }>;
-  weatherAdjustments?: ForecastWeatherReference[];
-  reason: string;
-  decision: { kind: "added" | "excluded"; operationId: string; quantity: number | null; orderId: string | null } | null;
-}
-
-export interface PurchaseSuggestions {
-  status: "ready" | "no_data" | "insufficient_history" | "simulation_only";
-  provenance: "recorded_sales" | "demo_simulation" | "mixed";
-  workspaceMode: "operational" | "demo";
-  model: string;
-  asOfDate: string;
-  forecastDate: string;
-  completeServiceDays: number;
-  blockers: string[];
-  deliveryWarnings: Array<{ code: "opening_days_unknown" | "opening_days_incompatible"; message: string }>;
-  suggestions: PurchaseSuggestion[];
-  assumptions: string[];
-}
-
-export interface PurchaseReceiptInput {
-  confirmedDuplicates?: Array<{ id: string; version: string }>;
-  operationId: string;
-  invoiceDocumentId: string;
-  invoiceDocumentRevision: number;
-  deliveryReference: string;
-  deliveryDate: string;
-  lines: Array<{ invoiceLineIndex: number; orderLineId: string; receivedQuantity: number; priceDifferenceReason?: string; expiresAt?: string | null }>;
 }
 
 export const getOrders = () => apiRequest<PurchaseOrder[]>("/workspace/orders");

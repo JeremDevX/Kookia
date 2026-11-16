@@ -4,7 +4,7 @@ import { prisma } from "../infrastructure/database/prisma.js";
 import { env } from "../config/env.js";
 import { WeatherProviderError } from "../integrations/weatherProvider.js";
 import type { OperationalForecast } from "../../../shared/operationalForecast.js";
-import type { PurchaseSuggestions } from "../application/workspace/purchaseSuggestionService.js";
+import type { PurchaseSuggestions } from "../../../shared/purchaseSuggestions.js";
 import { weatherAccount, weatherDate, weatherForecast, weatherProvider } from "./weatherTestFixture.js";
 
 const users: string[] = [];

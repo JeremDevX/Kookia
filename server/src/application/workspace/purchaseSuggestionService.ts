@@ -1,4 +1,5 @@
 import { purchaseAvailability } from "./purchaseAvailability.js";
+import type { PurchaseSuggestion, PurchaseSuggestions } from "../../../../shared/purchaseSuggestions.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import type { ForecastIngredient } from "../../../../shared/operationalForecast.js";
 import { getOperationalForecast } from "./operationalForecastService.js";
@@ -13,50 +14,6 @@ import { forecastWeatherNotice, type ForecastWeatherReference } from "../../../.
 
 type PurchaseDatabase = PrismaClient | Prisma.TransactionClient;
 type Baseline = { model: string; asOfDate: string; forecastDate: string; provenance: PurchaseSuggestions["provenance"] };
-
-export interface PurchaseSuggestion {
-  suggestionKey: string;
-  productId: string;
-  productName: string;
-  supplierName: string;
-  unit: string;
-  status: "ready" | "needs_stock_count" | "covered" | "unit_mismatch" | "supplier_constraints_missing" | "availability_conflict";
-  canAdd: boolean;
-  deliveryHorizon: SupplierDeliveryHorizon;
-  usableStock: number | null;
-  expiredQuantity: number;
-  unknownExpiryQuantity: number;
-  beforeDeliveryShortage: number;
-  shortages: Array<{ date: string; slot?: "lunch" | "dinner"; quantity: number }>;
-  expectedQuantity: number;
-  conditionalNetNeed: number | null;
-  forecastNeed: number;
-  countedStock: number | null;
-  countDate: string | null;
-  netNeed: number | null;
-  orderStep: number;
-  estimatedQuantity: number | null;
-  currentUnitPrice: number;
-  estimatedCost: number | null;
-  sources: Array<{ saleItemName: string; recipeName: string; recipeVersion: number; quantity: number }>;
-  weatherAdjustments: ForecastWeatherReference[];
-  reason: string;
-  decision: { kind: "added" | "excluded"; operationId: string; quantity: number | null; orderId: string | null } | null;
-}
-
-export interface PurchaseSuggestions {
-  status: "ready" | "no_data" | "insufficient_history" | "simulation_only";
-  provenance: "recorded_sales" | "demo_simulation" | "mixed";
-  workspaceMode: WorkspaceMode;
-  model: string;
-  asOfDate: string;
-  forecastDate: string;
-  completeServiceDays: number;
-  blockers: string[];
-  deliveryWarnings: Array<{ code: "opening_days_unknown" | "opening_days_incompatible"; message: string }>;
-  suggestions: PurchaseSuggestion[];
-  assumptions: string[];
-}
 
 const roundQuantity = (value: number) => Math.round(value * 1000) / 1000;
 

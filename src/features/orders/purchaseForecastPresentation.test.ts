@@ -9,6 +9,7 @@ const item = (productId: string, values: Partial<PurchaseSuggestion> = {}): Purc
   productId, productName: productId, supplierName: "Primeur", unit: "kg", suggestionKey: productId,
   status: "ready", canAdd: true, forecastNeed: 5, countedStock: 2, countDate: "2026-09-26",
   deliveryHorizon: { status: "unknown", code: "supplier_constraints_missing", reason: "test fixture" }, expectedQuantity: 0, conditionalNetNeed: 3,
+  usableStock: 2, expiredQuantity: 0, unknownExpiryQuantity: 0, beforeDeliveryShortage: 0, shortages: [], weatherAdjustments: [],
   netNeed: 3, orderStep: 1, estimatedQuantity: 3, currentUnitPrice: 4, estimatedCost: 12, sources: [], reason: "Besoin net", decision: null,
   ...values,
 });
