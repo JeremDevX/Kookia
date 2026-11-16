@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { formatDisplayDate as displayDate, formatQuantity } from "../../utils/format";
 import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
 import { getImpactReport, type ImpactBucket, type ImpactMonthlyPeriod, type ImpactPeriod, type ImpactReport } from "../../services/impactService";
@@ -9,8 +10,6 @@ import BilanOverview from "./BilanOverview";
 import { comparisonValues, formatLossValue } from "./comparisonValues";
 
 interface Props { from: string; to: string }
-const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
-const formatQuantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
 const formatMoney = (value: number, currency: string) => new Intl.NumberFormat("fr-FR", {
   style: "currency", currency, maximumFractionDigits: 2,
 }).format(value);

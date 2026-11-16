@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { formatDisplayDate as displayDate } from "../../utils/format";
 import Button from "../common/Button";
 import { Link } from "react-router-dom";
 import { getSalesMetrics, type SalesMetrics as Metrics } from "../../services/salesService";
@@ -11,7 +12,6 @@ import "../../pages/Analytics.css";
 interface Props { from: string; to: string }
 const PAGE_SIZE = 10;
 const MAX_PERIOD_SPAN_MS = 366 * 86_400_000;
-const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
 
 export default function SalesMetrics({ from, to }: Props) {
   const periodTooLong = Date.parse(to) - Date.parse(from) > MAX_PERIOD_SPAN_MS;

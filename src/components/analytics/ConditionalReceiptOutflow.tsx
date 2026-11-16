@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
+import { formatQuantity as quantity, formatPercent as percent } from "../../utils/format";
 import type { Product } from "../../domain/inventory/product.types";
 import { estimateIncomingRecipeSuggestion } from "../../domain/recipes/recipeSuggestionOutflowPolicy";
 import type { UnestimatedReceivedIngredient } from "../../../shared/ingredientOutflowEstimate";
 
 interface Props { entry: UnestimatedReceivedIngredient; products: Product[] }
-const quantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
-const percent = (value: number) => new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 1 }).format(value);
 
 export default function ConditionalReceiptOutflow({ entry, products }: Props) {
   const product = products.find((item) => item.id === entry.productId);

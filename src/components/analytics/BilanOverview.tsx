@@ -1,4 +1,5 @@
 import DeclaredWastePanel from "./DeclaredWastePanel";
+import { formatQuantity as quantity } from "../../utils/format";
 import { formatLossValue, hasPricedLoss } from "./comparisonValues";
 import { Link } from "react-router-dom";
 import type { ImpactReport } from "../../services/impactService";
@@ -7,7 +8,6 @@ export default function BilanOverview({ report }: { report: Pick<ImpactReport, "
   const current = report.current.recorded;
   const prior = report.prior.recorded;
   const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: report.currency }).format(value);
-  const quantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
   const missingDays = current.serviceDays.partial + current.serviceDays.coverageMissing + current.serviceDays.unregistered;
   const losses = [...current.lossesByProduct].sort((a, b) => b.knownCost - a.knownCost).slice(0, 5);
   return <>

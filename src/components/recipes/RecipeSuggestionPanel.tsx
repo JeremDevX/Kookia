@@ -1,4 +1,5 @@
 import Button from "../common/Button";
+import { formatQuantity as quantity, formatPercent as percent, formatDisplayDate as displayDate } from "../../utils/format";
 import type { RecipeSuggestion } from "../../domain/recipes/recipeSuggestionPolicy";
 import { estimateSuggestedRecipeOutflow } from "../../domain/recipes/recipeSuggestionOutflowPolicy";
 import "./RecipeSuggestionPanel.css";
@@ -9,9 +10,6 @@ interface Props {
   onReview: (trigger: HTMLButtonElement) => void;
 }
 
-const quantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
-const percent = (value: number) => new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 1 }).format(value);
-const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
 
 export default function RecipeSuggestionPanel({ suggestion, onReview, disabled = false }: Props) {
   const estimate = estimateSuggestedRecipeOutflow(suggestion);

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { formatQuantity, formatDisplayDate as displayDate } from "../../utils/format";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { getSalesBaseline, type SalesBaseline as Baseline } from "../../services/salesService";
@@ -7,8 +8,6 @@ import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegio
 
 const PAGE_SIZE = 50;
 type BaselineItem = Baseline["items"][number];
-const formatQuantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
-const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
 
 function RecipeProjectionDetails({ item }: { item: BaselineItem }) {
   const projection = item.recipeProjection;

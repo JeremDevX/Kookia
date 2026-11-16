@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { formatQuantity, formatPercent, formatDisplayDate as displayDate } from "../../utils/format";
 import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
 import { getIngredientOutflowEstimates } from "../../services/ingredientOutflowEstimateService";
@@ -12,9 +13,6 @@ import ConditionalReceiptOutflow from "./ConditionalReceiptOutflow";
 interface Props { from: string; to: string }
 const PAGE_SIZE = 10;
 type StoredCatalogRequest = { requestKey: string; result: { status: "success"; products: Product[] } | { status: "error"; message: string } } | null;
-const formatQuantity = (value: number) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value);
-const formatPercent = (value: number) => new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 1 }).format(value);
-const displayDate = (value: string) => new Date(`${value}T12:00:00`).toLocaleDateString("fr-FR");
 export default function EstimatedOutflows({ from, to }: Props) {
   const location = useLocation();
   const [estimatePage, setEstimatePage] = useState(0);
