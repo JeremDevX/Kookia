@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import type { ServiceSlot } from "../../../../shared/serviceCalendar.js";
 import type { ServiceWeather, WeatherForecast, WeatherHour, WeatherPosition } from "../../../../shared/serviceWeather.js";
@@ -31,7 +32,7 @@ export function emptyServiceWeather(date: string, slot: ServiceSlot, reason: str
     units: { temperature: "°C", precipitation: "mm", precipitationProbability: "%", windSpeed: "km/h" } };
 }
 export function weatherUnavailableReason(date: string, now: Date): string | null {
-  const today = formatParisDate(now), last = new Date(Date.parse(today) + 6 * 86400000).toISOString().slice(0, 10);
+  const today = formatParisDate(now), last = addCalendarDays(today, 6);
   if (date < today) return "Consultez le contexte conservé avec le plan pour ce service passé.";
   if (date > last) return "La météo est proposée pour les sept prochains jours.";
   return null;

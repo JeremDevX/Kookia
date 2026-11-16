@@ -54,6 +54,23 @@ export async function getOperationalForecast(restaurantId: string, fromDate: str
       history.push({ date: day, slot, saleItemId, quantity: row ? slot === "lunch" ? row.serviceAllocation!.lunchQuantity : row.serviceAllocation!.dinnerQuantity : 0 });
     }
   }
+  const mixBySlot = new Map(serviceSlots.map(slot => {
+    const observedSessions = sessions.filter(s =>
+      s.slot === slot && s.actualCovers !== null && s.actualCovers > 0 && qualifiedDays.has(`${iso(s.serviceDate)}:${slot}`));
+    const mix = ["Entrée", "Plat", "Dessert", "Boisson"].flatMap(category => {
+      let portions = 0, covers = 0, count = 0;
+      for (const s of observedSessions) {
+        const day = iso(s.serviceDate);
+        const historicalEntries = menuAt(day, slot, true)?.entries as unknown as MenuEntry[] | undefined;
+        if (!historicalEntries) continue;
+        covers += s.actualCovers!; count++;
+        for (const e of historicalEntries) for (const c of e.components.filter(c => c.category === category))
+          portions += (history.find(h => h.date === day && h.slot === slot && h.saleItemId === e.saleItemId)?.quantity ?? 0) * c.portions;
+      }
+      return count >= 4 && covers ? [{ category, portionsPerCover: Math.round(portions / covers * 1000) / 1000, observedCovers: covers, services: count }] : [];
+    });
+    return [slot, mix] as const;
+  }));
   const services: ForecastService[] = [], totals = new Map<string, ForecastIngredient>();
   for (let day = fromDate; day <= throughDate; day = offset(day, 1)) for (const slot of serviceSlots) {
     const session = sessions.find(s => iso(s.serviceDate) === day && s.slot === slot);
@@ -76,19 +93,8 @@ export async function getOperationalForecast(restaurantId: string, fromDate: str
       totals.set(need.productId, previous ? { ...previous, quantity: Math.round((previous.quantity + need.quantity) * 1000) / 1000,
         sources: [...previous.sources, ...need.sources] } : need);
     }
-    const mix = ["Entrée", "Plat", "Dessert", "Boisson"].flatMap(category => {
-      let portions = 0, covers = 0, count = 0;
-      for (const s of sessions.filter(s => s.slot === slot && s.actualCovers !== null && s.actualCovers > 0 && qualifiedDays.has(`${iso(s.serviceDate)}:${slot}`))) {
-        const historicalEntries = menuAt(iso(s.serviceDate), slot, true)?.entries as unknown as MenuEntry[] | undefined;
-        if (!historicalEntries) continue;
-        covers += s.actualCovers!; count++;
-        for (const e of historicalEntries) for (const c of e.components.filter(c => c.category === category))
-          portions += (history.find(h => h.date === iso(s.serviceDate) && h.slot === slot && h.saleItemId === e.saleItemId)?.quantity ?? 0) * c.portions;
-      }
-      return count >= 4 && covers ? [{ category, portionsPerCover: Math.round(portions / covers * 1000) / 1000, observedCovers: covers, services: count }] : [];
-    });
     const forecastKey = createHash("sha256").update(JSON.stringify({ date: day, slot, menuId: menu?.id ?? null, items, blockers, weatherAdjustment })).digest("hex");
-    services.push({ date: day, slot, plannedOpen: open, menuRevision: menu?.revision ?? 0, forecastKey, items, weatherAdjustment, ingredientNeeds: projection.ingredients, blockers, mix });
+    services.push({ date: day, slot, plannedOpen: open, menuRevision: menu?.revision ?? 0, forecastKey, items, weatherAdjustment, ingredientNeeds: projection.ingredients, blockers, mix: mixBySlot.get(slot)! });
   }
   return { fromDate, throughDate, asOfDate, provenance: restaurant.mode === "demo" ? "demo_simulation" : "recorded_sales",
     services, ingredientNeeds: [...totals.values()], blockers: services.flatMap(s => s.blockers.map(b => `${s.date} ${s.slot === "lunch" ? "midi" : "soir"} : ${b}`)), excludedServices,

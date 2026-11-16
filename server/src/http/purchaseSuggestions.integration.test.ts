@@ -1,6 +1,7 @@
+import { registerUser } from "../application/auth/authService.js";
 import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { getPurchaseSuggestions } from "../application/workspace/purchaseSuggestionService.js";
-import { addCalendarDays } from "../../../shared/supplierDelivery.js";
+import { addCalendarDays } from "../../../shared/calendarDate.js";
 import { getOrderStep } from "../../../shared/orderQuantity.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
@@ -26,6 +27,33 @@ async function account(name: string) {
 
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
   month: "2-digit", day: "2-digit" }).format(new Date());
+
+it("counts all complete service days in the previous 28 Paris dates for the selected restaurant", async () => {
+  async function coverageWorkspace(name: string) {
+    const { user } = await registerUser(name, `${randomUUID()}@example.test`, "purchase test password");
+    ownerIds.push(user.id);
+    const restaurant = await ensureWorkspace(user.id);
+    return { actorId: user.id, restaurantId: restaurant.id };
+  }
+  const owner = await coverageWorkspace("Purchase coverage");
+  const other = await coverageWorkspace("Purchase other coverage");
+  const today = "2026-11-03";
+  const days = [
+    { offset: -29, coverage: "complete", status: "open", source: "recorded" },
+    { offset: -28, coverage: "complete", status: "closed", source: "recorded" },
+    { offset: -8, coverage: "complete", status: "open", source: "demo_simulation" },
+    { offset: -2, coverage: "partial", status: "open", source: "recorded" },
+    { offset: -1, coverage: "complete", status: "open", source: "mixed" },
+    { offset: 0, coverage: "complete", status: "open", source: "recorded" },
+  ] as const;
+  await prisma.serviceDay.createMany({ data: days.map(({ offset, ...row }) => ({ ...row, restaurantId: owner.restaurantId, actorId: owner.actorId,
+    serviceDate: new Date(addCalendarDays(today, offset)) })) });
+  await prisma.serviceDay.create({ data: { restaurantId: other.restaurantId, actorId: other.actorId,
+    serviceDate: new Date(addCalendarDays(today, -3)), coverage: "complete", status: "open" } });
+
+  const suggestions = await getPurchaseSuggestions(owner.restaurantId, prisma, new Date("2026-11-02T23:10:00Z"));
+  expect(suggestions).toMatchObject({ asOfDate: "2026-11-02", forecastDate: today, completeServiceDays: 3 });
+});
 
 it("rounds net oil needs, budgets the purchase, and enforces steps at every purchase boundary", async () => {
   const owner = await account("Purchase units");

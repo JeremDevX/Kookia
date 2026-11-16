@@ -7,9 +7,7 @@ export function displayDate(date: string) {
   if (!z.iso.date().safeParse(date).success) return "Date invalide";
   return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 }
-export function offsetDate(date: string, offset: number) {
-  return new Date(Date.parse(`${date}T12:00:00Z`) + offset * 86400000).toISOString().slice(0, 10);
-}
+export { addCalendarDays as offsetDate } from "../../shared/calendarDate";
 export const weekday = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();
 export const isOpen = (date: string, options: Options) => !options.closedWeekdays.includes(weekday(date));
 // Independent keyed draws: adding a payment or waste draw never changes demand.

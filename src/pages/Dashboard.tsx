@@ -18,7 +18,7 @@ import { describeServiceSources } from "../features/sales/salesPresentation";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { getLatestService, type LatestService } from "../services/salesService";
 import { getRestaurant, type Restaurant } from "../services/restaurantService";
-import { formatLocalISODate } from "../utils/date";
+import { formatLocalISODate, shiftDays } from "../utils/date";
 import "./Dashboard.css";
 
 export default function Dashboard() {
@@ -28,7 +28,7 @@ export default function Dashboard() {
 
 function DashboardOverview() {
   const today = formatLocalISODate(new Date());
-  const thirtyDaysAgo = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
+  const thirtyDaysAgo = shiftDays(today, -29);
   const { addToast } = useToast();
   const { cartItems, loading: cartLoading, loadError: cartError, refreshCart } = useCart();
   const { products, loading: productsLoading, error: productsError, refetch: refreshProducts } = useInventoryCatalog();

@@ -57,7 +57,7 @@ it("versions a multi-recipe formula and forecasts qualified service sales exactl
     await owner.put("/api/workspace/services/calendar").send({ serviceDate, slot: "lunch", plannedOpen: true, coverage: "complete", actualCovers: 12, expectedRevision: 0, note: "Reviewed" }).expect(200);
   }
   await owner.put("/api/workspace/services/calendar").send({ serviceDate: day(1), slot: "lunch", plannedOpen: true, coverage: "missing", actualCovers: null, expectedRevision: 0, note: "Planned" }).expect(200);
-  const prediction = (await owner.get("/api/workspace/service-forecast").query({ from: day(1), to: day(1) }).expect(200)).body as OperationalForecast;
+  const prediction = (await owner.get("/api/workspace/service-forecast").query({ from: day(1), to: day(2) }).expect(200)).body as OperationalForecast;
   const lunch = prediction.services.find((service) => service.slot === "lunch")!;
   expect(lunch.forecastKey).toMatch(/^[a-f0-9]{64}$/);
   expect(lunch.items.find((item) => item.entryId === formula.id)).toMatchObject({ quantity: 12, observations: 8, model: "service", deviation: 0 });
@@ -65,6 +65,8 @@ it("versions a multi-recipe formula and forecasts qualified service sales exactl
   expect(lunch.items.find((item) => item.entryId === unmapped.id)?.quantity).toBeNull();
   expect(prediction.ingredientNeeds.map((ingredient) => ({ productId: ingredient.productId, quantity: ingredient.quantity }))).toEqual(products.map((product) => ({ productId: product.id, quantity: 6 })));
   expect(lunch.mix.find((row) => row.category === "Boisson")).toMatchObject({ portionsPerCover: 1, services: 8 });
+  expect(prediction.services.find((service) => service.date === day(2) && service.slot === "lunch")?.mix).toEqual(lunch.mix);
+  expect(prediction.services.filter((service) => service.slot === "dinner").map((service) => service.mix)).toEqual([[], []]);
   await owner.patch(`/api/workspace/sales/${sales[0].id}`).send({ operationId: randomUUID(), saleItemId: formulaSale.id, serviceDate: sales[0].serviceDate, quantity: 15, revision: 0, reason: "Late correction" }).expect(200);
   const stale = (await owner.get("/api/workspace/service-forecast").query({ from: day(1), to: day(1) }).expect(200)).body as OperationalForecast;
   expect(stale.excludedServices).toBeGreaterThan(prediction.excludedServices);

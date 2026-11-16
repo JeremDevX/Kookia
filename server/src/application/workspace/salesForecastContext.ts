@@ -1,4 +1,5 @@
 import type { evaluateSalesBaseline } from "./salesBaseline.js";
+import { addCalendarDays } from "../../../../shared/calendarDate.js";
 
 type Baseline = ReturnType<typeof evaluateSalesBaseline>;
 
@@ -68,7 +69,7 @@ export function evaluateSalesForecastContext(baseline: Pick<Baseline, "status" |
     return unavailable("unavailable");
 
   const backtestFrom = baseline.items[0]?.backtest.from ??
-    new Date(Date.parse(baseline.asOfDate) - 6 * 86_400_000).toISOString().slice(0, 10);
+    addCalendarDays(baseline.asOfDate, -6);
   const backtestThrough = baseline.items[0]?.backtest.to ?? baseline.asOfDate;
   const weather = sourceStatus(fixture.weather, baseline.forecastDate, baseline.forecastDate, evaluatedAtTime);
   const events = sourceStatus(fixture.events, baseline.forecastDate, baseline.forecastDate, evaluatedAtTime);

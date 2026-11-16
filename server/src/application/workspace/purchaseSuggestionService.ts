@@ -1,19 +1,20 @@
 import { purchaseAvailability } from "./purchaseAvailability.js";
 import type { PurchaseSuggestion, PurchaseSuggestions } from "../../../../shared/purchaseSuggestions.js";
+import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import type { ForecastIngredient } from "../../../../shared/operationalForecast.js";
 import { getOperationalForecast } from "./operationalForecastService.js";
-import { addCalendarDays, supplierDeliveryHorizon, type SupplierDeliveryHorizon } from "../../../../shared/supplierDelivery.js";
+import { supplierDeliveryHorizon, type SupplierDeliveryHorizon } from "../../../../shared/supplierDelivery.js";
 import { getOrderStep, roundOrderQuantity, isOrderQuantity, orderStepLabel } from "../../../../shared/orderQuantity.js";
 import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient, type WorkspaceMode } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
-import { getSalesBaseline } from "./salesBaselineService.js";
+import { countCompleteSalesBaselineDays } from "./salesBaselineService.js";
 import { forecastWeatherNotice, type ForecastWeatherReference } from "../../../../shared/forecastWeather.js";
 
 type PurchaseDatabase = PrismaClient | Prisma.TransactionClient;
-type Baseline = { model: string; asOfDate: string; forecastDate: string; provenance: PurchaseSuggestions["provenance"] };
+type SuggestionContext = Pick<PurchaseSuggestions, "model" | "asOfDate" | "forecastDate" | "provenance">;
 
 const roundQuantity = (value: number) => Math.round(value * 1000) / 1000;
 
@@ -21,7 +22,7 @@ function suggestionFor(need: ForecastIngredient & { forecastNeed: number }, prod
   id: string; name: string; category: string; unit: string; stockRevision: number; currentStock: Prisma.Decimal;
   pricePerUnit: Prisma.Decimal; orderPackQuantity?: Prisma.Decimal | null; supplier: { name: string; deliveryWeekdays: number[]; leadTimeDays: number | null; orderCutoffTime: string | null };
 }, count: { countedQuantity: Prisma.Decimal; countDate: Date; stockRevisionAfter: number; unit: string } | undefined,
-workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, projectionComplete: boolean, expectedQuantity: number, availability: ReturnType<typeof purchaseAvailability> | null, weatherAdjustments: ForecastWeatherReference[], deliveryHorizon: SupplierDeliveryHorizon): PurchaseSuggestion {
+workspaceMode: WorkspaceMode, context: SuggestionContext, canUseProvenance: boolean, projectionComplete: boolean, expectedQuantity: number, availability: ReturnType<typeof purchaseAvailability> | null, weatherAdjustments: ForecastWeatherReference[], deliveryHorizon: SupplierDeliveryHorizon): PurchaseSuggestion {
   const packKnown = product.orderPackQuantity !== null && product.orderPackQuantity !== undefined;
   const constraintsKnown = deliveryHorizon.status === "known" && packKnown;
   const unitMatches = need.unit === product.unit;
@@ -46,8 +47,8 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
     productId: product.id, forecastNeed: roundQuantity(need.forecastNeed), countedStock,
     countDate: countVerified ? count!.countDate.toISOString().slice(0, 10) : null,
     orderStep, stockRevision: product.stockRevision, unit: product.unit, unitMatches,
-    baselineModel: baseline.model, asOfDate: baseline.asOfDate, forecastDate: baseline.forecastDate,
-    workspaceMode, provenance: baseline.provenance,
+    baselineModel: context.model, asOfDate: context.asOfDate, forecastDate: context.forecastDate,
+    workspaceMode, provenance: context.provenance,
     sources: need.sources, weatherAdjustments,
   };
   const suggestionKey = createHash("sha256").update(JSON.stringify(input)).digest("hex");
@@ -58,7 +59,7 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
     : !sourceEligible ? "Cette projection simulée ne peut pas devenir un achat de l’espace réel."
     : !projectionComplete ? "Une vente de la période n’est pas reliée à une recette exploitable : besoin incomplet."
     : status === "covered" ? expectedQuantity > 0 ? "Le besoin serait couvert sous réserve de réception des commandes attendues; elles ne sont pas du stock." : "Le dernier comptage couvre le besoin prévu."
-    : `Besoin estimé jusqu’au ${deliveryHorizon.status === "known" ? deliveryHorizon.throughDate : baseline.forecastDate}, stock compté déduit${expectedQuantity > 0 ? ", sous réserve des commandes attendues" : ""}.`;
+    : `Besoin estimé jusqu’au ${deliveryHorizon.status === "known" ? deliveryHorizon.throughDate : context.forecastDate}, stock compté déduit${expectedQuantity > 0 ? ", sous réserve des commandes attendues" : ""}.`;
   return { suggestionKey, productId: product.id, productName: product.name, supplierName: product.supplier.name,
     unit: product.unit, status, canAdd, deliveryHorizon, expectedQuantity,
     usableStock: countVerified ? availability!.usableStock : null, expiredQuantity: availability?.expiredQuantity ?? 0,
@@ -72,8 +73,9 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
 
 export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseDatabase = prisma, inputDate = new Date()): Promise<PurchaseSuggestions> {
   const today = formatParisDate(inputDate);
-  const [baseline, restaurant, products, counts, pendingLines, lots] = await Promise.all([
-    getSalesBaseline(restaurantId, addCalendarDays(today, -1), db),
+  const asOfDate = addCalendarDays(today, -1);
+  const [completeServiceDays, restaurant, products, counts, pendingLines, lots] = await Promise.all([
+    countCompleteSalesBaselineDays(restaurantId, asOfDate, db),
     db.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true, openingWeekdays: true } }),
     db.product.findMany({ where: { restaurantId }, include: { supplier: true }, orderBy: { name: "asc" } }),
     db.stockCount.findMany({ where: { restaurantId }, orderBy: [{ countedAt: "desc" }, { id: "desc" }],
@@ -83,7 +85,7 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
   ]);
   if (!restaurant) throw new WorkspaceError(404, "WORKSPACE_NOT_FOUND", "Espace introuvable.");
   const workspaceMode = restaurant.mode;
-  const context = { ...baseline, model: "qualified_service_menu_v1", asOfDate: addCalendarDays(today, -1), forecastDate: today,
+  const context = { model: "qualified_service_menu_v1", asOfDate, forecastDate: today,
     provenance: workspaceMode === "demo" ? "demo_simulation" as const : "recorded_sales" as const };
   const latestCount = new Map<string, (typeof counts)[number]>();
   for (const count of counts) if (!latestCount.has(count.productId)) latestCount.set(count.productId, count);
@@ -141,7 +143,7 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
   }
   return { status: "ready", provenance: context.provenance,
     workspaceMode, model: context.model, asOfDate: context.asOfDate, forecastDate: context.forecastDate,
-    completeServiceDays: baseline.completeServiceDays, blockers,
+    completeServiceDays, blockers,
     deliveryWarnings: [...(openingDaysKnown ? [] : [{ code: "opening_days_unknown" as const, message: "Jours d’ouverture du restaurant non renseignés : les dates de livraison ne sont pas vérifiées par rapport à l’ouverture." }]),
       ...[...new Set(deliveryBlockers)].map(message => ({ code: "opening_days_incompatible" as const, message }))],
     suggestions: suggestions.map((suggestion) => ({ ...suggestion, decision: decisionsBySuggestion.get(

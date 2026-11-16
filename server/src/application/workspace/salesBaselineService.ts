@@ -1,21 +1,29 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { evaluateSalesBaseline } from "./salesBaseline.js";
+import { evaluateSalesBaseline, salesBaselineHistoryFrom } from "./salesBaseline.js";
 import { evaluateSalesForecastContext } from "./salesForecastContext.js";
 
 type BaselineDatabase = PrismaClient | Prisma.TransactionClient;
 
+const salesBaselineRange = (asOfDate: string) => ({
+  gte: new Date(`${salesBaselineHistoryFrom(asOfDate)}T00:00:00Z`),
+  lte: new Date(`${asOfDate}T00:00:00Z`),
+});
 
-export const previousParisDay = () => new Date(Date.parse(formatParisDate()) - 86_400_000).toISOString().slice(0, 10);
+export const previousParisDay = () => addCalendarDays(formatParisDate(), -1);
+
+export function countCompleteSalesBaselineDays(restaurantId: string, asOfDate: string, db: BaselineDatabase) {
+  return db.serviceDay.count({ where: { restaurantId, serviceDate: salesBaselineRange(asOfDate), coverage: "complete" } });
+}
 
 export async function getSalesBaseline(restaurantId: string, asOfDate = previousParisDay(), db: BaselineDatabase = prisma) {
-  const historyFrom = new Date(Date.parse(asOfDate) - 27 * 86_400_000).toISOString().slice(0, 10);
-  const start = new Date(`${historyFrom}T00:00:00Z`), end = new Date(`${asOfDate}T00:00:00Z`);
+  const serviceDate = salesBaselineRange(asOfDate);
   const [rows, serviceDays] = await Promise.all([
     db.dailySale.findMany({ where: { restaurantId, source: { in: ["manual", "csv", "pos", "ticket_z", "demo_simulation"] },
-      serviceDate: { gte: start, lte: end } }, include: { saleItem: { select: { name: true } } } }),
-    db.serviceDay.findMany({ where: { restaurantId, serviceDate: { gte: start, lte: end } },
+      serviceDate }, include: { saleItem: { select: { name: true } } } }),
+    db.serviceDay.findMany({ where: { restaurantId, serviceDate },
       select: { serviceDate: true, status: true, coverage: true, source: true } }),
   ]);
   const saleItemIds = [...new Set(rows.map((row) => row.saleItemId))];

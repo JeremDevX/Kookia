@@ -1,4 +1,5 @@
 import type { DeclaredWasteSummary } from "../../../../shared/declaredWaste.js";
+import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { readDeclaredWaste, summarizeDeclaredWaste } from "./declaredWasteRead.js";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -20,11 +21,6 @@ const DAY_MS = 86_400_000;
 const lossReasons = ["loss", "simulation_loss"];
 const dateAt = (date: string) => new Date(`${date}T00:00:00.000Z`);
 const dateOnly = (date: Date) => date.toISOString().slice(0, 10);
-const addDays = (date: string, days: number) => {
-  const result = dateAt(date);
-  result.setUTCDate(result.getUTCDate() + days);
-  return dateOnly(result);
-};
 const inRange = (date: string, from: string, to: string) => date >= from && date <= to;
 
 function emptyBucket(calendarDays: number): ImpactBucket {
@@ -54,7 +50,7 @@ function monthlyPeriod(month: string, period: ReturnType<typeof emptyPeriod>) {
 export async function getImpactReport(restaurantId: string, from: string, to: string, db: ImpactDatabase = prisma,
   options: { includeMonthly?: boolean; monthlyPage?: number } = {}) {
   const dayCount = Math.floor((dateAt(to).getTime() - dateAt(from).getTime()) / DAY_MS) + 1;
-  const previous = { from: addDays(from, -dayCount), to: addDays(from, -1) };
+  const previous = { from: addCalendarDays(from, -dayCount), to: addCalendarDays(from, -1) };
   const rangeStart = dateAt(previous.from);
   const rangeEnd = new Date(dateAt(to).getTime() + DAY_MS);
   const workspace = await db.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } });

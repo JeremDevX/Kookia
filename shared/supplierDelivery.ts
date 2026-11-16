@@ -1,3 +1,5 @@
+import { addCalendarDays } from "./calendarDate.js";
+
 export interface SupplierDeliveryConstraints {
   deliveryWeekdays?: number[];
   leadTimeDays?: number | null;
@@ -7,9 +9,6 @@ export interface SupplierDeliveryConstraints {
 export type SupplierDeliveryHorizon =
   | { status: "unknown"; code: "supplier_constraints_missing" | "opening_days_incompatible"; reason: string }
   | { status: "known"; orderDate: string; nextDeliveryDate: string; followingDeliveryDate: string; throughDate: string; openingDays: "known" | "unknown"; timeZone: "Europe/Paris" };
-
-export const addCalendarDays = (date: string, days: number) =>
-  new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
 
 export function supplierDeliveryHorizon(constraints: SupplierDeliveryConstraints, now: Date, openingWeekdays?: unknown): SupplierDeliveryHorizon {
   const { deliveryWeekdays: weekdays, leadTimeDays: lead, orderCutoffTime: cutoff } = constraints;

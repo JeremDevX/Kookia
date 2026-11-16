@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
+import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -20,7 +21,7 @@ export async function listOperationalIncidents(restaurantId: string, from: strin
     gte: new Date(`${from}T00:00:00Z`), lte: new Date(`${to}T00:00:00Z`) } }, orderBy: [{ serviceDate: "desc" }, { createdAt: "desc" }], take: 200 });
   const products = await prisma.product.findMany({ where: { restaurantId, id: { in: rows.flatMap(r => r.productId ? [r.productId] : []) } } });
   const lots = await prisma.stockLot.findMany({ where: { restaurantId, id: { in: rows.flatMap(r => r.lotId ? [r.lotId] : []) } } });
-  const horizon = formatParisDate(), end = iso(new Date(Date.parse(horizon) + 7 * 86400000));
+  const horizon = formatParisDate(), end = addCalendarDays(horizon, 7);
   const forecast = rows.length ? await getOperationalForecast(restaurantId, horizon, end) : null;
   return rows.map(row => {
     const product = products.find(p => p.id === row.productId), lot = lots.find(l => l.id === row.lotId);

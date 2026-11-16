@@ -1,3 +1,5 @@
+import { addCalendarDays } from "../../../../shared/calendarDate.js";
+
 export interface BaselineSale {
   serviceDate: string;
   saleItemId: string;
@@ -35,8 +37,7 @@ export interface BaselineRecipeVersion {
 const HISTORY_DAYS = 28;
 const LOOKBACK_DAYS = 7;
 const EVALUATION_DAYS = 7;
-const day = (date: string, offset: number) =>
-  new Date(Date.parse(date) + offset * 86_400_000).toISOString().slice(0, 10);
+export const salesBaselineHistoryFrom = (asOfDate: string) => addCalendarDays(asOfDate, 1 - HISTORY_DAYS);
 const roundQuantity = (value: number) => Math.round(value * 1000) / 1000;
 const mean = (values: number[]) => roundQuantity(values.reduce((sum, value) => sum + value, 0) / values.length);
 const round = (value: number) => Math.round(value * 10) / 10;
@@ -113,7 +114,9 @@ function recipeUsageBacktest(saleItemId: string, dates: string[], quantities: nu
 
 export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: BaselineServiceDay[], asOfDate: string,
   recipeMappings: BaselineRecipeMapping[] = [], recipeVersions: BaselineRecipeVersion[] = []) {
-  const dates = Array.from({ length: HISTORY_DAYS }, (_, index) => day(asOfDate, index - HISTORY_DAYS + 1));
+  const historyFrom = salesBaselineHistoryFrom(asOfDate);
+  const forecastDate = addCalendarDays(asOfDate, 1);
+  const dates = Array.from({ length: HISTORY_DAYS }, (_, index) => addCalendarDays(historyFrom, index));
   const inWindow = sales.filter((sale) => dates.includes(sale.serviceDate));
   const hasRecordedSales = inWindow.some((sale) => sale.source !== "demo_simulation");
   const hasSimulationSales = inWindow.some((sale) => sale.source === "demo_simulation");
@@ -157,7 +160,7 @@ export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: Baseli
         days: EVALUATION_DAYS, observedQuantity: evaluationActuals.reduce((sum, value) => sum + value, 0),
         rollingMean7: errorMetrics(rollingMeanErrors, evaluationActuals),
         previousWeekday: errorMetrics(previousWeekdayErrors, evaluationActuals) },
-      recipeProjection: recipeProjection(item.saleItemId, day(asOfDate, 1), day(asOfDate, 1),
+      recipeProjection: recipeProjection(item.saleItemId, forecastDate, forecastDate,
         mean(quantities.slice(-LOOKBACK_DAYS)), recipeMappings, recipeVersions),
       recipeBacktest: recipeUsageBacktest(item.saleItemId, dates, quantities, recipeMappings, recipeVersions) }];
   }).sort((a, b) => a.saleItemName.localeCompare(b.saleItemName, "fr"));
@@ -165,7 +168,7 @@ export function evaluateSalesBaseline(sales: BaselineSale[], serviceDays: Baseli
     : hasSimulationSales ? "demo_simulation" : "recorded_sales";
   return {
     provenance, model: "rolling_mean_7_v1" as const,
-    asOfDate, forecastDate: day(asOfDate, 1), historyFrom: dates[0],
+    asOfDate, forecastDate, historyFrom,
     requiredConsecutiveDays: HISTORY_DAYS, lookbackDays: LOOKBACK_DAYS, evaluationDays: EVALUATION_DAYS,
     completeServiceDays, openServiceDays, incompleteDates,
     status: byItem.size === 0 ? "no_data" as const : incompleteDates.length > 0 || mixedSourceWindow ? "insufficient_history" as const : "experimental" as const,
