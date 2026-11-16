@@ -13,7 +13,7 @@ beforeEach(() => { vi.clearAllMocks(); vi.stubGlobal("requestAnimationFrame", vi
 describe("préremplissage CSV", () => {
   it("place les ingrédients dans l’éditeur sans enregistrer de recette", () => {
     const ingredients = [{ productId: "p1", quantity: 1.25 }];
-    RecipeEditor({ open: true, recipe: null, products: [], headingRef: { current: null }, initialSuggestion: null,
+    RecipeEditor({ recipe: null, products: [], headingRef: { current: null }, initialSuggestion: null,
       initialImport: ingredients, onClose: vi.fn(), onSaved: vi.fn() });
     vi.mocked(useEffect).mock.calls[0][0]();
     const setDraft = vi.mocked(useState).mock.results[0].value[1];
@@ -24,7 +24,7 @@ describe("préremplissage CSV", () => {
     const draft = { name: "Test", category: "Plat", prepTime: 1, yieldPortions: 1, effectiveFrom: "2026-01-01",
       ingredients: [{ productId: "p1", quantity: 2, netQuantity: 1 }], steps: [] };
     vi.mocked(useState).mockImplementationOnce(() => [draft, vi.fn()] as never);
-    const tree = RecipeEditor({ open: true, recipe: null, products: [{ id: "p1", name: "A", unit: "kg" },
+    const tree = RecipeEditor({ recipe: null, products: [{ id: "p1", name: "A", unit: "kg" },
       { id: "p2", name: "B", unit: "kg" }] as never, headingRef: { current: null }, initialSuggestion: null,
       onClose: vi.fn(), onSaved: vi.fn() });
     const findSelect = (node: unknown): ReactElement<{ onChange: (event: unknown) => void }> | undefined => {
@@ -51,7 +51,7 @@ describe("validation des étapes", () => {
       .mockImplementationOnce(() => ["operation", vi.fn()] as never)
       .mockImplementationOnce(() => [false, vi.fn()] as never)
       .mockImplementationOnce(() => ["", setError] as never);
-    const tree = RecipeEditor({ open: true, recipe: null, products: [], headingRef: { current: null },
+    const tree = RecipeEditor({ recipe: null, products: [], headingRef: { current: null },
       initialSuggestion: null, onClose: vi.fn(), onSaved: vi.fn() });
     const form = Children.toArray(tree.props.children).find((child) => isValidElement(child) && child.type === "form") as ReactElement<{ onSubmit: (event: unknown) => void }>;
     form.props.onSubmit({ preventDefault: vi.fn() });
@@ -66,13 +66,13 @@ describe("conservation des étapes", () => {
     const steps = ["Mélanger\nPuis cuire", "Servir"];
     const recipe = { id: "r", name: "Test", category: "Plat", prepTime: 1, yieldPortions: 1,
       effectiveFrom: "2026-01-01", revision: 1, version: 1, ingredients: [], versions: [], steps } as never;
-    RecipeEditor({ open: true, recipe, products: [], headingRef: { current: null }, initialSuggestion: null,
+    RecipeEditor({ recipe, products: [], headingRef: { current: null }, initialSuggestion: null,
       onClose: vi.fn(), onSaved: vi.fn() });
     vi.mocked(useEffect).mock.calls[0][0]();
     const draft = vi.mocked(useState).mock.results[0].value[1].mock.calls[0][0];
     expect(draft.steps).toEqual(steps);
     vi.mocked(useState).mockImplementationOnce(() => [draft, vi.fn()] as never);
-    const tree = RecipeEditor({ open: true, recipe, products: [], headingRef: { current: null }, initialSuggestion: null,
+    const tree = RecipeEditor({ recipe, products: [], headingRef: { current: null }, initialSuggestion: null,
       onClose: vi.fn(), onSaved: vi.fn() });
     const form = Children.toArray(tree.props.children).find((child) => isValidElement(child) && child.type === "form") as ReactElement<{ onSubmit: (event: unknown) => void }>;
     await form.props.onSubmit({ preventDefault: vi.fn() });

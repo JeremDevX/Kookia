@@ -15,9 +15,9 @@ import ForecastWeatherSummary from "./ForecastWeatherSummary";
 import type { ForecastWeatherAdjustment } from "../../../shared/forecastWeather";
 import { hasPendingServiceSheetFields } from "./serviceSheetPendingFields";
 
-export default function ServiceSheetPanel({ date, slot, loadRecipes, onChanged, onDirtyChange, menuChange = 0, weatherContextRef }: {
-  date: string; slot: ServiceSlot; loadRecipes: () => Promise<Recipe[]>; onChanged?: () => void; onDirtyChange?: (dirty: boolean) => void;
-  menuChange?: number; weatherContextRef?: string;
+export default function ServiceSheetPanel({ date, slot, loadRecipes, onDirtyChange, menuChange, weatherContextRef }: {
+  date: string; slot: ServiceSlot; loadRecipes: () => Promise<Recipe[]>; onDirtyChange?: (dirty: boolean) => void;
+  menuChange: number; weatherContextRef?: string;
 }) {
   const [sheet, setSheet] = useState<ServiceSheet | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -94,7 +94,7 @@ export default function ServiceSheetPanel({ date, slot, loadRecipes, onChanged, 
         ...(action === "validate_plan" && weatherContextRef ? { weatherContextRef } : {}),
       };
       const result = await saveServiceSheet(pendingInput.current);
-      apply(result); pendingInput.current = null; setDirty(false); setOperationId(crypto.randomUUID()); onChanged?.();
+      apply(result); pendingInput.current = null; setDirty(false); setOperationId(crypto.randomUUID());
       setStatus(action === "close" ? "Service clôturé ; le constat est conservé sans nouvelle sortie de stock." : action === "validate_plan"
         ? `Plan validé par le chef. ${result.weatherContext?.status === "saved" ? "Contexte météo conservé." : "Contexte météo non conservé."} Enregistrez séparément les préparations réellement réalisées.` : "Brouillon enregistré.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Enregistrement impossible."); }

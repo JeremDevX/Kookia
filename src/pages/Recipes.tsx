@@ -261,7 +261,7 @@ const Recipes: React.FC = () => {
         Aucune proposition de recette automatique n’est disponible pour cette réception. Vous pouvez créer une recette depuis le catalogue.
       </p>}
       {recipeEditorOpen && <p role="status">Enregistrez ou annulez la recette en cours avant d’en ouvrir une autre.</p>}
-      {recipeEditorOpen && <RecipeEditor open={recipeEditorOpen} recipe={editingRecipe} products={products} headingRef={recipeEditorHeading}
+      {recipeEditorOpen && <RecipeEditor recipe={editingRecipe} products={products} headingRef={recipeEditorHeading}
         initialSuggestion={recipePrefill} initialImport={csvPrefill}
         onClose={closeRecipeEditor} onSaved={handleRecipeSaved} />}
       {csvOpen && <RecipeCsvImport products={products} onClose={() => { setCsvOpen(false); requestAnimationFrame(() => recipeEditOrigin.current?.focus()); }} onApply={(ingredients) => { setCsvOpen(false); setEditingRecipe(null); setRecipePrefill(null); setCsvPrefill(ingredients); setRecipeEditorOpen(true); requestAnimationFrame(() => document.getElementById("recipe-editor-section-title")?.scrollIntoView({ block: "nearest" })); }} />}
@@ -269,10 +269,9 @@ const Recipes: React.FC = () => {
       {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to={recipeViewHref(searchParams, "catalog")}>Voir toutes les recettes</Link></p>}
       {displayedTab === "catalog" && !error && <RecipeCatalog editing={recipeEditorOpen} recipes={recipesWithYield} loading={loading}
         onEdit={(recipe, trigger) => openRecipeEditor(recipe, trigger)} onProduce={handleStartProduction} />}
-      {!productId && !incomingReceiptLineId && displayedTab !== "sheets" && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
       {displayedTab === "sheets" && !error && <RecipeSheets editing={recipeEditorOpen} recipes={recipes} loading={loading} costPerPortion={getIngredientCost}
         onEdit={(recipe, trigger) => openRecipeEditor(recipe, trigger)} />}
-      {!productId && !incomingReceiptLineId && displayedTab === "sheets" && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
+      {!productId && !incomingReceiptLineId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
 
       {displayedTab === "history" && hasScenarioRecords && <p className="workspace-subtitle" role="note">
         Le journal contient des enregistrements de QA isolés ; ils ne décrivent pas des productions observées du restaurant.

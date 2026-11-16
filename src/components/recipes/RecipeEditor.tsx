@@ -13,8 +13,8 @@ interface RecipeDraft {
 const blankDraft = (): RecipeDraft => ({ name: "", category: "Plat", prepTime: 15, yieldPortions: 1,
   effectiveFrom: formatLocalISODate(), steps: [], ingredients: [{ productId: "", quantity: 0.1 }] });
 
-export default function RecipeEditor({ open, recipe, products, headingRef, initialSuggestion, initialImport = null, onClose, onSaved }: {
-  open: boolean; recipe: Recipe | null; products: Product[]; headingRef: RefObject<HTMLHeadingElement | null>;
+export default function RecipeEditor({ recipe, products, headingRef, initialSuggestion, initialImport = null, onClose, onSaved }: {
+  recipe: Recipe | null; products: Product[]; headingRef: RefObject<HTMLHeadingElement | null>;
   initialSuggestion: RecipeSuggestion | null;
   initialImport?: ImportedIngredient[] | null;
   onClose: () => void; onSaved: () => Promise<void>;
@@ -24,7 +24,6 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
-    if (!open) return;
     setDraft(recipe ? { name: recipe.name, category: recipe.category, prepTime: recipe.prepTime,
       yieldPortions: recipe.yieldPortions, effectiveFrom: formatLocalISODate(), steps: recipe.steps ?? [],
       ingredients: recipe.ingredients.map(({ productId, quantity, netQuantity }) => ({ productId, quantity, netQuantity })) }
@@ -35,7 +34,7 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
         : initialImport ? { ...blankDraft(), ingredients: initialImport } : blankDraft());
     setOperationId(crypto.randomUUID()); setError("");
     requestAnimationFrame(() => headingRef.current?.focus());
-  }, [open, recipe, initialSuggestion, initialImport, headingRef]);
+  }, [recipe, initialSuggestion, initialImport, headingRef]);
 
   const setIngredient = (index: number, next: Partial<RecipeDraft["ingredients"][number]>) =>
     setDraft((current) => ({ ...current, ingredients: current.ingredients.map((row, rowIndex) =>
@@ -61,7 +60,7 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
     <div className="recipe-editor-heading">
       <h2 id="recipe-editor-section-title">Gestion des recettes</h2>
     </div>
-    {open && <form className="recipe-editor-form" onSubmit={(event) => void submit(event)}>
+    <form className="recipe-editor-form" onSubmit={(event) => void submit(event)}>
       <h3 id="recipe-editor-title" ref={headingRef} tabIndex={-1}>{recipe ? `Modifier ${recipe.name}` : initialSuggestion ? "Revoir la proposition" : initialImport ? "Revoir la fiche importée" : "Nouvelle recette"}</h3>
       {initialImport && <p>Vérifiez les quantités, complétez les informations de la recette, puis créez-la si elles sont correctes.</p>}
       {initialSuggestion && <p>Cette proposition part de « {initialSuggestion.sourceProductName} »{initialSuggestion.sourceReceipt
@@ -139,6 +138,6 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
         <Button type="submit" disabled={saving || !products.length}>{saving ? "Enregistrement…" : recipe ? "Enregistrer une nouvelle version" : "Créer la recette"}</Button>
         <Button type="button" variant="outline" disabled={saving} onClick={onClose}>Annuler</Button>
       </div>
-    </form>}
+    </form>
   </section>;
 }
