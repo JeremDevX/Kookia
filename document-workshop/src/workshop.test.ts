@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { recipeById } from "./catalog";
+import { money, recipeById } from "./catalog";
+import { parseCheckpointFile } from "./continuation";
 import { createDocuments, salesCsv } from "./documents";
 import { archiveFiles, readySales } from "./dossier";
 import { pdfBytes, zipBytes } from "./exports";
@@ -12,7 +13,8 @@ import { inspectTicketZUpload } from "../../server/src/application/workspace/tic
 describe("workshop document contracts", () => {
   it("exports unique day/article CSV quantities from served transaction lines, not forecasts", () => {
     const scenario = generateScenario({ ...input, services: "both", incident: "mixed" });
-    const rows = parseSalesCsv(salesCsv(scenario), "2026-12-31").rows;
+    const { docs, sales } = createDocuments(scenario);
+    const rows = parseSalesCsv(salesCsv(sales), "2026-12-31").rows;
     expect(rows.every(row => !row.error)).toBe(true);
     expect(new Set(rows.map(row => `${row.serviceDate}:${row.itemName}`)).size).toBe(rows.length);
     for (const row of rows) {
@@ -23,13 +25,22 @@ describe("workshop document contracts", () => {
     }
     expect(rows.some(row => row.itemName.includes(","))).toBe(true);
     expect(rows.every(row => row.quantity > 0)).toBe(true);
-    const ready = readySales(scenario, "2026-09-10");
+    for (const ticket of docs.filter(doc => doc.kind === "ticket")) {
+      const day = scenario.days.find(d => d.date === ticket.date)!;
+      const lines = day.services.flatMap(s => s.transactions.flatMap(t => t.lines));
+      expect(ticket.sections[0].rows).toEqual(rows.filter(row => row.serviceDate === day.date).map(row => {
+        const gross = lines.filter(line => recipeById(line.recipeId).name === row.itemName)
+          .reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
+        return [row.itemName, String(row.quantity), money(gross)];
+      }));
+    }
+    const ready = readySales(sales, "2026-09-10");
     expect(parseSalesCsv(salesCsv(ready), "2026-09-10").rows.every(row => !row.error)).toBe(true);
-    expect(readySales(scenario, "2026-08-31").days).toHaveLength(0);
+    expect(readySales(sales, "2026-08-31")).toHaveLength(0);
   });
   it("dates and links supplier documents without inventing a receipt for pending orders", () => {
     const scenario = generateScenario({ ...input, incident: "short_delivery", days: 7 });
-    const docs = createDocuments(scenario);
+    const { docs } = createDocuments(scenario);
     expect(new Set(docs.map(d => d.id)).size).toBe(docs.length);
     expect(new Set(docs.filter(d => d.kind === "invoice").map(d => d.style))).toEqual(new Set(["market", "farm", "wholesale"]));
     for (const p of scenario.purchases) {
@@ -46,7 +57,7 @@ describe("workshop document contracts", () => {
   });
   it("documents actual productions, stock-only losses and source-linked refunds", () => {
     const scenario = generateScenario({ ...input, incident: "refund", days: 7 });
-    const docs = createDocuments(scenario);
+    const { docs } = createDocuments(scenario);
     for (const day of scenario.days.filter(d => d.open)) {
       const production = docs.find(d => d.kind === "production" && d.date === day.date)!;
       const total = production.sections.flatMap(s => s.rows).reduce((n, row) => n + Number(row[3]), 0);
@@ -59,7 +70,7 @@ describe("workshop document contracts", () => {
     }
   });
   it("renders bounded pages for every template, including long identities and a 90-day calendar", () => {
-    const docs = createDocuments(generateScenario({ ...input, days: 90, name: "Restaurant " + "W".repeat(69), incident: "mixed" }));
+    const { docs } = createDocuments(generateScenario({ ...input, days: 90, name: "Restaurant " + "W".repeat(69), incident: "mixed" }));
     const calendar = docs.find(d => d.kind === "service")!;
     expect(layoutDocument(calendar).length).toBeGreaterThan(1);
     for (const doc of docs) for (const page of layoutDocument(doc)) for (const run of page.runs) {
@@ -78,18 +89,27 @@ describe("workshop document contracts", () => {
     const scenario = generateScenario({ ...input, days: 7 });
     const files = archiveFiles(scenario, createDocuments(scenario));
     expect(new Set(files.map(file => file.name)).size).toBe(files.length);
-    const checkpoint = JSON.parse(new TextDecoder().decode(files.find(f => f.name === "stock-reprise.json")!.bytes));
-    expect(checkpoint).toEqual(scenario.checkpoint);
-    const journal = JSON.parse(new TextDecoder().decode(files.find(f => f.name === "scenario.json")!.bytes));
+    const decoder = new TextDecoder();
+    const decode = (name: string) => decoder.decode(files.find(file => file.name === name)!.bytes);
+    expect(parseCheckpointFile(decode("stock-reprise.json"))).toEqual(scenario.checkpoint);
+    expect(parseCheckpointFile(decode("scenario.json"))).toEqual(scenario.checkpoint);
+    const journal = JSON.parse(decode("scenario.json"));
     expect(journal.catalog.version).toBe(2); expect(journal.catalog.recipes.length).toBeGreaterThan(3);
+    const header = "service_date,item_name,quantity\r\n";
+    const dailyRows: string[] = [];
     for (const day of scenario.days) {
       const csv = files.find(file => file.name === `${day.date}/ventes.csv`);
       if (!day.open) { expect(csv).toBeUndefined(); expect(files.some(f => f.name === `${day.date}/sans-ventes.md`)).toBe(true); }
       else {
-        const parsed = parseSalesCsv(new TextDecoder().decode(csv!.bytes), "2026-12-31");
+        const text = decoder.decode(csv!.bytes);
+        expect(text.startsWith(header)).toBe(true);
+        expect(text.endsWith("\r\n")).toBe(true);
+        const parsed = parseSalesCsv(text, "2026-12-31");
         expect(parsed.rows.every(row => row.serviceDate === day.date && !row.error)).toBe(true);
+        dailyRows.push(text.slice(header.length));
       }
     }
+    expect(decode("ventes-periode-complete.csv")).toBe(header + dailyRows.join(""));
     const closed = generateScenario({ ...input, start: "2026-09-07", days: 1 });
     expect(archiveFiles(closed, createDocuments(closed)).some(f => f.name.endsWith(".csv"))).toBe(false);
   });

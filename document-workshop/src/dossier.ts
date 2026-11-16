@@ -1,6 +1,6 @@
-import { dailySales, salesCsv } from "./documents";
-import type { Document } from "./documents";
-import { workflows } from "./documents";
+import { salesCsv, workflows } from "./documents";
+import type { createDocuments, Document } from "./documents";
+import type { DaySales } from "./documentModel";
 import { pdfBytes } from "./exports";
 import type { ArchiveFile } from "./exports";
 import type { Scenario } from "./scenario";
@@ -28,17 +28,17 @@ const setupKinds = new Set(["identity", "suppliers", "catalog", "recipes", "serv
 function documentPath(doc: Document) {
   return `${setupKinds.has(doc.kind) ? "installation" : doc.date}/${doc.id}.pdf`;
 }
-export function readySales(scenario: Scenario, today: string): Scenario {
-  return { ...scenario, days: scenario.days.filter(day => day.date <= today && dailySales(day).length > 0) };
+export function readySales(days: readonly DaySales[], today: string) {
+  return days.filter(day => day.date <= today && day.articles.size > 0);
 }
-export function archiveFiles(scenario: Scenario, docs: Document[]): ArchiveFile[] {
+export function archiveFiles(scenario: Scenario, { docs, sales }: ReturnType<typeof createDocuments>): ArchiveFile[] {
   const encoder = new TextEncoder();
   const files: ArchiveFile[] = docs.map(doc => ({ name: documentPath(doc), bytes: pdfBytes(doc) }));
-  for (const day of scenario.days) {
-    if (dailySales(day).length) files.push({ name: `${day.date}/ventes.csv`, bytes: encoder.encode(salesCsv({ ...scenario, days: [day] })) });
+  for (const day of sales) {
+    if (day.articles.size) files.push({ name: `${day.date}/ventes.csv`, bytes: encoder.encode(salesCsv([day])) });
     else files.push({ name: `${day.date}/sans-ventes.md`, bytes: encoder.encode(day.open ? "Journée ouverte sans vente. Aucun CSV à importer ; revoir la couverture du service dans Kookia.\n" : "Journée fermée. Aucun CSV à importer ; renseigner la fermeture dans le calendrier Kookia.\n") });
   }
-  if (scenario.days.some(day => dailySales(day).length)) files.push({ name: "ventes-periode-complete.csv", bytes: encoder.encode(salesCsv(scenario)) });
+  if (sales.some(day => day.articles.size)) files.push({ name: "ventes-periode-complete.csv", bytes: encoder.encode(salesCsv(sales)) });
   files.push({ name: "guide.md", bytes: encoder.encode(guide(scenario, docs)) },
     { name: "scenario.json", bytes: encoder.encode(JSON.stringify(scenario, null, 2)) },
     { name: "stock-reprise.json", bytes: encoder.encode(JSON.stringify(scenario.checkpoint, null, 2)) });

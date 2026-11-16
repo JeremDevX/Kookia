@@ -1,17 +1,10 @@
 import { money, number, recipeById } from "./catalog";
 import { section, serviceLabel } from "./documentModel";
-import type { WriteDocument } from "./documentModel";
+import type { DaySales, WriteDocument } from "./documentModel";
 import type { Day, Scenario } from "./model";
 import { scenarioWeatherNotice, scenarioWeatherSummary, terraceLabel, weatherPercent } from "./weather";
 
-export function dailySales(day: Day) {
-  const quantities = new Map<string, number>();
-  for (const service of day.services) for (const transaction of service.transactions) for (const line of transaction.lines) {
-    quantities.set(line.recipeId, (quantities.get(line.recipeId) ?? 0) + line.quantity);
-  }
-  return [...quantities.entries()].map(([recipeId, sold]) => ({ recipeId, sold }));
-}
-export function serviceDocuments(scenario: Scenario, day: Day, add: WriteDocument) {
+export function serviceDocuments(scenario: Scenario, day: Day, articles: DaySales["articles"], add: WriteDocument) {
   if (!day.open) return;
   const { date } = day;
   add("forecast", "Prévision et plan de préparation", date, "01", [
@@ -34,10 +27,8 @@ export function serviceDocuments(scenario: Scenario, day: Day, add: WriteDocumen
       `${d.recipeId ? recipeById(d.recipeId).name : "Service"} / ${d.portions}`, d.reason]))), day.events);
   const transactions = day.services.flatMap(s => s.transactions);
   add("ticket", "Ticket Z", date, "01", [
-    section("Articles / journée", ["Article", "Qté", "Brut TTC"], dailySales(day).map(({ recipeId, sold }) => {
-      const gross = transactions.flatMap(t => t.lines).filter(l => l.recipeId === recipeId).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0);
-      return [recipeById(recipeId).name, String(sold), money(gross)];
-    })),
+    section("Articles / journée", ["Article", "Qté", "Brut TTC"], [...articles].map(([recipeId, { sold, gross }]) =>
+      [recipeById(recipeId).name, String(sold), money(gross)])),
     section("Clôture", ["Libellé", "EUR"], [["Brut articles", money(day.gross)], ["Remises formules", money(-day.discount)], ["Remboursements", money(-day.refunded)],
       ["Net encaissé TTC", money(day.collected)], ["Base HT nette", money(day.net)], ["TVA 10 % nette", money(day.tax)], ["Carte nette", money(day.card)], ["Espèces nettes", money(day.cash)]]),
     section("Services", ["Service", "Demandés", "Tickets"], day.services.map(s => [serviceLabel(s.name), String(s.covers), String(s.transactions.length)])),

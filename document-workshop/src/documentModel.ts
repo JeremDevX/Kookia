@@ -4,6 +4,8 @@ export interface Document {
   id: string; kind: string; title: string; date: string; issuer: string; recipient: string;
   sections: Section[]; notes: string[]; workflow: string; style: DocumentStyle;
 }
+export interface ArticleSales { sold: number; gross: number }
+export interface DaySales { date: string; open: boolean; articles: ReadonlyMap<string, ArticleSales> }
 export const workflows = {
   identity: "Paramètres → Restaurant : reprendre l'identité, les couverts de référence et le choix Terrasse après revue. Confirmer la commune depuis le bouton météo de Kookia, sans importer la météo du dossier.",
   suppliers: "Fournisseurs : créer ou rapprocher les fiches. Les tournées et conditionnements sont des hypothèses de travail, aucun email n'est envoyé.",

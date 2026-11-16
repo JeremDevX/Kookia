@@ -57,18 +57,19 @@ describe("document workshop terrace and weather", () => {
     expect(next.days).toEqual(scenario.days.slice(3));
     expect(next.checkpoint.lots).toEqual(scenario.checkpoint.lots);
     expect(new Set(scenario.days.map(d => d.weather.conditions?.weatherCode)).size).toBeGreaterThan(1);
-    const docs = createDocuments(scenario);
+    const documents = createDocuments(scenario);
+    const { docs, sales } = documents;
     expect(docs.find(d => d.kind === "identity")!.sections[0].rows).toContainEqual(["Terrasse", "Oui"]);
     const forecast = docs.find(d => d.kind === "forecast")!;
     expect(forecast.sections[0].columns).toEqual(["Service", "Base semaine/saison", "Effet météo", "Prévu ajusté"]);
     expect(forecast.sections[0].rows).toHaveLength(2);
     expect(forecast.notes.join(" ")).toContain("Météo de scénario");
     expect(forecast.notes.join(" ")).toContain("non calibrés");
-    const files = archiveFiles(scenario, docs), decode = (name: string) => new TextDecoder().decode(files.find(f => f.name === name)!.bytes);
+    const files = archiveFiles(scenario, documents), decode = (name: string) => new TextDecoder().decode(files.find(f => f.name === name)!.bytes);
     expect(JSON.parse(decode("scenario.json")).days[0].weather).toEqual(scenario.days[0].weather);
     expect(decode("guide.md")).toContain("Ne pas réappliquer le coefficient");
     expect(decode("guide.md")).toContain("ne mesure donc pas un gain prédictif");
-    expect(salesCsv(scenario).split(/\r?\n/)[0]).toBe("service_date,item_name,quantity");
+    expect(salesCsv(sales).split(/\r?\n/)[0]).toBe("service_date,item_name,quantity");
     expect(parseCheckpointFile(decode("stock-reprise.json"))).toEqual(scenario.checkpoint);
   });
   it("renders named native settings and distinguishes the base, conditions and adjusted result", () => {

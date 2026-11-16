@@ -18,10 +18,13 @@ export function forecastNeeds(from: string, until: string, options: Options) {
   const needs: Record<string, number> = {};
   for (let date = from; date < until; date = offsetDate(date, 1)) {
     if (!isOpen(date, options)) continue;
-    for (const service of serviceNames(options)) for (const recipe of menuFor(date, service, options)) {
-      const { planned } = forecastPortions(recipe, serviceForecast(date, service, options).forecastCovers, options);
-      for (const [id, dosage] of Object.entries(grossDosages(recipe, options.lossPercent))) {
-        needs[id] = quantity((needs[id] ?? 0) + quantity(dosage * planned / 10));
+    for (const service of serviceNames(options)) {
+      const { forecastCovers } = serviceForecast(date, service, options);
+      for (const recipe of menuFor(date, service, options)) {
+        const { planned } = forecastPortions(recipe, forecastCovers, options);
+        for (const [id, dosage] of Object.entries(grossDosages(recipe, options.lossPercent))) {
+          needs[id] = quantity((needs[id] ?? 0) + quantity(dosage * planned / 10));
+        }
       }
     }
   }

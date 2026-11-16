@@ -41,7 +41,8 @@ export default function App() {
   const [form, setForm] = useState<Options>(initial);
   const [scenario, setScenario] = useState(() => generateScenario(initial));
   const [continuation, setContinuation] = useState<Checkpoint | null>(null);
-  const docs = useMemo(() => createDocuments(scenario), [scenario]);
+  const documents = useMemo(() => createDocuments(scenario), [scenario]);
+  const { docs, sales } = documents;
   const [selectedId, setSelectedId] = useState(docs[0].id);
   const [kind, setKind] = useState("all");
   const [date, setDate] = useState(initial.start);
@@ -52,7 +53,7 @@ export default function App() {
   const selected = filtered.find(doc => doc.id === selectedId) ?? filtered[0];
   const dirty = JSON.stringify(scenario.options) !== JSON.stringify(form) || JSON.stringify(scenario.opening) !== JSON.stringify(continuation);
   const documentDates = [...new Set([...scenario.days.map(day => day.date), ...docs.map(doc => doc.date)])].sort();
-  const ready = readySales(scenario, today);
+  const ready = readySales(sales, today);
   const futureDays = scenario.days.filter(day => day.date > today).length;
   const generate = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault(); setError("");
@@ -81,7 +82,7 @@ export default function App() {
     // Yield so the busy status is painted before processing a long period.
     await new Promise(resolve => setTimeout(resolve, 30));
     try {
-      download(zipBytes(archiveFiles(scenario, docs)), `dossier-${scenario.options.start}-${scenario.options.seed}.zip`, "application/zip");
+      download(zipBytes(archiveFiles(scenario, documents)), `dossier-${scenario.options.start}-${scenario.options.seed}.zip`, "application/zip");
       setNotice(`Archive prête : ${docs.length} PDF, CSV quotidiens, guide et journal chiffré.`);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "L'archive n'a pas pu être créée."); }
     finally { setBusy(false); }
@@ -103,7 +104,7 @@ export default function App() {
           <button className="primary" type="submit">Générer {form.days || "…"} jours de documents</button>
           {dirty && <p className="pending" role="status">Réglages modifiés : générez pour mettre à jour le dossier.</p>}
         </form><div className="export-panel"><h3>Emporter le dossier</h3><button disabled={busy} onClick={archive}>{busy ? "Préparation…" : "Télécharger tout (.zip)"}</button>
-          <button className="secondary" disabled={!ready.days.length} onClick={() => download(salesCsv(ready), `ventes-jusqu-au-${today}.csv`, "text/csv;charset=utf-8")}>CSV jusqu’à aujourd’hui</button>
+          <button className="secondary" disabled={!ready.length} onClick={() => download(salesCsv(ready), `ventes-jusqu-au-${today}.csv`, "text/csv;charset=utf-8")}>CSV jusqu’à aujourd’hui</button>
           <button className="secondary" onClick={() => download(JSON.stringify(scenario.checkpoint, null, 2), "stock-reprise.json", "application/json")}>Télécharger l’état de reprise</button>
           <p className="hint">Le ZIP inclut toute la période, avec un CSV pour chaque jour avec ventes. Le bouton CSV exclut les dates futures. Aucun accès à votre compte.</p></div>
         </aside>

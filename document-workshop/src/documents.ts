@@ -1,16 +1,25 @@
 import { recipeById } from "./catalog";
 import { workflows } from "./documentModel";
-import type { Document, WriteDocument } from "./documentModel";
-import type { Scenario } from "./model";
+import type { ArticleSales, DaySales, Document, WriteDocument } from "./documentModel";
+import type { Day, Scenario } from "./model";
 import { purchaseDocuments } from "./purchaseDocuments";
-import { dailySales, serviceDocuments } from "./serviceDocuments";
+import { serviceDocuments } from "./serviceDocuments";
 import { setupDocuments } from "./setupDocuments";
 import { stockDocuments } from "./stockDocuments";
 
 export { workflows } from "./documentModel";
 export type { Document, Section } from "./documentModel";
-export { dailySales } from "./serviceDocuments";
-export function createDocuments(scenario: Scenario): Document[] {
+function dailySales(day: Day): DaySales {
+  const articles = new Map<string, ArticleSales>();
+  for (const service of day.services) for (const transaction of service.transactions) for (const line of transaction.lines) {
+    const article = articles.get(line.recipeId) ?? { sold: 0, gross: 0 };
+    article.sold += line.quantity;
+    article.gross += line.quantity * line.unitPrice;
+    articles.set(line.recipeId, article);
+  }
+  return { date: day.date, open: day.open, articles };
+}
+export function createDocuments(scenario: Scenario) {
   const docs: Document[] = [], { options } = scenario;
   const add: WriteDocument = (kind, title, date, suffix, sections, notes = [], parties = {}) => {
     docs.push({ id: `${kind}-${date}-${options.seed}-${suffix}`, kind, title, date, sections, notes,
@@ -19,14 +28,16 @@ export function createDocuments(scenario: Scenario): Document[] {
   };
   setupDocuments(scenario, add);
   purchaseDocuments(scenario, add);
-  for (const day of scenario.days) {
-    serviceDocuments(scenario, day, add);
+  const sales = scenario.days.map(day => {
+    const summary = dailySales(day);
+    serviceDocuments(scenario, day, summary.articles, add);
     stockDocuments(day, add);
-  }
-  return docs;
+    return summary;
+  });
+  return { docs, sales };
 }
-export function salesCsv(scenario: Scenario) {
+export function salesCsv(days: readonly DaySales[]) {
   const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
-  return "service_date,item_name,quantity\r\n" + scenario.days.flatMap(day => dailySales(day).map(({ recipeId, sold }) =>
+  return "service_date,item_name,quantity\r\n" + days.flatMap(day => [...day.articles].map(([recipeId, { sold }]) =>
     `${day.date},${quote(recipeById(recipeId).name)},${sold}`)).join("\r\n") + "\r\n";
 }
