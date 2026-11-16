@@ -12,24 +12,23 @@ import SalesRecipeMappings from "../components/sales/SalesRecipeMappings";
 import { correctSale, createSale, createSaleItem, getLatestService, getSaleItems, getSales, recordSaleOutcome,
   type DailySale, type LatestService, type SaleItem, type SaleValues } from "../services/salesService";
 import { describeServiceCoverage, describeServiceSources } from "../features/sales/salesPresentation";
+import { formatLocalISODate, shiftDays } from "../utils/date";
 import "../styles/Workspace.css";
 import "./Sales.css";
 
-const parisToday = () => new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-}).format(new Date());
-const initialFrom = () => new Date(Date.parse(parisToday()) - 29 * 86_400_000).toISOString().slice(0, 10);
+const initialFrom = () => shiftDays(formatLocalISODate(), -29);
 const message = (error: unknown) => error instanceof Error ? error.message : "Réessayez.";
 
 export default function Sales() {
+  const today = formatLocalISODate();
   const [items, setItems] = useState<SaleItem[]>([]);
   const [sales, setSales] = useState<DailySale[]>([]);
   const [latestService, setLatestService] = useState<LatestService | null>(null);
   const [salesRevision, setSalesRevision] = useState(0);
   const [ticketPreview, setTicketPreview] = useState<TicketPreview | null>(null);
   const [from, setFrom] = useState(initialFrom);
-  const [to, setTo] = useState(parisToday);
-  const [values, setValues] = useState<SaleValues>({ saleItemId: "", serviceDate: parisToday(), quantity: 1 });
+  const [to, setTo] = useState(formatLocalISODate);
+  const [values, setValues] = useState<SaleValues>({ saleItemId: "", serviceDate: today, quantity: 1 });
   const [itemName, setItemName] = useState("");
   const [itemSaving, setItemSaving] = useState(false);
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
@@ -83,7 +82,7 @@ export default function Sales() {
     setEditing(null);
     setEditReason("");
     setCorrectionOperationId(crypto.randomUUID());
-    setValues({ saleItemId: "", serviceDate: parisToday(), quantity: 1 });
+    setValues({ saleItemId: "", serviceDate: formatLocalISODate(), quantity: 1 });
     setOperationId(crypto.randomUUID());
     setError("");
     if (returnFocus) requestAnimationFrame(() => {
@@ -146,8 +145,8 @@ export default function Sales() {
         <Link to="/predictions">Voir les prévisions</Link></div>
       <small>Les ventes alimentent les indicateurs et peuvent contribuer aux achats suggérés lorsque les services, cartes, recettes et stocks nécessaires sont renseignés.</small>
     </section>
-    <DatedServices today={parisToday()} refreshToken={salesRevision} />
-    <details className="sales-disclosure"><summary>Couverture quotidienne historique (non ventilée)</summary><ServiceCalendar from={from} to={to} today={parisToday()} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} /></details>
+    <DatedServices today={today} refreshToken={salesRevision} />
+    <details className="sales-disclosure"><summary>Couverture quotidienne historique (non ventilée)</summary><ServiceCalendar from={from} to={to} today={today} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} /></details>
     <SalesTicketImport onCandidatesSaved={async (serviceDate) => {
       setSalesRevision((current) => current + 1);
       if (serviceDate < from || serviceDate > to) { setFrom(serviceDate); setTo(serviceDate); }
@@ -175,7 +174,7 @@ export default function Sales() {
           <option value="">Choisir un article</option>
           {items.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
         </select></label>
-        <label>Date de service<input type="date" required max={parisToday()} value={values.serviceDate} onChange={(event) => change({ ...values, serviceDate: event.target.value })} /></label>
+        <label>Date de service<input type="date" required max={today} value={values.serviceDate} onChange={(event) => change({ ...values, serviceDate: event.target.value })} /></label>
         <label>Quantité vendue (unités)<input type="number" required min="1" max="1000000" step="1" value={values.quantity} onChange={(event) => change({ ...values, quantity: Number(event.target.value) })} /></label>
         {editing && <label>Motif de correction, sans donnée personnelle<textarea required maxLength={240} value={editReason} onChange={(event) => setEditReason(event.target.value)} /></label>}
         <div className="sales-actions"><Button type="submit" disabled={saving || !items.length}>{saving ? "Enregistrement…" : editing ? "Enregistrer la correction" : "Valider la vente"}</Button>
@@ -188,7 +187,7 @@ export default function Sales() {
     <section className="sales-panel" aria-labelledby="sales-history-title">
       <h2 id="sales-history-title" ref={historyHeading} tabIndex={-1}>Historique enregistré</h2>
       <div className="sales-filters"><label>Du<input type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} /></label>
-        <label>Au<input type="date" value={to} min={from} max={parisToday()} onChange={(event) => setTo(event.target.value)} /></label>
+        <label>Au<input type="date" value={to} min={from} max={today} onChange={(event) => setTo(event.target.value)} /></label>
         <Button type="button" variant="outline" onClick={() => { void load(); setSalesRevision((current) => current + 1); }}>Actualiser</Button></div>
       {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <p>Historique indisponible. Réessayez depuis cette page.</p> : sales.length === 0 ? <p>Aucune vente enregistrée sur cette période.</p> :
         <div className="sales-table-wrap" role="region" aria-label="Ventes par date et produit" tabIndex={0}><table className="sales-table"><thead><tr>

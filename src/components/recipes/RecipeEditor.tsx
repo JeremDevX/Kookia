@@ -3,17 +3,15 @@ import type { Product, Recipe } from "../../types";
 import type { RecipeSuggestion } from "../../domain/recipes/recipeSuggestionPolicy";
 import { createRecipe, updateRecipe, type RecipeMutation } from "../../services/recipeService";
 import Button from "../common/Button";
+import { formatLocalISODate } from "../../utils/date";
 import type { ImportedIngredient } from "../../features/recipes/recipeCsv";
 
 interface RecipeDraft {
   name: string; category: Recipe["category"]; prepTime: number; yieldPortions: number;
   effectiveFrom: string; steps: string[]; ingredients: Array<{ productId: string; quantity: number; netQuantity?: number | null }>;
 }
-const today = () => new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-}).format(new Date());
 const blankDraft = (): RecipeDraft => ({ name: "", category: "Plat", prepTime: 15, yieldPortions: 1,
-  effectiveFrom: today(), steps: [], ingredients: [{ productId: "", quantity: 0.1 }] });
+  effectiveFrom: formatLocalISODate(), steps: [], ingredients: [{ productId: "", quantity: 0.1 }] });
 
 export default function RecipeEditor({ open, recipe, products, headingRef, initialSuggestion, initialImport = null, onClose, onSaved }: {
   open: boolean; recipe: Recipe | null; products: Product[]; headingRef: RefObject<HTMLHeadingElement | null>;
@@ -28,7 +26,7 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
   useEffect(() => {
     if (!open) return;
     setDraft(recipe ? { name: recipe.name, category: recipe.category, prepTime: recipe.prepTime,
-      yieldPortions: recipe.yieldPortions, effectiveFrom: today(), steps: recipe.steps ?? [],
+      yieldPortions: recipe.yieldPortions, effectiveFrom: formatLocalISODate(), steps: recipe.steps ?? [],
       ingredients: recipe.ingredients.map(({ productId, quantity, netQuantity }) => ({ productId, quantity, netQuantity })) }
       : initialSuggestion ? { name: initialSuggestion.name, category: initialSuggestion.category,
         prepTime: initialSuggestion.prepTime, yieldPortions: initialSuggestion.yieldPortions,
@@ -79,7 +77,7 @@ export default function RecipeEditor({ open, recipe, products, headingRef, initi
           onChange={(event) => setDraft({ ...draft, prepTime: Number(event.target.value) })} /></label>
         <label>Rendement du lot (portions)<input type="number" required min="1" max="10000" step="1" value={draft.yieldPortions}
           onChange={(event) => setDraft({ ...draft, yieldPortions: Number(event.target.value) })} /></label>
-        <label>Date d’effet<input type="date" required max={today()} min={recipe?.effectiveFrom ?? undefined} value={draft.effectiveFrom}
+        <label>Date d’effet<input type="date" required max={formatLocalISODate()} min={recipe?.effectiveFrom ?? undefined} value={draft.effectiveFrom}
           onChange={(event) => setDraft({ ...draft, effectiveFrom: event.target.value })} /></label>
       </div>
       <fieldset className="recipe-editor-ingredients">

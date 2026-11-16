@@ -13,8 +13,6 @@ import RecipeSuggestionPanel from "../components/recipes/RecipeSuggestionPanel";
 import RecipeCatalog from "../components/recipes/RecipeCatalog";
 import RecipeSheets from "../components/recipes/RecipeSheets";
 import { Clock, ChefHat, CheckCircle, AlertTriangle } from "lucide-react";
-import { format, parseISO, isSameWeek } from "date-fns";
-import { fr } from "date-fns/locale";
 import { useToast } from "../context/ToastContext";
 import { useRecipes } from "../hooks/useRecipes";
 import type { Recipe } from "../types";
@@ -24,13 +22,16 @@ import { recipeStockWarnings } from "../features/recipes/productionAvailability"
 import { getRecipeView, recipeViewHref, recipeViewParams, type RecipeView } from "../features/recipes/recipeNavigation";
 import { getProductions, recordProduction, type Production } from "../services/recipeService";
 import { getPurchaseReceiptLineEvidence, type PurchaseReceiptLineEvidence } from "../services/orderService";
-import { formatLocalISODate } from "../utils/date";
+import { formatLocalISODate, isValidISODate, shiftDays, startOfWeek } from "../utils/date";
 import type { ProductionRecord } from "../types/callbacks";
 import { ApiError } from "../config/api";
 import type { ServiceSlot } from "../../shared/serviceCalendar";
 import { Link, useBlocker, useSearchParams } from "react-router-dom";
 import "../styles/Workspace.css";
 import "./Recipes.css";
+
+const productionWeekday = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", timeZone: "UTC" });
+const productionDate = (date: string) => date.slice(0, 10).split("-").reverse().join("/");
 
 const Recipes: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -201,11 +202,12 @@ const Recipes: React.FC = () => {
   };
 
   // 1. Filter: Recipes made this week
-  const historyRecipes = recipes.filter(
-    (r) =>
-      r.lastMade &&
-      isSameWeek(parseISO(r.lastMade.slice(0, 10)), parseISO(formatLocalISODate(new Date())), { weekStartsOn: 1 })
-  );
+  const weekStart = startOfWeek(today);
+  const nextWeekStart = shiftDays(weekStart, 7);
+  const historyRecipes = recipes.filter(({ lastMade }) => {
+    const day = lastMade?.slice(0, 10) ?? null;
+    return isValidISODate(day) && day >= weekStart && day < nextWeekStart;
+  });
 
   // 2. Logic: Calculate feasible quantity based on stock (using service)
   const recipesWithYield = (loading || error ? [] : recipes).map((recipe) => ({
@@ -292,9 +294,7 @@ const Recipes: React.FC = () => {
                   </span>
                   <span className="recipe-meta-item">
                     <ChefHat size={14} /> Cuisiné le{" "}
-                    {format(parseISO(recipe.lastMade!.slice(0, 10)), "EEEE d", {
-                      locale: fr,
-                    })}
+                    {productionWeekday.format(new Date(recipe.lastMade!.slice(0, 10)))}
                   </span>
                 </div>
                 <p>Version {recipe.version} · {recipe.effectiveFrom ? `effective depuis ${recipe.effectiveFrom}` : "date d’effet historique inconnue"} · rendement {recipe.yieldPortions} portions.</p>
@@ -443,8 +443,8 @@ const Recipes: React.FC = () => {
         {productions.map((item) => {
           const visibleNote = productionNoteForDisplay(item);
           return <Card key={item.id}><strong>{item.recipeName}</strong>
-          <p>{item.portions} portions · {format(parseISO(item.date.slice(0, 10)), "dd/MM/yyyy")} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé" : "Production réalisée — stock déduit"}</p>
-          {item.recipeVersion && <p>Version recette {item.recipeVersion.version} · rendement {item.recipeVersion.yieldPortions} portions · effet {item.recipeVersion.effectiveFrom ? format(parseISO(item.recipeVersion.effectiveFrom.slice(0, 10)), "dd/MM/yyyy") : "date historique inconnue"}</p>}
+          <p>{item.portions} portions · {productionDate(item.date)} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé" : "Production réalisée — stock déduit"}</p>
+          {item.recipeVersion && <p>Version recette {item.recipeVersion.version} · rendement {item.recipeVersion.yieldPortions} portions · effet {item.recipeVersion.effectiveFrom ? productionDate(item.recipeVersion.effectiveFrom) : "date historique inconnue"}</p>}
           {visibleNote && <p>{visibleNote}</p>}</Card>;
         })}
       </section>}

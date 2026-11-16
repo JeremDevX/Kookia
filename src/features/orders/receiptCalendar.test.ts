@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PurchaseOrder } from "../../services/orderService";
-import { dateExceeded, isCalendarAnchor, receiptEventHref, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "./receiptCalendar";
+import { dateExceeded, isCalendarAnchor, receiptEventHref, receiptEvents, shiftMonth } from "./receiptCalendar";
+import { shiftDays, startOfWeek } from "../../utils/date";
 
 describe("calendrier des réceptions", () => {
   it("refuse une date invalide ou un mois dont la grille dépasse les dates représentables", () => {

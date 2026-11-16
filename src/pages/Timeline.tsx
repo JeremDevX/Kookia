@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import { getTimeline, type TimelineEvent, type TimelineProvenance, type TimelineResult } from "../services/timelineService";
-import { formatLocalISODate } from "../utils/date";
+import { formatLocalISODate, isValidISODate } from "../utils/date";
 import { filterTimelineEvents, TIMELINE_VISIBLE_BATCH_SIZE } from "./timelineSelectors";
 import { watchTimelineToday } from "./timelineToday";
 import "../styles/Workspace.css";
@@ -20,18 +20,12 @@ const provenanceLabels: Record<TimelineProvenance, string> = {
 function displayDate(value: string | null, includeTime = false) {
   if (!value) return "Date inconnue";
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
-  if (dateOnly && !isCalendarDate(value)) return "Date inconnue";
+  if (dateOnly && !isValidISODate(value)) return "Date inconnue";
   const parsed = new Date(dateOnly ? `${value}T12:00:00.000Z` : value);
   if (Number.isNaN(parsed.getTime())) return "Date inconnue";
   return new Intl.DateTimeFormat("fr-FR", {
     timeZone: "Europe/Paris", dateStyle: "medium", ...(includeTime ? { timeStyle: "short" as const } : {}),
   }).format(parsed);
-}
-
-function isCalendarDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
 function dateParam(params: URLSearchParams, key: string, fallback: string) {
@@ -40,11 +34,9 @@ function dateParam(params: URLSearchParams, key: string, fallback: string) {
 
 function dayKey(value: string | null) {
   if (!value) return "unknown";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return isCalendarDate(value) ? value : "unknown";
-  if (Number.isNaN(new Date(value).getTime())) return "unknown";
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-  }).format(new Date(value));
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return isValidISODate(value) ? value : "unknown";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "unknown" : formatLocalISODate(date);
 }
 
 function eventTime(event: TimelineEvent) {
@@ -79,7 +71,7 @@ export default function Timeline() {
     }, { replace: true });
   };
   const rangeDays = Math.floor((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1;
-  const validRequest = isCalendarDate(from) && isCalendarDate(to) && isCalendarDate(asOf) &&
+  const validRequest = isValidISODate(from) && isValidISODate(to) && isValidISODate(asOf) &&
     from <= to && to <= today && asOf <= today;
   const requestKey = validRequest ? `${from}:${to}:${asOf}:${requestAttempt}` : "";
   const [requestState, setRequestState] = useState<{ key: string; result?: TimelineResult; error?: string } | null>(null);

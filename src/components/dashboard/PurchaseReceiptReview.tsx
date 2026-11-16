@@ -5,13 +5,12 @@ import Button from "../common/Button";
 import { getInvoices, type Invoice } from "../../services/invoiceService";
 import { reconcilePurchaseReceipt, type PurchaseOrder, type PurchaseReceiptInput } from "../../services/orderService";
 import { useToast } from "../../context/ToastContext";
+import { formatLocalISODate } from "../../utils/date";
 import "./PurchaseReceiptReview.css";
 
 interface PurchaseReceiptReviewProps { order: PurchaseOrder; orderStateCurrent: boolean; onSaved: () => void; onNotice: (notice: string) => void; onSavingChange: (saving: boolean) => void; loadReceiptInvoices?: (orderId: string) => Promise<Invoice[]>; }
 interface ReceiptLineDraft { orderLineId: string; receivedQuantity: string; priceDifferenceReason: string; expiresAt: string; }
 
-const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
-  month: "2-digit", day: "2-digit" }).format(new Date());
 const validQuantity = (value: string) => /^\d+(?:\.\d{1,3})?$/.test(value.trim()) &&
   Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 1_000_000;
 const equalPrice = (left: number, right: number) => Math.round(left * 10_000) === Math.round(right * 10_000);
@@ -73,7 +72,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
   const chooseInvoice = (id: string) => {
     const selected = invoices.find((candidate) => candidate.id === id);
     setInvoiceId(id); setError(""); onNotice(""); setDeliveryReference("");
-    setDeliveryDate(selected?.date ?? parisToday());
+    setDeliveryDate(selected?.date ?? formatLocalISODate());
     if (!selected) { setLines({}); return; }
     const nextLines: Record<number, ReceiptLineDraft> = {};
     selected.lines.forEach((invoiceLine, index) => {

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useBlocker, useLocation } from "react-router-dom";
+import { formatLocalISODate } from "../../utils/date";
 import Button from "../common/Button";
 import { createTicketZCandidates as saveCandidates, deleteTicketZBatch, getTicketZBatches, uploadTicketZFile, type TicketZBatch } from "../../services/salesService";
 
 export type TicketPreview = { contentHash: string; url: string; mimeType: TicketZBatch["mimeType"] };
 type CandidateLine = { itemLabel: string; quantity: number };
 const maxBytes = 4 * 1024 * 1024;
-const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const errorMessage = (cause: unknown) => cause instanceof Error ? cause.message : "Réessayez.";
 const statusLabel: Record<TicketZBatch["status"], string> = {
   uploaded: "Pièce prête à transcrire", candidates: "Lignes à réconcilier", no_details: "Aucun détail article", reviewed: "Revue terminée",
@@ -20,7 +20,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
   const [batch, setBatch] = useState<TicketZBatch | null>(null);
   const [preview, setPreview] = useState<TicketPreview | null>(null);
   const [sourceDateText, setSourceDateText] = useState("");
-  const [serviceDate, setServiceDate] = useState(parisToday);
+  const [serviceDate, setServiceDate] = useState(formatLocalISODate);
   const [lines, setLines] = useState<CandidateLine[]>([]);
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -86,7 +86,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
       objectUrl.current = url;
       setDirty(false);
       setBatch(saved); setPreview(nextPreview); onPreviewChanged(nextPreview);
-      setSourceDateText(saved.sourceDateText ?? ""); setServiceDate(saved.serviceDate ?? parisToday());
+      setSourceDateText(saved.sourceDateText ?? ""); setServiceDate(saved.serviceDate ?? formatLocalISODate());
       setLines([]);
       setStatus(saved.duplicate ? "Cette pièce existe déjà dans cet espace ; aucune nouvelle ligne n’a été ajoutée." :
         "Pièce reçue. L’original n’est pas conservé ; vous pouvez le lire ici pour transcrire les lignes.");
@@ -167,7 +167,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
         <fieldset disabled={saving || loading || deleting}>
         <h3>Transcription candidate</h3>
         <label>Date lue sur le ticket<input value={sourceDateText} maxLength={80} onChange={(event) => setSourceDateText(event.target.value)} placeholder="Date telle qu’imprimée, si lisible" /></label>
-        <label>Jour de service retenu<input type="date" required value={serviceDate} max={parisToday()} onChange={(event) => setServiceDate(event.target.value)} /></label>
+        <label>Jour de service retenu<input type="date" required value={serviceDate} max={formatLocalISODate()} onChange={(event) => setServiceDate(event.target.value)} /></label>
         {sourceDateText && <p role="status">Comparez la date lue au jour de service avant d’enregistrer.</p>}
         <p>Seules les lignes d’articles détaillées peuvent devenir des ventes candidates. Un total général ou un ticket sans détail ne crée pas d’unités par article.</p>
         <div className="ticket-transcription-lines"><h4>Lignes d’articles lisibles</h4>

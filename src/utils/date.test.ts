@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidISODate } from "./date";
+import { formatLocalISODate, isValidISODate, startOfWeek } from "./date";
 
 describe("isValidISODate", () => {
   it("accepts real calendar dates in the supported format", () => {
@@ -13,4 +13,9 @@ describe("isValidISODate", () => {
     expect(isValidISODate("2026-02-29")).toBe(false);
     expect(isValidISODate("2026-13-01")).toBe(false);
   });
+});
+
+it("uses the restaurant date at midnight in Paris, including after a clock change", () => {
+  expect(startOfWeek(formatLocalISODate(new Date("2026-03-29T21:59:59Z")))).toBe("2026-03-23");
+  expect(startOfWeek(formatLocalISODate(new Date("2026-03-29T22:00:00Z")))).toBe("2026-03-30");
 });

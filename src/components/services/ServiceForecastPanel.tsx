@@ -3,6 +3,7 @@ import type { ServiceSlot } from "../../../shared/serviceCalendar";
 import type { ForecastIngredient, ForecastService, OperationalForecast } from "../../../shared/operationalForecast";
 import { getOperationalForecast } from "../../services/serviceOperationsService";
 import { selectedForecastService } from "./forecastPresentation";
+import { formatLocalISODate } from "../../utils/date";
 import Button from "../common/Button";
 import "./ServiceOperations.css";
 import ForecastWeatherSummary from "./ForecastWeatherSummary";
@@ -53,7 +54,7 @@ export function ForecastPanelContent({ forecast, date, slot }: { forecast: Opera
   </>;
 }
 export default function ServiceForecastPanel({ date, slot }: { date: string; slot: ServiceSlot }) {
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const today = formatLocalISODate();
   const past = date < today;
   const [reload, setReload] = useState(0);
   const key = `${date}:${slot}:${reload}`;

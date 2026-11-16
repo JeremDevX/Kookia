@@ -1,5 +1,5 @@
 import type { PurchaseOrder } from "../../services/orderService";
-import { isValidISODate } from "../../utils/date";
+import { isValidISODate, shiftDays, startOfWeek } from "../../utils/date";
 
 export type ReceiptEvent = { date: string; orderId: string; label: string; simulated: boolean; items: Array<{ name: string; quantity: number; unit: string }> } &
   ({ kind: "expected" } | { kind: "received"; receiptId: string });
@@ -7,19 +7,6 @@ export const receiptEventHref = (event: ReceiptEvent) => event.kind === "expecte
   ? `/orders?view=orders&action=receive#order-${encodeURIComponent(event.orderId)}`
   : `/orders?view=orders&receiptId=${encodeURIComponent(event.receiptId)}#receipt-${encodeURIComponent(event.receiptId)}`;
 export const dateExceeded = (event: ReceiptEvent, today: string) => event.kind === "expected" && event.date < today;
-const dateFromISO = (date: string) => new Date(`${date}T12:00:00Z`);
-const isoFromDate = (date: Date) => date.toISOString().slice(0, 10);
-
-export function shiftDays(date: string, days: number): string {
-  const value = dateFromISO(date);
-  value.setUTCDate(value.getUTCDate() + days);
-  return isoFromDate(value);
-}
-
-export function startOfWeek(date: string): string {
-  return shiftDays(date, -((dateFromISO(date).getUTCDay() + 6) % 7));
-}
-
 export function isCalendarAnchor(date: string | null): date is string {
   if (!isValidISODate(date)) return false;
   const start = startOfWeek(`${date.slice(0, 7)}-01`);
@@ -27,10 +14,10 @@ export function isCalendarAnchor(date: string | null): date is string {
 }
 
 export function shiftMonth(date: string, months: number): string {
-  const value = dateFromISO(date);
+  const value = new Date(date);
   value.setUTCDate(1);
   value.setUTCMonth(value.getUTCMonth() + months);
-  return isoFromDate(value);
+  return value.toISOString().slice(0, 10);
 }
 
 export function receiptEvents(orders: PurchaseOrder[], supplierId = ""): { events: ReceiptEvent[]; undated: number } {

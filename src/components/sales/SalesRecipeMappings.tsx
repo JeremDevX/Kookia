@@ -2,10 +2,9 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { createSaleRecipeMapping, getSaleRecipeMappings, type SaleRecipeMappingItem } from "../../services/salesService";
 import { getRecipes } from "../../services/recipeService";
 import type { Recipe } from "../../types";
+import { formatLocalISODate } from "../../utils/date";
 import Button from "../common/Button";
 
-const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
-  month: "2-digit", day: "2-digit" }).format(new Date());
 const message = (error: unknown) => error instanceof Error ? error.message : "Réessayez.";
 const currentMapping = (item: SaleRecipeMappingItem, date: string) => item.mappings.find((mapping) => mapping.effectiveFrom <= date);
 
@@ -14,7 +13,7 @@ export default function SalesRecipeMappings({ itemCount }: { itemCount: number }
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [recipeId, setRecipeId] = useState("");
-  const [effectiveFrom, setEffectiveFrom] = useState(parisToday);
+  const [effectiveFrom, setEffectiveFrom] = useState(formatLocalISODate);
   const [portions, setPortions] = useState("1");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,10 +35,10 @@ export default function SalesRecipeMappings({ itemCount }: { itemCount: number }
         const first = mappingItems[0];
         selectedIdRef.current = first?.id ?? "";
         setSelectedId(first?.id ?? "");
-        const current = first && currentMapping(first, parisToday());
+        const current = first && currentMapping(first, formatLocalISODate());
         setRecipeId(current?.recipeId ?? first?.suggestedRecipeId ?? "");
         setPortions(String(current?.portionsPerItem ?? 1));
-        setEffectiveFrom(parisToday());
+        setEffectiveFrom(formatLocalISODate());
       }
     }).catch((cause: unknown) => {
       if (active) setLoadError(message(cause));
@@ -48,16 +47,16 @@ export default function SalesRecipeMappings({ itemCount }: { itemCount: number }
   }, [itemCount, reload]);
 
   const item = items.find((row) => row.id === selectedId);
-  const current = item && currentMapping(item, parisToday());
+  const current = item && currentMapping(item, formatLocalISODate());
   const recipe = recipes.find((row) => row.id === recipeId);
   const hasDatedVersion = Boolean(recipe?.versions.some((version) => version.effectiveFrom !== null && version.effectiveFrom <= effectiveFrom));
 
   const selectItem = (id: string) => {
     const next = items.find((row) => row.id === id);
     selectedIdRef.current = id; setSelectedId(id); setError(""); setStatus(""); operationId.current = crypto.randomUUID();
-    const active = next && currentMapping(next, parisToday());
+    const active = next && currentMapping(next, formatLocalISODate());
     setRecipeId(active?.recipeId ?? next?.suggestedRecipeId ?? "");
-    setPortions(String(active?.portionsPerItem ?? 1)); setEffectiveFrom(parisToday());
+    setPortions(String(active?.portionsPerItem ?? 1)); setEffectiveFrom(formatLocalISODate());
   };
 
   const submit = async (event: FormEvent) => {

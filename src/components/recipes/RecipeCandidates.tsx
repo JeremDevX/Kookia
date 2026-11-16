@@ -5,6 +5,7 @@ import { getSourceInvoice, getSourceInvoices, type SourceInvoiceDetail, type Sou
 import { createRecipeCandidate, decideRecipeCandidate, getRecipeCandidates, updateRecipeCandidate,
   type RecipeCandidate, type RecipeCandidateInput } from "../../services/recipeCandidateService";
 import type { Product, Recipe } from "../../types";
+import { formatLocalISODate } from "../../utils/date";
 import "./RecipeCandidates.css";
 
 interface IngredientDraft {
@@ -25,13 +26,10 @@ interface CandidateDraft {
 }
 interface Props { products: Product[]; onRecipeConfirmed: () => Promise<void>; }
 
-const today = () => new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-}).format(new Date());
 const newIngredient = (): IngredientDraft => ({ key: crypto.randomUUID(), productId: "", quantity: 0.1,
   sourceDocumentId: "", sourceLineNumber: "", sourceLabel: "" });
 const blankDraft = (): CandidateDraft => ({ name: "", category: "Plat", prepTime: 15,
-  yieldPortions: 4, effectiveFrom: today(), ingredients: [newIngredient()] });
+  yieldPortions: 4, effectiveFrom: formatLocalISODate(), ingredients: [newIngredient()] });
 const lineLabel = (line: { name: string; sourceQuantityText: string }) => `ligne : ${line.name} · ${line.sourceQuantityText}`;
 const statusLabel: Record<RecipeCandidate["status"], string> = {
   pending: "À revoir — hypothèse non validée",
@@ -211,7 +209,7 @@ export default function RecipeCandidates({ products, onRecipeConfirmed }: Props)
           onChange={(event) => setDraft((current) => ({ ...current, prepTime: Number(event.target.value) }))} /></label>
         <label>Rendement hypothétique (portions)<input type="number" min="1" max="10000" step="1" required value={draft.yieldPortions}
           onChange={(event) => setDraft((current) => ({ ...current, yieldPortions: Number(event.target.value) }))} /></label>
-        <label>Date d’effet proposée<input type="date" required max={today()} value={draft.effectiveFrom}
+        <label>Date d’effet proposée<input type="date" required max={formatLocalISODate()} value={draft.effectiveFrom}
           onChange={(event) => setDraft((current) => ({ ...current, effectiveFrom: event.target.value }))} /></label>
       </div>
       <fieldset><legend>Ingrédients supposés pour le lot</legend>

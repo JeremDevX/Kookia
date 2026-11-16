@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 import type { PurchaseOrder } from "../../services/orderService";
-import { formatLocalISODate } from "../../utils/date";
-import { dateExceeded, isCalendarAnchor, receiptEventHref, receiptEvents, shiftDays, shiftMonth, startOfWeek } from "../../features/orders/receiptCalendar";
+import { formatLocalISODate, shiftDays, startOfWeek } from "../../utils/date";
+import { dateExceeded, isCalendarAnchor, receiptEventHref, receiptEvents, shiftMonth } from "../../features/orders/receiptCalendar";
 import Button from "../common/Button";
 import "./ReceiptCalendar.css";
 
