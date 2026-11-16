@@ -11,15 +11,13 @@ cp .env.example .env
 npm run db:up
 npm run db:generate
 npm run db:migrate
-npm run db:seed
 npm run dev
 ```
 
 Ouvrir `http://localhost:5173/register`. Vite proxifie `/api` vers Express sur
-le port 3001. Le seed reprend les comptes existants ; un nouveau compte reçoit
-son espace au premier accès métier. La reprise est idempotente et ne remplace pas
-les données déjà modifiées. Ne pas utiliser `prisma migrate reset` sur une base
-contenant des données à conserver.
+le port 3001. Un nouveau compte reçoit son espace au premier accès métier.
+Ne pas utiliser `prisma migrate reset` sur une base contenant des données à
+conserver.
 
 Pour parcourir le récit 2023–2026 sans utiliser une base conservée, lancer
 `npm run demo:local` : la commande crée une base PostgreSQL temporaire sur tmpfs,

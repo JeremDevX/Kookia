@@ -1,4 +1,4 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { buildDisposablePostgresArgs, localDemoDatabaseUrl, parseLoopbackPort } from "./localDeliveryRecipe.mjs";
+import { buildDisposablePostgresArgs, cleanupContainer, disposableDatabaseUrl, parseLoopbackPort, waitForPostgres } from "./disposablePostgres.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const children = new Set();
@@ -112,17 +112,6 @@ async function findLoopbackPort(excluded = new Set()) {
   }
 }
 
-async function waitForPostgres(containerName) {
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    if (interruptedSignal) throw new Error("Démo locale interrompue.");
-    const result = spawnSync("docker", ["exec", containerName, "pg_isready", "-U", "kookia", "-d", "kookia_demo"], { stdio: "ignore" });
-    if (result.error) throw new Error(`Impossible de vérifier PostgreSQL : ${result.error.message}`);
-    if (result.status === 0) return;
-    await delay(500);
-  }
-  throw new Error("PostgreSQL local temporaire n’est pas devenu prêt en 60 secondes.");
-}
-
 function startDisposablePostgres(containerName, password) {
   return spawnTask("docker", buildDisposablePostgresArgs(containerName, password, {
     database: "kookia_demo", scope: "disposable-local-demo",
@@ -152,15 +141,6 @@ async function registerDemoAccount(password, webOrigin) {
   const result = await response.json();
   if (typeof result.user?.id !== "string") throw new Error("Le serveur n’a pas créé le compte de démonstration attendu.");
   return result.user.id;
-}
-
-function cleanupContainer(containerName) {
-  const removed = spawnSync("docker", ["rm", "--force", containerName], { stdio: "ignore" });
-  if (!removed.error && removed.status === 0) return;
-  const inspected = spawnSync("docker", ["inspect", containerName], { encoding: "utf8", stdio: ["ignore", "ignore", "pipe"] });
-  if (!inspected.error && inspected.status !== 0 && !/permission denied|cannot connect|error during connect/i.test(inspected.stderr ?? "")) return;
-  console.error(`Nettoyage Docker non confirmé. Vérifiez puis supprimez le conteneur temporaire ${containerName} s’il existe.`);
-  process.exitCode = 1;
 }
 
 function requestStop(signal) {
@@ -198,8 +178,8 @@ async function main() {
     mayExist = true;
     await startDisposablePostgres(containerName, dbPassword);
     const port = parseLoopbackPort(await spawnTask("docker", ["port", containerName, "5432/tcp"], { capture: true }));
-    const databaseUrl = localDemoDatabaseUrl(port, dbPassword);
-    await waitForPostgres(containerName);
+    const databaseUrl = disposableDatabaseUrl(port, dbPassword, "kookia_demo");
+    await waitForPostgres(containerName, "kookia_demo", () => interruptedSignal !== null);
 
     const demoEnv = { ...process.env, DATABASE_URL: databaseUrl, NODE_ENV: "development" };
     console.log("\n==> Migrations fraîches");

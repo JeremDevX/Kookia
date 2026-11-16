@@ -469,9 +469,10 @@ de régression sont intégrés à `npm test`.
 
 ### Contrôles applicatifs
 
-La CI exécute `lint`, `build` et `test`. Les contrôles locaux complémentaires
-`build:api` et `test:integration` existent, mais ne sont pas encore dans la CI ;
-ce dernier doit être exécuté sur une [base isolée](setup-auth.md#base-isolée-pour-les-tests-dintégration).
+Le workflow GitHub Actions se déclenche manuellement. Il exécute `lint`, les
+builds web et API, applique les migrations sur un service PostgreSQL éphémère,
+puis lance les tests unitaires et d'intégration. En local, les tests
+d'intégration exigent une [base dédiée](setup-auth.md#base-isolée-pour-les-tests-dintégration).
 
 ```bash
 npm run lint
