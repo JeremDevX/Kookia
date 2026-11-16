@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { recordLotMovement } from "./lotService.js";
 import { stockCountDto } from "./stockCountDto.js";
@@ -17,7 +18,7 @@ export const productDto = (product: Awaited<ReturnType<typeof prisma.product.fin
 });
 
 export async function getCatalog(restaurantId: string) {
-  const availabilityDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const availabilityDate = formatParisDate();
   const [products, suppliers] = await prisma.$transaction([
     prisma.product.findMany({ where: { restaurantId }, orderBy: { id: "asc" }, include: {
       stockCounts: { orderBy: [{ countedAt: "desc" }, { id: "desc" }], take: 1 },

@@ -3,9 +3,6 @@ import { recipes } from "./catalog";
 import type { Ingredient, Recipe } from "./catalog";
 import type { Options, ServiceName } from "./model";
 
-export function localToday() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-}
 export function displayDate(date: string) {
   if (!z.iso.date().safeParse(date).success) return "Date invalide";
   return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));

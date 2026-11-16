@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
@@ -6,7 +7,6 @@ import type { IncidentInput } from "../../../../shared/serviceOperations.js";
 import { getOperationalForecast } from "./operationalForecastService.js";
 
 const iso = (date: Date) => date.toISOString().slice(0, 10);
-const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const suggestions: Record<IncidentInput["kind"], string[]> = {
   delivery_delay: ["Confirmer la nouvelle date dans la commande fournisseur.", "Revoir les préparations prévues avant la réception ; envisager une alternative disponible."],
   unavailable: ["Vérifier les quantités restantes et les alternatives de la carte.", "Modifier la carte ou la commande après revue du chef."],
@@ -20,7 +20,7 @@ export async function listOperationalIncidents(restaurantId: string, from: strin
     gte: new Date(`${from}T00:00:00Z`), lte: new Date(`${to}T00:00:00Z`) } }, orderBy: [{ serviceDate: "desc" }, { createdAt: "desc" }], take: 200 });
   const products = await prisma.product.findMany({ where: { restaurantId, id: { in: rows.flatMap(r => r.productId ? [r.productId] : []) } } });
   const lots = await prisma.stockLot.findMany({ where: { restaurantId, id: { in: rows.flatMap(r => r.lotId ? [r.lotId] : []) } } });
-  const horizon = today(), end = iso(new Date(Date.parse(horizon) + 7 * 86400000));
+  const horizon = formatParisDate(), end = iso(new Date(Date.parse(horizon) + 7 * 86400000));
   const forecast = rows.length ? await getOperationalForecast(restaurantId, horizon, end) : null;
   return rows.map(row => {
     const product = products.find(p => p.id === row.productId), lot = lots.find(l => l.id === row.lotId);

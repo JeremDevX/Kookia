@@ -1,4 +1,5 @@
 import { checkInvoiceDuplicates, invoiceKey } from "./invoiceDuplicates.js";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { recordLotMovement } from "./lotService.js";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma, type PurchaseReceipt as PurchaseReceiptRecord, type PurchaseReceiptLine as PurchaseReceiptLineRecord,
@@ -26,8 +27,6 @@ export interface PurchaseReceiptInput {
 }
 
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
-const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
-  month: "2-digit", day: "2-digit" }).format(new Date());
 
 function purchaseReceiptDto(receipt: ReceiptWithLines) {
   return { id: receipt.id, orderId: receipt.orderId, supplierId: receipt.supplierId,
@@ -62,7 +61,7 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
       return { ...purchaseReceiptDto(prior), replayed: true };
     }
 
-    if (input.deliveryDate > parisToday()) throw new WorkspaceError(400, "FUTURE_DELIVERY_DATE", "La date de livraison ne peut pas être future.");
+    if (input.deliveryDate > formatParisDate()) throw new WorkspaceError(400, "FUTURE_DELIVERY_DATE", "La date de livraison ne peut pas être future.");
     const [workspace, invoiceDocument, order] = await Promise.all([
       tx.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } }),
       tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind: `invoice:${input.invoiceDocumentId}` } } }),

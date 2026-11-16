@@ -9,7 +9,7 @@ import { orderDto, validateOrder } from "../application/workspace/orderService.j
 import { getPurchaseSuggestions, recordPurchaseSuggestionDecision } from "../application/workspace/purchaseSuggestionService.js";
 import { getPurchaseReceiptLineEvidence, listPurchaseOrders, purchaseReceiptSchema, recordPurchaseReceipt } from "../application/workspace/purchaseReceiptService.js";
 import { refreshForecastWeather } from "../application/workspace/forecastWeatherService.js";
-import { weatherToday } from "../application/workspace/weatherPolicy.js";
+import { formatParisDate } from "../../../shared/parisDate.js";
 import type { WeatherProvider } from "../integrations/weatherProvider.js";
 
 export const orderRoutes = Router();
@@ -24,7 +24,7 @@ const suggestionDecisionSchema = z.object({ operationId: z.uuid(), suggestionKey
   .strict().refine((input) => input.decision === "added" ? input.quantity !== undefined : input.quantity === undefined);
 orderRoutes.get("/orders/suggestions", async (_req, res, next) => {
   try {
-    await refreshForecastWeather(context(res).restaurantId, weatherToday(new Date()), res.locals.weatherProvider as WeatherProvider);
+    await refreshForecastWeather(context(res).restaurantId, formatParisDate(), res.locals.weatherProvider as WeatherProvider);
     res.json(await getPurchaseSuggestions(context(res).restaurantId));
   } catch (error) { next(error); }
 });

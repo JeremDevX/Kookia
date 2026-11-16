@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { formatParisDate } from "../../shared/parisDate";
 import { identity, money } from "./catalog";
 import { createDocuments, salesCsv, workflows } from "./documents";
 import type { Document } from "./documents";
 import { download, pdfBytes, zipBytes } from "./exports";
 import { layoutDocument, svgColor } from "./layout";
-import { displayDate, generateScenario, localToday, optionsSchema } from "./scenario";
+import { displayDate, generateScenario, optionsSchema } from "./scenario";
 import type { Options } from "./scenario";
 import type { Checkpoint } from "./model";
 import { continuationStart, MAX_CHECKPOINT_BYTES, parseCheckpointFile } from "./continuation";
@@ -13,7 +14,7 @@ import { Settings } from "./Settings";
 import { archiveFiles, labels, readySales } from "./dossier";
 
 const initial: Options = optionsSchema.parse({ name: identity.name, address: identity.address, city: identity.city, email: identity.email,
-  start: localToday(), days: 7, covers: 40, seed: 1, incident: "normal", variationPercent: 20, lossPercent: 2, starterPercent: 65, dessertPercent: 60, incidentEvery: 3 });
+  start: formatParisDate(), days: 7, covers: 40, seed: 1, incident: "normal", variationPercent: 20, lossPercent: 2, starterPercent: 65, dessertPercent: 60, incidentEvery: 3 });
 function Preview({ doc }: { doc: Document }) {
   const pages = useMemo(() => layoutDocument(doc), [doc]);
   return <section aria-label="Document sélectionné" className="preview">
@@ -32,9 +33,9 @@ function Preview({ doc }: { doc: Document }) {
   </section>;
 }
 export default function App() {
-  const [today, setToday] = useState(localToday);
+  const [today, setToday] = useState(formatParisDate);
   useEffect(() => {
-    const timer = window.setInterval(() => setToday(localToday()), 60_000);
+    const timer = window.setInterval(() => setToday(formatParisDate()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
   const [form, setForm] = useState<Options>(initial);

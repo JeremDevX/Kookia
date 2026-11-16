@@ -1,4 +1,5 @@
 import { Router, type Response } from "express";
+import { formatParisDate } from "../../../shared/parisDate.js";
 import { z } from "zod";
 import { getInventorySession, openInventorySession, saveInventorySession, validateInventorySession, refreshInventorySession, discardInventorySession } from "../application/workspace/inventorySessionService.js";
 import { listStockLots } from "../application/workspace/lotService.js";
@@ -11,7 +12,7 @@ const wasteSchema = z.object({ operationId: z.uuid(), serviceDate: z.iso.date(),
   productId: z.string().min(1).max(100).optional(), lotId: z.uuid().optional(), productionId: z.uuid().optional(),
   quantity: z.number().finite().positive().max(1_000_000).multipleOf(0.001), unit: z.enum(["kg", "L", "dz", "pcs", "portion"]),
   note: z.string().trim().max(1000),
-}).strict().refine((input) => input.serviceDate <= new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()));
+}).strict().refine((input) => input.serviceDate <= formatParisDate());
 inventoryRoutes.get("/stock-lots", async (_req, res, next) => {
   try { res.json(await listStockLots(context(res).restaurantId)); } catch (error) { next(error); }
 });

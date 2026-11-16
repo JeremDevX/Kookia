@@ -1,4 +1,5 @@
 import { purchaseAvailability } from "./purchaseAvailability.js";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import type { ForecastIngredient } from "../../../../shared/operationalForecast.js";
 import { getOperationalForecast } from "./operationalForecastService.js";
 import { addCalendarDays, supplierDeliveryHorizon, type SupplierDeliveryHorizon } from "../../../../shared/supplierDelivery.js";
@@ -113,7 +114,7 @@ workspaceMode: WorkspaceMode, baseline: Baseline, canUseProvenance: boolean, pro
 }
 
 export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseDatabase = prisma, inputDate = new Date()): Promise<PurchaseSuggestions> {
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(inputDate);
+  const today = formatParisDate(inputDate);
   const [baseline, restaurant, products, counts, pendingLines, lots] = await Promise.all([
     getSalesBaseline(restaurantId, addCalendarDays(today, -1), db),
     db.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true, openingWeekdays: true } }),

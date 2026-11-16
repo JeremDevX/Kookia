@@ -1,4 +1,5 @@
 import { Prisma, type StockCount } from "@prisma/client";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
 import { productDto } from "./catalogService.js";
@@ -12,9 +13,7 @@ export interface StockCountInput {
   countedQuantity: number;
 }
 
-const parisServiceDate = () => new Date(`${new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-}).format(new Date())}T00:00:00.000Z`);
+const parisServiceDate = () => new Date(`${formatParisDate()}T00:00:00.000Z`);
 
 export async function recordStockCountInTransaction(tx: Prisma.TransactionClient, restaurantId: string, actorId: string, productId: string, input: StockCountInput) {
     // Serialize operation keys within a workspace, then lock the stock row before comparing its version.

@@ -1,4 +1,5 @@
 import express, { Router, type Request, type Response } from "express";
+import { formatParisDate } from "../../../shared/parisDate.js";
 import { z } from "zod";
 import { createSale, correctSale, listSales, listSaleItems, createSaleItem, latestService, listServiceDays, saveServiceDay,
   } from "../application/workspace/salesService.js";
@@ -15,20 +16,16 @@ import { prisma } from "../infrastructure/database/prisma.js";
 
 export const salesRoutes = Router();
 const workspace = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
-const parisDate = (date: Date) => new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-}).format(date);
-const today = () => parisDate(new Date());
 const saleValues = z.object({
   saleItemId: z.uuid(), serviceDate: z.iso.date(),
   quantity: z.number().int().min(1).max(1_000_000),
-}).strict().refine((sale) => sale.serviceDate <= today(), { message: "La date de service ne peut pas être future." });
+}).strict().refine((sale) => sale.serviceDate <= formatParisDate(), { message: "La date de service ne peut pas être future." });
 const period = z.object({ from: z.iso.date(), to: z.iso.date() }).strict().refine(
   ({ from, to }) => from <= to && Date.parse(to) - Date.parse(from) <= 366 * 86_400_000,
   { message: "La période doit être croissante et limitée à 366 jours." },
 );
 const parsePeriod = (req: Request) => {
-  const end = today();
+  const end = formatParisDate();
   const start = new Date(Date.parse(end) - 29 * 86_400_000).toISOString().slice(0, 10);
   return period.parse({ from: req.query.from ?? start, to: req.query.to ?? end });
 };
@@ -60,7 +57,7 @@ const serviceDayValues = z.object({ expectedRevision: z.number().int().min(0),
 salesRoutes.put("/sales/service-days/:date", async (req, res, next) => {
   try {
     const serviceDate = z.iso.date().parse(req.params.date);
-    if (serviceDate > today()) throw new WorkspaceError(400, "FUTURE_SERVICE_DATE", "La date de service ne peut pas être future.");
+    if (serviceDate > formatParisDate()) throw new WorkspaceError(400, "FUTURE_SERVICE_DATE", "La date de service ne peut pas être future.");
     const input = serviceDayValues.parse(req.body);
     const { restaurantId, actorId } = workspace(res);
     res.json(await saveServiceDay(restaurantId, actorId, serviceDate, input.expectedRevision, input.status, input.coverage));
@@ -124,14 +121,14 @@ const importBody = z.object({ csv: z.string().min(1).max(256_000), mapping: z.re
 salesRoutes.post("/sales/imports/preview", async (req, res, next) => {
   try {
     const { csv, mapping } = importBody.parse(req.body);
-    res.json(await previewSalesImport(workspace(res).restaurantId, csv, mapping, today()));
+    res.json(await previewSalesImport(workspace(res).restaurantId, csv, mapping, formatParisDate()));
   } catch (error) { next(error); }
 });
 salesRoutes.post("/sales/imports", async (req, res, next) => {
   try {
     const { csv, mapping, expectedHash } = importBody.safeExtend({ expectedHash: z.string().regex(/^[0-9a-f]{64}$/) }).parse(req.body);
     const { restaurantId, actorId } = workspace(res);
-    res.status(201).json(await commitSalesImport(restaurantId, actorId, csv, mapping, expectedHash, today()));
+    res.status(201).json(await commitSalesImport(restaurantId, actorId, csv, mapping, expectedHash, formatParisDate()));
   } catch (error) { next(error); }
 });
 salesRoutes.post("/sales", async (req, res, next) => {

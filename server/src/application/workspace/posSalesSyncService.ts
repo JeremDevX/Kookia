@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
@@ -7,9 +8,6 @@ import { posSalesBatchSchema, posSyncWindowSchema, type PosAdapter, type PosSale
 
 const providerIdSchema = /^[a-z][a-z0-9_-]{0,59}$/;
 const dateValue = (value: string) => new Date(`${value}T00:00:00.000Z`);
-const parisToday = () => new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-}).format(new Date());
 const sourceKey = (provider: string, record: PosSalesRecord) =>
   `pos:${provider}:${record.sourceRecordId}:${record.revision}`;
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -28,7 +26,7 @@ function isSameSourceRecord(existing: {
 export async function syncPosSales(restaurantId: string, actorId: string, window: unknown, adapter: PosAdapter) {
   const parsedWindow = posSyncWindowSchema.safeParse(window);
   if (!parsedWindow.success) throw new WorkspaceError(400, "INVALID_POS_WINDOW", "La période de caisse doit être valide et limitée à 31 jours.");
-  if (parsedWindow.data.to > parisToday()) throw new WorkspaceError(400, "FUTURE_POS_WINDOW", "La période de caisse ne peut pas contenir de date future.");
+  if (parsedWindow.data.to > formatParisDate()) throw new WorkspaceError(400, "FUTURE_POS_WINDOW", "La période de caisse ne peut pas contenir de date future.");
   if (!providerIdSchema.test(adapter.provider)) throw new WorkspaceError(500, "INVALID_POS_PROVIDER", "L’identifiant de la source POS est invalide.");
 
   const { from, to } = parsedWindow.data;

@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient, type Prisma as PrismaTypes } from "@prisma/client";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
@@ -9,8 +10,6 @@ type MenuDatabase = PrismaClient | Prisma.TransactionClient;
 type SurplusSelection = { productId: string; stockCountId: string; expectedStockRevision: number; quantity: number };
 export interface MenuIdeasInput { operationId: string; surplus: SurplusSelection[] }
 
-const todayParis = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
-  month: "2-digit", day: "2-digit" }).format(new Date());
 const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
 const countOrder = [{ countedAt: "desc" as const }, { id: "desc" as const }];
 const isCurrentCount = (count: { stockRevisionAfter: number; countedQuantity: Prisma.Decimal; unit: string } | undefined,
@@ -62,7 +61,7 @@ export async function createMenuIdeas(restaurantId: string, actorId: string, inp
 
     const restaurant = await tx.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } });
     if (restaurant?.mode !== "demo") throw new WorkspaceError(409, "DEMO_ONLY", "Les idées à partir d’un surstock sont réservées au bac de démonstration.");
-    const today = todayParis();
+    const today = formatParisDate();
     const productIds = input.surplus.map((selection) => selection.productId);
     const surplusProductIds = new Set(productIds);
     const eligibleVersions = await tx.recipeVersion.findMany({

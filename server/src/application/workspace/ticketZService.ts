@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -12,7 +13,6 @@ const candidateSchema = z.object({
   lines: z.array(z.object({ itemLabel: z.string().trim().min(1).max(120), quantity: z.number().int().positive().max(1_000_000) }).strict()).max(200),
 }).strict();
 const dateValue = (value: string) => new Date(`${value}T00:00:00.000Z`);
-const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const hashValue = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const normalizedName = (value: string) => value.trim().toLocaleLowerCase("fr-FR");
 function comparableTicketDate(value: string) {
@@ -75,7 +75,7 @@ export async function registerTicketZUpload(restaurantId: string, actorId: strin
 export async function createTicketZCandidates(restaurantId: string, actorId: string, id: string, input: unknown) {
   const parsed = candidateSchema.safeParse(input);
   if (!parsed.success) throw new WorkspaceError(400, "INVALID_TICKET_CANDIDATE", "Vérifiez la date et les lignes du Ticket Z.");
-  if (parsed.data.serviceDate > parisToday()) throw new WorkspaceError(400, "FUTURE_SERVICE_DATE", "La date de service ne peut pas être future.");
+  if (parsed.data.serviceDate > formatParisDate()) throw new WorkspaceError(400, "FUTURE_SERVICE_DATE", "La date de service ne peut pas être future.");
   const candidateHash = hashValue(parsed.data);
   return prisma.$transaction(async (tx) => {
     await lockSalesWorkspace(tx, restaurantId);

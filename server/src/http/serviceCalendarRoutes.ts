@@ -1,4 +1,5 @@
 import { Router, type Response } from "express";
+import { formatParisDate } from "../../../shared/parisDate.js";
 import { z } from "zod";
 import { getWeeklyServices, saveWeeklyService, getServiceCalendar, saveCalendarService,
   getSaleAllocation, saveSaleAllocation } from "../application/workspace/serviceCalendarService.js";
@@ -15,7 +16,7 @@ const weekly = z.object({ weekday: z.number().int().min(0).max(6), slot, opensAt
 const session = z.object({ serviceDate: z.iso.date(), slot, plannedOpen: z.boolean(),
   coverage: z.enum(["missing", "partial", "complete"]), actualCovers: z.number().int().min(0).max(100000).nullable(),
   note: z.string().trim().max(1000), expectedRevision: revision }).strict().refine((entry) => {
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    const today = formatParisDate();
     return entry.serviceDate <= today || (entry.coverage === "missing" && entry.actualCovers === null);
   }, { message: "Une planification future ne peut pas contenir d’observations." });
 const allocation = z.object({ lunchQuantity: z.number().int().min(0).max(1000000),

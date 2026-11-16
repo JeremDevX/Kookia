@@ -1,4 +1,5 @@
-import { displayDate, localToday, offsetDate } from "./scenario";
+import { displayDate, offsetDate } from "./scenario";
+import { formatParisDate } from "../../shared/parisDate";
 import type { Options } from "./scenario";
 
 interface Props { value: Options; onChange: (value: Options) => void }
@@ -6,7 +7,7 @@ export function Settings({ value, onChange }: Props) {
   const update = <K extends keyof Options>(key: K, next: Options[K]) => onChange({ ...value, [key]: next });
   const end = value.start && value.days >= 1 && value.days <= 90 && Number.isFinite(Date.parse(value.start))
     ? offsetDate(value.start, value.days - 1) : "—";
-  const preset = (offset: number, days: number) => onChange({ ...value, start: offsetDate(localToday(), offset), days });
+  const preset = (offset: number, days: number) => onChange({ ...value, start: offsetDate(formatParisDate(), offset), days });
   return <>
     <fieldset><legend>1. Choisissez votre période</legend>
       <div className="presets" aria-label="Périodes rapides">

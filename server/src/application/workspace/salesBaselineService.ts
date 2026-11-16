@@ -1,15 +1,13 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { evaluateSalesBaseline } from "./salesBaseline.js";
 import { evaluateSalesForecastContext } from "./salesForecastContext.js";
 
 type BaselineDatabase = PrismaClient | Prisma.TransactionClient;
 
-const parisDate = (date: Date) => new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-}).format(date);
 
-export const previousParisDay = () => new Date(Date.parse(parisDate(new Date())) - 86_400_000).toISOString().slice(0, 10);
+export const previousParisDay = () => new Date(Date.parse(formatParisDate()) - 86_400_000).toISOString().slice(0, 10);
 
 export async function getSalesBaseline(restaurantId: string, asOfDate = previousParisDay(), db: BaselineDatabase = prisma) {
   const historyFrom = new Date(Date.parse(asOfDate) - 27 * 86_400_000).toISOString().slice(0, 10);
@@ -35,9 +33,9 @@ export async function getSalesBaseline(restaurantId: string, asOfDate = previous
     status: row.status, coverage: row.coverage, source: row.source })), asOfDate,
   mappings.map((mapping) => ({ saleItemId: mapping.saleItemId, recipeId: mapping.recipeId,
     revision: mapping.revision, effectiveFrom: mapping.effectiveFrom.toISOString().slice(0, 10),
-    knownAt: parisDate(mapping.createdAt), portionsPerItem: Number(mapping.portionsPerItem) })),
+    knownAt: formatParisDate(mapping.createdAt), portionsPerItem: Number(mapping.portionsPerItem) })),
   versions.map((version) => ({ recipeId: version.recipeId, version: version.version,
-    effectiveFrom: version.effectiveFrom?.toISOString().slice(0, 10) ?? null, knownAt: parisDate(version.createdAt),
+    effectiveFrom: version.effectiveFrom?.toISOString().slice(0, 10) ?? null, knownAt: formatParisDate(version.createdAt),
     name: version.name, yieldPortions: version.yieldPortions, ingredients: version.ingredients.map((ingredient) => ({
       productId: ingredient.productId, productName: ingredient.productName, unit: ingredient.productUnit,
       quantity: Number(ingredient.quantity),

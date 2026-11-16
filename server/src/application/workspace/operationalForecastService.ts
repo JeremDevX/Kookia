@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { createHash } from "node:crypto";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { qualifiedAllocation, serviceSlots } from "../../../../shared/serviceCalendar.js";
@@ -18,9 +19,8 @@ type Database = PrismaClient | Prisma.TransactionClient;
 const date = (value: string) => new Date(`${value}T00:00:00Z`);
 const iso = (value: Date) => value.toISOString().slice(0, 10);
 const offset = (value: string, n: number) => iso(new Date(Date.parse(value) + n * 86400000));
-const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 export async function getOperationalForecast(restaurantId: string, fromDate: string, throughDate: string,
-  db: Database = prisma, asOfDate = offset(today(), -1)): Promise<OperationalForecast> {
+  db: Database = prisma, asOfDate = offset(formatParisDate(), -1)): Promise<OperationalForecast> {
   if (fromDate <= asOfDate || throughDate < fromDate || Date.parse(throughDate) - Date.parse(fromDate) > 90 * 86400000)
     throw new WorkspaceError(400, "INVALID_FORECAST_RANGE", "La prévision doit suivre la date d'observation et couvrir au plus 90 jours.");
   // Analysis window, not a limit on the restaurant's retained history.

@@ -1,4 +1,5 @@
 import { recordLotMovement } from "./lotService.js";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma } from "@prisma/client";
@@ -24,9 +25,6 @@ export interface ProductionInput {
 }
 
 const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
-const parisToday = () => new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-}).format(new Date());
 const lockWorkspace = (tx: Prisma.TransactionClient, restaurantId: string) =>
   tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
 
@@ -92,7 +90,7 @@ function sameSnapshot(version: { name: string; category: string; prepTime: numbe
 }
 
 function assertEffectiveDate(input: RecipeValues, latest: { effectiveFrom: Date | null } | null) {
-  if (input.effectiveFrom > parisToday()) throw new WorkspaceError(400, "FUTURE_RECIPE_DATE", "La date d’effet ne peut pas être future.");
+  if (input.effectiveFrom > formatParisDate()) throw new WorkspaceError(400, "FUTURE_RECIPE_DATE", "La date d’effet ne peut pas être future.");
   if (latest?.effectiveFrom && date(input.effectiveFrom) < latest.effectiveFrom)
     throw new WorkspaceError(409, "RECIPE_DATE_ORDER", "Une nouvelle version ne peut pas précéder la dernière version datée.");
 }

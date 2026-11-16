@@ -10,7 +10,7 @@ import { runService } from "./service";
 import { refundTransaction } from "./till";
 import { scenarioWeather } from "./weather";
 
-export { localToday, displayDate, offsetDate } from "./calendar";
+export { displayDate, offsetDate } from "./calendar";
 export { optionsSchema } from "./model";
 export type { Options, Scenario, Day, StockLine } from "./model";
 const incidents: Incident[] = ["short_delivery", "late_delivery", "unavailable", "high_waste", "refund", "stock_gap", "demand_shift"];

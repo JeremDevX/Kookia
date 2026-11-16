@@ -1,4 +1,5 @@
 import { invitationOwnerRoutes, membershipOwnerRoutes } from "./invitationRoutes.js";
+import { formatParisDate } from "../../../shared/parisDate.js";
 import { reportRoutes } from "./reportRoutes.js";
 import { impactRoutes } from "./impactRoutes.js";
 import { ingredientOutflowEstimateRoutes } from "./ingredientOutflowEstimateRoutes.js";
@@ -222,9 +223,7 @@ const productionSchema = z.object({
     ? (data.recipeId === undefined && data.expectedRecipeRevision === undefined) ||
       (data.recipeId !== undefined && data.expectedRecipeRevision !== undefined)
     : data.recipeId !== undefined && data.expectedRecipeRevision !== undefined)
-  .refine((data) => data.date <= new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
-  }).format(new Date()));
+  .refine((data) => data.date <= formatParisDate());
 workspaceRoutes.get("/productions", async (_req, res, next) => {
   try { res.json(await prisma.production.findMany({ where: { restaurantId: context(res).restaurantId },
     include: { recipeVersion: { select: { version: true, effectiveFrom: true, yieldPortions: true } } },

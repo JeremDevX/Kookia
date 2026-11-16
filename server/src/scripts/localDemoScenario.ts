@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { formatParisDate } from "../../../shared/parisDate.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { createRecipeCandidate } from "../application/workspace/recipeCandidateService.js";
@@ -80,8 +81,7 @@ export async function seedLocalDemoScenario(ownerId: string, sources: { invoices
     mode: "demo", name: "Restaurant de démonstration KookIA", type: "Restaurant de démonstration",
     address: "", city: "", phone: "", email: "demo@kookia.local", dailyCovers: 50,
   } });
-  const effectiveFrom = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
-    month: "2-digit", day: "2-digit" }).format(new Date());
+  const effectiveFrom = formatParisDate();
   const recipeProductIds = [...new Set(recipeIdeas.ideas.flatMap((idea) => idea.ingredients.map(({ productKey }) => {
     const product = scenarioProducts.find((candidate) => candidate.key === productKey);
     if (!product) throw new Error(`Famille produit inconnue dans une hypothèse de recette : ${productKey}.`);
