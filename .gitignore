@@ -12,9 +12,9 @@ node_modules
 *.log
 *.dump
 dist
-dist
 dist-ssr
 *.local
+/.local-backups/
 
 # Editor directories and files
 .vscode/*

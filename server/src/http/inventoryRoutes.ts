@@ -5,7 +5,7 @@ import { listStockLots } from "../application/workspace/lotService.js";
 import { listWaste, recordWaste } from "../application/workspace/wasteService.js";
 const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 export const inventoryRoutes = Router();
-export const wasteSchema = z.object({ operationId: z.uuid(), serviceDate: z.iso.date(),
+const wasteSchema = z.object({ operationId: z.uuid(), serviceDate: z.iso.date(),
   serviceSlot: z.enum(["lunch", "dinner"]).nullable().optional(),
   kind: z.enum(["raw", "preparation", "unsold", "plate_return"]), avoidability: z.enum(["avoidable", "inedible"]),
   productId: z.string().min(1).max(100).optional(), lotId: z.uuid().optional(), productionId: z.uuid().optional(),

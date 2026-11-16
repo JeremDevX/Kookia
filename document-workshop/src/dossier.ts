@@ -11,7 +11,7 @@ export const labels: Record<keyof typeof workflows, string> = {
   adjustment: "Régularisations", refund: "Avoirs clients", kitchen: "Décisions cuisine",
   sales: "Bilans de service", ticket: "Tickets Z", customer: "Factures clients", waste: "Pertes et déchets", count: "Inventaires", service: "Services", ledger: "Journal matière", lots: "Lots et échéances",
 };
-export function guide(scenario: Scenario, docs: Document[]) {
+function guide(scenario: Scenario, docs: Document[]) {
   return `# ${scenario.options.name} — Dossier d'exploitation\n\nPériode : ${scenario.days[0].date} au ${scenario.days.at(-1)!.date}.\n\n` +
     "## Utiliser le dossier au fil des jours\n\ninstallation contient les références et le calendrier. Les pièces sont classées par leur date réelle : une commande peut précéder la période, une facture suivre la livraison. Chaque journée avec ventes a son ventes.csv ; les jours fermés ou sans vente ont une note, jamais un CSV invalide à importer. Le CSV global inclut les ventes futures : utiliser les CSV quotidiens à partir de leur date.\n\n" +
     "## Ordre de saisie\n\nÉtablissement → fournisseurs → produits et stock d'ouverture rapproché → recettes en dosages BRUTS → commandes → réceptions → pertes brutes avant cuisine → productions réellement préparées → ventes → régularisation/comptage → couverture. Ne pas redéduire les parures, invendus ou retours d'assiette. Les ventes et productions futures sont refusées par Kookia.\n\n" +
@@ -25,7 +25,7 @@ export function guide(scenario: Scenario, docs: Document[]) {
 }
 
 const setupKinds = new Set(["identity", "suppliers", "catalog", "recipes", "service"]);
-export function documentPath(doc: Document) {
+function documentPath(doc: Document) {
   return `${setupKinds.has(doc.kind) ? "installation" : doc.date}/${doc.id}.pdf`;
 }
 export function readySales(scenario: Scenario, today: string): Scenario {

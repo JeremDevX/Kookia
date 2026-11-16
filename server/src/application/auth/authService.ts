@@ -6,7 +6,7 @@ import { createSessionToken, hashSessionToken } from "../../security/sessionToke
 import { EmailAlreadyUsedError, InvalidCredentialsError, InvalidCurrentPasswordError, UnauthenticatedError } from "../../domain/auth/errors.js";
 import { normalizeEmail, toPublicUser, type PublicUser } from "../../domain/auth/user.js";
 
-export const createSession = async (userId: string) => {
+const createSession = async (userId: string) => {
   const token = createSessionToken();
   const expiresAt = new Date(Date.now() + env.SESSION_TTL_DAYS * 86_400_000);
   await prisma.session.create({ data: { userId, tokenHash: hashSessionToken(token), expiresAt } });

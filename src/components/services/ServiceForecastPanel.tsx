@@ -14,7 +14,7 @@ function IngredientNeeds({ ingredients }: { ingredients: ForecastIngredient[] })
       <ul>{ingredient.sources.map((source, index) => <li key={index}>{source.saleItemName} → {source.recipeName}, recette version {source.recipeVersion} : {source.quantity.toLocaleString("fr-FR", { maximumFractionDigits: 3 })} {ingredient.unit}</li>)}</ul>
     </li>)}</ul></>;
 }
-export function ForecastServiceView({ service }: { service: ForecastService | null }) {
+function ForecastServiceView({ service }: { service: ForecastService | null }) {
   if (!service) return <p>Aucune prévision pour ce service. Vérifiez l’ouverture planifiée et la carte datée.</p>;
   return <>
     <p>{service.plannedOpen ? "Service planifié ouvert" : "Service planifié fermé"} · carte version {service.menuRevision}. L’ouverture ne prouve pas que les ventes sont complètes.</p>
@@ -52,7 +52,7 @@ export function ForecastPanelContent({ forecast, date, slot }: { forecast: Opera
     </details>
   </>;
 }
-export default function ServiceForecastPanel({ date, slot }: { date: string; slot: ServiceSlot; onChanged?: () => void }) {
+export default function ServiceForecastPanel({ date, slot }: { date: string; slot: ServiceSlot }) {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const past = date < today;
   const [reload, setReload] = useState(0);

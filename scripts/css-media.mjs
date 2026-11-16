@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import postcss from "postcss";
 
-export const globalCssPath = new URL("../src/styles/index.css", import.meta.url);
+const globalCssPath = new URL("../src/styles/index.css", import.meta.url);
 
 export function readMediaDefinitions(root) {
   const definitions = new Map();

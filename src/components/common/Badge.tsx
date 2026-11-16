@@ -1,7 +1,6 @@
 import React from "react";
 import clsx from "clsx";
 import type { ProductStatus } from "../../types";
-import "../../styles/index.css";
 
 interface BadgeProps {
   status?: ProductStatus;

@@ -6,7 +6,6 @@ import RouteErrorBoundary from "./RouteErrorBoundary";
 import ServiceWeatherProvider from "../../features/services/ServiceWeatherProvider";
 import WeatherSettingsModal from "./WeatherSettingsModal";
 import { useAuth } from "../../features/auth/context/AuthContext";
-import "../../styles/index.css";
 import "./Layout.css";
 
 const Layout: React.FC = () => {

@@ -29,7 +29,7 @@ const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
 const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
   month: "2-digit", day: "2-digit" }).format(new Date());
 
-export function purchaseReceiptDto(receipt: ReceiptWithLines) {
+function purchaseReceiptDto(receipt: ReceiptWithLines) {
   return { id: receipt.id, orderId: receipt.orderId, supplierId: receipt.supplierId,
     invoiceReference: receipt.invoiceReference, invoiceDocumentId: receipt.invoiceDocumentId,
     invoiceDocumentRevision: receipt.invoiceDocumentRevision, deliveryReference: receipt.deliveryReference,

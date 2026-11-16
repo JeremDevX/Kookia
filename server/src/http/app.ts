@@ -114,5 +114,3 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
 }
 
 export const app = createApp();
-
-export { clearSessionCookie, setSessionCookie };

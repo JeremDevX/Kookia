@@ -4,7 +4,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import searchIcon from "../../assets/figma-layout/search.svg";
 import { getOrderView } from "../../features/orders/orderNavigation";
 import { getRecipeView } from "../../features/recipes/recipeNavigation";
-import "../../styles/index.css";
 import "./TopNav.css";
 import { useAuth } from "../../features/auth/context/AuthContext";
 import WeatherNavButton from "./WeatherNavButton";

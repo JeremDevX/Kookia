@@ -19,7 +19,7 @@ export function weatherHours(date: string, opensAt: string, closesAt: string): s
   }
   return result;
 }
-export const completeWeatherHour = (hour: WeatherHour) => hour.temperature !== null && hour.precipitation !== null &&
+const completeWeatherHour = (hour: WeatherHour) => hour.temperature !== null && hour.precipitation !== null &&
   hour.precipitationProbability !== null && hour.windSpeed !== null;
 export function completeWeatherForecast(forecast: WeatherForecast) {
   return forecast.days?.length === 7 && forecast.days.every(day => day.weatherCode !== null) &&

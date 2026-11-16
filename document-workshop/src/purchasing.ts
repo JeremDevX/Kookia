@@ -5,7 +5,7 @@ import { serviceForecast } from "./forecast";
 import { available, grossDosages } from "./inventory";
 import type { Day, Lot, Options, Purchase } from "./model";
 
-export function nextDelivery(date: string, supplierId: string) {
+function nextDelivery(date: string, supplierId: string) {
   const supplier = suppliers.find(s => s.id === supplierId)!;
   for (let offset = 1; offset <= 7; offset++) {
     const candidate = offsetDate(date, offset);
@@ -27,7 +27,7 @@ export function forecastNeeds(from: string, until: string, options: Options) {
   }
   return needs;
 }
-export function planPurchase(placedOn: string, deliveryOn: string, supplierId: string, lots: Lot[], purchases: Purchase[], options: Options, opening = false) {
+function planPurchase(placedOn: string, deliveryOn: string, supplierId: string, lots: Lot[], purchases: Purchase[], options: Options, opening = false) {
   const needs = forecastNeeds(deliveryOn, nextDelivery(deliveryOn, supplierId), options);
   const lines = ingredients.filter(p => p.supplier === supplierId && needs[p.id] > 0).flatMap(product => {
     const usable = available(lots.filter(l => l.expiresOn >= deliveryOn), product.id);
