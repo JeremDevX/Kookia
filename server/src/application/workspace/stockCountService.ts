@@ -79,9 +79,5 @@ export async function getStockCounts(restaurantId: string, productId: string) {
   const product = await prisma.product.findUnique({ where: { restaurantId_id: { restaurantId, id: productId } }, select: { id: true } });
   if (!product) throw new WorkspaceError(404, "NOT_FOUND", "Produit introuvable.");
   const counts = await prisma.stockCount.findMany({ where: { restaurantId, productId }, orderBy: [{ countedAt: "desc" }, { id: "desc" }], take: 100 });
-  if (!counts.length) return [];
-  const reasons = await prisma.$queryRaw<{ id: string; inventoryReason: string | null }[]>(Prisma.sql`
-    SELECT id, "inventoryReason" FROM "StockCount" WHERE "restaurantId" = ${restaurantId} AND "productId" = ${productId} AND id IN (${Prisma.join(counts.map((count) => count.id))})`);
-  const byId = new Map(reasons.map((reason) => [reason.id, reason.inventoryReason]));
-  return counts.map((count) => ({ ...stockCountDto(count), inventoryReason: byId.get(count.id) ?? null }));
+  return counts.map((count) => ({ ...stockCountDto(count), inventoryReason: count.inventoryReason }));
 }

@@ -36,46 +36,67 @@ export async function getOperationalForecast(restaurantId: string, fromDate: str
   const [weatherLocation, weatherCache] = weatherEnabled ? await Promise.all([
     getWeatherLocation(restaurantId, true, db), readWeatherCache(db, restaurantId),
   ]) : [null, null];
-  const menuAt = (day: string, slot: ServiceSlot, historical = false) => menus.find(m => iso(m.serviceDate) === day && m.slot === slot && (!historical || m.createdAt < knownBefore));
-  const history: ServiceObservation[] = [], qualifiedDays = new Set<string>();
+  const menusByService = new Map<string, (typeof menus)[number]>();
+  for (const menu of menus) {
+    const day = iso(menu.serviceDate), key = `${day}:${menu.slot}`;
+    if (!menusByService.has(key) && (day > asOfDate || menu.createdAt < knownBefore)) menusByService.set(key, menu);
+  }
+  const salesByDate = new Map<string, Map<string, ReturnType<typeof qualifiedAllocation>>>();
+  const invalidDays = new Set<string>();
+  for (const sale of sales) {
+    const day = iso(sale.serviceDate), allocation = sale.serviceAllocation;
+    if (invalidDays.has(day)) continue;
+    const qualified = sale.source !== "demo_simulation" && sale.updatedAt < knownBefore && allocation && allocation.updatedAt < knownBefore
+      ? qualifiedAllocation(sale, allocation) : null;
+    if (!qualified || qualified.needsReview || qualified.unallocatedQuantity > 0) { invalidDays.add(day); continue; }
+    const rows = salesByDate.get(day) ?? new Map();
+    rows.set(sale.saleItemId, qualified);
+    salesByDate.set(day, rows);
+  }
+  const history = new Map<string, ServiceObservation[]>();
+  const futureSessions = new Map<string, (typeof sessions)[number]>();
+  const mixTotals = new Map(serviceSlots.map(slot => [slot, { covers: 0, services: 0, portions: new Map<string, number>() }]));
   let excludedServices = 0;
-  for (const session of sessions.filter(s => iso(s.serviceDate) <= asOfDate)) {
-    const day = iso(session.serviceDate), slot = session.slot as ServiceSlot;
-    const rows = sales.filter(s => iso(s.serviceDate) === day);
-    const invalid = rows.some(s => s.source === "demo_simulation" || s.updatedAt >= knownBefore || !s.serviceAllocation ||
-      s.serviceAllocation.updatedAt >= knownBefore || qualifiedAllocation(s, s.serviceAllocation).needsReview || qualifiedAllocation(s, s.serviceAllocation).unallocatedQuantity > 0);
-    if (restaurant.mode !== "operational" || !session.plannedOpen || session.coverage !== "complete" || session.updatedAt >= knownBefore || invalid) { excludedServices++; continue; }
-    qualifiedDays.add(`${day}:${slot}`);
-    const historicalMenu = menuAt(day, slot, true);
-    const offered = (historicalMenu?.entries as unknown as MenuEntry[] | undefined)?.filter(e => e.available && e.saleItemId) ?? [];
-    const ids = new Set([...offered.map(e => e.saleItemId!), ...rows.filter(s => (slot === "lunch" ? s.serviceAllocation?.lunchQuantity : s.serviceAllocation?.dinnerQuantity)).map(s => s.saleItemId)]);
+  for (const session of sessions) {
+    const day = iso(session.serviceDate), slot = session.slot as ServiceSlot, key = `${day}:${slot}`;
+    if (day > asOfDate) { futureSessions.set(key, session); continue; }
+    if (restaurant.mode !== "operational" || !session.plannedOpen || session.coverage !== "complete" || session.updatedAt >= knownBefore || invalidDays.has(day)) { excludedServices++; continue; }
+    const rows = salesByDate.get(day);
+    const allocationKey = slot === "lunch" ? "lunchQuantity" : "dinnerQuantity";
+    const entries = menusByService.get(key)?.entries as unknown as MenuEntry[] | undefined;
+    const ids = new Set(entries?.filter(e => e.available && e.saleItemId).map(e => e.saleItemId!) ?? []);
+    for (const [saleItemId, allocation] of rows ?? []) if (allocation[allocationKey]) ids.add(saleItemId);
     for (const saleItemId of ids) {
-      const row = rows.find(s => s.saleItemId === saleItemId);
-      history.push({ date: day, slot, saleItemId, quantity: row ? slot === "lunch" ? row.serviceAllocation!.lunchQuantity : row.serviceAllocation!.dinnerQuantity : 0 });
+      const itemKey = `${slot}:${saleItemId}`;
+      const observations = history.get(itemKey) ?? [];
+      observations.push({ date: day, slot, saleItemId, quantity: rows?.get(saleItemId)?.[allocationKey] ?? 0 });
+      history.set(itemKey, observations);
+    }
+    const mix = mixTotals.get(slot);
+    if (mix && session.actualCovers !== null && session.actualCovers > 0 && entries) {
+      mix.covers += session.actualCovers;
+      mix.services++;
+      for (const entry of entries) {
+        const quantity = entry.saleItemId === null ? 0 : rows?.get(entry.saleItemId)?.[allocationKey] ?? 0;
+        for (const component of entry.components) {
+          const previous = mix.portions.get(component.category) ?? 0;
+          mix.portions.set(component.category, previous + quantity * component.portions);
+        }
+      }
     }
   }
-  const mixBySlot = new Map(serviceSlots.map(slot => {
-    const observedSessions = sessions.filter(s =>
-      s.slot === slot && s.actualCovers !== null && s.actualCovers > 0 && qualifiedDays.has(`${iso(s.serviceDate)}:${slot}`));
-    const mix = ["Entrée", "Plat", "Dessert", "Boisson"].flatMap(category => {
-      let portions = 0, covers = 0, count = 0;
-      for (const s of observedSessions) {
-        const day = iso(s.serviceDate);
-        const historicalEntries = menuAt(day, slot, true)?.entries as unknown as MenuEntry[] | undefined;
-        if (!historicalEntries) continue;
-        covers += s.actualCovers!; count++;
-        for (const e of historicalEntries) for (const c of e.components.filter(c => c.category === category))
-          portions += (history.find(h => h.date === day && h.slot === slot && h.saleItemId === e.saleItemId)?.quantity ?? 0) * c.portions;
-      }
-      return count >= 4 && covers ? [{ category, portionsPerCover: Math.round(portions / covers * 1000) / 1000, observedCovers: covers, services: count }] : [];
-    });
+  const mixBySlot = new Map([...mixTotals].map(([slot, { covers, services, portions }]) => {
+    const mix = services >= 4 && covers ? ["Entrée", "Plat", "Dessert", "Boisson"].map(category => ({
+      category, portionsPerCover: Math.round((portions.get(category) ?? 0) / covers * 1000) / 1000,
+      observedCovers: covers, services,
+    })) : [];
     return [slot, mix] as const;
   }));
   const services: ForecastService[] = [], totals = new Map<string, ForecastIngredient>();
   for (let day = fromDate; day <= throughDate; day = offset(day, 1)) for (const slot of serviceSlots) {
-    const session = sessions.find(s => iso(s.serviceDate) === day && s.slot === slot);
+    const key = `${day}:${slot}`, session = futureSessions.get(key);
     const open = session?.plannedOpen ?? weekly.some(w => w.weekday === date(day).getUTCDay() && w.slot === slot);
-    const menu = menuAt(day, slot), entries = (menu?.entries as unknown as MenuEntry[] | undefined) ?? [];
+    const menu = menusByService.get(key), entries = (menu?.entries as unknown as MenuEntry[] | undefined) ?? [];
     const blockers: string[] = [];
     if (!weekly.length && !session) blockers.push("Horaires de service non renseignés.");
     if (open && !menu) blockers.push("Carte du service non renseignée.");
@@ -83,7 +104,8 @@ export async function getOperationalForecast(restaurantId: string, fromDate: str
     const weather = weatherLocation?.status === "confirmed" && weatherLocation.position
       ? projectServiceWeather(day, slot, weatherLocation.position, weatherCache, knownBefore) : null;
     const weatherAdjustment = forecastWeatherAdjustment(restaurant.hasTerrace, weather);
-    const items = applyForecastWeather(open ? entries.filter(e => e.available).map(e => forecastMenuEntry(e, day, slot, history)) : [], weatherAdjustment);
+    const items = applyForecastWeather(open ? entries.filter(e => e.available).map(e =>
+      forecastMenuEntry(e, day, slot, e.saleItemId === null ? [] : history.get(`${slot}:${e.saleItemId}`) ?? [])) : [], weatherAdjustment);
     for (const item of items) if (item.quantity === null) blockers.push(`${item.name} : correspondance de vente ou historique qualifié insuffisant.`);
     const projection = projectMenuIngredients(entries, items);
     blockers.push(...projection.blockers);
