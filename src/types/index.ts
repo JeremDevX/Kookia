@@ -5,10 +5,6 @@ export type {
   Unit,
 } from "../domain/inventory/product.types";
 export type { Supplier } from "../domain/inventory/supplier.types";
-export {
-  getProductStatus,
-  getStatusColor,
-} from "../domain/inventory/product.policies";
 
 export type { Recipe, RecipeIngredient } from "../domain/recipes/recipe.types";
 

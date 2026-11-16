@@ -2,19 +2,6 @@ import type { Product, ProductStatus } from "./product.types";
 import { getOrderStep, roundOrderQuantity } from "../../../shared/orderQuantity.js";
 import { getStockVerificationStatus } from "./stockCount.policies";
 
-export const getStatusColor = (status: ProductStatus): string => {
-  switch (status) {
-    case "urgent":
-      return "var(--color-urgent)";
-    case "moderate":
-      return "var(--color-moderate)";
-    case "optimal":
-      return "var(--color-optimal)";
-    default:
-      return "var(--color-text-secondary)";
-  }
-};
-
 export const getProductStatus = (product: Product): ProductStatus => {
   if (getStockVerificationStatus(product) !== "counted") return "neutral";
   if (product.currentStock <= 0) return "urgent";
