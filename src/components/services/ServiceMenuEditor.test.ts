@@ -1,6 +1,6 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ServiceMenu } from "../../../shared/serviceOperations";
 import { menuDraft } from "./serviceMenuDraft";
 import ServiceMenuEditor, { ServiceMenuHistory } from "./ServiceMenuEditor";
@@ -15,7 +15,7 @@ describe("service menu UI", () => {
     expect(html).toContain("Salade"); expect(html).toContain("Thé"); expect(html).toContain("recette version 2");
   });
   it("renders loading, no stock deduction and non duplicated formula sales guidance", () => {
-    const html = renderToStaticMarkup(createElement(ServiceMenuEditor, { date: "2026-10-01", slot: "lunch" }));
+    const html = renderToStaticMarkup(createElement(ServiceMenuEditor, { date: "2026-10-01", slot: "lunch", loadRecipes: vi.fn() }));
     expect(html).toContain("Chargement de la carte"); expect(html).toContain("jamais les deux"); expect(html).toContain("ne déduit aucune matière");
   });
   it("maps saved evidence to an editable input without stripping formula composition", () => {

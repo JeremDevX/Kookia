@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ServiceSlot } from "../../../shared/serviceCalendar";
 import { menuInputSchema, type MenuEntryInput, type ServiceMenu } from "../../../shared/serviceOperations";
 import type { Recipe } from "../../types";
-import { getRecipes } from "../../services/recipeService";
 import { getSaleItems, type SaleItem } from "../../services/salesService";
 import { getMenuHistory, getServiceMenu, saveServiceMenu } from "../../services/serviceOperationsService";
 import Button from "../common/Button";
@@ -20,7 +19,9 @@ export function ServiceMenuHistory({ history }: { history: ServiceMenu[] }) {
     </li>)}</ol>
   </details>;
 }
-export default function ServiceMenuEditor({ date, slot, onChanged, onDirtyChange }: { date: string; slot: ServiceSlot; onChanged?: () => void; onDirtyChange?: (dirty: boolean) => void }) {
+export default function ServiceMenuEditor({ date, slot, loadRecipes, onChanged, onDirtyChange }: {
+  date: string; slot: ServiceSlot; loadRecipes: () => Promise<Recipe[]>; onChanged?: () => void; onDirtyChange?: (dirty: boolean) => void;
+}) {
   const [menu, setMenu] = useState<ServiceMenu | null>(null);
   const [history, setHistory] = useState<ServiceMenu[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -39,7 +40,7 @@ export default function ServiceMenuEditor({ date, slot, onChanged, onDirtyChange
   useEffect(() => {
     const request = ++generation.current;
     setLoading(true); setMenu(null); setError(""); setMessage(""); setSaving(false);
-    void Promise.all([getServiceMenu(date, slot), getMenuHistory(date, slot), getRecipes(), getSaleItems()])
+    void Promise.all([getServiceMenu(date, slot), getMenuHistory(date, slot), loadRecipes(), getSaleItems()])
       .then(([current, versions, recipeRows, saleRows]) => {
         if (generation.current !== request) return;
         setMenu(current); setHistory(versions); setRecipes(recipeRows); setSales(saleRows);
@@ -47,7 +48,7 @@ export default function ServiceMenuEditor({ date, slot, onChanged, onDirtyChange
       }).catch((cause: unknown) => { if (generation.current === request) setError(cause instanceof Error ? cause.message : "Carte indisponible."); })
       .finally(() => { if (generation.current === request) setLoading(false); });
     return () => { generation.current = request + 1; };
-  }, [date, slot, reload]);
+  }, [date, slot, reload, loadRecipes]);
   const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!menu || menu.serviceDate !== date || menu.slot !== slot || saving) return;

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
-import { getRecipes } from "../../services/recipeService";
 import { getServiceSheet, saveServiceSheet } from "../../services/serviceSheetService";
 import { downloadServiceSheetPrint } from "../../features/services/serviceSheetPrint";
 import { forecastSheetPlan } from "../../features/services/serviceSheetForecast";
@@ -16,7 +15,10 @@ import ForecastWeatherSummary from "./ForecastWeatherSummary";
 import type { ForecastWeatherAdjustment } from "../../../shared/forecastWeather";
 import { hasPendingServiceSheetFields } from "./serviceSheetPendingFields";
 
-export default function ServiceSheetPanel({ date, slot, onChanged, onDirtyChange, menuChange = 0, weatherContextRef }: { date: string; slot: ServiceSlot; onChanged?: () => void; onDirtyChange?: (dirty: boolean) => void; menuChange?: number; weatherContextRef?: string }) {
+export default function ServiceSheetPanel({ date, slot, loadRecipes, onChanged, onDirtyChange, menuChange = 0, weatherContextRef }: {
+  date: string; slot: ServiceSlot; loadRecipes: () => Promise<Recipe[]>; onChanged?: () => void; onDirtyChange?: (dirty: boolean) => void;
+  menuChange?: number; weatherContextRef?: string;
+}) {
   const [sheet, setSheet] = useState<ServiceSheet | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [planned, setPlanned] = useState<SheetInput["planned"]>([]);
@@ -53,13 +55,13 @@ export default function ServiceSheetPanel({ date, slot, onChanged, onDirtyChange
     const requestedMenuChange = menuChangeRef.current;
     setBusy(true); setError(""); setStatus("");
     try {
-      const [result, catalog] = await Promise.all([getServiceSheet(date, slot), getRecipes()]);
+      const [result, catalog] = await Promise.all([getServiceSheet(date, slot), loadRecipes()]);
       if (loadRevision.current !== requestRevision) return;
       apply(result); setLoadedMenuChange(requestedMenuChange); setRecipes(catalog); setOperationId(crypto.randomUUID()); pendingInput.current = null; setDirty(false);
       setRecipeId(""); setPortions(0); setFromRecipeId(""); setToRecipeId(""); setReplacementPortions(1); setReplacementNote("");
     } catch (cause) { if (loadRevision.current === requestRevision) setError(cause instanceof Error ? cause.message : "Fiche indisponible."); }
     finally { if (loadRevision.current === requestRevision) setBusy(false); }
-  }, [date, slot]);
+  }, [date, slot, loadRecipes]);
   useEffect(() => {
     void load(); const revision = loadRevision;
     return () => { revision.current++; };

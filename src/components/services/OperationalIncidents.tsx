@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { getProducts } from "../../services/productService";
-import { getRecipes } from "../../services/recipeService";
 import { getOrders } from "../../services/orderService";
 import { getIncidentLots, getIncidents, recordIncident, resolveIncident, type OperationalIncident } from "../../services/serviceOperationsService";
 import type { IncidentInput } from "../../../shared/serviceOperations";
@@ -30,7 +29,9 @@ function ResolveIncident({ incident, onChanged }: { incident: OperationalInciden
     {error && <p role="alert">{error}</p>}
   </form></details>;
 }
-export default function OperationalIncidents({ date, slot }: { date: string; slot: ServiceSlot }) {
+export default function OperationalIncidents({ date, slot, loadRecipes }: {
+  date: string; slot: ServiceSlot; loadRecipes: () => Promise<Recipe[]>;
+}) {
   const [incidents, setIncidents] = useState<OperationalIncident[]>([]);
   const [products, setProducts] = useState<Product[]>([]), [recipes, setRecipes] = useState<Recipe[]>([]);
   const [orders, setOrders] = useState<Awaited<ReturnType<typeof getOrders>>>([]);
@@ -44,14 +45,14 @@ export default function OperationalIncidents({ date, slot }: { date: string; slo
   const [reload, setReload] = useState(0), [operationId, setOperationId] = useState(() => crypto.randomUUID());
   useEffect(() => {
     let cancelled = false; setLoading(true); setError("");
-    void Promise.all([getIncidents(date, date), getProducts(), getRecipes(), getOrders(), getIncidentLots()])
+    void Promise.all([getIncidents(date, date), getProducts(), loadRecipes(), getOrders(), getIncidentLots()])
       .then(([records, stock, cards, purchases, lotData]) => {
         if (cancelled) return;
         setIncidents(records); setProducts(stock); setRecipes(cards); setOrders(purchases); setLots(lotData.lots);
       }).catch((cause: unknown) => { if (!cancelled) setError(cause instanceof Error ? cause.message : "Suivi indisponible."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [date, reload]);
+  }, [date, reload, loadRecipes]);
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
