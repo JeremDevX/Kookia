@@ -163,12 +163,6 @@
   height: var(--size-40);
 }
 
-.btn-lg {
-  padding: var(--size-12) var(--spacing-lg);
-  font-size: var(--font-size-md);
-  height: var(--spacing-2xl);
-}
-
 .btn-danger-outline {
   background-color: transparent;
   border: var(--size-1) solid var(--color-urgent);

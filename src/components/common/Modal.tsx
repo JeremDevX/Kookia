@@ -8,7 +8,7 @@ interface ModalProps {
   closeDisabled?: boolean;
   title: string;
   children: React.ReactNode;
-  width?: "sm" | "md" | "lg" | "xl";
+  width?: "sm" | "md" | "lg";
 }
 
 let openModalCount = 0;

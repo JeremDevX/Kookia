@@ -1,24 +1,15 @@
 import React from "react";
-import clsx from "clsx";
 import type { ProductStatus } from "../../types";
 
 interface BadgeProps {
-  status?: ProductStatus;
+  status: ProductStatus;
   label: string;
-  className?: string;
 }
 
-const Badge: React.FC<BadgeProps> = ({ status, label, className }) => {
-  // Determine class based on status if provided
-  const statusClass = status ? `badge-${status}` : "";
-
+const Badge: React.FC<BadgeProps> = ({ status, label }) => {
   return (
-    <span
-      className={clsx("badge", statusClass, className)}
-    >
-      {status === "urgent" && <span className="dot urgent"></span>}
-      {status === "moderate" && <span className="dot moderate"></span>}
-      {status === "optimal" && <span className="dot optimal"></span>}
+    <span className={`badge badge-${status}`}>
+      {status !== "neutral" && <span className={`dot ${status}`} />}
       {label}
     </span>
   );

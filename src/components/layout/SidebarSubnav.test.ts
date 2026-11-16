@@ -32,6 +32,13 @@ describe("sous-navigation", () => {
     expect(html).toContain('href="/analytics?from=2026-01-01&amp;to=2026-02-01&amp;view=overview"');
     expect(html).toMatch(/<a[^>]*aria-current="page"[^>]*>Prévisions<\/a>/);
   });
+  it("donne la priorité aux ancres de retour du bilan", () => {
+    const estimates = render("/analytics?view=sales#estimated-outflows-title", "analytics");
+    expect(estimates).toMatch(/<a[^>]*aria-current="page"[^>]*>Sorties estimées<\/a>/);
+    expect(estimates).toContain('href="/predictions"');
+    const overview = render("/analytics?view=estimates#impact-summary-title", "analytics");
+    expect(overview).toMatch(/<a[^>]*aria-current="page"[^>]*>Vue d’ensemble<\/a>/);
+  });
   it("préserve le contexte de service dans les paramètres", () => {
     const html = render("/settings?date=2026-11-02&slot=lunch&section=account", "settings");
     expect(html).toContain('href="/settings?date=2026-11-02&amp;slot=lunch&amp;section=restaurant"');

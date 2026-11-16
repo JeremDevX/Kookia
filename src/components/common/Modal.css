@@ -33,9 +33,6 @@
 .modal-lg {
   width: var(--size-800);
 }
-.modal-xl {
-  width: var(--size-1000);
-}
 
 .modal-header {
   display: flex;
@@ -121,8 +118,7 @@
 
   .modal-sm,
   .modal-md,
-  .modal-lg,
-  .modal-xl {
+  .modal-lg {
     width: var(--unit-100percent);
     max-width: var(--unit-100percent);
     border-radius: var(--radius-lg) var(--radius-lg) var(--number-0) var(--number-0);

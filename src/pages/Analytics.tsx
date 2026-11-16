@@ -6,6 +6,7 @@ import SalesMetrics from "../components/sales/SalesMetrics";
 import ImpactSummary from "../components/analytics/ImpactSummary";
 import EstimatedOutflows from "../components/analytics/EstimatedOutflows";
 import BilanNavigation from "../components/analytics/BilanNavigation";
+import { getAnalyticsView, type AnalyticsView } from "../utils/analyticsNavigation";
 import { formatLocalISODate, isValidISODate } from "../utils/date";
 import "../styles/Workspace.css";
 import "./Sales.css";
@@ -17,15 +18,14 @@ const startOfCurrentYear = () => `${today().slice(0, 4)}-01-01`;
 export default function Analytics() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const view = location.hash === "#estimated-outflows-title" ? "estimates" : location.hash === "#impact-summary-title" ? "overview" : searchParams.get("view") || "overview";
-  const selectedView = view === "sales" || view === "estimates" ? view : "overview";
+  const selectedView = getAnalyticsView(searchParams, location.hash);
   const requestedFrom = searchParams.get("from");
   const requestedTo = searchParams.get("to");
   return <AnalyticsContent key={`${requestedFrom}:${requestedTo}`} selectedView={selectedView} requestedFrom={requestedFrom} requestedTo={requestedTo} />;
 }
 
 function AnalyticsContent({ selectedView, requestedFrom, requestedTo }: {
-  selectedView: "overview" | "sales" | "estimates"; requestedFrom: string | null; requestedTo: string | null;
+  selectedView: Exclude<AnalyticsView, "predictions">; requestedFrom: string | null; requestedTo: string | null;
 }) {
   const [from, setFrom] = useState(() => isValidISODate(requestedFrom) ? requestedFrom : startOfCurrentYear());
   const [to, setTo] = useState(() => isValidISODate(requestedTo) ? requestedTo : today());

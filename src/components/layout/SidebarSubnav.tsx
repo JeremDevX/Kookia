@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { getOrderView, orderViewHref } from "../../features/orders/orderNavigation";
 import { getRecipeView, recipeViewHref, type RecipeView } from "../../features/recipes/recipeNavigation";
+import { analyticsViewLinks, getAnalyticsView } from "../../utils/analyticsNavigation";
 
 type Section = "orders" | "receipts" | "stocks" | "analytics" | "settings" | "recipes";
 
@@ -28,17 +29,10 @@ export default function SidebarSubnav({ section, onNavigate }: { section: Sectio
       { id: "review", label: "À traiter", href: "/stocks?stockView=review" },
       { id: "count", label: "Inventaire", href: "/stocks?stockView=count" }];
   } else if (section === "analytics") {
-    const requested = params.get("view");
-    active = pathname === "/predictions" ? "predictions" : hash === "#estimated-outflows-title" ? "estimates" : hash === "#impact-summary-title" ? "overview" : requested === "sales" || requested === "estimates" ? requested : "overview";
+    active = pathname === "/predictions" ? "predictions" : getAnalyticsView(params, hash);
     const period = new URLSearchParams();
     for (const key of ["from", "to"]) { const value = params.get(key); if (value) period.set(key, value); }
-    const href = (view: string) => { const query = new URLSearchParams(period); query.set("view", view); return `/analytics?${query}`; };
-    items = [
-      { id: "overview", label: "Vue d’ensemble", href: href("overview") },
-      { id: "sales", label: "Ventes", href: href("sales") },
-      { id: "estimates", label: "Sorties estimées", href: href("estimates") },
-      { id: "predictions", label: "Prévisions", href: `/predictions${period.size ? `?${period}` : ""}` },
-    ];
+    items = analyticsViewLinks(period);
   } else if (section === "recipes") {
     active = getRecipeView(params);
     const views: Array<{ id: RecipeView; label: string }> = [
