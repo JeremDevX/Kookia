@@ -187,37 +187,6 @@ body .toast-close {
   min-width: var(--spacing-xl);
   min-height: var(--spacing-xl);
 }
-body .invoice-summary {
-  background: var(--color-primary-light);
-  border: var(--size-1) solid var(--color-border);
-  border-radius: var(--radius-roomy);
-}
-body .invoice-summary-icon {
-  background: var(--color-surface-active);
-  color: var(--palette-sage-11);
-  box-shadow: none;
-  border-radius: var(--radius-roomy);
-}
-body .invoice-price {
-  font-family: inherit;
-  font-variant-numeric: tabular-nums;
-}
-body .scanned-list {
-  overflow-x: auto;
-}
-body .export-info-card {
-  background: var(--color-primary-light);
-  border-color: var(--color-border);
-  border-radius: var(--radius-roomy);
-}
-body .export-format-option {
-  border-width: var(--size-1);
-  border-radius: var(--radius-md);
-}
-body .export-format-option.active {
-  border: var(--size-2) solid var(--palette-sage-11);
-  background: var(--color-primary-light);
-}
 body .notification-item:hover,
 body .notification-item:focus-visible {
   transform: none;

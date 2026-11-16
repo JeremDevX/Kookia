@@ -5,16 +5,14 @@
 .orders-heading-panel .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); line-height: var(--number-1_5); }
 .orders-container .orders-heading-panel .btn-primary { background: var(--color-nav-text); color: var(--color-surface); text-decoration: none; }
 .orders-container .orders-heading-panel .btn-primary:hover { background: var(--color-auth-icon-border); }
-.orders-selection, .orders-examples { background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); padding: var(--spacing-lg); }
+.orders-selection { background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); padding: var(--spacing-lg); }
 .orders-selection { display: flex; flex-direction: column; gap: var(--spacing-md); }
 .orders-selection-list { list-style: none; padding: var(--number-0); margin: var(--number-0); }
 .orders-selection-list li { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); padding: var(--spacing-md) var(--number-0); border-top: var(--size-1) solid var(--color-border-light); }
 .orders-selection-list li div { display: flex; flex-direction: column; gap: var(--spacing-xs); }
-.orders-selection-list li span, .orders-selection-actions p, .orders-examples p { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.orders-selection-list li span, .orders-selection-actions p { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
 .orders-selection-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-md); border-top: var(--size-1) solid var(--color-border-light); padding-top: var(--spacing-md); }
 .orders-empty { display: flex; gap: var(--spacing-md); align-items: center; flex-wrap: wrap; }
-.orders-examples { display: flex; flex-direction: column; gap: var(--spacing-sm); }
-.orders-examples h2 { font-size: var(--font-size-lg); }
 .orders-container a { color: var(--color-primary); text-decoration: underline; text-underline-offset: var(--size-3); }
 @media (--media-workspace-compact) {
   .orders-selection-actions { align-items: stretch; flex-direction: column; }
@@ -24,9 +22,9 @@
 .orders-views { display: flex; flex-wrap: wrap; gap: var(--spacing-lg); padding: var(--number-0) var(--spacing-xl); border-top: var(--size-1) solid var(--color-nav-border); }
 .orders-container .orders-views .btn { min-height: var(--size-60); padding: var(--spacing-md) var(--spacing-xs); border: none; border-bottom: var(--size-3) solid transparent; border-radius: var(--number-0); background: transparent; color: var(--color-auth-icon-border); }
 .orders-container .orders-views [aria-pressed="true"] { border-bottom-color: var(--color-auth-link); color: var(--color-accent-text); }
-.orders-guide, .orders-kpis { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); margin-block: var(--spacing-md); }
-.orders-guide > div, .orders-kpis article { padding: var(--spacing-lg); background: var(--color-primary-light); border-radius: var(--radius-lg); }
-.orders-guide p, .orders-kpis small { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
+.orders-kpis { display: grid; grid-template-columns: repeat(var(--number-3), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-md); margin-block: var(--spacing-md); }
+.orders-kpis article { padding: var(--spacing-lg); background: var(--color-primary-light); border-radius: var(--radius-lg); }
+.orders-kpis small { color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--number-1_7); }
 .orders-kpis article { display: flex; flex-direction: column; gap: var(--spacing-sm); }
 .orders-kpis strong { font-size: var(--font-size-2xl); color: var(--color-primary); }
 .orders-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--spacing-md); margin-block: var(--spacing-lg); }
@@ -42,8 +40,8 @@
 .orders-container :is(.source-invoice-archive, .orders-history, .source-invoice-controls) { min-width: var(--number-0); }
 .orders-container summary { cursor: pointer; }
 @media (--media-tablet) {
-  .orders-guide, .orders-kpis { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); }
-  .orders-guide > div, .orders-kpis article { padding: var(--spacing-md); }
+  .orders-kpis { grid-template-columns: minmax(var(--number-0), var(--unit-1fr)); }
+  .orders-kpis article { padding: var(--spacing-md); }
 }
 
 .orders-prepare-intro { display: flex; flex-wrap: wrap; gap: var(--spacing-md); color: var(--color-text-muted); font-size: var(--font-size-sm); }

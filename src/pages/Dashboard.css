@@ -9,7 +9,6 @@
 .dashboard-metric span, .dashboard-metric small { font-size: var(--font-size-caption); color: var(--color-auth-icon-border); }
 .dashboard-metric small { color: var(--color-nav-muted); }
 .dashboard-metric strong { color: var(--color-nav-text); font-size: var(--font-size-2xl); line-height: var(--number-1_2); }
-.dashboard-metric .dashboard-metric-date { font-size: var(--font-size-lg); }
 .dashboard-columns { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-2fr)) minmax(var(--size-280), var(--unit-1fr)); gap: var(--spacing-lg); align-items: start; }
 .dashboard-main-column { min-width: var(--number-0); display: flex; flex-direction: column; gap: var(--spacing-lg); }
 .today-focus { background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); padding: var(--spacing-lg); display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-md); }

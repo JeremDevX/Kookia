@@ -46,7 +46,6 @@
 .sales-metrics { display: flex; flex-direction: column; gap: var(--spacing-md); }
 .sales-metrics h3 { margin-top: var(--spacing-sm); font-size: var(--font-size-md); }
 .sales-metrics p { line-height: var(--number-1_8); }
-.sales-metrics-total strong { font-size: var(--font-size-xl); }
 .sales-reconciliation-card { display: grid; gap: var(--spacing-sm); margin-top: var(--spacing-md); padding: var(--spacing-md); border: var(--size-1) solid var(--color-border); border-radius: var(--radius-md); }
 .sales-reconciliation-card h3 { margin: var(--number-0); font-size: var(--font-size-md); }
 .sales-reconciliation-card label, .sales-outcome-actions label { display: grid; gap: var(--spacing-sm); }
