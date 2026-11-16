@@ -40,7 +40,6 @@
 .workspace-page .stock-product-link:hover { text-decoration: underline; color: var(--color-primary); }
 .workspace-page .stock-value { font-family: inherit; font-variant-numeric: tabular-nums; }
 .workspace-page .section-header { border: var(--number-0); margin-bottom: var(--spacing-md); padding: var(--number-0); }
-.workspace-page .section-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); }
 .workspace-page .recipe-card.produced { opacity: var(--number-1); background: var(--color-bg); }
 .workspace-page .recipes-grid { grid-template-columns: repeat(auto-fit, minmax(min(var(--unit-100percent), var(--size-290)), var(--unit-1fr))); gap: var(--size-20); }
 .workspace-page .recipe-card { border-top: var(--size-3) solid var(--palette-sage-5); }

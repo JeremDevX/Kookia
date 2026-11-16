@@ -88,10 +88,8 @@
   --rgb-color-info: 31, 33, 47;
   --rgb-color-moderate: 168, 75, 47;
   --rgb-color-optimal: 34, 139, 91;
-  --rgb-color-surface: 255, 255, 255;
   --rgb-color-urgent: 192, 21, 47;
   --rgb-palette-neutral-2: 0, 0, 0;
-  --rgb-palette-rose-3: 230, 194, 173;
   --rgb-palette-sage-6: 34, 197, 94;
   --rgb-palette-sage-14: 41, 67, 33;
   --rgb-palette-sage-15: 23, 44, 36;
@@ -224,7 +222,6 @@
   --number-0_05: 0.05;
   --number-0_5: 0.5;
   --number-0_7: 0.7;
-  --number-0_9: 0.9;
   --number-0_15: 0.15;
   --number-0_16: 0.16;
   --number-0_96: 0.96;
@@ -240,7 +237,6 @@
   --number-4: 4;
   --number-7: 7;
   --number-10: 10;
-  --number-40: 40;
   --number-50: 50;
   --number-51: 51;
   --number-90: 90;
@@ -248,7 +244,6 @@
   --number-200: 200;
   --number-201: 201;
   --number-300: 300;
-  --number-350: 350;
   --number-1000: 1000;
   --number-9999: 9999;
   --number-negative-1: -1;

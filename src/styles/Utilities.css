@@ -1,58 +1,11 @@
 /* Utility Classes */
 
 /* Colors */
-.text-primary {
-  color: var(--color-primary);
-}
-.text-primary-accessible {
-  color: var(--color-primary-text); /* Darker green for text accessibility */
-}
 .text-secondary {
   color: var(--color-text-secondary);
 }
-.text-urgent {
-  color: var(--color-urgent);
-}
-.text-urgent-accessible {
-  color: var(--color-urgent-text); /* Darker red for accessibility */
-}
-.text-moderate {
-  color: var(--color-moderate);
-}
-.text-moderate-accessible {
-  color: var(--color-moderate-text); /* Darker orange for accessibility */
-}
 .text-optimal {
   color: var(--color-optimal);
-}
-.text-optimal-accessible {
-  color: var(--color-optimal-text); /* Darker green for accessibility */
-}
-
-/* Text shadow for improved readability on light backgrounds */
-.text-shadow-subtle {
-  text-shadow: var(--number-0) var(--size-1) var(--size-2) rgba(var(--rgb-color-info), var(--number-0_1));
-}
-
-.text-shadow-card {
-  text-shadow: var(--number-0) var(--size-1) var(--size-1) rgba(var(--rgb-color-info), var(--number-0_05));
-}
-
-.bg-primary {
-  background-color: var(--color-primary);
-  color: var(--color-surface);
-}
-.bg-urgent {
-  background-color: var(--color-urgent);
-  color: var(--color-surface);
-}
-.bg-moderate {
-  background-color: var(--color-moderate);
-  color: var(--color-surface);
-}
-.bg-optimal {
-  background-color: var(--color-optimal);
-  color: var(--color-surface);
 }
 
 /* Flexbox */
@@ -62,9 +15,6 @@
 .flex-col {
   display: flex;
   flex-direction: column;
-}
-.flex-wrap {
-  flex-wrap: wrap;
 }
 .items-center {
   align-items: center;
@@ -84,10 +34,6 @@
 .flex-1 {
   flex: var(--number-1);
 }
-
-.gap-xs {
-  gap: var(--spacing-xs);
-}
 .gap-sm {
   gap: var(--spacing-sm);
 }
@@ -98,36 +44,9 @@
   gap: var(--spacing-lg);
 }
 
-/* Spacing */
-.p-sm {
-  padding: var(--spacing-sm);
-}
-.p-md {
-  padding: var(--spacing-md);
-}
-.p-lg {
-  padding: var(--spacing-lg);
-}
-
-.m-0 {
-  margin: var(--number-0);
-}
-.mt-sm {
-  margin-top: var(--spacing-sm);
-}
-.mt-md {
-  margin-top: var(--spacing-md);
-}
-.mb-md {
-  margin-bottom: var(--spacing-md);
-}
-
 /* Sizing */
 .w-full {
   width: var(--unit-100percent);
-}
-.h-full {
-  height: var(--unit-100percent);
 }
 
 /* Layout Containers */

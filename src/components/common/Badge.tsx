@@ -5,22 +5,16 @@ import type { ProductStatus } from "../../types";
 interface BadgeProps {
   status?: ProductStatus;
   label: string;
-  color?: string; // Hex override
   className?: string;
 }
 
-const Badge: React.FC<BadgeProps> = ({ status, label, color, className }) => {
+const Badge: React.FC<BadgeProps> = ({ status, label, className }) => {
   // Determine class based on status if provided
   const statusClass = status ? `badge-${status}` : "";
 
   return (
     <span
       className={clsx("badge", statusClass, className)}
-      style={
-        color
-          ? { backgroundColor: color + "20", color: color, borderColor: color }
-          : {}
-      }
     >
       {status === "urgent" && <span className="dot urgent"></span>}
       {status === "moderate" && <span className="dot moderate"></span>}

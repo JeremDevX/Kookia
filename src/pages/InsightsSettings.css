@@ -7,12 +7,9 @@
 .settings-container.workspace-page .input-field { background: var(--color-bg); border-color: var(--color-border); min-height: var(--size-44); border-radius: var(--radius-compact); font-size: var(--font-size-sm); }
 .settings-container.workspace-page .input-label { font-size: var(--font-size-xs); margin-bottom: var(--size-10); }
 .settings-container.workspace-page .integration-item { padding: var(--size-20); border-color: var(--color-border); background: var(--color-bg); border-radius: var(--radius-roomy); margin-bottom: var(--size-12); }
-.settings-container.workspace-page .int-icon { border-radius: var(--radius-roomy); box-shadow: none; }
-.integration-demo { font-size: var(--font-size-caption); color: var(--color-text-muted); display: block; margin-top: var(--spacing-xs); }
-.settings-container.workspace-page .empty-state { text-align: center; background: var(--color-bg); border: var(--size-1) dashed var(--color-border); border-radius: var(--radius-roomy); font-size: var(--font-size-sm); line-height: var(--number-1_8); }
 .settings-container.workspace-page .account-help { line-height: var(--number-1_8); }
 .settings-container.workspace-page .account-help svg { flex-shrink: var(--number-0); }
 .settings-container.workspace-page .danger-zone { padding: var(--size-20); background: var(--color-bg); border: var(--size-1) solid var(--palette-rose-1); border-radius: var(--radius-md); }
 .settings-container.workspace-page .danger-zone h3 { font-size: var(--font-size-md); }
 .settings-container.workspace-page .danger-zone p { font-size: var(--font-size-xs); line-height: var(--number-1_8); }
-@media (--media-compact) { .workspace-page:is(.analytics-container, .settings-container) { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); gap: var(--size-20); } .settings-container.workspace-page .grid-2 { grid-template-columns: var(--unit-1fr); } .settings-container.workspace-page .integration-item { align-items: stretch; } }
+@media (--media-compact) { .workspace-page:is(.analytics-container, .settings-container) { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); gap: var(--size-20); } .settings-container.workspace-page .integration-item { align-items: stretch; } }

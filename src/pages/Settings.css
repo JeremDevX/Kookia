@@ -49,21 +49,6 @@
 .settings-container .settings-content .supplier-form .input-field { border-color: var(--color-nav-border); }
 .settings-container .settings-content .supplier-form .input-field:focus { border-color: var(--color-auth-link); }
 .settings-container.workspace-page .supplier-form .input-label { margin-bottom: var(--number-0); }
-.grid-2 {
-  display: grid;
-  grid-template-columns: var(--unit-1fr) var(--unit-1fr);
-  gap: var(--spacing-md);
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-2xl);
-  gap: var(--spacing-md);
-  color: var(--color-text-secondary);
-}
 
 .integration-item {
   display: flex;
@@ -82,47 +67,6 @@
 .connections-card .connection-list { width: var(--unit-100percent); margin: var(--number-0); }
 .connections-card .connection-list .integration-item:last-child { margin-bottom: var(--number-0); }
 .connections-card a { color: var(--color-accent-text); text-decoration: underline; text-underline-offset: var(--size-3); }
-.int-info {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-.int-icon {
-  width: var(--size-40);
-  height: var(--size-40);
-  background-color: var(--color-bg);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-caption);
-  color: var(--color-text-secondary);
-  border: var(--size-1) solid var(--color-border);
-}
-
-.int-info h4 {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  margin: var(--number-0);
-  color: var(--color-text-primary);
-}
-
-.status.connected {
-  color: var(--color-optimal);
-  font-size: var(--font-size-sm);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-.status.connected::before {
-  content: var(--content-empty);
-  display: block;
-  width: var(--size-6);
-  height: var(--size-6);
-  background-color: var(--color-optimal);
-  border-radius: var(--unit-50percent);
-}
 
 /* ===========================================
    RESPONSIVE STYLES
@@ -138,10 +82,6 @@
   .settings-content .restaurant-intro { color: var(--color-nav-muted); font-size: var(--font-size-sm); margin-bottom: var(--spacing-lg); }
 .settings-content .restaurant-form { grid-template-columns: var(--unit-1fr); }
   .restaurant-form > .btn { width: var(--unit-100percent); }
-
-  .grid-2 {
-    grid-template-columns: var(--unit-1fr);
-  }
 
   .integration-item {
     flex-direction: column;
@@ -163,24 +103,6 @@
   .form-grid {
     gap: var(--spacing-md);
   }
-
-  .empty-state {
-    padding: var(--spacing-xl);
-  }
-
-  .int-info {
-    gap: var(--spacing-sm);
-  }
-
-  .int-icon {
-    width: var(--spacing-xl);
-    height: var(--spacing-xl);
-    font-size: var(--font-size-caption);
-  }
-
-  .int-info h4 {
-    font-size: var(--font-size-sm);
-  }
 }
 
 @media (--media-phone-small) {
@@ -195,27 +117,6 @@
   .integration-item {
     padding: var(--spacing-sm);
     margin-bottom: var(--spacing-xs);
-  }
-
-  .int-icon {
-    width: var(--size-28);
-    height: var(--size-28);
-    font-size: var(--font-size-caption);
-    border-radius: var(--radius-sm);
-  }
-
-  .status.connected {
-    font-size: var(--font-size-caption);
-  }
-
-  .status.connected::before {
-    width: var(--size-6);
-    height: var(--size-6);
-  }
-
-  .empty-state {
-    padding: var(--spacing-lg);
-    font-size: var(--font-size-sm);
   }
 }
 

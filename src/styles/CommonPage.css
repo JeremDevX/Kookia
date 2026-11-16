@@ -1,95 +1,5 @@
-/* Common Page Styles */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-lg) var(--spacing-xl);
-  background: var(--color-surface);
-  border-bottom: var(--size-1) solid var(--color-border);
-  box-shadow: var(--number-0) var(--size-1) var(--size-3) rgba(var(--rgb-color-info), var(--number-0_05));
-  margin: var(--number-0);
-  position: sticky;
-  top: var(--number-0);
-  z-index: var(--number-40);
-}
-
-.glass-header {
-  background: rgba(var(--rgb-color-surface), var(--number-0_9));
-  backdrop-filter: blur(var(--size-12));
-  border: var(--size-1) solid rgba(var(--rgb-palette-rose-3), var(--number-0_5));
-}
-
-.page-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin: var(--number-0) var(--number-0) var(--spacing-xs) var(--number-0);
-}
-
-.page-subtitle {
-  font-size: var(--font-size-base);
-  color: var(--color-text-secondary);
-  margin: var(--number-0);
-}
-
-.section-title {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-md);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.clickable-row {
-  cursor: pointer;
-  transition: background-color var(--unit-0_15s) ease;
-}
-
-.clickable-row:hover {
-  background-color: var(--color-surface-hover);
-}
-
-/* ===========================================
-   RESPONSIVE UTILITIES
-   =========================================== */
-
-/* Hide on mobile, show on desktop */
-.hide-mobile {
-  display: block;
-}
-
-/* Show on mobile, hide on desktop */
-.show-mobile {
-  display: none;
-}
-
 /* Tablet breakpoint (768px) */
 @media (--media-mobile) {
-  .hide-mobile {
-    display: none !important;
-  }
-
-  .show-mobile {
-    display: block !important;
-  }
-
-  /* Page header responsive */
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: var(--spacing-md);
-    gap: var(--spacing-sm);
-  }
-
-  .page-title {
-    font-size: var(--font-size-xl);
-  }
-
-  .page-subtitle {
-    font-size: var(--font-size-sm);
-  }
 
   /* Card adjustments */
   .card {
@@ -114,26 +24,10 @@
     padding: var(--size-10) var(--size-20);
     height: var(--size-44);
   }
-
-  /* Section title */
-  .section-title {
-    font-size: var(--font-size-base);
-  }
 }
 
 /* Mobile breakpoint (375px) */
 @media (--media-phone-small) {
-  .page-header {
-    padding: var(--spacing-sm);
-  }
-
-  .page-title {
-    font-size: var(--font-size-md);
-  }
-
-  .page-subtitle {
-    font-size: var(--font-size-xs);
-  }
 
   .card {
     border-radius: var(--radius-sm);
@@ -155,10 +49,6 @@
   .btn-sm {
     padding: var(--spacing-xs) var(--spacing-sm);
     height: var(--size-28);
-  }
-
-  .section-title {
-    font-size: var(--font-size-sm);
   }
 
   /* Badge adjustments */

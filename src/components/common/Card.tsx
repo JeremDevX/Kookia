@@ -5,16 +5,14 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   title?: string;
-  action?: React.ReactNode;
 }
 
-const Card: React.FC<CardProps> = ({ children, className, title, action }) => {
+const Card: React.FC<CardProps> = ({ children, className, title }) => {
   return (
     <div className={clsx("card", className)}>
-      {(title || action) && (
+      {title && (
         <div className="card-header">
-          {title && <h3 className="card-title">{title}</h3>}
-          {action && <div className="card-action">{action}</div>}
+          <h3 className="card-title">{title}</h3>
         </div>
       )}
       <div className="card-content">{children}</div>

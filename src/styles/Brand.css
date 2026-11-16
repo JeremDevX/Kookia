@@ -153,10 +153,6 @@ body .product-drawer .close-btn {
   background: var(--color-surface);
   border: var(--size-1) solid var(--color-border);
 }
-body .account-modal-backdrop {
-  z-index: var(--number-350);
-  background: rgba(var(--rgb-palette-sage-15), var(--number-0_4));
-}
 body .toast {
   border: var(--size-1) solid var(--color-border);
   border-left: var(--size-3) solid;
@@ -186,20 +182,6 @@ body .toast-close {
   color: var(--color-text-secondary);
   min-width: var(--spacing-xl);
   min-height: var(--spacing-xl);
-}
-body .notification-item:hover,
-body .notification-item:focus-visible {
-  transform: none;
-  box-shadow: none !important;
-}
-body .notification-action-button:hover,
-body .notification-action-button:focus-visible {
-  background: var(--color-primary-light) !important;
-}
-body .notification-generate-button:hover,
-body .notification-generate-button:focus-visible {
-  transform: none;
-  box-shadow: none !important;
 }
 @media (--media-compact) {
   body .modal-content :is(.grid-cols-2, .grid-cols-3) {
