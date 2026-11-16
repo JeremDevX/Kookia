@@ -1,20 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Product, Supplier } from "../../types";
-import { getProducts, getSuppliers } from "../../services/productService";
+import { getCatalog } from "../../services/productService";
 
-interface UseInventoryCatalogResult {
-  products: Product[];
-  suppliers: Supplier[];
-  loading: boolean;
-  error: Error | null;
-  refetch: () => Promise<void>;
-  findProductById: (productId: string) => Product | undefined;
-  findSupplierByProductId: (productId: string) => Supplier | undefined;
-}
-
-export const useInventoryCatalog = (): UseInventoryCatalogResult => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+export const useInventoryCatalog = () => {
+  const [{ products, suppliers }, setCatalog] = useState<{ products: Product[]; suppliers: Supplier[] }>({
+    products: [],
+    suppliers: [],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -22,13 +14,7 @@ export const useInventoryCatalog = (): UseInventoryCatalogResult => {
     try {
       setLoading(true);
       setError(null);
-      const [nextProducts, nextSuppliers] = await Promise.all([
-        getProducts(),
-        getSuppliers(),
-      ]);
-
-      setProducts(nextProducts);
-      setSuppliers(nextSuppliers);
+      setCatalog(await getCatalog());
     } catch (err) {
       setError(
         err instanceof Error ? err : new Error("Failed to fetch inventory")
@@ -42,28 +28,11 @@ export const useInventoryCatalog = (): UseInventoryCatalogResult => {
     void fetchCatalog();
   }, [fetchCatalog]);
 
-  const findProductById = useCallback(
-    (productId: string) => products.find((product) => product.id === productId),
-    [products]
-  );
-
-  const findSupplierByProductId = useCallback(
-    (productId: string) => {
-      const product = products.find((item) => item.id === productId);
-      if (!product) return undefined;
-
-      return suppliers.find((supplier) => supplier.id === product.supplierId);
-    },
-    [products, suppliers]
-  );
-
   return {
     products,
     suppliers,
     loading,
     error,
     refetch: fetchCatalog,
-    findProductById,
-    findSupplierByProductId,
   };
 };

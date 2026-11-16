@@ -5,17 +5,6 @@
 import type { Unit } from "./index";
 
 /**
- * Analytics customization settings
- */
-export interface AnalyticsSettings {
-  wasteTarget: string;
-  showTrends: boolean;
-  showAI: boolean;
-  showROI: boolean;
-  alertThreshold: string;
-}
-
-/**
  * Stock filter options
  */
 export interface StockFilters {

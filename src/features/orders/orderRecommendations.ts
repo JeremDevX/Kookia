@@ -1,12 +1,10 @@
-import type { Product, Supplier } from "../../types";
-
 export type OrderRecommendationSource =
   | "prediction"
   | "notification"
   | "dashboard"
   | "stocks";
 
-export interface CartOrderItemInput {
+interface CartOrderItemInput {
   purchaseSuggestionOperationId?: string;
   predictionId?: string;
   id: string;
@@ -27,18 +25,6 @@ export interface OrderRecommendation {
   source: OrderRecommendationSource;
 }
 
-export interface OrderItem {
-  productName: string;
-  quantity: number;
-  unit: string;
-  price: number;
-}
-
-export interface SupplierOrder {
-  supplier: Supplier | undefined;
-  items: OrderItem[];
-}
-
 export const createOrderRecommendationsFromCartItems = (
   cartItems: CartOrderItemInput[],
 ): OrderRecommendation[] =>
@@ -54,30 +40,3 @@ export const createOrderRecommendationsFromCartItems = (
         : "Sélection enregistrée auparavant. Vérifiez la quantité et le stock.",
       source: item.source,
   }));
-
-export const groupRecommendationsBySupplier = (
-  recommendations: OrderRecommendation[],
-  products: Product[],
-  suppliers: Supplier[]
-): Record<string, SupplierOrder> =>
-  recommendations.reduce<Record<string, SupplierOrder>>((acc, recommendation) => {
-    const product = products.find((item) => item.id === recommendation.productId);
-    if (!product) return acc;
-
-    const supplierId = product.supplierId;
-    if (!acc[supplierId]) {
-      acc[supplierId] = {
-        supplier: suppliers.find((supplier) => supplier.id === supplierId),
-        items: [],
-      };
-    }
-
-    acc[supplierId].items.push({
-      productName: product.name,
-      quantity: recommendation.quantity,
-      unit: product.unit,
-      price: product.pricePerUnit * recommendation.quantity,
-    });
-
-    return acc;
-  }, {});

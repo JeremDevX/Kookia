@@ -12,15 +12,4 @@ export {
 
 export type { Recipe, RecipeIngredient } from "../domain/recipes/recipe.types";
 
-export type {
-  AIReliability,
-  AIReliabilityTrend,
-  AnalyticsData,
-  CriticalProduct,
-  DashboardActivity,
-  SavingsEvolutionMonth,
-  WasteEvolutionDay,
-  WasteStats,
-} from "../domain/analytics/analytics.types";
-
 export type { Toast, ToastType } from "../shared/ui/toast/toast.types";

@@ -6,10 +6,6 @@ export { getProductStatus } from "../domain/inventory/product.policies";
 export const getCatalog = () => apiRequest<{ products: Product[]; suppliers: Supplier[] }>("/workspace/catalog");
 export const getProducts = async (): Promise<Product[]> => (await getCatalog()).products;
 export const getSuppliers = async (): Promise<Supplier[]> => (await getCatalog()).suppliers;
-export const getProductById = async (id: string) => (await getProducts()).find((product) => product.id === id) ?? null;
-export const getProductsByCategory = async (category: string) => (await getProducts()).filter((product) => product.category === category);
-export const getProductCategories = async () => Array.from(new Set((await getProducts()).map((product) => product.category))).sort();
-export const getSupplierForProduct = async (product: Product) => (await getSuppliers()).find((supplier) => supplier.id === product.supplierId) ?? null;
 export const createProduct = (product: NewProduct) => {
   const { id, ...data } = product;
   return apiRequest<Product>("/workspace/products", { method: "POST", body: JSON.stringify({ ...data, operationId: id }) });

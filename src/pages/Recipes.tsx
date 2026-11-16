@@ -64,8 +64,15 @@ const Recipes: React.FC = () => {
   const csvBlocker = useBlocker(csvOpen);
   useEffect(() => {
     if (csvBlocker.state !== "blocked") return;
-    if (window.confirm("L’import en cours sera perdu. Quitter cette page ?")) { setCsvOpen(false); csvBlocker.proceed(); }
-    else csvBlocker.reset();
+    if (!window.confirm("L’import en cours sera perdu. Quitter cette page ?")) {
+      csvBlocker.reset();
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setCsvOpen(false);
+      csvBlocker.proceed();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [csvBlocker]);
   useEffect(() => {
     if (!csvOpen) return;

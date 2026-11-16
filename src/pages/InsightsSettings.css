@@ -1,23 +1,4 @@
 .workspace-page:is(.analytics-container, .settings-container) { padding: var(--size-36) clamp(var(--size-20), var(--unit-3vw), var(--spacing-2xl)) var(--spacing-2xl); gap: var(--spacing-lg); }
-.analytics-container.workspace-page .analytics-grid { grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr))); gap: var(--spacing-lg); align-items: start; }
-.analytics-container.workspace-page .stat-card { min-width: var(--number-0); }
-.analytics-container.workspace-page .card-header { border-color: var(--color-surface-active); margin-bottom: var(--size-20); }
-.analytics-container.workspace-page .card-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-medium); }
-.analytics-container.workspace-page .card-content { padding: var(--number-0); }
-.analytics-container.workspace-page .kpi-value { background: none; -webkit-text-fill-color: currentColor; color: var(--color-primary-text); font-weight: var(--font-weight-medium); letter-spacing: var(--tracking-negative-0_04); text-shadow: none; }
-.analytics-container.workspace-page .kpi-value.red { color: var(--palette-sand-4); }
-.analytics-container.workspace-page .metric-item { background: var(--color-bg); border: var(--size-1) solid var(--color-surface-active); border-radius: var(--radius-roomy); }
-.analytics-container.workspace-page .metric-item-label { color: var(--color-text-muted); font-size: var(--font-size-caption); font-weight: var(--font-weight-medium); }
-.analytics-container.workspace-page .trend-pill { border: var(--size-1) solid var(--color-border); background: var(--color-primary-light); color: var(--palette-sage-11); border-radius: var(--radius-sm); box-shadow: none; font-size: var(--font-size-caption); font-weight: var(--font-weight-medium); }
-.analytics-container.workspace-page .chart-wrapper { background: var(--color-surface); border: var(--number-0); border-top: var(--size-1) solid var(--color-surface-active); padding: var(--size-20) var(--number-0) var(--number-0); }
-.analytics-container.workspace-page .chart-wrapper h4 { font-size: var(--font-size-caption); letter-spacing: var(--tracking-0_1); font-weight: var(--font-weight-medium); color: var(--color-text-muted); }
-.analytics-container.workspace-page .product-perf-item { background: var(--color-bg); border-color: var(--color-surface-active); font-size: var(--font-size-sm); }
-.analytics-container.workspace-page .product-perf-item:hover { transform: none; box-shadow: none; }
-.analytics-container.workspace-page .accuracy-bar-fill { background: var(--palette-sage-9); }
-.analytics-container.workspace-page .roi-simulator { background: var(--color-surface-hover); border-color: var(--color-border); }
-.analytics-container.workspace-page .roi-result { border-color: var(--color-border); box-shadow: none; border-radius: var(--radius-roomy); }
-.analytics-container.workspace-page .roi-amount { color: var(--color-primary-text); font-weight: var(--font-weight-medium); }
-.analytics-container.workspace-page .custom-range { accent-color: var(--color-primary-text); }
 .settings-container.workspace-page .settings-content .card-header { margin-bottom: var(--spacing-lg); border-color: var(--color-surface-active); }
 .settings-container.workspace-page .card-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-medium); }
 .settings-container.workspace-page .settings-content .card-content { padding: var(--number-0); }
@@ -34,5 +15,4 @@
 .settings-container.workspace-page .danger-zone { padding: var(--size-20); background: var(--color-bg); border: var(--size-1) solid var(--palette-rose-1); border-radius: var(--radius-md); }
 .settings-container.workspace-page .danger-zone h3 { font-size: var(--font-size-md); }
 .settings-container.workspace-page .danger-zone p { font-size: var(--font-size-xs); line-height: var(--number-1_8); }
-@media (--media-navigation-compact) { .analytics-container.workspace-page .analytics-grid { grid-template-columns: var(--unit-1fr); } .analytics-container.workspace-page .col-span-2 { grid-column: auto; } }
 @media (--media-compact) { .workspace-page:is(.analytics-container, .settings-container) { padding: var(--spacing-lg) var(--spacing-md) var(--spacing-xl); gap: var(--size-20); } .settings-container.workspace-page .grid-2 { grid-template-columns: var(--unit-1fr); } .settings-container.workspace-page .integration-item { align-items: stretch; } }

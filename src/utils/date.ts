@@ -61,8 +61,3 @@ export const getBusinessDaysUntilDate = (
     getEpochDayFromISODate(restaurantTodayISO)
   );
 };
-
-export const isOnOrAfterRestaurantToday = (
-  targetDate: string,
-  referenceDate: Date = new Date()
-): boolean => getBusinessDaysUntilDate(targetDate, referenceDate) >= 0;

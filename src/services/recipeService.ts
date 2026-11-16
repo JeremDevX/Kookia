@@ -15,13 +15,6 @@ export const updateRecipe = (id: string, expectedRevision: number, data: RecipeM
   apiRequest<Recipe>(`/workspace/recipes/${id}`, {
     method: "PATCH", body: JSON.stringify({ ...data, expectedRevision }),
   });
-export const getRecipeById = async (id: string) => (await getRecipes()).find((recipe) => recipe.id === id) ?? null;
-export const getRecipesByCategory = async (category: Recipe["category"]) => (await getRecipes()).filter((recipe) => recipe.category === category);
-export const getRecentRecipes = async () => {
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  return (await getRecipes()).filter((recipe) => recipe.lastMade && new Date(recipe.lastMade) >= oneWeekAgo);
-};
 export {
   calculateMaxYieldFromInventory as calculateMaxYield,
   calculateIngredientCostFromInventory as calculateIngredientCost,
