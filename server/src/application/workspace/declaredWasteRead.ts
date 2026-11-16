@@ -2,7 +2,8 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import type { DeclaredWasteSummary } from "../../../../shared/declaredWaste.js";
 import { isSimulationStockMovement } from "./stockMovementProvenance.js";
 const include = { product: { select: { name: true } }, production: { select: { recipeName: true, actorId: true } },
-  stockMovement: { include: { lotAllocations: { include: { lot: true } }, purchaseReceiptLine: { select: { receipt: { select: { simulated: true } } } } } } } satisfies Prisma.WasteRecordInclude;
+  stockMovement: { include: { product: { select: { name: true, unit: true } },
+    lotAllocations: { include: { lot: true } }, purchaseReceiptLine: { select: { receipt: { select: { simulated: true } } } } } } } satisfies Prisma.WasteRecordInclude;
 export type WasteReadRow = Prisma.WasteRecordGetPayload<{ include: typeof include }>;
 export function readDeclaredWaste(db: PrismaClient | Prisma.TransactionClient, restaurantId: string, from: Date, to: Date) {
   return db.wasteRecord.findMany({ where: { restaurantId, serviceDate: { gte: from, lt: to } }, include, orderBy: [{ serviceDate: "asc" }, { createdAt: "asc" }] });

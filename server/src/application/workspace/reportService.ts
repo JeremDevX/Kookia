@@ -16,37 +16,36 @@ export interface DeclaredLossSummary {
 export async function getOperationalReport(restaurantId: string, from: string, to: string) {
   const start = new Date(`${from}T00:00:00Z`);
   const end = new Date(`${to}T00:00:00Z`); end.setUTCDate(end.getUTCDate() + 1);
-  const [workspace, sales, movements, productions, orders] = await prisma.$transaction([
+  const [workspace, sales, movements, productions, orders, typedRows] = await prisma.$transaction([
     prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } }),
     prisma.dailySale.findMany({ where: { restaurantId, serviceDate: { gte: start, lt: end } }, include: {
       saleItem: { select: { name: true } }, serviceDay: { select: { source: true } },
     }, orderBy: { serviceDate: "asc" } }),
-    prisma.stockMovement.findMany({ where: { restaurantId, OR: [{ wasteRecord: { serviceDate: { gte: start, lt: end } } }, { wasteRecord: null, createdAt: { gte: start, lt: end } }] }, include: {
-      wasteRecord: { select: { id: true } }, product: { select: { name: true, unit: true } },
+    prisma.stockMovement.findMany({ where: { restaurantId, wasteRecord: null, createdAt: { gte: start, lt: end } }, include: {
+      product: { select: { name: true, unit: true } },
       purchaseReceiptLine: { select: { receipt: { select: { simulated: true } } } },
     }, orderBy: { createdAt: "asc" } }),
     prisma.production.findMany({ where: { restaurantId, date: { gte: start, lt: end } }, orderBy: { date: "asc" } }),
     prisma.purchaseOrder.findMany({ where: { restaurantId, createdAt: { gte: start, lt: end } }, include: { lines: true }, orderBy: { createdAt: "asc" } }),
+    readDeclaredWaste(prisma, restaurantId, start, end),
   ]);
-  const typedRows = await readDeclaredWaste(prisma, restaurantId, start, end);
-  const declaredWaste = summarizeDeclaredWaste(typedRows, from, to, workspace?.mode ?? "operational");
+  const mode = workspace?.mode ?? "operational";
+  const declaredWaste = summarizeDeclaredWaste(typedRows, from, to, mode);
   const rows: OperationalReportRow[] = [];
   const declaredLosses: DeclaredLossSummary = {
     method: "Mouvements de stock négatifs explicitement étiquetés « loss » ; quantité = valeur absolue du delta. Coût historique des mouvements anciens snapshoté ; déclarations typées : coût des lots connus uniquement. Déchets liés à une préparation sans nouvelle déduction ni extrapolation de coût. Aucune inférence depuis les ventes, productions ou seuils.",
     dateBasis: "Déclarations typées : jour de service ; anciens mouvements sans déclaration : createdAt UTC (repli explicite). Bornes incluses.",
     reportedMovementCount: 0, unpricedMovementCount: 0, incompatibleUnitMovementCount: 0,
-    excludedSimulationMovementCount: typedRows.filter((row) => row.stockMovement && isSimulationStockMovement(row.stockMovement, workspace?.mode ?? "operational")).length, unavailableMetrics: ["stockouts", "complete_unsold_quantity"],
+    excludedSimulationMovementCount: typedRows.filter((row) => row.stockMovement && isSimulationStockMovement(row.stockMovement, mode)).length, unavailableMetrics: ["stockouts", "complete_unsold_quantity"],
   };
 
   for (const movement of movements) {
-    if (movement.wasteRecord) continue;
     const explicitLoss = movement.delta.isNegative() && ["loss", "simulation_loss"].includes(movement.reason);
-    const simulated = isSimulationStockMovement(movement, workspace?.mode ?? "operational");
+    const simulated = isSimulationStockMovement(movement, mode);
     if (explicitLoss && simulated) declaredLosses.excludedSimulationMovementCount++;
-    if (workspace?.mode === "demo" || simulated) continue;
+    if (simulated) continue;
 
     if (explicitLoss) {
-      if (movement.reason !== "loss") continue;
       const unit = movement.productUnitSnapshot ?? movement.product.unit;
       const quantity = movement.delta.abs();
       const operation = `Opération source ${movement.operationId}`;
@@ -84,7 +83,7 @@ export async function getOperationalReport(restaurantId: string, from: string, t
       metric: "Coût connu des lots (EUR)", value: waste.knownCost == null ? "Non valorisé" : waste.knownCost.toFixed(2), source });
     if (waste.stockMovementId) { declaredLosses.reportedMovementCount++; if (waste.knownCost == null) declaredLosses.unpricedMovementCount++; }
   }
-  if (workspace?.mode !== "demo") {
+  if (mode !== "demo") {
     for (const item of sales) if (item.source !== "demo_simulation" && item.serviceDay.source !== "demo_simulation")
       rows.push({ section: "Ventes enregistrées", date: item.serviceDate.toISOString().slice(0, 10),
         metric: `${item.saleItem.name} — unités vendues`, value: item.quantity,

@@ -17,6 +17,7 @@ type ImpactBucket = { menuItemUnits: number; salesByItem: SaleItem[]; serviceDay
   receiptsByProduct: ReceiptItem[]; declaredWaste: DeclaredWasteSummary };
 
 const DAY_MS = 86_400_000;
+const lossReasons = ["loss", "simulation_loss"];
 const dateAt = (date: string) => new Date(`${date}T00:00:00.000Z`);
 const dateOnly = (date: Date) => date.toISOString().slice(0, 10);
 const addDays = (date: string, days: number) => {
@@ -50,8 +51,6 @@ function monthlyPeriod(month: string, period: ReturnType<typeof emptyPeriod>) {
     excluded: period.excluded };
 }
 
-function quantity(decimal: Prisma.Decimal) { return Number(decimal); }
-
 export async function getImpactReport(restaurantId: string, from: string, to: string, db: ImpactDatabase = prisma,
   options: { includeMonthly?: boolean; monthlyPage?: number } = {}) {
   const dayCount = Math.floor((dateAt(to).getTime() - dateAt(from).getTime()) / DAY_MS) + 1;
@@ -61,57 +60,50 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
   const workspace = await db.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } });
   if (!workspace) throw new Error("Workspace not found.");
 
-  const [serviceDays, sales, movements, receiptLines, declaredWasteRows] = await Promise.all([
+  const [serviceDays, sales, legacyMovements, receiptLines, declaredWasteRows] = await Promise.all([
     db.serviceDay.findMany({ where: { restaurantId, serviceDate: { gte: rangeStart, lt: rangeEnd } },
       select: { serviceDate: true, status: true, coverage: true, source: true } }),
     db.dailySale.findMany({ where: { restaurantId, serviceDate: { gte: rangeStart, lt: rangeEnd } },
       include: { saleItem: { select: { id: true, name: true } }, serviceDay: { select: { source: true } } } }),
-    db.stockMovement.findMany({ where: { restaurantId, OR: [{ wasteRecord: { serviceDate: { gte: rangeStart, lt: rangeEnd } } }, { wasteRecord: null, createdAt: { gte: rangeStart, lt: rangeEnd } }],
-      reason: { in: ["loss", "simulation_loss"] } }, include: { wasteRecord: { select: { serviceDate: true } }, product: { select: { id: true, name: true, unit: true } },
+    db.stockMovement.findMany({ where: { restaurantId, wasteRecord: null, createdAt: { gte: rangeStart, lt: rangeEnd },
+      reason: { in: lossReasons } }, include: { product: { select: { name: true, unit: true } },
         purchaseReceiptLine: { select: { receipt: { select: { simulated: true } } } } } }),
     db.purchaseReceiptLine.findMany({ where: { restaurantId, receivedQuantity: { gt: 0 }, receipt: { deliveryDate: { gte: rangeStart, lt: rangeEnd } } },
       include: { product: { select: { unit: true } }, receipt: { select: { id: true, orderId: true, deliveryDate: true, simulated: true } } } }),
     readDeclaredWaste(db, restaurantId, rangeStart, rangeEnd),
   ]);
+  const movements = [
+    ...legacyMovements.map((movement) => ({ movement, serviceDate: null })),
+    ...declaredWasteRows.flatMap(({ stockMovement, serviceDate }) =>
+      stockMovement && lossReasons.includes(stockMovement.reason) ? [{ movement: stockMovement, serviceDate }] : []),
+  ];
 
   const summarize = (start: string, end: string) => {
     const calendarDays = Math.floor((dateAt(end).getTime() - dateAt(start).getTime()) / DAY_MS) + 1;
     const period = emptyPeriod(start, end, calendarDays);
     period.recorded.declaredWaste = summarizeDeclaredWaste(declaredWasteRows, start, end, workspace.mode);
+    const typedWasteCosts = new Map(period.recorded.declaredWaste.records.map((row) => [row.stockMovementId, row.knownCost]));
     if (period.recorded.declaredWaste.records.length) period.hasRecordedData = true;
     const salesGroups = new Map<string, { name: string; quantity: number; operationIds: string[] }>();
     const lossGroups = new Map<string, { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
       knownCost: Prisma.Decimal; unpricedCount: number; count: number; operationIds: string[]; movementIds: string[] }>();
     const receiptGroups = new Map<string, { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
       cost: Prisma.Decimal; receiptIds: string[]; orderIds: string[] }>();
-    const recordedServiceDates = new Set<string>();
     const simulatedReceiptIds = new Set<string>();
     const recordedReceiptIds = new Set<string>();
 
     for (const row of serviceDays) {
-      const serviceDate = dateOnly(row.serviceDate);
-      if (!inRange(serviceDate, start, end)) continue;
+      if (!inRange(dateOnly(row.serviceDate), start, end)) continue;
       const isSimulation = workspace.mode === "demo" || row.source === "demo_simulation";
-      if (isSimulation) {
-        period.hasSimulationData = true;
-        if (row.status === "closed") period.simulation.serviceDays.closed++;
-        else if (row.coverage === "complete") period.simulation.serviceDays.complete++;
-        else if (row.coverage === "partial") period.simulation.serviceDays.partial++;
-        else period.simulation.serviceDays.coverageMissing++;
-        continue;
-      }
-      period.hasRecordedData = true;
-      recordedServiceDates.add(serviceDate);
-      if (row.status === "closed") period.recorded.serviceDays.closed++;
-      else if (row.coverage === "complete") period.recorded.serviceDays.complete++;
-      else if (row.coverage === "partial") period.recorded.serviceDays.partial++;
-      else period.recorded.serviceDays.coverageMissing++;
+      const bucket = isSimulation ? period.simulation : period.recorded;
+      if (isSimulation) period.hasSimulationData = true;
+      else period.hasRecordedData = true;
+      bucket.serviceDays.unregistered--;
+      if (row.status === "closed") bucket.serviceDays.closed++;
+      else if (row.coverage === "complete") bucket.serviceDays.complete++;
+      else if (row.coverage === "partial") bucket.serviceDays.partial++;
+      else bucket.serviceDays.coverageMissing++;
     }
-    period.recorded.serviceDays.unregistered = Math.max(0, calendarDays - recordedServiceDates.size);
-    period.simulation.serviceDays.unregistered = calendarDays - serviceDays.filter((row) => {
-      const date = dateOnly(row.serviceDate);
-      return workspace.mode === "demo" ? inRange(date, start, end) : row.source === "demo_simulation" && inRange(date, start, end);
-    }).length;
 
     for (const sale of sales) {
       const serviceDate = dateOnly(sale.serviceDate);
@@ -128,24 +120,23 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
         { name: sale.saleItem.name, quantity: sale.quantity, operationIds: [sale.operationId] });
     }
 
-    for (const movement of movements) {
-      const recordedDate = dateOnly(movement.wasteRecord?.serviceDate ?? movement.createdAt);
+    for (const { movement, serviceDate } of movements) {
+      const recordedDate = dateOnly(serviceDate ?? movement.createdAt);
       if (!inRange(recordedDate, start, end) || !movement.delta.isNegative()) continue;
       const isSimulation = isSimulationStockMovement(movement, workspace.mode);
-      if (isSimulation && movement.reason !== "loss" && movement.reason !== "simulation_loss") continue;
       const bucket = isSimulation ? period.simulation : period.recorded;
       if (isSimulation) period.hasSimulationData = true;
       else period.hasRecordedData = true;
       if (isSimulation) period.excluded.simulatedLosses++;
       const unit = movement.productUnitSnapshot ?? movement.product.unit;
-      if (!movement.wasteRecord && unit !== movement.product.unit) { period.excluded.lossUnitMismatch++; continue; }
+      if (!serviceDate && unit !== movement.product.unit) { period.excluded.lossUnitMismatch++; continue; }
       const key = `${isSimulation ? "simulation" : "recorded"}:${movement.productId}:${unit}`;
       const loss = lossGroups.get(key) ?? { productId: movement.productId,
         name: movement.productNameSnapshot ?? movement.product.name, unit, quantity: new Prisma.Decimal(0),
         knownCost: new Prisma.Decimal(0), unpricedCount: 0, count: 0, operationIds: [], movementIds: [] };
       const lostQuantity = movement.delta.abs();
-      const typedWaste = period.recorded.declaredWaste.records.find((row) => row.stockMovementId === movement.id);
-      const knownCost = movement.wasteRecord ? typedWaste?.knownCost ?? null : movement.unitPriceSnapshot == null ? null : Number(lostQuantity.mul(movement.unitPriceSnapshot));
+      const knownCost = serviceDate ? typedWasteCosts.get(movement.id) ?? null
+        : movement.unitPriceSnapshot == null ? null : Number(lostQuantity.mul(movement.unitPriceSnapshot));
       loss.quantity = loss.quantity.plus(lostQuantity);
       loss.count++;
       loss.operationIds.push(movement.operationId);
@@ -172,14 +163,15 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
       const item = receiptGroups.get(key) ?? { productId: line.productId, name: line.productName, unit: line.unit,
         quantity: new Prisma.Decimal(0), cost: new Prisma.Decimal(0), receiptIds: [], orderIds: [] };
       item.quantity = item.quantity.plus(line.receivedQuantity);
-      item.cost = item.cost.plus(line.receivedQuantity.mul(line.invoiceUnitPrice));
+      const lineCost = line.receivedQuantity.mul(line.invoiceUnitPrice);
+      item.cost = item.cost.plus(lineCost);
       item.receiptIds.push(line.receipt.id);
       item.orderIds.push(line.receipt.orderId);
       receiptGroups.set(key, item);
-      bucket.receivedCost += Number(line.receivedQuantity.mul(line.invoiceUnitPrice));
+      bucket.receivedCost += Number(lineCost);
     }
 
-    const presentGroups = <T extends { productId?: string; name?: string }>(groups: Map<string, T>, scope: string) =>
+    const presentGroups = <T>(groups: Map<string, T>, scope: string) =>
       [...groups.entries()].filter(([key]) => key.startsWith(`${scope}:`)).map(([, item]) => item);
     for (const scope of ["recorded", "simulation"] as const) {
       const bucket = period[scope];
@@ -187,28 +179,18 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
         saleItemId: key.slice(scope.length + 1), saleItemName: item.name, quantity: item.quantity,
         operationIds: [...new Set(item.operationIds)].sort(),
       })).sort((a, b) => a.saleItemName.localeCompare(b.saleItemName, "fr"));
-      bucket.lossesByProduct = presentGroups(lossGroups, scope).map((item) => {
-        const loss = item as { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
-          knownCost: Prisma.Decimal; unpricedCount: number; count: number; operationIds: string[]; movementIds: string[] };
-        return { productId: loss.productId, productName: loss.name, unit: loss.unit, quantity: quantity(loss.quantity),
-          knownCost: quantity(loss.knownCost), unpricedMovementCount: loss.unpricedCount, movementCount: loss.count,
-          operationIds: [...new Set(loss.operationIds)].sort(), movementIds: [...new Set(loss.movementIds)].sort() };
-      }).sort((a, b) => a.productName.localeCompare(b.productName, "fr"));
-      bucket.receiptsByProduct = presentGroups(receiptGroups, scope).map((item) => {
-        const receipt = item as { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
-          cost: Prisma.Decimal; receiptIds: string[]; orderIds: string[] };
-        return { productId: receipt.productId, productName: receipt.name, unit: receipt.unit,
-          receivedQuantity: quantity(receipt.quantity), cost: quantity(receipt.cost),
-          receiptIds: [...new Set(receipt.receiptIds)].sort(), orderIds: [...new Set(receipt.orderIds)].sort() };
-      }).sort((a, b) => a.productName.localeCompare(b.productName, "fr"));
+      bucket.lossesByProduct = presentGroups(lossGroups, scope).map((loss) => ({
+        productId: loss.productId, productName: loss.name, unit: loss.unit, quantity: Number(loss.quantity),
+        knownCost: Number(loss.knownCost), unpricedMovementCount: loss.unpricedCount, movementCount: loss.count,
+        operationIds: [...new Set(loss.operationIds)].sort(), movementIds: [...new Set(loss.movementIds)].sort(),
+      })).sort((a, b) => a.productName.localeCompare(b.productName, "fr"));
+      bucket.receiptsByProduct = presentGroups(receiptGroups, scope).map((receipt) => ({
+        productId: receipt.productId, productName: receipt.name, unit: receipt.unit,
+        receivedQuantity: Number(receipt.quantity), cost: Number(receipt.cost),
+        receiptIds: [...new Set(receipt.receiptIds)].sort(), orderIds: [...new Set(receipt.orderIds)].sort(),
+      })).sort((a, b) => a.productName.localeCompare(b.productName, "fr"));
       bucket.receiptCount = scope === "recorded" ? recordedReceiptIds.size : simulatedReceiptIds.size;
     }
-    period.recorded.menuItemUnits = sales.filter((sale) => inRange(dateOnly(sale.serviceDate), start, end) &&
-      workspace.mode !== "demo" && sale.source !== "demo_simulation" && sale.serviceDay.source !== "demo_simulation")
-      .reduce((total, sale) => total + sale.quantity, 0);
-    period.simulation.menuItemUnits = sales.filter((sale) => inRange(dateOnly(sale.serviceDate), start, end) &&
-      (workspace.mode === "demo" || sale.source === "demo_simulation" || sale.serviceDay.source === "demo_simulation"))
-      .reduce((total, sale) => total + sale.quantity, 0);
     return period;
   };
 

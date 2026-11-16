@@ -9,12 +9,20 @@ it("keeps full-period impact totals while projecting one recorded/simulated mont
     id, productId: "tomatoes", delta: new Prisma.Decimal(simulated ? "-0.25" : "-0.5"),
     reason: simulated ? "simulation_loss" : "loss", createdAt,
     actorId: simulated ? "restaurant-simulation:v1" : "restaurant-owner",
-    operationId: simulated ? "restaurant-simulation-v1:loss-1" : "recorded-loss-op",
+    operationId: simulated ? "restaurant-simulation-v1:loss-1" : `${id}-op`,
     productNameSnapshot: "Tomates", productUnitSnapshot: "kg", unitPriceSnapshot: new Prisma.Decimal("2"),
     product: { id: "tomatoes", name: "Tomates", unit: "kg" }, purchaseReceiptLine: null,
   });
+  const typedLoss = loss("typed-loss", new Date("2024-02-15T00:00:00.000Z"), false);
   const db = {
-    wasteRecord: { findMany: vi.fn().mockResolvedValue([]) },
+    wasteRecord: { findMany: vi.fn().mockResolvedValue([{
+      id: "declared-loss", operationId: typedLoss.operationId, serviceDate: january, serviceSlot: "lunch",
+      kind: "raw", avoidability: "avoidable", productId: typedLoss.productId, product: typedLoss.product,
+      productionId: null, production: null, lotId: "lot", quantity: new Prisma.Decimal("0.5"), unit: "kg",
+      note: "", stockMovementId: typedLoss.id, stockMovement: { ...typedLoss,
+        lotAllocations: [{ quantity: new Prisma.Decimal("0.5"), lot: { unitCost: new Prisma.Decimal("8") } }],
+      },
+    }]) },
     restaurant: { findUnique: vi.fn().mockResolvedValue({ mode: "operational" }) },
     serviceDay: { findMany: vi.fn().mockResolvedValue([
       { serviceDate: december, status: "open", coverage: "complete", source: "manual" },
@@ -44,8 +52,8 @@ it("keeps full-period impact totals while projecting one recorded/simulated mont
   expect(report.current.recorded.receivedCost).toBe(6);
   expect(report.current.recorded.receiptsByProduct).toMatchObject([{ productId: "tomatoes", receivedQuantity: 3,
     cost: 6, receiptIds: ["recorded-receipt"], orderIds: ["recorded-order"] }]);
-  expect(report.current.recorded.lossesByProduct).toMatchObject([{ productId: "tomatoes", quantity: 0.5,
-    knownCost: 1, operationIds: ["recorded-loss-op"], movementIds: ["recorded-loss"] }]);
+  expect(report.current.recorded.lossesByProduct).toMatchObject([{ productId: "tomatoes", quantity: 1,
+    knownCost: 5, operationIds: ["recorded-loss-op", "typed-loss-op"], movementIds: ["recorded-loss", "typed-loss"] }]);
   expect(report.current.simulation.lossesByProduct).toMatchObject([{ quantity: 0.25, knownCost: 0.5,
     movementIds: ["simulated-loss"] }]);
   expect(report.current.excluded.simulatedLosses).toBe(1);
@@ -58,6 +66,8 @@ it("keeps full-period impact totals while projecting one recorded/simulated mont
   expect(report.monthly?.find((period) => period.month === "2024-01")).toMatchObject({
     month: "2024-01", from: "2024-01-01", to: "2024-01-01",
     hasRecordedData: true, hasSimulationData: true,
-    recorded: { menuItemUnits: 0, lossMovementCount: 0, receiptCount: 1, receivedCost: 6 },
-    simulation: { menuItemUnits: 3, lossMovementCount: 1 } });
+    recorded: { menuItemUnits: 0, lossMovementCount: 1, knownLossCost: 4, receiptCount: 1, receivedCost: 6,
+      serviceDays: { complete: 0, unregistered: 1 },
+      declaredWaste: { records: [{ id: "declared-loss", serviceDate: "2024-01-01", knownCost: 4 }] } },
+    simulation: { menuItemUnits: 3, lossMovementCount: 1, serviceDays: { complete: 1, unregistered: 0 } } });
 });
