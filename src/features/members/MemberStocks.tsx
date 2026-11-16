@@ -5,7 +5,7 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import StockCountList from "../../components/stocks/StockCountList";
 import StockCountModal from "../../components/stocks/StockCountModal";
-import { useProductsWithMutations } from "../../hooks";
+import { useProductsWithMutations } from "../../hooks/useProducts";
 import "../../styles/Workspace.css";
 import "../../pages/Stocks.css";
 

@@ -14,7 +14,7 @@ interface InvoiceModalProps {
   suppliers: Supplier[];
   catalogLoading: boolean;
   catalogError: Error | null;
-  onRetryCatalog: () => Promise<void>;
+  onRetryCatalog: () => void;
   onValidate: (invoice: Invoice) => void;
   onInvoiceDataChanged: () => void;
   onClose: () => void;

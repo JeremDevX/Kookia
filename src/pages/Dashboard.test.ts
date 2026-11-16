@@ -5,7 +5,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import Dashboard from "./Dashboard";
 
 const state = vi.hoisted(() => ({ productsLoading: false, productsError: null as string | null }));
-vi.mock("../hooks", () => ({ useProducts: () => ({ products: [], loading: state.productsLoading, error: state.productsError, refetch: vi.fn() }) }));
+vi.mock("../features/inventory/useInventoryCatalog", () => ({ useInventoryCatalog: () => ({ products: [], loading: state.productsLoading, error: state.productsError, refetch: vi.fn() }) }));
 vi.mock("../context/useCart", () => ({ useCart: () => ({ cartItems: [], loading: false, loadError: null, refreshCart: vi.fn() }) }));
 vi.mock("../context/ToastContext", () => ({ useToast: () => ({ addToast: vi.fn() }) }));
 vi.mock("../components/dashboard/TodayPurchaseForecast", () => ({ default: () => null }));

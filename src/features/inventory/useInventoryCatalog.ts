@@ -10,15 +10,21 @@ export const useInventoryCatalog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  const updateProducts = useCallback((update: (products: Product[]) => Product[]) => {
+    setCatalog((catalog) => ({ ...catalog, products: update(catalog.products) }));
+  }, []);
+
   const fetchCatalog = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       setCatalog(await getCatalog());
+      return true;
     } catch (err) {
       setError(
         err instanceof Error ? err : new Error("Failed to fetch inventory")
       );
+      return false;
     } finally {
       setLoading(false);
     }
@@ -34,5 +40,6 @@ export const useInventoryCatalog = () => {
     loading,
     error,
     refetch: fetchCatalog,
+    updateProducts,
   };
 };

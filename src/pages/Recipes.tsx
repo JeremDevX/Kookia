@@ -16,7 +16,7 @@ import { Clock, ChefHat, CheckCircle, AlertTriangle } from "lucide-react";
 import { format, parseISO, isSameWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useToast } from "../context/ToastContext";
-import { useRecipes } from "../hooks";
+import { useRecipes } from "../hooks/useRecipes";
 import type { Recipe } from "../types";
 import { suggestRecipeFromIncomingProduct, type RecipeSuggestion } from "../domain/recipes/recipeSuggestionPolicy";
 import { isScenarioProduction, productionNoteForDisplay } from "../features/recipes/productionPresentation";

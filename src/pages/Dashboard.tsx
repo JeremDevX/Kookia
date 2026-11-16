@@ -15,7 +15,7 @@ import { useToast } from "../context/ToastContext";
 import { useCart } from "../context/useCart";
 import { getProductStatus, needsStockReview } from "../domain/inventory/product.policies";
 import { describeServiceSources } from "../features/sales/salesPresentation";
-import { useProducts } from "../hooks";
+import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { getLatestService, type LatestService } from "../services/salesService";
 import { getRestaurant, type Restaurant } from "../services/restaurantService";
 import { formatLocalISODate } from "../utils/date";
@@ -31,7 +31,7 @@ function DashboardOverview() {
   const thirtyDaysAgo = new Date(Date.parse(today) - 29 * 86_400_000).toISOString().slice(0, 10);
   const { addToast } = useToast();
   const { cartItems, loading: cartLoading, loadError: cartError, refreshCart } = useCart();
-  const { products, loading: productsLoading, error: productsError, refetch: refreshProducts } = useProducts();
+  const { products, loading: productsLoading, error: productsError, refetch: refreshProducts } = useInventoryCatalog();
   const [latestService, setLatestService] = useState<LatestService | null | undefined>(undefined);
   const [salesError, setSalesError] = useState("");
   const [salesReload, setSalesReload] = useState(0);

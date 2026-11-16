@@ -10,15 +10,13 @@ import FiltersModal from "../components/stocks/FiltersModal";
 import StockInventoryCard from "../components/stocks/StockInventoryCard";
 import { Search, Filter, Plus } from "lucide-react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { useProductsWithMutations } from "../hooks";
+import { useProductsWithMutations } from "../hooks/useProducts";
 import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
 import type { Product } from "../types";
-import type { StockAdjustment } from "../services/productService";
 import type { NewProduct, StockFilters } from "../types/callbacks";
-import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { readStockFilters, updateStockFilters, type StockFilterKey } from "../features/inventory/stockFilters";
-import { getSuggestedOrderQuantity, needsStockReview } from "../domain/inventory/product.policies";
+import { getProductStatus, getSuggestedOrderQuantity, needsStockReview } from "../domain/inventory/product.policies";
 import { analyticsReturnHref } from "../utils/analyticsNavigation";
 import "../styles/Workspace.css";
 import "./Stocks.css";
@@ -32,9 +30,8 @@ const Stocks: React.FC = () => {
     searchParams.get("returnAnchor"));
   const { addToast } = useToast();
   const { addToCart, loading: cartLoading } = useCart();
-  const { products, updateStock, updateProduct, recordCount, addProduct, getStatus, loading, error, refetch } =
+  const { products, suppliers, updateStock, updateProduct, recordCount, addProduct, loading, error, refetch } =
     useProductsWithMutations();
-  const { suppliers, error: catalogError, refetch: refetchCatalog } = useInventoryCatalog();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const { search: searchTerm, category: categoryFilter, view, advanced: advancedFilters } = readStockFilters(searchParams);
   const [pagination, setPagination] = useState({ filters: searchParams.toString(), page: 0 });
@@ -63,7 +60,7 @@ const Stocks: React.FC = () => {
       categoryFilter === "all" || p.category === categoryFilter;
 
     // Advanced filters
-    const status = getStatus(p);
+    const status = getProductStatus(p);
     const matchesStatus =
       advancedFilters.status === "all" || status === advancedFilters.status;
     const matchesSupplier =
@@ -93,10 +90,6 @@ const Stocks: React.FC = () => {
   const pageCount = Math.max(1, Math.ceil(filteredProducts.length / 7));
   const currentPage = Math.min(pagination.filters === searchParams.toString() ? pagination.page : 0, pageCount - 1);
   const visibleProducts = filteredProducts.slice(currentPage * 7, (currentPage + 1) * 7);
-
-  const handleDrawerAdjustStock = async (productId: string, input: StockAdjustment, restaurantId: string) => {
-    await updateStock(productId, input, restaurantId);
-  };
 
   const handleAddProduct = async (newProduct: NewProduct) => {
     await addProduct(newProduct);
@@ -130,8 +123,8 @@ const Stocks: React.FC = () => {
   return (
     <div className="stocks-container workspace-page">
       {loading && <p role="status">Chargement du stock…</p>}
-      {(error || catalogError) && <div role="alert"><p>{(error ?? catalogError)?.message}</p><Button onClick={() => {
-        void Promise.all([refetch(), refetchCatalog()]);
+      {error && <div role="alert"><p>{error.message}</p><Button onClick={() => {
+        void refetch();
         requestAnimationFrame(() => headingRef.current?.focus());
       }}>Réessayer</Button></div>}
       <section className="inventory-panel" aria-label="Inventaire">
@@ -222,7 +215,7 @@ const Stocks: React.FC = () => {
         focusedMovementId={focusedMovementId}
         returnHref={analyticsReturn}
         onClose={() => analyticsReturn ? navigate(analyticsReturn) : setSelectedProductId(null)}
-        onAdjustStock={handleDrawerAdjustStock}
+        onAdjustStock={updateStock}
         onUpdateProduct={updateProduct}
         onRecordCount={recordCount}
         onRefresh={refetch}

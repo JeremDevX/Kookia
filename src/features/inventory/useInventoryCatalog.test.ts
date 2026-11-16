@@ -1,4 +1,4 @@
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { apiRequest } from "../../config/api";
 import { useInventoryCatalog } from "./useInventoryCatalog";
 
@@ -9,12 +9,21 @@ vi.mock("react", () => ({
   useEffect: vi.fn(),
 }));
 
+beforeEach(() => vi.clearAllMocks());
+
 it("charge les produits et les fournisseurs en une seule requête", async () => {
   vi.mocked(apiRequest).mockResolvedValue({ products: [], suppliers: [] });
   const { refetch } = useInventoryCatalog();
 
-  await refetch();
+  await expect(refetch()).resolves.toBe(true);
 
   expect(apiRequest).toHaveBeenCalledTimes(1);
   expect(apiRequest).toHaveBeenCalledWith("/workspace/catalog");
+});
+
+it("signale un échec de rechargement au comptage de stock", async () => {
+  vi.mocked(apiRequest).mockRejectedValue(new Error("Catalogue indisponible"));
+  const { refetch } = useInventoryCatalog();
+
+  await expect(refetch()).resolves.toBe(false);
 });

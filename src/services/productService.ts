@@ -1,7 +1,6 @@
 import type { Product, StockCountSummary, Supplier, Unit } from "../types";
 import type { NewProduct } from "../types/callbacks";
 import { apiRequest } from "../config/api";
-export { getProductStatus } from "../domain/inventory/product.policies";
 
 export const getCatalog = () => apiRequest<{ products: Product[]; suppliers: Supplier[] }>("/workspace/catalog");
 export const getProducts = async (): Promise<Product[]> => (await getCatalog()).products;

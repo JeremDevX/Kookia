@@ -1,104 +1,48 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import type { Product } from "../types";
+import { useCallback, useRef } from "react";
 import type { NewProduct } from "../types/callbacks";
-import { getProducts, getProductStatus, createProduct, createStockCount, editProduct, adjustProductStock, type NewStockCount, type ProductEdit, type StockAdjustment } from "../services/productService";
-import type { ProductStatus } from "../types";
-
-interface UseProductsReturn {
-  products: Product[];
-  loading: boolean;
-  error: Error | null;
-  refetch: () => Promise<boolean>;
-  getStatus: (product: Product) => ProductStatus;
-}
+import { createProduct, createStockCount, editProduct, adjustProductStock, type NewStockCount, type ProductEdit, type StockAdjustment } from "../services/productService";
+import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 
 /**
- * Hook for accessing product data with loading/error states
- */
-export const useProducts = (): UseProductsReturn => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const fetchProducts = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getProducts();
-      setProducts(data);
-      return true;
-    } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error("Failed to fetch products")
-      );
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
-
-  return {
-    products,
-    loading,
-    error,
-    refetch: fetchProducts,
-    getStatus: getProductStatus,
-  };
-};
-
-/**
- * Hook for managing a local copy of products with mutations
+ * Keep the loaded catalog in sync with product mutations.
  */
 export const useProductsWithMutations = () => {
-  const { products: initialProducts, loading, error, refetch } = useProducts();
-  const [products, setProducts] = useState<Product[]>([]);
+  const { updateProducts, ...catalog } = useInventoryCatalog();
   const stockQueue = useRef(Promise.resolve());
-
-  useEffect(() => {
-    setProducts(initialProducts);
-  }, [initialProducts]);
 
   const updateStock = useCallback((id: string, input: StockAdjustment, restaurantId: string) => {
     const operation = stockQueue.current.then(async () => {
       const updated = await adjustProductStock(id, input, restaurantId);
-      setProducts((prev) => prev.map((product) => product.id === id ? { ...product, ...updated } : product));
+      updateProducts((prev) => prev.map((product) => product.id === id ? { ...product, ...updated } : product));
     });
     stockQueue.current = operation.catch(() => undefined);
     return operation;
-  }, []);
+  }, [updateProducts]);
 
   const addProduct = useCallback(async (product: NewProduct) => {
     const created = await createProduct(product);
-    setProducts((prev) => [...prev, created]);
-  }, []);
+    updateProducts((prev) => [...prev, created]);
+  }, [updateProducts]);
 
   const updateProduct = useCallback(async (id: string, data: ProductEdit) => {
     const updated = await editProduct(id, data);
-    setProducts((prev) => prev.map((product) => product.id === id ? { ...product, ...updated } : product));
+    updateProducts((prev) => prev.map((product) => product.id === id ? { ...product, ...updated } : product));
     return updated;
-  }, []);
+  }, [updateProducts]);
 
   const recordCount = useCallback(async (id: string, input: NewStockCount) => {
     const result = await createStockCount(id, input);
-    setProducts((prev) => prev.map((product) => product.id === id
+    updateProducts((prev) => prev.map((product) => product.id === id
       ? { ...product, ...result.product, latestCount: result.latestCount }
       : product));
     return result;
-  }, []);
+  }, [updateProducts]);
 
   return {
-    products,
-    loading,
-    error,
-    refetch,
+    ...catalog,
     updateStock,
     updateProduct,
     recordCount,
     addProduct,
-    getStatus: getProductStatus,
   };
 };

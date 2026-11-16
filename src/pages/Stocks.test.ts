@@ -20,8 +20,7 @@ vi.mock("react-router-dom", async (original) => ({
   useSearchParams: () => [state.params, (params: URLSearchParams) => { state.params = params; }],
 }));
 const products = Array.from({ length: 15 }, (_, i) => ({ id: String(i), name: `Produit ${i + 1}`, category: "Frais", currentStock: 1, minThreshold: 0 }));
-vi.mock("../hooks", () => ({ useProductsWithMutations: () => ({ products, getStatus: () => "optimal", loading: false, error: null }) }));
-vi.mock("../features/inventory/useInventoryCatalog", () => ({ useInventoryCatalog: () => ({ suppliers: [] }) }));
+vi.mock("../hooks/useProducts", () => ({ useProductsWithMutations: () => ({ products, suppliers: [], loading: false, error: null }) }));
 vi.mock("../context/useCart", () => ({ useCart: () => ({ loading: false }) }));
 vi.mock("../context/ToastContext", () => ({ useToast: () => ({ addToast: vi.fn() }) }));
 

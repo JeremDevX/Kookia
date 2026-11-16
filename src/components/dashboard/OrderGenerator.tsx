@@ -15,7 +15,7 @@ interface OrderGeneratorProps {
   suppliers: Supplier[];
   catalogLoading: boolean;
   catalogError: Error | null;
-  onRetryCatalog: () => Promise<void>;
+  onRetryCatalog: () => void;
   onClose: () => void;
   onValidated?: () => void;
   orderHref?: string;
