@@ -25,6 +25,7 @@
     "test": "npm run test:css && vitest run",
     "test:css": "node --test scripts/*.test.mjs",
     "test:integration": "node scripts/runIntegrationTests.mjs",
+    "test:browser": "playwright test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "db:seed": "node --import tsx server/src/scripts/seedWorkspaces.ts",
@@ -50,6 +51,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@playwright/test": "1.64.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
     "@types/node": "^25.3.2",

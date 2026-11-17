@@ -469,17 +469,25 @@ de régression sont intégrés à `npm test`.
 
 ### Contrôles applicatifs
 
-Le workflow GitHub Actions se déclenche manuellement. Il exécute `lint`, les
-builds web et API, applique les migrations sur un service PostgreSQL éphémère,
-puis lance les tests unitaires et d'intégration. En local, les tests
-d'intégration exigent une [base dédiée](setup-auth.md#base-isolée-pour-les-tests-dintégration).
+Le workflow GitHub Actions se déclenche sur les demandes de fusion, les mises à
+jour de `main` et les lancements manuels. Il exécute `check:quality` et les builds
+web, API et atelier. Il applique les migrations sur un service PostgreSQL
+éphémère, puis lance les tests unitaires, d’intégration et le parcours navigateur
+de reprise d’un inventaire après une réponse de validation perdue.
+
+En local, les tests d’intégration et navigateur exigent une
+[base dédiée](setup-auth.md#base-isolée-pour-les-tests-dintégration). Exporter
+son `DATABASE_URL` dans le terminal avant de lancer le test navigateur.
 
 ```bash
-npm run lint
+npm run check:quality
 npm run build
 npm run build:api
+npm run documents:build
 npm run test
 npm run test:integration
+npx playwright install --only-shell chromium
+npm run test:browser
 ```
 
 Pour la cible préproduction, compléter progressivement avec des tests unitaires

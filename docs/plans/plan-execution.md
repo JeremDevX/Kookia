@@ -34,10 +34,10 @@ sur absence/erreur/doublon, consommateurs, données de test, migration/retour
 arrière si stockage change. **Définition de fait :** comportement observable,
 tests ciblés positifs et négatifs, isolation restaurant, documentation du
 contrat et parcours clavier/mobile si UI, puis contrôles CI applicables.
-`npm run lint`, `npm run build`, `npm test` sont la CI actuelle ; ajouter
-`npm run build:api` et les tests d'intégration sur
-[base isolée](../setup-auth.md#base-isolée-pour-les-tests-dintégration) lorsqu'ils
-concernent le backend. Ne jamais tester une suppression, un seed de remplacement
+La CI automatise [les contrôles applicatifs](../technical-development.md#contrôles-applicatifs),
+dont l’intégration sur une
+[base isolée](../setup-auth.md#base-isolée-pour-les-tests-dintégration).
+Ne jamais tester une suppression, un seed de remplacement
 ou une migration risquée sur Camille. Avant modification de données conservées :
 sauvegarde vérifiée, migration additive si possible et procédure de rollback.
 
