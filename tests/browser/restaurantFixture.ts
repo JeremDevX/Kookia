@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test as base } from "@playwright/test";
+import { validateIntegrationDatabaseUrl } from "../../scripts/integrationDatabaseGuard.mjs";
 
 type TestRestaurant = {
   headers: { "X-Expected-User-Id": string };
@@ -8,18 +9,20 @@ type TestRestaurant = {
 };
 
 export const test = base.extend<{ restaurant: TestRestaurant }>({
-  restaurant: async ({ page }, provide) => {
+  restaurant: async ({ page, baseURL }, provide) => {
+    validateIntegrationDatabaseUrl(process.env.DATABASE_URL);
+    if (!baseURL) throw new Error("Une URL d’application est requise pour le test navigateur.");
+    const { registerUser, deleteAccount } = await import("../../server/src/application/auth/authService.js");
+    const { sessionCookieName } = await import("../../server/src/config/env.js");
     const request = page.request;
     const email = `restaurant-${randomUUID()}@example.test`;
     const password = "mot de passe du compte de test";
-    const registration = await request.post("/api/auth/register", {
-      data: { displayName: "Compte test", email, password },
-    });
-    expect(registration.status()).toBe(201);
-    const { user } = await registration.json() as { user: { id: string } };
+    const { user, token, expiresAt } = await registerUser("Compte test", email, password);
     const headers = { "X-Expected-User-Id": user.id };
 
     try {
+      await page.context().addCookies([{ name: sessionCookieName, value: token, url: baseURL,
+        httpOnly: true, sameSite: "Strict", expires: expiresAt.getTime() / 1000 }]);
       const setup = await request.post("/api/setup", { data: {
         expectedUserId: user.id, name: "Restaurant test", type: "Restaurant", city: "Paris",
         address: "", phone: "", email, dailyCovers: 20,
@@ -57,8 +60,7 @@ export const test = base.extend<{ restaurant: TestRestaurant }>({
         },
       });
     } finally {
-      const cleanup = await request.delete("/api/account", { headers, data: { currentPassword: password } });
-      expect(cleanup.status()).toBe(204);
+      await deleteAccount(user.id, password);
     }
   },
 });
