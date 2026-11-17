@@ -193,9 +193,29 @@ function summarizeImpact({ workspace, serviceDays, sales, movements, receiptLine
   return period;
 }
 
+function groupRowsByMonth<Row>(rows: Row[], dateOf: (row: Row) => Date, months: string[]) {
+  const grouped = new Map(months.map((month) => [month, [] as Row[]]));
+  for (const row of rows) grouped.get(dateOf(row).toISOString().slice(0, 7))?.push(row);
+  return grouped;
+}
+
 function summarizeMonthlyPage({ ranges, ...monthlyPagination }: ReturnType<typeof impactMonthPage>,
   rows: Awaited<ReturnType<typeof readImpactRows>>) {
-  const monthly = ranges.map(({ month, from, to }) => monthlyPeriod(month, summarizeImpact(rows, from, to)));
+  if (ranges.length === 1) {
+    const [{ month, from, to }] = ranges;
+    return { monthly: [monthlyPeriod(month, summarizeImpact(rows, from, to))], monthlyPagination };
+  }
+  const months = ranges.map(({ month }) => month);
+  const serviceDays = groupRowsByMonth(rows.serviceDays, (day) => day.serviceDate, months);
+  const sales = groupRowsByMonth(rows.sales, (sale) => sale.serviceDate, months);
+  const movements = groupRowsByMonth(rows.movements, ({ movement, serviceDate }) => serviceDate ?? movement.createdAt, months);
+  const receiptLines = groupRowsByMonth(rows.receiptLines, (line) => line.receipt.deliveryDate, months);
+  const declaredWasteRows = groupRowsByMonth(rows.declaredWasteRows, (waste) => waste.serviceDate, months);
+  const monthly = ranges.map(({ month, from, to }) => monthlyPeriod(month, summarizeImpact({
+    workspace: rows.workspace, serviceDays: serviceDays.get(month) ?? [], sales: sales.get(month) ?? [],
+    movements: movements.get(month) ?? [], receiptLines: receiptLines.get(month) ?? [],
+    declaredWasteRows: declaredWasteRows.get(month) ?? [],
+  }, from, to)));
   return { monthly, monthlyPagination };
 }
 
