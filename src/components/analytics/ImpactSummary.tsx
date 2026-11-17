@@ -1,22 +1,16 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatDisplayDate as displayDate, formatQuantity } from "../../utils/format";
 import { Link, useLocation } from "react-router-dom";
 import Button from "../common/Button";
-import { getImpactReport, type ImpactBucket, type ImpactMonthlyPeriod, type ImpactPeriod, type ImpactReport } from "../../services/impactService";
+import { getImpactReport, type ImpactBucket, type ImpactPeriod, type ImpactReport } from "../../services/impactService";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 import { receiptDetailsHref, stockMovementHref } from "../../utils/analyticsNavigation";
 
 import BilanOverview from "./BilanOverview";
-import { comparisonValues, formatLossValue } from "./comparisonValues";
+import MonthlyImpactPanel from "./MonthlyReconciliation";
+import { comparisonValues, formatLossValue, formatMoney } from "./comparisonValues";
 
 interface Props { from: string; to: string }
-const formatMoney = (value: number, currency: string) => new Intl.NumberFormat("fr-FR", {
-  style: "currency", currency, maximumFractionDigits: 2,
-}).format(value);
-const monthCount = (from: string, to: string) => Number(to.slice(0, 4)) * 12 + Number(to.slice(5, 7)) -
-  Number(from.slice(0, 4)) * 12 - Number(from.slice(5, 7)) + 1;
-const displayMonth = (value: string) => new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" })
-  .format(new Date(`${value}-01T00:00:00.000Z`));
 
 function periodRange(period: ImpactPeriod) {
   return `${displayDate(period.from)} – ${displayDate(period.to)} (${period.calendarDays} jours calendaires)`;
@@ -63,87 +57,26 @@ export function RecordedOperations({ bucket, currency, from, to, excludedLosses 
   </>;
 }
 
-function monthlySales(period: ImpactMonthlyPeriod) {
-  const bucket = period.recorded;
-  if (!period.hasRecordedData) return "Aucune vente enregistrée";
-  if (bucket.menuItemUnits > 0) return `${formatQuantity(bucket.menuItemUnits)} unité(s) saisie(s)`;
-  if (bucket.serviceDays.complete > 0) return `0 unité saisie · ${bucket.serviceDays.complete} service(s) complet(s)`;
-  return "Aucune vente enregistrée · aucun service complet pour confirmer un zéro";
-}
-
-function monthlyCoverage(bucket: ImpactMonthlyPeriod["recorded"]) {
-  const days = bucket.serviceDays;
-  return `${days.complete} service(s) complet(s) · ${days.partial} à compléter · ${days.coverageMissing} sans état renseigné · ${days.closed} fermé(s) · ${days.unregistered} sans fiche de service`;
-}
-
-interface MonthlyReconciliationProps {
-  periods: ImpactMonthlyPeriod[];
-  currency: string;
-  pagination: NonNullable<ImpactReport["monthlyPagination"]>;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onOlder: () => void;
-  onNewer: () => void;
-  headingRef: RefObject<HTMLHeadingElement | null>;
-}
-
-export function MonthlyReconciliation({ periods, currency, pagination, open, onOpenChange, onOlder, onNewer, headingRef }: MonthlyReconciliationProps) {
-  const displayedStart = periods[0]?.month ?? "";
-  const displayedEnd = periods[periods.length - 1]?.month ?? "";
-  return <details className="impact-monthly-summary bilan-drilldown" open={open} onToggle={(event) => onOpenChange(event.currentTarget.open)}>
-    <summary>Évolution mois par mois · {pagination.totalMonths} mois</summary>
-    <p>Les périodes partielles reprennent uniquement les dates sélectionnées. Les ventes sont des unités d’articles ; un zéro n’est confirmé que par un service complet. Les pertes sont des mouvements déclarés, pas une quantité invendue ; les unités incompatibles sont écartées.</p>
-    <h3 ref={headingRef} tabIndex={-1}>Mois affichés : {displayMonth(displayedStart)} – {displayMonth(displayedEnd)}</h3>
-    {pagination.pageCount > 1 && <nav className="impact-monthly-navigation" aria-label="Navigation des périodes mensuelles">
-      <Button type="button" variant="outline" disabled={!pagination.hasOlder} onClick={onOlder}>Mois plus anciens</Button>
-      <p aria-live="polite">Page {pagination.page + 1} sur {pagination.pageCount}</p>
-      <Button type="button" variant="outline" disabled={!pagination.hasNewer} onClick={onNewer}>Mois plus récents</Button>
-    </nav>}
-    <div className="sales-table-wrap" role="region" aria-label="Réconciliation mensuelle des indicateurs opérationnels"
-      aria-describedby="impact-table-scroll-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
-      <table className="sales-table impact-monthly-table" aria-label="Détails mensuels des ventes, services, pertes et réceptions"><thead><tr>
-        <th scope="col">Mois et période</th><th scope="col">Ventes (unités)</th><th scope="col">Services renseignés</th>
-        <th scope="col">Pertes déclarées</th><th scope="col">Réceptions confirmées</th>
-      </tr></thead><tbody>{periods.map((period) => <tr key={period.month}>
-        <th scope="row">{displayMonth(period.month)}<br /><small>{displayDate(period.from)} – {displayDate(period.to)} ({period.calendarDays} j)</small></th>
-        <td><p>{monthlySales(period)}</p></td>
-        <td>{period.recorded.serviceDays.complete} complets<details><summary>Détail des services</summary><p>{monthlyCoverage(period.recorded)}</p></details></td>
-        <td><p>{period.recorded.lossMovementCount > 0 && `${period.recorded.lossMovementCount} mouvement(s) · `}{!period.recorded.lossMovementCount && period.excluded.lossUnitMismatch ? "Pertes exclues pour unité incompatible" : formatLossValue(period.recorded.lossMovementCount, period.recorded.unpricedLossMovementCount, period.recorded.knownLossCost, currency)}</p>
-          {period.excluded.lossUnitMismatch > 0 && <p>{period.excluded.lossUnitMismatch} mouvement(s) de perte écarté(s) pour unité incompatible</p>}
-          {period.excluded.receiptUnitMismatch > 0 && <p>{period.excluded.receiptUnitMismatch} ligne(s) de réception écartée(s) pour unité incompatible</p>}</td>
-        <td><p>{period.recorded.receiptCount ? `${period.recorded.receiptCount} réception(s) · ${formatMoney(period.recorded.receivedCost, currency)}` : "Aucune réception enregistrée"}</p>
-        </td>
-      </tr>)}</tbody></table>
-    </div>
-  </details>;
-}
-
 export default function ImpactSummary({ from, to }: Props) {
   const location = useLocation();
-  const selectedMonthCount = monthCount(from, to);
-  const includeMonthly = selectedMonthCount >= 2;
-  const [monthlyPage, setMonthlyPage] = useState(0);
-  const [monthlyOpen, setMonthlyOpen] = useState(false);
   const [refreshRevision, setRefreshRevision] = useState(0);
-  const requestKey = JSON.stringify([from, to, includeMonthly ? monthlyPage : null, refreshRevision]);
+  const requestKey = JSON.stringify([from, to, refreshRevision]);
   const [report, setReport] = useState<ImpactReport | null>(null);
   const [error, setError] = useState("");
   const [loadedRequestKey, setLoadedRequestKey] = useState("");
   const loading = loadedRequestKey !== requestKey;
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const monthlyHeadingRef = useRef<HTMLHeadingElement>(null);
   const retryFocusPending = useRef(false);
-  const monthlyPageFocusPending = useRef(false);
   useEffect(() => {
     let active = true;
-    void getImpactReport(from, to, includeMonthly ? monthlyPage : undefined).then((result) => {
+    void getImpactReport(from, to).then((result) => {
       if (active) { setReport(result); setError(""); setLoadedRequestKey(requestKey); }
     }).catch((cause: unknown) => {
       if (active) { setError(cause instanceof Error ? cause.message : "Réessayez."); setLoadedRequestKey(requestKey); }
     });
     return () => { active = false; };
-  }, [from, to, includeMonthly, monthlyPage, requestKey]);
+  }, [from, to, requestKey]);
   useEffect(() => {
     if (loading || !retryFocusPending.current) return;
     retryFocusPending.current = false;
@@ -154,12 +87,6 @@ export default function ImpactSummary({ from, to }: Props) {
   useEffect(() => {
     if (location.hash === "#impact-summary-title" && !loading) headingRef.current?.focus();
   }, [loading, location.hash]);
-  useEffect(() => {
-    if (loading || !monthlyPageFocusPending.current) return;
-    monthlyPageFocusPending.current = false;
-    if (error) retryButtonRef.current?.focus();
-    else monthlyHeadingRef.current?.focus();
-  }, [error, loading, report]);
   const retryReport = () => {
     retryFocusPending.current = document.activeElement === retryButtonRef.current;
     setRefreshRevision((value) => value + 1);
@@ -185,13 +112,10 @@ export default function ImpactSummary({ from, to }: Props) {
         </tbody></table></div>
       </details>
       {!report.current.hasRecordedData && <p role="status">Aucune donnée opérationnelle mesurable dans la période actuelle.</p>}
-      {report.monthly && report.monthlyPagination && <MonthlyReconciliation periods={report.monthly} currency={report.currency}
-        pagination={report.monthlyPagination} open={monthlyOpen} onOpenChange={setMonthlyOpen} headingRef={monthlyHeadingRef}
-        onOlder={() => { monthlyPageFocusPending.current = true; setMonthlyPage((page) => page + 1); }}
-        onNewer={() => { monthlyPageFocusPending.current = true; setMonthlyPage((page) => Math.max(0, page - 1)); }} />}
+      {from.slice(0, 7) !== to.slice(0, 7) && <MonthlyImpactPanel key={`${from}:${to}`} from={from} to={to} />}
       <RecordedOperations bucket={report.current.recorded} currency={report.currency} from={from} to={to} excludedLosses={report.current.excluded.lossUnitMismatch} />
       <details className="impact-reading-guide"><summary>Comprendre les chiffres et leurs limites</summary>
-      <p>La comparaison porte sur des périodes de même durée calendaire, pas nécessairement de même activité. Les ventes suivent la date de service (Europe/Paris), les pertes leur date d’enregistrement (UTC) et les achats leur date de livraison. Les unités restent séparées par produit.</p>
+      <p>La comparaison porte sur des périodes de même durée calendaire. Les ventes et les pertes déclarées par service suivent le jour du service (Europe/Paris). Les anciens mouvements de perte suivent leur date d’enregistrement (UTC). Les achats suivent leur date de livraison. Les unités restent séparées par produit.</p>
       <p className="impact-unmeasured"><strong>Non mesuré dans le système :</strong> ruptures de stock et inventaire complet des invendus. Seuls les invendus explicitement déclarés sont disponibles. Un seuil de stock bas ou une production ne prouvent pas une rupture ou un invendu. Les économies réalisées ne sont pas calculées.</p>
       {(report.current.excluded.lossUnitMismatch > 0 || report.current.excluded.receiptUnitMismatch > 0) &&
         <p>Éléments écartés pour unité incompatible : {report.current.excluded.lossUnitMismatch} mouvement(s) de perte et {report.current.excluded.receiptUnitMismatch} ligne(s) de réception.</p>}

@@ -3,6 +3,7 @@ import { wasteKindLabels } from "../../../../shared/declaredWaste.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { isSimulationSale, simulationActor } from "./operationProvenance.js";
 import { isSimulationStockMovement, stockReceiptProvenance } from "./stockMovementProvenance.js";
+import { legacyLossCost, lossMovementReasons } from "./legacyLossValuation.js";
 
 interface OperationalReportRow {
   section: string; date: string; metric: string; value: string | number; source: string;
@@ -34,14 +35,14 @@ export async function getOperationalReport(restaurantId: string, from: string, t
   const declaredWaste = summarizeDeclaredWaste(typedRows, from, to, mode);
   const rows: OperationalReportRow[] = [];
   const declaredLosses: DeclaredLossSummary = {
-    method: "Mouvements de stock négatifs explicitement étiquetés « loss » ; quantité = valeur absolue du delta. Coût historique des mouvements anciens snapshoté ; déclarations typées : coût des lots connus uniquement. Déchets liés à une préparation sans nouvelle déduction ni extrapolation de coût. Aucune inférence depuis les ventes, productions ou seuils.",
-    dateBasis: "Déclarations typées : jour de service ; anciens mouvements sans déclaration : createdAt UTC (repli explicite). Bornes incluses.",
+    method: "Mouvements de stock négatifs déclarés comme pertes. Les anciens mouvements utilisent le prix enregistré lors de la perte. Les déclarations par service utilisent le coût des lots connus. Les montants gardent leur précision par ligne. Les déchets liés à une préparation ne donnent lieu à aucune nouvelle déduction ni extrapolation de coût. Aucun calcul à partir des ventes, des productions ou des seuils.",
+    dateBasis: "Les déclarations par service suivent le jour du service (Europe/Paris). Les anciens mouvements suivent leur date d’enregistrement (UTC). Les deux dates sélectionnées sont incluses.",
     reportedMovementCount: 0, unpricedMovementCount: 0, incompatibleUnitMovementCount: 0,
     excludedSimulationMovementCount: typedRows.filter((row) => row.stockMovement && isSimulationStockMovement(row.stockMovement, mode)).length, unavailableMetrics: ["stockouts", "complete_unsold_quantity"],
   };
 
   for (const movement of movements) {
-    const explicitLoss = movement.delta.isNegative() && ["loss", "simulation_loss"].includes(movement.reason);
+    const explicitLoss = movement.delta.isNegative() && lossMovementReasons.includes(movement.reason);
     const simulated = isSimulationStockMovement(movement, mode);
     if (explicitLoss && simulated) declaredLosses.excludedSimulationMovementCount++;
     if (simulated) continue;
@@ -59,14 +60,15 @@ export async function getOperationalReport(restaurantId: string, from: string, t
       }
 
       declaredLosses.reportedMovementCount++;
-      const knownCost = movement.unitPriceSnapshot?.mul(quantity).toDecimalPlaces(2);
-      if (knownCost === undefined || knownCost === null) declaredLosses.unpricedMovementCount++;
+      const knownCost = legacyLossCost(quantity, movement.unitPriceSnapshot);
+      if (knownCost === null) declaredLosses.unpricedMovementCount++;
       const productName = movement.productNameSnapshot ?? movement.product.name;
       rows.push({ section: "Pertes déclarées", date: movement.createdAt.toISOString(),
         metric: `${productName} — quantité perdue (${unit})`, value: Number(quantity), source: operation });
       rows.push({ section: "Pertes déclarées", date: movement.createdAt.toISOString(),
         metric: `${productName} — coût connu valorisé au prix snapshoté (EUR)`,
-        value: knownCost?.toFixed(2) ?? "Non valorisé", source: knownCost ? operation : `${operation} · prix snapshoté absent` });
+        value: knownCost === null ? "Non valorisé" : Number(knownCost),
+        source: knownCost === null ? `${operation} · prix snapshoté absent` : operation });
       continue;
     }
 
@@ -81,7 +83,7 @@ export async function getOperationalReport(restaurantId: string, from: string, t
     rows.push({ section: "Pertes et déchets déclarés par service", date: waste.serviceDate,
       metric: `${wasteKindLabels[waste.kind] ?? waste.kind} — ${waste.productName ?? waste.preparationName ?? "élément lié"} (${waste.unit})`, value: waste.quantity, source });
     rows.push({ section: "Pertes et déchets déclarés par service", date: waste.serviceDate,
-      metric: "Coût connu des lots (EUR)", value: waste.knownCost == null ? "Non valorisé" : waste.knownCost.toFixed(2), source });
+      metric: "Coût connu des lots (EUR)", value: waste.knownCost ?? "Non valorisé", source });
     if (waste.stockMovementId) { declaredLosses.reportedMovementCount++; if (waste.knownCost == null) declaredLosses.unpricedMovementCount++; }
   }
   if (mode !== "demo") {

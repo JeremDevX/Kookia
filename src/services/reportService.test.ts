@@ -29,3 +29,10 @@ it("omits demonstration provenance from operational exports when no such losses 
   const recordedOnly = { ...report, declaredLosses: { ...report.declaredLosses, excludedSimulationMovementCount: 0 } };
     expect(reportCells(recordedOnly).flat().join(" ")).not.toMatch(/démonstration|simulée?/i);
 });
+
+it("keeps fractional cent amounts as numeric values in both exports", () => {
+  const smallLoss = { ...report, rows: [{ section: "Pertes déclarées", date: report.from,
+    metric: "Coût connu (EUR)", value: 0.004, source: "Opération source" }] };
+  expect(reportCsv(smallLoss)).toContain('"0.004"');
+  expect(reportExcelXml(smallLoss)).toContain('<Data ss:Type="Number">0.004</Data>');
+});

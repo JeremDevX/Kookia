@@ -97,7 +97,7 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   expect(exportedReport.body.rows).toContainEqual(expect.objectContaining({ section: "Pertes déclarées",
     metric: expect.stringContaining("quantité perdue"), value: 0.5, source: expect.stringContaining(reportedLossOperationId) }));
   expect(exportedReport.body.rows).toContainEqual(expect.objectContaining({ section: "Pertes déclarées",
-    metric: expect.stringContaining("coût connu"), value: (product.pricePerUnit * 0.5).toFixed(2),
+    metric: expect.stringContaining("coût connu"), value: product.pricePerUnit * 0.5,
     source: expect.stringContaining(reportedLossOperationId) }));
   expect(exportedReport.body.rows).toContainEqual(expect.objectContaining({ section: "Pertes déclarées",
     metric: expect.stringContaining("coût connu"), value: "Non valorisé",
@@ -106,6 +106,23 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
     value: 0.25, source: expect.stringContaining(mismatchLossOperationId) }));
   expect(exportedReport.body.rows.some((row: { source: string }) => row.source.includes(simulatedLossOperationId))).toBe(false);
   expect(exportedReport.body.rows.some((row: { metric: string }) => row.metric.includes("Plat simulé") || row.metric.includes("simulation_loss"))).toBe(false);
+
+  const smallLossDate = "2025-01-12";
+  const smallLossOperationIds = [randomUUID(), randomUUID()];
+  await prisma.stockMovement.createMany({ data: smallLossOperationIds.map((operationId) => ({
+    restaurantId: restaurant.id, productId: product.id, delta: -0.002, reason: "loss", operationId,
+    actorId: registration.body.user.id, productNameSnapshot: product.name, productUnitSnapshot: product.unit,
+    unitPriceSnapshot: 2, createdAt: new Date(`${smallLossDate}T17:00:00.000Z`),
+  })) });
+  const smallLossQuery = { from: smallLossDate, to: smallLossDate };
+  const smallLossImpact = await agent.get("/api/workspace/impact").query(smallLossQuery).expect(200);
+  expect(smallLossImpact.body.current.recorded).toMatchObject({ lossMovementCount: 2, knownLossCost: 0.008,
+    lossesByProduct: [{ knownCost: 0.008 }] });
+  const smallLossExport = await agent.get("/api/workspace/report").query(smallLossQuery).expect(200);
+  const costRows = smallLossExport.body.rows.filter((row: { metric: string }) => row.metric.includes("coût connu"));
+  expect(costRows.map((row: { value: number }) => row.value)).toEqual([0.004, 0.004]);
+  expect(costRows.map((row: { source: string }) => row.source).sort())
+    .toEqual(smallLossOperationIds.map((id) => `Opération source ${id}`).sort());
 
   const empty = await agent.get("/api/workspace/impact?from=2020-01-01&to=2020-01-01").expect(200);
   expect(empty.body.current.hasRecordedData).toBe(false);
@@ -121,9 +138,11 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   expect(latestMonthlyPage.body.monthly[0]).toMatchObject({ month: "2023-01", from: "2023-01-01" });
   expect(latestMonthlyPage.body.monthly[11]).toMatchObject({ month: "2023-12", from: "2023-12-01", to: "2023-12-15",
     calendarDays: 15 });
-  const oldestMonthlyPage = await agent.get("/api/workspace/impact").query({
-    from: "2020-01-15", to: "2023-12-15", monthly: "true", monthlyPage: 3,
+  const oldestMonthlyPage = await agent.get("/api/workspace/impact/monthly").query({
+    from: "2020-01-15", to: "2023-12-15", page: 3,
   }).expect(200);
+  expect(oldestMonthlyPage.body.current).toBeUndefined();
+  expect(oldestMonthlyPage.body.prior).toBeUndefined();
   expect(oldestMonthlyPage.body.monthlyPagination).toMatchObject({ page: 3, hasOlder: false, hasNewer: true });
   expect(oldestMonthlyPage.body.monthly[0]).toMatchObject({ month: "2020-01", from: "2020-01-15", to: "2020-01-31",
     calendarDays: 17 });
@@ -137,4 +156,11 @@ it("compares equal calendar periods, traces losses/receipts, and excludes simula
   }).expect(400);
   await agent.get("/api/workspace/impact").query({ from: "2020-01-01", to: "2024-01-01", monthlyPage: 0 }).expect(400);
   await agent.get("/api/workspace/impact?from=2026-09-02&to=2026-09-01").expect(400);
+  await request(app).get("/api/workspace/impact/monthly").query(smallLossQuery).expect(401);
+  const monthlyLossImpact = await agent.get("/api/workspace/impact/monthly").query(smallLossQuery).expect(200);
+  expect(monthlyLossImpact.body.monthly).toMatchObject([{ month: "2025-01", from: smallLossDate, to: smallLossDate,
+    recorded: { lossMovementCount: 2, knownLossCost: 0.008 } }]);
+  for (const page of ["", "-1", "0.5", "1", "999999999999999999"]) {
+    await agent.get("/api/workspace/impact/monthly").query({ ...smallLossQuery, page }).expect(400);
+  }
 });

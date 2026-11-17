@@ -4,6 +4,7 @@ import { readDeclaredWaste, summarizeDeclaredWaste } from "./declaredWasteRead.j
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { impactMonthPage } from "./impactMonthPolicy.js";
+import { legacyLossCost, lossMovementReasons } from "./legacyLossValuation.js";
 import { isSimulationReceipt, isSimulationSale, isSimulationServiceDay } from "./operationProvenance.js";
 import { isSimulationStockMovement, stockReceiptProvenance } from "./stockMovementProvenance.js";
 
@@ -19,7 +20,7 @@ type ImpactBucket = { menuItemUnits: number; salesByItem: SaleItem[]; serviceDay
   receiptsByProduct: ReceiptItem[]; declaredWaste: DeclaredWasteSummary };
 
 const DAY_MS = 86_400_000;
-const lossReasons = ["loss", "simulation_loss"];
+const currency = "EUR";
 const dateAt = (date: string) => new Date(`${date}T00:00:00.000Z`);
 const dateOnly = (date: Date) => date.toISOString().slice(0, 10);
 const inRange = (date: string, from: string, to: string) => date >= from && date <= to;
@@ -48,11 +49,8 @@ function monthlyPeriod(month: string, period: ReturnType<typeof emptyPeriod>) {
     excluded: period.excluded };
 }
 
-export async function getImpactReport(restaurantId: string, from: string, to: string, db: ImpactDatabase = prisma,
-  options: { includeMonthly?: boolean; monthlyPage?: number } = {}) {
-  const dayCount = Math.floor((dateAt(to).getTime() - dateAt(from).getTime()) / DAY_MS) + 1;
-  const previous = { from: addCalendarDays(from, -dayCount), to: addCalendarDays(from, -1) };
-  const rangeStart = dateAt(previous.from);
+async function readImpactRows(restaurantId: string, from: string, to: string, db: ImpactDatabase) {
+  const rangeStart = dateAt(from);
   const rangeEnd = new Date(dateAt(to).getTime() + DAY_MS);
   const workspace = await db.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } });
   if (!workspace) throw new Error("Workspace not found.");
@@ -63,7 +61,7 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
     db.dailySale.findMany({ where: { restaurantId, serviceDate: { gte: rangeStart, lt: rangeEnd } },
       include: { saleItem: { select: { id: true, name: true } }, serviceDay: { select: { source: true } } } }),
     db.stockMovement.findMany({ where: { restaurantId, wasteRecord: null, createdAt: { gte: rangeStart, lt: rangeEnd },
-      reason: { in: lossReasons } }, include: { product: { select: { name: true, unit: true } },
+      reason: { in: lossMovementReasons } }, include: { product: { select: { name: true, unit: true } },
         purchaseReceiptLine: stockReceiptProvenance } }),
     db.purchaseReceiptLine.findMany({ where: { restaurantId, receivedQuantity: { gt: 0 }, receipt: { deliveryDate: { gte: rangeStart, lt: rangeEnd } } },
       include: { product: { select: { unit: true } }, receipt: { select: { id: true, orderId: true, deliveryDate: true, simulated: true, provenance: true } } } }),
@@ -72,136 +70,155 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
   const movements = [
     ...legacyMovements.map((movement) => ({ movement, serviceDate: null })),
     ...declaredWasteRows.flatMap(({ stockMovement, serviceDate }) =>
-      stockMovement && lossReasons.includes(stockMovement.reason) ? [{ movement: stockMovement, serviceDate }] : []),
+      stockMovement && lossMovementReasons.includes(stockMovement.reason) ? [{ movement: stockMovement, serviceDate }] : []),
   ];
+  return { workspace, serviceDays, sales, movements, receiptLines, declaredWasteRows };
+}
 
-  const summarize = (start: string, end: string) => {
-    const calendarDays = Math.floor((dateAt(end).getTime() - dateAt(start).getTime()) / DAY_MS) + 1;
-    const period = emptyPeriod(start, end, calendarDays);
-    period.recorded.declaredWaste = summarizeDeclaredWaste(declaredWasteRows, start, end, workspace.mode);
-    const typedWasteCosts = new Map(period.recorded.declaredWaste.records.map((row) => [row.stockMovementId, row.knownCost]));
-    if (period.recorded.declaredWaste.records.length) period.hasRecordedData = true;
-    const salesGroups = new Map<string, { name: string; quantity: number; operationIds: string[] }>();
-    const lossGroups = new Map<string, { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
-      knownCost: Prisma.Decimal; unpricedCount: number; count: number; operationIds: string[]; movementIds: string[] }>();
-    const receiptGroups = new Map<string, { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
-      cost: Prisma.Decimal; receiptIds: string[]; orderIds: string[] }>();
-    const simulatedReceiptIds = new Set<string>();
-    const recordedReceiptIds = new Set<string>();
+function summarizeImpact({ workspace, serviceDays, sales, movements, receiptLines, declaredWasteRows }:
+  Awaited<ReturnType<typeof readImpactRows>>, start: string, end: string) {
+  const calendarDays = Math.floor((dateAt(end).getTime() - dateAt(start).getTime()) / DAY_MS) + 1;
+  const period = emptyPeriod(start, end, calendarDays);
+  period.recorded.declaredWaste = summarizeDeclaredWaste(declaredWasteRows, start, end, workspace.mode);
+  const typedWasteCosts = new Map(period.recorded.declaredWaste.records.map((row) => [row.stockMovementId, row.knownCost]));
+  if (period.recorded.declaredWaste.records.length) period.hasRecordedData = true;
+  const salesGroups = new Map<string, { name: string; quantity: number; operationIds: string[] }>();
+  const lossGroups = new Map<string, { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
+    knownCost: Prisma.Decimal; unpricedCount: number; count: number; operationIds: string[]; movementIds: string[] }>();
+  const receiptGroups = new Map<string, { productId: string; name: string; unit: string; quantity: Prisma.Decimal;
+    cost: Prisma.Decimal; receiptIds: string[]; orderIds: string[] }>();
+  const simulatedReceiptIds = new Set<string>();
+  const recordedReceiptIds = new Set<string>();
 
-    for (const row of serviceDays) {
-      if (!inRange(dateOnly(row.serviceDate), start, end)) continue;
-      const isSimulation = isSimulationServiceDay(row, workspace.mode);
-      const bucket = isSimulation ? period.simulation : period.recorded;
-      if (isSimulation) period.hasSimulationData = true;
-      else period.hasRecordedData = true;
-      bucket.serviceDays.unregistered--;
-      if (row.status === "closed") bucket.serviceDays.closed++;
-      else if (row.coverage === "complete") bucket.serviceDays.complete++;
-      else if (row.coverage === "partial") bucket.serviceDays.partial++;
-      else bucket.serviceDays.coverageMissing++;
-    }
+  for (const row of serviceDays) {
+    if (!inRange(dateOnly(row.serviceDate), start, end)) continue;
+    const isSimulation = isSimulationServiceDay(row, workspace.mode);
+    const bucket = isSimulation ? period.simulation : period.recorded;
+    if (isSimulation) period.hasSimulationData = true;
+    else period.hasRecordedData = true;
+    bucket.serviceDays.unregistered--;
+    if (row.status === "closed") bucket.serviceDays.closed++;
+    else if (row.coverage === "complete") bucket.serviceDays.complete++;
+    else if (row.coverage === "partial") bucket.serviceDays.partial++;
+    else bucket.serviceDays.coverageMissing++;
+  }
 
-    for (const sale of sales) {
-      const serviceDate = dateOnly(sale.serviceDate);
-      if (!inRange(serviceDate, start, end)) continue;
-      const isSimulation = isSimulationSale(sale, workspace.mode);
-      const bucket = isSimulation ? period.simulation : period.recorded;
-      if (isSimulation) period.hasSimulationData = true;
-      else period.hasRecordedData = true;
-      if (isSimulation) period.excluded.simulatedSales++;
-      bucket.menuItemUnits += sale.quantity;
-      const prior = salesGroups.get(`${isSimulation ? "simulation" : "recorded"}:${sale.saleItemId}`);
-      if (prior) { prior.quantity += sale.quantity; prior.operationIds.push(sale.operationId); }
-      else salesGroups.set(`${isSimulation ? "simulation" : "recorded"}:${sale.saleItemId}`,
-        { name: sale.saleItem.name, quantity: sale.quantity, operationIds: [sale.operationId] });
-    }
+  for (const sale of sales) {
+    const serviceDate = dateOnly(sale.serviceDate);
+    if (!inRange(serviceDate, start, end)) continue;
+    const isSimulation = isSimulationSale(sale, workspace.mode);
+    const bucket = isSimulation ? period.simulation : period.recorded;
+    if (isSimulation) period.hasSimulationData = true;
+    else period.hasRecordedData = true;
+    if (isSimulation) period.excluded.simulatedSales++;
+    bucket.menuItemUnits += sale.quantity;
+    const prior = salesGroups.get(`${isSimulation ? "simulation" : "recorded"}:${sale.saleItemId}`);
+    if (prior) { prior.quantity += sale.quantity; prior.operationIds.push(sale.operationId); }
+    else salesGroups.set(`${isSimulation ? "simulation" : "recorded"}:${sale.saleItemId}`,
+      { name: sale.saleItem.name, quantity: sale.quantity, operationIds: [sale.operationId] });
+  }
 
-    for (const { movement, serviceDate } of movements) {
-      const recordedDate = dateOnly(serviceDate ?? movement.createdAt);
-      if (!inRange(recordedDate, start, end) || !movement.delta.isNegative()) continue;
-      const isSimulation = isSimulationStockMovement(movement, workspace.mode);
-      const bucket = isSimulation ? period.simulation : period.recorded;
-      if (isSimulation) period.hasSimulationData = true;
-      else period.hasRecordedData = true;
-      if (isSimulation) period.excluded.simulatedLosses++;
-      const unit = movement.productUnitSnapshot ?? movement.product.unit;
-      if (!serviceDate && unit !== movement.product.unit) { period.excluded.lossUnitMismatch++; continue; }
-      const key = `${isSimulation ? "simulation" : "recorded"}:${movement.productId}:${unit}`;
-      const loss = lossGroups.get(key) ?? { productId: movement.productId,
-        name: movement.productNameSnapshot ?? movement.product.name, unit, quantity: new Prisma.Decimal(0),
-        knownCost: new Prisma.Decimal(0), unpricedCount: 0, count: 0, operationIds: [], movementIds: [] };
-      const lostQuantity = movement.delta.abs();
-      const knownCost = serviceDate ? typedWasteCosts.get(movement.id) ?? null
-        : movement.unitPriceSnapshot == null ? null : Number(lostQuantity.mul(movement.unitPriceSnapshot));
-      loss.quantity = loss.quantity.plus(lostQuantity);
-      loss.count++;
-      loss.operationIds.push(movement.operationId);
-      loss.movementIds.push(movement.id);
-      if (knownCost === null) loss.unpricedCount++;
-      else loss.knownCost = loss.knownCost.plus(knownCost);
-      lossGroups.set(key, loss);
-      bucket.lossMovementCount++;
-      if (knownCost === null) bucket.unpricedLossMovementCount++;
-      else bucket.knownLossCost += knownCost;
-    }
+  for (const { movement, serviceDate } of movements) {
+    const recordedDate = dateOnly(serviceDate ?? movement.createdAt);
+    if (!inRange(recordedDate, start, end) || !movement.delta.isNegative()) continue;
+    const isSimulation = isSimulationStockMovement(movement, workspace.mode);
+    const bucket = isSimulation ? period.simulation : period.recorded;
+    if (isSimulation) period.hasSimulationData = true;
+    else period.hasRecordedData = true;
+    if (isSimulation) period.excluded.simulatedLosses++;
+    const unit = movement.productUnitSnapshot ?? movement.product.unit;
+    if (!serviceDate && unit !== movement.product.unit) { period.excluded.lossUnitMismatch++; continue; }
+    const key = `${isSimulation ? "simulation" : "recorded"}:${movement.productId}:${unit}`;
+    const loss = lossGroups.get(key) ?? { productId: movement.productId,
+      name: movement.productNameSnapshot ?? movement.product.name, unit, quantity: new Prisma.Decimal(0),
+      knownCost: new Prisma.Decimal(0), unpricedCount: 0, count: 0, operationIds: [], movementIds: [] };
+    const lostQuantity = movement.delta.abs();
+    const knownCost = serviceDate ? typedWasteCosts.get(movement.id) ?? null
+      : legacyLossCost(lostQuantity, movement.unitPriceSnapshot);
+    loss.quantity = loss.quantity.plus(lostQuantity);
+    loss.count++;
+    loss.operationIds.push(movement.operationId);
+    loss.movementIds.push(movement.id);
+    if (knownCost === null) loss.unpricedCount++;
+    else loss.knownCost = loss.knownCost.plus(knownCost);
+    lossGroups.set(key, loss);
+    bucket.lossMovementCount++;
+    if (knownCost === null) bucket.unpricedLossMovementCount++;
+  }
 
-    for (const line of receiptLines) {
-      const deliveryDate = dateOnly(line.receipt.deliveryDate);
-      if (!inRange(deliveryDate, start, end)) continue;
-      const isSimulation = isSimulationReceipt(line.receipt, workspace.mode);
-      const bucket = isSimulation ? period.simulation : period.recorded;
-      if (isSimulation) period.hasSimulationData = true;
-      else period.hasRecordedData = true;
-      if (isSimulation) { period.excluded.simulatedReceiptLines++; simulatedReceiptIds.add(line.receipt.id); }
-      else recordedReceiptIds.add(line.receipt.id);
-      if (line.unit !== line.product.unit) { period.excluded.receiptUnitMismatch++; continue; }
-      const key = `${isSimulation ? "simulation" : "recorded"}:${line.productId}:${line.unit}`;
-      const item = receiptGroups.get(key) ?? { productId: line.productId, name: line.productName, unit: line.unit,
-        quantity: new Prisma.Decimal(0), cost: new Prisma.Decimal(0), receiptIds: [], orderIds: [] };
-      item.quantity = item.quantity.plus(line.receivedQuantity);
-      const lineCost = line.receivedQuantity.mul(line.invoiceUnitPrice);
-      item.cost = item.cost.plus(lineCost);
-      item.receiptIds.push(line.receipt.id);
-      item.orderIds.push(line.receipt.orderId);
-      receiptGroups.set(key, item);
-      bucket.receivedCost += Number(lineCost);
-    }
+  for (const line of receiptLines) {
+    const deliveryDate = dateOnly(line.receipt.deliveryDate);
+    if (!inRange(deliveryDate, start, end)) continue;
+    const isSimulation = isSimulationReceipt(line.receipt, workspace.mode);
+    if (isSimulation) period.hasSimulationData = true;
+    else period.hasRecordedData = true;
+    if (isSimulation) { period.excluded.simulatedReceiptLines++; simulatedReceiptIds.add(line.receipt.id); }
+    else recordedReceiptIds.add(line.receipt.id);
+    if (line.unit !== line.product.unit) { period.excluded.receiptUnitMismatch++; continue; }
+    const key = `${isSimulation ? "simulation" : "recorded"}:${line.productId}:${line.unit}`;
+    const item = receiptGroups.get(key) ?? { productId: line.productId, name: line.productName, unit: line.unit,
+      quantity: new Prisma.Decimal(0), cost: new Prisma.Decimal(0), receiptIds: [], orderIds: [] };
+    item.quantity = item.quantity.plus(line.receivedQuantity);
+    const lineCost = line.receivedQuantity.mul(line.invoiceUnitPrice);
+    item.cost = item.cost.plus(lineCost);
+    item.receiptIds.push(line.receipt.id);
+    item.orderIds.push(line.receipt.orderId);
+    receiptGroups.set(key, item);
+  }
 
-    const presentGroups = <T>(groups: Map<string, T>, scope: string) =>
-      [...groups.entries()].filter(([key]) => key.startsWith(`${scope}:`)).map(([, item]) => item);
-    for (const scope of ["recorded", "simulation"] as const) {
-      const bucket = period[scope];
-      bucket.salesByItem = [...salesGroups.entries()].filter(([key]) => key.startsWith(`${scope}:`)).map(([key, item]) => ({
-        saleItemId: key.slice(scope.length + 1), saleItemName: item.name, quantity: item.quantity,
-        operationIds: [...new Set(item.operationIds)].sort(),
-      })).sort((a, b) => a.saleItemName.localeCompare(b.saleItemName, "fr"));
-      bucket.lossesByProduct = presentGroups(lossGroups, scope).map((loss) => ({
-        productId: loss.productId, productName: loss.name, unit: loss.unit, quantity: Number(loss.quantity),
-        knownCost: Number(loss.knownCost), unpricedMovementCount: loss.unpricedCount, movementCount: loss.count,
-        operationIds: [...new Set(loss.operationIds)].sort(), movementIds: [...new Set(loss.movementIds)].sort(),
-      })).sort((a, b) => a.productName.localeCompare(b.productName, "fr"));
-      bucket.receiptsByProduct = presentGroups(receiptGroups, scope).map((receipt) => ({
-        productId: receipt.productId, productName: receipt.name, unit: receipt.unit,
-        receivedQuantity: Number(receipt.quantity), cost: Number(receipt.cost),
-        receiptIds: [...new Set(receipt.receiptIds)].sort(), orderIds: [...new Set(receipt.orderIds)].sort(),
-      })).sort((a, b) => a.productName.localeCompare(b.productName, "fr"));
-      bucket.receiptCount = scope === "recorded" ? recordedReceiptIds.size : simulatedReceiptIds.size;
-    }
-    return period;
-  };
+  const presentGroups = <T>(groups: Map<string, T>, scope: string) =>
+    [...groups.entries()].filter(([key]) => key.startsWith(`${scope}:`)).map(([, item]) => item);
+  for (const scope of ["recorded", "simulation"] as const) {
+    const bucket = period[scope];
+    bucket.salesByItem = [...salesGroups.entries()].filter(([key]) => key.startsWith(`${scope}:`)).map(([key, item]) => ({
+      saleItemId: key.slice(scope.length + 1), saleItemName: item.name, quantity: item.quantity,
+      operationIds: [...new Set(item.operationIds)].sort(),
+    })).sort((a, b) => a.saleItemName.localeCompare(b.saleItemName, "fr"));
+    const losses = presentGroups(lossGroups, scope);
+    bucket.knownLossCost = Number(losses.reduce((total, loss) => total.plus(loss.knownCost), new Prisma.Decimal(0)));
+    bucket.lossesByProduct = losses.map((loss) => ({
+      productId: loss.productId, productName: loss.name, unit: loss.unit, quantity: Number(loss.quantity),
+      knownCost: Number(loss.knownCost), unpricedMovementCount: loss.unpricedCount, movementCount: loss.count,
+      operationIds: [...new Set(loss.operationIds)].sort(), movementIds: [...new Set(loss.movementIds)].sort(),
+    })).sort((a, b) => a.productName.localeCompare(b.productName, "fr"));
+    const receipts = presentGroups(receiptGroups, scope);
+    bucket.receivedCost = Number(receipts.reduce((total, receipt) => total.plus(receipt.cost), new Prisma.Decimal(0)));
+    bucket.receiptsByProduct = receipts.map((receipt) => ({
+      productId: receipt.productId, productName: receipt.name, unit: receipt.unit,
+      receivedQuantity: Number(receipt.quantity), cost: Number(receipt.cost),
+      receiptIds: [...new Set(receipt.receiptIds)].sort(), orderIds: [...new Set(receipt.orderIds)].sort(),
+    })).sort((a, b) => a.productName.localeCompare(b.productName, "fr"));
+    bucket.receiptCount = scope === "recorded" ? recordedReceiptIds.size : simulatedReceiptIds.size;
+  }
+  return period;
+}
 
-  const current = summarize(from, to);
-  const prior = summarize(previous.from, previous.to);
-  const report = { from, to, previous, comparison: "same_number_of_calendar_days" as const,
-    timezone: "Europe/Paris", currency: "EUR",
+function summarizeMonthlyPage({ ranges, ...monthlyPagination }: ReturnType<typeof impactMonthPage>,
+  rows: Awaited<ReturnType<typeof readImpactRows>>) {
+  const monthly = ranges.map(({ month, from, to }) => monthlyPeriod(month, summarizeImpact(rows, from, to)));
+  return { monthly, monthlyPagination };
+}
+
+export async function getImpactMonthlyPage(restaurantId: string, from: string, to: string, page: number,
+  db: ImpactDatabase = prisma) {
+  const monthPage = impactMonthPage(from, to, page);
+  const rows = await readImpactRows(restaurantId, monthPage.ranges[0].from, monthPage.ranges[monthPage.ranges.length - 1].to, db);
+  return { currency, ...summarizeMonthlyPage(monthPage, rows) };
+}
+
+export async function getImpactReport(restaurantId: string, from: string, to: string, db: ImpactDatabase = prisma,
+  options: { includeMonthly?: boolean; monthlyPage?: number } = {}) {
+  const dayCount = Math.floor((dateAt(to).getTime() - dateAt(from).getTime()) / DAY_MS) + 1;
+  const previous = { from: addCalendarDays(from, -dayCount), to: addCalendarDays(from, -1) };
+  const rows = await readImpactRows(restaurantId, previous.from, to, db);
+  const current = summarizeImpact(rows, from, to);
+  const prior = summarizeImpact(rows, previous.from, previous.to);
+  const monthlyDetails = options.includeMonthly
+    ? summarizeMonthlyPage(impactMonthPage(from, to, options.monthlyPage ?? 0), rows)
+    : undefined;
+  return { from, to, previous, comparison: "same_number_of_calendar_days" as const,
+    timezone: "Europe/Paris", currency,
     dateBasis: { sales: "serviceDate Europe/Paris", losses: "typed declarations: serviceDate Europe/Paris; legacy movements: createdAt UTC fallback", receipts: "deliveryDate on confirmed receipt" },
     unavailableMetrics: ["stockouts", "complete_unsold_quantity"], savingsClaim: "not_measured", generatedAt: new Date().toISOString(),
-    current, prior };
-  if (!options.includeMonthly) return report;
-  const page = impactMonthPage(from, to, options.monthlyPage ?? 0);
-  const monthly = page.ranges.map(({ month, from: monthFrom, to: monthTo }) =>
-    monthlyPeriod(month, summarize(monthFrom, monthTo)));
-  return { ...report, monthly, monthlyPagination: { page: page.page, pageCount: page.pageCount,
-    totalMonths: page.totalMonths, hasOlder: page.hasOlder, hasNewer: page.hasNewer } };
+    current, prior, ...monthlyDetails };
 }

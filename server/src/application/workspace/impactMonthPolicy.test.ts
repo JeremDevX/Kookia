@@ -21,4 +21,11 @@ describe("impactMonthPage", () => {
     expect(() => impactMonthPage("2026-02-01", "2026-01-31", 0)).toThrow(RangeError);
     expect(() => impactMonthPage("2020-01-01", "2024-01-01", 5)).toThrow(RangeError);
   });
+
+  it("keeps padded years and the leap day in ISO date ranges", () => {
+    expect(impactMonthPage("0004-02-19", "0004-03-05", 0).ranges).toEqual([
+      { month: "0004-02", from: "0004-02-19", to: "0004-02-29" },
+      { month: "0004-03", from: "0004-03-01", to: "0004-03-05" },
+    ]);
+  });
 });

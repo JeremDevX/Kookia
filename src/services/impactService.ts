@@ -39,15 +39,16 @@ export interface ImpactReport {
   dateBasis: { sales: string; losses: string; receipts: string };
   unavailableMetrics: string[]; savingsClaim: "not_measured"; generatedAt: string;
   current: ImpactPeriod; prior: ImpactPeriod;
-  monthly?: ImpactMonthlyPeriod[];
-  monthlyPagination?: { page: number; pageCount: number; totalMonths: number; hasOlder: boolean; hasNewer: boolean };
 }
 
-export const getImpactReport = (from: string, to: string, monthlyPage?: number) => {
-  const query = new URLSearchParams({ from, to });
-  if (monthlyPage !== undefined) {
-    query.set("monthly", "true");
-    query.set("monthlyPage", String(monthlyPage));
-  }
-  return apiRequest<ImpactReport>(`/workspace/impact?${query}`);
-};
+export interface ImpactMonthlyReport {
+  currency: string;
+  monthly: ImpactMonthlyPeriod[];
+  monthlyPagination: { page: number; pageCount: number; totalMonths: number; hasOlder: boolean; hasNewer: boolean };
+}
+
+export const getImpactReport = (from: string, to: string) =>
+  apiRequest<ImpactReport>(`/workspace/impact?${new URLSearchParams({ from, to })}`);
+
+export const getImpactMonthlyPage = (from: string, to: string, page: number) =>
+  apiRequest<ImpactMonthlyReport>(`/workspace/impact/monthly?${new URLSearchParams({ from, to, page: String(page) })}`);

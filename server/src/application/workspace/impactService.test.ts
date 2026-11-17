@@ -1,8 +1,8 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { expect, it, vi } from "vitest";
-import { getImpactReport } from "./impactService.js";
+import { getImpactMonthlyPage, getImpactReport } from "./impactService.js";
 
-it("keeps full-period impact totals while projecting one recorded/simulated monthly page", async () => {
+const impactDb = () => {
   const december = new Date("2023-12-10T00:00:00.000Z");
   const january = new Date("2024-01-01T00:00:00.000Z");
   const loss = (id: string, createdAt: Date, simulated: boolean) => ({
@@ -14,7 +14,7 @@ it("keeps full-period impact totals while projecting one recorded/simulated mont
     product: { id: "tomatoes", name: "Tomates", unit: "kg" }, purchaseReceiptLine: null,
   });
   const typedLoss = loss("typed-loss", new Date("2024-02-15T00:00:00.000Z"), false);
-  const db = {
+  return {
     wasteRecord: { findMany: vi.fn().mockResolvedValue([{
       id: "declared-loss", operationId: typedLoss.operationId, serviceDate: january, serviceSlot: "lunch",
       kind: "raw", avoidability: "avoidable", productId: typedLoss.productId, product: typedLoss.product,
@@ -42,9 +42,11 @@ it("keeps full-period impact totals while projecting one recorded/simulated mont
       invoiceUnitPrice: new Prisma.Decimal("2"), product: { unit: "kg" },
       receipt: { deliveryDate: january, simulated: false, id: "recorded-receipt", orderId: "recorded-order" },
     }]) },
-  } as unknown as PrismaClient;
+  };
+};
 
-  const report = await getImpactReport("restaurant", "2022-12-01", "2024-01-01", db,
+it("keeps full-period impact totals while projecting one recorded/simulated monthly page", async () => {
+  const report = await getImpactReport("restaurant", "2022-12-01", "2024-01-01", impactDb() as unknown as PrismaClient,
     { includeMonthly: true, monthlyPage: 0 });
 
   expect(report.current.recorded.menuItemUnits).toBe(4);
@@ -70,4 +72,39 @@ it("keeps full-period impact totals while projecting one recorded/simulated mont
       serviceDays: { complete: 0, unregistered: 1 },
       declaredWaste: { records: [{ id: "declared-loss", serviceDate: "2024-01-01", knownCost: 4 }] } },
     simulation: { menuItemUnits: 3, lossMovementCount: 1, serviceDays: { complete: 1, unregistered: 0 } } });
+});
+
+it("loads only the requested monthly page with a bounded query for each source", async () => {
+  const db = impactDb();
+  const report = await getImpactMonthlyPage("restaurant", "2020-12-10", "2024-01-01", 0, db as unknown as PrismaClient);
+  const dateWindow = { gte: new Date("2023-02-01T00:00:00.000Z"), lt: new Date("2024-01-02T00:00:00.000Z") };
+  const queries = [
+    [db.serviceDay.findMany, { serviceDate: dateWindow }],
+    [db.dailySale.findMany, { serviceDate: dateWindow }],
+    [db.stockMovement.findMany, { createdAt: dateWindow, wasteRecord: null }],
+    [db.purchaseReceiptLine.findMany, { receipt: { deliveryDate: dateWindow } }],
+    [db.wasteRecord.findMany, { serviceDate: dateWindow }],
+  ] as const;
+  for (const [query, filter] of queries) {
+    expect(query).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      where: expect.objectContaining({ restaurantId: "restaurant", ...filter }),
+    }));
+  }
+  expect(Object.keys(report).sort()).toEqual(["currency", "monthly", "monthlyPagination"]);
+  expect(report.monthly).toHaveLength(12);
+  expect(report.monthly[0]).toMatchObject({ month: "2023-02", hasRecordedData: false });
+  expect(report.monthly[10]).toMatchObject({ month: "2023-12", recorded: { menuItemUnits: 4, knownLossCost: 1 } });
+  expect(report.monthly[11]).toMatchObject({ month: "2024-01", calendarDays: 1,
+    recorded: { knownLossCost: 4, receivedCost: 6 }, simulation: { menuItemUnits: 3, knownLossCost: 0.5 } });
+});
+
+it("uses the same unrounded receipt costs for the period total and product totals", async () => {
+  const db = impactDb();
+  db.purchaseReceiptLine.findMany.mockResolvedValue(["0.003", "0.022"].map((price, index) => ({
+    productId: "tomatoes", productName: "Tomates", unit: "kg", receivedQuantity: new Prisma.Decimal(1),
+    invoiceUnitPrice: new Prisma.Decimal(price), product: { unit: "kg" },
+    receipt: { deliveryDate: new Date("2024-01-01"), simulated: false, id: `receipt-${index}`, orderId: `order-${index}` },
+  })));
+  const report = await getImpactReport("restaurant", "2024-01-01", "2024-01-01", db as unknown as PrismaClient);
+  expect(report.current.recorded).toMatchObject({ receivedCost: 0.025, receiptsByProduct: [{ cost: 0.025 }] });
 });

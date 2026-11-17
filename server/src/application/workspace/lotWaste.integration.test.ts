@@ -74,7 +74,7 @@ describe("lot and waste mutations", () => {
     expect(report.declaredWaste.records.map((row) => row.id)).toEqual([datedRaw.id]);
     expect(report.declaredLosses.reportedMovementCount).toBe(1);
     expect(report.rows.filter((row) => row.section === "Pertes et déchets déclarés par service")).toHaveLength(2);
-    expect(report.rows.find((row) => row.metric === "Coût connu des lots (EUR)")?.value).toBe("1.00");
+    expect(report.rows.find((row) => row.metric === "Coût connu des lots (EUR)")?.value).toBe(1);
     const withoutDouble = await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: product.id } } });
     expect(Number(withoutDouble.currentStock)).toBe(6.25);
     await prisma.product.update({ where: { restaurantId_id: { restaurantId, id: product.id } }, data: { unit: "L" } });
@@ -83,6 +83,26 @@ describe("lot and waste mutations", () => {
     expect(retainedUnit.current.recorded.declaredWaste.totals.some((row) => row.unit === "L")).toBe(false);
 
 
+  });
+
+  it("keeps fractional cent costs of tracked lots in the export and the service-date impact total", async () => {
+    const { owner, restaurantId, addProduct } = await stockFixture();
+    const product = await addProduct("Low-cost lot");
+    const lot = await prisma.stockLot.findFirstOrThrow({ where: { restaurantId, productId: product.id } });
+    await prisma.stockLot.update({ where: { id: lot.id }, data: { unitCost: 0.02 } });
+    const serviceDate = "2026-01-31";
+    for (let count = 0; count < 2; count++) {
+      await recordWaste(restaurantId, owner.id, { operationId: randomUUID(), serviceDate, serviceSlot: "dinner",
+        kind: "raw", avoidability: "avoidable", productId: product.id, lotId: lot.id, quantity: 0.2, unit: "kg", note: "" });
+    }
+
+    const impact = await getImpactReport(restaurantId, serviceDate, serviceDate);
+    expect(impact.current.recorded).toMatchObject({ lossMovementCount: 2, knownLossCost: 0.008 });
+    const report = await getOperationalReport(restaurantId, serviceDate, serviceDate);
+    expect(report.rows.filter((row) => row.metric === "Coût connu des lots (EUR)")).toMatchObject([
+      { date: serviceDate, value: 0.004, source: expect.stringContaining("sortie matière tracée") },
+      { date: serviceDate, value: 0.004, source: expect.stringContaining("sortie matière tracée") },
+    ]);
   });
 
   it("accepts only one concurrent write against the same stock revision and replays its movement once", async () => {

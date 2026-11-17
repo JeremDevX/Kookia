@@ -20,9 +20,11 @@ export function impactMonthPage(from: string, to: string, page: number) {
   for (let index = startIndex; index < endIndex; index += 1) {
     const year = Math.floor(index / 12);
     const monthNumber = index % 12 + 1;
-    const month = `${year}-${String(monthNumber).padStart(2, "0")}`;
+    const month = `${String(year).padStart(4, "0")}-${String(monthNumber).padStart(2, "0")}`;
     const monthStart = `${month}-01`;
-    const monthEnd = new Date(Date.UTC(year, monthNumber, 0)).toISOString().slice(0, 10);
+    const end = new Date(0);
+    end.setUTCFullYear(year, monthNumber, 0);
+    const monthEnd = end.toISOString().slice(0, 10);
     ranges.push({ month, from: from > monthStart ? from : monthStart, to: to < monthEnd ? to : monthEnd });
   }
 

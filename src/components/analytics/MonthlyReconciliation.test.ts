@@ -2,7 +2,7 @@ import { createElement, createRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 import type { ImpactMonthlyPeriod } from "../../services/impactService";
-import { MonthlyReconciliation } from "./ImpactSummary";
+import { MonthlyReconciliation } from "./MonthlyReconciliation";
 
 it("affiche le coût des seules pertes enregistrées, avec ses limites", () => {
   const empty = { menuItemUnits: 0, serviceDays: { complete: 0, partial: 0, coverageMissing: 0, closed: 0, unregistered: 1 },
@@ -18,9 +18,11 @@ it("affiche le coût des seules pertes enregistrées, avec ses limites", () => {
   const noReceipt = make("2026-05", 1, 0, 0);
   noReceipt.recorded.receiptCount = 0; noReceipt.recorded.receivedCost = 0;
   const html = renderToStaticMarkup(createElement(MonthlyReconciliation, {
-    periods: [make("2026-01", 0, 0, 0), make("2026-02", 1, 1, 0), make("2026-03", 2, 1, 5), make("2026-04", 1, 0, 0), noReceipt, excluded],
-    currency: "EUR", pagination: { page: 0, pageCount: 1, totalMonths: 4, hasOlder: false, hasNewer: false },
-    open: true, onOpenChange: () => {}, onOlder: () => {}, onNewer: () => {}, headingRef: createRef<HTMLHeadingElement>(),
+    report: {
+      monthly: [make("2026-01", 0, 0, 0), make("2026-02", 1, 1, 0), make("2026-03", 2, 1, 5), make("2026-04", 1, 0, 0), noReceipt, excluded],
+      currency: "EUR", monthlyPagination: { page: 0, pageCount: 1, totalMonths: 6, hasOlder: false, hasNewer: false },
+    },
+    onPage: () => {}, headingRef: createRef<HTMLHeadingElement>(),
   }));
   expect(html).toContain("Aucune perte enregistrée");
   expect(html).toContain("Pertes exclues pour unité incompatible");

@@ -1,9 +1,12 @@
 import type { ImpactBucket, ImpactPeriod } from "../../services/impactService";
 
+export const formatMoney = (value: number, currency: string) =>
+  new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(value);
+
 export function formatLossValue(count: number, unpriced: number, cost: number, currency: string) {
   if (!count) return "Aucune perte enregistrée";
   if (unpriced >= count) return "Indisponible";
-  const value = new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(cost);
+  const value = formatMoney(cost, currency);
   return `${value}${unpriced ? " · valorisation partielle" : ""}`;
 }
 
@@ -15,7 +18,7 @@ export function comparisonValues(period: ImpactPeriod, currency: string) {
   const incompleteSales = days.partial + days.coverageMissing + days.unregistered > 0;
   const salesKnown = bucket.menuItemUnits > 0 || days.complete > 0 || (days.closed > 0 && !incompleteSales);
   const serviceDaysKnown = days.complete + days.partial + days.coverageMissing + days.closed > 0;
-  const money = (value: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(value);
+  const money = (value: number) => formatMoney(value, currency);
   const lossHasPrice = hasPricedLoss(bucket);
   const lossIncomplete = bucket.unpricedLossMovementCount > 0 || excluded.lossUnitMismatch > 0;
   return {

@@ -49,6 +49,10 @@ describe("Bilan overview reading safeguards", () => {
     const zero = render({ ...bucket(), lossMovementCount: 1, knownLossCost: 0 });
     expect(zero).toMatch(/class="bilan-kpi-value">0,00/);
   });
+  it("arrondit l’agrégat des pertes lors de l’affichage", () => {
+    const html = render({ ...bucket(), lossMovementCount: 2, knownLossCost: 0.008 });
+    expect(html).toMatch(/class="bilan-kpi-value">0,01\s€/);
+  });
   it("does not present a partial loss valuation as complete", () => {
     const html = render({ ...bucket(), lossMovementCount: 2, unpricedLossMovementCount: 1, knownLossCost: 15 });
     expect(html).toContain("Valorisation partielle : 1 pertes restent à valoriser");

@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 import type { DeclaredWasteSummary } from "../../../../shared/declaredWaste.js";
 import { simulationActor } from "./operationProvenance.js";
 import { isSimulationStockMovement, stockReceiptProvenance } from "./stockMovementProvenance.js";
@@ -9,6 +9,20 @@ export type WasteReadRow = Prisma.WasteRecordGetPayload<{ include: typeof includ
 export function readDeclaredWaste(db: PrismaClient | Prisma.TransactionClient, restaurantId: string, from: Date, to: Date) {
   return db.wasteRecord.findMany({ where: { restaurantId, serviceDate: { gte: from, lt: to } }, include, orderBy: [{ serviceDate: "asc" }, { createdAt: "asc" }] });
 }
+
+function wasteLotCost(row: WasteReadRow) {
+  const allocations = row.stockMovement?.lotAllocations;
+  if (!allocations?.length) return null;
+  let allocated = new Prisma.Decimal(0);
+  let cost = new Prisma.Decimal(0);
+  for (const { quantity, lot } of allocations) {
+    if (lot.unitCost === null) return null;
+    allocated = allocated.plus(quantity);
+    cost = cost.plus(quantity.mul(lot.unitCost));
+  }
+  return allocated.eq(row.quantity) ? cost.toNumber() : null;
+}
+
 export function summarizeDeclaredWaste(rows: WasteReadRow[], from: string, to: string, mode: "operational" | "demo"): DeclaredWasteSummary {
   const summary: DeclaredWasteSummary = { records: [], totals: [], excludedSimulationCount: 0 };
   const totals = new Map<string, DeclaredWasteSummary["totals"][number]>();
@@ -17,10 +31,7 @@ export function summarizeDeclaredWaste(rows: WasteReadRow[], from: string, to: s
     if (serviceDate < from || serviceDate > to) continue;
     if (mode === "demo" || row.production?.actorId === simulationActor ||
       (row.stockMovement && isSimulationStockMovement(row.stockMovement, mode))) { summary.excludedSimulationCount++; continue; }
-    const sources = row.stockMovement?.lotAllocations ?? [];
-    const priced = sources.length > 0 && sources.every((entry) => entry.lot.unitCost !== null) &&
-      Math.abs(sources.reduce((sum, entry) => sum + Number(entry.quantity), 0) - Number(row.quantity)) < 0.0005;
-    const knownCost = row.stockMovement && priced ? sources.reduce((sum, entry) => sum + Number(entry.quantity) * Number(entry.lot.unitCost), 0) : null;
+    const knownCost = wasteLotCost(row);
     summary.records.push({ id: row.id, operationId: row.operationId, serviceDate, serviceSlot: row.serviceSlot, kind: row.kind,
       avoidability: row.avoidability, productId: row.productId, productName: row.product?.name ?? null,
       productionId: row.productionId, preparationName: row.production?.recipeName ?? null, lotId: row.lotId,
