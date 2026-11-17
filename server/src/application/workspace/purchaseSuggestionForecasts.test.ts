@@ -55,9 +55,9 @@ function fixture() {
       menus.filter(menu => menu.serviceDate <= where.serviceDate.lte)) },
     serviceDay: { count: vi.fn().mockResolvedValue(8) },
     product: { findMany: vi.fn().mockResolvedValue(products) },
-    stockCount: { findMany: vi.fn().mockResolvedValue(products.map(({ id, unit }) => ({
+    $queryRaw: vi.fn().mockResolvedValue(products.map(({ id, unit }) => ({
       productId: id, countDate: date(asOfDate), unit, stockRevisionAfter: 1, countedQuantity: id === "cream" ? 0.283 : 0,
-    }))) },
+    }))),
     purchaseOrderLine: { findMany: vi.fn().mockResolvedValue(products.map(({ id, unit }) => ({
       productId: id, unit, quantity: 0.1, receiptLines: [], expectedDeliveryDate: date(tomorrow),
     }))) },

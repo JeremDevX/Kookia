@@ -10,6 +10,7 @@ import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient, type WorkspaceMode } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
+import { listLatestStockCounts } from "./stockCountRead.js";
 import { countCompleteSalesBaselineDays } from "./salesBaselineService.js";
 import { forecastWeatherNotice, type ForecastWeatherReference } from "../../../../shared/forecastWeather.js";
 
@@ -78,8 +79,7 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
     countCompleteSalesBaselineDays(restaurantId, asOfDate, db),
     db.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true, openingWeekdays: true } }),
     db.product.findMany({ where: { restaurantId }, include: { supplier: true }, orderBy: { name: "asc" } }),
-    db.stockCount.findMany({ where: { restaurantId }, orderBy: [{ countedAt: "desc" }, { id: "desc" }],
-      select: { productId: true, countedQuantity: true, countDate: true, stockRevisionAfter: true, unit: true } }),
+    listLatestStockCounts(db, restaurantId),
     db.purchaseOrderLine.findMany({ where: { restaurantId, order: { status: { in: ["validated", "partially_received"] } } }, include: { receiptLines: { select: { receivedQuantity: true } } } }),
     db.stockLot.findMany({ where: { restaurantId, remainingQuantity: { gt: 0 } }, select: { productId: true, remainingQuantity: true, expiresAt: true } }),
   ]);
@@ -87,8 +87,7 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
   const workspaceMode = restaurant.mode;
   const context = { model: "qualified_service_menu_v1", asOfDate, forecastDate: today,
     provenance: workspaceMode === "demo" ? "demo_simulation" as const : "recorded_sales" as const };
-  const latestCount = new Map<string, (typeof counts)[number]>();
-  for (const count of counts) if (!latestCount.has(count.productId)) latestCount.set(count.productId, count);
+  const countsByProduct = new Map(counts.map((count) => [count.productId, count]));
   const expectedLines = pendingLines.map((line) => ({ productId: line.productId, unit: line.unit, quantity: Number(line.quantity),
     receivedQuantity: line.receiptLines.reduce((sum, receipt) => sum + Number(receipt.receivedQuantity), 0),
     expectedDeliveryDate: line.expectedDeliveryDate?.toISOString().slice(0, 10) ?? null }));
@@ -110,7 +109,7 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
     const ingredient = forecast.ingredientNeeds.find((need) => need.productId === product.id);
     if (!ingredient) return [];
     const need = { ...ingredient, forecastNeed: ingredient.quantity };
-    const count = latestCount.get(product.id);
+    const count = countsByProduct.get(product.id);
     const countVerified = count?.stockRevisionAfter === product.stockRevision && count?.unit === product.unit;
     const arrivals = expectedLines.filter((line) => line.productId === product.id && line.unit === product.unit && line.expectedDeliveryDate &&
       line.expectedDeliveryDate >= today && line.expectedDeliveryDate <= forecast.throughDate).map((line) => ({ date: line.expectedDeliveryDate!, quantity: Math.max(0, line.quantity - line.receivedQuantity) }));

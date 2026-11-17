@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { stockCountDto } from "./stockCountDto.js";
+import { listLatestStockCounts } from "./stockCountRead.js";
 import { applyStockMovement, recordStockMovement } from "./stockWrite.js";
 import { purchaseAvailability } from "./purchaseAvailability.js";
 import { WorkspaceError } from "./workspaceError.js";
@@ -16,18 +17,20 @@ export const productDto = (product: Awaited<ReturnType<typeof prisma.product.fin
 
 export async function getCatalog(restaurantId: string) {
   const availabilityDate = formatParisDate();
-  const [products, suppliers] = await prisma.$transaction([
+  const [products, suppliers, counts] = await prisma.$transaction([
     prisma.product.findMany({ where: { restaurantId }, orderBy: { id: "asc" }, include: {
-      stockCounts: { orderBy: [{ countedAt: "desc" }, { id: "desc" }], take: 1 },
       stockLots: { where: { remainingQuantity: { gt: 0 } }, select: { remainingQuantity: true, expiresAt: true } },
     } }),
     prisma.supplier.findMany({ where: { restaurantId }, orderBy: { id: "asc" } }),
+    listLatestStockCounts(prisma, restaurantId),
   ]);
-  return { products: products.map(({ stockCounts, stockLots, ...product }) => {
+  const countsByProduct = new Map(counts.map((count) => [count.productId, count]));
+  return { products: products.map(({ stockLots, ...product }) => {
+    const latestCount = countsByProduct.get(product.id);
     const availability = purchaseAvailability(Number(product.currentStock), stockLots.map(lot => ({
       quantity: Number(lot.remainingQuantity), expiresAt: lot.expiresAt?.toISOString().slice(0, 10) ?? null,
     })), [], [], availabilityDate, availabilityDate);
-    return { ...productDto(product), latestCount: stockCounts[0] ? stockCountDto(stockCounts[0]) : null,
+    return { ...productDto(product), latestCount: latestCount ? stockCountDto(latestCount) : null,
       availableForProduction: availability.lotMismatch ? null : availability.usableStock,
       expiredStock: availability.expiredQuantity, unknownExpiryStock: availability.unknownExpiryQuantity,
       availabilityDate, lotStockMismatch: availability.lotMismatch };

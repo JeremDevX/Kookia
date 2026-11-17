@@ -137,6 +137,20 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
   await prisma.product.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: product.id } },
     data: { currentStock: 2, stockRevision: { increment: 1 } } });
   await seedSalesAndRecipe(owner, product.id, "manual", additionalProduct.id);
+  const countedAt = new Date("2025-02-10T09:00:00Z");
+  const [earlierId, latestId] = [randomUUID(), randomUUID()].sort();
+  const countFixture = { productId: product.id, unit: product.unit, countedQuantity: 2, theoreticalQuantity: 2, delta: 0,
+    countedAt, countDate: new Date("2025-02-10"), stockRevisionBefore: product.stockRevision + 1, stockRevisionAfter: product.stockRevision + 1 };
+  await prisma.stockCount.createMany({ data: [
+    { ...countFixture, id: earlierId, operationId: earlierId, restaurantId: owner.restaurantId, actorId: owner.actorId },
+    { ...countFixture, id: latestId, operationId: latestId, restaurantId: owner.restaurantId, actorId: owner.actorId,
+      stockRevisionBefore: product.stockRevision, stockRevisionAfter: product.stockRevision },
+    { ...countFixture, id: latestId, operationId: latestId, restaurantId: other.restaurantId, actorId: other.actorId,
+      countedAt: new Date("2025-02-11T09:00:00Z"), countDate: new Date("2025-02-11") },
+  ] });
+  const catalogWithCounts = await owner.agent.get("/api/workspace/catalog").expect(200);
+  expect(catalogWithCounts.body.products.find((item: { id: string }) => item.id === product.id))
+    .toMatchObject({ latestCount: { id: latestId, countedQuantity: 2, countDate: "2025-02-10" } });
 
   const beforeCount = await owner.agent.get("/api/workspace/orders/suggestions").expect(200);
   expect(beforeCount.body).toMatchObject({ status: "ready", provenance: "recorded_sales", workspaceMode: "operational" });
