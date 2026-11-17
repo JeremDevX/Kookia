@@ -11,10 +11,12 @@ existing test setup. Prefer unit tests for deterministic policies, services, and
 state transitions; this repository has Vitest in Node and no declared DOM or E2E
 test infrastructure.
 
-During iteration, run the narrowest relevant test or static check. For a
-PR-ready code change, consider the CI gates: `npm run lint`, `npm run build`, and
-`npm test`. Do not disable checks or create implementation-mirroring tests merely
-to satisfy a rule.
+During iteration, run the narrowest relevant test or static check. Use the local
+quality command in `AGENTS.md` before completing the change. Choose behavior
+checks by risk. Read wording in context, test calculation boundaries, and use
+isolated PostgreSQL for stock writes affected by conflicts or replay. When
+deleting code, verify its entry points and run the affected builds. Keep tests
+focused on behavior observable by a caller.
 
 For UI changes, a build alone is insufficient: inspect the changed path and its
 interactive states in a browser when available. For documentation-only changes,

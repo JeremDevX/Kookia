@@ -1,12 +1,12 @@
 import type { Document } from "./documents";
 
 export type Color = [number, number, number];
-export interface TextRun { x: number; y: number; text: string; size: number; bold: boolean; muted: boolean; font: "sans" | "mono" | "serif" }
-export interface Rule { x: number; y: number; width: number; height: number; color: Color }
+interface TextRun { x: number; y: number; text: string; size: number; bold: boolean; muted: boolean; font: "sans" | "mono" | "serif" }
+interface Rule { x: number; y: number; width: number; height: number; color: Color }
 export interface Page { width: number; height: number; runs: TextRun[]; rules: Rule[]; accent: Color }
 export const svgColor = (color: Color) => `rgb(${color.map(n => Math.round(n * 255)).join(",")})`;
 const clean = (text: string) => text.replace(/[\u00a0\u202f]/g, " ").replace(/[–—]/g, "-").replace(/[’]/g, "'").replace(/œ/g, "oe");
-export function wrap(text: string, width: number, size: number): string[] {
+function wrap(text: string, width: number, size: number): string[] {
   const limit = Math.max(1, Math.floor(width / (size * .62)));
   const chunks = clean(text).split(/\s+/).flatMap(word => word.match(new RegExp(`.{1,${limit}}`, "gu")) ?? []);
   const lines: string[] = [];

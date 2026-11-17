@@ -5,6 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
+const buttonClass = String.raw`/(^|\s)btn(?:-(?:primary|secondary|outline|danger|ghost|sm|md))?(\s|$)/`
+
 export default defineConfig([
   globalIgnores(['dist']),
   {
@@ -23,6 +25,17 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+    },
+  },
+  {
+    files: ['src/**/*.tsx'],
+    ignores: ['src/components/common/Button.tsx'],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: "JSXOpeningElement[name.name='button'] JSXAttribute[name.name='className'] " +
+          `:matches(Literal[value=${buttonClass}], TemplateElement[value.raw=${buttonClass}])`,
+        message: 'Réutiliser Button pour les actions qui reprennent les variantes du design system.',
+      }],
     },
   },
 ])

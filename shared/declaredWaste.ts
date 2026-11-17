@@ -1,4 +1,4 @@
-export interface DeclaredWasteRecord {
+interface DeclaredWasteRecord {
   id: string; operationId: string; serviceDate: string; serviceSlot: string | null;
   kind: string; avoidability: string; productId: string | null; productName: string | null;
   productionId: string | null; preparationName: string | null; lotId: string | null;

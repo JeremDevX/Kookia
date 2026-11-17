@@ -1,6 +1,6 @@
 import { apiRequest } from "../config/api";
 
-export interface InventoryLine {
+interface InventoryLine {
   productId: string; name: string; category: string; unit: string; stockRevision: number; theoreticalQuantity: number;
   countedQuantity: number | null; reason: string; available?: boolean; previousCount?: { quantity: number; unit: string; reason: string };
 }

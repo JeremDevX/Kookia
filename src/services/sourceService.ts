@@ -1,7 +1,7 @@
 import { apiRequest } from "../config/api";
 
 export type SourceKind = "pos" | "ticket_ocr" | "geocoding" | "weather" | "events";
-export type SourceState = "not_connected" | "ready" | "degraded";
+type SourceState = "not_connected" | "ready" | "degraded";
 
 export interface SourceHealth {
   kind: SourceKind;

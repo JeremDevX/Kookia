@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "entry": [
+    "src/main.tsx",
+    "server/src/index.ts",
+    "document-workshop/src/main.tsx",
+    "server/src/scripts/seedLocalDemoScenario.ts"
+  ],
+  "project": [
+    "src/**",
+    "server/src/**",
+    "shared/**",
+    "document-workshop/src/**",
+    "scripts/**",
+    "prisma/**"
+  ],
+  "includeEntryExports": true,
+  "vitest": {
+    "config": ["vitest.config.ts", "vitest.integration.config.ts"]
+  }
+}

@@ -1,4 +1,4 @@
-export type OrderRecommendationSource =
+type OrderRecommendationSource =
   | "prediction"
   | "notification"
   | "dashboard"

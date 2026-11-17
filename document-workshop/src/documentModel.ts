@@ -1,5 +1,5 @@
 export interface Section { heading: string; columns: string[]; rows: string[][] }
-export type DocumentStyle = "house" | "market" | "farm" | "wholesale" | "receipt";
+type DocumentStyle = "house" | "market" | "farm" | "wholesale" | "receipt";
 export interface Document {
   id: string; kind: string; title: string; date: string; issuer: string; recipient: string;
   sections: Section[]; notes: string[]; workflow: string; style: DocumentStyle;

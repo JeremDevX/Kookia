@@ -5,6 +5,8 @@ pour la restauration, avec API Express et PostgreSQL/Prisma.
 
 ## Démarrage local
 
+Utiliser Node.js 20.19+ (série 20) ou 22.12+.
+
 ```bash
 npm install
 cp .env.example .env
@@ -70,12 +72,15 @@ HttpOnly et des jetons opaques ; mots de passe Argon2id, jetons hashés en base.
 ## Vérifications
 
 ```bash
-npm run lint
+npm run check:quality
 npm run build
 npm run build:api
 npm test
 npm run verify:local-delivery
 ```
+
+`check:quality` vérifie en local le lint, les tokens et alias média CSS, puis
+les fichiers, exports et dépendances inutilisés.
 
 La recette `verify:local-delivery` utilise un PostgreSQL temporaire sur tmpfs,
 des données synthétiques, puis vérifie un dump/restore avant suppression du

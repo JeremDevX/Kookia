@@ -22,19 +22,19 @@ export type OptionsInput = z.input<typeof optionsSchema>;
 export type Incident = Exclude<Options["incident"], "mixed">;
 export type ServiceName = "lunch" | "dinner";
 export interface Lot { id: string; productId: string; receivedOn: string; expiresOn: string; quantity: number; unitCost: number }
-export interface PurchaseLine { productId: string; ordered: number; received: number; shortage: number; unitPrice: number }
+interface PurchaseLine { productId: string; ordered: number; received: number; shortage: number; unitPrice: number }
 export interface Purchase {
   id: string; supplierId: string; placedOn: string; expectedOn: string; deliveryOn: string;
   receivedOn: string | null; invoiceOn: string | null; time: string; delayed: boolean;
   lines: PurchaseLine[]; note: string;
 }
-export interface Waste {
+interface Waste {
   kind: "preparation" | "expiry" | "spoilage" | "unsold" | "plate_return";
   productId?: string; recipeId?: string; lotId?: string; service?: ServiceName;
   quantity: number; unit: "kg" | "L" | "pcs" | "portions";
   avoidable: boolean; stockEffect: boolean; note: string;
 }
-export interface StockLine {
+interface StockLine {
   id: string; opening: number; ordered: number; received: number; shortage: number;
   consumed: number; loss: number; adjustment: number; closing: number;
 }
@@ -43,7 +43,7 @@ export interface RecipeRun {
   demand: number; sold: number; unsold: number; unserved: number;
   substitutedIn: number; substitutedOut: number; plateReturns: number; price: number;
 }
-export interface Decision { time: string; recipeId?: string; kind: "prepare" | "top_up" | "refusal" | "substitute"; portions: number; reason: string }
+interface Decision { time: string; recipeId?: string; kind: "prepare" | "top_up" | "refusal" | "substitute"; portions: number; reason: string }
 export interface TransactionLine { recipeId: string; quantity: number; unitPrice: number; unitDiscount: number; discount: number; total: number }
 export interface Transaction {
   id: string; service: ServiceName; table: number; time: string; covers: number;

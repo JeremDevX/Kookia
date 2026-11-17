@@ -3,7 +3,7 @@ import { addCalendarDays } from "../../../../shared/calendarDate.js";
 
 type Baseline = ReturnType<typeof evaluateSalesBaseline>;
 
-export interface DatedForecastContextSource {
+interface DatedForecastContextSource {
   source: "fixture";
   capturedAt: string;
   validFrom: string;

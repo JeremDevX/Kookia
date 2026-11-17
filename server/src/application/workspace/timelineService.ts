@@ -3,7 +3,7 @@ import { prisma } from "../../infrastructure/database/prisma.js";
 import { decisionEvent, documentEvent, productionEvent, purchaseOrderEvent, purchaseReceiptEvent, stockEvent, versionEvent,
   type TimelineDocumentRow, type TimelineEvent } from "./timelineEventMappers.js";
 
-export type { TimelineEvent, TimelineKind, TimelineProvenance } from "./timelineEventMappers.js";
+export type { TimelineEvent } from "./timelineEventMappers.js";
 
 const QUERY_LIMIT = 1_501;
 const RESPONSE_LIMIT = 5_000;

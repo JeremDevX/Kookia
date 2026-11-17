@@ -6,7 +6,7 @@ export interface RecipeIngredient {
   netQuantity?: number | null;
 }
 
-export interface RecipeVersion {
+interface RecipeVersion {
   version: number;
   effectiveFrom: string | null;
   actorId: string;

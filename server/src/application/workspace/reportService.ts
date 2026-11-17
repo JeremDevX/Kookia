@@ -3,11 +3,11 @@ import { wasteKindLabels } from "../../../../shared/declaredWaste.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { isSimulationStockMovement } from "./stockMovementProvenance.js";
 
-export interface OperationalReportRow {
+interface OperationalReportRow {
   section: string; date: string; metric: string; value: string | number; source: string;
 }
 
-export interface DeclaredLossSummary {
+interface DeclaredLossSummary {
   method: string; dateBasis: string; reportedMovementCount: number; unpricedMovementCount: number;
   incompatibleUnitMovementCount: number; excludedSimulationMovementCount: number;
   unavailableMetrics: ["stockouts", "complete_unsold_quantity"];

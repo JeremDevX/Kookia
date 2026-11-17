@@ -1,7 +1,7 @@
 import { apiRequest } from "../config/api";
 import type { Recipe } from "../types";
 
-export interface RecipeCandidateIngredient {
+interface RecipeCandidateIngredient {
   productId: string;
   productName: string;
   unit: string;
@@ -23,7 +23,7 @@ export interface RecipeCandidateIngredient {
   };
 }
 
-export interface RecipeCandidateRecipe {
+interface RecipeCandidateRecipe {
   name: string;
   category: Recipe["category"];
   prepTime: number;

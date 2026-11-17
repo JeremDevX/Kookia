@@ -5,7 +5,7 @@ import { weatherForecastSchema } from "../../../../shared/serviceWeather.js";
 export type WeatherDatabase = PrismaClient | Prisma.TransactionClient;
 export const positionKind = "weather-position";
 export const cacheKind = "weather-cache";
-export const weatherCacheSchema = z.object({
+const weatherCacheSchema = z.object({
   id: z.uuid(), positionRevision: z.number().int(),
   forecast: weatherForecastSchema.nullable(), provenance: z.enum(["live", "fixture"]),
   lastSuccessAt: z.iso.datetime().nullable(), retryAt: z.iso.datetime().nullable(), failed: z.boolean(),

@@ -39,10 +39,9 @@ export const invoiceExtractionPayloadSchema = z.object({
 });
 
 export type InvoiceExtractionFile = z.infer<typeof invoiceExtractionFileSchema>;
-export type InvoiceExtractionPayload = z.infer<typeof invoiceExtractionPayloadSchema>;
-export type InvoiceExtractionUnavailableReason = "not_configured" | "temporary_error" | "invalid_data";
+type InvoiceExtractionUnavailableReason = "not_configured" | "temporary_error" | "invalid_data";
 
-export type InvoiceExtractionResult =
+type InvoiceExtractionResult =
   | { status: "ok"; payload: unknown }
   | { status: "unavailable"; reason: InvoiceExtractionUnavailableReason };
 

@@ -72,7 +72,7 @@ function SetupForm() {
       </div>
       <OpeningWeekdays value={form.openingWeekdays} disabled={saving} onChange={value => set("openingWeekdays", value)} />
           <div className="setup-actions setup-wide">
-            <button type="button" className="btn btn-ghost" disabled={saving} onClick={() => { void logout().then(() => { if (user) clearSetupDraft(user.id); navigate("/login", { replace: true, state: location.state }); }).catch((err: unknown) => setError(err instanceof Error ? err.message : "Déconnexion impossible. Réessayez.")); }}>Se déconnecter</button>
+            <Button type="button" variant="ghost" disabled={saving} onClick={() => { void logout().then(() => { if (user) clearSetupDraft(user.id); navigate("/login", { replace: true, state: location.state }); }).catch((err: unknown) => setError(err instanceof Error ? err.message : "Déconnexion impossible. Réessayez.")); }}>Se déconnecter</Button>
             <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Créer mon établissement"}</Button>
           </div>
         </form>

@@ -175,7 +175,7 @@ function namedPackageFactor(name: string, unit: StockUnit): number | null {
   return null;
 }
 
-export interface ConvertedSourceLine {
+interface ConvertedSourceLine {
   product: ScenarioProduct;
   quantity: number;
   pricePerUnit: number;

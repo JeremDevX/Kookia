@@ -7,7 +7,7 @@ import { WorkspaceError } from "./catalogService.js";
 import { createRecipeInTransaction, type RecipeValues } from "./recipeService.js";
 import { sourceInvoiceDocumentSchema } from "./invoiceService.js";
 
-export interface RecipeCandidateIngredientInput {
+interface RecipeCandidateIngredientInput {
   productId: string;
   quantity: number;
   sourceDocumentId: string;

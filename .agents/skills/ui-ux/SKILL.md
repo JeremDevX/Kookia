@@ -29,10 +29,13 @@ screens. Do not surface implementation details or imply unavailable capabilities
 
 ## Implementation
 
-Follow styles already used near the edited component. The repository mainly uses
-local `.css` files; do not introduce or convert a styling system without a task
-need. Avoid fragile selectors, unexplained visual constants, and decorative
-changes that obscure status or priority.
+Check `src/components/common/` and its consumers first. Use `Button` for
+standard styled actions, `Input` for labeled inputs, and `Modal` for dialogs.
+Keep links for navigation, including when styled like buttons. Compose existing
+variants with page-specific layout in local CSS. Use the tokens in
+`src/styles/index.css` for shared visual values. If an existing component needs
+a new variant, use it in the requested flow and verify the other consumers
+when its API or rendering changes.
 
 Design responsive layouts deliberately rather than compressing desktop content.
 Confirm consequential or destructive product actions, while keeping normal

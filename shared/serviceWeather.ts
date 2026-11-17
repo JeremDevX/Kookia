@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { ServiceSlot } from "./serviceCalendar.js";
 import { weatherCondition } from "./weatherConditions.js";
 
-export const weatherPlaceSchema = z.object({
+const weatherPlaceSchema = z.object({
   id: z.number().int().positive(), name: z.string().min(1).max(200),
   region: z.string().max(200), country: z.string().min(1).max(200),
   latitude: z.number().finite().min(-90).max(90), longitude: z.number().finite().min(-180).max(180),
@@ -25,7 +25,7 @@ export const confirmWeatherPositionSchema = z.object({
   addressFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
 }).strict();
 export type ConfirmWeatherPosition = z.infer<typeof confirmWeatherPositionSchema>;
-export const weatherHourSchema = z.object({
+const weatherHourSchema = z.object({
   time: z.iso.datetime(), temperature: z.number().finite().min(-100).max(70).nullable(),
   precipitation: z.number().finite().min(0).max(1000).nullable(),
   precipitationProbability: z.number().finite().min(0).max(100).nullable(),
@@ -42,7 +42,7 @@ export const weatherForecastSchema = z.object({
     .refine(days => days.every((day, i) => i === 0 || day.date > days[i - 1].date)).optional(),
 }).strict();
 export type WeatherForecast = z.infer<typeof weatherForecastSchema>;
-export type WeatherStatus = "not_configured" | "unavailable" | "stale" | "partial" | "ready";
+type WeatherStatus = "not_configured" | "unavailable" | "stale" | "partial" | "ready";
 export interface ServiceWeather {
   status: WeatherStatus; reason: string | null; serviceDate: string; slot: ServiceSlot;
   source: "Open-Meteo"; provenance: "live" | "fixture" | null;

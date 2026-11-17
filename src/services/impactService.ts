@@ -1,11 +1,11 @@
 import type { DeclaredWasteSummary } from "../../shared/declaredWaste";
 import { apiRequest } from "../config/api";
 
-export interface ImpactProductLoss {
+interface ImpactProductLoss {
   productId: string; productName: string; unit: string; quantity: number; knownCost: number;
   unpricedMovementCount: number; movementCount: number; operationIds: string[]; movementIds: string[];
 }
-export interface ImpactReceiptProduct {
+interface ImpactReceiptProduct {
   productId: string; productName: string; unit: string; receivedQuantity: number; cost: number;
   receiptIds: string[]; orderIds: string[];
 }

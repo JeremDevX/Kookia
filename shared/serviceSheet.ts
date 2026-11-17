@@ -3,7 +3,7 @@ import type { MenuEntry, SheetInput } from "./serviceOperations.js";
 import type { ForecastService } from "./operationalForecast.js";
 import type { WeatherDecisionContext } from "./serviceWeather.js";
 
-export interface ServiceSheetLine {
+interface ServiceSheetLine {
   recipeId: string; recipeName: string; planned: number; adjustedPlanned: number;
   prepared: number; additionalPrepared: number; refused: number; soldObserved: number; sold: number | null;
   preparationLosses: { quantity: number; unit: string }[]; plateReturns: number; unsold: number | null;

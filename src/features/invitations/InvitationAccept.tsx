@@ -57,6 +57,6 @@ export default function InvitationAccept({ onAccepted }: { onAccepted?: () => vo
         <Input id="invite-password" aria-describedby={registering ? "invite-password-help" : undefined} label="Mot de passe" type="password" required minLength={registering ? 10 : undefined} autoComplete={registering ? "new-password" : "current-password"} value={form.password} disabled={busy} onChange={set("password")} />
         {registering && <><small id="invite-password-help">10 caractères minimum.</small><Input id="invite-confirmation" label="Confirmation du mot de passe" type="password" required autoComplete="new-password" value={form.confirmation} disabled={busy} onChange={set("confirmation")} /></>}
         <Button type="submit" disabled={busy}>{busy ? "Veuillez patienter…" : registering ? "Créer mon compte" : "Se connecter"}</Button>
-      </form><p className="auth-footer"><button type="button" className="btn btn-ghost" disabled={busy} onClick={() => { setRegistering((value) => !value); setError(""); }}>{registering ? "J’ai déjà un compte" : "Créer un compte"}</button></p></>}
+      </form><p className="auth-footer"><Button type="button" variant="ghost" disabled={busy} onClick={() => { setRegistering((value) => !value); setError(""); }}>{registering ? "J’ai déjà un compte" : "Créer un compte"}</Button></p></>}
   </section></AuthLayout>;
 }

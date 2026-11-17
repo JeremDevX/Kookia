@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { ServiceSlot } from "./serviceCalendar.js";
 
 export const slotSchema = z.enum(["lunch", "dinner"]);
-export const menuEntrySchema = z.object({
+const menuEntrySchema = z.object({
   id: z.uuid(), name: z.string().trim().min(1).max(120),
   category: z.enum(["Entrée", "Plat", "Dessert", "Boisson", "Formule"]),
   saleItemId: z.string().min(1).max(100).nullable(), available: z.boolean(),
@@ -26,7 +26,7 @@ export const menuInputSchema = z.object({
 });
 export type MenuEntryInput = z.infer<typeof menuEntrySchema>;
 export type MenuInput = z.infer<typeof menuInputSchema>;
-export interface MenuComponent {
+interface MenuComponent {
   recipeId: string; portions: number; recipeName: string; recipeVersionId: string;
   recipeVersion: number; category: string; yieldPortions: number;
   ingredients: Array<{ productId: string; productName: string; unit: string; quantity: number }>;

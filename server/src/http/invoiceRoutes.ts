@@ -24,7 +24,7 @@ invoiceRoutes.get("/invoice-extraction/status", (_req, res) => {
   const mode = extractionAdapter(res).provider === "local_demo_fixture" ? "demo_fixture" : "manual";
   res.json({ mode });
 });
-invoiceRoutes.post("/invoice-extractions", (req, res, next) => {
+invoiceRoutes.post("/invoice-extractions", (_req, res, next) => {
   if (extractionAdapter(res).provider === "unconfigured") { extractionUnavailable(res); return; }
   next();
 }, express.raw({ type: () => true, limit: "4mb", inflate: false }), async (req, res) => {

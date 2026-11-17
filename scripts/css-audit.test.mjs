@@ -12,13 +12,17 @@ const globals = `
 @custom-media --compact (max-width: 600px);
 :root { --space: 16px; --ink: #123; --solid: solid; --zero: 0; }
 `;
+const useTestTokens = `
+.fixture { border: var(--space) var(--solid) var(--ink); }
+@media (--compact) { .fixture { opacity: var(--zero); } }
+`;
 const audit = (css, catalogue = globals) => auditCss(new Map([
-  [globalFile, catalogue], ["src/card.css", css],
+  [globalFile, catalogue], ["src/card.css", css + useTestTokens],
 ]));
 
 test("an independent app uses its own catalogue without weakening literal checks", () => {
   const catalogue = "document-workshop/src/tokens.css";
-  const files = new Map([[catalogue, globals], ["document-workshop/src/style.css", ".card { color: var(--ink); }"]]);
+  const files = new Map([[catalogue, globals], ["document-workshop/src/style.css", useTestTokens]]);
   assert.deepEqual(auditCss(files, catalogue), []);
   files.set("document-workshop/src/style.css", ".card { color: #123; }");
   assert.ok(auditCss(files, catalogue).some(issue => issue.message.includes("en dur")));
@@ -100,6 +104,19 @@ test("rejects raw and unknown media, local definitions and conditional imports",
   assert.match(audit("", globals + "@custom-media --compact (max-width: 400px);")[0].message, /dupliqué/);
 });
 
+test("rejects unused tokens and media even when unused tokens reference each other", () => {
+  const issues = audit(".card { color: var(--foreground); }", globals + `
+    @custom-media --unused (max-width: 300px);
+    :root { --foreground: var(--palette); --palette: black; --unused-a: var(--unused-b); --unused-b: red; }
+    /* var(--unused-a) */
+  `);
+  assert.deepEqual(issues.map(({ message }) => message), [
+    "Variable globale inutilisée : --unused-a",
+    "Variable globale inutilisée : --unused-b",
+    "Alias média inutilisé : --unused",
+  ]);
+});
+
 test("fails on malformed CSS, malformed var(), empty values and a missing catalogue", () => {
   for (const css of [".card {", ".card { color: var(ink); }", ".card { color: var(--ink red); }",
     ".card { color: ; }", ".card { color: rgb(); }"]) {
@@ -115,6 +132,7 @@ test("CLI discovers future CSS files outside src and exits nonzero with location
   await mkdir(path.join(directory, "new-feature"));
   await mkdir(path.join(directory, "node_modules"));
   await writeFile(path.join(directory, globalFile), globals);
+  await writeFile(path.join(directory, "src/styles/fixture.css"), useTestTokens);
   await writeFile(path.join(directory, "node_modules/vendor.css"), ".vendor { color: red; }");
   const cli = fileURLToPath(new URL("./check-css.mjs", import.meta.url));
   const run = () => spawnSync(process.execPath, [cli], { cwd: directory, encoding: "utf8" });

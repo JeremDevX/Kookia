@@ -40,6 +40,8 @@ export function auditCss(files, catalogueFile = globalFile) {
   }
 
   const dependencies = new Map([...definitions.keys()].map((name) => [name, new Set()]));
+  const usedVariables = new Set();
+  const usedMedia = new Set();
   const keyframes = new Set();
   for (const root of roots.values()) {
     root.walkAtRules(/^(?:-webkit-)?keyframes$/, (rule) => keyframes.add(rule.params));
@@ -60,7 +62,8 @@ export function auditCss(files, catalogueFile = globalFile) {
       }
       for (const name of references) {
         if (!definitions.has(name)) report(file, decl, `Variable inconnue : ${name}`);
-        if (custom && file === globalFile) dependencies.get(decl.prop)?.add(name);
+        if (!custom) usedVariables.add(name);
+        else if (file === globalFile) dependencies.get(decl.prop)?.add(name);
       }
       if (!globalDefinition && literals.length) {
         report(file, decl, `${decl.prop} : valeur(s) en dur ${[...new Set(literals)].join(", ")}`);
@@ -74,6 +77,7 @@ export function auditCss(files, catalogueFile = globalFile) {
       } else if (rule.name === "media") {
         const alias = mediaAlias(rule.params);
         if (!alias || !media.has(alias)) report(file, rule, `Condition média non globale ou inconnue : ${rule.params}`);
+        else usedMedia.add(alias);
       } else if (rule.name === "import") {
         const args = valueParser(rule.params).nodes.filter((node) => !["space", "comment"].includes(node.type));
         if (args.length !== 1 || !(args[0].type === "string" || (args[0].type === "function" && args[0].value === "url"))) {
@@ -96,5 +100,16 @@ export function auditCss(files, catalogueFile = globalFile) {
     for (const dependency of dependencies.get(name) ?? []) visit(dependency, [...chain, name]);
   }
   for (const name of definitions.keys()) visit(name, []);
+
+  for (const name of usedVariables) {
+    for (const dependency of dependencies.get(name) ?? []) usedVariables.add(dependency);
+  }
+  for (const [name, declaration] of definitions) {
+    if (!usedVariables.has(name)) report(globalFile, declaration, `Variable globale inutilisée : ${name}`);
+  }
+  globals.walkAtRules("custom-media", (rule) => {
+    const [name] = rule.params.split(/\s+/);
+    if (media.has(name) && !usedMedia.has(name)) report(globalFile, rule, `Alias média inutilisé : ${name}`);
+  });
   return issues;
 }

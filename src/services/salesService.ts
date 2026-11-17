@@ -105,7 +105,7 @@ export const correctSale = (id: string, revision: number, values: SaleValues, op
   { method: "PATCH", body: JSON.stringify({ ...values, revision, operationId, reason }) },
 );
 
-export interface SaleContributionEvent {
+interface SaleContributionEvent {
   kind: string; actorId: string; reason: string; revision: number; createdAt: string; snapshot: unknown;
 }
 export interface SaleContribution {
@@ -152,7 +152,7 @@ export const recordSaleOutcome = (id: string, revision: number, action: "void" |
     method: "POST", body: JSON.stringify({ expectedRevision: revision, reason, operationId }),
   });
 
-export interface SalesImportRow {
+interface SalesImportRow {
   line: number; serviceDate: string; itemName: string; quantity: number;
   saleItemId?: string; saleItemName?: string;
   status: "ready" | "invalid" | "unmapped" | "duplicate" | "existing" | "closed";

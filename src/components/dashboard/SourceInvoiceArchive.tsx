@@ -234,11 +234,11 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
             </li>)}
           </ul></details>}
           <details><summary>Lire la transcription (date de travail)</summary><pre className="source-invoice-content">{selected.content}</pre></details>
-          <button ref={resumeButtonRef} type="button" className="btn btn-primary" onClick={() => void resume()}
+          <Button ref={resumeButtonRef} type="button" onClick={() => void resume()}
             disabled={sourceConflict} aria-disabled={opening || sourceConflict} aria-busy={opening}>
             {opening ? "Ouverture…" : sourceConflict ? "Brouillon périmé" : selected.invoiceStatus === "draft" ? "Reprendre le brouillon" : selected.invoiceStatus === "received" ? "Voir la réception" :
               selected.type === "invoice" ? "Créer un brouillon corrigible" : "Consulter et classer la pièce"}
-          </button>
+          </Button>
         </section>}
       </div>}
   </section>;

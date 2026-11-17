@@ -1,4 +1,4 @@
-export type WeatherConditionKind = "clear" | "partlyCloudy" | "cloudy" | "fog" | "drizzle" | "rain" | "snow" | "storm" | "unknown";
+type WeatherConditionKind = "clear" | "partlyCloudy" | "cloudy" | "fog" | "drizzle" | "rain" | "snow" | "storm" | "unknown";
 interface WeatherCondition { label: string; kind: WeatherConditionKind; }
 
 // Open-Meteo WMO codes. A daily code describes the most severe forecast episode,

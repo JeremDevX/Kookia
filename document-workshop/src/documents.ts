@@ -8,7 +8,7 @@ import { setupDocuments } from "./setupDocuments";
 import { stockDocuments } from "./stockDocuments";
 
 export { workflows } from "./documentModel";
-export type { Document, Section } from "./documentModel";
+export type { Document } from "./documentModel";
 function dailySales(day: Day): DaySales {
   const articles = new Map<string, ArticleSales>();
   for (const service of day.services) for (const transaction of service.transactions) for (const line of transaction.lines) {

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { WorkspaceError } from "./catalogService.js";
 import { CsvSyntaxError, splitCsv } from "../../../../shared/csv.js";
 
-export interface CsvSaleRow {
+interface CsvSaleRow {
   line: number;
   serviceDate: string;
   itemName: string;

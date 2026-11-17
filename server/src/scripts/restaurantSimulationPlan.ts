@@ -9,9 +9,9 @@ import {
 import { buildScenarioRecipeVersions, recipeVersionForDate } from "./restaurantSimulationVersions.js";
 
 export const SIMULATION_VERSION = "restaurant-simulation-v1";
-export const SIMULATION_FROM = "2023-05-03";
-export const SIMULATION_INPUTS_TO = "2026-09-23";
-export const SIMULATION_TO = "2026-09-24";
+const SIMULATION_FROM = "2023-05-03";
+const SIMULATION_INPUTS_TO = "2026-09-23";
+const SIMULATION_TO = "2026-09-24";
 export const SIMULATION_MARKER = "restaurant-simulation:v1";
 
 export interface ExistingProductSnapshot {
@@ -25,7 +25,7 @@ export interface ExistingProductSnapshot {
   category: string;
 }
 
-export interface PlannedMovement {
+interface PlannedMovement {
   productId: string;
   productKey: string;
   delta: number;
@@ -37,7 +37,7 @@ export interface PlannedMovement {
   supplierName?: string;
 }
 
-export interface PlannedSale {
+interface PlannedSale {
   id: string;
   itemId: string;
   itemName: string;
@@ -66,7 +66,7 @@ export interface PlannedProduction {
   createdAt: string;
 }
 
-export interface PlannedStockCount {
+interface PlannedStockCount {
   id: string;
   productId: string;
   productKey: string;

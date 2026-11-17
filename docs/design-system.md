@@ -120,6 +120,12 @@ automatiques dans tout le produit :
 
 ## Composants et interactions
 
+- Les primitives de `src/components/common/` sont les composants de référence.
+  Utiliser `Button` pour les actions standard, `Input` pour les champs libellés
+  et `Modal` pour les dialogues. Le contrôle local réserve les classes des
+  variantes de bouton au composant et aux liens qui reprennent ce style.
+- Le contrôle local `npm run check:css` signale les tokens et alias média
+  inutilisés dans le catalogue.
 - Lien pour naviguer ; bouton pour agir ; libellé de contrôle visible.
 - Bouton de validation désactivé avec raison textuelle lorsque la commande
   comporte une ligne non admissible, une unité manquante ou un chargement.

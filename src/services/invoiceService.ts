@@ -6,7 +6,7 @@ export interface InvoiceLine {
   sourceName?: string; sourceQuantityText?: string; sourceQuantity?: number; sourceUnit?: "kg" | "L" | "pcs";
   sourceUnitPrice?: number; sourcePriceBasis?: string; sourceTaxBasis?: "HT" | "TTC" | "unknown"; sourceCode?: string;
 }
-export interface InvoiceDraft {
+interface InvoiceDraft {
   reference: string; date: string; supplierId?: string; lines: InvoiceLine[];
   sourceTypeConfirmed?: boolean; sourceDateConfirmed?: boolean;
 }
@@ -26,7 +26,7 @@ export interface SourceInvoiceSummary {
   invoiceId?: string; invoiceStatus?: "draft" | "received"; receivedAt?: string;
   alreadyCreditedBySimulation: boolean; sourceMovementCount: number;
 }
-export interface SourceInvoiceLine {
+interface SourceInvoiceLine {
   name: string; quantity: number; unit: "kg" | "L" | "pcs"; unitPrice: number; sourceQuantityText: string;
   sourceLineNumber: number; priceBasis: string; priceTaxBasis: "HT" | "TTC" | "unknown"; code?: string;
 }

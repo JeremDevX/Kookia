@@ -14,7 +14,7 @@ interface RecipeIdeaDefinition {
   ingredients: RecipeIdeaIngredientDefinition[];
 }
 
-export interface DemoRecipeIdea extends Omit<RecipeIdeaDefinition, "ingredients"> {
+interface DemoRecipeIdea extends Omit<RecipeIdeaDefinition, "ingredients"> {
   ingredients: Array<RecipeIdeaIngredientDefinition & { sourceDocumentId: string; sourceLineNumber: number }>;
 }
 

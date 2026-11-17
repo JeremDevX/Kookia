@@ -87,34 +87,34 @@ not as a mandate to redesign unrelated screens.
 
 ## Working approach
 
-Understand the outcome, inspect only the relevant context, and make the smallest
-coherent change. Use a repository Skill when its specialized workflow materially
-helps; do not load specialized guidance mechanically.
+Discussion, diagnosis, and planning requests are read-only. For implementation,
+work on `main`, preserve existing changes, and verify locally.
 
-Proceed directly for a small, clear task. Make a short execution plan for
-ambiguous, cross-cutting, risky, or long-running work. Infer routine technical
-details from the repository and continue through implementation and correction.
-Ask only when missing product intent or authorization would materially change the
-result. Local, reversible implementation choices do not need confirmation.
+Identify the requested user outcome and affected entry points. Read the existing
+implementation and its consumers before editing. Complete the affected flow and
+update every consumer of a changed contract. Report independent findings
+separately. For a risky or cross-cutting change, plan around the affected
+boundaries. Use the repository Skills that match the task's scope and risks.
+Ask only when missing product intent or authorization materially changes the result.
+
+## Reuse and dead code
+
+- Search for existing components, hooks, policies, and dependencies before
+  adding any. New abstractions must serve a concrete caller in this change.
+- For UI, start with the primitives in `src/components/common/`, the tokens
+  in `src/styles/index.css`, and [the design system](docs/design-system.md).
+  Add a variant only when existing variants cannot serve a concrete consumer.
+- Remove the implementation, exports, CSS, and dependencies made obsolete by
+  the change. Keep symbols private unless an external consumer needs them.
+  Before removing a reported element, verify dynamic routes/imports, CLI
+  scripts, local demos, and the document workshop where relevant. Any tool
+  exception must be narrow and identify the real consumer.
 
 ## Validation
 
-Use the smallest check that gives appropriate confidence while iterating. The CI
-currently runs:
-
-```bash
-npm run lint
-npm run build
-npm test
-```
-
-Before PR-ready completion, run the applicable CI-equivalent checks when they are
-relevant to the change. UI work also needs a rendered, keyboard, or responsive
-check when available. Documentation-only work needs accurate links, commands,
-and `git diff --check`, not application tests by default.
-
-## Done
-
-Work is done when the requested result exists, the change respects the active
-architecture and scope, proportionate validation has passed, and no known blocker
-is hidden. Report what changed, validation performed, and any material limit.
+For code changes, run `npm run check:quality` locally and the relevant builds
+and focused behavior checks. Review the full diff and verify the changed flow
+through its normal entry point. For changed interactions, verify relevant error
+and recovery states, keyboard behavior, and mobile rendering when available.
+For documentation-only changes, verify links, commands, and `git diff --check`.
+Report the outcome, evidence, and any checks that could not run.

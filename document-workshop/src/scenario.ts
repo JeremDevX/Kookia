@@ -12,7 +12,7 @@ import { scenarioWeather } from "./weather";
 
 export { displayDate, offsetDate } from "./calendar";
 export { optionsSchema } from "./model";
-export type { Options, Scenario, Day, StockLine } from "./model";
+export type { Options, Scenario } from "./model";
 const incidents: Incident[] = ["short_delivery", "late_delivery", "unavailable", "high_waste", "refund", "stock_gap", "demand_shift"];
 function incidentOn(date: string, origin: string, options: Options): Incident {
   const index = Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${origin}T12:00:00Z`)) / 86400000);

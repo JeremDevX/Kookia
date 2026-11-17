@@ -2,8 +2,8 @@ import { apiRequest, ApiError } from "../../config/api";
 import type { Restaurant } from "../../services/restaurantService";
 
 export type SetupStep = "team" | "suppliers" | "review";
-export type WorkspaceRole = "owner" | "chef" | "kitchen";
-export interface WorkspaceCapabilities { viewStock: boolean; countStock: boolean; receiveOrders: boolean; validateOrders: boolean; manageSettings: boolean; }
+type WorkspaceRole = "owner" | "chef" | "kitchen";
+interface WorkspaceCapabilities { viewStock: boolean; countStock: boolean; receiveOrders: boolean; validateOrders: boolean; manageSettings: boolean; }
 export interface SetupProgress { configured: boolean; step: SetupStep | null; revision: number; role: WorkspaceRole | null; restaurantName: string | null; capabilities: WorkspaceCapabilities | null; }
 
 export async function checkSetup(expectedUserId: string, refreshUser: () => Promise<void>): Promise<SetupProgress> {

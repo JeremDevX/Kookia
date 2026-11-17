@@ -1,7 +1,7 @@
 import { Prisma, type RecommendationDecision, type RecipeVersion, type StockMovement } from "@prisma/client";
 
-export type TimelineProvenance = "source" | "recorded" | "simulation" | "assumption" | "unknown";
-export type TimelineKind = "document" | "stock" | "loss" | "recipe" | "mapping" | "production" | "sale" | "service" |
+type TimelineProvenance = "source" | "recorded" | "simulation" | "assumption" | "unknown";
+type TimelineKind = "document" | "stock" | "loss" | "recipe" | "mapping" | "production" | "sale" | "service" |
   "decision" | "purchase_order" | "purchase_receipt";
 
 export interface TimelineEvent {

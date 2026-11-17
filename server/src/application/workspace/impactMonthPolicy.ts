@@ -1,4 +1,4 @@
-export const IMPACT_MONTHS_PER_PAGE = 12;
+const IMPACT_MONTHS_PER_PAGE = 12;
 
 const monthIndex = (date: string) => Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7)) - 1;
 

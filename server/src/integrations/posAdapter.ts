@@ -9,7 +9,7 @@ export const posSyncWindowSchema = z.object({ from: z.iso.date(), to: z.iso.date
     }
   });
 
-export const posRecordSchema = z.object({
+const posRecordSchema = z.object({
   sourceRecordId: z.string().trim().min(1).max(160),
   revision: z.number().int().positive().max(1_000_000),
   serviceDate: z.iso.date(),
@@ -34,12 +34,12 @@ export const posSalesBatchSchema = z.object({
   });
 });
 
-export type PosSyncWindow = z.infer<typeof posSyncWindowSchema>;
+type PosSyncWindow = z.infer<typeof posSyncWindowSchema>;
 export type PosSalesRecord = z.infer<typeof posRecordSchema>;
 export type PosSalesBatch = z.infer<typeof posSalesBatchSchema>;
-export type PosUnavailableReason = "not_configured" | "temporary_error" | "invalid_data";
+type PosUnavailableReason = "not_configured" | "temporary_error" | "invalid_data";
 
-export type PosReadResult =
+type PosReadResult =
   | { status: "ok"; payload: unknown }
   | { status: "unavailable"; reason: PosUnavailableReason };
 
