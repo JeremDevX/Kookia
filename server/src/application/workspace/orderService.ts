@@ -66,13 +66,19 @@ export async function validateOrder(restaurantId: string, actorId: string, input
       if (await tx.purchaseOrderLine.findFirst({ where: { suggestionDecisionId: { in: suggestionDecisions.map(({ id }) => id) } },
         select: { id: true } })) throw new WorkspaceError(409, "SUGGESTION_ALREADY_ORDERED", "Cette proposition est déjà associée à une commande enregistrée.");
     }
+    const products = await tx.product.findMany({
+      where: { restaurantId, id: { in: input.lines.map((line) => line.productId) } },
+      include: { supplier: { select: { name: true } } },
+    });
+    const productsById = new Map(products.map((product) => [product.id, product]));
     const lines = [];
     for (const line of input.lines) {
       if (line.predictionId) throw new WorkspaceError(400, "DEMO_PREDICTION", "Les scénarios d'exemple ne peuvent pas être validés dans une commande.");
-      const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: line.productId } }, include: { supplier: true } });
+      const product = productsById.get(line.productId);
       if (!product) throw new WorkspaceError(400, "INVALID_PRODUCT", "Un produit de la commande est introuvable.");
-      if (!isOrderQuantity(line.quantity, getOrderStep(product)))
-        throw new WorkspaceError(400, "INVALID_ORDER_QUANTITY", `${product.name} : ${orderStepLabel(getOrderStep(product), product.unit)} ; quantité maximale : 1 000 000.`);
+      const orderStep = getOrderStep(product);
+      if (!isOrderQuantity(line.quantity, orderStep))
+        throw new WorkspaceError(400, "INVALID_ORDER_QUANTITY", `${product.name} : ${orderStepLabel(orderStep, product.unit)} ; quantité maximale : 1 000 000.`);
       lines.push({ productId: product.id, productName: product.name, supplierId: product.supplierId,
         supplierName: product.supplier.name, unit: product.unit, quantity: line.quantity, pricePerUnit: product.pricePerUnit,
         ...(line.cartId && suggestionDecisionByCartId.has(line.cartId)
