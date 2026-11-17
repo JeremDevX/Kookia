@@ -50,9 +50,6 @@ export default function ProducibleRecipes({ recipes, products, producedRecipeIds
               <span className="recipe-meta-item">
                 <Clock size={14} /> {recipe.prepTime} min
               </span>
-              <span className="recipe-meta-item text-optimal font-medium">
-                Stock suffisant pour une portion
-              </span>
             </div>
 
             <div className="ingredients-box">
@@ -91,14 +88,13 @@ export default function ProducibleRecipes({ recipes, products, producedRecipeIds
           </Card>
         );
       })}
-      {allRecipesHref && recipes.length === 0 ? <div className="empty-week col-span-full"><p>Aucune recette du catalogue ne contient ce produit.</p><Link to={allRecipesHref}>Voir toutes les recettes</Link></div> : antiWasteRecipes.length === 0 && (
+      {allRecipesHref && recipes.length === 0 ? <div className="empty-week col-span-full"><p>Aucune recette du catalogue ne contient ce produit.</p><Link to={allRecipesHref}>Voir toutes les recettes</Link></div> : antiWasteRecipes.length === 0 && unavailableRecipes.length === 0 && (
         <div className="empty-week col-span-full">
-          <p>{recipes.length === 0 ? "Aucune recette disponible." : unavailableRecipes.length > 0 ? "Pas assez de stock pour préparer une portion des recettes renseignées." : "Aucune recette avec des ingrédients renseignés."}</p>
+          <p>{recipes.length === 0 ? "Aucune recette disponible." : "Aucune recette avec des ingrédients renseignés."}</p>
         </div>
       )}
       {unavailableRecipes.length > 0 && <section className="col-span-full" aria-label="Recettes non réalisables avec le stock actuel">
         <h3>Recettes non réalisables avec le stock actuel</h3>
-        <p>Stock insuffisant pour une portion. Signalez les demandes refusées si besoin.</p>
         <div className="recipes-grid">{unavailableRecipes.map((recipe) => {
           const warnings = recipeStockWarnings(recipe, products);
           return <Card key={recipe.id} className="recipe-card">

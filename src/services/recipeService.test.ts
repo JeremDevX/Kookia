@@ -8,7 +8,7 @@ const products: Product[] = [
 ];
 const makeRecipe = (overrides: Partial<Recipe> = {}): Recipe => ({ id: "r1", name: "Test", category: "Plat",
   prepTime: 10, yieldPortions: 1, revision: 1, version: 1, effectiveFrom: null, ingredients: [], versions: [], ...overrides });
-const ingredient = (productId: string, quantity: number) => ({ productId, productName: productId, unit: "kg", quantity });
+const ingredient = (productId: string, quantity: number, unit = "kg") => ({ productId, productName: productId, unit, quantity });
 
 describe("recipeService", () => {
   it("returns 0 max yield when recipe has no ingredient", () => {
@@ -32,15 +32,40 @@ describe("recipeService", () => {
   });
 
   it("limits piece-based production to whole-piece portion increments", () => {
-    const recipe = makeRecipe({ yieldPortions: 3, ingredients: [ingredient("eggs", 2)] });
+    const recipe = makeRecipe({ yieldPortions: 3, ingredients: [ingredient("eggs", 2, "pcs")] });
     const stock: Product[] = [{ ...products[0], id: "eggs", unit: "pcs", currentStock: 5 }];
     expect(calculateMaxYield(recipe, stock)).toBe(6);
-    expect(calculateMaxYield(makeRecipe({ yieldPortions: 3, ingredients: [ingredient("eggs", 2)] }),
-      [{ ...stock[0], currentStock: 1 }])).toBe(0);
+    expect(calculateMaxYield(recipe, [{ ...stock[0], currentStock: 1 }])).toBe(0);
   });
 
   it("matches persisted three-decimal stock arithmetic at a portion boundary", () => {
     expect(calculateMaxYield(makeRecipe({ ingredients: [ingredient("p1", 0.1)] }), [{ ...products[0], currentStock: 0.3 }])).toBe(3);
+  });
+
+  it("finds the largest batch whose rounded usage fits the stock", () => {
+    const recipe = makeRecipe({ yieldPortions: 3, ingredients: [ingredient("p1", 0.001)] });
+    expect(calculateMaxYield(recipe, [{ ...products[0], currentStock: 0.001 }])).toBe(4);
+  });
+
+  it("reports no feasible batch when its maximum would round an ingredient to zero", () => {
+    const recipe = makeRecipe({ yieldPortions: 4, ingredients: [ingredient("p1", 0.001), ingredient("p2", 1)] });
+    const stock = [{ ...products[0], currentStock: 0.001 }, { ...products[1], currentStock: 0.25 }];
+    expect(calculateMaxYield(recipe, stock)).toBe(0);
+  });
+
+  it("combines rounded weights with the whole-piece steps of every ingredient", () => {
+    const recipe = makeRecipe({ yieldPortions: 6,
+      ingredients: [ingredient("p1", 0.001), ingredient("eggs", 4, "pcs"), ingredient("onions", 3, "pcs")] });
+    const stock: Product[] = [{ ...products[0], currentStock: 0.002 },
+      { ...products[0], id: "eggs", unit: "pcs", currentStock: 20 },
+      { ...products[0], id: "onions", unit: "pcs", currentStock: 20 }];
+    expect(calculateMaxYield(recipe, stock)).toBe(12);
+  });
+
+  it("handles legacy piece dosages if the total consumed stays whole", () => {
+    const recipe = makeRecipe({ yieldPortions: 3, ingredients: [ingredient("eggs", 0.5, "pcs")] });
+    const stock: Product[] = [{ ...products[0], id: "eggs", unit: "pcs", currentStock: 2 }];
+    expect(calculateMaxYield(recipe, stock)).toBe(12);
   });
 
   it("scales stock and ingredient cost by the batch yield", () => {
