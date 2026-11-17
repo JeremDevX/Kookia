@@ -15,30 +15,24 @@ export interface StockCountInput {
 
 const parisServiceDate = () => new Date(`${formatParisDate()}T00:00:00.000Z`);
 
-export async function recordStockCountInTransaction(tx: Prisma.TransactionClient, restaurantId: string, actorId: string, productId: string, input: StockCountInput) {
-    // Serialize operation keys within a workspace, then lock the stock row before comparing its version.
-    await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR NO KEY UPDATE`);
+export const lockInventoryWorkspace = (tx: Prisma.TransactionClient, restaurantId: string) =>
+  tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR NO KEY UPDATE`);
+
+export async function recordStockCountInLockedWorkspace(tx: Prisma.TransactionClient, restaurantId: string,
+  actorId: string, productId: string, input: StockCountInput): Promise<StockCount> {
     const locked = await tx.$queryRaw<{ id: string; name: string; supplierId: string; currentStock: Prisma.Decimal;
       unit: string; stockRevision: number; pricePerUnit: Prisma.Decimal }[]>(
       Prisma.sql`SELECT id, name, "supplierId", "currentStock", unit, "stockRevision", "pricePerUnit" FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${productId} FOR UPDATE`,
     );
     const product = locked[0];
     if (!product) throw new WorkspaceError(404, "NOT_FOUND", "Produit introuvable.");
-    const response = async (count: StockCount) => {
-      const [currentProduct, latestCount] = await Promise.all([
-        tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: productId } } }),
-        tx.stockCount.findFirst({ where: { restaurantId, productId }, orderBy: [{ countedAt: "desc" }, { id: "desc" }] }),
-      ]);
-      return { product: productDto(currentProduct), count: stockCountDto(count), latestCount: latestCount ? stockCountDto(latestCount) : null };
-    };
-
     const prior = await tx.stockCount.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId: input.operationId } } });
     if (prior) {
       if (prior.productId !== productId || prior.stockRevisionBefore !== input.expectedStockRevision || prior.unit !== input.expectedUnit ||
           !prior.countedQuantity.equals(new Prisma.Decimal(input.countedQuantity))) {
         throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération de comptage a déjà été utilisée avec d’autres valeurs.");
       }
-      return response(prior);
+      return prior;
     }
     if (product.stockRevision !== input.expectedStockRevision || product.unit !== input.expectedUnit) {
       throw new WorkspaceError(409, "STOCK_CHANGED", "Le stock ou son unité a changé depuis l’ouverture du comptage. Rechargez la fiche.");
@@ -65,11 +59,20 @@ export async function recordStockCountInTransaction(tx: Prisma.TransactionClient
         error: new WorkspaceError(409, "STOCK_CHANGED", "Le stock a changé pendant le comptage. Rechargez la fiche."),
       } });
     }
-    return response(count);
+    return count;
 }
 
 export async function recordStockCount(restaurantId: string, actorId: string, productId: string, input: StockCountInput) {
-  return prisma.$transaction((tx) => recordStockCountInTransaction(tx, restaurantId, actorId, productId, input));
+  return prisma.$transaction(async (tx) => {
+    // Serialize operation keys within a workspace, then lock the stock row before comparing its version.
+    await lockInventoryWorkspace(tx, restaurantId);
+    const count = await recordStockCountInLockedWorkspace(tx, restaurantId, actorId, productId, input);
+    const [currentProduct, latestCount] = await Promise.all([
+      tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: productId } } }),
+      tx.stockCount.findFirst({ where: { restaurantId, productId }, orderBy: [{ countedAt: "desc" }, { id: "desc" }] }),
+    ]);
+    return { product: productDto(currentProduct), count: stockCountDto(count), latestCount: latestCount ? stockCountDto(latestCount) : null };
+  });
 }
 
 export async function getStockCounts(restaurantId: string, productId: string) {

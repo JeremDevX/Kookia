@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
-import { recordStockCountInTransaction } from "./stockCountService.js";
+import { lockInventoryWorkspace, recordStockCountInLockedWorkspace } from "./stockCountService.js";
 
 interface Line {
   productId: string; operationId: string; name: string; category: string; unit: string;
@@ -17,13 +17,11 @@ const getDraft = async (tx: Prisma.TransactionClient, restaurantId: string, lock
     : Prisma.sql`SELECT id, "actorId", status, revision, lines FROM "InventorySession" WHERE "restaurantId" = ${restaurantId} AND status = 'draft'`);
   return rows[0] ?? null;
 };
-const lockRestaurant = (tx: Prisma.TransactionClient, restaurantId: string) =>
-  tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR NO KEY UPDATE`);
 
 export async function getInventorySession(restaurantId: string) { return getDraft(prisma, restaurantId); }
 export async function openInventorySession(restaurantId: string, actorId: string) {
   return prisma.$transaction(async (tx) => {
-    await lockRestaurant(tx, restaurantId);
+    await lockInventoryWorkspace(tx, restaurantId);
     const existing = await getDraft(tx, restaurantId);
     if (existing) return existing;
     const products = await tx.product.findMany({ where: { restaurantId }, orderBy: { name: "asc" } });
@@ -57,7 +55,7 @@ export async function saveInventorySession(restaurantId: string, id: string, rev
 }
 export async function validateInventorySession(restaurantId: string, actorId: string, id: string, revision: number) {
   return prisma.$transaction(async (tx) => {
-    await lockRestaurant(tx, restaurantId);
+    await lockInventoryWorkspace(tx, restaurantId);
     const sessions = await tx.$queryRaw<Session[]>(Prisma.sql`SELECT id, "actorId", status, revision, lines FROM "InventorySession" WHERE id = ${id} AND "restaurantId" = ${restaurantId} FOR UPDATE`);
     const session = sessions[0];
     if (!session) throw new WorkspaceError(404, "NOT_FOUND", "Inventaire introuvable.");
@@ -69,7 +67,7 @@ export async function validateInventorySession(restaurantId: string, actorId: st
       throw new WorkspaceError(400, "MISSING_REASON", "Justifiez chaque écart avant validation.");
     for (const line of counted) {
       try {
-        await recordStockCountInTransaction(tx, restaurantId, actorId, line.productId, {
+        await recordStockCountInLockedWorkspace(tx, restaurantId, actorId, line.productId, {
           operationId: line.operationId, expectedStockRevision: line.stockRevision, expectedUnit: line.unit, countedQuantity: line.countedQuantity!,
         });
       } catch (error) {
@@ -86,7 +84,7 @@ export async function validateInventorySession(restaurantId: string, actorId: st
 
 export async function refreshInventorySession(restaurantId: string, id: string, revision: number) {
   return prisma.$transaction(async (tx) => {
-    await lockRestaurant(tx, restaurantId);
+    await lockInventoryWorkspace(tx, restaurantId);
     const session = await getDraft(tx, restaurantId, true);
     if (!session || session.id !== id) throw new WorkspaceError(404, "NOT_FOUND", "Brouillon introuvable.");
     if (session.revision !== revision) throw new WorkspaceError(409, "INVENTORY_CHANGED", "Cet inventaire a été modifié ailleurs. Rechargez le brouillon.");
