@@ -95,7 +95,8 @@ export function buildRestaurantSimulation(invoices: SourceInvoice[], existingPro
     }
   }
 
-  const closingStocks = auditMovements(movements, scenarioProducts);
+  const chronologicalMovements = [...movements].sort((a, b) => a.at.localeCompare(b.at) || a.operationId.localeCompare(b.operationId));
+  const closingStocks = auditMovements(chronologicalMovements, scenarioProducts);
   for (const movement of movements) if (movement.reason === "simulation_loss") {
     coverage.get(movement.at.slice(0, 4))!.simulationLossMovements++;
   }
@@ -105,9 +106,11 @@ export function buildRestaurantSimulation(invoices: SourceInvoice[], existingPro
   }
   const asOf = SIMULATION_TO;
   const baselineFrom = addCalendarDays(asOf, -28);
+  const baselineSales = new Set(sales.filter(({ date }) => date >= baselineFrom && date < asOf)
+    .map(({ recipeId, date }) => `${recipeId}:${date}`));
   for (const recipe of scenarioRecipes) {
     for (let date = baselineFrom; date < asOf; date = addCalendarDays(date, 1)) {
-      if (!serviceDaysByDate.has(date) || !sales.some((sale) => sale.recipeId === recipe.id && sale.date === date)) {
+      if (!serviceDaysByDate.has(date) || !baselineSales.has(`${recipe.id}:${date}`)) {
         throw new Error(`Fenêtre baseline incomplète pour ${recipe.name} au ${date}.`);
       }
     }
@@ -144,7 +147,7 @@ export function buildRestaurantSimulation(invoices: SourceInvoice[], existingPro
   });
 
   return { version: SIMULATION_VERSION, marker: SIMULATION_MARKER, sourceDigest, startDate: SIMULATION_FROM, endDate: SIMULATION_TO,
-    receipts, movements: movements.sort((a, b) => a.at.localeCompare(b.at) || a.operationId.localeCompare(b.operationId)),
+    receipts, movements: chronologicalMovements,
     serviceDays: [...serviceDaysByDate].sort(), sales, productions, stockCounts, recipeVersions, productState, yearCoverage, unitCosts,
     counts: { invoiceDocuments: invoices.length, parsedLines: [...coverage.values()].reduce((n, row) => n + row.parsedLines, 0),
       mappedLines: [...coverage.values()].reduce((n, row) => n + row.mappedLines, 0),

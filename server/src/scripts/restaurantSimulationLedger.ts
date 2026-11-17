@@ -11,11 +11,11 @@ interface LedgerProduct { id: string; unit: StockUnit; }
 
 const round = (value: number) => Math.round(value * 1000) / 1000;
 
-export function auditMovements(movements: LedgerMovement[], products: LedgerProduct[]) {
+export function auditMovements(chronologicalMovements: readonly LedgerMovement[], products: LedgerProduct[]) {
   const units = new Map(products.map((product) => [product.id, product.unit]));
   const balances = new Map<string, number>();
   const byDay = new Map<string, Map<string, { opening: number; delta: number }>>();
-  for (const movement of [...movements].sort((a, b) => a.at.localeCompare(b.at) || a.operationId.localeCompare(b.operationId))) {
+  for (const movement of chronologicalMovements) {
     if (units.get(movement.productId) === "pcs" && !Number.isInteger(movement.delta)) {
       throw new Error(`Mouvement fractionnaire en pièces : ${movement.operationId}`);
     }
