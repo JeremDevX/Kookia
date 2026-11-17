@@ -8,7 +8,8 @@ export const svgColor = (color: Color) => `rgb(${color.map(n => Math.round(n * 2
 const clean = (text: string) => text.replace(/[\u00a0\u202f]/g, " ").replace(/[–—]/g, "-").replace(/[’]/g, "'").replace(/œ/g, "oe");
 function wrap(text: string, width: number, size: number): string[] {
   const limit = Math.max(1, Math.floor(width / (size * .62)));
-  const chunks = clean(text).split(/\s+/).flatMap(word => word.match(new RegExp(`.{1,${limit}}`, "gu")) ?? []);
+  const chunkPattern = new RegExp(`.{1,${limit}}`, "gu");
+  const chunks = clean(text).split(/\s+/).flatMap(word => word.match(chunkPattern) ?? []);
   const lines: string[] = [];
   let line = "";
   for (const chunk of chunks) {

@@ -3,9 +3,11 @@ import { recipes } from "./catalog";
 import type { Ingredient, Recipe } from "./catalog";
 import type { Options, ServiceName } from "./model";
 
+const isoDate = z.iso.date();
+const dateFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 export function displayDate(date: string) {
-  if (!z.iso.date().safeParse(date).success) return "Date invalide";
-  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
+  if (!isoDate.safeParse(date).success) return "Date invalide";
+  return dateFormat.format(new Date(`${date}T12:00:00Z`));
 }
 export { addCalendarDays as offsetDate } from "../../shared/calendarDate";
 export const weekday = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();

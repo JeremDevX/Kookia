@@ -51,5 +51,5 @@ export const recipes: Recipe[] = [
 export const ingredientById = (id: string) => ingredients.find(p => p.id === id)!;
 export const recipeById = (id: string) => recipes.find(r => r.id === id)!;
 export const quantity = (value: number) => Math.round(value * 1000) / 1000;
-export const number = (value: number) => value.toLocaleString("fr-FR", { maximumFractionDigits: 3 });
+export const number = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format;
 export const money = (cents: number) => `${(cents / 100).toFixed(2).replace(".", ",")} EUR`;
