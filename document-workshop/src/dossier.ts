@@ -2,9 +2,9 @@ import { createDocuments, salesCsv } from "./documents";
 import { workflowEntries } from "./documentModel";
 import type { Document } from "./documentModel";
 import { pdfBytes } from "./exports";
-import type { ArchiveFile } from "./exports";
 import type { Scenario } from "./model";
 import { scenarioWeatherNotice, terraceLabel } from "./weather";
+import type { ArchiveFile } from "./zip";
 
 function guide(scenario: Scenario, docs: Document[]) {
   return `# ${scenario.options.name} — Dossier d'exploitation\n\nPériode : ${scenario.days[0].date} au ${scenario.days.at(-1)!.date}.\n\n` +

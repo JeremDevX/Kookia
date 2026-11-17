@@ -3,10 +3,11 @@ import { money, recipeById } from "./catalog";
 import { parseCheckpointFile } from "./continuation";
 import { createDocuments, readySales, salesCsv } from "./documents";
 import { archiveFiles } from "./dossier";
-import { pdfBytes, zipBytes } from "./exports";
+import { pdfBytes } from "./exports";
 import { layoutDocument } from "./layout";
 import { generateScenario } from "./scenario";
 import { workshopOptions as input } from "./testFixtures";
+import { zipArchive } from "./zip";
 import { parseSalesCsv } from "../../server/src/application/workspace/salesCsv";
 import { inspectTicketZUpload } from "../../server/src/application/workspace/ticketZService";
 
@@ -113,16 +114,21 @@ describe("workshop document contracts", () => {
     const closed = generateScenario({ ...input, start: "2026-09-07", days: 1 });
     expect(archiveFiles(closed).some(f => f.name.endsWith(".csv"))).toBe(false);
   });
-  it("writes coherent ZIP offsets, UTF-8 names and payload lengths", () => {
+  it("writes coherent ZIP offsets, UTF-8 names, payloads and checksums", async () => {
     const files = [{ name: "épreuve.txt", bytes: new TextEncoder().encode("Contenu accentué") }];
-    const bytes = zipBytes(files), view = new DataView(bytes.buffer);
+    const archive = zipArchive(files);
+    expect(archive.type).toBe("application/zip");
+    const bytes = await archive.arrayBuffer(), view = new DataView(bytes);
     expect(view.getUint32(0, true)).toBe(0x04034b50);
     const nameSize = view.getUint16(26, true);
     expect(new TextDecoder().decode(bytes.slice(30, 30 + nameSize))).toBe(files[0].name);
     expect(new TextDecoder().decode(bytes.slice(30 + nameSize, 30 + nameSize + files[0].bytes.length))).toBe("Contenu accentué");
-    const end = bytes.length - 22;
+    expect(view.getUint32(14, true)).toBe(0x16225e31);
+    const end = bytes.byteLength - 22;
     expect(view.getUint32(end, true)).toBe(0x06054b50);
     expect(view.getUint16(end + 8, true)).toBe(1);
-    expect(view.getUint32(view.getUint32(end + 16, true), true)).toBe(0x02014b50);
+    const directory = view.getUint32(end + 16, true);
+    expect(view.getUint32(directory, true)).toBe(0x02014b50);
+    expect(view.getUint32(directory + 16, true)).toBe(0x16225e31);
   });
 });
