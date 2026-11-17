@@ -3,11 +3,14 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { env } from "../config/env.js";
 import { prisma } from "../infrastructure/database/prisma.js";
-import { digestRecipePlan, type PlannedRecipe } from "./restaurantSimulationSupport.js";
 import { SIMULATION_MARKER, SIMULATION_VERSION } from "./restaurantSimulationPlan.js";
 import { scenarioProducts } from "./restaurantSimulationCatalog.js";
 import { resolveCamilleRestaurantId } from "./restaurantSimulationTarget.js";
 import { parseSimulationBackup } from "./restaurantSimulationBackup.js";
+import {
+  hasChangedSimulationProducts, isSimulationProduction, isUnchangedSimulationSale, matchesSimulationRecipes,
+  matchesSimulationRecipeVersions,
+} from "./restaurantSimulationVerification.js";
 
 const backupArgument = process.argv.indexOf("--backup");
 const backupPath = backupArgument >= 0 ? process.argv[backupArgument + 1] : undefined;
@@ -150,36 +153,21 @@ async function assertNoHumanChanges(tx: Prisma.TransactionClient, restaurantId: 
     tx.production.findMany({ where: { restaurantId, operationId: { startsWith: `${SIMULATION_VERSION}:` } },
       select: { actorId: true, recipeVersionId: true } }),
     tx.recipeVersion.findMany({ where: { restaurantId, id: { in: marker.recipeVersionIds } },
-      select: { id: true, recipeId: true, version: true, actorId: true, operationId: true } }),
+      select: { recipeId: true, version: true, actorId: true, operationId: true } }),
   ]);
-  if (generatedSales.some((sale) => sale.createdBy !== SIMULATION_MARKER || sale.updatedBy !== SIMULATION_MARKER || sale.revision !== 0) ||
+  if (!generatedSales.every(isUnchangedSimulationSale) ||
     generatedContributions.some((contribution) => contribution.reviewedBy !== SIMULATION_MARKER || contribution.reviewRevision !== 1 ||
       contribution.status !== "accepted" || contribution.source !== "demo_simulation") ||
     await tx.saleContributionEvent.count({ where: { restaurantId,
       contributionId: { in: generatedContributions.map((row) => row.id) } } }) !== marker.counts.sales ||
-    generatedProductions.some((production) => production.actorId !== SIMULATION_MARKER ||
-      !marker.recipeVersionIds.includes(production.recipeVersionId ?? "")) ||
-    generatedVersions.length !== marker.recipeVersionIds.length || generatedVersions.some((version) =>
-      version.actorId !== SIMULATION_MARKER || version.operationId !== `${SIMULATION_VERSION}:recipe:${version.recipeId}:v${version.version}` ||
-      marker.recipeRevisionById[version.recipeId] !== version.version)) {
+    !generatedProductions.every((production) => isSimulationProduction(production, marker.recipeVersionIds)) ||
+    !matchesSimulationRecipeVersions(generatedVersions, marker.recipeVersionIds.length, marker.recipeRevisionById)) {
     throw new Error("Une vente ou production simulée a été modifiée dans l’application ; rollback arrêté pour préserver la saisie.");
   }
-  const currentById = new Map(currentProducts.map((product) => [product.id, product]));
-  for (const state of marker.productState) {
-    const spec = scenarioProducts.find((product) => product.id === state.id)!;
-    const product = currentById.get(state.id);
-    const lastDelivery = product?.lastDelivery?.toISOString().slice(0, 10) ?? null;
-    if (!product || product.name !== spec.name || product.category !== spec.category || product.unit !== state.unit ||
-      Math.abs(Number(product.currentStock) - state.closing) > 0.0005 ||
-      Math.abs(Number(product.minThreshold) - state.minThreshold) > 0.0005 ||
-      Math.abs(Number(product.pricePerUnit) - state.pricePerUnit) > 0.00005 ||
-      product.supplierId !== state.supplierId || lastDelivery !== (state.lastDelivery ?? null)) {
-      throw new Error("Un produit a été modifié depuis l’import ; rollback arrêté sans écraser cette saisie.");
-    }
+  if (hasChangedSimulationProducts(currentProducts, marker.productState)) {
+    throw new Error("Un produit a été modifié depuis l’import ; rollback arrêté sans écraser cette saisie.");
   }
-  const digest = digestRecipePlan(currentRecipes.map((recipe): PlannedRecipe => ({ id: recipe.id, name: recipe.name,
-    category: recipe.category, prepTime: recipe.prepTime, lastMade: recipe.lastMade?.toISOString().slice(0, 10) ?? null,
-    ingredients: recipe.ingredients.map((ingredient) => ({ productId: ingredient.productId, quantity: Number(ingredient.quantity) })) })));
-  if (digest !== marker.recipeDigest || currentRecipes.some((recipe) => marker.recipeRevisionById[recipe.id] !== recipe.revision))
+  if (!matchesSimulationRecipes(currentRecipes, marker.recipeDigest, marker.recipeRevisionById)) {
     throw new Error("Une recette a été modifiée depuis l’import ; rollback arrêté sans l’écraser.");
+  }
 }

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { appendRecipeVersion } from "../application/workspace/recipeVersionStorage.js";
-import { digestRecipePlan } from "./restaurantSimulationSupport.js";
+import { digestRecipePlan, simulationSaleItems } from "./restaurantSimulationSupport.js";
 import {
   SIMULATION_MARKER, SIMULATION_VERSION, stableUuid,
 } from "./restaurantSimulationPlan.js";
@@ -21,18 +21,22 @@ async function insertBatches<T>(items: T[], insert: (batch: T[]) => Promise<unkn
   for (const batch of chunks(items)) await insert(batch);
 }
 
-const normalizeName = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR");
-
-export async function applyRestaurantSimulation(restaurantId: string, plan: SimulationPlan, recipes: PlannedRecipe[],
-  oldProductIds: string[], legacyMovementIds: string[], existingSupplierIds: Set<string>) {
-  const stateById = new Map(plan.productState.map((product) => [product.id, product]));
+export function simulationSuppliers(plan: SimulationPlan) {
   const supplierNames = new Map<string, string>();
   for (const receipt of plan.receipts) supplierNames.set(sourceInvoiceSupplierId(receipt.supplier), receipt.supplier.slice(0, 120));
   for (const state of plan.productState) if (state.supplierId?.startsWith("simulation-v1-")) {
     supplierNames.set(state.supplierId, state.supplierName ?? "Approvisionnement synthétique (aucune commande)");
   }
+  return supplierNames;
+}
+
+export async function applyRestaurantSimulation(restaurantId: string, plan: SimulationPlan, recipes: PlannedRecipe[],
+  oldProductIds: string[], legacyMovementIds: string[], existingSupplierIds: Set<string>) {
+  const stateById = new Map(plan.productState.map((product) => [product.id, product]));
+  const supplierNames = simulationSuppliers(plan);
   const createdSupplierIds = [...supplierNames.keys()].filter((id) => !existingSupplierIds.has(id));
-  const saleItems = plan.sales.filter((sale, index, all) => all.findIndex((candidate) => candidate.itemId === sale.itemId) === index);
+  const saleItems = simulationSaleItems(plan.sales);
+  const saleItemIds = saleItems.map(({ id }) => id);
 
   await prisma.$transaction(async (tx) => {
     const serviceDateValues = plan.serviceDays.map((serviceDate) => new Date(serviceDate + "T00:00:00.000Z"));
@@ -149,9 +153,7 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
       recipeVersionId: recipeVersionIds.get(`${production.recipeId}:${production.recipeVersionSequence}`)!,
     } satisfies Prisma.ProductionCreateManyInput)), (batch) => tx.production.createMany({ data: batch }));
 
-    await tx.saleItem.createMany({ data: saleItems.map((sale) => ({
-      id: sale.itemId, restaurantId, name: sale.itemName, normalizedName: normalizeName(sale.itemName),
-    })) });
+    await tx.saleItem.createMany({ data: saleItems.map((item) => ({ ...item, restaurantId })) });
     await tx.serviceDay.createMany({ data: plan.serviceDays.map((serviceDate) => ({
       restaurantId, serviceDate: new Date(serviceDate + "T00:00:00.000Z"),
       status: "open", coverage: "complete", source: "demo_simulation", actorId: SIMULATION_MARKER,
@@ -187,11 +189,11 @@ export async function applyRestaurantSimulation(restaurantId: string, plan: Simu
       counts: plan.counts, yearCoverage: plan.yearCoverage, productState: plan.productState,
       receiptConversions: plan.receipts,
       recipeDigest: digestRecipePlan(recipes), recipeVersionIds: [...recipeVersionIds.values()], recipeRevisionById,
-      saleItemIds: saleItems.map((sale) => sale.itemId), createdSupplierIds,
+      saleItemIds, createdSupplierIds,
       startDate: plan.startDate, endDate: plan.endDate,
     })) as Prisma.InputJsonValue;
     await tx.workspaceDocument.create({ data: { restaurantId, kind: SIMULATION_MARKER, data: marker } });
   }, { maxWait: 20_000, timeout: 300_000 });
 
-  return { createdSupplierIds, saleItemIds: saleItems.map((sale) => sale.itemId) };
+  return { createdSupplierIds, saleItemIds };
 }

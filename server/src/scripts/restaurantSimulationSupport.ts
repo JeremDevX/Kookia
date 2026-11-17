@@ -54,7 +54,6 @@ export function assertSeedSnapshot(products: ProductRow[], recipes: RecipeRow[])
 }
 
 export function buildRecipePlan(recipes: RecipeRow[], productions: PlannedProduction[], versions: PlannedRecipeVersion[] = []): PlannedRecipe[] {
-  const sourceRecipes = new Map(recipes.map((recipe) => [recipe.id, recipe]));
   const latestMade = new Map<string, string>();
   for (const production of productions) if (production.kind === "production") latestMade.set(production.recipeId, production.date);
   const productUnits = new Map(scenarioProducts.map((product) => [product.id, product.unit]));
@@ -74,7 +73,6 @@ export function buildRecipePlan(recipes: RecipeRow[], productions: PlannedProduc
       productId: ingredient.productId,
       quantity: round(Number(ingredient.quantity) * (convertedSeedUnits[ingredient.productId] ?? 1)),
     }));
-    if (!sourceRecipes.has(recipe.id)) throw new Error(`Recette absente du seed : ${recipe.id}.`);
     for (const ingredient of ingredients) {
       if (productUnits.get(ingredient.productId) === "pcs" && !Number.isInteger(ingredient.quantity)) {
         throw new Error(`La recette ${recipe.name} utilise une fraction de pièce (${ingredient.productId}).`);
@@ -88,6 +86,16 @@ export function buildRecipePlan(recipes: RecipeRow[], productions: PlannedProduc
 
 export function digestRecipePlan(recipes: PlannedRecipe[]) {
   return createHash("sha256").update(JSON.stringify(recipes)).digest("hex");
+}
+
+export function simulationSaleItems(sales: { itemId: string; itemName: string }[]) {
+  const byId = new Map<string, { id: string; name: string; normalizedName: string }>();
+  for (const { itemId: id, itemName: name } of sales) {
+    if (byId.has(id)) continue;
+    const normalizedName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr-FR");
+    byId.set(id, { id, name, normalizedName });
+  }
+  return [...byId.values()];
 }
 
 export function isLegacyImportMovement(movement: { reason: string; operationId: string }) {
