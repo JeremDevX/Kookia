@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect } from "@playwright/test";
 import { formatParisDate } from "../../shared/parisDate";
+import type { SourceInvoiceDetail, SourceInvoiceSummary } from "../../shared/invoice";
 import { test } from "./restaurantFixture";
 
 test.use({ timezoneId: "Europe/Paris" });
@@ -62,4 +63,43 @@ test("ouvre un brouillon vierge, recharge un conflit et retrouve une facture enr
   await expect(reference).toHaveValue("");
   await history.selectOption({ label: "FACT-MANUELLE · Brouillon" });
   await expect(reference).toHaveValue("FACT-MANUELLE");
+});
+
+test("termine la lecture de la pièce quand un rechargement de l’archive la remplace", async ({ page, restaurant }) => {
+  await restaurant.completeSetup();
+  const source: SourceInvoiceSummary = {
+    id: "0123456789abcdef01234567", title: "Facture à jour", date: "2026-06-12", supplier: "Fournisseur test",
+    type: "invoice", status: "à vérifier", stockLineCount: 0, alreadyCreditedBySimulation: false, sourceMovementCount: 0,
+  };
+  const detail: SourceInvoiceDetail = { ...source, stockLines: [], content: "Transcription test" };
+  let archiveAvailable = false;
+  await page.route("**/api/workspace/source-invoices", (route) => archiveAvailable
+    ? route.fulfill({ json: [source] }) : route.abort("failed"));
+
+  const firstRead = Promise.withResolvers<void>();
+  let reads = 0;
+  await page.route(`**/api/workspace/source-invoices/${source.id}`, async (route) => {
+    const initial = ++reads === 1;
+    if (initial) await firstRead.promise;
+    await route.fulfill({ json: initial ? { ...detail, title: "Version précédente" } : detail });
+  });
+
+  try {
+    await page.goto(`/orders?view=invoices&source=${source.id}`);
+    await expect(page.getByRole("status", { name: "Ouverture de KookiA" })).toBeHidden();
+    await expect.poll(() => reads).toBe(1);
+    const retry = page.getByRole("button", { name: "Recharger les pièces" });
+    await expect(retry).toBeVisible();
+    archiveAvailable = true;
+    await retry.press("Enter");
+    await expect(page.getByRole("heading", { name: source.title })).toBeVisible();
+    await expect(page.getByText("Lecture de la pièce…")).toBeHidden();
+    await expect(page.getByRole("button", { name: "Créer un brouillon corrigible" })).toBeEnabled();
+
+    const firstResponse = page.waitForResponse(async (response) => response.url().endsWith(`/source-invoices/${source.id}`)
+      && (await response.json() as SourceInvoiceDetail).title === "Version précédente");
+    firstRead.resolve();
+    await firstResponse;
+    await expect(page.getByRole("heading", { name: source.title })).toBeVisible();
+  } finally { firstRead.resolve(); }
 });

@@ -14,6 +14,14 @@ interface SourceInvoiceArchiveProps {
   onOpenDraft: (invoice: Invoice) => void;
 }
 
+type SourceSelection = { id: string };
+interface SourceDetailResult {
+  selection: SourceSelection;
+  requestKey: string;
+  detail: SourceInvoiceDetail | null;
+  error: string;
+}
+
 const sourceTypeLabel = (type: SourceInvoiceSummary["type"]) => ({
   invoice: "Facture (type transcrit, à confirmer)", credit: "Avoir — aucune entrée stock", delivery: "Bon de livraison — à rapprocher",
 }[type]);
@@ -22,22 +30,24 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   const [retryRevision, setRetryRevision] = useState(0);
   const requestKey = `${refreshKey}:${retryRevision}`;
   const [invoices, setInvoices] = useState<SourceInvoiceSummary[]>([]);
-  const [selected, setSelected] = useState<SourceInvoiceDetail | null>(null);
-  const [selectedId, setSelectedId] = useState("");
+  const [selection, setSelection] = useState<SourceSelection | null>(null);
+  const [detailResult, setDetailResult] = useState<SourceDetailResult | null>(null);
+  const latestSelection = useRef<SourceSelection | null>(null);
+  const selectedId = selection?.id;
+  const currentDetail = detailResult?.selection === selection ? detailResult : null;
+  const selected = currentDetail?.detail ?? null;
+  const detailLoading = selection !== null && currentDetail?.requestKey !== requestKey;
+  const detailError = detailLoading ? "" : currentDetail?.error ?? "";
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(0);
   const [loadedRequestKey, setLoadedRequestKey] = useState("");
   const loading = loadedRequestKey !== requestKey;
   const initialLoading = loading && loadedRequestKey === "";
-  const [detailLoading, setDetailLoading] = useState(false);
   const [opening, setOpening] = useState(false);
   const [sourceConflictId, setSourceConflictId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [archiveError, setArchiveError] = useState("");
-  const [detailError, setDetailError] = useState("");
-  const requestId = useRef(0);
-  const selectedIdRef = useRef("");
   const archiveRetryButtonRef = useRef<HTMLButtonElement>(null);
   const archiveHeadingRef = useRef<HTMLHeadingElement>(null);
   const detailRetryButtonRef = useRef<HTMLButtonElement>(null);
@@ -55,39 +65,34 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
     }, (cause: unknown) => {
       if (active) { setArchiveError(cause instanceof Error ? cause.message : "Pièces indisponibles."); setLoadedRequestKey(requestKey); }
     });
-    if (selectedIdRef.current) {
-      const detailRequest = ++requestId.current;
-      const currentSelectedId = selectedIdRef.current;
-      getSourceInvoice(currentSelectedId).then((detail) => {
-        if (active && detailRequest === requestId.current && currentSelectedId === selectedIdRef.current) {
-          setSelected(detail); setDetailError("");
-        }
-      }, (cause: unknown) => {
-        if (active && detailRequest === requestId.current && currentSelectedId === selectedIdRef.current) {
-          setDetailError(cause instanceof Error ? cause.message : "Lecture impossible.");
-        }
-      });
-    }
     return () => { active = false; };
   }, [requestKey]);
 
-  const open = useCallback(async (id: string) => {
-    const currentRequest = ++requestId.current;
-    selectedIdRef.current = id;
-    setSelectedId(id);
-    setSelected(null);
-    setError("");
-    setDetailError("");
-    if (!id) { setDetailLoading(false); return; }
-    setDetailLoading(true);
-    try {
-      const detail = await getSourceInvoice(id);
-      if (currentRequest === requestId.current) setSelected(detail);
-    } catch (cause) {
-      if (currentRequest === requestId.current) setDetailError(cause instanceof Error ? cause.message : "Lecture impossible.");
-    } finally {
-      if (currentRequest === requestId.current) setDetailLoading(false);
+  useEffect(() => {
+    if (!selection) return;
+    let active = true;
+    getSourceInvoice(selection.id).then((detail) => {
+      if (active) setDetailResult({ selection, requestKey, detail, error: "" });
+    }, (cause: unknown) => {
+      if (active) setDetailResult((previous) => ({ selection, requestKey,
+        detail: previous?.selection === selection ? previous.detail : null,
+        error: cause instanceof Error ? cause.message : "Lecture impossible.",
+      }));
+    });
+    return () => { active = false; };
+  }, [selection, requestKey]);
+
+  useEffect(() => () => { latestSelection.current = null; }, []);
+
+  const open = useCallback((id: string, focusDetail = false) => {
+    if (focusDetail) {
+      sourceFocusPending.current = true;
+      sourceFocusBeforeNavigation.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     }
+    const nextSelection = { id };
+    latestSelection.current = nextSelection;
+    setSelection(nextSelection);
+    setError("");
   }, []);
 
   useEffect(() => {
@@ -123,27 +128,29 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   };
 
   const retryDetail = () => {
+    if (!selectedId) return;
     detailRetryFocusPending.current = document.activeElement === detailRetryButtonRef.current;
-    void open(selectedId);
+    open(selectedId);
   };
 
   useEffect(() => {
-    if (!sourceId) return;
-    sourceFocusPending.current = true;
-    sourceFocusBeforeNavigation.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    void open(sourceId);
+    if (sourceId) open(sourceId, true);
   }, [open, sourceId]);
 
   const resume = async () => {
-    if (!selected || opening || sourceConflict) return;
+    if (!selected || opening || sourceConflict || detailLoading) return;
     setOpening(true);
     setError("");
-    try { onOpenDraft(await createInvoiceDraftFromSource(selected.id)); }
+    try {
+      const draft = await createInvoiceDraftFromSource(selected.id);
+      if (latestSelection.current === selection) onOpenDraft(draft);
+    }
     catch (cause) {
+      if (latestSelection.current !== selection) return;
       if (cause instanceof ApiError && cause.details.code === "SOURCE_CHANGED") {
         setSourceConflictId(selected.id);
         detailRetryFocusPending.current = document.activeElement === resumeButtonRef.current;
-        void open(selected.id);
+        open(selected.id);
       } else setError(cause instanceof Error ? cause.message : "Brouillon indisponible.");
     }
     finally { setOpening(false); }
@@ -164,7 +171,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
       <p>Retrouvez une pièce, reprenez un brouillon ou consultez son rapprochement.</p>
     </div><div className="source-invoice-heading-actions">
       <span role="status" aria-busy={loading}>{loading ? "Chargement…" : currentArchiveError ? "Indisponible" : `${invoices.length} pièce${invoices.length === 1 ? "" : "s"}`}</span>
-      <Button variant="outline" onClick={onCreateManual}>Saisir manuellement</Button>
+      <Button variant="outline" disabled={opening} onClick={onCreateManual}>Saisir manuellement</Button>
     </div></div>
     <p>Une facture ne confirme pas une livraison. Vérifiez les produits et quantités reçus avant tout ajout au stock.</p>
     {error && <p role="alert">{error}</p>}
@@ -201,11 +208,8 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
             <tbody>{filtered.slice(page * 10, (page + 1) * 10).map((invoice) => <tr key={invoice.id}>
               <td>{invoice.date ?? "Non renseignée"}</td><th scope="row">{invoice.title}<small>{invoice.supplier}</small></th>
               <td>{invoice.invoiceStatus === "draft" ? "Brouillon" : invoice.invoiceStatus === "received" ? "Rapproché" : "À examiner"}</td>
-              <td><Button variant="outline" aria-label={`Consulter ${invoice.title}`} onClick={() => {
-                sourceFocusPending.current = true;
-                sourceFocusBeforeNavigation.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-                void open(invoice.id);
-              }}>{invoice.id === selectedId ? "Document ouvert" : "Consulter"}</Button></td>
+              <td><Button variant="outline" aria-label={`Consulter ${invoice.title}`} onClick={() => open(invoice.id, true)}>
+                {invoice.id === selectedId ? "Document ouvert" : "Consulter"}</Button></td>
             </tr>)}</tbody>
           </table>
         </div>
@@ -232,7 +236,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
           </ul></details>}
           <details><summary>Lire la transcription (date de travail)</summary><pre className="source-invoice-content">{selected.content}</pre></details>
           <Button ref={resumeButtonRef} type="button" onClick={() => void resume()}
-            disabled={sourceConflict} aria-disabled={opening || sourceConflict} aria-busy={opening}>
+            disabled={sourceConflict} aria-disabled={opening || sourceConflict || detailLoading} aria-busy={opening || detailLoading}>
             {opening ? "Ouverture…" : sourceConflict ? "Brouillon périmé" : selected.invoiceStatus === "draft" ? "Reprendre le brouillon" : selected.invoiceStatus === "received" ? "Voir la pièce rapprochée" :
               selected.type === "invoice" ? "Créer un brouillon corrigible" : "Consulter et classer la pièce"}
           </Button>
