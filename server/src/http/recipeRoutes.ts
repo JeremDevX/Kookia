@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { formatParisDate } from "../../../shared/parisDate.js";
+import { recipeCategories } from "../../../shared/recipeCategory.js";
 import { slotSchema } from "../../../shared/serviceOperations.js";
 import { createRecipe, getRecipes, recordProduction, updateRecipe } from "../application/workspace/recipeService.js";
 import { createRecipeCandidate, decideRecipeCandidate, getRecipeCandidates, updateRecipeCandidate } from "../application/workspace/recipeCandidateService.js";
@@ -17,7 +18,7 @@ const recipeIngredientSchema = z.object({ productId: z.string().trim().min(1).ma
   netQuantity: z.number().finite().min(0).max(1_000_000).multipleOf(.001).nullable().optional(),
 }).strict().refine(value => value.netQuantity == null || value.netQuantity <= value.quantity);
 const recipeValuesSchema = z.object({
-  name: z.string().trim().min(1).max(120), category: z.enum(["Plat", "Dessert", "Entrée", "Boisson"]),
+  name: z.string().trim().min(1).max(120), category: z.enum(recipeCategories),
   prepTime: z.number().int().min(0).max(10080), yieldPortions: z.number().int().min(1).max(10000),
   effectiveFrom: z.iso.date(), ingredients: z.array(recipeIngredientSchema).min(1).max(100),
   steps: z.array(z.string().trim().min(1).max(2000)).max(100).optional(),

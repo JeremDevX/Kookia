@@ -50,6 +50,25 @@ function candidate(name: string, productId: string, sourceDocumentId: string, un
     ingredients: [{ productId, quantity: unit === "L" ? 0.4 : 0.6, sourceDocumentId, sourceLineNumber }] };
 }
 
+it("keeps the drink category when saving and confirming a recipe candidate", async () => {
+  const { agent, restaurantId, supplierId } = await account("candidate-drink");
+  await prisma.restaurant.update({ where: { id: restaurantId }, data: { mode: "demo" } });
+  const lemonJuice = await product(agent, supplierId, "Jus de citron", "L");
+  const source = await sourceInvoice(restaurantId, "Jus de citron", "L");
+  const recipe = { name: "Citronnade", category: "Boisson" };
+  const { body: saved } = await agent.post("/api/workspace/recipe-candidates").send({
+    ...candidate(recipe.name, lemonJuice.id, source.id, "L"), ...recipe, operationId: randomUUID(),
+  }).expect(201);
+  const { body: list } = await agent.get("/api/workspace/recipe-candidates").expect(200);
+  expect(list.candidates).toContainEqual(expect.objectContaining({ id: saved.id, status: "pending", recipe: expect.objectContaining(recipe) }));
+
+  const { body: confirmed } = await agent.post(`/api/workspace/recipe-candidates/${saved.id}/decision`).send({
+    action: "confirm", expectedRevision: saved.revision, operationId: randomUUID(),
+  }).expect(200);
+  const { body: recipes } = await agent.get("/api/workspace/recipes").expect(200);
+  expect(recipes).toContainEqual(expect.objectContaining({ ...recipe, id: confirmed.recipeId }));
+});
+
 it("keeps recipe candidates hypothetical until an atomic, stock-neutral confirmation", async () => {
   const demo = await account("candidate-demo");
   const other = await account("candidate-other");

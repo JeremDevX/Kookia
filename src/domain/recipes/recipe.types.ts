@@ -1,3 +1,5 @@
+import type { RecipeCategory } from "../../../shared/recipeCategory";
+
 export interface RecipeIngredient {
   productId: string;
   productName: string;
@@ -22,7 +24,7 @@ interface RecipeVersion {
 export interface Recipe {
   id: string;
   name: string;
-  category: "Plat" | "Dessert" | "Entrée" | "Boisson";
+  category: RecipeCategory;
   prepTime: number;
   yieldPortions: number;
   revision: number;

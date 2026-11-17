@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { recipeCategories, type RecipeCategory } from "../../../../shared/recipeCategory.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
 import { createRecipeInTransaction, type RecipeValues } from "./recipeService.js";
@@ -13,7 +14,8 @@ interface RecipeCandidateIngredientInput {
   sourceDocumentId: string;
   sourceLineNumber: number;
 }
-export interface RecipeCandidateInput extends Omit<RecipeValues, "ingredients"> {
+export interface RecipeCandidateInput extends Omit<RecipeValues, "ingredients" | "category"> {
+  category: RecipeCategory;
   ingredients: RecipeCandidateIngredientInput[];
 }
 
@@ -29,7 +31,7 @@ const candidateIngredientSchema = z.object({ productId: z.string(), productName:
   evidence: evidenceSchema }).strict();
 const candidateDataSchema = z.object({ id: z.string().uuid(), status: z.enum(["pending", "confirmed", "rejected"]),
   recipeId: z.string().uuid().nullable(),
-  recipe: z.object({ name: z.string(), category: z.enum(["Entrée", "Plat", "Dessert"]), prepTime: z.number().int(),
+  recipe: z.object({ name: z.string(), category: z.enum(recipeCategories), prepTime: z.number().int(),
     yieldPortions: z.number().int(), effectiveFrom: z.iso.date() }).strict(),
   ingredients: z.array(candidateIngredientSchema).min(1),
 }).strict();
