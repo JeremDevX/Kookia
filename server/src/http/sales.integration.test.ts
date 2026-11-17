@@ -2,6 +2,8 @@ import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
+import { addCalendarDays } from "../../../shared/calendarDate.js";
+import { formatParisDate } from "../../../shared/parisDate.js";
 import { app } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
@@ -17,8 +19,6 @@ async function account() {
   await ensureWorkspace(result.body.user.id);
   return agent;
 }
-const parisToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
-  month: "2-digit", day: "2-digit" }).format(new Date());
 
 it("records, reads and corrects only sales of owner-created items", async () => {
   const owner = await account();
@@ -104,8 +104,8 @@ it("keeps service calendar edits simulated in demo workspaces", async () => {
   const restaurant = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: userId } });
   await prisma.restaurant.update({ where: { id: restaurant.id }, data: { mode: "demo" } });
 
-  const today = parisToday();
-  const yesterday = new Date(Date.parse(today) - 86_400_000).toISOString().slice(0, 10);
+  const today = formatParisDate();
+  const yesterday = addCalendarDays(today, -1);
   await prisma.serviceDay.create({ data: { restaurantId: restaurant.id, serviceDate: new Date(`${yesterday}T00:00:00.000Z`),
     status: "open", coverage: "partial", source: "recorded", actorId: userId } });
   const updated = await owner.put(`/api/workspace/sales/service-days/${yesterday}`)

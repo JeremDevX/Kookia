@@ -41,18 +41,20 @@ export async function getServiceCalendar(restaurantId: string, from: string, to:
     const daySales = sales.filter((sale) => sale.serviceDate.getTime() === timestamp);
     const recordedSales = daySales.filter((sale) => sale.source !== "demo_simulation");
     const allocations = recordedSales.map((sale) => qualifiedAllocation(sale, sale.serviceAllocation));
+    const allocationNeedsReview = allocations.some((entry) => entry.needsReview);
+    const hasIncompleteAllocation = allocationNeedsReview || allocations.some((entry) => entry.unallocatedQuantity > 0);
+    const unallocatedQuantity = allocations.reduce((sum, entry) => sum + entry.unallocatedQuantity, 0);
+    const excludedSimulationQuantity = daySales.filter((sale) => sale.source === "demo_simulation").reduce((sum, sale) => sum + sale.quantity, 0);
     for (const slot of serviceSlots) {
       const schedule = weekly.find((entry) => entry.weekday === currentDate.getUTCDay() && entry.slot === slot);
       const session = sessions.find((entry) => entry.serviceDate.getTime() === timestamp && entry.slot === slot);
       result.push({ serviceDate, slot, plannedOpen: session?.plannedOpen ?? Boolean(schedule),
         opensAt: schedule?.opensAt ?? null, closesAt: schedule?.closesAt ?? null, exceptional: Boolean(session),
-        coverage: session?.coverage === "complete" && allocations.some((entry) => entry.needsReview || entry.unallocatedQuantity > 0)
+        coverage: session?.coverage === "complete" && hasIncompleteAllocation
           ? "partial" : session?.coverage ?? "missing", actualCovers: session?.actualCovers ?? null,
         note: session?.note ?? "", revision: session?.revision ?? 0,
         soldQuantity: allocations.reduce((sum, entry) => sum + (slot === "lunch" ? entry.lunchQuantity : entry.dinnerQuantity), 0),
-        unallocatedQuantity: allocations.reduce((sum, entry) => sum + entry.unallocatedQuantity, 0),
-        allocationNeedsReview: allocations.some((entry) => entry.needsReview),
-        excludedSimulationQuantity: daySales.filter((sale) => sale.source === "demo_simulation").reduce((sum, sale) => sum + sale.quantity, 0) });
+        unallocatedQuantity, allocationNeedsReview, excludedSimulationQuantity });
     }
   }
   return result;

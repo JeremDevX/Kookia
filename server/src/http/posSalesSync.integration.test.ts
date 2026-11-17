@@ -2,6 +2,8 @@ import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
+import { addCalendarDays } from "../../../shared/calendarDate.js";
+import { formatParisDate } from "../../../shared/parisDate.js";
 import { app } from "./app.js";
 import { syncPosSales } from "../application/workspace/posSalesSyncService.js";
 import type { PosAdapter, PosSalesBatch } from "../integrations/posAdapter.js";
@@ -27,10 +29,10 @@ it("resumes bounded fixture batches, requires POS review, saves mappings and exc
   const other = await account();
   const pizza = await owner.agent.post("/api/workspace/sales/items").send({ name: "Pizza" }).expect(201);
   const soup = await owner.agent.post("/api/workspace/sales/items").send({ name: "Soupe" }).expect(201);
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-  const serviceDate = new Date(Date.parse(today) - 86_400_000).toISOString().slice(0, 10);
+  const today = formatParisDate();
+  const serviceDate = addCalendarDays(today, -1);
   const window = { from: serviceDate, to: serviceDate };
-  const outsideWindow = { from: new Date(Date.parse(today) - 40 * 86_400_000).toISOString().slice(0, 10), to: today };
+  const outsideWindow = { from: addCalendarDays(today, -40), to: today };
   const firstBatch: PosSalesBatch = { batchId: "fixture-page-one", nextCursor: "cursor-page-two", coverage: "partial", records: [
     { sourceRecordId: "pizza-sale-1", revision: 1, serviceDate, externalItemId: "pizza-code", itemLabel: "Pizza", quantity: 5, refunded: false },
     { sourceRecordId: "unknown-sale-1", revision: 1, serviceDate, externalItemId: "dessert-code", itemLabel: "Dessert du jour", quantity: 2, refunded: false },
@@ -59,7 +61,7 @@ it("resumes bounded fixture batches, requires POS review, saves mappings and exc
   expect(imported).toMatchObject({ status: "ok", coverage: "partial", provenance: "demo_simulation",
     recordCount: 3, candidateCount: 3, duplicateRecords: 0, replayed: false, nextCursor: "cursor-page-two" });
   await expect(syncPosSales(owner.restaurantId, owner.actorId, {
-    from: new Date(Date.parse(serviceDate) - 86_400_000).toISOString().slice(0, 10), to: serviceDate,
+    from: addCalendarDays(serviceDate, -1), to: serviceDate,
   }, adapter)).rejects.toMatchObject({ code: "POS_WINDOW_CONFLICT" });
   expect(requests.filter((entry) => entry.restaurantId === owner.restaurantId)).toHaveLength(2);
   const retries = await Promise.all([

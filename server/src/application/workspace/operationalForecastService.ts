@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import { createHash } from "node:crypto";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -18,9 +19,8 @@ import { forecastWeatherNotice } from "../../../../shared/forecastWeather.js";
 type Database = PrismaClient | Prisma.TransactionClient;
 const date = (value: string) => new Date(`${value}T00:00:00Z`);
 const iso = (value: Date) => value.toISOString().slice(0, 10);
-const offset = (value: string, n: number) => iso(new Date(Date.parse(value) + n * 86400000));
 export async function getOperationalForecast(restaurantId: string, fromDate: string, throughDate: string,
-  db: Database = prisma, asOfDate = offset(formatParisDate(), -1)): Promise<OperationalForecast> {
+  db: Database = prisma, asOfDate = addCalendarDays(formatParisDate(), -1)): Promise<OperationalForecast> {
   return (await getOperationalForecasts(restaurantId, fromDate, [throughDate], db, asOfDate)).get(throughDate)!;
 }
 
@@ -36,7 +36,7 @@ export async function getOperationalForecasts(restaurantId: string, fromDate: st
   }
   const requestedDates = new Set(throughDates);
   // Analysis window, not a limit on the restaurant's retained history.
-  const since = offset(asOfDate, -1095), knownBefore = new Date();
+  const since = addCalendarDays(asOfDate, -1095), knownBefore = new Date();
   const [restaurant, weekly, sessions, sales, menus] = await Promise.all([
     db.restaurant.findUniqueOrThrow({ where: { id: restaurantId }, select: { mode: true, hasTerrace: true } }),
     db.restaurantServiceSchedule.findMany({ where: { restaurantId } }),
@@ -111,7 +111,7 @@ export async function getOperationalForecasts(restaurantId: string, fromDate: st
     "Dispersion observée, pas un intervalle de confiance. Aucune précision terrain revendiquée.",
     "Fenêtre d'analyse de trois ans ; l'historique conservé n'est pas limité.", forecastWeatherNotice];
   const services: ForecastService[] = [], totals = new Map<string, ForecastIngredient>(), allBlockers: string[] = [];
-  for (let day = fromDate; day <= lastDate; day = offset(day, 1)) {
+  for (let day = fromDate; day <= lastDate; day = addCalendarDays(day, 1)) {
     for (const slot of serviceSlots) {
       const key = `${day}:${slot}`, session = futureSessions.get(key);
       const open = session?.plannedOpen ?? weekly.some(w => w.weekday === date(day).getUTCDay() && w.slot === slot);

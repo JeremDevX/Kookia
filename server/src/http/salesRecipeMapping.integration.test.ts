@@ -2,6 +2,8 @@ import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
+import { addCalendarDays } from "../../../shared/calendarDate.js";
+import { formatParisDate } from "../../../shared/parisDate.js";
 import { app } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
@@ -19,11 +21,7 @@ async function account() {
   return agent;
 }
 
-const parisDate = (offset: number) => {
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric",
-    month: "2-digit", day: "2-digit" }).format(new Date());
-  return new Date(Date.parse(today) + offset * 86_400_000).toISOString().slice(0, 10);
-};
+const parisDate = (offset: number) => addCalendarDays(formatParisDate(), offset);
 
 it("requires an explicit tenant-scoped dated mapping and preserves menu history", async () => {
   const owner = await account();
