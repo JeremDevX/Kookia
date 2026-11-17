@@ -15,7 +15,7 @@ it("opens preparation from the dashboard or an old document/history anchor", () 
 });
 
 it("keeps reviewed recommendations traceable in the final review without treating manual stocks as forecasts", () => {
-  const base = { id: "cart-id", productId: "oil", productName: "Huile", quantity: 0.5, source: "dashboard" as const };
+  const base = { id: "cart-id", productId: "oil", productName: "Huile", quantity: 0.5, unit: "L", source: "dashboard" as const };
   const [suggestion, manual] = createOrderRecommendationsFromCartItems([
     { ...base, purchaseSuggestionOperationId: "decision-id" }, { ...base, source: "stocks" },
   ]);

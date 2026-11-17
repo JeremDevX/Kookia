@@ -8,7 +8,6 @@ import StockCountModal from "../../components/stocks/StockCountModal";
 import { useCart } from "../../context/useCart";
 import { useProductsWithMutations } from "../../hooks/useProducts";
 import { getSuggestedOrderQuantity } from "../../domain/inventory/product.policies";
-import { createOrderRecommendationsFromCartItems } from "../orders/orderRecommendations";
 import type { MemberRole } from "./MemberShell";
 import type { Product } from "../../types";
 import "../../styles/Workspace.css";
@@ -30,7 +29,6 @@ function ChefOrders() {
     await addToCart({ id: `product-${product.id}`, productId: product.id, productName: product.name,
       quantity: getSuggestedOrderQuantity(product), unit: product.unit, source: "stocks" });
   };
-  const recommendations = createOrderRecommendationsFromCartItems(cartItems);
   const invalid = cartItems.some((item) => item.predictionId || !products.some((product) => product.id === item.productId));
   return <div className="member-page orders-container stocks-container workspace-page"><h1>Préparer une commande</h1>
     <p>Examinez votre sélection. La validation enregistre la commande sans l’envoyer au fournisseur.</p>
@@ -47,6 +45,6 @@ function ChefOrders() {
       <Button type="button" disabled={cartLoading || !!loadError || loading || !!error || invalid || cartItems.length === 0} onClick={() => setReview(true)}>Revoir la commande</Button>
     </section>
     {countProduct && <StockCountModal product={countProduct} isOpen onClose={() => setCountId(null)} onRefresh={refetch} onSave={recordCount} />}
-    {review && <OrderGenerator recommendations={recommendations} products={products} suppliers={suppliers} catalogLoading={loading} catalogError={error} onRetryCatalog={refetch} onClose={() => setReview(false)} onValidated={() => { void refreshCart(); setRevision((value) => value + 1); }} orderHref="/orders?view=receipts" />}
+    {review && <OrderGenerator initialCartItems={cartItems} products={products} suppliers={suppliers} catalogLoading={loading} catalogError={error} onRetryCatalog={refetch} onClose={() => setReview(false)} onValidated={() => { void refreshCart(); setRevision((value) => value + 1); }} orderHref="/orders?view=receipts" />}
   </div>;
 }

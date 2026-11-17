@@ -11,7 +11,6 @@ import SourceInvoiceArchive from "../components/dashboard/SourceInvoiceArchive";
 import { useCart } from "../context/useCart";
 import { useToast } from "../context/ToastContext";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
-import { createOrderRecommendationsFromCartItems } from "../features/orders/orderRecommendations";
 import type { Invoice } from "../services/invoiceService";
 import { createManualInvoiceDraft } from "../features/orders/invoiceDraft";
 import { invoiceReceiptFeedback } from "../features/orders/invoiceReceiptFeedback";
@@ -44,7 +43,6 @@ export default function Orders() {
     if (view === "prepare" && location.hash === "#selection") selectionHeadingRef.current?.focus();
   }, [view, location.hash]);
   const showingSelection = view === "prepare" && location.hash === "#selection";
-  const recommendations = createOrderRecommendationsFromCartItems(cartItems);
   const missingProduct = !cartError && cartItems.some((item) => !products.some((product) => product.id === item.productId));
   const hasExampleItem = !cartError && cartItems.some((item) => !!item.predictionId);
   const retryCart = () => {
@@ -106,7 +104,7 @@ export default function Orders() {
 
     <p className="orders-help"><Link to="/stocks">Consulter les stocks</Link> · <Link to="/analytics">Voir le bilan des achats réceptionnés</Link></p>
 
-    {reviewOpen && <OrderGenerator recommendations={recommendations} products={products} suppliers={suppliers}
+    {reviewOpen && <OrderGenerator initialCartItems={cartItems} products={products} suppliers={suppliers}
         catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
         onClose={() => setReviewOpen(false)}
         onValidated={() => { void refreshCart(); setHistoryRevision((value) => value + 1); setSuggestionsRevision((value) => value + 1); }} />}
