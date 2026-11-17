@@ -3,9 +3,10 @@ import type { Product, Supplier } from "../../types";
 import { getCatalog } from "../../services/productService";
 
 export const useInventoryCatalog = () => {
-  const [{ products, suppliers }, setCatalog] = useState<{ products: Product[]; suppliers: Supplier[] }>({
+  const [{ products, suppliers, loaded }, setCatalog] = useState<{ products: Product[]; suppliers: Supplier[]; loaded: boolean }>({
     products: [],
     suppliers: [],
+    loaded: false,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -18,7 +19,7 @@ export const useInventoryCatalog = () => {
     setError(null);
     try {
       const catalog = await request;
-      if (activeRead.current === request) setCatalog(catalog);
+      if (activeRead.current === request) setCatalog({ ...catalog, loaded: true });
       return true;
     } catch (err) {
       if (activeRead.current === request) {
@@ -46,6 +47,7 @@ export const useInventoryCatalog = () => {
   return {
     products,
     suppliers,
+    loaded,
     loading,
     error,
     refetch,

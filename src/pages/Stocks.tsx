@@ -30,7 +30,7 @@ const Stocks: React.FC = () => {
     searchParams.get("returnAnchor"));
   const { addToast } = useToast();
   const { addToCart, loading: cartLoading } = useCart();
-  const { products, suppliers, updateStock, updateProduct, recordCount, addProduct, loading, error, refetch } =
+  const { products, suppliers, updateStock, updateProduct, recordCount, addProduct, loaded, loading, error, refetch } =
     useProductsWithMutations();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const { search: searchTerm, category: categoryFilter, view, advanced: advancedFilters } = readStockFilters(searchParams);
@@ -208,7 +208,7 @@ const Stocks: React.FC = () => {
         <p>Transcrivez les ventes depuis votre ticket, puis vérifiez-les avant leur enregistrement.</p>
         <Link className="btn btn-outline" to="/sales#sales-ticket-title">Transcrire un Ticket Z</Link>
       </section>}
-      {view !== "count" && !loading && !error && <StockLotsAndWaste products={products} onSaved={async () => { await refetch(); }} />}
+      {view !== "count" && loaded && <StockLotsAndWaste products={products} catalogAvailable={!loading && !error} onSaved={refetch} />}
       {selectedProduct && <ProductDetail
         key={selectedProduct.id}
         product={selectedProduct}

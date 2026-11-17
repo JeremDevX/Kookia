@@ -1,5 +1,5 @@
 import "./StockLotsAndWaste.css";
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { apiRequest } from "../../config/api";
 import { getProductions, type Production } from "../../services/recipeService";
 import type { Product } from "../../types";
@@ -9,40 +9,78 @@ interface Lot { id: string; productId: string; receivedAt: string | null; expire
 interface Lots { lots: Lot[]; unagedStock: Array<{ productId: string; productName: string; quantity: number; unit: string }> }
 interface Waste { id: string; kind: string; quantity: number; unit: string; serviceDate: string; serviceSlot: string | null; note: string; stockMovementId: string | null; cost: number | null }
 const labels: Record<string, string> = { raw: "Matière brute", preparation: "Déchet de préparation", unsold: "Invendu", plate_return: "Retour d’assiette" };
-export default function StockLotsAndWaste({ products, onSaved }: { products: Product[]; onSaved: () => Promise<void> }) {
+export default function StockLotsAndWaste({ products, catalogAvailable, onSaved }: {
+  products: Product[];
+  catalogAvailable: boolean;
+  onSaved: () => Promise<boolean>;
+}) {
   const [data, setData] = useState<Lots>({ lots: [], unagedStock: [] });
   const [waste, setWaste] = useState<Waste[]>([]);
   const [productions, setProductions] = useState<Production[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [busy, setBusy] = useState(false);
   const [kind, setKind] = useState("raw");
   const [productId, setProductId] = useState("");
   const [productionId, setProductionId] = useState("");
+  const heading = useRef<HTMLHeadingElement>(null);
   const cooked = kind === "unsold" || kind === "plate_return";
   const linkedPreparation = kind === "preparation" && productionId !== "";
   const product = products.find((row) => row.id === productId);
-  const load = async () => {
-    const [lots, losses, prepared] = await Promise.all([apiRequest<Lots>("/workspace/stock-lots"), apiRequest<Waste[]>("/workspace/waste"), getProductions()]);
-    setData(lots); setWaste(losses); setProductions(prepared.filter((row) => row.kind === "production"));
-  };
-  useEffect(() => { void load().catch((cause: unknown) => setError(cause instanceof Error ? cause.message : "Chargement impossible.")); }, []);
+  const submitDisabled = busy || loading || Boolean(loadError) || !catalogAvailable;
+  const load = useCallback(async (signal?: AbortSignal) => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const [lots, losses, prepared] = await Promise.all([
+        apiRequest<Lots>("/workspace/stock-lots", { signal }), apiRequest<Waste[]>("/workspace/waste", { signal }), getProductions(signal),
+      ]);
+      if (!signal?.aborted) {
+        setData(lots); setWaste(losses); setProductions(prepared.filter((row) => row.kind === "production"));
+      }
+    } catch {
+      if (!signal?.aborted) setLoadError("Lots et pertes indisponibles.");
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
   const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); setBusy(true); setError("");
-    const fields = new FormData(event.currentTarget);
+    event.preventDefault();
+    if (submitDisabled) return;
+    setBusy(true); setError(""); setNotice("");
+    const form = event.currentTarget;
+    const fields = new FormData(form);
     try {
       await apiRequest("/workspace/waste", { method: "POST", body: JSON.stringify({ operationId, kind,
         serviceDate: fields.get("date"), serviceSlot: fields.get("slot") || null, quantity: Number(fields.get("quantity")),
         avoidability: fields.get("avoidability"), unit: cooked ? "portion" : product?.unit,
         ...(cooked ? { productionId } : { productId, ...(linkedPreparation ? { productionId } : {}), ...(fields.get("lot") ? { lotId: fields.get("lot") } : {}) }), note: fields.get("note") || "" }) });
       setOperationId(crypto.randomUUID());
+      form.reset();
+      setKind("raw");
+      setProductId("");
+      setProductionId("");
+      setNotice("Perte enregistrée.");
       await Promise.all([load(), onSaved()]);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Perte non enregistrée."); }
     finally { setBusy(false); }
   };
   return <section aria-labelledby="lots-waste-title" className="stock-lots-waste">
-    <h2 id="lots-waste-title">Lots et pertes</h2>
+    <h2 ref={heading} id="lots-waste-title" tabIndex={-1}>Lots et pertes</h2>
     <p>Les échéances renseignées les plus proches sont proposées en premier (FEFO). Un âge ou une échéance inconnue n’est pas estimé.</p>
+    {loading && <p role="status">Chargement des lots et des pertes…</p>}
+    {loadError && <div role="alert"><p>{loadError}</p><Button type="button" variant="outline" onClick={() => {
+      heading.current?.focus({ preventScroll: true });
+      void load();
+    }}>Réessayer</Button></div>}
     <ul>{data.lots.map((lot) => <li key={lot.id}>
       {products.find((row) => row.id === lot.productId)?.name ?? lot.productId} : {lot.remainingQuantity} {products.find((row) => row.id === lot.productId)?.unit} · reçu {lot.receivedAt ?? "date inconnue"} · échéance {lot.expiresAt ?? "inconnue"} · coût {lot.unitCost == null ? "inconnu" : `${lot.unitCost} € / unité`}
       {lot.allocations.length > 0 && <details><summary>Sorties tracées</summary><ul>{lot.allocations.map((entry) => <li key={entry.stockMovementId}>{entry.quantity} · mouvement {entry.stockMovementId}</li>)}</ul></details>}
@@ -65,9 +103,10 @@ export default function StockLotsAndWaste({ products, onSaved }: { products: Pro
       <label>Qualification<select name="avoidability"><option value="avoidable">Gaspillage évitable</option><option value="inedible">Déchet non comestible</option></select></label>
       <label>Note<input name="note" maxLength={1000} /></label>
       <p>{cooked || linkedPreparation ? "Les ingrédients ont déjà été déduits en production : aucune nouvelle sortie de matières." : "Cette déclaration déduit la matière du stock et trace les lots consommés."}</p>
-      <Button type="submit" disabled={busy}>{busy ? "Enregistrement…" : "Confirmer la perte"}</Button>
+      <Button type="submit" disabled={submitDisabled}>{busy ? "Enregistrement…" : "Confirmer la perte"}</Button>
     </form>
     {error && <p role="alert">{error}</p>}
+    {notice && <p role="status">{notice}</p>}
     <h3>Déclarations récentes</h3>
     <ul>{waste.slice(0, 20).map((row) => <li key={row.id}>{row.serviceDate} · {row.serviceSlot === "lunch" ? "midi" : row.serviceSlot === "dinner" ? "soir" : "non ventilé"} · {labels[row.kind]} : {row.quantity} {row.unit} · {row.stockMovementId ? "matière déduite" : "sans nouvelle déduction"} · {row.cost == null ? "non valorisé" : `${row.cost.toFixed(2)} € (coût des lots)`} {row.note}</li>)}</ul>
   </section>;
