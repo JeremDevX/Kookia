@@ -18,9 +18,11 @@ it("keeps keyboard focus inside when a fieldset disables its controls", async ()
   const listeners = new Map<string, EventListener>();
   class Element {
     disabled: boolean;
+    tabIndex = 0;
     constructor(disabled = false) { this.disabled = disabled; }
     matches(selector: string) { return selector === ":disabled" && this.disabled; }
-    getAttribute() { return null; }
+    closest() { return null; }
+    getClientRects() { return [{}]; }
     focus() { fakeDocument.activeElement = this; }
   }
   const first = new Element();
@@ -38,13 +40,12 @@ it("keeps keyboard focus inside when a fieldset disables its controls", async ()
     removeEventListener: (name: string) => listeners.delete(name),
   };
   let cleanup: (() => void) | undefined;
-  let refCount = 0;
   vi.stubGlobal("document", fakeDocument);
   vi.stubGlobal("HTMLElement", Element);
   vi.resetModules();
   vi.doMock("react", async (importOriginal) => ({
     ...await importOriginal<typeof import("react")>(),
-    useRef: () => ({ current: refCount++ === 0 ? modal : null }),
+    useRef: () => ({ current: modal }),
     useId: () => "title",
     useEffectEvent: (callback: () => void) => callback,
     useLayoutEffect: (effect: () => () => void) => { cleanup = effect(); },

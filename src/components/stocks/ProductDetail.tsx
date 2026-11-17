@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useEffectEvent, useRef } from "react";
+import React, { useState, useRef } from "react";
 import Button from "../common/Button";
 import Input from "../common/Input";
 import {
@@ -6,20 +6,17 @@ import {
   Package,
   Truck,
   AlertTriangle,
-  History,
   Phone,
   ShoppingCart,
   Pencil,
 } from "lucide-react";
-import type { Product, StockCountSummary, Supplier } from "../../types";
-import { useToast } from "../../context/ToastContext";
-import { ApiError } from "../../config/api";
-import { useAuth } from "../../features/auth/context/AuthContext";
-import { getInventoryWorkspace } from "../../services/inventorySessionService";
-import { readPendingAdjustment, submitAdjustment } from "../../features/inventory/pendingAdjustment";
+import type { Product, Supplier } from "../../types";
 import { getSuggestedOrderQuantity } from "../../domain/inventory/product.policies";
-
-import { getProductStockCounts, getStockMovements, type StockMovement, type NewStockCount, type ProductEdit, type StockCountResult, type StockAdjustment } from "../../services/productService";
+import type { NewStockCount, ProductEdit, StockCountResult, StockAdjustment } from "../../services/productService";
+import { useDialogFocus } from "../common/useDialogFocus";
+import { useProductAdjustment } from "./useProductAdjustment";
+import { useProductHistory } from "./useProductHistory";
+import ProductMovementHistory from "./ProductMovementHistory";
 import EditProductModal from "./EditProductModal";
 import StockCountModal from "./StockCountModal";
 import StockVerificationSummary from "./StockVerificationSummary";
@@ -29,7 +26,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "./ProductDetail.css";
 
 interface ProductDetailProps {
-  product: Product | null;
+  product: Product;
   focusedMovementId: string | null;
   returnHref?: string;
   onClose: () => void;
@@ -39,14 +36,6 @@ interface ProductDetailProps {
   onRefresh: () => Promise<boolean>;
   suppliers: Supplier[];
 }
-
-const movementLabel = (reason: string) => ({
-  loss: "Perte", initial: "Stock initial", receipt: "Réception",
-  invoice_import_demo: "Entrée depuis une transcription", simulated_consumption: "Sortie non rapprochée",
-  simulated_unit_rounding: "Correction d’unité non rapprochée", simulation_opening: "Stock de départ à vérifier",
-  simulation_restock: "Réapprovisionnement à vérifier", simulation_loss: "Perte estimée à vérifier",
-  production: "Production", stock_count: "Écart de comptage",
-}[reason] ?? "Ajustement");
 
 const ProductDetail: React.FC<ProductDetailProps> = ({
   product,
@@ -59,109 +48,17 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
   onRefresh,
   suppliers,
 }) => {
-  const { addToast } = useToast();
-  const { user } = useAuth();
-  const [restaurantId, setRestaurantId] = useState("");
-  const [pendingAdjustment, setPendingAdjustment] = useState<StockAdjustment | null>(null);
-  const [adjustmentError, setAdjustmentError] = useState("");
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const [movements, setMovements] = useState<StockMovement[]>([]);
-  const [movementsLoaded, setMovementsLoaded] = useState(false);
-  const [stockCounts, setStockCounts] = useState<StockCountSummary[]>([]);
-  const [historyError, setHistoryError] = useState("");
-  const [countHistoryError, setCountHistoryError] = useState("");
-  const [movementReloadRevision, setMovementReloadRevision] = useState(0);
-  const [saving, setSaving] = useState(false);
-  const [adjustReason, setAdjustReason] = useState<"adjustment" | "loss">("adjustment");
-  const [showAdjustModal, setShowAdjustModal] = useState(false);
-  const [adjustAmount, setAdjustAmount] = useState("");
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showCountModal, setShowCountModal] = useState(false);
+  const [childDialog, setChildDialog] = useState<"edit" | "count" | null>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
-  const focusedMovementRef = useRef<HTMLDivElement>(null);
-  const movementHeadingRef = useRef<HTMLHeadingElement>(null);
-  const movementRetryButtonRef = useRef<HTMLButtonElement>(null);
-  const movementRetryFocusPending = useRef(false);
-  const closeFromKeyboard = useEffectEvent(() => {
-    if (!showEditModal && !showCountModal) onClose();
-  });
-  const productId = product?.id;
-  useEffect(() => {
-    if (!productId || !user) return;
-    let active = true;
-    void getInventoryWorkspace().then(({ restaurantId: id }) => {
-      if (!active) return;
-      const pending = readPendingAdjustment(user.id, id, productId);
-      setRestaurantId(id); setPendingAdjustment(pending);
-    }).catch(() => { if (active) setAdjustmentError("Impossible de vérifier un ajustement en attente. Rechargez la page."); });
-    return () => { active = false; };
-  }, [productId, user]);
+  useDialogFocus(drawerRef, true, onClose);
 
-  useEffect(() => {
-    if (!productId) return;
-    const previous = document.activeElement;
-    const drawer = drawerRef.current;
-    drawer?.querySelector<HTMLButtonElement>(".close-btn")?.focus();
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeFromKeyboard();
-      if (event.key !== "Tab" || !drawer) return;
-      const items = Array.from(drawer.querySelectorAll<HTMLElement>('button:not(:disabled), input, a[href]'));
-      const first = items[0]; const last = items.at(-1);
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-    };
-    document.addEventListener("keydown", handleKey);
-    return () => { document.removeEventListener("keydown", handleKey); if (previous instanceof HTMLElement) previous.focus(); };
-  }, [productId]);
-
-  useEffect(() => {
-    if (!productId) return;
-    let active = true;
-    setMovementsLoaded(false);
-    setHistoryError("");
-    getStockMovements(productId).then((data) => { if (active) { setMovements(data); setHistoryError(""); setMovementsLoaded(true); } }, () => {
-      if (active) { setHistoryError("Historique indisponible."); setMovementsLoaded(true); }
-    });
-    return () => { active = false; };
-  }, [productId, product?.currentStock, movementReloadRevision]);
-
-  useEffect(() => {
-    if (!focusedMovementId || !movementsLoaded || !focusedMovementRef.current) return;
-    focusedMovementRef.current.scrollIntoView({ block: "center" });
-    focusedMovementRef.current.focus();
-  }, [focusedMovementId, movements, movementsLoaded]);
-
-  useEffect(() => {
-    if (!movementsLoaded || !movementRetryFocusPending.current) return;
-    movementRetryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
-    if (historyError) movementRetryButtonRef.current?.focus();
-    else if (focusedMovementId && focusedMovementRef.current) focusedMovementRef.current.focus();
-    else movementHeadingRef.current?.focus();
-  }, [focusedMovementId, historyError, movementsLoaded]);
-
-  useEffect(() => {
-    if (!productId) return;
-    let active = true;
-    getProductStockCounts(productId).then((data) => { if (active) { setStockCounts(data); setCountHistoryError(""); } }, () => { if (active) setCountHistoryError("Historique des comptages indisponible."); });
-    return () => { active = false; };
-  }, [productId, product?.stockRevision]);
-
-  if (!product) return null;
-
+  const { movements, movementsLoaded, historyError, reloadMovements, stockCounts, countHistoryError, recordCount } =
+    useProductHistory(product, onRecordCount);
+  const { pendingAdjustment, adjustmentError, adjustReason, adjustAmount, setAdjustAmount, reportLoss, adjustStock, adjustmentDisabled } =
+    useProductAdjustment(product, onAdjustStock, onRefresh);
   const supplier = suppliers.find((item) => item.id === product.supplierId);
-
-  const handleRecordCount = async (productId: string, count: NewStockCount) => {
-    const result = await onRecordCount(productId, count);
-    setStockCounts((previous) => [result.count, ...previous.filter((item) => item.id !== result.count.id)]);
-    return result;
-  };
-
-  const retryMovementHistory = () => {
-    movementRetryFocusPending.current = document.activeElement === movementRetryButtonRef.current;
-    setMovementReloadRevision((revision) => revision + 1);
-  };
 
   const handleContactSupplier = () => {
     if (supplier?.phone) window.location.href = `tel:${supplier.phone.replace(/[^+0-9]/g, "")}`;
@@ -173,45 +70,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
     if (saved) { onClose(); navigate("/orders#selection"); }
   };
 
-  const handleReportLoss = () => {
-    setAdjustReason("loss");
-    setAdjustAmount("");
-    setShowAdjustModal(true);
-  };
-
-  const handleAdjustStock = async () => {
-    if (saving || !user || !restaurantId) return;
-    if (!pendingAdjustment && !showAdjustModal) { setAdjustReason("adjustment"); setShowAdjustModal(true); return; }
-    const normalizedAmount = adjustAmount.trim().replace(",", ".");
-    const amount = Number(normalizedAmount);
-    const delta = adjustReason === "loss" ? -Math.abs(amount) : amount;
-    if (!pendingAdjustment && (!/^[+-]?(?:\d+(?:\.\d{1,3})?|\.\d{1,3})$/.test(normalizedAmount) || !Number.isFinite(delta) || delta === 0 || Math.abs(delta) > 1_000_000)) {
-      addToast("info", "Ajustement invalide", "Entrez une quantité non nulle, de 3 décimales au maximum (ex. +10 ou -2,5).");
-      return;
-    }
-    if (!pendingAdjustment && product.currentStock + delta < 0) {
-      addToast("info", "Ajustement invalide", "La quantité retirée dépasse le stock disponible.");
-      return;
-    }
-    const input = pendingAdjustment ?? { operationId: crypto.randomUUID(), delta, reason: adjustReason, expectedStockRevision: product.stockRevision, expectedUnit: product.unit };
-    setSaving(true); setAdjustmentError("");
-    try {
-      await submitAdjustment(user.id, restaurantId, product.id, input, !!pendingAdjustment, () => onAdjustStock(product.id, input, restaurantId));
-      setPendingAdjustment(null);
-      addToast("success", "Stock ajusté", `${product.name}: ${input.delta > 0 ? "+" : ""}${input.delta} ${product.unit}`);
-      setShowAdjustModal(false); setAdjustAmount("");
-    } catch (error) {
-      try { setPendingAdjustment(readPendingAdjustment(user.id, restaurantId, product.id)); }
-      catch { setAdjustmentError("Impossible de vérifier l’ajustement. Consultez l’historique avant de continuer."); return; }
-      setAdjustmentError(error instanceof Error ? error.message : "Impossible de vérifier l’ajustement.");
-      if (error instanceof ApiError && error.details.code === "STOCK_CHANGED") await onRefresh();
-    } finally { setSaving(false); }
-  };
-
   return (
     <>
       <div className="drawer-backdrop" onClick={onClose} />
-      <div className="product-drawer" ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="product-drawer-title">
+      <div className="product-drawer" ref={drawerRef} role="dialog" aria-modal="true" aria-labelledby="product-drawer-title" tabIndex={-1}>
         <header className="drawer-header">
           <div>
             <span className="drawer-subtitle">Stock et mouvements</span>
@@ -223,7 +85,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
         </header>
 
         <div className="drawer-content">
-          <StockVerificationSummary product={product} onCount={() => setShowCountModal(true)} />
+          <StockVerificationSummary product={product} onCount={() => setChildDialog("count")} />
 
           <section className="drawer-section">
             <h3 className="section-heading">Recettes avec ce produit</h3>
@@ -234,7 +96,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           <section className="drawer-section">
             <div className="flex items-center justify-between gap-3"><h3 className="section-heading">
               <Package size={18} /> Quantités et prix
-            </h3><Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setShowEditModal(true)}>Modifier la fiche</Button></div>
+            </h3><Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setChildDialog("edit")}>Modifier la fiche</Button></div>
             <div className="info-grid">
               <div className="info-item">
                 <span className="label">Catégorie</span>
@@ -298,7 +160,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
 
           {pendingAdjustment && <p role="alert">Un ajustement de {pendingAdjustment.delta} {pendingAdjustment.expectedUnit} ({pendingAdjustment.reason === "loss" ? "perte" : "correction"}) reste à vérifier. Reprenez-le avant toute nouvelle saisie.</p>}
           {adjustmentError && <p role="alert">{adjustmentError}</p>}
-          {showAdjustModal && !pendingAdjustment && (
+          {adjustReason && !pendingAdjustment && (
             <section className="drawer-section">
               <p role="status">Motif : {adjustReason === "loss" ? "perte déclarée" : "correction d'inventaire"}. Ce mouvement sera enregistré dans l'historique.</p>
               <Input id="stock-adjustment" type="text" inputMode="decimal"
@@ -308,49 +170,25 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
             </section>
           )}
 
-          <section className="drawer-section">
-            <h3 ref={movementHeadingRef} className="section-heading" tabIndex={-1}>
-              <History size={18} /> Mouvements de stock
-            </h3>
-            <div className="history-list">
-              {historyError ? <div role="alert"><p>{historyError} {returnHref &&
-                <Link to={returnHref}>Retour au Bilan (même période)</Link>}</p>
-                <Button ref={movementRetryButtonRef} type="button" variant="outline" onClick={retryMovementHistory}>Réessayer</Button></div>
-                : !movementsLoaded ? <p role="status">Chargement de l’historique des mouvements…</p>
-                  : movements.length === 0 ? <p>Aucun mouvement enregistré.</p> : movements.map((movement) => (
-                <div className="history-item" id={`stock-movement-${movement.id}`} key={movement.id} tabIndex={-1}
-                  ref={movement.id === focusedMovementId ? focusedMovementRef : undefined}>
-                  <span className="date">{new Date(movement.createdAt).toLocaleDateString("fr-FR")}</span>
-                  <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {product.unit} ({movementLabel(movement.reason)})</span>
-                  {movement.sourceDocumentId && <Link to={`/orders?source=${encodeURIComponent(movement.sourceDocumentId)}#invoices`}>Ouvrir la pièce source</Link>}
-                  {movement.id === focusedMovementId && returnHref &&
-                    <Link to={returnHref}>Retour au Bilan (même période)</Link>}
-                </div>
-              ))}
-              {focusedMovementId && movementsLoaded && !historyError && !movements.some((movement) => movement.id === focusedMovementId) &&
-                <p role="status">Ce mouvement n’est pas présent dans l’historique de ce produit. {returnHref &&
-                  <Link to={returnHref}>Retour au Bilan (même période)</Link>}</p>}
-            </div>
-          </section>
-
-
+          <ProductMovementHistory unit={product.unit} focusedMovementId={focusedMovementId} returnHref={returnHref}
+            movements={movements} movementsLoaded={movementsLoaded} historyError={historyError} onRetry={reloadMovements} />
         </div>
 
         <footer className="drawer-footer">
           <Button
             variant="danger"
             icon={<AlertTriangle size={16} />}
-            onClick={handleReportLoss} disabled={saving || !!pendingAdjustment || !restaurantId}
+            onClick={reportLoss} disabled={adjustmentDisabled || !!pendingAdjustment}
           >
             Signaler une perte
           </Button>
-          <Button variant="secondary" onClick={handleAdjustStock} disabled={saving || !restaurantId}>
-            {pendingAdjustment ? "Vérifier l’ajustement" : showAdjustModal ? "Enregistrer l’ajustement" : "Ajuster le stock"}
+          <Button variant="secondary" onClick={adjustStock} disabled={adjustmentDisabled}>
+            {pendingAdjustment ? "Vérifier l’ajustement" : adjustReason ? "Enregistrer l’ajustement" : "Ajuster le stock"}
           </Button>
         </footer>
       </div>
-      <EditProductModal product={product} suppliers={suppliers} isOpen={showEditModal} onClose={() => setShowEditModal(false)} onSave={onUpdateProduct} />
-      <StockCountModal product={product} isOpen={showCountModal} onClose={() => setShowCountModal(false)} onRefresh={onRefresh} onSave={handleRecordCount} />
+      <EditProductModal product={product} suppliers={suppliers} isOpen={childDialog === "edit"} onClose={() => setChildDialog(null)} onSave={onUpdateProduct} />
+      <StockCountModal product={product} isOpen={childDialog === "count"} onClose={() => setChildDialog(null)} onRefresh={onRefresh} onSave={recordCount} />
     </>
   );
 };

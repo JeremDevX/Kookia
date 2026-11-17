@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--number-50);
+  z-index: var(--number-51);
   animation: fadeIn var(--unit-0_25s) ease-out;
 }
 

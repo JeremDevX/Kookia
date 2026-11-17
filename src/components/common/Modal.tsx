@@ -1,5 +1,6 @@
-import React, { useEffectEvent, useId, useLayoutEffect, useRef } from "react";
+import React, { useId, useRef } from "react";
 import { X } from "lucide-react";
+import { useDialogFocus } from "./useDialogFocus";
 import "./Modal.css";
 
 interface ModalProps {
@@ -11,29 +12,6 @@ interface ModalProps {
   width?: "sm" | "md" | "lg";
 }
 
-let openModalCount = 0;
-let previousBodyOverflow: string | null = null;
-
-const lockBodyScroll = () => {
-  if (openModalCount === 0) {
-    previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-  }
-
-  openModalCount += 1;
-};
-
-const unlockBodyScroll = () => {
-  if (openModalCount > 0) {
-    openModalCount -= 1;
-  }
-
-  if (openModalCount === 0) {
-    document.body.style.overflow = previousBodyOverflow ?? "";
-    previousBodyOverflow = null;
-  }
-};
-
 const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -43,86 +21,8 @@ const Modal: React.FC<ModalProps> = ({
   width = "md",
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
-  const closeFromKeyboard = useEffectEvent(() => { if (!closeDisabled) onClose(); });
-
-  useLayoutEffect(() => {
-    if (!isOpen) return;
-
-    const getFocusableElements = () => {
-      if (!modalRef.current) return [];
-
-      const focusableSelector = [
-        'a[href]',
-        'button:not([disabled])',
-        'textarea:not([disabled])',
-        'input:not([disabled])',
-        'select:not([disabled])',
-        '[tabindex]:not([tabindex="-1"])',
-      ].join(", ");
-
-      return Array.from(
-        modalRef.current.querySelectorAll<HTMLElement>(focusableSelector),
-      ).filter(
-        (element) =>
-          !element.matches(":disabled") &&
-          element.getAttribute("aria-hidden") !== "true",
-      );
-    };
-
-    previouslyFocusedElementRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-
-    const focusInitialElement = () => {
-      const focusableElements = getFocusableElements();
-      const firstFocusableElement = focusableElements[0];
-      (firstFocusableElement ?? modalRef.current)?.focus();
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        closeFromKeyboard();
-        return;
-      }
-
-      if (e.key !== "Tab") return;
-
-      const focusableElements = getFocusableElements();
-      if (focusableElements.length === 0) {
-        e.preventDefault();
-        modalRef.current?.focus();
-        return;
-      }
-
-      const firstFocusableElement = focusableElements[0];
-      const lastFocusableElement = focusableElements[focusableElements.length - 1];
-      const activeElement = document.activeElement;
-
-      if (!modalRef.current?.contains(activeElement)) {
-        e.preventDefault();
-        (e.shiftKey ? lastFocusableElement : firstFocusableElement).focus();
-      } else if (!e.shiftKey && activeElement === lastFocusableElement) {
-        e.preventDefault();
-        firstFocusableElement.focus();
-      } else if (e.shiftKey && activeElement === firstFocusableElement) {
-        e.preventDefault();
-        lastFocusableElement.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    lockBodyScroll();
-    focusInitialElement();
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      unlockBodyScroll();
-      previouslyFocusedElementRef.current?.focus();
-    };
-  }, [isOpen]);
+  useDialogFocus(modalRef, isOpen, onClose, closeDisabled);
 
   if (!isOpen) return null;
 
