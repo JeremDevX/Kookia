@@ -360,9 +360,13 @@ fournisseur ni mouvement de stock n'est déclenché par ces propositions.
 
 La page **Plus → Historique** (/history) appelle la route tenant-scopée
 de lecture seule GET /api/workspace/timeline, sans borne de durée et avec une
-coupe « Connu au ». L'API signale les réponses denses et limite chaque type de
-ligne à 1 501 lignes lues, puis la réponse à 5 000 événements ; l'interface
-invite alors à resserrer la période. Chaque événement sépare date d'effet, date à laquelle
+coupe « Connu au ». L’interface charge 20 événements à la fois et transmet la
+recherche au serveur. L’API accepte `limit` (1 à 100), `q` et `cursor` et fournit
+`nextCursor` tant que la lecture peut reprendre. Une page de recherche peut être
+vide avec un curseur si le serveur a parcouru un lot sans trouver de résultat.
+L’interface poursuit alors la recherche. Un appel sans ces paramètres conserve
+la réponse historique plafonnée à 5 000 événements avec l’indicateur `truncated`.
+Chaque événement sépare date d'effet, date à laquelle
 son état est connu et date d'enregistrement ; les provenances affichées sont
 pièce source, saisie, hors bilan, à confirmer ou non renseigné. Les statuts
 techniques de provenance restent internes. Les pièces sont réduites côté SQL

@@ -4,7 +4,6 @@ import { Link, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
 import { getTimeline, type TimelineEvent, type TimelineProvenance, type TimelineResult } from "../services/timelineService";
 import { formatLocalISODate, isValidISODate } from "../utils/date";
-import { filterTimelineEvents, TIMELINE_VISIBLE_BATCH_SIZE } from "./timelineSelectors";
 import { watchTimelineToday } from "./timelineToday";
 import "../styles/Workspace.css";
 import "./Timeline.css";
@@ -16,6 +15,15 @@ const provenanceLabels: Record<TimelineProvenance, string> = {
   assumption: "À confirmer",
   unknown: "Non renseigné",
 };
+const SEARCH_MAX_LENGTH = 120;
+
+interface TimelineRequestState {
+  key: string;
+  result?: TimelineResult;
+  error?: string;
+  loadingMore?: boolean;
+  moreError?: boolean;
+}
 
 function displayDate(value: string | null, includeTime = false) {
   if (!value) return "Date inconnue";
@@ -51,13 +59,13 @@ export default function Timeline() {
   const [to, setTo] = useState(() => dateParam(searchParams, "to", today));
   const [asOf, setAsOf] = useState(() => dateParam(searchParams, "asOf", today));
   const [requestAttempt, setRequestAttempt] = useState(0);
-  const [searchDraft, setSearchDraft] = useState(() => searchParams.get("qDraft") ?? searchParams.get("q") ?? "");
-  const [search, setSearch] = useState(() => searchParams.get("q")?.trim() ?? "");
-  const [visibleCount, setVisibleCount] = useState(TIMELINE_VISIBLE_BATCH_SIZE);
+  const [searchDraft, setSearchDraft] = useState(() => (searchParams.get("qDraft") ?? searchParams.get("q") ?? "").slice(0, SEARCH_MAX_LENGTH));
+  const [search, setSearch] = useState(() => searchParams.get("q")?.trim().slice(0, SEARCH_MAX_LENGTH) ?? "");
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const resultsStatusRef = useRef<HTMLParagraphElement>(null);
-  const loadMoreFocusPending = useRef(false);
+  const resultsStatusRef = useRef<HTMLDivElement>(null);
+  const loadMoreButtonRef = useRef<HTMLButtonElement>(null);
+  const pageRequest = useRef<AbortController | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const retryFocusPending = useRef(false);
   const updateSearchParams = (changes: Record<string, string | null>) => {
@@ -73,47 +81,47 @@ export default function Timeline() {
   const rangeDays = Math.floor((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1;
   const validRequest = isValidISODate(from) && isValidISODate(to) && isValidISODate(asOf) &&
     from <= to && to <= today && asOf <= today;
-  const requestKey = validRequest ? `${from}:${to}:${asOf}:${requestAttempt}` : "";
-  const [requestState, setRequestState] = useState<{ key: string; result?: TimelineResult; error?: string } | null>(null);
+  const requestKey = validRequest ? JSON.stringify([from, to, asOf, search, requestAttempt]) : "";
+  const [requestState, setRequestState] = useState<TimelineRequestState | null>(null);
   const currentState = requestState?.key === requestKey ? requestState : null;
   const timeline = currentState?.result ?? null;
   const error = validRequest ? currentState?.error ?? "" : "Choisissez une plage de dates et une date de connaissance valides.";
   const loading = validRequest && !currentState;
-  const filteredEvents = useMemo(() => filterTimelineEvents(timeline?.events ?? [], search), [timeline, search]);
-  const visibleEvents = useMemo(() => filteredEvents.slice(0, visibleCount), [filteredEvents, visibleCount]);
-  const remainingEvents = filteredEvents.length - visibleEvents.length;
-  const moreEventsCount = Math.min(TIMELINE_VISIBLE_BATCH_SIZE, remainingEvents);
   const loadedCount = timeline?.events.length ?? 0;
-  const timelineStatus = timeline ? `${timeline.count.toLocaleString("fr-FR")} événement${timeline.count === 1 ? "" : "s"} pour la période.` : "";
-  const resultsStatus = filteredEvents.length === 0 ? "Aucun événement ne correspond à cette recherche." :
-    `${visibleEvents.length.toLocaleString("fr-FR")} événement${visibleEvents.length === 1 ? "" : "s"} affiché${visibleEvents.length === 1 ? "" : "s"} sur ${search
-      ? `${filteredEvents.length.toLocaleString("fr-FR")} résultat${filteredEvents.length === 1 ? "" : "s"} de recherche (${loadedCount.toLocaleString("fr-FR")} événement${loadedCount === 1 ? "" : "s"} récupéré${loadedCount === 1 ? "" : "s"})`
-      : `${filteredEvents.length.toLocaleString("fr-FR")} événement${filteredEvents.length === 1 ? "" : "s"} récupéré${filteredEvents.length === 1 ? "" : "s"} pour cette période`}.`;
+  const plural = loadedCount === 1 ? "" : "s";
+  const resultsStatus = loadedCount > 0
+    ? `${loadedCount.toLocaleString("fr-FR")} ${search ? `résultat${plural}` : `événement${plural}`} affiché${plural}.`
+    : search ? "Aucun événement ne correspond à cette recherche." : "Aucun événement pour ces dates.";
   const grouped = useMemo(() => {
     const groups = new Map<string, TimelineEvent[]>();
-    for (const event of visibleEvents) {
+    for (const event of timeline?.events ?? []) {
       const key = dayKey(event.effectiveAt);
-      groups.set(key, [...(groups.get(key) ?? []), event]);
+      const group = groups.get(key);
+      if (group) group.push(event);
+      else groups.set(key, [event]);
     }
     return [...groups.entries()];
-  }, [visibleEvents]);
+  }, [timeline]);
 
   useEffect(() => watchTimelineToday(setToday), []);
 
   useEffect(() => {
     if (!requestKey) return;
-    let active = true;
-    const [from, to, knownAsOf] = requestKey.split(":");
-    getTimeline(from, to, knownAsOf).then((result) => {
-      if (active) setRequestState({ key: requestKey, result });
+    const controller = new AbortController();
+    getTimeline(from, to, asOf, search, controller.signal).then((result) => {
+      if (!controller.signal.aborted) setRequestState({ key: requestKey, result });
     }).catch((cause: unknown) => {
-      if (active) {
+      if (!controller.signal.aborted) {
         setRequestState({ key: requestKey,
           error: cause instanceof Error ? cause.message : "La chronologie est indisponible." });
       }
     });
-    return () => { active = false; };
-  }, [requestKey]);
+    return () => {
+      controller.abort();
+      pageRequest.current?.abort();
+      pageRequest.current = null;
+    };
+  }, [asOf, from, requestKey, search, to]);
 
   useEffect(() => {
     if (loading || !retryFocusPending.current) return;
@@ -123,15 +131,8 @@ export default function Timeline() {
     else headingRef.current?.focus();
   }, [currentState, loading]);
 
-  useEffect(() => {
-    if (!loadMoreFocusPending.current || visibleCount < filteredEvents.length) return;
-    loadMoreFocusPending.current = false;
-    resultsStatusRef.current?.focus();
-  }, [filteredEvents.length, visibleCount]);
-
   const retryHistory = () => {
     retryFocusPending.current = document.activeElement === retryButtonRef.current;
-    setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE);
     setRequestAttempt((attempt) => attempt + 1);
   };
 
@@ -140,21 +141,34 @@ export default function Timeline() {
     const query = searchDraft.trim();
     setSearch(query);
     updateSearchParams({ q: query || null, qDraft: query || null });
-    setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE);
   };
 
   const clearSearch = () => {
     setSearchDraft("");
     setSearch("");
     updateSearchParams({ q: null, qDraft: null });
-    setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE);
     searchInputRef.current?.focus();
   };
 
-  const showMoreEvents = () => {
-    const nextCount = Math.min(visibleCount + TIMELINE_VISIBLE_BATCH_SIZE, filteredEvents.length);
-    loadMoreFocusPending.current = nextCount >= filteredEvents.length;
-    setVisibleCount(nextCount);
+  const showMoreEvents = async () => {
+    if (!timeline?.nextCursor || pageRequest.current) return;
+    const controller = new AbortController();
+    pageRequest.current = controller;
+    setRequestState({ key: requestKey, result: timeline, loadingMore: true });
+    try {
+      const result = await getTimeline(from, to, asOf, search, controller.signal, timeline.nextCursor);
+      if (controller.signal.aborted) return;
+      if (!result.nextCursor && document.activeElement === loadMoreButtonRef.current) {
+        resultsStatusRef.current?.focus({ preventScroll: true });
+      }
+      const displayed = new Set(timeline.events.map(({ id }) => id));
+      const events = [...timeline.events, ...result.events.filter(({ id }) => !displayed.has(id))];
+      setRequestState({ key: requestKey, result: { ...result, events } });
+    } catch {
+      if (!controller.signal.aborted) setRequestState({ key: requestKey, result: timeline, moreError: true });
+    } finally {
+      if (pageRequest.current === controller) pageRequest.current = null;
+    }
   };
 
   return <div className="workspace-page timeline-page">
@@ -167,15 +181,15 @@ export default function Timeline() {
       <h2>Période et date de connaissance</h2>
       <label htmlFor="timeline-from">Du (service ou effet)
         <input id="timeline-from" type="date" max={today} value={from}
-          onChange={(event) => { setFrom(event.target.value); updateSearchParams({ from: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
+          onChange={(event) => { setFrom(event.target.value); updateSearchParams({ from: event.target.value }); }} />
       </label>
       <label htmlFor="timeline-to">Au
         <input id="timeline-to" type="date" max={today} value={to}
-          onChange={(event) => { setTo(event.target.value); updateSearchParams({ to: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
+          onChange={(event) => { setTo(event.target.value); updateSearchParams({ to: event.target.value }); }} />
       </label>
       <label htmlFor="timeline-as-of">Connu au
         <input id="timeline-as-of" type="date" max={today} value={asOf}
-          onChange={(event) => { setAsOf(event.target.value); updateSearchParams({ asOf: event.target.value }); setVisibleCount(TIMELINE_VISIBLE_BATCH_SIZE); }} />
+          onChange={(event) => { setAsOf(event.target.value); updateSearchParams({ asOf: event.target.value }); }} />
       </label>
       <p>{validRequest && `${rangeDays.toLocaleString("fr-FR")} jours affichés. `}La période n’a pas de limite de durée. « Connu au » masque les pièces modifiées après la date choisie.</p>
     </section>
@@ -187,58 +201,53 @@ export default function Timeline() {
       <p>Une pièce d’archive ne confirme pas une livraison. Les éléments hors bilan et les hypothèses restent distincts des opérations enregistrées.</p>
     </section>
 
-    <div className="timeline-status">
+    <form className="timeline-search" onSubmit={applySearch}>
+      <label htmlFor="timeline-search">Rechercher dans l’historique</label>
+      <div className="timeline-search-actions">
+        <input ref={searchInputRef} id="timeline-search" type="search" placeholder="Libellé, détail ou précision" value={searchDraft}
+          maxLength={SEARCH_MAX_LENGTH} onChange={(event) => { setSearchDraft(event.target.value); updateSearchParams({ qDraft: event.target.value }); }}
+          aria-describedby="timeline-search-help" />
+        <Button type="submit" variant="outline">Rechercher</Button>
+        {(search || searchDraft) && <Button type="button" variant="outline" onClick={clearSearch}>Effacer</Button>}
+      </div>
+      <p id="timeline-search-help" className="timeline-search-help">Recherche dans toute la période sélectionnée.</p>
+    </form>
+    <div className="timeline-status" ref={resultsStatusRef} tabIndex={-1}>
       <span role={error ? "alert" : "status"} aria-live={error ? "assertive" : "polite"}>
-        {loading ? "Chargement de l’historique…" : error || timelineStatus}
+        {loading ? "Chargement de l’historique…" : error || (timeline && resultsStatus)}
       </span>
       {currentState?.error && <Button ref={retryButtonRef} type="button" variant="outline" size="sm"
         onClick={retryHistory}>Réessayer</Button>}
     </div>
-    {timeline?.truncated && <p className="timeline-truncated" role="status">Période dense : seuls les premiers événements sont affichés. Choisissez une période plus courte pour continuer à parcourir l’historique.</p>}
-    {timeline && timeline.events.length === 0 && <section className="timeline-empty"><h2>Historique</h2><p>Aucun événement disponible avec ces dates et ces informations connues.</p></section>}
     {timeline && timeline.events.length > 0 && <>
-      <form className="timeline-search" onSubmit={applySearch}>
-        <label htmlFor="timeline-search">Rechercher dans l’historique</label>
-        <div className="timeline-search-actions">
-          <input ref={searchInputRef} id="timeline-search" type="search" placeholder="Libellé, détail ou précision" value={searchDraft}
-            onChange={(event) => { setSearchDraft(event.target.value); updateSearchParams({ qDraft: event.target.value }); }} aria-describedby="timeline-search-help" />
-          <Button type="submit" variant="outline">Rechercher</Button>
-          {(search || searchDraft) && <Button type="button" variant="outline" onClick={clearSearch}>Effacer</Button>}
-        </div>
-        <p id="timeline-search-help">Recherche dans les libellés, détails et précisions affichés.</p>
-      </form>
-      <p ref={resultsStatusRef} className="timeline-results-status" role="status" aria-live="polite" aria-atomic="true" tabIndex={-1}>
-        {resultsStatus}
-      </p>
-      {filteredEvents.length === 0 ? <p className="workspace-empty">Modifiez le terme ou effacez la recherche pour retrouver l’historique.</p> : <>
-        <div className="timeline-days">
-          {grouped.map(([key, events]) => <section className="timeline-day" key={key}>
-            <h2>{key === "unknown" ? "Date d’effet inconnue" : displayDate(key)}</h2>
-            <ol>
-              {events.map((event) => <li key={event.id}>
-                <article className="timeline-event">
-                  <div className="timeline-event-heading">
-                    <h3>{event.label}</h3><span className={`timeline-badge provenance-${event.provenance}`}>{provenanceLabels[event.provenance]}</span>
-                  </div>
-                  <p>{event.detail}</p>
-                  <p className="timeline-event-times">
-                    <span>Effet : {eventTime(event)}</span>
-                    {event.knownAt && <span>Connu le : {displayDate(event.knownAt, true)}</span>}
-                    {event.recordedAt && <span>Enregistré le : {displayDate(event.recordedAt, true)}</span>}
-                  </p>
-                  {event.qualifier && <p className="timeline-qualifier">{event.qualifier}</p>}
-                  {event.href && <Link to={event.href} aria-label={`Ouvrir ${event.label} dans l’espace actuel`}>Ouvrir la rubrique actuelle</Link>}
-                </article>
-              </li>)}
-            </ol>
-          </section>)}
-        </div>
-        {visibleEvents.length < filteredEvents.length && <div className="timeline-load-more">
-          <Button type="button" variant="outline" onClick={showMoreEvents}>
-            {moreEventsCount === 1 ? "Afficher l’événement suivant" : `Afficher les ${moreEventsCount} événements suivants`}
-          </Button>
-        </div>}
-      </>}
+      <div className="timeline-days">
+        {grouped.map(([key, events]) => <section className="timeline-day" key={key}>
+          <h2>{key === "unknown" ? "Date d’effet inconnue" : displayDate(key)}</h2>
+          <ol>
+            {events.map((event) => <li key={event.id}>
+              <article className="timeline-event">
+                <div className="timeline-event-heading">
+                  <h3>{event.label}</h3><span className={`timeline-badge provenance-${event.provenance}`}>{provenanceLabels[event.provenance]}</span>
+                </div>
+                <p>{event.detail}</p>
+                <p className="timeline-event-times">
+                  <span>Effet : {eventTime(event)}</span>
+                  {event.knownAt && <span>Connu le : {displayDate(event.knownAt, true)}</span>}
+                  {event.recordedAt && <span>Enregistré le : {displayDate(event.recordedAt, true)}</span>}
+                </p>
+                {event.qualifier && <p className="timeline-qualifier">{event.qualifier}</p>}
+                {event.href && <Link to={event.href} aria-label={`Ouvrir ${event.label} dans l’espace actuel`}>Ouvrir la rubrique actuelle</Link>}
+              </article>
+            </li>)}
+          </ol>
+        </section>)}
+      </div>
+      {currentState?.moreError && <p role="alert">Impossible de charger la suite de l’historique.</p>}
+      {timeline.nextCursor && <div className="timeline-load-more">
+        <Button ref={loadMoreButtonRef} type="button" variant="outline" aria-disabled={currentState?.loadingMore} onClick={showMoreEvents}>
+          {currentState?.loadingMore ? "Chargement…" : currentState?.moreError ? "Réessayer" : "Afficher la suite"}
+        </Button>
+      </div>}
     </>}
     <section className="timeline-read-only"><h2>Lecture seule</h2><p>Les liens ouvrent les espaces actuels sans rejouer une décision ni modifier les données. Les documents n’ont pas de journal de versions ; leur première saisie et leurs états antérieurs restent inconnus.</p></section>
   </div>;

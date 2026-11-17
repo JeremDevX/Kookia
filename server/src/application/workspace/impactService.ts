@@ -4,7 +4,8 @@ import { readDeclaredWaste, summarizeDeclaredWaste } from "./declaredWasteRead.j
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { impactMonthPage } from "./impactMonthPolicy.js";
-import { isSimulationStockMovement } from "./stockMovementProvenance.js";
+import { isSimulationReceipt, isSimulationSale, isSimulationServiceDay } from "./operationProvenance.js";
+import { isSimulationStockMovement, stockReceiptProvenance } from "./stockMovementProvenance.js";
 
 type ImpactDatabase = PrismaClient | Prisma.TransactionClient;
 type ImpactItem = { productId: string; productName: string; unit: string; quantity: number; knownCost: number;
@@ -63,9 +64,9 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
       include: { saleItem: { select: { id: true, name: true } }, serviceDay: { select: { source: true } } } }),
     db.stockMovement.findMany({ where: { restaurantId, wasteRecord: null, createdAt: { gte: rangeStart, lt: rangeEnd },
       reason: { in: lossReasons } }, include: { product: { select: { name: true, unit: true } },
-        purchaseReceiptLine: { select: { receipt: { select: { simulated: true } } } } } }),
+        purchaseReceiptLine: stockReceiptProvenance } }),
     db.purchaseReceiptLine.findMany({ where: { restaurantId, receivedQuantity: { gt: 0 }, receipt: { deliveryDate: { gte: rangeStart, lt: rangeEnd } } },
-      include: { product: { select: { unit: true } }, receipt: { select: { id: true, orderId: true, deliveryDate: true, simulated: true } } } }),
+      include: { product: { select: { unit: true } }, receipt: { select: { id: true, orderId: true, deliveryDate: true, simulated: true, provenance: true } } } }),
     readDeclaredWaste(db, restaurantId, rangeStart, rangeEnd),
   ]);
   const movements = [
@@ -90,7 +91,7 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
 
     for (const row of serviceDays) {
       if (!inRange(dateOnly(row.serviceDate), start, end)) continue;
-      const isSimulation = workspace.mode === "demo" || row.source === "demo_simulation";
+      const isSimulation = isSimulationServiceDay(row, workspace.mode);
       const bucket = isSimulation ? period.simulation : period.recorded;
       if (isSimulation) period.hasSimulationData = true;
       else period.hasRecordedData = true;
@@ -104,7 +105,7 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
     for (const sale of sales) {
       const serviceDate = dateOnly(sale.serviceDate);
       if (!inRange(serviceDate, start, end)) continue;
-      const isSimulation = workspace.mode === "demo" || sale.source === "demo_simulation" || sale.serviceDay.source === "demo_simulation";
+      const isSimulation = isSimulationSale(sale, workspace.mode);
       const bucket = isSimulation ? period.simulation : period.recorded;
       if (isSimulation) period.hasSimulationData = true;
       else period.hasRecordedData = true;
@@ -148,7 +149,7 @@ export async function getImpactReport(restaurantId: string, from: string, to: st
     for (const line of receiptLines) {
       const deliveryDate = dateOnly(line.receipt.deliveryDate);
       if (!inRange(deliveryDate, start, end)) continue;
-      const isSimulation = workspace.mode === "demo" || line.receipt.simulated;
+      const isSimulation = isSimulationReceipt(line.receipt, workspace.mode);
       const bucket = isSimulation ? period.simulation : period.recorded;
       if (isSimulation) period.hasSimulationData = true;
       else period.hasRecordedData = true;

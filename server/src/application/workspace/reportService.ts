@@ -1,7 +1,8 @@
 import { readDeclaredWaste, summarizeDeclaredWaste } from "./declaredWasteRead.js";
 import { wasteKindLabels } from "../../../../shared/declaredWaste.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { isSimulationStockMovement } from "./stockMovementProvenance.js";
+import { isSimulationSale, simulationActor } from "./operationProvenance.js";
+import { isSimulationStockMovement, stockReceiptProvenance } from "./stockMovementProvenance.js";
 
 interface OperationalReportRow {
   section: string; date: string; metric: string; value: string | number; source: string;
@@ -23,7 +24,7 @@ export async function getOperationalReport(restaurantId: string, from: string, t
     }, orderBy: { serviceDate: "asc" } }),
     prisma.stockMovement.findMany({ where: { restaurantId, wasteRecord: null, createdAt: { gte: start, lt: end } }, include: {
       product: { select: { name: true, unit: true } },
-      purchaseReceiptLine: { select: { receipt: { select: { simulated: true } } } },
+      purchaseReceiptLine: stockReceiptProvenance,
     }, orderBy: { createdAt: "asc" } }),
     prisma.production.findMany({ where: { restaurantId, date: { gte: start, lt: end } }, orderBy: { date: "asc" } }),
     prisma.purchaseOrder.findMany({ where: { restaurantId, createdAt: { gte: start, lt: end } }, include: { lines: true }, orderBy: { createdAt: "asc" } }),
@@ -84,13 +85,13 @@ export async function getOperationalReport(restaurantId: string, from: string, t
     if (waste.stockMovementId) { declaredLosses.reportedMovementCount++; if (waste.knownCost == null) declaredLosses.unpricedMovementCount++; }
   }
   if (mode !== "demo") {
-    for (const item of sales) if (item.source !== "demo_simulation" && item.serviceDay.source !== "demo_simulation")
+    for (const item of sales) if (!isSimulationSale(item, mode))
       rows.push({ section: "Ventes enregistrées", date: item.serviceDate.toISOString().slice(0, 10),
         metric: `${item.saleItem.name} — unités vendues`, value: item.quantity,
         source: item.source === "csv" ? item.revision ? "Import CSV corrigé" : "Import CSV" :
           item.source === "pos" ? item.revision ? "Caisse POS corrigée" : "Caisse POS" :
             item.source === "ticket_z" ? "Ticket Z vérifié" : "Saisie manuelle" });
-    for (const item of productions) if (item.actorId !== "restaurant-simulation:v1")
+    for (const item of productions) if (item.actorId !== simulationActor)
       rows.push({ section: "Productions et refus", date: item.date.toISOString().slice(0, 10),
         metric: `${item.recipeName} — ${item.kind}`, value: item.portions,
         source: "Déclaration enregistrée — portions" });

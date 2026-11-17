@@ -1,9 +1,10 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import type { DeclaredWasteSummary } from "../../../../shared/declaredWaste.js";
-import { isSimulationStockMovement } from "./stockMovementProvenance.js";
+import { simulationActor } from "./operationProvenance.js";
+import { isSimulationStockMovement, stockReceiptProvenance } from "./stockMovementProvenance.js";
 const include = { product: { select: { name: true } }, production: { select: { recipeName: true, actorId: true } },
   stockMovement: { include: { product: { select: { name: true, unit: true } },
-    lotAllocations: { include: { lot: true } }, purchaseReceiptLine: { select: { receipt: { select: { simulated: true } } } } } } } satisfies Prisma.WasteRecordInclude;
+    lotAllocations: { include: { lot: true } }, purchaseReceiptLine: stockReceiptProvenance } } } satisfies Prisma.WasteRecordInclude;
 export type WasteReadRow = Prisma.WasteRecordGetPayload<{ include: typeof include }>;
 export function readDeclaredWaste(db: PrismaClient | Prisma.TransactionClient, restaurantId: string, from: Date, to: Date) {
   return db.wasteRecord.findMany({ where: { restaurantId, serviceDate: { gte: from, lt: to } }, include, orderBy: [{ serviceDate: "asc" }, { createdAt: "asc" }] });
@@ -14,7 +15,7 @@ export function summarizeDeclaredWaste(rows: WasteReadRow[], from: string, to: s
   for (const row of rows) {
     const serviceDate = row.serviceDate.toISOString().slice(0, 10);
     if (serviceDate < from || serviceDate > to) continue;
-    if (mode === "demo" || row.production?.actorId === "restaurant-simulation:v1" ||
+    if (mode === "demo" || row.production?.actorId === simulationActor ||
       (row.stockMovement && isSimulationStockMovement(row.stockMovement, mode))) { summary.excludedSimulationCount++; continue; }
     const sources = row.stockMovement?.lotAllocations ?? [];
     const priced = sources.length > 0 && sources.every((entry) => entry.lot.unitCost !== null) &&

@@ -15,14 +15,16 @@ export interface TimelineEvent {
   href?: string;
 }
 export interface TimelineResult {
-  from: string;
-  to: string;
-  asOf: string;
-  count: number;
-  truncated: boolean;
+  nextCursor: string | null;
   events: TimelineEvent[];
 }
 
-export const getTimeline = (from: string, to: string, asOf: string) => apiRequest<TimelineResult>(
-  `/workspace/timeline?${new URLSearchParams({ from, to, asOf })}`,
-);
+export async function getTimeline(from: string, to: string, asOf: string, q: string, signal: AbortSignal, cursor?: string) {
+  const params = new URLSearchParams({ from, to, asOf, q, limit: "20" });
+  for (;;) {
+    if (cursor) params.set("cursor", cursor);
+    const page = await apiRequest<TimelineResult>(`/workspace/timeline?${params}`, { signal });
+    if (page.events.length || !page.nextCursor) return page;
+    cursor = page.nextCursor;
+  }
+}
