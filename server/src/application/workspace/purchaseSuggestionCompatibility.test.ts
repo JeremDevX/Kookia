@@ -1,5 +1,7 @@
 import { it, expect, vi } from "vitest";
-vi.mock("./operationalForecastService.js", () => ({ getOperationalForecast: async () => ({ blockers: [], provenance: "recorded_sales", ingredientNeeds: [{ productId: "p", unit: "kg", quantity: 10, sources: [] }], services: [], throughDate: "2026-11-03" }) }));
+vi.mock("./operationalForecastService.js", () => ({ getOperationalForecasts: async () => new Map([["2026-11-03", {
+ blockers: [], provenance: "recorded_sales", ingredientNeeds: [{ productId: "p", unit: "kg", quantity: 10, sources: [] }], services: [], throughDate: "2026-11-03",
+}]]) }));
 import { getPurchaseSuggestions as current } from "./purchaseSuggestionService.js";
 it("preserves pre-opening-days keys for unchanged supplier horizons", async () => {
  const product = { id: "p", supplierId: "s", name: "Product", category: "x", unit: "kg", stockRevision: 0, currentStock: 0, pricePerUnit: 1, orderPackQuantity: 1, supplier: { name: "Supplier", deliveryWeekdays: [0,1,2,3,4,5,6], leadTimeDays: 0, orderCutoffTime: "23:59" } };

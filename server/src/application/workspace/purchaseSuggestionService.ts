@@ -3,7 +3,7 @@ import type { PurchaseSuggestion, PurchaseSuggestions } from "../../../../shared
 import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import type { ForecastIngredient } from "../../../../shared/operationalForecast.js";
-import { getOperationalForecast } from "./operationalForecastService.js";
+import { getOperationalForecasts } from "./operationalForecastService.js";
 import { supplierDeliveryHorizon, type SupplierDeliveryHorizon } from "../../../../shared/supplierDelivery.js";
 import { getOrderStep, roundOrderQuantity, isOrderQuantity, orderStepLabel } from "../../../../shared/orderQuantity.js";
 import { createHash } from "node:crypto";
@@ -92,10 +92,12 @@ export async function getPurchaseSuggestions(restaurantId: string, db: PurchaseD
   const expectedLines = pendingLines.map((line) => ({ productId: line.productId, unit: line.unit, quantity: Number(line.quantity),
     receivedQuantity: line.receiptLines.reduce((sum, receipt) => sum + Number(receipt.receivedQuantity), 0),
     expectedDeliveryDate: line.expectedDeliveryDate?.toISOString().slice(0, 10) ?? null }));
-  const horizons = new Map(products.map((product) => [product.supplierId, supplierDeliveryHorizon(product.supplier, inputDate, restaurant.openingWeekdays)]));
+  const horizons = new Map<string, SupplierDeliveryHorizon>();
+  for (const product of products) {
+    if (!horizons.has(product.supplierId)) horizons.set(product.supplierId, supplierDeliveryHorizon(product.supplier, inputDate, restaurant.openingWeekdays));
+  }
   const throughDates = [...new Set([...horizons.values()].map((horizon) => horizon.status === "known" ? horizon.throughDate : today))];
-  const forecasts = new Map(await Promise.all(throughDates.map(async (throughDate) => [throughDate,
-    await getOperationalForecast(restaurantId, today, throughDate, db, context.asOfDate)] as const)));
+  const forecasts = await getOperationalForecasts(restaurantId, today, throughDates, db, asOfDate);
   const deliveryBlockers = products.flatMap((product) => {
     const horizon = horizons.get(product.supplierId)!;
     return horizon.status === "unknown" && horizon.code === "opening_days_incompatible" ? [`${product.supplier.name} : ${horizon.reason}`] : [];
