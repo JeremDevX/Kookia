@@ -60,7 +60,7 @@ export default function App() {
     event.preventDefault(); setError("");
     try {
       const next = generateScenario(form, continuation ?? undefined);
-      setScenario(next); setKind("all"); setDate(next.options.start);
+      setScenario(next); setForm(next.options); setKind("all"); setDate(next.options.start);
       setNotice(`Dossier prêt : ${next.days.length} journée(s). Les pièces affichées correspondent aux paramètres validés.`);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Vérifiez les paramètres du dossier."); }
   };
