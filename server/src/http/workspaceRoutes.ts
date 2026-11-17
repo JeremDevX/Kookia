@@ -1,5 +1,4 @@
 import { invitationOwnerRoutes, membershipOwnerRoutes } from "./invitationRoutes.js";
-import { formatParisDate } from "../../../shared/parisDate.js";
 import { reportRoutes } from "./reportRoutes.js";
 import { impactRoutes } from "./impactRoutes.js";
 import { ingredientOutflowEstimateRoutes } from "./ingredientOutflowEstimateRoutes.js";
@@ -20,20 +19,15 @@ import { workspaceReadRoutes } from "./workspaceReadRoutes.js";
 import { timelineRoutes } from "./timelineRoutes.js";
 import { sourceRoutes } from "./sourceRoutes.js";
 import { weatherRoutes } from "./weatherRoutes.js";
-import { Router, type Response } from "express";
+import { catalogRoutes } from "./catalogRoutes.js";
+import { recipeRoutes } from "./recipeRoutes.js";
+import { Router } from "express";
 import { z } from "zod";
 import { sessionCookieName } from "../config/env.js";
 import { getUserBySessionToken } from "../application/auth/authService.js";
-import { adjustStock, createProduct, editProduct, getCatalog, WorkspaceError } from "../application/workspace/catalogService.js";
-import { getStockCounts, recordStockCount } from "../application/workspace/stockCountService.js";
-import { createRecipe, getRecipes, recordProduction, updateRecipe } from "../application/workspace/recipeService.js";
-import { createRecipeCandidate, decideRecipeCandidate, getRecipeCandidates, updateRecipeCandidate } from "../application/workspace/recipeCandidateService.js";
-import { prisma } from "../infrastructure/database/prisma.js";
+import { WorkspaceError } from "../application/workspace/catalogService.js";
 import { resolveWorkspace } from "../application/workspace/workspaceIdentity.js";
 import { canAccessWorkspace } from "../application/workspace/workspacePermissions.js";
-
-interface WorkspaceContext { restaurantId: string; actorId: string; }
-const context = (res: Response): WorkspaceContext => res.locals.workspace as WorkspaceContext;
 
 export const workspaceRoutes = Router();
 workspaceRoutes.use(async (req, res, next) => {
@@ -69,149 +63,9 @@ workspaceRoutes.use(serviceOperationsRoutes);
 workspaceRoutes.use(serviceSheetRoutes);
 workspaceRoutes.use(operationalIncidentRoutes);
 
-const quantity = z.number().finite().min(0).max(1_000_000).multipleOf(0.001);
-const newProductSchema = z.object({
-  operationId: z.uuid(), name: z.string().trim().min(1).max(120),
-  category: z.string().trim().min(1).max(80), currentStock: quantity,
-  unit: z.enum(["kg", "L", "dz", "pcs"]), minThreshold: quantity,
-  supplierId: z.string().min(1).max(100), pricePerUnit: z.number().finite().min(0).max(1_000_000).multipleOf(0.0001),
-  orderPackQuantity: z.number().finite().positive().max(1_000_000).multipleOf(.001).nullable().optional(),
-}).strict();
-const stockSchema = z.object({
-  operationId: z.uuid(), delta: z.number().finite().min(-1_000_000).max(1_000_000).multipleOf(0.001).refine((value) => value !== 0),
-  reason: z.enum(["adjustment", "loss"]).default("adjustment"),
-  expectedStockRevision: z.number().int().positive(), expectedUnit: z.enum(["kg", "L", "dz", "pcs"]),
-}).strict().refine((data) => data.reason !== "loss" || data.delta < 0);
-const editProductSchema = z.object({
-  expectedRevision: z.number().int().positive(), name: z.string().trim().min(1).max(120),
-  category: z.string().trim().min(1).max(80), minThreshold: quantity,
-  supplierId: z.string().min(1).max(100),
-  pricePerUnit: z.number().finite().min(0).max(1_000_000).multipleOf(0.0001),
-  orderPackQuantity: z.number().finite().positive().max(1_000_000).multipleOf(.001).nullable().optional(),
-}).strict();
-const stockCountSchema = z.object({
-  operationId: z.uuid(), expectedStockRevision: z.number().int().positive(),
-  expectedUnit: z.enum(["kg", "L", "dz", "pcs"]), countedQuantity: quantity,
-}).strict();
+workspaceRoutes.use(catalogRoutes);
+workspaceRoutes.use(recipeRoutes);
 
-workspaceRoutes.get("/catalog", async (_req, res) => {
-  res.json(await getCatalog(context(res).restaurantId));
-});
-workspaceRoutes.post("/products", async (req, res) => {
-  const { operationId, ...data } = newProductSchema.parse(req.body);
-  const { restaurantId, actorId } = context(res);
-  res.status(201).json(await createProduct(restaurantId, actorId, data, operationId));
-});
-workspaceRoutes.patch("/products/:id", async (req, res) => {
-  const data = editProductSchema.parse(req.body);
-  res.json(await editProduct(context(res).restaurantId, String(req.params.id), data));
-});
-workspaceRoutes.get("/products/:id/counts", async (req, res) => {
-  res.json(await getStockCounts(context(res).restaurantId, String(req.params.id)));
-});
-workspaceRoutes.post("/products/:id/counts", async (req, res) => {
-  const input = stockCountSchema.parse(req.body);
-  const { restaurantId, actorId } = context(res);
-  res.status(201).json(await recordStockCount(restaurantId, actorId, String(req.params.id), input));
-});
-workspaceRoutes.post("/products/:id/stock", async (req, res) => {
-  const data = stockSchema.parse(req.body);
-  const { restaurantId, actorId } = context(res);
-  if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== restaurantId) { res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return; }
-  res.json(await adjustStock(restaurantId, actorId, String(req.params.id), data.delta, data.operationId, data.reason, data.expectedStockRevision, data.expectedUnit));
-});
-workspaceRoutes.get("/products/:id/movements", async (req, res) => {
-  const data = await prisma.stockMovement.findMany({ where: { restaurantId: context(res).restaurantId, productId: String(req.params.id) }, orderBy: { createdAt: "desc" } });
-  res.json(data.map((movement) => {
-    const legacySourceId = movement.operationId.match(/^restaurant-simulation-v1:invoice:([a-f0-9]{24}):/)?.[1];
-    return { id: movement.id, delta: Number(movement.delta), reason: movement.reason, createdAt: movement.createdAt,
-      ...(movement.sourceDocumentId ?? legacySourceId ? { sourceDocumentId: movement.sourceDocumentId ?? legacySourceId } : {}),
-      ...(movement.sourceContentHash ? { sourceContentHash: movement.sourceContentHash } : {}),
-      ...(movement.sourceDocumentRevision !== null ? { sourceDocumentRevision: movement.sourceDocumentRevision } : {}),
-      ...(movement.invoiceDocumentId ? { invoiceDocumentId: movement.invoiceDocumentId } : {}),
-      ...(movement.invoiceRevision !== null ? { invoiceRevision: movement.invoiceRevision } : {}),
-      ...(movement.stockCountId ? { stockCountId: movement.stockCountId } : {}),
-      ...(movement.purchaseReceiptLineId ? { purchaseReceiptLineId: movement.purchaseReceiptLineId } : {}),
-    };
-  }));
-});
-workspaceRoutes.get("/recipes", async (_req, res) => {
-  res.json(await getRecipes(context(res).restaurantId));
-});
-const recipeIngredientSchema = z.object({ productId: z.string().trim().min(1).max(100),
-  quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001),
-  netQuantity: z.number().finite().min(0).max(1_000_000).multipleOf(.001).nullable().optional(),
-}).strict().refine(value => value.netQuantity == null || value.netQuantity <= value.quantity);
-const recipeValuesSchema = z.object({
-  name: z.string().trim().min(1).max(120), category: z.enum(["Plat", "Dessert", "Entrée", "Boisson"]),
-  prepTime: z.number().int().min(0).max(10080), yieldPortions: z.number().int().min(1).max(10000),
-  effectiveFrom: z.iso.date(), ingredients: z.array(recipeIngredientSchema).min(1).max(100),
-  steps: z.array(z.string().trim().min(1).max(2000)).max(100).optional(),
-}).strict();
-const recipeMutationSchema = recipeValuesSchema.extend({ operationId: z.uuid() });
-const recipeCreateSchema = recipeMutationSchema.extend({ sourceReceiptLineId: z.uuid().optional() });
-const recipeCandidateInputSchema = recipeValuesSchema.omit({ steps: true }).extend({ ingredients: z.array(z.object({
-  productId: z.string().trim().min(1).max(100), quantity: z.number().finite().min(0.001).max(1_000_000).multipleOf(0.001),
-  sourceDocumentId: z.string().regex(/^[a-f0-9]{24}$/), sourceLineNumber: z.number().int().positive(),
-}).strict()).min(1).max(100) }).strict();
-workspaceRoutes.post("/recipes", async (req, res) => {
-  const { operationId, sourceReceiptLineId, ...input } = recipeCreateSchema.parse(req.body);
-  const { restaurantId, actorId } = context(res);
-  res.status(201).json(await createRecipe(restaurantId, actorId, operationId, input, sourceReceiptLineId));
-});
-workspaceRoutes.patch("/recipes/:id", async (req, res) => {
-  const { operationId, expectedRevision, ...values } = recipeMutationSchema.safeExtend({
-    expectedRevision: z.number().int().positive(),
-  }).parse(req.body);
-  const id = z.string().trim().min(1).max(100).parse(req.params.id);
-  const { restaurantId, actorId } = context(res);
-  res.json(await updateRecipe(restaurantId, actorId, id, expectedRevision, operationId, values));
-});
-workspaceRoutes.get("/recipe-candidates", async (_req, res) => {
-  res.json(await getRecipeCandidates(context(res).restaurantId));
-});
-workspaceRoutes.post("/recipe-candidates", async (req, res) => {
-  const { operationId, ...input } = recipeCandidateInputSchema.extend({ operationId: z.uuid() }).parse(req.body);
-  const { restaurantId, actorId } = context(res);
-  res.status(201).json(await createRecipeCandidate(restaurantId, actorId, operationId, input));
-});
-workspaceRoutes.patch("/recipe-candidates/:id", async (req, res) => {
-  const { operationId, expectedRevision, ...input } = recipeCandidateInputSchema.extend({
-    operationId: z.uuid(), expectedRevision: z.number().int().positive(),
-  }).parse(req.body);
-  const id = z.uuid().parse(req.params.id);
-  const { restaurantId, actorId } = context(res);
-  res.json(await updateRecipeCandidate(restaurantId, actorId, id, expectedRevision, operationId, input));
-});
-workspaceRoutes.post("/recipe-candidates/:id/decision", async (req, res) => {
-  const { operationId, expectedRevision, action } = z.object({ operationId: z.uuid(),
-    expectedRevision: z.number().int().positive(), action: z.enum(["confirm", "reject"]) }).strict().parse(req.body);
-  const id = z.uuid().parse(req.params.id);
-  const { restaurantId, actorId } = context(res);
-  res.json(await decideRecipeCandidate(restaurantId, actorId, id, expectedRevision, operationId, action));
-});
-const productionSchema = z.object({
-  operationId: z.uuid(), recipeId: z.string().min(1).max(100).optional(),
-  expectedRecipeRevision: z.number().int().positive().optional(),
-  recipeName: z.string().trim().min(1).max(120), portions: z.number().int().min(1).max(10000),
-  prepTime: z.number().int().min(0).max(10080), notes: z.string().max(4000),
-  date: z.iso.date(), serviceSlot: z.enum(["lunch", "dinner"]).nullable().optional(), kind: z.enum(["production", "record", "refusal"]),
-}).strict()
-  .refine((data) => data.kind === "record"
-    ? (data.recipeId === undefined && data.expectedRecipeRevision === undefined) ||
-      (data.recipeId !== undefined && data.expectedRecipeRevision !== undefined)
-    : data.recipeId !== undefined && data.expectedRecipeRevision !== undefined)
-  .refine((data) => data.date <= formatParisDate());
-workspaceRoutes.get("/productions", async (_req, res) => {
-  res.json(await prisma.production.findMany({ where: { restaurantId: context(res).restaurantId },
-    include: { recipeVersion: { select: { version: true, effectiveFrom: true, yieldPortions: true } } },
-    orderBy: { date: "desc" } }));
-});
-workspaceRoutes.post("/productions", async (req, res) => {
-  const input = productionSchema.parse(req.body);
-  const { restaurantId, actorId } = context(res);
-  res.status(201).json(await recordProduction(restaurantId, actorId, input));
-});
 workspaceRoutes.use((error: unknown, _req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
   if (error instanceof z.ZodError) { res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données fournies sont invalides." } }); return; }
   if (error instanceof WorkspaceError) { res.status(error.status).json({ error: { code: error.code, message: error.message, ...(error.duplicates ? { duplicates: error.duplicates } : {}) } }); return; }
