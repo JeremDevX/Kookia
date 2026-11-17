@@ -18,7 +18,7 @@ function spawnTask(command, args, { env = process.env, capture = false } = {}) {
   if (interruptedSignal) return Promise.reject(new Error("Démo locale interrompue."));
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { cwd: projectRoot, env,
-      stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit" });
+      stdio: capture ? ["ignore", "pipe", "ignore"] : "inherit" });
     children.add(child);
     let stdout = "";
     if (capture) child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; });
