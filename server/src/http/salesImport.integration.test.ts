@@ -118,6 +118,44 @@ it("isolates identical files by restaurant, preserves import provenance after co
   expect((await owner.get(`/api/workspace/sales?from=${concurrentDate}&to=${concurrentDate}`).expect(200)).body).toHaveLength(1);
 });
 
+it("uses the same row priorities as the preview and rechecks the calendar before committing", async () => {
+  const owner = await account();
+  const pizza = await owner.post("/api/workspace/sales/items").send({ name: "Pizza" }).expect(201);
+  const otherItem = await owner.post("/api/workspace/sales/items").send({ name: "constructor" }).expect(201);
+  const sale = await owner.post("/api/workspace/sales").send({ operationId: randomUUID(), saleItemId: pizza.body.id,
+    serviceDate: "2026-09-13", quantity: 2 }).expect(201);
+  const { restaurantId } = await prisma.dailySale.findUniqueOrThrow({ where: { id: sale.body.id } });
+  // Model a pre-existing inconsistency that the current calendar API prevents.
+  await prisma.serviceDay.update({ where: { restaurantId_serviceDate: { restaurantId, serviceDate: new Date("2026-09-13") } },
+    data: { status: "closed", coverage: "complete" } });
+  const csv = "service_date,item_name,quantity\n2026-09-13,Pizza,3\n2026-09-13,PIZZA,4\n2026-09-14,Pizza,5\n2026-09-12,constructor,6\n";
+  const url = "/api/workspace/sales/imports";
+  const preview = await owner.post(`${url}/preview`).send({ csv, mapping: {} }).expect(200);
+  expect(preview.body.rows.map((row: { status: string }) => row.status)).toEqual(["closed", "duplicate", "ready", "ready"]);
+  await owner.put("/api/workspace/sales/service-days/2026-09-14")
+    .send({ expectedRevision: 0, status: "closed", coverage: "complete" }).expect(200);
+  const result = await owner.post(url).send({ csv, mapping: {}, expectedHash: preview.body.hash }).expect(201);
+  expect(result.body).toMatchObject({ acceptedCount: 1, conflictCount: 0, rejectedCount: 3 });
+  const outcomes = await prisma.saleContribution.findMany({ where: { importId: result.body.id },
+    orderBy: { importLine: "asc" }, select: { status: true, reviewReason: true } });
+  expect(outcomes).toMatchObject([
+    { status: "rejected", reviewReason: "Service déclaré fermé." },
+    { status: "rejected", reviewReason: expect.stringContaining("Doublon") },
+    { status: "rejected", reviewReason: "Service déclaré fermé." },
+    { status: "accepted" },
+  ]);
+
+  const validName = "A".repeat(120);
+  const invalidName = `${validName}B`;
+  const longNamesCsv = `service_date,item_name,quantity\n2026-09-11,${validName},1\n2026-09-11,${invalidName},1\n`;
+  const mapping = { [validName]: pizza.body.id, [invalidName]: otherItem.body.id };
+  const longNamesPreview = await owner.post(`${url}/preview`).send({ csv: longNamesCsv, mapping }).expect(200);
+  expect(longNamesPreview.body.rows[0]).toMatchObject({ status: "ready", saleItemId: pizza.body.id });
+  expect(longNamesPreview.body.rows[1].status).toBe("invalid");
+  await owner.post(url).send({ csv: longNamesCsv, mapping: { ...mapping, [validName]: otherItem.body.id },
+    expectedHash: longNamesPreview.body.hash }).expect(409);
+});
+
 it("persists manual/CSV conflicts and requires an explicit replacement, keep, refund or void decision", async () => {
   const owner = await account();
   const other = await account();
