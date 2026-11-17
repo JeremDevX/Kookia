@@ -2,7 +2,7 @@
 
 ## Prérequis
 
-- Node.js 20 ou supérieur — Node.js 26 a été utilisé pour valider le projet.
+- Node.js 22.13 ou une version ultérieure.
 - Docker Desktop installé et démarré.
 
 ## Installation

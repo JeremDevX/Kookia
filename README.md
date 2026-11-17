@@ -5,7 +5,7 @@ pour la restauration, avec API Express et PostgreSQL/Prisma.
 
 ## Démarrage local
 
-Utiliser Node.js 20.19+ (série 20) ou 22.12+.
+Utiliser Node.js 22.13 ou une version ultérieure. La CI utilise Node.js 22.
 
 ```bash
 npm install
