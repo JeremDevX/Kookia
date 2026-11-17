@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Download, FileText, Info, Monitor, SlidersHorizontal } from "lucide-react";
 import { formatParisDate } from "../../shared/parisDate";
 import { displayDate } from "./calendar";
 import { identity, money } from "./catalog";
@@ -20,16 +21,33 @@ const initial: Options = optionsSchema.parse({ name: identity.name, address: ide
 function Preview({ doc }: { doc: Document }) {
   const pages = useMemo(() => layoutDocument(doc), [doc]);
   return <section aria-label="Document sélectionné" className="preview">
-    <div className="preview-toolbar"><div><span className="eyebrow">{doc.date}</span><h2>{doc.title}</h2></div>
-      <button onClick={() => download(pdfBytes(doc), `${doc.id}.pdf`, "application/pdf")}>Télécharger le PDF</button></div>
-    <aside className="workflow"><strong>Utilisation dans Kookia</strong><p>{doc.workflow}</p></aside>
+    <div className="preview-toolbar">
+      <div><h3>{doc.title}</h3><time dateTime={doc.date}>{displayDate(doc.date)}</time></div>
+      <button className="secondary" onClick={() => download(pdfBytes(doc), `${doc.id}.pdf`, "application/pdf")}>
+        <Download size={16} aria-hidden="true" />Télécharger le PDF
+      </button>
+    </div>
+    <div className="workflow">
+      <Info size={18} aria-hidden="true" />
+      <div><strong>Utilisation dans Kookia</strong><p>{doc.workflow}</p></div>
+    </div>
     <div className="paper-stack">{pages.map((page, pageIndex) => <svg key={pageIndex} className={`paper${doc.style === "receipt" ? " receipt" : ""}`} viewBox={`0 0 ${page.width} ${page.height}`} role="img" aria-label={`${doc.title}, page ${pageIndex + 1}`}>
       <rect width={page.width} height={page.height} fill="white"/>
       {page.rules.map((rule, i) => <rect key={i} x={rule.x} y={rule.y} width={rule.width} height={rule.height} fill={svgColor(rule.color)}/>)}
       {page.runs.map((run, i) => <text key={i} x={run.x} y={run.y} fontSize={run.size} fontFamily={run.font === "mono" ? "Courier, monospace" : run.font === "serif" ? "Times New Roman, serif" : "Helvetica, Arial, sans-serif"} fontWeight={run.bold ? 700 : 400} fill={run.muted ? svgColor(page.accent) : "#141a17"}>{run.text}</text>)}
     </svg>)}</div>
-    <details className="accessible-document"><summary>Lire le document en texte</summary>
-      <p>{doc.issuer} → {doc.recipient}</p>{doc.sections.map((section, i) => <section key={i}><h3>{section.heading}</h3><div className="table-scroll"><table><thead><tr>{section.columns.map(c => <th key={c} scope="col">{c}</th>)}</tr></thead><tbody>{section.rows.map((row, r) => <tr key={r}>{row.map((cell, c) => <td key={c}>{cell}</td>)}</tr>)}</tbody></table></div></section>)}
+    <details className="accessible-document">
+      <summary>Lire le document en texte</summary>
+      <p>{doc.issuer} → {doc.recipient}</p>
+      {doc.sections.map((section, i) => <section key={i}>
+        <h4>{section.heading}</h4>
+        <div className="table-scroll" tabIndex={0} role="region" aria-label={section.heading}>
+          <table>
+            <thead><tr>{section.columns.map(c => <th key={c} scope="col">{c}</th>)}</tr></thead>
+            <tbody>{section.rows.map((row, r) => <tr key={r}>{row.map((cell, c) => <td key={c}>{cell}</td>)}</tr>)}</tbody>
+          </table>
+        </div>
+      </section>)}
       {doc.notes.map(note => <p key={note}>{note}</p>)}
     </details>
   </section>;
@@ -92,41 +110,76 @@ export default function App() {
     } finally { setBusy(false); }
   };
   return <>
-    <header className="masthead"><a href="#main" className="brand"><span className="mark">S</span><span>{scenario.options.name}<small>Atelier documentaire</small></span></a><span className="local-badge">Local · indépendant de Kookia</span></header>
+    <header className="masthead"><div className="masthead-inner">
+      <a href="#main" className="brand"><span className="mark" aria-hidden="true">K</span>KookIA</a>
+      <span className="local-badge"><Monitor size={16} aria-hidden="true" />Atelier local</span>
+    </div></header>
     <main id="main">
-      <div className="intro"><span className="eyebrow">Le bureau du restaurant</span><h1>Votre restaurant.<br/><em>Vos journées, prêtes à l’emploi.</em></h1><p>Choisissez une période, ajustez l’activité et emportez toutes les pièces. Passé ou futur : un seul dossier, rangé jour par jour.</p></div>
+      <header className="intro"><h1>Atelier documentaire</h1><p>Préparez un dossier de restaurant avec ses recettes, livraisons et ventes, classées jour par jour.</p></header>
       <div className="workspace">
-        <aside className="settings"><form onSubmit={generate}>
-          <Settings value={form} onChange={setForm}/>
-          <details className="continuation"><summary>Reprendre les stocks d’un dossier</summary>
-            <p className="hint">Charger stock-reprise.json (ou scenario.json version 2). Lecture locale uniquement. Les lots et commandes en attente sont conservés ; les réglages d’activité restent ceux du formulaire.</p>
-            <label>Fichier de reprise<input type="file" accept=".json,application/json" onChange={loadContinuation}/></label>
-            <button type="button" className="secondary" onClick={() => { try { prepareContinuation(scenario.checkpoint); } catch (cause) { setError(cause instanceof Error ? cause.message : "Reprise impossible."); } }}>Continuer après le dossier affiché</button>
-            {continuation && <><p className="period-note">Reprise de la clôture du {displayDate(continuation.asOf)} : {continuation.lots.length} lots et {continuation.pendingOrders.length} commandes en attente. Début obligatoire : {displayDate(continuationStart(continuation))}.</p>
-              <button type="button" className="secondary" onClick={() => { setContinuation(null); setNotice("Reprise retirée des réglages. La prochaine génération démarrera avec un stock nul, sans modifier le dossier affiché."); }}>Retirer la reprise</button></>}
-          </details>
-          <button className="primary" type="submit">Générer {form.days || "…"} jours de documents</button>
-          {dirty && <p className="pending" role="status">Réglages modifiés : générez pour mettre à jour le dossier.</p>}
-        </form><div className="export-panel"><h3>Emporter le dossier</h3><button disabled={busy} onClick={archive}>{busy ? "Préparation…" : "Télécharger tout (.zip)"}</button>
-          <button className="secondary" disabled={!ready.length} onClick={() => download(salesCsv(ready), `ventes-jusqu-au-${today}.csv`, "text/csv;charset=utf-8")}>CSV jusqu’à aujourd’hui</button>
-          <button className="secondary" onClick={() => download(JSON.stringify(scenario.checkpoint, null, 2), "stock-reprise.json", "application/json")}>Télécharger l’état de reprise</button>
-          <p className="hint">Le ZIP inclut les fiches recettes en CSV. Le bouton CSV de ventes exclut les dates futures. Utilisez ces données de scénario dans un espace de test.</p></div>
-        </aside>
-        <div className="results"><div role="status" className="status">{notice}</div>{error && <p role="alert" className="error">{error}</p>}
-          <div className="dossier-heading"><div><span className="eyebrow">Votre dossier généré</span><h2>{scenario.options.name}</h2><p>Du {displayDate(scenario.options.start)} au {displayDate(scenario.days.at(-1)!.date)} · Dossier n° {scenario.options.seed}</p></div><span className="ready-badge">{dirty ? "Version précédente" : "Prêt à télécharger"}</span></div>
+        <section className="settings panel" aria-labelledby="settings-title">
+          <h2 id="settings-title" className="section-heading"><span className="section-icon"><SlidersHorizontal size={18} aria-hidden="true" /></span>Réglages du dossier</h2>
+          <form onSubmit={generate}>
+            <Settings value={form} onChange={setForm}/>
+            <details className="continuation"><summary>Reprendre les stocks d’un dossier</summary>
+              <p className="hint">Charger stock-reprise.json (ou scenario.json version 2). Lecture locale uniquement. Les lots et commandes en attente sont conservés ; les réglages d’activité restent ceux du formulaire.</p>
+              <label>Fichier de reprise<input type="file" accept=".json,application/json" onChange={loadContinuation}/></label>
+              <button type="button" className="secondary" onClick={() => { try { prepareContinuation(scenario.checkpoint); } catch (cause) { setError(cause instanceof Error ? cause.message : "Reprise impossible."); } }}>Continuer après le dossier affiché</button>
+              {continuation && <><p className="period-note">Reprise de la clôture du {displayDate(continuation.asOf)} : {continuation.lots.length} lots et {continuation.pendingOrders.length} commandes en attente. Début obligatoire : {displayDate(continuationStart(continuation))}.</p>
+                <button type="button" className="secondary" onClick={() => { setContinuation(null); setNotice("Reprise retirée des réglages. La prochaine génération démarrera avec un stock nul, sans modifier le dossier affiché."); }}>Retirer la reprise</button></>}
+            </details>
+            <button className="generate-button" type="submit">Générer {form.days || "…"} jours de documents</button>
+            {dirty && <p className="pending" role="status">Réglages modifiés : générez pour mettre à jour le dossier.</p>}
+          </form>
+        </section>
+        <section className="results" aria-labelledby="dossier-title">
+          <div role="status" className="status">{notice}</div>{error && <p role="alert" className="error">{error}</p>}
+          <div className="dossier panel">
+            <div className="dossier-heading">
+              <div>
+                {dirty && <span className="pending-badge">Version précédente</span>}
+                <h2 id="dossier-title">{scenario.options.name}</h2>
+                <p>Du {displayDate(scenario.options.start)} au {displayDate(scenario.days.at(-1)!.date)} · Dossier n° {scenario.options.seed}</p>
+              </div>
+              <button disabled={busy} onClick={archive}><Download size={16} aria-hidden="true" />{busy ? "Préparation…" : "Télécharger le ZIP"}</button>
+            </div>
+            <div className="export-actions">
+              <button className="secondary" disabled={!ready.length} onClick={() => download(salesCsv(ready), `ventes-jusqu-au-${today}.csv`, "text/csv;charset=utf-8")}>CSV jusqu’à aujourd’hui</button>
+              <button className="secondary" onClick={() => download(JSON.stringify(scenario.checkpoint, null, 2), "stock-reprise.json", "application/json")}>Télécharger l’état de reprise</button>
+            </div>
+            <p className="hint">Le ZIP inclut les fiches recettes en CSV. Utilisez les données du dossier dans un espace de test.</p>
+          </div>
           {futureDays > 0 && <p className="future-note">{futureDays} journée(s) à venir. Dans votre espace de test, attendez la date du service pour importer ses ventes. La production saisie dans Recettes porte la date du jour.</p>}
-          <div className="summary"><div><strong>{docs.length}</strong><span>pièces PDF</span></div><div><strong>{scenario.days.length}</strong><span>journée(s)</span></div><div><strong>{money(scenario.days.reduce((sum, day) => sum + day.collected, 0))}</strong><span>encaissé TTC du scénario</span></div></div>
+          <div className="summary">
+            <div className="panel"><span>Pièces PDF</span><strong>{docs.length}</strong></div>
+            <div className="panel"><span>Jours du dossier</span><strong>{scenario.days.length}</strong></div>
+            <div className="panel"><span>Encaissements TTC du scénario</span><strong>{money(scenario.days.reduce((sum, day) => sum + day.collected, 0))}</strong></div>
+          </div>
           <ScenarioSummary scenario={scenario}/>
-          <h3>Consulter les pièces</h3><div className="filters"><label>Type de pièce<select value={kind} onChange={e => setKind(e.target.value)}><option value="all">Toutes les pièces</option>{Object.entries(labels).filter(([key]) => docs.some(doc => doc.kind === key)).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-            <label>Date de pièce<select value={date} onChange={e => setDate(e.target.value)}><option value="">Toutes les dates</option>{documentDates.map(date => <option key={date} value={date}>{displayDate(date)}</option>)}</select></label>
-            <label>Document<select value={selected?.id ?? ""} onChange={e => setSelectedId(e.target.value)}>{filtered.length === 0 && <option value="">Aucune pièce</option>}{filtered.map(doc => <option key={doc.id} value={doc.id}>{doc.date} · {doc.title} · {doc.kind === "order" ? doc.recipient : doc.issuer}</option>)}</select></label></div>
-          {selected ? <Preview doc={selected}/> : <p className="empty">Aucune pièce pour ce filtre. Choisissez un déroulement avec incident pour obtenir les avoirs ou régularisations.</p>}
-        </div>
+          <section className="panel" aria-labelledby="documents-title">
+            <h2 id="documents-title" className="section-heading"><span className="section-icon"><FileText size={18} aria-hidden="true" /></span>Consulter les pièces</h2>
+            <div className="filters">
+              <label>Type de pièce<select value={kind} onChange={e => setKind(e.target.value)}>
+                <option value="all">Toutes les pièces</option>
+                {Object.entries(labels).filter(([key]) => docs.some(doc => doc.kind === key)).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+              </select></label>
+              <label>Date de pièce<select value={date} onChange={e => setDate(e.target.value)}>
+                <option value="">Toutes les dates</option>
+                {documentDates.map(date => <option key={date} value={date}>{displayDate(date)}</option>)}
+              </select></label>
+              <label>Document<select value={selected?.id ?? ""} onChange={e => setSelectedId(e.target.value)}>
+                {filtered.length === 0 && <option value="">Aucune pièce</option>}
+                {filtered.map(doc => <option key={doc.id} value={doc.id}>{doc.date} · {doc.title} · {doc.kind === "order" ? doc.recipient : doc.issuer}</option>)}
+              </select></label>
+            </div>
+            {selected ? <Preview doc={selected}/> : <p className="empty">Aucune pièce pour ce filtre. Essayez une autre date ou un autre type de pièce.</p>}
+          </section>
+        </section>
       </div>
-      <details className="coverage"><summary>Parcours de saisie et couverture des documents</summary><p>Commencez par l'établissement, les fournisseurs, les produits et les recettes. Puis suivez les opérations dans l'ordre de la journée.</p>
+      <details className="coverage panel"><summary>Parcours de saisie et couverture des documents</summary><p>Commencez par l'établissement, les fournisseurs, les produits et les recettes. Puis suivez les opérations dans l'ordre de la journée.</p>
         <ol>{workflowEntries.map(({ kind, label, text }) => <li key={kind}><strong>{label}</strong><p>{text}</p></li>)}</ol>
         <p>Les préférences, comptes et connexions de sources se règlent dans Kookia. L'historique et les rapports sont calculés à partir des opérations. Il n'existe pas d'import universel de ces PDF.</p>
       </details>
-    </main><footer>{scenario.options.name} · Achats, cuisine & service</footer>
+    </main>
   </>;
 }

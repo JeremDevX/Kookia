@@ -9,7 +9,7 @@ export function Settings({ value, onChange }: Props) {
     ? offsetDate(value.start, value.days - 1) : "—";
   const preset = (offset: number, days: number) => onChange({ ...value, start: offsetDate(formatParisDate(), offset), days });
   return <>
-    <fieldset><legend>1. Choisissez votre période</legend>
+    <fieldset><legend>Période</legend>
       <div className="presets" aria-label="Périodes rapides">
         <button type="button" className="secondary" onClick={() => preset(-6, 7)}>7 derniers jours</button>
         <button type="button" className="secondary" onClick={() => preset(0, 7)}>7 jours dès aujourd’hui</button>
@@ -19,7 +19,7 @@ export function Settings({ value, onChange }: Props) {
         <label>Nombre de jours<input required type="number" min={1} max={90} value={value.days || ""} onChange={e => update("days", Number(e.target.value))}/></label></div>
       <p className="period-note">Jusqu’au <strong>{end === "—" ? end : displayDate(end)}</strong> inclus. De 1 à 90 jours, passés ou futurs.</p>
     </fieldset>
-    <fieldset><legend>2. Ajustez l’activité</legend><div className="fields">
+    <fieldset><legend>Activité</legend><div className="fields">
       <label>Couverts de référence par jour ouvert<input required type="number" min={5} max={200} value={value.covers || ""} onChange={e => update("covers", Number(e.target.value))}/></label>
       <label>Écart de fréquentation autour de la prévision : ± {value.variationPercent} %<input type="range" min={0} max={50} step={5} value={value.variationPercent} onChange={e => update("variationPercent", Number(e.target.value))}/></label>
       <p className="hint">La prévision suit la semaine et la saison. Ce réglage ajoute un écart au service, sans changer les achats prévus. À 0 %, les couverts suivent la prévision ; le choix des plats reste variable.</p>
@@ -55,7 +55,7 @@ export function Settings({ value, onChange }: Props) {
         <p className="hint">Le sur-parage est pondéré par ingrédient et inclus dans le dosage brut. Échéances, altération, invendus et retours d’assiette sont suivis séparément. Les retours sont des estimations, pas des pesées.</p>
       </div></details>
     </fieldset>
-    <fieldset><legend>3. Ajoutez des imprévus</legend><div className="fields">
+    <fieldset><legend>Imprévus</legend><div className="fields">
       <label>Situation à rencontrer<select value={value.incident} onChange={e => update("incident", e.target.value as Options["incident"])}>
         <option value="normal">Pas d'incident ajouté</option><option value="mixed">Imprévus variés</option>
         <option value="short_delivery">Livraison incomplète + avoir</option><option value="late_delivery">Tournée fournisseur retardée</option>

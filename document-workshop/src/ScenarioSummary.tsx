@@ -6,8 +6,8 @@ import { scenarioWeatherNotice, scenarioWeatherSummary, terraceLabel } from "./w
 export const ScenarioSummary = memo(function ScenarioSummary({ scenario }: { scenario: Scenario }) {
   const runs = scenario.days.flatMap(d => d.services.flatMap(s => s.runs));
   const sum = (key: "prepared" | "sold" | "unsold" | "unserved") => runs.reduce((total, r) => total + r[key], 0);
-  return <section className="activity-summary" aria-labelledby="activity-title">
-    <h3 id="activity-title">De la prévision au service</h3>
+  return <section className="activity-summary panel" aria-labelledby="activity-title">
+    <h2 id="activity-title">De la prévision au service</h2>
     <p>{scenario.days.filter(d => d.open).length} jours ouverts · {sum("prepared")} articles préparés · {sum("sold")} servis · <strong>{sum("unsold")} invendus</strong> · {sum("unserved")} demandes non servies.</p>
     <p className="hint">Les achats précèdent la demande du service. Les invendus et retours d’assiette sont déjà compris dans la matière utilisée en production. Hypothèses de travail, sans calibration terrain.</p>
     <p>Terrasse : {terraceLabel(scenario.options.hasTerrace)}. {scenario.options.weather === "none" ? "Sans ajustement météo." : scenarioWeatherNotice}</p>
