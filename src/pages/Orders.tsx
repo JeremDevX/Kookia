@@ -13,8 +13,8 @@ import { useToast } from "../context/ToastContext";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { createOrderRecommendationsFromCartItems } from "../features/orders/orderRecommendations";
 import type { Invoice } from "../services/invoiceService";
+import { createManualInvoiceDraft } from "../features/orders/invoiceDraft";
 import { invoiceReceiptFeedback } from "../features/orders/invoiceReceiptFeedback";
-import { formatLocalISODate } from "../utils/date";
 import { analyticsReturnHref, analyticsReturnTarget } from "../utils/analyticsNavigation";
 import "../styles/Workspace.css";
 import "./Orders.css";
@@ -36,8 +36,7 @@ export default function Orders() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [historyRevision, setHistoryRevision] = useState(0);
   const [suggestionsRevision, setSuggestionsRevision] = useState(0);
-  const [invoiceOpen, setInvoiceOpen] = useState(false);
-  const [invoiceDraft, setInvoiceDraft] = useState<Invoice | undefined>();
+  const [invoiceDraft, setInvoiceDraft] = useState<Invoice | null>(null);
   const [invoiceRefresh, setInvoiceRefresh] = useState(0);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const selectionHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -56,12 +55,6 @@ export default function Orders() {
     void refetch();
     requestAnimationFrame(() => headingRef.current?.focus());
   };
-  const openManualInvoice = () => {
-    setInvoiceDraft({ id: crypto.randomUUID(), reference: "", date: formatLocalISODate(new Date()),
-      lines: [], status: "draft", source: "manual", revision: 0 });
-    setInvoiceOpen(true);
-  };
-
   return <div className={`orders-container workspace-page${view === "receipts" ? " orders-receipts" : view === "prepare" ? " orders-prepare" : ""}`}>
     <div className="orders-heading-panel">
     <header className="workspace-header"><div>
@@ -102,8 +95,8 @@ export default function Orders() {
     </>}
 
     {view === "invoices" && <SourceInvoiceArchive refreshKey={invoiceRefresh} sourceId={searchParams.get("source") ?? undefined}
-      onCreateManual={openManualInvoice}
-      onOpenDraft={(invoice) => { setInvoiceDraft(invoice); setInvoiceOpen(true); }} /> }
+      onCreateManual={() => setInvoiceDraft(createManualInvoiceDraft())}
+      onOpenDraft={setInvoiceDraft} /> }
 
     {view === "orders" && <OrderHistory refreshKey={historyRevision} focusReceiptId={focusReceiptId} returnHref={returnHref} returnTarget={returnTarget} onReceiptSaved={() => {
       setInvoiceRefresh((value) => value + 1);
@@ -117,13 +110,13 @@ export default function Orders() {
         catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
         onClose={() => setReviewOpen(false)}
         onValidated={() => { void refreshCart(); setHistoryRevision((value) => value + 1); setSuggestionsRevision((value) => value + 1); }} />}
-    {invoiceOpen && <InvoiceModal initialInvoice={invoiceDraft} products={products} suppliers={suppliers}
+    {invoiceDraft && <InvoiceModal initialInvoice={invoiceDraft} products={products} suppliers={suppliers}
         catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
         onInvoiceDataChanged={() => setInvoiceRefresh((value) => value + 1)}
         onValidate={(invoice) => {
           const { title, message } = invoiceReceiptFeedback[invoice.stockEffect];
           addToast("success", title, message);
           if (invoice.stockEffect !== "none") void refetch();
-        }} onClose={() => setInvoiceOpen(false)} />}
+        }} onClose={() => setInvoiceDraft(null)} />}
   </div>;
 }
