@@ -1,68 +1,55 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import Card from "../components/common/Card";
+import { useEffect, useRef, useState } from "react";
+import { ChefHat } from "lucide-react";
+import { Link, useBlocker, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
-import Badge from "../components/common/Badge";
 import RecordProductionModal from "../components/recipes/RecordProductionModal";
 import ProductionConfirmModal from "../components/recipes/ProductionConfirmModal";
 import ReportRefusalModal from "../components/recipes/ReportRefusalModal";
 import RecipeEditor from "../components/recipes/RecipeEditor";
 import RecipeCsvImport from "../components/recipes/RecipeCsvImport";
-import type { ImportedIngredient } from "../features/recipes/recipeCsv";
 import RecipeCandidates from "../components/recipes/RecipeCandidates";
-import RecipeSuggestionPanel from "../components/recipes/RecipeSuggestionPanel";
 import RecipeCatalog from "../components/recipes/RecipeCatalog";
 import RecipeSheets from "../components/recipes/RecipeSheets";
-import { Clock, ChefHat, CheckCircle, AlertTriangle } from "lucide-react";
-import { useToast } from "../context/ToastContext";
+import RecipeProductionHistory from "../components/recipes/RecipeProductionHistory";
+import ProducibleRecipes from "../components/recipes/ProducibleRecipes";
+import ReceiptRecipeSuggestion from "../components/recipes/ReceiptRecipeSuggestion";
 import { useRecipes } from "../hooks/useRecipes";
-import type { Recipe } from "../types";
-import { suggestRecipeFromIncomingProduct, type RecipeSuggestion } from "../domain/recipes/recipeSuggestionPolicy";
-import { isScenarioProduction, productionNoteForDisplay } from "../features/recipes/productionPresentation";
+import { useRecipeProduction } from "../features/recipes/useRecipeProduction";
 import { recipeStockWarnings } from "../features/recipes/productionAvailability";
 import { getRecipeView, recipeViewHref, recipeViewParams, type RecipeView } from "../features/recipes/recipeNavigation";
-import { getProductions, recordProduction, type Production } from "../services/recipeService";
-import { getPurchaseReceiptLineEvidence, type PurchaseReceiptLineEvidence } from "../services/orderService";
-import { formatLocalISODate, isValidISODate, shiftDays, startOfWeek } from "../utils/date";
-import type { ProductionRecord } from "../types/callbacks";
-import { ApiError } from "../config/api";
-import type { ServiceSlot } from "../../shared/serviceCalendar";
-import { Link, useBlocker, useSearchParams } from "react-router-dom";
+import { formatLocalISODate } from "../utils/date";
+import type { Recipe } from "../types";
+import type { ImportedIngredient } from "../features/recipes/recipeCsv";
+import type { RecipeSuggestion } from "../domain/recipes/recipeSuggestionPolicy";
 import "../styles/Workspace.css";
 import "./Recipes.css";
 
-const productionWeekday = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", timeZone: "UTC" });
-const productionDate = (date: string) => date.slice(0, 10).split("-").reverse().join("/");
+type EditorFlow = { kind: "csv" }
+  | { kind: "editor"; recipe: Recipe | null; suggestion: RecipeSuggestion | null; imported: ImportedIngredient[] | null };
+type ProductionDialog = { kind: "preparation" }
+  | { kind: "production"; recipe: Recipe; portions: number }
+  | { kind: "refusal"; recipe: Recipe };
 
-const Recipes: React.FC = () => {
+export default function Recipes() {
   const [searchParams, setSearchParams] = useSearchParams();
   const productId = searchParams.get("product");
-  const incomingReceiptLineId = searchParams.get("incomingReceiptLineId");
-  const { addToast } = useToast();
-  const {
-    recipes, products, loading, error, refetch,
-    getMaxYield,
-    getIngredientCost,
-    getProductName,
-    getProductUnit,
-  } = useRecipes();
+  const receiptLineId = searchParams.get("incomingReceiptLineId");
   const displayedTab = getRecipeView(searchParams);
   const changeTab = (view: RecipeView) => setSearchParams(recipeViewParams(searchParams, view));
-  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
-  const [isProductionModalOpen, setIsProductionModalOpen] = useState(false);
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [initialProductionPortions, setInitialProductionPortions] = useState(1);
-  const [refusalRecipe, setRefusalRecipe] = useState<Recipe | null>(null);
-  const [productions, setProductions] = useState<Production[]>([]);
-  const [productionError, setProductionError] = useState("");
-  const [incomingReceiptResult, setIncomingReceiptResult] = useState<{
-    receiptLineId: string;
-    evidence?: PurchaseReceiptLineEvidence;
-    error?: string;
-  } | null>(null);
-  const [incomingReceiptRetryRevision, setIncomingReceiptRetryRevision] = useState(0);
-  const [recipeEditorOpen, setRecipeEditorOpen] = useState(false);
-  const [csvOpen, setCsvOpen] = useState(false);
+  const allRecipesHref = recipeViewHref(searchParams, "catalog");
+  const { recipes, products, loading, error, refetch, productsLoading, productsError, productsReady, refreshProducts,
+    getMaxYield, getIngredientCost, getProductName, getProductUnit } = useRecipes();
+  const { productions, productionError, refreshProductions, recordPreparation,
+    confirmProduction, reportRefusal } = useRecipeProduction(refetch, refreshProducts);
+
+  const [editorFlow, setEditorFlow] = useState<EditorFlow | null>(null);
+  const [dialog, setDialog] = useState<ProductionDialog | null>(null);
+  const editorHeading = useRef<HTMLHeadingElement>(null);
+  const pageHeading = useRef<HTMLHeadingElement>(null);
+  const editorOrigin = useRef<HTMLButtonElement | null>(null);
+  const csvOpen = editorFlow?.kind === "csv";
   const csvBlocker = useBlocker(csvOpen);
+
   useEffect(() => {
     if (csvBlocker.state !== "blocked") return;
     if (!window.confirm("L’import en cours sera perdu. Quitter cette page ?")) {
@@ -70,92 +57,33 @@ const Recipes: React.FC = () => {
       return;
     }
     const timer = window.setTimeout(() => {
-      setCsvOpen(false);
+      setEditorFlow(null);
       csvBlocker.proceed();
     }, 0);
     return () => window.clearTimeout(timer);
   }, [csvBlocker]);
+
   useEffect(() => {
     if (!csvOpen) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [csvOpen]);
-  const [csvPrefill, setCsvPrefill] = useState<ImportedIngredient[] | null>(null);
-  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
-  const [recipePrefill, setRecipePrefill] = useState<RecipeSuggestion | null>(null);
-  const recipeEditorHeading = React.useRef<HTMLHeadingElement>(null);
-  const pageHeadingRef = React.useRef<HTMLHeadingElement>(null);
-  const incomingReceiptRetryButtonRef = React.useRef<HTMLButtonElement>(null);
-  const incomingReceiptRetryFocusPending = React.useRef(false);
-  const recipeEditOrigin = React.useRef<HTMLButtonElement | null>(null);
-  const today = formatLocalISODate(new Date());
-  useEffect(() => {
-    if (!incomingReceiptLineId) return;
-    let active = true;
-    getPurchaseReceiptLineEvidence(incomingReceiptLineId).then((evidence) => {
-      if (active) setIncomingReceiptResult({ receiptLineId: incomingReceiptLineId, evidence });
-    }, (cause: unknown) => {
-      if (active) setIncomingReceiptResult({ receiptLineId: incomingReceiptLineId,
-        error: cause instanceof Error ? cause.message : "Réessayez." });
-    });
-    return () => { active = false; };
-  }, [incomingReceiptLineId, incomingReceiptRetryRevision]);
-  const incomingReceipt = incomingReceiptResult?.receiptLineId === incomingReceiptLineId
-    ? incomingReceiptResult.evidence ?? null : null;
-  const incomingReceiptError = incomingReceiptResult?.receiptLineId === incomingReceiptLineId
-    ? incomingReceiptResult.error ?? "" : "";
-  const incomingReceiptLoading = Boolean(incomingReceiptLineId) && !incomingReceipt && !incomingReceiptError;
-  useEffect(() => {
-    if (incomingReceiptLoading || !incomingReceiptRetryFocusPending.current) return;
-    incomingReceiptRetryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
-    if (incomingReceiptError) incomingReceiptRetryButtonRef.current?.focus();
-    else pageHeadingRef.current?.focus();
-  }, [incomingReceiptError, incomingReceiptLoading]);
-  const retryIncomingReceipt = () => {
-    incomingReceiptRetryFocusPending.current = document.activeElement === incomingReceiptRetryButtonRef.current;
-    setIncomingReceiptResult(null);
-    setIncomingReceiptRetryRevision((revision) => revision + 1);
-  };
-  const incomingSuggestion = useMemo(() => {
-    const product = incomingReceipt ? products.find((item) => item.id === incomingReceipt.productId) : undefined;
-    const sourceReceipt = incomingReceipt ? { receiptLineId: incomingReceipt.receiptLineId,
-      reference: incomingReceipt.deliveryReference, receivedQuantity: incomingReceipt.receivedQuantity, unit: incomingReceipt.unit } : undefined;
-    return product && incomingReceipt ? suggestRecipeFromIncomingProduct(product, products,
-      incomingReceipt.deliveryDate, sourceReceipt) : null;
-  }, [incomingReceipt, products]);
-  const refreshProductions = useCallback(async () => {
-    try { setProductions(await getProductions()); setProductionError(""); }
-    catch { setProductionError("Historique de production indisponible."); }
-  }, []);
-  useEffect(() => {
-    let active = true;
-    getProductions().then((data) => { if (active) { setProductions(data); setProductionError(""); } },
-      () => { if (active) setProductionError("Historique de production indisponible."); });
-    return () => { active = false; };
-  }, []);
-  const producedRecipes = productions.filter((item) => item.kind === "production" && item.date.slice(0, 10) === today).map((item) => item.recipeId);
-  const hasScenarioRecords = productions.some((item) => isScenarioProduction(item.operationId));
-  const formatIngredientCost = (recipe: Recipe) => {
-    const cost = getIngredientCost(recipe);
-    return cost === null ? "Indisponible" : `${cost.toFixed(2)} €`;
-  };
 
-  const openRecipeEditor = (recipe: Recipe | null, trigger: HTMLButtonElement, suggestion: RecipeSuggestion | null = null) => {
-    if (recipeEditorOpen) { addToast("info", "Éditeur déjà ouvert", "Enregistrez ou annulez la recette en cours."); recipeEditorHeading.current?.focus(); return; }
-    recipeEditOrigin.current = trigger;
-    setEditingRecipe(recipe); setRecipePrefill(suggestion); setCsvPrefill(null); setRecipeEditorOpen(true);
-    requestAnimationFrame(() => document.getElementById("recipe-editor-section-title")?.scrollIntoView({ block: "nearest" }));
+  const edit = (recipe: Recipe | null, trigger: HTMLButtonElement, suggestion: RecipeSuggestion | null = null) => {
+    editorOrigin.current = trigger;
+    setEditorFlow({ kind: "editor", recipe, suggestion, imported: null });
   };
-  const closeRecipeEditor = () => {
-    setRecipeEditorOpen(false); setEditingRecipe(null); setRecipePrefill(null); setCsvPrefill(null);
-    requestAnimationFrame(() => { if (recipeEditOrigin.current?.isConnected) recipeEditOrigin.current.focus(); });
+  const closeEditor = () => {
+    setEditorFlow(null);
+    requestAnimationFrame(() => {
+      if (editorOrigin.current?.isConnected && !editorOrigin.current.disabled) editorOrigin.current.focus();
+      else pageHeading.current?.focus();
+    });
   };
   const handleRecipeSaved = async () => {
     await refetch();
-    if (!recipePrefill) return;
-    setRecipePrefill(null);
+    if (editorFlow?.kind !== "editor" || !editorFlow.suggestion) return;
     setSearchParams((current) => {
       const next = new URLSearchParams(current);
       next.delete("incomingReceiptLineId");
@@ -163,313 +91,83 @@ const Recipes: React.FC = () => {
     });
   };
 
-
-  const handleRecordProduction = async (data: ProductionRecord, operationId: string) => {
-    const saved = await recordProduction({ operationId, recipeName: data.recipeName,
-      portions: Number(data.portions), prepTime: Number(data.prepTime || 0), notes: data.notes,
-      date: formatLocalISODate(new Date(data.date)), serviceSlot: data.serviceSlot ?? null, kind: "record" });
-    setProductions((prev) => [saved, ...prev]);
-    void refreshProductions();
-    addToast(
-      "success",
-      "Préparation ajoutée au journal",
-      `${data.portions} portions de ${data.recipeName} notées. Stock inchangé.`
-    );
+  const startProduction = (recipe: Recipe, portions = 1) => setDialog({ kind: "production", recipe, portions });
+  const startRefusal = (recipe: Recipe) => setDialog({ kind: "refusal", recipe });
+  const closeDialog = () => {
+    setDialog(null);
+    requestAnimationFrame(() => { if (document.activeElement === document.body) pageHeading.current?.focus(); });
   };
+  const editing = editorFlow !== null;
+  const today = formatLocalISODate();
+  const recipesWithYield = recipes.map((recipe) => ({ ...recipe, maxYield: getMaxYield(recipe) }));
+  const matchingRecipes = productId
+    ? recipesWithYield.filter((recipe) => recipe.ingredients.some((ingredient) => ingredient.productId === productId))
+    : recipesWithYield;
+  const producedRecipeIds = new Set(productions.filter((item) => item.kind === "production" && item.date.slice(0, 10) === today)
+    .flatMap((item) => item.recipeId ? [item.recipeId] : []));
+  const recipeDetails = { getProductName, getProductUnit, costPerPortion: getIngredientCost };
 
-  const handleStartProduction = (recipe: Recipe, portions = 1) => {
-    setSelectedRecipe(recipe);
-    setInitialProductionPortions(portions);
-    setIsProductionModalOpen(true);
-  };
+  return <div className="recipes-container workspace-page">
+    {loading && <p role="status">Chargement des recettes…</p>}
+    {error && <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>}
+    {productsLoading && <p role="status">Chargement du catalogue de produits…</p>}
+    {productsError && <div role="alert"><p>Catalogue de produits indisponible. {productsError.message}</p>
+      <Button onClick={() => void refreshProducts()}>Réessayer</Button></div>}
+    {productionError && <div role="alert"><p>{productionError}</p><Button onClick={() => void refreshProductions()}>Réessayer</Button></div>}
+    <div className="recipes-heading-panel"><header className="workspace-header">
+      <div>
+        <h1 ref={pageHeading} tabIndex={-1}>{productId ? `Recettes avec ${productsReady ? getProductName(productId) : "ce produit"}` : displayedTab === "sheets" ? "Fiches techniques" : "Mes recettes"}</h1>
+        <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, selon les lots proposés. Aucun surstock n'est déduit automatiquement." : displayedTab === "sheets" ? "Retrouvez les coûts et les quantités de vos recettes." : "Faisabilité selon les lots et recettes enregistrés. Les échéances dépassées sont exclues, les échéances inconnues restent à vérifier par le chef. La validation d'une production déduit les ingrédients du stock."}</p>
+        {!productId && !receiptLineId && displayedTab === "catalog" && <a className="recipe-candidates-link" href="#recipe-candidates" onClick={(event) => {
+          event.preventDefault(); document.querySelector<HTMLElement>("#recipe-candidates > summary")?.focus();
+        }}>Voir les fiches candidates issues de pièces</a>}
+      </div>
+      <div className="recipes-header-actions">
+        <Button disabled={editing} onClick={(event) => edit(null, event.currentTarget)}>{displayedTab === "sheets" ? "Créer une fiche" : "Nouvelle recette"}</Button>
+        <Button type="button" variant="outline" disabled={editing || !productsReady} onClick={(event) => {
+          editorOrigin.current = event.currentTarget; setEditorFlow({ kind: "csv" });
+        }}>Importer une fiche CSV</Button>
+        {!productId && <Button variant="outline" icon={<ChefHat size={17} />} onClick={() => setDialog({ kind: "preparation" })}>Noter une préparation hors catalogue</Button>}
+      </div>
+    </header>
+    <div className="recipe-tabs" role="group" aria-label="Vues des recettes">
+      <button type="button" aria-pressed={displayedTab === "catalog"} onClick={() => changeTab("catalog")}>Toutes les recettes · {loading ? "…" : error ? "—" : recipes.length}</button>
+      <button type="button" aria-pressed={displayedTab === "anti-waste"} onClick={() => changeTab("anti-waste")}>Réalisables avec le stock</button>
+      <button type="button" aria-pressed={displayedTab === "sheets"} onClick={() => changeTab("sheets")}>Fiches techniques</button>
+      <button type="button" aria-pressed={displayedTab === "history"} onClick={() => changeTab("history")}>Produites cette semaine</button>
+    </div></div>
 
-  const handleConfirmProduction = async (quantity: number, operationId: string, serviceSlot: string | null) => {
-    if (selectedRecipe) {
-      try {
-        const saved = await recordProduction({ operationId, recipeId: selectedRecipe.id,
-          expectedRecipeRevision: selectedRecipe.version,
-          recipeName: selectedRecipe.name, portions: quantity, prepTime: selectedRecipe.prepTime,
-          notes: "", date: formatLocalISODate(new Date()), serviceSlot, kind: "production" });
-        setProductions((prev) => [saved, ...prev]);
-        void refreshProductions();
-        await refetch();
-        addToast("success", "Production enregistrée", `${quantity} portions de ${selectedRecipe.name} enregistrées. Ingrédients déduits du stock.`);
-      } catch (cause) {
-        if (cause instanceof ApiError && ["INSUFFICIENT_STOCK", "INSUFFICIENT_LOT_STOCK", "LOT_STOCK_MISMATCH"].includes(cause.details.code)) await refetch();
-        throw cause;
-      }
-    }
-  };
+    {receiptLineId && <ReceiptRecipeSuggestion key={receiptLineId} receiptLineId={receiptLineId} products={products}
+      ready={productsReady} editing={editing} pageHeading={pageHeading} onReview={(suggestion, trigger) => edit(null, trigger, suggestion)} />}
+    {editorFlow?.kind === "editor" && <>
+      <p role="status">Enregistrez ou annulez la recette en cours avant d’en ouvrir une autre.</p>
+      <RecipeEditor recipe={editorFlow.recipe} products={products} headingRef={editorHeading}
+        initialSuggestion={editorFlow.suggestion} initialImport={editorFlow.imported}
+        onClose={closeEditor} onSaved={handleRecipeSaved} />
+    </>}
+    {csvOpen && <RecipeCsvImport products={products} onClose={closeEditor}
+      onApply={(imported) => setEditorFlow({ kind: "editor", recipe: null, suggestion: null, imported })} />}
 
-  // 1. Filter: Recipes made this week
-  const weekStart = startOfWeek(today);
-  const nextWeekStart = shiftDays(weekStart, 7);
-  const historyRecipes = recipes.filter(({ lastMade }) => {
-    const day = lastMade?.slice(0, 10) ?? null;
-    return isValidISODate(day) && day >= weekStart && day < nextWeekStart;
-  });
+    {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to={allRecipesHref}>Voir toutes les recettes</Link></p>}
+    {displayedTab === "catalog" && !error && <RecipeCatalog editing={editing} recipes={recipesWithYield} loading={loading && recipes.length === 0}
+      onEdit={edit} onProduce={startProduction} />}
+    {displayedTab === "sheets" && !error && <RecipeSheets editing={editing} recipes={recipes} loading={loading && recipes.length === 0}
+      costPerPortion={getIngredientCost} onEdit={edit} />}
+    {!productId && !receiptLineId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
+    {displayedTab === "anti-waste" && !loading && !error && productsReady &&
+      <ProducibleRecipes {...recipeDetails} recipes={matchingRecipes} products={products} producedRecipeIds={producedRecipeIds}
+        allRecipesHref={productId ? allRecipesHref : undefined} editing={editing}
+        onEdit={edit} onProduce={startProduction} onRefusal={startRefusal} />}
+    {displayedTab === "history" &&
+      <RecipeProductionHistory {...recipeDetails} recipes={recipes} productions={productions} today={today}
+        loading={loading} recipeError={Boolean(error)} editing={editing} onEdit={edit} onRefusal={startRefusal} />}
 
-  // 2. Logic: Calculate feasible quantity based on stock (using service)
-  const recipesWithYield = (loading || error ? [] : recipes).map((recipe) => ({
-    ...recipe,
-    maxYield: getMaxYield(recipe),
-  }));
-  const matchingRecipes = productId ? recipesWithYield.filter((recipe) => recipe.ingredients.some((ingredient) => ingredient.productId === productId)) : recipesWithYield;
-  const antiWasteRecipes = matchingRecipes.filter((recipe) => recipe.maxYield > 0);
-  const unavailableRecipes = matchingRecipes.filter((recipe) => recipe.maxYield === 0 && recipe.ingredients.length > 0);
-  const incompleteRecipes = matchingRecipes.filter((recipe) => recipe.ingredients.length === 0);
-
-  const handleReportRefusal = async (recipe: Recipe, portions: number, operationId: string, serviceSlot: ServiceSlot | null) => {
-    const saved = await recordProduction({ operationId, recipeId: recipe.id,
-      expectedRecipeRevision: recipe.version,
-      recipeName: recipe.name, portions, prepTime: 0, notes: "",
-      date: formatLocalISODate(new Date()), serviceSlot, kind: "refusal" });
-    setProductions((prev) => [saved, ...prev]);
-    void refreshProductions();
-    addToast("success", "Demandes refusées enregistrées", `${portions} demande${portions > 1 ? "s" : ""} pour ${recipe.name}.`);
-  };
-
-  return (
-    <div className="recipes-container workspace-page">
-      {loading && <p role="status">Chargement des recettes…</p>}
-      {error && <div role="alert"><p>{error.message}</p><Button onClick={() => void refetch()}>Réessayer</Button></div>}
-      {productionError && <div role="alert"><p>{productionError}</p><Button onClick={() => void refreshProductions()}>Réessayer</Button></div>}
-      <div className="recipes-heading-panel"><header className="workspace-header">
-        <div>
-          <h1 ref={pageHeadingRef} tabIndex={-1}>{productId ? `Recettes avec ${loading ? "ce produit" : getProductName(productId)}` : displayedTab === "sheets" ? "Fiches techniques" : "Mes recettes"}</h1>
-          <p className="workspace-subtitle">{productId ? "Recettes contenant cet ingrédient, selon les lots proposés. Aucun surstock n'est déduit automatiquement." : displayedTab === "sheets" ? "Retrouvez les coûts et les quantités de vos recettes." : "Faisabilité selon les lots et recettes enregistrés. Les échéances dépassées sont exclues, les échéances inconnues restent à vérifier par le chef. La validation d'une production déduit les ingrédients du stock."}</p>
-          {!productId && !incomingReceiptLineId && displayedTab === "catalog" && <a className="recipe-candidates-link" href="#recipe-candidates" onClick={(event) => { event.preventDefault(); document.querySelector<HTMLElement>("#recipe-candidates > summary")?.focus(); }}>Voir les fiches candidates issues de pièces</a>}
-        </div>
-        <div className="recipes-header-actions"><Button disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(null, event.currentTarget)}>{displayedTab === "sheets" ? "Créer une fiche" : "Nouvelle recette"}</Button>
-          <Button type="button" variant="outline" disabled={recipeEditorOpen || loading || !!error} onClick={(event) => { recipeEditOrigin.current = event.currentTarget; setCsvOpen(true); }}>Importer une fiche CSV</Button>
-          {!productId && <Button variant="outline" icon={<ChefHat size={17} />} onClick={() => setIsRecordModalOpen(true)}>Noter une préparation hors catalogue</Button>}</div>
-      </header>
-      <div className="recipe-tabs" role="group" aria-label="Vues des recettes">
-        <button type="button" aria-pressed={displayedTab === "catalog"} onClick={() => changeTab("catalog")}>Toutes les recettes · {loading ? "…" : error ? "—" : recipes.length}</button>
-        <button type="button" aria-pressed={displayedTab === "anti-waste"} onClick={() => changeTab("anti-waste")}>Réalisables avec le stock</button>
-        <button type="button" aria-pressed={displayedTab === "sheets"} onClick={() => changeTab("sheets")}>Fiches techniques</button>
-        <button type="button" aria-pressed={displayedTab === "history"} onClick={() => changeTab("history")}>Produites cette semaine</button>
-      </div></div>
-
-      {incomingReceiptLineId && incomingReceiptLoading && <p role="status">Chargement de la réception source…</p>}
-      {incomingReceiptLineId && incomingReceiptError && <div role="alert"><p>La réception source est indisponible : {incomingReceiptError}</p>
-        <Button ref={incomingReceiptRetryButtonRef} type="button" variant="outline" onClick={retryIncomingReceipt}>Réessayer</Button>
-      </div>}
-      {incomingReceiptLineId && !loading && !error && !incomingReceiptLoading && !incomingReceiptError && incomingSuggestion && <RecipeSuggestionPanel disabled={recipeEditorOpen} suggestion={incomingSuggestion}
-        onReview={(trigger) => openRecipeEditor(null, trigger, incomingSuggestion)} />}
-      {incomingReceiptLineId && !loading && !error && !incomingReceiptLoading && !incomingReceiptError && !incomingSuggestion && <p role="status">
-        Aucune proposition de recette automatique n’est disponible pour cette réception. Vous pouvez créer une recette depuis le catalogue.
-      </p>}
-      {recipeEditorOpen && <p role="status">Enregistrez ou annulez la recette en cours avant d’en ouvrir une autre.</p>}
-      {recipeEditorOpen && <RecipeEditor recipe={editingRecipe} products={products} headingRef={recipeEditorHeading}
-        initialSuggestion={recipePrefill} initialImport={csvPrefill}
-        onClose={closeRecipeEditor} onSaved={handleRecipeSaved} />}
-      {csvOpen && <RecipeCsvImport products={products} onClose={() => { setCsvOpen(false); requestAnimationFrame(() => recipeEditOrigin.current?.focus()); }} onApply={(ingredients) => { setCsvOpen(false); setEditingRecipe(null); setRecipePrefill(null); setCsvPrefill(ingredients); setRecipeEditorOpen(true); requestAnimationFrame(() => document.getElementById("recipe-editor-section-title")?.scrollIntoView({ block: "nearest" })); }} />}
-
-      {productId && !loading && !error && <p className="recipes-context" role="status">{matchingRecipes.length} recette{matchingRecipes.length > 1 ? "s" : ""} trouvée{matchingRecipes.length > 1 ? "s" : ""}. <Link to={recipeViewHref(searchParams, "catalog")}>Voir toutes les recettes</Link></p>}
-      {displayedTab === "catalog" && !error && <RecipeCatalog editing={recipeEditorOpen} recipes={recipesWithYield} loading={loading}
-        onEdit={(recipe, trigger) => openRecipeEditor(recipe, trigger)} onProduce={handleStartProduction} />}
-      {displayedTab === "sheets" && !error && <RecipeSheets editing={recipeEditorOpen} recipes={recipes} loading={loading} costPerPortion={getIngredientCost}
-        onEdit={(recipe, trigger) => openRecipeEditor(recipe, trigger)} />}
-      {!productId && !incomingReceiptLineId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
-
-      {displayedTab === "history" && hasScenarioRecords && <p className="workspace-subtitle" role="note">
-        Le journal contient des enregistrements de QA isolés ; ils ne décrivent pas des productions observées du restaurant.
-      </p>}
-
-      {/* TAB 1: HISTORY */}
-      {displayedTab === "history" && (
-        <div className="recipes-grid">
-          {historyRecipes.length > 0 ? (
-            historyRecipes.map((recipe) => (
-              <Card key={recipe.id} className="recipe-card">
-                <div className="recipe-header">
-                  <span className="recipe-title">{recipe.name}</span>
-                  <Badge label={recipe.category} status="neutral" />
-                </div>
-                <div className="recipe-meta">
-                  <span className="recipe-meta-item">
-                    <Clock size={14} /> {recipe.prepTime} min
-                  </span>
-                  <span className="recipe-meta-item">
-                    <ChefHat size={14} /> Cuisiné le{" "}
-                    {productionWeekday.format(new Date(recipe.lastMade!.slice(0, 10)))}
-                  </span>
-                </div>
-                <p>Version {recipe.version} · {recipe.effectiveFrom ? `effective depuis ${recipe.effectiveFrom}` : "date d’effet historique inconnue"} · rendement {recipe.yieldPortions} portions.</p>
-                <div className="recipe-ingredients">
-                  <h4 className="text-xs font-semibold uppercase text-secondary mb-2">Ingrédients du lot ({recipe.yieldPortions} portions)</h4>
-                  {recipe.ingredients.map((ing, i) => (
-                    <div key={i} className="ingredient-item">
-                      <span>{ing.productName || getProductName(ing.productId)}</span>
-                      <span>{ing.quantity} {ing.unit || getProductUnit(ing.productId)}</span>
-                    </div>
-                  ))}
-                  {/* Economics Section */}
-                  <div className="cost-row mt-3">
-                    <div className="cost-col">
-                      <span className="cost-label">Coût matière par portion</span>
-                      <span className="cost-value">
-                        {formatIngredientCost(recipe)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="recipe-actions mt-auto pt-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="btn-danger-outline w-full"
-                    icon={<AlertTriangle size={14} />}
-                    onClick={() => setRefusalRecipe(recipe)}
-                  >
-                    Signaler un refus
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
-                </div>
-              </Card>
-            ))
-          ) : !loading && !error && (
-            <div className="empty-week col-span-full">
-              <ChefHat
-                size={48}
-                className="mx-auto mb-4 text-secondary opacity-50"
-              />
-              <p>Aucune recette du catalogue produite cette semaine.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 2: ANTI-WASTE SUGGESTIONS */}
-      {displayedTab === "anti-waste" && (
-        <div className="recipes-grid">
-          {antiWasteRecipes.map((recipe) => {
-            const isProduced = producedRecipes.includes(recipe.id);
-            return (
-              <Card
-                key={recipe.id}
-                className={`recipe-card border-optimal ${
-                  isProduced ? "produced" : ""
-                }`}
-              >
-                {isProduced && (
-                  <div className="produced-badge">
-                    <CheckCircle size={16} />
-                    <span>Préparée aujourd’hui</span>
-                  </div>
-                )}
-                  <div className="recipe-header">
-                  <span className="recipe-title text-optimal">
-                    {recipe.name}
-                  </span>
-                  <Badge label={recipeStockWarnings(recipe, products).length ? "Faisable sous réserve" : "Faisable"} status="optimal" />
-                </div>
-                <div className="recipe-meta">
-                  <span className="recipe-meta-item">
-                    <Clock size={14} /> {recipe.prepTime} min
-                  </span>
-                  <span className="recipe-meta-item text-optimal font-medium">
-                    Stock suffisant pour une portion
-                  </span>
-                </div>
-
-                <div className="ingredients-box">
-                  <div className="stock-match-badge w-full justify-center mb-2">
-                    <CheckCircle size={16} />
-                    Jusqu’à {recipe.maxYield} portions avec les lots proposés
-                  </div>
-
-                  {/* Economics Section */}
-                  <div className="cost-row">
-                    <div className="cost-col">
-                      <span className="cost-label">Coût matière par portion</span>
-                      <span className="cost-value">
-                        {formatIngredientCost(recipe)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {recipe.ingredients.map((ing, i) => (
-                    <div key={i} className="ingredient-row">
-                      <span>{ing.productName || getProductName(ing.productId)}</span>
-                      <span className="font-medium text-optimal">{ing.quantity} {ing.unit || getProductUnit(ing.productId)} / lot</span>
-                    </div>
-                  ))}
-                </div>
-                {recipeStockWarnings(recipe, products).length > 0 && <ul>{recipeStockWarnings(recipe, products).map(warning => <li key={warning}>{warning}</li>)}</ul>}
-                <div className="recipe-actions">
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={() =>
-                      handleStartProduction(recipe)
-                    }
-                  >
-                    {isProduced ? "Produire à nouveau" : "Produire cette recette"}
-                  </Button>
-                  <Button size="sm" variant="outline" className="w-full" disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
-                </div>
-              </Card>
-            );
-          })}
-          {productId && matchingRecipes.length === 0 && !loading && !error ? <div className="empty-week col-span-full"><p>Aucune recette du catalogue ne contient ce produit.</p><Link to={recipeViewHref(searchParams, "catalog")}>Voir toutes les recettes</Link></div> : antiWasteRecipes.length === 0 && !loading && !error && (
-            <div className="empty-week col-span-full">
-              <p>{recipes.length === 0 ? "Aucune recette disponible." : unavailableRecipes.length > 0 ? "Pas assez de stock pour préparer une portion des recettes renseignées." : "Aucune recette avec des ingrédients renseignés."}</p>
-            </div>
-          )}
-          {unavailableRecipes.length > 0 && <section className="col-span-full" aria-label="Recettes non réalisables avec le stock actuel">
-            <h3>Recettes non réalisables avec le stock actuel</h3>
-            <p>Stock insuffisant pour une portion. Signalez les demandes refusées si besoin.</p>
-            <div className="recipes-grid">{unavailableRecipes.map((recipe) => <Card key={recipe.id} className="recipe-card">
-              <strong>{recipe.name}</strong>
-              {recipeStockWarnings(recipe, products).length > 0 && <ul>{recipeStockWarnings(recipe, products).map(warning => <li key={warning}>{warning}</li>)}</ul>}
-              <Button size="sm" variant="outline" onClick={() => setRefusalRecipe(recipe)}>Signaler un refus</Button>
-              <Button size="sm" variant="outline" disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Modifier la recette</Button>
-            </Card>)}</div>
-          </section>}
-          {incompleteRecipes.length > 0 && <section className="col-span-full" aria-label="Recettes sans ingrédients renseignés">
-            <p role="status">{incompleteRecipes.length} recette{incompleteRecipes.length > 1 ? "s" : ""} sans ingrédients renseignés ne peuvent pas être produites.</p>
-            {incompleteRecipes.map((recipe) => <Card key={recipe.id} className="recipe-card"><strong>{recipe.name}</strong>
-              <Button size="sm" variant="outline" disabled={recipeEditorOpen} onClick={(event) => openRecipeEditor(recipe, event.currentTarget)}>Compléter la recette</Button>
-            </Card>)}
-          </section>}
-        </div>
-      )}
-
-      {displayedTab === "history" && productions.length > 0 && <section aria-label="Journal de production">
-        <h2>Productions enregistrées</h2>
-        {productions.map((item) => {
-          const visibleNote = productionNoteForDisplay(item);
-          return <Card key={item.id}><strong>{item.recipeName}</strong>
-          <p>{item.portions} portions · {productionDate(item.date)} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé" : "Production réalisée — stock déduit"}</p>
-          {item.recipeVersion && <p>Version recette {item.recipeVersion.version} · rendement {item.recipeVersion.yieldPortions} portions · effet {item.recipeVersion.effectiveFrom ? productionDate(item.recipeVersion.effectiveFrom) : "date historique inconnue"}</p>}
-          {visibleNote && <p>{visibleNote}</p>}</Card>;
-        })}
-      </section>}
-
-      <RecordProductionModal
-        isOpen={isRecordModalOpen}
-        onClose={() => setIsRecordModalOpen(false)}
-        onRecord={handleRecordProduction}
-      />
-
-      <ProductionConfirmModal
-        key={`${selectedRecipe?.id ?? "none"}-${isProductionModalOpen ? "open" : "closed"}`}
-        isOpen={isProductionModalOpen}
-        onClose={() => setIsProductionModalOpen(false)}
-        recipe={selectedRecipe}
-        initialPortions={initialProductionPortions}
-        maxYield={selectedRecipe ? getMaxYield(selectedRecipe) : 0}
-        availabilityWarnings={selectedRecipe ? recipeStockWarnings(selectedRecipe, products) : []}
-        costPerPortion={selectedRecipe ? getIngredientCost(selectedRecipe) : null}
-        getProductName={getProductName}
-        getProductUnit={getProductUnit}
-        onConfirm={handleConfirmProduction}
-      />
-      {refusalRecipe && <ReportRefusalModal recipe={refusalRecipe} onClose={() => setRefusalRecipe(null)} onConfirm={handleReportRefusal} />}
-    </div>
-  );
-};
-
-export default Recipes;
+    <RecordProductionModal isOpen={dialog?.kind === "preparation"} onClose={closeDialog} onRecord={recordPreparation} />
+    {dialog?.kind === "production" && <ProductionConfirmModal
+      isOpen onClose={closeDialog} recipe={dialog.recipe} initialPortions={dialog.portions}
+      maxYield={getMaxYield(dialog.recipe)} availabilityWarnings={productsReady ? recipeStockWarnings(dialog.recipe, products) : []}
+      costPerPortion={getIngredientCost(dialog.recipe)} getProductName={getProductName} getProductUnit={getProductUnit}
+      onConfirm={(quantity, operationId, serviceSlot) => confirmProduction(dialog.recipe, quantity, operationId, serviceSlot)} />}
+    {dialog?.kind === "refusal" && <ReportRefusalModal recipe={dialog.recipe} onClose={closeDialog} onConfirm={reportRefusal} />}
+  </div>;
+}

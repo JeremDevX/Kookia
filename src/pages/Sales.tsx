@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/common/Button";
 import SalesImport from "../components/sales/SalesImport";
@@ -9,8 +9,8 @@ import SaleServiceAllocation from "../components/sales/SaleServiceAllocation";
 import SalesTicketImport, { type TicketPreview } from "../components/sales/SalesTicketImport";
 import SalesReconciliation from "../components/sales/SalesReconciliation";
 import SalesRecipeMappings from "../components/sales/SalesRecipeMappings";
-import { correctSale, createSale, createSaleItem, getLatestService, getSaleItems, getSales, recordSaleOutcome,
-  type DailySale, type LatestService, type SaleItem, type SaleValues } from "../services/salesService";
+import { correctSale, createSale, createSaleItem, recordSaleOutcome, type DailySale, type SaleValues } from "../services/salesService";
+import { useSalesReads } from "../features/sales/useSalesReads";
 import { describeServiceCoverage, describeServiceSources } from "../features/sales/salesPresentation";
 import { formatLocalISODate, shiftDays } from "../utils/date";
 import "../styles/Workspace.css";
@@ -21,13 +21,12 @@ const message = (error: unknown) => error instanceof Error ? error.message : "R�
 
 export default function Sales() {
   const today = formatLocalISODate();
-  const [items, setItems] = useState<SaleItem[]>([]);
-  const [sales, setSales] = useState<DailySale[]>([]);
-  const [latestService, setLatestService] = useState<LatestService | null>(null);
   const [salesRevision, setSalesRevision] = useState(0);
   const [ticketPreview, setTicketPreview] = useState<TicketPreview | null>(null);
-  const [from, setFrom] = useState(initialFrom);
-  const [to, setTo] = useState(formatLocalISODate);
+  const [{ from, to }, setPeriod] = useState(() => ({ from: initialFrom(), to: today }));
+  const { history, latest, catalog, items, rememberItems } = useSalesReads(from, to);
+  const sales = history.data ?? [];
+  const latestService = latest.data;
   const [values, setValues] = useState<SaleValues>({ saleItemId: "", serviceDate: today, quantity: 1 });
   const [itemName, setItemName] = useState("");
   const [itemSaving, setItemSaving] = useState(false);
@@ -35,43 +34,26 @@ export default function Sales() {
   const [editing, setEditing] = useState<DailySale | null>(null);
   const [editReason, setEditReason] = useState("");
   const [correctionOperationId, setCorrectionOperationId] = useState(() => crypto.randomUUID());
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [itemError, setItemError] = useState("");
   const [itemStatus, setItemStatus] = useState("");
-  const [loadError, setLoadError] = useState("");
   const [status, setStatus] = useState("");
   const [showMetrics, setShowMetrics] = useState(false);
   const productSelect = useRef<HTMLSelectElement>(null);
   const startHeading = useRef<HTMLHeadingElement>(null);
   const historyHeading = useRef<HTMLHeadingElement>(null);
   const editOrigin = useRef<HTMLButtonElement>(null);
-  const requestNumber = useRef(0);
+  const itemsHeading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { if (editing) productSelect.current?.focus(); }, [editing]);
 
-  const load = useCallback(async () => {
-    const currentRequest = ++requestNumber.current;
-    setLoading(true);
-    setLoadError("");
-    setSales([]);
-    try {
-      const [catalog, rows, latest] = await Promise.all([getSaleItems(), getSales(from, to), getLatestService()]);
-      if (currentRequest === requestNumber.current) {
-        setItems((current) => {
-          const merged = new Map([...catalog, ...current].map((item) => [item.id, item]));
-          return [...merged.values()].sort((a, b) => a.name.localeCompare(b.name, "fr"));
-        });
-        setSales(rows);
-        setLatestService(latest);
-      }
-    } catch (cause) { if (currentRequest === requestNumber.current) setLoadError(message(cause)); }
-    finally { if (currentRequest === requestNumber.current) setLoading(false); }
-  }, [from, to]);
-  useEffect(() => { void load(); }, [load]);
-  const retryLoad = () => {
-    void load();
-    requestAnimationFrame(() => startHeading.current?.focus());
+  const includeDate = (date: string) => setPeriod((period) => date < period.from || date > period.to
+    ? { from: date, to: date } : period);
+  const refreshSales = (date?: string) => {
+    setSalesRevision((current) => current + 1);
+    latest.reload();
+    history.reload();
+    if (date) includeDate(date);
   };
 
   const change = (next: SaleValues) => {
@@ -94,7 +76,7 @@ export default function Sales() {
     event.preventDefault(); setItemSaving(true); setItemError(""); setItemStatus("");
     try {
       const item = await createSaleItem(itemName);
-      setItems((current) => [...current, item].sort((a, b) => a.name.localeCompare(b.name, "fr")));
+      rememberItems([item]);
       change({ ...values, saleItemId: item.id });
       setItemName(""); setItemStatus("Article vendu ajouté. Vous pouvez saisir sa première vente.");
       productSelect.current?.focus();
@@ -102,9 +84,7 @@ export default function Sales() {
     finally { setItemSaving(false); }
   };
   const showImportedDate = async (date?: string) => {
-    setSalesRevision((current) => current + 1);
-    if (date && (date < from || date > to)) { setFrom(date); setTo(date); }
-    else await load();
+    refreshSales(date);
     requestAnimationFrame(() => historyHeading.current?.focus());
   };
   const submit = async (event: FormEvent) => {
@@ -114,17 +94,12 @@ export default function Sales() {
       if (editing) await correctSale(editing.id, editing.revision, values, correctionOperationId, editReason);
       else await createSale(values, operationId);
       setStatus(editing ? "Vente corrigée et enregistrée." : "Vente enregistrée.");
-      setSalesRevision((current) => current + 1);
       cancel(false);
-      if (values.serviceDate < from || values.serviceDate > to) {
-        setFrom(values.serviceDate);
-        setTo(values.serviceDate);
-      }
-      else await load();
+      refreshSales(values.serviceDate);
       requestAnimationFrame(() => historyHeading.current?.focus());
     } catch (cause) {
       setError(message(cause));
-      if (!editing) { setSalesRevision((current) => current + 1); await load(); }
+      if (!editing) refreshSales();
     }
     finally { setSaving(false); }
   };
@@ -135,8 +110,10 @@ export default function Sales() {
     </div></header>
     <section id="sales-start" className="sales-panel sales-start" aria-labelledby="sales-start-title">
       <h2 id="sales-start-title" ref={startHeading} tabIndex={-1}>Vos ventes enregistrées</h2>
-      {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <div role="alert"><p>{loadError}</p>
-        <Button type="button" variant="outline" onClick={retryLoad}>Réessayer</Button></div> : latestService ?
+      {latest.loading ? <p role="status">Chargement du dernier service…</p> : latest.error ? <div role="alert"><p>Dernier service indisponible. {latest.error}</p>
+        <Button type="button" variant="outline" onClick={() => {
+          latest.reload(); startHeading.current?.focus();
+        }}>Réessayer</Button></div> : latestService ?
         <p>Dernière date de service renseignée : {new Date(`${latestService.serviceDate}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })} · {latestService.status === "open" ? "restaurant ouvert" : "restaurant fermé"} · couverture {describeServiceCoverage(latestService.coverage).toLocaleLowerCase("fr-FR")}.
           {latestService.status === "closed" ? " Aucune activité n’était prévue." : latestService.coverage === "complete" && latestService.salesCount === 0 ? " Zéro vente observé après revue complète." : latestService.coverage !== "complete" ? " " + latestService.salesCount + " ligne(s) enregistrée(s) ; les absences restent inconnues." : " " + latestService.salesCount + " ligne(s) enregistrée(s)."}
           {latestService.salesCount > 0 ? ` Sources : ${describeServiceSources(latestService.sources)}.` : ""}</p> :
@@ -146,17 +123,24 @@ export default function Sales() {
       <small>Les ventes alimentent les indicateurs et peuvent contribuer aux achats suggérés lorsque les services, cartes, recettes et stocks nécessaires sont renseignés.</small>
     </section>
     <DatedServices today={today} refreshToken={salesRevision} />
-    <details className="sales-disclosure"><summary>Couverture quotidienne historique (non ventilée)</summary><ServiceCalendar from={from} to={to} today={today} onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} /></details>
+    <details className="sales-disclosure"><summary>Couverture quotidienne historique (non ventilée)</summary><ServiceCalendar from={from} to={to} today={today} onChanged={async () => {
+      setSalesRevision((current) => current + 1);
+      latest.reload();
+    }} /></details>
     <SalesTicketImport onCandidatesSaved={async (serviceDate) => {
       setSalesRevision((current) => current + 1);
-      if (serviceDate < from || serviceDate > to) { setFrom(serviceDate); setTo(serviceDate); }
-      else await load();
+      includeDate(serviceDate);
     }} onPreviewChanged={setTicketPreview} />
     <SalesReconciliation from={from} to={to} refreshToken={salesRevision} items={items} ticketPreview={ticketPreview}
-      onChanged={async () => { setSalesRevision((current) => current + 1); await load(); }} />
-    <SalesImport items={items} onImported={showImportedDate} onItemsCreated={setItems} />
+      onChanged={async () => refreshSales()} />
+    <SalesImport items={items} onImported={showImportedDate} onItemsCreated={rememberItems} />
     <section className="sales-panel" aria-labelledby="sale-item-title">
-      <h2 id="sale-item-title">Articles vendus</h2>
+      <h2 id="sale-item-title" ref={itemsHeading} tabIndex={-1}>Articles vendus</h2>
+      {catalog.loading && <p role="status">Chargement des articles vendus…</p>}
+      {catalog.error && <div role="alert"><p>Articles vendus indisponibles. {catalog.error}</p>
+        <Button type="button" variant="outline" onClick={() => {
+          catalog.reload(); itemsHeading.current?.focus();
+        }}>Réessayer</Button></div>}
       <p>Pour saisir une vente manuellement, créez d'abord le plat ou l'article vendu.</p>
       <form onSubmit={(event) => void addItem(event)} className="sales-form">
         <label>Nom du nouvel article<input required maxLength={120} value={itemName} onChange={(event) => setItemName(event.target.value)} /></label>
@@ -186,10 +170,13 @@ export default function Sales() {
     </section>
     <section className="sales-panel" aria-labelledby="sales-history-title">
       <h2 id="sales-history-title" ref={historyHeading} tabIndex={-1}>Historique enregistré</h2>
-      <div className="sales-filters"><label>Du<input type="date" value={from} max={to} onChange={(event) => setFrom(event.target.value)} /></label>
-        <label>Au<input type="date" value={to} min={from} max={today} onChange={(event) => setTo(event.target.value)} /></label>
-        <Button type="button" variant="outline" onClick={() => { void load(); setSalesRevision((current) => current + 1); }}>Actualiser</Button></div>
-      {loading ? <p role="status">Chargement des ventes…</p> : loadError ? <p>Historique indisponible. Réessayez depuis cette page.</p> : sales.length === 0 ? <p>Aucune vente enregistrée sur cette période.</p> :
+      <div className="sales-filters"><label>Du<input type="date" value={from} max={to} onChange={(event) => setPeriod({ from: event.target.value, to })} /></label>
+        <label>Au<input type="date" value={to} min={from} max={today} onChange={(event) => setPeriod({ from, to: event.target.value })} /></label>
+        <Button type="button" variant="outline" onClick={() => {
+          history.reload();
+          if (!history.error) setSalesRevision((current) => current + 1);
+        }}>{history.error ? "Réessayer" : "Actualiser"}</Button></div>
+      {history.loading ? <p role="status">Chargement des ventes…</p> : history.error ? <p role="alert">Historique indisponible. {history.error}</p> : sales.length === 0 ? <p>Aucune vente enregistrée sur cette période.</p> :
         <div className="sales-table-wrap" role="region" aria-label="Ventes par date et produit" tabIndex={0}><table className="sales-table"><thead><tr>
           <th>Date de service</th><th>Article vendu</th><th>Quantité</th><th>Provenance</th><th>Dernière modification</th><th>Action</th>
         </tr></thead><tbody>{sales.map((sale) => <tr key={sale.id}>
@@ -200,7 +187,7 @@ export default function Sales() {
             <SaleServiceAllocation sale={sale} onChanged={() => setSalesRevision((current) => current + 1)} />
             <SaleOutcomeActions sale={sale} onUpdated={async (action) => {
               setStatus(action === "void" ? "Vente annulée et conservée dans la provenance." : "Remboursement signalé ; les unités vendues restent inchangées.");
-              setSalesRevision((current) => current + 1); await load();
+              refreshSales();
               requestAnimationFrame(() => historyHeading.current?.focus());
             }} /></div></td>
         </tr>)}</tbody></table></div>}

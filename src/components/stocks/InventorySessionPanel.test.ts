@@ -1,177 +1,194 @@
-import { Children, isValidElement, type ReactElement } from "react";
+import { Children, isValidElement, type ComponentProps, type ReactElement } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
-import { AccountInventorySessionPanel } from "./InventorySessionPanel";
+import { ApiError } from "../../config/api";
+import InventoryCountTable from "./InventoryCountTable";
+import InventorySessionPanel from "./InventorySessionPanel";
 
-const state = vi.hoisted(() => ({ index: 0, values: [] as unknown[], setters: [] as Array<ReturnType<typeof vi.fn>>, effects: [] as Array<() => unknown>, userId: "user-1" }));
-const api = vi.hoisted(() => ({ getInventory: vi.fn(), getInventoryWorkspace: vi.fn(), saveInventory: vi.fn(), openInventory: vi.fn(), validateInventory: vi.fn() }));
+const hooks = vi.hoisted(() => ({ index: 0, values: [] as unknown[], effects: [] as Array<() => unknown>, userId: "user-1" }));
+const api = vi.hoisted(() => ({ getInventory: vi.fn(), getInventoryWorkspace: vi.fn(), saveInventory: vi.fn(),
+  openInventory: vi.fn(), validateInventory: vi.fn(), refreshInventory: vi.fn(), discardInventory: vi.fn() }));
 vi.mock("../../services/inventorySessionService", () => api);
 vi.mock("react", async (original) => ({
   ...await original<typeof import("react")>(),
-  useState: () => { const index = state.index++; return [state.values[index], state.setters[index]]; },
-  useEffect: (effect: () => unknown) => { state.effects.push(effect); },
+  useState: (initial: unknown) => {
+    const index = hooks.index++;
+    if (index >= hooks.values.length) hooks.values[index] = initial;
+    return [hooks.values[index], (next: unknown) => {
+      hooks.values[index] = typeof next === "function" ? next(hooks.values[index]) : next;
+    }];
+  },
+  useRef: () => ({ current: null }),
+  useEffect: (effect: () => unknown) => { hooks.effects.push(effect); },
 }));
-vi.mock("../../features/auth/context/AuthContext", () => ({ useAuth: () => ({ user: { id: state.userId } }) }));
+vi.mock("../../features/auth/context/AuthContext", () => ({ useAuth: () => ({ user: { id: hooks.userId } }) }));
 vi.mock("react-router-dom", () => ({ useBlocker: () => ({ state: "unblocked" }) }));
 
-function find(node: unknown, label: string): ReactElement<Record<string, unknown>> | undefined {
-  if (!isValidElement<Record<string, unknown>>(node)) return;
-  if (node.props.children === label) return node;
-  for (const child of Children.toArray(node.props.children as never)) {
-    const result = find(child, label); if (result) return result;
-  }
-}
+type Node = ReactElement<Record<string, unknown>>;
+const key = "inventory-pending-validation:user-1:restaurant-1";
+const testOperation = { id: "s1", revision: 2 };
 const product = { productId: "p1", name: "Tomates", category: "Légumes", unit: "kg", stockRevision: 1,
   theoreticalQuantity: 10, countedQuantity: 5, reason: "Casse" };
+const draft = { ...testOperation, status: "draft", lines: [product] };
+const slots = new Map<string, string>();
+
+function find(node: unknown, predicate: (element: Node) => boolean): Node | undefined {
+  if (!isValidElement<Record<string, unknown>>(node)) return;
+  if (predicate(node)) return node;
+  if (node.type === InventoryCountTable) return find(InventoryCountTable(node.props as ComponentProps<typeof InventoryCountTable>), predicate);
+  for (const child of Children.toArray(node.props.children as never)) {
+    const result = find(child, predicate);
+    if (result) return result;
+  }
+}
+
+const render = (props: Partial<ComponentProps<typeof InventorySessionPanel>> = {}) => {
+  hooks.index = 0; hooks.effects = [];
+  const panel = InventorySessionPanel({ search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn(), ...props });
+  if (!isValidElement(panel)) throw new Error("Inventaire indisponible");
+  const accountPanel = panel.type as (props: unknown) => Node;
+  return accountPanel(panel.props);
+};
+const byLabel = (label: string, props?: Partial<ComponentProps<typeof InventorySessionPanel>>) => find(render(props),
+  (node) => node.props.children === label || node.props["aria-label"] === label);
+const click = (label: string, props?: Partial<ComponentProps<typeof InventorySessionPanel>>) => {
+  const button = byLabel(label, props);
+  expect(button).toBeDefined();
+  (button!.props.onClick as (event: { currentTarget: object }) => void)({ currentTarget: {} });
+};
+const load = async () => {
+  render();
+  hooks.effects[0]();
+  await Promise.resolve();
+  await Promise.resolve();
+};
+const storedValidation = () => slots.set(key, JSON.stringify(testOperation));
+
 beforeEach(() => {
-  state.index = 0; state.effects = []; state.userId = "user-1";
-  api.getInventory.mockReset(); api.getInventoryWorkspace.mockResolvedValue({ restaurantId: "restaurant-1" }); api.openInventory.mockReset(); api.validateInventory.mockReset();
-  vi.stubGlobal("sessionStorage", { getItem: () => null });
-  state.values = ["restaurant-1", { id: "s1", status: "draft", revision: 2, lines: [product] }, { p1: "5" }, false, "", false, false, false, false,
-    false, { p1: { quantity: 6, reason: "Erreur" } }, {}, null, true, 0, false];
-  state.setters = Array.from({ length: state.values.length }, () => vi.fn());
-});
-it("signale un conflit masqué et propose d’effacer les filtres", () => {
-  const clear = vi.fn();
-  const tree = AccountInventorySessionPanel({ userId: state.userId, search: "farine", category: "all", onRefresh: async () => {}, onClearFilters: clear });
-  const button = find(tree, "Afficher tous les produits");
-  expect(button).toBeDefined();
-  (button!.props.onClick as () => void)();
-  expect(clear).toHaveBeenCalledOnce();
-});
-it.each(["Garder ma saisie", "Prendre la valeur enregistrée"])("protège le choix « %s » avant enregistrement", (label) => {
-  const tree = AccountInventorySessionPanel({ userId: state.userId, search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  const button = find(tree, label);
-  expect(button).toBeDefined();
-  (button!.props.onClick as () => void)();
-  expect(state.setters[8]).toHaveBeenCalledWith(true);
+  vi.resetAllMocks();
+  hooks.values = []; hooks.userId = "user-1";
+  api.getInventoryWorkspace.mockResolvedValue({ restaurantId: "restaurant-1" });
+  api.getInventory.mockResolvedValue(null);
+  slots.clear();
+  vi.stubGlobal("sessionStorage", {
+    getItem: vi.fn((name: string) => slots.get(name) ?? null),
+    setItem: vi.fn((name: string, value: string) => slots.set(name, value)),
+    removeItem: vi.fn((name: string) => slots.delete(name)),
+  });
+  vi.stubGlobal("document", { activeElement: null });
 });
 
-it("consulte le brouillon sans en créer à l’ouverture", async () => {
-  state.values[1] = null; state.values[13] = false;
-  api.getInventory.mockResolvedValue(null);
-  AccountInventorySessionPanel({ userId: state.userId, search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  state.effects[2]();
-  await vi.waitFor(() => expect(api.getInventory).toHaveBeenCalledOnce());
+it("consulte le brouillon de l’établissement sans en créer à l’ouverture", async () => {
+  await load();
+  expect(api.getInventory).toHaveBeenCalledWith("restaurant-1");
   expect(api.openInventory).not.toHaveBeenCalled();
   expect(api.validateInventory).not.toHaveBeenCalled();
+  expect(byLabel("Commencer l’inventaire")).toBeDefined();
 });
-it("crée le brouillon seulement après le choix de commencer", async () => {
-  state.values[1] = null;
-  api.openInventory.mockResolvedValue({ id: "s1", revision: 1, status: "draft", lines: [] });
-  const tree = AccountInventorySessionPanel({ userId: state.userId, search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  const button = find(tree, "Commencer l’inventaire");
-  expect(button).toBeDefined();
-  expect(api.openInventory).not.toHaveBeenCalled();
-  (button!.props.onClick as () => void)();
-  await vi.waitFor(() => expect(api.openInventory).toHaveBeenCalledOnce());
+
+it("crée un brouillon sur demande et permet de réessayer si son ouverture échoue", async () => {
+  api.openInventory.mockRejectedValueOnce(new Error("Connexion interrompue")).mockResolvedValue(draft);
+  await load();
+  click("Commencer l’inventaire");
+  await vi.waitFor(() => expect(byLabel("Connexion interrompue")).toBeDefined());
+  click("Commencer l’inventaire");
+  await vi.waitFor(() => expect(byLabel("Quantité comptée : Tomates")?.props.value).toBe("5"));
+  expect(api.openInventory).toHaveBeenCalledTimes(2);
 });
+
 it("reprend un brouillon existant sans créer de session", async () => {
-  const draft = { id: "s1", revision: 1, status: "draft", lines: [product] };
   api.getInventory.mockResolvedValue(draft);
-  AccountInventorySessionPanel({ userId: state.userId, search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  state.effects[2]();
-  await vi.waitFor(() => expect(state.setters[1]).toHaveBeenCalledWith(draft));
+  await load();
+  expect(byLabel("Quantité comptée : Tomates")?.props.value).toBe("5");
   expect(api.openInventory).not.toHaveBeenCalled();
 });
-it("demande une action avant de vérifier une validation restée incertaine", async () => {
-  const operation = { id: "s1", revision: 2 };
-  vi.stubGlobal("sessionStorage", { getItem: () => JSON.stringify(operation) });
-  api.getInventory.mockResolvedValue(null);
-  AccountInventorySessionPanel({ userId: state.userId, search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  state.effects[2]();
-  await vi.waitFor(() => expect(state.setters[12]).toHaveBeenCalledWith(operation));
+
+it("rejoue la validation persistée uniquement à la demande, même si la lecture du brouillon est indisponible", async () => {
+  storedValidation();
+  api.getInventory.mockRejectedValue(new Error("Lecture impossible"));
+  api.validateInventory.mockResolvedValue({ ...draft, status: "validated" });
+  await load();
   expect(api.openInventory).not.toHaveBeenCalled();
   expect(api.validateInventory).not.toHaveBeenCalled();
+  click("Vérifier la validation");
+  await vi.waitFor(() => expect(byLabel("Inventaire validé. Les produits non comptés restent à vérifier.")).toBeDefined());
+  expect(api.validateInventory).toHaveBeenCalledWith(testOperation, "restaurant-1");
+  expect(sessionStorage.removeItem).toHaveBeenCalledWith(key);
 });
 
-it.each([401, 403, 404, 429, 500])("conserve la validation incertaine après une erreur %s", async (status) => {
-  const { ApiError } = await import("../../config/api");
-  const removeItem = vi.fn();
-  vi.stubGlobal("sessionStorage", { getItem: () => null, removeItem });
-  state.values[12] = { id: "s1", revision: 2 };
-  api.validateInventory.mockRejectedValue(new ApiError(status, { code: "ERROR", message: "Erreur" }));
-  const tree = AccountInventorySessionPanel({ userId: state.userId, search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  (find(tree, "Vérifier la validation")!.props.onClick as () => void)();
-  await vi.waitFor(() => expect(state.setters[4]).toHaveBeenCalledWith("Erreur"));
-  expect(removeItem).not.toHaveBeenCalled();
-  expect(state.setters[12]).not.toHaveBeenCalledWith(null);
-});
-it("recherche la validation uniquement pour le compte et l’établissement courants", async () => {
-  const getItem = vi.fn(() => null);
-  vi.stubGlobal("sessionStorage", { getItem });
-  api.getInventory.mockResolvedValue(null);
-  AccountInventorySessionPanel({ userId: state.userId, search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  state.effects[2]();
-  await vi.waitFor(() => expect(getItem).toHaveBeenCalledWith("inventory-pending-validation:user-1:restaurant-1"));
-});
+it.each([[401, "ERROR"], [403, "ERROR"], [404, "ERROR"], [429, "ERROR"], [500, "ERROR"],
+  [409, "WORKSPACE_CHANGED"], [409, "SETUP_REQUIRED"], [409, "UNKNOWN"], [400, "UNKNOWN"]])(
+  "conserve la validation incertaine après l’erreur %s %s", async (status, code) => {
+    storedValidation();
+    api.validateInventory.mockRejectedValue(new ApiError(status, { code, message: "Erreur" }));
+    await load();
+    click("Vérifier la validation");
+    await vi.waitFor(() => expect(byLabel("Erreur")).toBeDefined());
+    expect(byLabel("Vérifier la validation")?.props.disabled).toBe(false);
+    expect(slots.get(key)).toBe(JSON.stringify(testOperation));
+  },
+);
 
-it.each([{ user: "user-2", restaurant: "restaurant-1" }, { user: "user-1", restaurant: "restaurant-2" }])("ne reprend pas la validation d’un autre compte ou établissement", async ({ user, restaurant }) => {
-  state.userId = user;
-  api.getInventoryWorkspace.mockResolvedValue({ restaurantId: restaurant });
-  api.getInventory.mockResolvedValue(null);
-  vi.stubGlobal("sessionStorage", { getItem: (key: string) => key === "inventory-pending-validation:user-1:restaurant-1" ? JSON.stringify({ id: "s1", revision: 2 }) : null });
-  AccountInventorySessionPanel({ userId: state.userId, search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  state.effects[2]();
-  await vi.waitFor(() => expect(state.setters[13]).toHaveBeenCalledWith(true));
-  expect(state.setters[12]).not.toHaveBeenCalledWith({ id: "s1", revision: 2 });
-  expect(api.validateInventory).not.toHaveBeenCalled();
-});
+it.each([{ user: "user-2", restaurant: "restaurant-1" }, { user: "user-1", restaurant: "restaurant-2" }])(
+  "ne reprend pas la validation d’un autre compte ou établissement", async ({ user, restaurant }) => {
+    hooks.userId = user;
+    api.getInventoryWorkspace.mockResolvedValue({ restaurantId: restaurant });
+    storedValidation();
+    await load();
+    expect(sessionStorage.getItem).toHaveBeenCalledWith(`inventory-pending-validation:${user}:${restaurant}`);
+    expect(byLabel("Vérifier la validation")).toBeUndefined();
+    expect(byLabel("Commencer l’inventaire")).toBeDefined();
+    expect(api.validateInventory).not.toHaveBeenCalled();
+  },
+);
 
 it("signale une ancienne validation sans la rejouer", async () => {
-  api.getInventory.mockResolvedValue(null);
-  vi.stubGlobal("sessionStorage", { getItem: (key: string) => key === "inventory-pending-validation" ? "ancienne" : null });
-  AccountInventorySessionPanel({ userId: "user-1", search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  state.effects[2]();
-  await vi.waitFor(() => expect(state.setters[15]).toHaveBeenCalledWith(true));
+  slots.set("inventory-pending-validation", "ancienne");
+  await load();
+  expect(byLabel("Une ancienne validation reste à vérifier, mais son compte et son établissement ne sont pas identifiés. Vérifiez l’historique des comptages avant de refaire l’inventaire.")).toBeDefined();
   expect(api.validateInventory).not.toHaveBeenCalled();
+  expect(slots.has("inventory-pending-validation")).toBe(true);
 });
-it("propose la comparaison lorsque la validation incertaine rencontre un brouillon modifié", async () => {
-  const { ApiError } = await import("../../config/api");
-  state.values[12] = { id: "s1", revision: 2 };
-  vi.stubGlobal("sessionStorage", { removeItem: vi.fn() });
+
+it.each(["{", "null", "{}", '{"id":"s1","revision":0}'])(
+  "bloque la reprise si les données locales sont invalides (%s)", async (stored) => {
+    slots.set(key, stored);
+    api.getInventory.mockResolvedValue(draft);
+    await load();
+    expect(byLabel("Réessayer")).toBeDefined();
+    expect(byLabel("Quantité comptée : Tomates")).toBeUndefined();
+    expect(api.validateInventory).not.toHaveBeenCalled();
+    expect(slots.get(key)).toBe(stored);
+  },
+);
+
+it("propose la comparaison si le brouillon d’une validation incertaine a changé", async () => {
+  storedValidation();
+  api.getInventory.mockResolvedValue(draft);
   api.validateInventory.mockRejectedValue(new ApiError(409, { code: "INVENTORY_CHANGED", message: "Modifié" }));
-  const tree = AccountInventorySessionPanel({ userId: "user-1", search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  (find(tree, "Vérifier la validation")!.props.onClick as () => void)();
-  await vi.waitFor(() => expect(state.setters[9]).toHaveBeenCalledWith(true));
+  await load();
+  click("Vérifier la validation");
+  await vi.waitFor(() => expect(byLabel("Comparer les saisies")).toBeDefined());
+  expect(slots.has(key)).toBe(false);
 });
 
-it.each(["{", "null", "{}", '{"id":"s1","revision":0}'])("bloque la reprise si les données locales sont invalides : %s", async (stored) => {
-  api.getInventory.mockResolvedValue({ id: "s1", revision: 2, status: "draft", lines: [product] });
-  vi.stubGlobal("sessionStorage", { getItem: (key: string) => key.includes(":") ? stored : null });
-  AccountInventorySessionPanel({ userId: "user-1", search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  state.effects[2]();
-  await vi.waitFor(() => expect(state.setters[4]).toHaveBeenCalledWith(expect.stringContaining("ne peut pas être vérifiée")));
-  expect(state.setters[1]).not.toHaveBeenCalledWith(expect.objectContaining({ id: "s1" }));
-  expect(api.validateInventory).not.toHaveBeenCalled();
-});
-it("associe le chargement du brouillon à l’établissement retourné", async () => {
-  api.getInventory.mockResolvedValue(null);
-  AccountInventorySessionPanel({ userId: "user-1", search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  state.effects[2]();
-  await vi.waitFor(() => expect(api.getInventory).toHaveBeenCalledWith("restaurant-1"));
-});
-it("conserve la validation si l’établissement a changé", async () => {
-  const { ApiError } = await import("../../config/api");
-  const removeItem = vi.fn();
-  vi.stubGlobal("sessionStorage", { removeItem });
-  state.values[12] = { id: "s1", revision: 2 };
-  api.validateInventory.mockRejectedValue(new ApiError(409, { code: "WORKSPACE_CHANGED", message: "Établissement changé" }));
-  const tree = AccountInventorySessionPanel({ userId: "user-1", search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  (find(tree, "Vérifier la validation")!.props.onClick as () => void)();
-  await vi.waitFor(() => expect(state.setters[4]).toHaveBeenCalledWith("Établissement changé"));
-  expect(api.validateInventory).toHaveBeenCalledWith({ id: "s1", revision: 2 }, "restaurant-1");
-  expect(removeItem).not.toHaveBeenCalled();
-});
-
-it.each([[409, "SETUP_REQUIRED"], [409, "UNKNOWN"], [400, "UNKNOWN"]])("conserve la validation sur l’erreur %s %s", async (status, code) => {
-  const { ApiError } = await import("../../config/api");
-  const removeItem = vi.fn();
-  vi.stubGlobal("sessionStorage", { removeItem });
-  state.values[12] = { id: "s1", revision: 2 };
-  api.validateInventory.mockRejectedValue(new ApiError(status as number, { code: code as string, message: "Réessayez" }));
-  const tree = AccountInventorySessionPanel({ userId: "user-1", search: "", category: "all", onRefresh: async () => {}, onClearFilters: vi.fn() });
-  (find(tree, "Vérifier la validation")!.props.onClick as () => void)();
-  await vi.waitFor(() => expect(state.setters[4]).toHaveBeenCalledWith("Réessayez"));
-  expect(removeItem).not.toHaveBeenCalled();
-  expect(state.setters[12]).not.toHaveBeenCalledWith(null);
+it("conserve une saisie après échec, révèle le conflit masqué et conserve la valeur choisie jusqu’à l’enregistrement", async () => {
+  const latest = { ...draft, revision: 3, lines: [{ ...product, countedQuantity: 6, reason: "Erreur" }] };
+  api.getInventory.mockResolvedValueOnce(draft).mockResolvedValueOnce(latest);
+  api.saveInventory.mockRejectedValueOnce(new ApiError(409, { code: "INVENTORY_CHANGED", message: "Modifié" }))
+    .mockResolvedValueOnce({ ...latest, revision: 4 });
+  await load();
+  const quantity = byLabel("Quantité comptée : Tomates")!;
+  (quantity.props.onChange as (event: { target: { value: string } }) => void)({ target: { value: "7" } });
+  click("Enregistrer le brouillon");
+  await vi.waitFor(() => expect(byLabel("Comparer les saisies")).toBeDefined());
+  expect(byLabel("Quantité comptée : Tomates")?.props.value).toBe("7");
+  click("Comparer les saisies");
+  await vi.waitFor(() => expect(byLabel("Prendre la valeur enregistrée")).toBeDefined());
+  const clear = vi.fn();
+  click("Afficher tous les produits", { search: "farine", onClearFilters: clear });
+  expect(clear).toHaveBeenCalledOnce();
+  click("Prendre la valeur enregistrée");
+  expect(byLabel("Quantité comptée : Tomates")?.props.value).toBe("6");
+  click("Enregistrer le brouillon");
+  expect(api.saveInventory).toHaveBeenLastCalledWith(latest, "restaurant-1");
 });

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Button from "../common/Button";
 import { getSaleContributions, getSales, reviewSaleContribution, type DailySale, type SaleContribution, type SaleItem } from "../../services/salesService";
+import { useSalesRead } from "../../features/sales/useSalesReads";
 
 const sourceLabel = (source: SaleContribution["source"] | DailySale["source"], posBatch = false,
   ticketBatch?: SaleContribution["ticketBatch"]) => ticketBatch ?
@@ -19,24 +20,15 @@ export default function SalesReconciliation({ from, to, refreshToken, items, tic
   ticketPreview: { contentHash: string; url: string; mimeType: "application/pdf" | "image/jpeg" | "image/png" } | null;
   onChanged: () => Promise<void>;
 }) {
-  const [rows, setRows] = useState<SaleContribution[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [loadError, setLoadError] = useState("");
   const [status, setStatus] = useState("");
-  const [revision, setRevision] = useState(0);
   const heading = useRef<HTMLHeadingElement>(null);
   const { hash } = useLocation();
   useEffect(() => {
     if (hash === "#sales-reconciliation-title") heading.current?.focus();
   }, [hash]);
-  const load = useCallback(async () => {
-    setLoading(true); setLoadError("");
-    try { setRows(await getSaleContributions(from, to)); }
-    catch (cause) { setLoadError(errorMessage(cause)); }
-    finally { setLoading(false); }
-  }, [from, to]);
-  useEffect(() => { void load(); }, [load, revision, refreshToken]);
+  const load = useCallback(() => getSaleContributions(from, to), [from, to]);
+  const { data: rows = [], loading, error: loadError, reload } = useSalesRead(load, refreshToken);
   const pending = rows.filter((row) => row.status === "pending");
   const history = rows.filter((row) => row.status !== "pending").slice(0, 20);
 
@@ -46,7 +38,6 @@ export default function SalesReconciliation({ from, to, refreshToken, items, tic
       await reviewSaleContribution(row.id, row.reviewRevision, decision, reason, crypto.randomUUID(), saleItemId);
       setStatus(decision === "replace" ? "Vente confirmée ; la décision et sa provenance sont enregistrées." :
         decision === "keep" ? "Vente existante conservée ; l’autre apport est tracé." : "Apport écarté et tracé.");
-      setRevision((value) => value + 1);
       await onChanged();
       requestAnimationFrame(() => heading.current?.focus());
     } catch (cause) { setError(errorMessage(cause)); }
@@ -57,7 +48,7 @@ export default function SalesReconciliation({ from, to, refreshToken, items, tic
     <p>Une seule vente est retenue par date et article. Les lignes de caisse restent à vérifier ; remboursements et doublons ne diminuent ni n’additionnent les ventes automatiquement.</p>
     {loading && <p role="status">Chargement des apports…</p>}
     {loadError && <div role="alert"><p>Lecture des apports indisponible : {loadError}</p>
-      <Button type="button" variant="outline" onClick={() => { void load(); requestAnimationFrame(() => heading.current?.focus()); }}>Réessayer</Button></div>}
+      <Button type="button" variant="outline" onClick={() => { reload(); requestAnimationFrame(() => heading.current?.focus()); }}>Réessayer</Button></div>}
     {error && <p role="alert">{error}</p>}
     {status && <p role="status">{status}</p>}
     {!loading && !loadError && pending.length === 0 && <p>Aucun apport en attente de revue.</p>}

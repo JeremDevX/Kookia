@@ -194,13 +194,13 @@ const Stocks: React.FC = () => {
           document.getElementById("stock-search")?.focus();
         }}>Effacer les filtres</button>}
       </div>
-      {!error && (view === "count" ? <InventorySessionPanel search={searchTerm} category={categoryFilter} onRefresh={refetch} onClearFilters={() => updateFilters({ search: "", category: "all" })} /> : !loading && <><StockInventoryTable products={visibleProducts} selecting={cartLoading}
+      {view === "count" ? <InventorySessionPanel search={searchTerm} category={categoryFilter} onRefresh={refetch} onClearFilters={() => updateFilters({ search: "", category: "all" })} /> : !error && !loading && <><StockInventoryTable products={visibleProducts} selecting={cartLoading}
         onInspect={setSelectedProductId} onSelect={(product) => void handleSelectForOrder(product)} />
       <ul className="stock-inventory-cards" aria-label="Inventaire des produits">
         {visibleProducts.map((product) => <StockInventoryCard key={product.id} product={product} selecting={cartLoading}
           onInspect={() => setSelectedProductId(product.id)} onSelect={() => void handleSelectForOrder(product)} />)}
         {filteredProducts.length === 0 && <li className="workspace-empty">Aucun produit trouvé. Modifiez la recherche ou les filtres.</li>}
-      </ul></>)}
+      </ul></>}
       {view !== "count" && <p className="inventory-footnote">Quantités théoriques · Achats à valider avant commande.</p>}
       </section>
       {view !== "count" && <section className="stock-ticket-panel" aria-labelledby="stock-ticket-title">
