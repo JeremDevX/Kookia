@@ -3,7 +3,11 @@ import type { Recipe } from "./catalog";
 import { draw, offsetDate } from "./calendar";
 import type { Day, Lot, Options, ServiceName } from "./model";
 
-export const available = (lots: Lot[], productId: string) => quantity(lots.filter(l => l.productId === productId).reduce((sum, l) => sum + l.quantity, 0));
+export function available(lots: Lot[], productId: string) {
+  let total = 0;
+  for (const lot of lots) if (lot.productId === productId) total += lot.quantity;
+  return quantity(total);
+}
 export function grossDosages(recipe: Recipe, lossPercent: number): Record<string, number> {
   return Object.fromEntries(Object.entries(recipe.ingredients).map(([id, net]) => {
     const product = ingredientById(id);
@@ -48,10 +52,12 @@ export function spoilLot(lots: Lot[], day: Day, options: Options) {
   day.events.push(`${product.name} : ${amount} ${product.unit} écartés après réception, sans achat anticipant cet incident.`);
 }
 export function prepare(lots: Lot[], recipe: Recipe, requested: number, options: Options, day: Day, service: ServiceName) {
-  const dosages = grossDosages(recipe, options.lossPercent);
-  const needs = (portions: number) => Object.entries(dosages).map(([id, dose]) => ({ id, amount: quantity(dose * portions / 10) }));
-  let portions = Math.min(requested, ...Object.entries(dosages).map(([id, dose]) => Math.floor((available(lots, id) + .00049) * 10 / dose)));
+  if (requested === 0) return 0;
+  const dosages = Object.entries(grossDosages(recipe, options.lossPercent));
+  const needs = (portions: number) => dosages.map(([id, dose]) => ({ id, amount: quantity(dose * portions / 10) }));
+  let portions = Math.min(requested, ...dosages.map(([id, dose]) => Math.floor((available(lots, id) + .00049) * 10 / dose)));
   while (portions > 0 && needs(portions).some(n => n.amount > available(lots, n.id))) portions--;
+  if (portions === 0) return 0;
   for (const { id, amount } of needs(portions)) {
     take(lots, id, amount);
     const line = day.stock.find(s => s.id === id)!;
