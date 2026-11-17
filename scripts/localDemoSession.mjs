@@ -11,37 +11,38 @@ import { buildDisposablePostgresArgs, cleanupContainer, disposableDatabaseUrl, p
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const children = new Set();
+const session = new AbortController();
 let interruptedSignal = null;
-let resolveStop;
-const stopRequested = new Promise((resolve) => { resolveStop = resolve; });
 
-function spawnTask(command, args, { env = process.env, capture = false } = {}) {
-  if (interruptedSignal) return Promise.reject(new Error("Démo locale interrompue."));
+async function spawnTask(command, args, { env = process.env, capture = false } = {}) {
+  session.signal.throwIfAborted();
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd: projectRoot, env,
+    const child = spawn(command, args, { cwd: projectRoot, env, signal: session.signal,
       stdio: capture ? ["ignore", "pipe", "ignore"] : "inherit" });
     children.add(child);
     let stdout = "";
     if (capture) child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; });
     child.once("error", (error) => {
-      children.delete(child);
-      reject(new Error(`Impossible de lancer ${command} : ${error.message}`));
+      reject(session.signal.reason ?? new Error(`Impossible de lancer ${command} : ${error.message}`));
     });
     child.once("close", (status, signal) => {
       children.delete(child);
-      if (interruptedSignal) reject(new Error("Démo locale interrompue."));
+      if (session.signal.aborted) reject(session.signal.reason);
       else if (status !== 0) reject(new Error(`${command} a échoué (${status ?? signal ?? "arrêt"}).`));
       else resolve(capture ? stdout.trim() : "");
     });
   });
 }
 
-function startServer(args, env) {
+function startServer(name, args, env) {
+  session.signal.throwIfAborted();
   const child = spawn(process.execPath, args, { cwd: projectRoot, env, stdio: "inherit" });
   children.add(child);
   child.once("close", () => children.delete(child));
-  child.once("error", (error) => { console.error(`Arrêt du serveur local : ${error.message}`); });
-  return child;
+  child.once("exit", (code, signal) => {
+    session.abort(new Error(`Le serveur ${name} s’est arrêté (${code ?? signal ?? "inconnu"}).`));
+  });
+  child.once("error", (error) => session.abort(new Error(`Impossible de lancer le serveur ${name} : ${error.message}`)));
 }
 
 async function findLoopbackPort(excluded = new Set()) {
@@ -66,27 +67,13 @@ function startDisposablePostgres(containerName, password) {
   }), { capture: true });
 }
 
-function serverStopped(name, code, signal) {
-  return new Error(`Le serveur ${name} s’est arrêté (${code ?? signal ?? "inconnu"}).`);
-}
-
-function checkServers(servers) {
-  if (interruptedSignal) throw new Error("Démo locale interrompue.");
-  for (const [name, child] of Object.entries(servers)) {
-    if (!child.pid || child.exitCode !== null || child.signalCode !== null) {
-      throw serverStopped(name, child.exitCode, child.signalCode);
-    }
-  }
-}
-
-async function waitForHttp(url, servers) {
+async function waitForHttp(url) {
   for (let attempt = 0; attempt < 80; attempt += 1) {
-    checkServers(servers);
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(1_000) });
+      const response = await fetch(url, { signal: AbortSignal.any([session.signal, AbortSignal.timeout(1_000)]) });
       if (response.ok) return;
     } catch { /* Le serveur démarre encore. */ }
-    await delay(250);
+    await delay(250, undefined, { signal: session.signal });
   }
   throw new Error(`Le service local n’a pas répondu sur ${url}.`);
 }
@@ -95,7 +82,7 @@ async function registerDemoAccount(password, webOrigin) {
   const response = await fetch(`${webOrigin}/api/auth/register`, {
     method: "POST", headers: { "content-type": "application/json", origin: webOrigin },
     body: JSON.stringify({ displayName: "Démo locale", email: "demo@kookia.local", password }),
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.any([session.signal, AbortSignal.timeout(10_000)]),
   });
   if (!response.ok) throw new Error(`Création du compte de démonstration impossible (${response.status}).`);
   const result = await response.json();
@@ -104,16 +91,16 @@ async function registerDemoAccount(password, webOrigin) {
 }
 
 function requestStop(signal) {
-  if (interruptedSignal) return;
+  if (session.signal.aborted) return;
   interruptedSignal = signal;
   process.exitCode = signal === "SIGINT" ? 130 : 143;
-  resolveStop(signal);
-  for (const child of children) child.kill("SIGTERM");
+  session.abort(new Error("Démo locale interrompue."));
 }
 
 async function stopServers() {
+  const closed = Promise.all([...children].map((child) => new Promise((resolve) => child.once("close", resolve))));
   for (const child of children) child.kill("SIGTERM");
-  await Promise.race([Promise.all([...children].map((child) => new Promise((resolve) => child.once("close", resolve)))), delay(3_000, undefined, { ref: false })]);
+  await Promise.race([closed, delay(3_000, undefined, { ref: false })]);
   for (const child of children) child.kill("SIGKILL");
 }
 
@@ -139,7 +126,7 @@ async function main() {
     await startDisposablePostgres(containerName, dbPassword);
     const port = parseLoopbackPort(await spawnTask("docker", ["port", containerName, "5432/tcp"], { capture: true }));
     const databaseUrl = disposableDatabaseUrl(port, dbPassword, "kookia_demo");
-    await waitForPostgres(containerName, "kookia_demo", () => interruptedSignal !== null);
+    await waitForPostgres(containerName, "kookia_demo", () => session.signal.aborted);
 
     const demoEnv = { ...process.env, DATABASE_URL: databaseUrl, NODE_ENV: "development" };
     console.log("\n==> Migrations fraîches");
@@ -149,13 +136,12 @@ async function main() {
     const webOrigin = `http://127.0.0.1:${webPort}`;
     const apiEnv = { ...demoEnv, HOST: "127.0.0.1", PORT: String(apiPort), APP_ORIGIN: webOrigin,
       LOCAL_DEMO_INVOICE_FIXTURE: "true" };
-    const api = startServer(["--import", "tsx", "server/src/index.ts"], apiEnv);
-    await waitForHttp(`http://127.0.0.1:${apiPort}/api/health`, { API: api });
+    startServer("API", ["--import", "tsx", "server/src/index.ts"], apiEnv);
+    await waitForHttp(`http://127.0.0.1:${apiPort}/api/health`);
     const webEnv = { ...demoEnv, KOOKIA_API_PROXY_TARGET: `http://127.0.0.1:${apiPort}` };
     delete webEnv.DATABASE_URL;
-    const web = startServer(["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(webPort), "--strictPort"], webEnv);
-    const servers = { API: api, web };
-    await waitForHttp(`${webOrigin}/login`, servers);
+    startServer("web", ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(webPort), "--strictPort"], webEnv);
+    await waitForHttp(`${webOrigin}/login`);
     const ownerId = await registerDemoAccount(demoPassword, webOrigin);
     const seedEnv = { ...demoEnv, LOCAL_DEMO_USER_ID: ownerId };
     await spawnTask(process.execPath, ["--import", "tsx", "server/src/scripts/seedWorkspaces.ts"], { env: seedEnv });
@@ -168,20 +154,16 @@ async function main() {
     await writeFile(credentialPath, `Email : demo@kookia.local\nMot de passe : ${demoPassword}\n`, { mode: 0o600, flag: "wx" });
     await chmod(credentialPath, 0o600);
 
-    checkServers(servers);
+    session.signal.throwIfAborted();
     console.log(`\nDémo ${fixtureOnly ? "à fixtures synthétiques" : "locale"} prête : ${webOrigin}/login`);
     console.log("Compte : demo@kookia.local");
     console.log(`Mot de passe dans le fichier privé temporaire : ${credentialPath}`);
     console.log("Ctrl-C arrête les serveurs et supprime le compte, la base tmpfs et le fichier d’identifiants.");
-    await Promise.race([
-      stopRequested,
-      ...Object.entries(servers).map(async ([name, child]) => {
-        const [code, signal] = await once(child, "close");
-        if (!interruptedSignal) throw serverStopped(name, code, signal);
-      }),
-    ]);
+    await once(session.signal, "abort");
+    if (!interruptedSignal) session.signal.throwIfAborted();
   } catch (error) {
-    console.error(interruptedSignal ? "Démo locale interrompue." : error instanceof Error ? error.message : "La démo locale a échoué.");
+    const cause = session.signal.reason ?? error;
+    console.error(cause instanceof Error ? cause.message : "La démo locale a échoué.");
     process.exitCode = interruptedSignal === "SIGINT" ? 130 : interruptedSignal === "SIGTERM" ? 143 : 1;
   } finally {
     await stopServers();
