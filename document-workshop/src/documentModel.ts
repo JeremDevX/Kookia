@@ -1,7 +1,8 @@
 export interface Section { heading: string; columns: string[]; rows: string[][] }
 type DocumentStyle = "house" | "market" | "farm" | "wholesale" | "receipt";
+type DocumentKind = keyof typeof workflows;
 export interface Document {
-  id: string; kind: string; title: string; date: string; issuer: string; recipient: string;
+  id: string; kind: DocumentKind; title: string; date: string; issuer: string; recipient: string;
   sections: Section[]; notes: string[]; workflow: string; style: DocumentStyle;
 }
 export interface ArticleSales { sold: number; gross: number }
@@ -30,7 +31,15 @@ export const workflows = {
   kitchen: "Journal des décisions : préparations, compléments, substitutions et refus sont reliés au service. Les notes ne doivent pas déclencher une seconde production.",
   ledger: "Contrôle : initial + reçu - production brute - pertes brutes + écart = final. Les autres déchets sont des fractions de matière déjà sorties en production.",
 };
-export type WriteDocument = (kind: keyof typeof workflows, title: string, date: string, suffix: string, sections: Section[], notes?: string[],
+export const labels: Record<DocumentKind, string> = {
+  identity: "Établissement", suppliers: "Fournisseurs", catalog: "Produits", recipes: "Fiches techniques", menu: "Menus", forecast: "Prévisions",
+  order: "Commandes", invoice: "Factures fournisseurs", delivery: "Livraisons", credit: "Avoirs", production: "Productions",
+  adjustment: "Régularisations", refund: "Avoirs clients", kitchen: "Décisions cuisine",
+  sales: "Bilans de service", ticket: "Tickets Z", customer: "Factures clients", waste: "Pertes et déchets", count: "Inventaires", service: "Services", ledger: "Journal matière", lots: "Lots et échéances",
+};
+export const workflowEntries = (Object.keys(workflows) as DocumentKind[]).map(kind => ({ kind, label: labels[kind], text: workflows[kind] }));
+
+export type WriteDocument = (kind: DocumentKind, title: string, date: string, suffix: string, sections: Section[], notes?: string[],
   parties?: { issuer?: string; recipient?: string; style?: DocumentStyle }) => void;
 export const section = (heading: string, columns: string[], rows: string[][]): Section => ({ heading, columns, rows });
 export const serviceLabel = (service: "lunch" | "dinner") => service === "lunch" ? "Midi" : "Soir";

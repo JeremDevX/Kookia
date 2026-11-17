@@ -39,12 +39,6 @@ export function menuFor(date: string, service: ServiceName, options: Options): R
   return [choose("Entrée", "starter"), meat, veg[Math.floor(draw(options.seed, `${date}:${service}:main`) * veg.length)], choose("Dessert", "dessert"),
     ...(options.drinks ? [recipes.find(r => r.id === "expresso")!] : [])];
 }
-export function forecastPortions(recipe: Recipe, covers: number, options: Options) {
-  const share = recipe.category === "Entrée" ? options.starterPercent / 100 : recipe.category === "Dessert" ? options.dessertPercent / 100
-    : recipe.category === "Boisson" ? .55 : recipe.id.startsWith("poulet") ? .6 : .4;
-  const forecast = Math.round(covers * share);
-  return { forecast, planned: Math.ceil(forecast / recipe.batch) * recipe.batch };
-}
 export const purchasePrice = (product: Ingredient, date: string) => Math.round(product.price * (1 + (draw(17, `${date.slice(0, 7)}:${product.id}`) - .5) * .22));
 export const salePrice = (recipe: Recipe, date: string) => recipe.category === "Boisson" ? recipe.price
   : recipe.price + Math.floor((Number(date.slice(5, 7)) - 1) / 3) * 50;

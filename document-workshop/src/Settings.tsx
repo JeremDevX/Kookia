@@ -1,6 +1,6 @@
-import { displayDate, offsetDate } from "./scenario";
+import { displayDate, offsetDate } from "./calendar";
 import { formatParisDate } from "../../shared/parisDate";
-import type { Options } from "./scenario";
+import type { Options } from "./model";
 
 interface Props { value: Options; onChange: (value: Options) => void }
 export function Settings({ value, onChange }: Props) {

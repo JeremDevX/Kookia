@@ -1,4 +1,4 @@
-import type { Document } from "./documents";
+import type { Document } from "./documentModel";
 
 export type Color = [number, number, number];
 interface TextRun { x: number; y: number; text: string; size: number; bold: boolean; muted: boolean; font: "sans" | "mono" | "serif" }

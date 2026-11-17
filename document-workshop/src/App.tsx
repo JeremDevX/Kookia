@@ -1,18 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { formatParisDate } from "../../shared/parisDate";
+import { displayDate } from "./calendar";
 import { identity, money } from "./catalog";
-import { createDocuments, salesCsv, workflows } from "./documents";
-import type { Document } from "./documents";
+import { labels, workflowEntries } from "./documentModel";
+import type { Document } from "./documentModel";
+import { createDocuments, readySales, salesCsv } from "./documents";
 import { download, pdfBytes } from "./exports";
 import { createArchive } from "./archiveExport";
 import { layoutDocument, svgColor } from "./layout";
-import { displayDate, generateScenario, optionsSchema } from "./scenario";
-import type { Options } from "./scenario";
-import type { Checkpoint } from "./model";
+import { generateScenario } from "./scenario";
+import { optionsSchema } from "./model";
+import type { Checkpoint, Options } from "./model";
 import { continuationStart, MAX_CHECKPOINT_BYTES, parseCheckpointFile } from "./continuation";
 import { ScenarioSummary } from "./ScenarioSummary";
 import { Settings } from "./Settings";
-import { labels, readySales } from "./dossier";
 
 const initial: Options = optionsSchema.parse({ name: identity.name, address: identity.address, city: identity.city, email: identity.email,
   start: formatParisDate(), days: 7, covers: 40, seed: 1, incident: "normal", variationPercent: 20, lossPercent: 2, starterPercent: 65, dessertPercent: 60, incidentEvery: 3 });
@@ -123,7 +124,7 @@ export default function App() {
         </div>
       </div>
       <details className="coverage"><summary>Parcours de saisie et couverture des documents</summary><p>Commencez par l'établissement, les fournisseurs, les produits et les recettes. Puis suivez les opérations dans l'ordre de la journée.</p>
-        <ol>{Object.entries(workflows).map(([key, text]) => <li key={key}><strong>{labels[key as keyof typeof labels]}</strong><p>{text}</p></li>)}</ol>
+        <ol>{workflowEntries.map(({ kind, label, text }) => <li key={kind}><strong>{label}</strong><p>{text}</p></li>)}</ol>
         <p>Les préférences, comptes et connexions de sources se règlent dans Kookia. L'historique et les rapports sont calculés à partir des opérations. Il n'existe pas d'import universel de ces PDF.</p>
       </details>
     </main><footer>{scenario.options.name} · Achats, cuisine & service</footer>

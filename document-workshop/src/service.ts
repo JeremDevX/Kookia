@@ -1,7 +1,7 @@
 import { quantity, recipeById } from "./catalog";
 import type { Recipe } from "./catalog";
-import { draw, forecastPortions, menuFor, salePrice } from "./calendar";
-import { serviceForecast } from "./forecast";
+import { draw, salePrice } from "./calendar";
+import { planService } from "./forecast";
 import { prepare } from "./inventory";
 import type { Day, Lot, Options, RecipeRun, Service, ServiceName } from "./model";
 import { buildTransactions } from "./till";
@@ -21,12 +21,11 @@ function customerRequests(date: string, name: ServiceName, menu: Recipe[], forec
   ]);
 }
 export function runService(day: Day, name: ServiceName, lots: Lot[], options: Options): Service {
-  const { baselineCovers, forecastCovers } = serviceForecast(day.date, name, options), menu = menuFor(day.date, name, options);
+  const { baselineCovers, forecastCovers, menu } = planService(day.date, name, options, day.weather.percent);
   const service: Service = { name, baselineCovers, forecastCovers, covers: 0, runs: [], decisions: [], transactions: [] };
   const prepTime = name === "lunch" ? "10:30" : "18:00";
   // The initial kitchen decision depends exclusively on the forecast and physical stock.
-  for (const recipe of menu) {
-    const { forecast, planned } = forecastPortions(recipe, forecastCovers, options);
+  for (const { recipe, forecast, planned } of menu) {
     const prepared = recipe.category === "Boisson" ? 0 : prepare(lots, recipe, planned, options, day, name);
     service.runs.push({ recipeId: recipe.id, forecast, planned, prepared, extraPrepared: 0, demand: 0, sold: 0,
       unsold: 0, unserved: 0, substitutedIn: 0, substitutedOut: 0, plateReturns: 0, price: salePrice(recipe, day.date) });
@@ -35,7 +34,7 @@ export function runService(day: Day, name: ServiceName, lots: Lot[], options: Op
     if (prepared < planned && recipe.category !== "Boisson") service.decisions.push({ time: prepTime, recipeId: recipe.id,
       kind: "refusal", portions: planned - prepared, reason: "Matières insuffisantes après réception et tri. Le complément n'est pas préparé." });
   }
-  const requests = customerRequests(day.date, name, menu, forecastCovers, options, day.incident);
+  const requests = customerRequests(day.date, name, menu.map(({ recipe }) => recipe), forecastCovers, options, day.incident);
   service.covers = requests.length;
   const byId = new Map(service.runs.map(r => [r.recipeId, r]));
   const served = requests.map((dishes, index) => dishes.flatMap(recipeId => {

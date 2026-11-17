@@ -1,4 +1,4 @@
-import type { Document } from "./documents";
+import type { Document } from "./documentModel";
 import { layoutDocument } from "./layout";
 
 // PDF 1.4, embedded text via standard Helvetica/WinAnsi fonts. No server or remote service.

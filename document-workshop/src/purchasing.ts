@@ -1,9 +1,10 @@
 import { roundOrderQuantity } from "../../shared/orderQuantity";
 import { ingredientById, ingredients, quantity, suppliers } from "./catalog";
-import { draw, forecastPortions, isOpen, menuFor, offsetDate, purchasePrice, serviceNames, weekday } from "./calendar";
-import { serviceForecast } from "./forecast";
+import { draw, isOpen, offsetDate, purchasePrice, serviceNames, weekday } from "./calendar";
+import { planService } from "./forecast";
 import { available, grossDosages } from "./inventory";
 import type { Day, Lot, Options, Purchase } from "./model";
+import { scenarioWeather } from "./weather";
 
 function nextDelivery(date: string, supplierId: string) {
   const supplier = suppliers.find(s => s.id === supplierId)!;
@@ -18,10 +19,10 @@ export function forecastNeeds(from: string, until: string, options: Options) {
   const needs: Record<string, number> = {};
   for (let date = from; date < until; date = offsetDate(date, 1)) {
     if (!isOpen(date, options)) continue;
+    const weather = scenarioWeather(date, options);
     for (const service of serviceNames(options)) {
-      const { forecastCovers } = serviceForecast(date, service, options);
-      for (const recipe of menuFor(date, service, options)) {
-        const { planned } = forecastPortions(recipe, forecastCovers, options);
+      const { menu } = planService(date, service, options, weather.percent);
+      for (const { recipe, planned } of menu) {
         for (const [id, dosage] of Object.entries(grossDosages(recipe, options.lossPercent))) {
           needs[id] = quantity((needs[id] ?? 0) + quantity(dosage * planned / 10));
         }

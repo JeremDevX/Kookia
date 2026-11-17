@@ -7,8 +7,6 @@ import { serviceDocuments } from "./serviceDocuments";
 import { setupDocuments } from "./setupDocuments";
 import { stockDocuments } from "./stockDocuments";
 
-export { workflows } from "./documentModel";
-export type { Document } from "./documentModel";
 function dailySales(day: Day): DaySales {
   const articles = new Map<string, ArticleSales>();
   for (const service of day.services) for (const transaction of service.transactions) for (const line of transaction.lines) {
@@ -40,4 +38,8 @@ export function salesCsv(days: readonly DaySales[]) {
   const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
   return "service_date,item_name,quantity\r\n" + days.flatMap(day => [...day.articles].map(([recipeId, { sold }]) =>
     `${day.date},${quote(recipeById(recipeId).name)},${sold}`)).join("\r\n") + "\r\n";
+}
+
+export function readySales(days: readonly DaySales[], today: string) {
+  return days.filter(day => day.date <= today && day.articles.size > 0);
 }

@@ -2,7 +2,6 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { optionsSchema } from "./model";
-import { serviceForecast } from "./forecast";
 import { scenarioWeather } from "./weather";
 import { forecastNeeds } from "./purchasing";
 import { generateScenario } from "./scenario";
@@ -26,9 +25,10 @@ describe("document workshop terrace and weather", () => {
   it("keeps legacy settings, unknown terraces, missing weather and closed services unadjusted", () => {
     const legacy = { ...input }; delete (legacy as Partial<typeof input>).hasTerrace; delete (legacy as Partial<typeof input>).weather;
     expect(optionsSchema.parse(legacy)).toMatchObject({ hasTerrace: null, weather: "none" });
-    expect(serviceForecast(input.start, "lunch", { ...input, weather: "rain", hasTerrace: null })).toEqual({ baselineCovers: 36, forecastCovers: 36 });
-    expect(serviceForecast(input.start, "lunch", { ...input, weather: "none", hasTerrace: true })).toEqual({ baselineCovers: 36, forecastCovers: 36 });
-    expect(serviceForecast("2026-09-07", "lunch", { ...input, weather: "clear", hasTerrace: true })).toEqual({ baselineCovers: 0, forecastCovers: 0 });
+    const singleDay = { ...input, days: 1 };
+    expect(generateScenario({ ...singleDay, weather: "rain", hasTerrace: null }).days[0]).toMatchObject({ baselineCovers: 36, forecastCovers: 36 });
+    expect(generateScenario({ ...singleDay, weather: "none", hasTerrace: true }).days[0]).toMatchObject({ baselineCovers: 36, forecastCovers: 36 });
+    expect(generateScenario({ ...singleDay, start: "2026-09-07", weather: "clear", hasTerrace: true }).days[0]).toMatchObject({ baselineCovers: 0, forecastCovers: 0 });
     expect(scenarioWeather("2026-12-01", { ...input, weather: "clear", hasTerrace: true })).toMatchObject({ percent: 0, conditions: { temperatureMax: 9 } });
     for (const change of [{ hasTerrace: "yes" }, { hasTerrace: 1 }, { weather: "live" }, { weather: null }])
       expect(optionsSchema.safeParse({ ...input, ...change }).success).toBe(false);
@@ -37,7 +37,7 @@ describe("document workshop terrace and weather", () => {
     const rainy = { ...input, hasTerrace: true, weather: "rain" as const, variationPercent: 0, days: 1 };
     const scenario = generateScenario(rainy);
     expect(scenario.days[0]).toMatchObject({ baselineCovers: 36, forecastCovers: 31, covers: 31 });
-    expect(serviceForecast(input.start, "lunch", { ...rainy, hasTerrace: false })).toEqual({ baselineCovers: 36, forecastCovers: 34 });
+    expect(generateScenario({ ...rainy, hasTerrace: false }).days[0]).toMatchObject({ baselineCovers: 36, forecastCovers: 34 });
     const normalNeeds = forecastNeeds(input.start, "2026-09-07", { ...rainy, weather: "none" });
     const rainyNeeds = forecastNeeds(input.start, "2026-09-07", rainy);
     expect(Object.keys(rainyNeeds).every(id => rainyNeeds[id] <= normalNeeds[id])).toBe(true);
@@ -57,15 +57,14 @@ describe("document workshop terrace and weather", () => {
     expect(next.days).toEqual(scenario.days.slice(3));
     expect(next.checkpoint.lots).toEqual(scenario.checkpoint.lots);
     expect(new Set(scenario.days.map(d => d.weather.conditions?.weatherCode)).size).toBeGreaterThan(1);
-    const documents = createDocuments(scenario);
-    const { docs, sales } = documents;
+    const { docs, sales } = createDocuments(scenario);
     expect(docs.find(d => d.kind === "identity")!.sections[0].rows).toContainEqual(["Terrasse", "Oui"]);
     const forecast = docs.find(d => d.kind === "forecast")!;
     expect(forecast.sections[0].columns).toEqual(["Service", "Base semaine/saison", "Effet météo", "Prévu ajusté"]);
     expect(forecast.sections[0].rows).toHaveLength(2);
     expect(forecast.notes.join(" ")).toContain("Météo de scénario");
     expect(forecast.notes.join(" ")).toContain("non calibrés");
-    const files = archiveFiles(scenario, documents), decode = (name: string) => new TextDecoder().decode(files.find(f => f.name === name)!.bytes);
+    const files = archiveFiles(scenario), decode = (name: string) => new TextDecoder().decode(files.find(f => f.name === name)!.bytes);
     expect(JSON.parse(decode("scenario.json")).days[0].weather).toEqual(scenario.days[0].weather);
     expect(decode("guide.md")).toContain("Ne pas réappliquer le coefficient");
     expect(decode("guide.md")).toContain("ne mesure donc pas un gain prédictif");

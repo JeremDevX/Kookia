@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { money, recipeById } from "./catalog";
 import { parseCheckpointFile } from "./continuation";
-import { createDocuments, salesCsv } from "./documents";
-import { archiveFiles, readySales } from "./dossier";
+import { createDocuments, readySales, salesCsv } from "./documents";
+import { archiveFiles } from "./dossier";
 import { pdfBytes, zipBytes } from "./exports";
 import { layoutDocument } from "./layout";
 import { generateScenario } from "./scenario";
@@ -87,7 +87,7 @@ describe("workshop document contracts", () => {
   });
   it("packages daily CSVs only for actual sales, closed-day notes, catalog and continuation", () => {
     const scenario = generateScenario({ ...input, days: 7 });
-    const files = archiveFiles(scenario, createDocuments(scenario));
+    const files = archiveFiles(scenario);
     expect(new Set(files.map(file => file.name)).size).toBe(files.length);
     const decoder = new TextDecoder();
     const decode = (name: string) => decoder.decode(files.find(file => file.name === name)!.bytes);
@@ -111,7 +111,7 @@ describe("workshop document contracts", () => {
     }
     expect(decode("ventes-periode-complete.csv")).toBe(header + dailyRows.join(""));
     const closed = generateScenario({ ...input, start: "2026-09-07", days: 1 });
-    expect(archiveFiles(closed, createDocuments(closed)).some(f => f.name.endsWith(".csv"))).toBe(false);
+    expect(archiveFiles(closed).some(f => f.name.endsWith(".csv"))).toBe(false);
   });
   it("writes coherent ZIP offsets, UTF-8 names and payload lengths", () => {
     const files = [{ name: "épreuve.txt", bytes: new TextEncoder().encode("Contenu accentué") }];
