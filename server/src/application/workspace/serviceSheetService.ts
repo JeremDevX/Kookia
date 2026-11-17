@@ -61,14 +61,19 @@ async function evidence(restaurantId: string, serviceDate: string, slot: Service
     }) };
 }
 
-export async function getServiceSheet(restaurantId: string, serviceDate: string, slot: ServiceSlot, db: Database = prisma): Promise<ServiceSheet> {
+async function loadServiceSheet(restaurantId: string, serviceDate: string, slot: ServiceSlot, db: Database) {
   const document = await db.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind: kind(serviceDate, slot) } } });
   const stored = document ? document.data as unknown as StoredSheet : empty();
   const menu = stored.state === "draft" ? await getServiceMenu(restaurantId, serviceDate, slot, db) : null;
-  const menuEntries = menu?.entries ?? stored.menuEntries, menuRevision = menu?.revision ?? stored.menuRevision;
-  const facts = reconcileServiceSheet(stored, await evidence(restaurantId, serviceDate, slot, menuEntries, menuRevision, db));
-  return { ...stored, serviceDate, slot, revision: document?.revision ?? 0, menuEntries, menuRevision, facts,
-    factsChangedSinceClosure: stored.closureFacts !== null && !isDeepStrictEqual(stored.closureFacts, facts) };
+  return { ...stored, serviceDate, slot, revision: document?.revision ?? 0,
+    menuEntries: menu?.entries ?? stored.menuEntries, menuRevision: menu?.revision ?? stored.menuRevision };
+}
+
+export async function getServiceSheet(restaurantId: string, serviceDate: string, slot: ServiceSlot): Promise<ServiceSheet> {
+  const sheet = await loadServiceSheet(restaurantId, serviceDate, slot, prisma);
+  const facts = reconcileServiceSheet(sheet, await evidence(restaurantId, serviceDate, slot, sheet.menuEntries, sheet.menuRevision, prisma));
+  return { ...sheet, facts,
+    factsChangedSinceClosure: sheet.closureFacts !== null && !isDeepStrictEqual(sheet.closureFacts, facts) };
 }
 
 export async function saveServiceSheet(restaurantId: string, actorId: string, input: SheetInput): Promise<ServiceSheet> {
@@ -80,7 +85,7 @@ export async function saveServiceSheet(restaurantId: string, actorId: string, in
       if (!isDeepStrictEqual(snapshot.input, input)) throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette validation a déjà été utilisée pour une autre fiche.");
       return snapshot.result;
     }
-    const current = await getServiceSheet(restaurantId, input.serviceDate, input.slot, tx);
+    const current = await loadServiceSheet(restaurantId, input.serviceDate, input.slot, tx);
     if (current.revision !== input.expectedRevision) throw new WorkspaceError(409, "REVISION_CONFLICT", "La fiche a changé. Rechargez-la.");
     if (current.state === "closed") throw new WorkspaceError(409, "SERVICE_ALREADY_CLOSED", "La clôture est conservée. Les corrections ultérieures restent visibles dans le rapprochement.");
     if (input.action === "close" && current.state !== "validated")
