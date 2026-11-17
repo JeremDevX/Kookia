@@ -41,7 +41,7 @@ export function pdfBytes(doc: Document): Uint8Array<ArrayBuffer> {
   return new TextEncoder().encode(output);
 }
 export function download(bytes: BlobPart, filename: string, type: string) {
-  const url = URL.createObjectURL(new Blob([bytes], { type }));
+  const url = URL.createObjectURL(bytes instanceof Blob ? bytes : new Blob([bytes], { type }));
   const link = window.document.createElement("a"); link.href = url; link.download = filename; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

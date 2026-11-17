@@ -3,7 +3,8 @@ import { formatParisDate } from "../../shared/parisDate";
 import { identity, money } from "./catalog";
 import { createDocuments, salesCsv, workflows } from "./documents";
 import type { Document } from "./documents";
-import { download, pdfBytes, zipBytes } from "./exports";
+import { download, pdfBytes } from "./exports";
+import { createArchive } from "./archiveExport";
 import { layoutDocument, svgColor } from "./layout";
 import { displayDate, generateScenario, optionsSchema } from "./scenario";
 import type { Options } from "./scenario";
@@ -11,7 +12,7 @@ import type { Checkpoint } from "./model";
 import { continuationStart, MAX_CHECKPOINT_BYTES, parseCheckpointFile } from "./continuation";
 import { ScenarioSummary } from "./ScenarioSummary";
 import { Settings } from "./Settings";
-import { archiveFiles, labels, readySales } from "./dossier";
+import { labels, readySales } from "./dossier";
 
 const initial: Options = optionsSchema.parse({ name: identity.name, address: identity.address, city: identity.city, email: identity.email,
   start: formatParisDate(), days: 7, covers: 40, seed: 1, incident: "normal", variationPercent: 20, lossPercent: 2, starterPercent: 65, dessertPercent: 60, incidentEvery: 3 });
@@ -41,8 +42,7 @@ export default function App() {
   const [form, setForm] = useState<Options>(initial);
   const [scenario, setScenario] = useState(() => generateScenario(initial));
   const [continuation, setContinuation] = useState<Checkpoint | null>(null);
-  const documents = useMemo(() => createDocuments(scenario), [scenario]);
-  const { docs, sales } = documents;
+  const { docs, sales } = useMemo(() => createDocuments(scenario), [scenario]);
   const [selectedId, setSelectedId] = useState(docs[0].id);
   const [kind, setKind] = useState("all");
   const [date, setDate] = useState(initial.start);
@@ -78,14 +78,17 @@ export default function App() {
     finally { input.value = ""; }
   };
   const archive = async () => {
-    setBusy(true); setError(""); setNotice("Préparation de l'archive…");
-    // Yield so the busy status is painted before processing a long period.
-    await new Promise(resolve => setTimeout(resolve, 30));
+    const pendingNotice = "Préparation de l’archive…";
+    setBusy(true); setError(""); setNotice(pendingNotice);
     try {
-      download(zipBytes(archiveFiles(scenario, documents)), `dossier-${scenario.options.start}-${scenario.options.seed}.zip`, "application/zip");
-      setNotice(`Archive prête : ${docs.length} PDF, CSV quotidiens, guide et journal chiffré.`);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "L'archive n'a pas pu être créée."); }
-    finally { setBusy(false); }
+      const { options, opening } = scenario;
+      const zip = await createArchive({ options, opening });
+      download(zip, `dossier-${options.start}-${options.seed}.zip`, "application/zip");
+      setNotice(current => current === pendingNotice ? `Archive prête : ${docs.length} PDF, CSV quotidiens, guide et journal chiffré.` : current);
+    } catch (cause) {
+      setNotice(current => current === pendingNotice ? "" : current);
+      setError(current => current || (cause instanceof Error ? cause.message : "L’archive n’a pas pu être créée."));
+    } finally { setBusy(false); }
   };
   return <>
     <header className="masthead"><a href="#main" className="brand"><span className="mark">S</span><span>{scenario.options.name}<small>Atelier documentaire</small></span></a><span className="local-badge">Local · indépendant de Kookia</span></header>

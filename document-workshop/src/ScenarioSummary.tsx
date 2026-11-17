@@ -1,8 +1,9 @@
+import { memo } from "react";
 import { number } from "./catalog";
 import type { Scenario } from "./model";
 import { scenarioWeatherNotice, scenarioWeatherSummary, terraceLabel } from "./weather";
 
-export function ScenarioSummary({ scenario }: { scenario: Scenario }) {
+export const ScenarioSummary = memo(function ScenarioSummary({ scenario }: { scenario: Scenario }) {
   const runs = scenario.days.flatMap(d => d.services.flatMap(s => s.runs));
   const sum = (key: "prepared" | "sold" | "unsold" | "unserved") => runs.reduce((total, r) => total + r[key], 0);
   return <section className="activity-summary" aria-labelledby="activity-title">
@@ -21,4 +22,4 @@ export function ScenarioSummary({ scenario }: { scenario: Scenario }) {
         })}</tbody></table>
     </div><p className="hint">Base avant météo, Prévu ajusté et Demandé comptent les couverts ; Préparé, Servi et Invendu comptent les articles. La base suit la semaine et la saison, pas des ventes mesurées. La même météo de journée s’applique à midi et au soir, avec arrondi des couverts par service. Retours d’assiette : {number(scenario.days.flatMap(d => d.waste).filter(w => w.kind === "plate_return").reduce((n, w) => n + w.quantity, 0))} équivalents-portions estimés.</p></details>
   </section>;
-}
+});
