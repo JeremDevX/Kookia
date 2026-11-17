@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
+import { once } from "node:events";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import { tmpdir } from "node:os";
@@ -35,8 +36,8 @@ function spawnTask(command, args, { env = process.env, capture = false } = {}) {
   });
 }
 
-function startServer(command, args, env) {
-  const child = spawn(command, args, { cwd: projectRoot, env, stdio: "inherit" });
+function startServer(args, env) {
+  const child = spawn(process.execPath, args, { cwd: projectRoot, env, stdio: "inherit" });
   children.add(child);
   child.once("close", () => children.delete(child));
   child.once("error", (error) => { console.error(`Arrêt du serveur local : ${error.message}`); });
@@ -65,10 +66,22 @@ function startDisposablePostgres(containerName, password) {
   }), { capture: true });
 }
 
-async function waitForHttp(url, serverProcesses) {
+function serverStopped(name, code, signal) {
+  return new Error(`Le serveur ${name} s’est arrêté (${code ?? signal ?? "inconnu"}).`);
+}
+
+function checkServers(servers) {
+  if (interruptedSignal) throw new Error("Démo locale interrompue.");
+  for (const [name, child] of Object.entries(servers)) {
+    if (!child.pid || child.exitCode !== null || child.signalCode !== null) {
+      throw serverStopped(name, child.exitCode, child.signalCode);
+    }
+  }
+}
+
+async function waitForHttp(url, servers) {
   for (let attempt = 0; attempt < 80; attempt += 1) {
-    if (interruptedSignal) throw new Error("Démo locale interrompue.");
-    if (serverProcesses.some((child) => child.exitCode !== null)) throw new Error("Un serveur local s’est arrêté au démarrage.");
+    checkServers(servers);
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(1_000) });
       if (response.ok) return;
@@ -100,7 +113,7 @@ function requestStop(signal) {
 
 async function stopServers() {
   for (const child of children) child.kill("SIGTERM");
-  await Promise.race([Promise.all([...children].map((child) => new Promise((resolve) => child.once("close", resolve)))), delay(3_000)]);
+  await Promise.race([Promise.all([...children].map((child) => new Promise((resolve) => child.once("close", resolve)))), delay(3_000, undefined, { ref: false })]);
   for (const child of children) child.kill("SIGKILL");
 }
 
@@ -136,12 +149,13 @@ async function main() {
     const webOrigin = `http://127.0.0.1:${webPort}`;
     const apiEnv = { ...demoEnv, HOST: "127.0.0.1", PORT: String(apiPort), APP_ORIGIN: webOrigin,
       LOCAL_DEMO_INVOICE_FIXTURE: "true" };
-    const api = startServer(process.execPath, ["--import", "tsx", "server/src/index.ts"], apiEnv);
-    await waitForHttp(`http://127.0.0.1:${apiPort}/api/health`, [api]);
+    const api = startServer(["--import", "tsx", "server/src/index.ts"], apiEnv);
+    await waitForHttp(`http://127.0.0.1:${apiPort}/api/health`, { API: api });
     const webEnv = { ...demoEnv, KOOKIA_API_PROXY_TARGET: `http://127.0.0.1:${apiPort}` };
     delete webEnv.DATABASE_URL;
-    const web = startServer(process.execPath, ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(webPort), "--strictPort"], webEnv);
-    await waitForHttp(`${webOrigin}/login`, [api, web]);
+    const web = startServer(["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", String(webPort), "--strictPort"], webEnv);
+    const servers = { API: api, web };
+    await waitForHttp(`${webOrigin}/login`, servers);
     const ownerId = await registerDemoAccount(demoPassword, webOrigin);
     const seedEnv = { ...demoEnv, LOCAL_DEMO_USER_ID: ownerId };
     await spawnTask(process.execPath, ["--import", "tsx", "server/src/scripts/seedWorkspaces.ts"], { env: seedEnv });
@@ -154,18 +168,17 @@ async function main() {
     await writeFile(credentialPath, `Email : demo@kookia.local\nMot de passe : ${demoPassword}\n`, { mode: 0o600, flag: "wx" });
     await chmod(credentialPath, 0o600);
 
+    checkServers(servers);
     console.log(`\nDémo ${fixtureOnly ? "à fixtures synthétiques" : "locale"} prête : ${webOrigin}/login`);
     console.log("Compte : demo@kookia.local");
     console.log(`Mot de passe dans le fichier privé temporaire : ${credentialPath}`);
     console.log("Ctrl-C arrête les serveurs et supprime le compte, la base tmpfs et le fichier d’identifiants.");
     await Promise.race([
       stopRequested,
-      new Promise((_, reject) => api.once("exit", (code, signal) => {
-        if (!interruptedSignal) reject(new Error(`Le serveur API s’est arrêté (${code ?? signal ?? "inconnu"}).`));
-      })),
-      new Promise((_, reject) => web.once("exit", (code, signal) => {
-        if (!interruptedSignal) reject(new Error(`Le serveur web s’est arrêté (${code ?? signal ?? "inconnu"}).`));
-      })),
+      ...Object.entries(servers).map(async ([name, child]) => {
+        const [code, signal] = await once(child, "close");
+        if (!interruptedSignal) throw serverStopped(name, code, signal);
+      }),
     ]);
   } catch (error) {
     console.error(interruptedSignal ? "Démo locale interrompue." : error instanceof Error ? error.message : "La démo locale a échoué.");
