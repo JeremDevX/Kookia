@@ -1,11 +1,14 @@
-import { recipeById } from "./catalog";
+import { ingredientById, recipeById, type Recipe } from "./catalog";
 import { workflows } from "./documentModel";
 import type { ArticleSales, DaySales, Document, WriteDocument } from "./documentModel";
+import { grossDosages } from "./inventory";
 import type { Day, Scenario } from "./model";
 import { purchaseDocuments } from "./purchaseDocuments";
 import { serviceDocuments } from "./serviceDocuments";
 import { setupDocuments } from "./setupDocuments";
 import { stockDocuments } from "./stockDocuments";
+
+const quoteCsv = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
 function dailySales(day: Day): DaySales {
   const articles = new Map<string, ArticleSales>();
@@ -35,9 +38,16 @@ export function createDocuments(scenario: Scenario) {
   return { docs, sales };
 }
 export function salesCsv(days: readonly DaySales[]) {
-  const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
   return "service_date,item_name,quantity\r\n" + days.flatMap(day => [...day.articles].map(([recipeId, { sold }]) =>
-    `${day.date},${quote(recipeById(recipeId).name)},${sold}`)).join("\r\n") + "\r\n";
+    `${day.date},${quoteCsv(recipeById(recipeId).name)},${sold}`)).join("\r\n") + "\r\n";
+}
+
+export function recipeCsv(recipe: Recipe, lossPercent: number) {
+  const rows = Object.entries(grossDosages(recipe, lossPercent)).map(([id, dose]) => {
+    const { name, unit } = ingredientById(id);
+    return `${quoteCsv(name)};${dose};${unit}`;
+  });
+  return ["Produit;Quantité brute;Unité", ...rows, ""].join("\r\n");
 }
 
 export function readySales(days: readonly DaySales[], today: string) {

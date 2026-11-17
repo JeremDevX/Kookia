@@ -61,6 +61,13 @@ export function planTomorrow(date: string, lots: Lot[], purchases: Purchase[], o
     planPurchase(date, tomorrow, supplier.id, lots, purchases, options);
   }
 }
+export function receivedLot(purchaseId: string, line: Purchase["lines"][number], receivedOn: string): Lot {
+  return {
+    id: `LOT-${purchaseId}-${line.productId}`, productId: line.productId, receivedOn,
+    expiresOn: offsetDate(receivedOn, ingredientById(line.productId).shelfLife - 1),
+    quantity: line.received, unitCost: line.unitPrice,
+  };
+}
 export function receivePurchases(purchases: Purchase[], lots: Lot[], day: Day, options: Options) {
   const due = purchases.filter(p => !p.receivedOn && p.deliveryOn === day.date);
   const target = due[Math.floor(draw(options.seed, `${day.date}:supplier-incident`) * due.length)];
@@ -83,8 +90,7 @@ export function receivePurchases(purchases: Purchase[], lots: Lot[], day: Day, o
       line.received = quantity(line.ordered - line.shortage);
       const product = ingredientById(line.productId), stock = day.stock.find(s => s.id === product.id)!;
       stock.received = quantity(stock.received + line.received); stock.shortage = quantity(stock.shortage + line.shortage);
-      if (line.received) lots.push({ id: `LOT-${purchase.id}-${product.id}`, productId: product.id, receivedOn: day.date,
-        expiresOn: offsetDate(day.date, product.shelfLife - 1), quantity: line.received, unitCost: line.unitPrice });
+      if (line.received) lots.push(receivedLot(purchase.id, line, day.date));
     }
   }
 }

@@ -151,7 +151,9 @@ version datée lors de l’intégration, pas le remplacement d’une fiche pass�
 
 ## Contenu du ZIP et couverture Kookia
 
-- `installation/` : établissement, fournisseurs, catalogue, recettes, calendrier.
+- `installation/` contient l’établissement, les fournisseurs, le catalogue, les
+  fiches techniques et le calendrier. `installation/recettes/` fournit un CSV
+  d’ingrédients par fiche, avec les dosages bruts pour dix portions.
 - Répertoires datés : pièces selon leur date d’émission, CSV de chaque journée
   avec ventes et note `sans-ventes.md` pour les jours fermés ou sans vente.
 - `ventes-periode-complete.csv`, seulement si au moins une vente existe.
@@ -173,23 +175,34 @@ se rapprochent de ces mêmes quantités. Les jours à zéro passent par le calen
 jamais par des lignes CSV invalides. Le bouton **CSV jusqu’à aujourd’hui** exclut
 les dates futures ; il ne détecte pas les ventes déjà présentes dans Kookia.
 
-Les PDF fournissent des pièces à revoir et saisir, pas un import universel :
-commandes puis réceptions, recettes en dosage brut, productions réellement
-préparées, ventes, pertes brutes et comptages. Les prévisions et notes cuisine
-ne déclenchent rien. Kookia prend désormais en charge les lots de réception,
-déchets liés aux préparations et avoirs rapprochés, via ses formulaires/API
-revus ; aucun import automatique du JSON de l'atelier n'est ajouté. Les
-transactions détaillées et remises restent documentaires. Voir
-[Services, carte et stocks opérationnels](operational-services.md) pour les
-champs réellement persistés et leurs limites. Les estimations de retours de
-l'atelier ne doivent pas être présentées comme des pesées observées.
+Les opérations du dossier sont simulées. Pour essayer les imports et les
+saisies, utiliser un espace de test isolé. Un CSV importé via **Ventes** alimente
+les ventes enregistrées de l’espace.
+
+- Dans **Recettes**, choisir **Importer une fiche CSV**, associer les produits
+  du catalogue puis renseigner la recette d’après le PDF, dont la catégorie,
+  le rendement de dix portions et la date d’effet. Le CSV préremplit les
+  ingrédients.
+- Dans **Mes commandes**, rapprocher facture et bon de livraison. Le bon
+  indique la référence et l’échéance de chaque lot effectivement reçu.
+- Dans **Ventes**, ventiler les quantités de chaque article à partir de la
+  colonne **Vendu** du bilan de midi et de soir. Le registre des pertes indique
+  le service, la recette et, pour les parures, le produit. Dans **Services et
+  carte**, rapprocher les quantités conservées et écartées avant la clôture.
+
+Les PDF servent à renseigner les formulaires. Les transactions détaillées et
+les remises restent documentaires. Les retours d’assiette restent des
+estimations en équivalents-portions. Voir
+[Services, carte et stocks opérationnels](operational-services.md).
 
 **Garde-fous de rapprochement :**
 
 - Réception par commande OU facture, jamais les deux ; une facture seule n’est
   pas une réception. Une commande reprise n’est pas une nouvelle commande.
-- Production par service OU total quotidien, jamais les deux. Une vente ou une
-  note de complément ne doit pas provoquer une deuxième déduction de production.
+- Production par service pour le rapprochement de la fiche de service.
+  Inclure les compléments dans le total. La confirmation dans **Recettes**
+  enregistre la production à la date de saisie. Pour une reprise historique,
+  vérifier le parcours et les dates avant toute écriture.
 - CSV OU Ticket Z OU saisie manuelle, jamais additionnés pour le même article/jour.
   La facture client est déjà incluse ; remboursement sans annulation de quantité.
 - Une régularisation par ajustement OU comptage, jamais les deux.
@@ -224,8 +237,9 @@ npm run documents:build
 npm test
 ```
 
-Les tests utilisent des objets temporaires, le parseur CSV et le contrôle de
-fichiers Ticket Z de Kookia, sans compte ni base. Conservation matière/portions/
-argent, causalité, FEFO, reprise, limites d’import, dates, PDF et ZIP sont couverts.
+Les tests utilisent des objets temporaires, les parseurs CSV de ventes et
+d’ingrédients et le contrôle de fichiers Ticket Z de Kookia. Ils couvrent la
+conservation de matière, des portions et de l’argent, les dates, les lots, la
+reprise et les formats PDF et ZIP.
 Le suivi des preuves du développement est dans le
 [plan de réalisme](plans/document-workshop-realism.md).

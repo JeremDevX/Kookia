@@ -85,7 +85,7 @@ export default function App() {
       const { options, opening } = scenario;
       const zip = await createArchive({ options, opening });
       download(zip, `dossier-${options.start}-${options.seed}.zip`, "application/zip");
-      setNotice(current => current === pendingNotice ? `Archive prête : ${docs.length} PDF, CSV quotidiens, guide et journal chiffré.` : current);
+      setNotice(current => current === pendingNotice ? "Archive prête. Elle contient les PDF, les CSV de ventes et de recettes, le guide et l’état de reprise." : current);
     } catch (cause) {
       setNotice(current => current === pendingNotice ? "" : current);
       setError(current => current || (cause instanceof Error ? cause.message : "L’archive n’a pas pu être créée."));
@@ -110,12 +110,12 @@ export default function App() {
         </form><div className="export-panel"><h3>Emporter le dossier</h3><button disabled={busy} onClick={archive}>{busy ? "Préparation…" : "Télécharger tout (.zip)"}</button>
           <button className="secondary" disabled={!ready.length} onClick={() => download(salesCsv(ready), `ventes-jusqu-au-${today}.csv`, "text/csv;charset=utf-8")}>CSV jusqu’à aujourd’hui</button>
           <button className="secondary" onClick={() => download(JSON.stringify(scenario.checkpoint, null, 2), "stock-reprise.json", "application/json")}>Télécharger l’état de reprise</button>
-          <p className="hint">Le ZIP inclut toute la période, avec un CSV pour chaque jour avec ventes. Le bouton CSV exclut les dates futures. Aucun accès à votre compte.</p></div>
+          <p className="hint">Le ZIP inclut les fiches recettes en CSV. Le bouton CSV de ventes exclut les dates futures. Utilisez ces données de scénario dans un espace de test.</p></div>
         </aside>
         <div className="results"><div role="status" className="status">{notice}</div>{error && <p role="alert" className="error">{error}</p>}
           <div className="dossier-heading"><div><span className="eyebrow">Votre dossier généré</span><h2>{scenario.options.name}</h2><p>Du {displayDate(scenario.options.start)} au {displayDate(scenario.days.at(-1)!.date)} · Dossier n° {scenario.options.seed}</p></div><span className="ready-badge">{dirty ? "Version précédente" : "Prêt à télécharger"}</span></div>
-          {futureDays > 0 && <p className="future-note">{futureDays} journée(s) à venir sont prêtes. Conservez le ZIP et utilisez le dossier de chaque date au fil des jours : Kookia accepte les ventes et productions à partir de leur date, sans nouvelle génération.</p>}
-          <div className="summary"><div><strong>{docs.length}</strong><span>pièces PDF</span></div><div><strong>{scenario.days.length}</strong><span>journée(s)</span></div><div><strong>{money(scenario.days.reduce((sum, day) => sum + day.collected, 0))}</strong><span>encaissé TTC</span></div></div>
+          {futureDays > 0 && <p className="future-note">{futureDays} journée(s) à venir. Dans votre espace de test, attendez la date du service pour importer ses ventes. La production saisie dans Recettes porte la date du jour.</p>}
+          <div className="summary"><div><strong>{docs.length}</strong><span>pièces PDF</span></div><div><strong>{scenario.days.length}</strong><span>journée(s)</span></div><div><strong>{money(scenario.days.reduce((sum, day) => sum + day.collected, 0))}</strong><span>encaissé TTC du scénario</span></div></div>
           <ScenarioSummary scenario={scenario}/>
           <h3>Consulter les pièces</h3><div className="filters"><label>Type de pièce<select value={kind} onChange={e => setKind(e.target.value)}><option value="all">Toutes les pièces</option>{Object.entries(labels).filter(([key]) => docs.some(doc => doc.kind === key)).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
             <label>Date de pièce<select value={date} onChange={e => setDate(e.target.value)}><option value="">Toutes les dates</option>{documentDates.map(date => <option key={date} value={date}>{displayDate(date)}</option>)}</select></label>

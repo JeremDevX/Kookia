@@ -1,4 +1,4 @@
-import { identity, ingredients, money, number, recipes, suppliers } from "./catalog";
+import { identity, includedRecipes, ingredients, money, number, suppliers } from "./catalog";
 import { available, grossDosages } from "./inventory";
 import type { Scenario } from "./model";
 import { section, serviceLabel } from "./documentModel";
@@ -22,7 +22,7 @@ export function setupDocuments(scenario: Scenario, add: WriteDocument) {
   ])), section("Hypothèses des lots", ["Produit", "Durée de travail", "Rendement net", "Fournisseur"], ingredients.map(p => [p.name, `${p.shelfLife} jours`, `${number(p.yield * 100)} %`, p.supplier]))],
     ["Prix réellement facturés sur chaque pièce fournisseur. Les quantités initiales d'une reprise sont déjà détenues, pas de nouvelles réceptions.",
       "Les durées et pas d'achat sont des paramètres du dossier, sans valeur de consigne sanitaire ni de conditionnement fournisseur vérifié."]);
-  for (const recipe of recipes.filter(r => r.category !== "Boisson" || options.drinks)) {
+  for (const recipe of includedRecipes(options.drinks)) {
     const gross = grossDosages(recipe, options.lossPercent);
     add("recipes", `Fiche technique · ${recipe.name}`, options.start, recipe.id, [
       section("Recette", ["Catégorie", "Rendement", "Préparation", "Saisonnalité"], [[recipe.category, "10 portions", `${recipe.prepTime} min`, recipe.months?.join(", ") ?? "Toute l'année"]]),

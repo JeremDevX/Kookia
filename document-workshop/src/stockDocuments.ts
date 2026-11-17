@@ -1,6 +1,6 @@
 import { ingredientById, number, recipeById } from "./catalog";
 import { weekday } from "./calendar";
-import { section } from "./documentModel";
+import { section, serviceLabel } from "./documentModel";
 import type { WriteDocument } from "./documentModel";
 import type { Day } from "./model";
 
@@ -9,9 +9,10 @@ export function stockDocuments(day: Day, add: WriteDocument) {
   if (day.waste.length) add("waste", "Registre des pertes et déchets", day.date, "01", [
     section("Pertes BRUTES à sortir du stock", ["Produit / lot", "Quantité", "Cause"], day.waste.filter(w => w.stockEffect).map(w => [
       `${ingredientById(w.productId!).name} · ${w.lotId}`, `${number(w.quantity)} ${w.unit}`, kinds[w.kind]])),
-    section("Déchets DÉJÀ INCLUS dans la production", ["Produit / recette", "Quantité", "Évitable", "Cause"], day.waste.filter(w => !w.stockEffect).map(w => [
-      w.productId ? ingredientById(w.productId).name : recipeById(w.recipeId!).name,
-      `${number(w.quantity)} ${w.unit === "portions" ? "éq. portions" : w.unit}`, w.avoidable ? "Oui" : "Non comestible", kinds[w.kind]])),
+    section("Déchets DÉJÀ INCLUS dans la production", ["Service", "Recette / produit", "Quantité", "Évitable", "Cause"], day.waste.filter(w => !w.stockEffect).map(w => [
+      w.service ? serviceLabel(w.service) : "—",
+      [w.recipeId && recipeById(w.recipeId).name, w.productId && ingredientById(w.productId).name].filter(Boolean).join(" / "),
+      `${number(w.quantity)} ${w.kind === "plate_return" ? "éq. portions" : w.unit}`, w.avoidable ? "Oui" : "Non comestible", kinds[w.kind]])),
   ], ["Seul le premier tableau crée une sortie stock supplémentaire. Les parures sont incluses dans le dosage brut, les invendus dans le préparé, les retours dans le servi.",
     "Les équivalents-portions sont des estimations de travail. Ne pas additionner kg, L et portions ; aucun poids cuit mesuré n'est fourni."]);
   if (day.stock.some(l => l.adjustment)) add("adjustment", "Régularisation de stock", day.date, "01", [section("Écart signé de fermeture", ["Produit", "Écart", "Unité"],

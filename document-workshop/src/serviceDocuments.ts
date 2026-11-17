@@ -17,7 +17,7 @@ export function serviceDocuments(scenario: Scenario, day: Day, articles: DaySale
     "Plan avant demande et incidents du service. Café préparé à la commande."]);
   add("menu", "Carte du jour", date, "01", day.services.map(s => section(`Service ${serviceLabel(s.name).toLowerCase()}`, ["Séquence", "Choix", "Prix TTC"],
     s.runs.map(r => [recipeById(r.recipeId).category, recipeById(r.recipeId).name, money(r.price)]))),
-    [scenario.options.mealDeals ? "Midi : réduction de 2,00 EUR sur l'entrée ou le dessert avec un plat, une réduction par couvert. Appliquée sur les transactions." : "Carte à l'unité, sans formule.",
+    [scenario.options.mealDeals ? "À midi, remise de 2,00 EUR sur l'entrée ou le dessert avec un plat, une fois par couvert. Les articles sont vendus à l'unité dans le CSV." : "Carte à l'unité.",
       "Disponibilité sous réserve des matières et des quantités préparées. Les deux plats sont des alternatives, pas deux plats par couvert."]);
   add("production", "Feuille de production", date, "01", day.services.map(s => section(`Cuisine · ${serviceLabel(s.name)}`, ["Recette", "Initial", "+ Service", "TOTAL préparé"],
     s.runs.filter(r => r.prepared > 0).map(r => [recipeById(r.recipeId).name, String(r.prepared - r.extraPrepared), String(r.extraPrepared), String(r.prepared)]))),
@@ -45,8 +45,10 @@ export function serviceDocuments(scenario: Scenario, day: Day, articles: DaySale
       [[recipeById(t.refundRecipeId).name, "1", money(-t.refund)]]), section(`Retour sur ${t.payment === "card" ? "carte" : "espèces"}`, ["HT", "TVA", "TTC"],
       [[money(-t.refundNet), money(-(t.refund - t.refundNet)), money(-t.refund)]])], [t.refundReason!], customer);
   }
-  add("sales", "Bilan du service", date, "01", day.services.map(s => section(serviceLabel(s.name), ["Article", "Demandé", "Préparé", "Vendu", "Invendu", "Non servi"],
-    s.runs.map(r => [recipeById(r.recipeId).name, String(r.demand), String(r.prepared), String(r.sold), String(r.unsold), String(r.unserved)]))),
-    ["Les substitutions déplacent des demandes entre plats ; le CSV suit uniquement les articles réellement servis.",
+  add("sales", "Bilan du service", date, "01", day.services.map(s => section(`${serviceLabel(s.name)} · ${s.covers} couverts du scénario`,
+    ["Article", "Demandé", "Préparé", "Vendu", "Conservé", "Écarté", "Non servi"],
+    s.runs.map(r => [recipeById(r.recipeId).name, String(r.demand), String(r.prepared), String(r.sold), "0", String(r.unsold), String(r.unserved)]))),
+    ["Pour ventiler le total du CSV, utilisez la colonne Vendu de chaque service. Les substitutions sont comptées sur le plat servi.",
+      "Les portions écartées sont déjà comptées dans la production. Rapprochez-les du registre des pertes avant de clôturer la fiche de service.",
       `Retours d'assiette : ${number(day.waste.filter(w => w.kind === "plate_return").reduce((sum, w) => sum + w.quantity, 0))} équivalents-portions estimés, pas un poids mesuré.`]);
 }
