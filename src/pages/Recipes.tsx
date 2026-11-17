@@ -40,8 +40,9 @@ export default function Recipes() {
   const allRecipesHref = recipeViewHref(searchParams, "catalog");
   const { recipes, products, loading, error, refetch, productsLoading, productsError, productsReady, refreshProducts,
     getMaxYield, getIngredientCost, getProductName, getProductUnit } = useRecipes();
-  const { productions, productionError, refreshProductions, recordPreparation,
-    confirmProduction, reportRefusal } = useRecipeProduction(refetch, refreshProducts);
+  const needsJournal = displayedTab === "anti-waste" || displayedTab === "history";
+  const { productions, productionLoading, productionError, refreshProductions, recordPreparation,
+    confirmProduction, reportRefusal } = useRecipeProduction(needsJournal, refetch, refreshProducts);
 
   const [editorFlow, setEditorFlow] = useState<EditorFlow | null>(null);
   const [dialog, setDialog] = useState<ProductionDialog | null>(null);
@@ -109,7 +110,11 @@ export default function Recipes() {
     {productsLoading && <p role="status">Chargement du catalogue de produits…</p>}
     {productsError && <div role="alert"><p>Catalogue de produits indisponible. {productsError.message}</p>
       <Button onClick={() => void refreshProducts()}>Réessayer</Button></div>}
-    {productionError && <div role="alert"><p>{productionError}</p><Button onClick={() => void refreshProductions()}>Réessayer</Button></div>}
+    {productionLoading && <p role="status">Chargement de l’historique de production…</p>}
+    {productionError && <div role="alert"><p>{productionError}</p><Button onClick={() => {
+      pageHeading.current?.focus({ preventScroll: true });
+      refreshProductions();
+    }}>Réessayer</Button></div>}
     <div className="recipes-heading-panel"><header className="workspace-header">
       <div>
         <h1 ref={pageHeading} tabIndex={-1}>{productId ? `Recettes avec ${productsReady ? getProductName(productId) : "ce produit"}` : displayedTab === "sheets" ? "Fiches techniques" : "Mes recettes"}</h1>
@@ -150,13 +155,13 @@ export default function Recipes() {
     {displayedTab === "sheets" && !error && <RecipeSheets editing={editing} recipes={recipes} loading={loading && recipes.length === 0}
       costPerPortion={getIngredientCost} onEdit={edit} />}
     {!productId && !receiptLineId && <RecipeCandidates products={products} onRecipeConfirmed={refetch} />}
-    {displayedTab === "anti-waste" && !loading && !error && productsReady &&
+    {displayedTab === "anti-waste" && !loading && !error && productsReady && !productionLoading &&
       <ProducibleRecipes {...recipeDetails} recipes={matchingRecipes} products={products} producedRecipeIds={producedRecipeIds}
         allRecipesHref={productId ? allRecipesHref : undefined} editing={editing}
         onEdit={edit} onProduce={startProduction} onRefusal={startRefusal} />}
     {displayedTab === "history" &&
       <RecipeProductionHistory {...recipeDetails} recipes={recipes} productions={productions} today={today}
-        loading={loading} recipeError={Boolean(error)} editing={editing} onEdit={edit} onRefusal={startRefusal} />}
+        loading={loading || productionLoading || Boolean(productionError)} recipeError={Boolean(error)} editing={editing} onEdit={edit} onRefusal={startRefusal} />}
 
     <RecordProductionModal isOpen={dialog?.kind === "preparation"} onClose={closeDialog} onRecord={recordPreparation} />
     {dialog?.kind === "production" && <ProductionConfirmModal

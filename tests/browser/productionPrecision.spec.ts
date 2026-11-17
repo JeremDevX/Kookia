@@ -27,9 +27,26 @@ test("produit le maximum annoncé quand un dosage est arrondi au millième", asy
   expect(recipe.status()).toBe(201);
   await completeSetup();
 
-  await page.goto("/recipes?view=anti-waste");
-  await expect(page.getByText("Jusqu’à 4 portions avec les lots proposés")).toBeVisible();
+  let journalReads = 0;
+  await page.route("**/api/workspace/productions", async (route) => {
+    if (route.request().method() === "GET" && ++journalReads === 1) {
+      await route.fulfill({ status: 503, json: { error: { code: "TEST", message: "Journal indisponible" } } });
+    } else await route.continue();
+  });
+  await page.goto("/recipes");
+  await expect(page.getByText("Assaisonnement test", { exact: true })).toBeVisible();
   await expect(page.getByRole("status", { name: "Ouverture de KookiA" })).toBeHidden();
+  await page.getByRole("button", { name: "Fiches techniques" }).click();
+  await expect(page.getByRole("heading", { name: "Fiches techniques", level: 1 })).toBeVisible();
+  expect(journalReads).toBe(0);
+
+  await page.getByRole("button", { name: "Réalisables avec le stock" }).press("Enter");
+  const journalError = page.getByRole("alert").filter({ hasText: "Historique de production indisponible." });
+  await expect(journalError).toBeVisible();
+  await journalError.getByRole("button", { name: "Réessayer" }).press("Enter");
+  await expect(page.getByRole("heading", { name: "Mes recettes", level: 1 })).toBeFocused();
+  await expect(page.getByText("Jusqu’à 4 portions avec les lots proposés")).toBeVisible();
+  await expect(journalError).toHaveCount(0);
   const produce = page.getByRole("button", { name: "Produire cette recette" });
   await produce.press("Enter");
 
@@ -43,6 +60,11 @@ test("produit le maximum annoncé quand un dosage est arrondi au millième", asy
   await confirm.press("Enter");
   await expect(dialog).toBeHidden();
   await expect(produce).toBeHidden();
+
+  await page.getByRole("button", { name: "Produites cette semaine" }).click();
+  await expect(page.getByRole("region", { name: "Journal de production" }).getByText("Assaisonnement test", { exact: true })).toBeVisible();
+  await expect(page.getByText("Chargement de l’historique de production…")).toBeHidden();
+  expect(journalReads).toBe(3);
 
   const movements = await page.request.get(`/api/workspace/products/${productId}/movements`, { headers });
   expect(movements.ok()).toBe(true);

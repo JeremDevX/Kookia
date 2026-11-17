@@ -27,5 +27,5 @@ export interface Production extends Omit<ProductionInput, "expectedRecipeRevisio
   id: string; createdAt: string; recipeVersionId: string | null;
   recipeVersion: { version: number; effectiveFrom: string | null; yieldPortions: number } | null;
 }
-export const getProductions = () => apiRequest<Production[]>("/workspace/productions");
+export const getProductions = (signal?: AbortSignal) => apiRequest<Production[]>("/workspace/productions", { signal });
 export const recordProduction = (data: ProductionInput) => apiRequest<Production>("/workspace/productions", { method: "POST", body: JSON.stringify(data) });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ApiError } from "../../config/api";
 import { useToast } from "../../context/ToastContext";
 import { getProductions, recordProduction, type Production } from "../../services/recipeService";
@@ -7,32 +7,42 @@ import type { ProductionRecord } from "../../types/callbacks";
 import { formatLocalISODate } from "../../utils/date";
 import type { ServiceSlot } from "../../../shared/serviceCalendar";
 
-export function useRecipeProduction(refreshRecipes: () => Promise<void>, refreshProducts: () => Promise<boolean>) {
+interface ProductionJournal {
+  revision: number;
+  loadedRevision?: number;
+  productions: Production[];
+  error: string;
+}
+
+export function useRecipeProduction(
+  needsJournal: boolean,
+  refreshRecipes: () => Promise<void>,
+  refreshProducts: () => Promise<boolean>,
+) {
   const { addToast } = useToast();
-  const [productions, setProductions] = useState<Production[]>([]);
-  const [productionError, setProductionError] = useState("");
-  const pending = useRef<Promise<Production[]> | null>(null);
-  const refreshProductions = useCallback(() => {
-    const request = getProductions();
-    pending.current = request;
-    return request.then((data) => {
-      if (pending.current === request) {
-        setProductions(data);
-        setProductionError("");
-      }
-    }, () => {
-      if (pending.current === request) setProductionError("Historique de production indisponible.");
-    });
-  }, []);
+  const [journal, setJournal] = useState<ProductionJournal>({ revision: 0, productions: [], error: "" });
+  const { revision, loadedRevision, productions, error } = journal;
+  const productionLoading = needsJournal && loadedRevision !== revision;
+  const refreshProductions = () => setJournal((current) => ({ ...current, revision: current.revision + 1 }));
 
   useEffect(() => {
-    void refreshProductions();
-    return () => { pending.current = null; };
-  }, [refreshProductions]);
+    if (!productionLoading) return;
+    const controller = new AbortController();
+    void getProductions(controller.signal).then((productions) => {
+      if (controller.signal.aborted) return;
+      setJournal((current) => current.revision === revision
+        ? { ...current, loadedRevision: revision, productions, error: "" } : current);
+    }, () => {
+      if (controller.signal.aborted) return;
+      setJournal((current) => current.revision === revision
+        ? { ...current, loadedRevision: revision, error: "Historique de production indisponible." } : current);
+    });
+    return () => controller.abort();
+  }, [productionLoading, revision]);
 
   const addToJournal = (saved: Production) => {
-    setProductions((previous) => [saved, ...previous.filter(({ id }) => id !== saved.id)]);
-    void refreshProductions();
+    setJournal((current) => ({ ...current, revision: current.revision + 1,
+      productions: [saved, ...current.productions.filter(({ id }) => id !== saved.id)] }));
   };
 
   const recordPreparation = async (data: ProductionRecord, operationId: string) => {
@@ -67,5 +77,10 @@ export function useRecipeProduction(refreshRecipes: () => Promise<void>, refresh
     addToast("success", "Demandes refusées enregistrées", `${portions} demande${portions > 1 ? "s" : ""} pour ${recipe.name}.`);
   };
 
-  return { productions, productionError, refreshProductions, recordPreparation, confirmProduction, reportRefusal };
+  return {
+    productions,
+    productionLoading,
+    productionError: needsJournal && !productionLoading ? error : "",
+    refreshProductions, recordPreparation, confirmProduction, reportRefusal,
+  };
 }
