@@ -6,10 +6,10 @@ import { WeatherProviderError, type WeatherProvider } from "../integrations/weat
 import { getWeatherLocation, confirmWeatherLocation } from "../application/workspace/weatherPositionService.js";
 import { getServiceWeather } from "../application/workspace/serviceWeatherService.js";
 import { rateLimit } from "./rateLimit.js";
+import { workspaceContext as context } from "./workspaceContext.js";
 
 export const weatherRoutes = Router();
 export const weatherProviderFor = (res: Response) => res.locals.weatherProvider as WeatherProvider;
-const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const query = z.object({ date: z.iso.date(), slot: slotSchema }).strict();
 weatherRoutes.get("/weather/location", async (_req, res) => {
   res.json(await getWeatherLocation(context(res).restaurantId, weatherProviderFor(res).configured));

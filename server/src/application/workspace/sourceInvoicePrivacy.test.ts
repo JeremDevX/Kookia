@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { sourceInvoiceContentForWorkspace } from "./invoiceService.js";
+import { sourceInvoiceContentForWorkspace } from "./invoiceData.js";
 
 it("exposes only the working date in a source invoice transcription", () => {
   const content = [

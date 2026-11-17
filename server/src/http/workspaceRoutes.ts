@@ -25,9 +25,10 @@ import { Router } from "express";
 import { z } from "zod";
 import { sessionCookieName } from "../config/env.js";
 import { getUserBySessionToken } from "../application/auth/authService.js";
-import { WorkspaceError } from "../application/workspace/catalogService.js";
+import { WorkspaceError } from "../application/workspace/workspaceError.js";
 import { resolveWorkspace } from "../application/workspace/workspaceIdentity.js";
 import { canAccessWorkspace } from "../application/workspace/workspacePermissions.js";
+import type { WorkspaceContext } from "./workspaceContext.js";
 
 export const workspaceRoutes = Router();
 workspaceRoutes.use(async (req, res, next) => {
@@ -36,7 +37,7 @@ workspaceRoutes.use(async (req, res, next) => {
   const workspace = await resolveWorkspace(user.id);
   if (!workspace) { res.status(409).json({ error: { code: "SETUP_REQUIRED", message: "Créez votre établissement pour accéder à votre espace." } }); return; }
   if (!canAccessWorkspace(workspace.role, req.method, `${req.baseUrl}${req.path}`)) { res.status(403).json({ error: { code: "FORBIDDEN", message: "Vous ne pouvez pas effectuer cette action." } }); return; }
-  res.locals.workspace = { restaurantId: workspace.restaurantId, actorId: user.id };
+  res.locals.workspace = { restaurantId: workspace.restaurantId, actorId: user.id } satisfies WorkspaceContext;
   next();
 });
 

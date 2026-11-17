@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 
 export const purchaseCreditSchema = z.object({ operationId: z.uuid(), receiptId: z.uuid(),
   reference: z.string().trim().min(1).max(120), amount: z.number().finite().positive().max(1_000_000).multipleOf(0.01),

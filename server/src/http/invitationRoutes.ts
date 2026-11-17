@@ -6,9 +6,9 @@ import { getUserBySessionToken } from "../application/auth/authService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { createSessionToken, hashSessionToken } from "../security/sessionToken.js";
 import { rateLimit } from "./rateLimit.js";
+import { workspaceContext as context } from "./workspaceContext.js";
 
 const fields = { id: true, role: true, createdAt: true, expiresAt: true, revokedAt: true, acceptedAt: true } as const;
-const context = (res: import("express").Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const requireOwner = async (_req: Request, res: Response, next: NextFunction) => {
   const { actorId, restaurantId } = context(res);
   if (!await prisma.restaurant.findFirst({ where: { id: restaurantId, ownerId: actorId }, select: { id: true } })) {

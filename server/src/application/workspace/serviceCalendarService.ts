@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { qualifiedAllocation, serviceSlots, type ServiceSlot, type SalesCoverage } from "../../../../shared/serviceCalendar.js";
 
 const date = (value: string) => new Date(`${value}T00:00:00Z`);

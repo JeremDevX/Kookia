@@ -1,14 +1,14 @@
 import { checkInvoiceDuplicates, invoiceKey } from "./invoiceDuplicates.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
-import { invoiceSchema, recordSourceInvoiceRevision } from "./invoiceData.js";
+import { invoiceSchema, recordSourceInvoiceRevision, sourceInvoiceDocumentSchema } from "./invoiceData.js";
 import { creditReceiptStock, getReceiptProduct, lockReceiptProducts, lockReceiptWorkspace } from "./receiptStock.js";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma, type PurchaseReceipt as PurchaseReceiptRecord, type PurchaseReceiptLine as PurchaseReceiptLineRecord,
   type PrismaClient } from "@prisma/client";
 import type { PurchaseReceiptInput, PurchaseReceiptLineEvidence } from "../../../../shared/purchaseReceipt.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
-import { rejectPriorSourceCredit, sourceInvoiceDocumentSchema, validateSourceReview } from "./invoiceService.js";
+import { WorkspaceError } from "./workspaceError.js";
+import { rejectPriorSourceCredit, validateSourceReview } from "./invoiceService.js";
 
 type ReceiptDatabase = PrismaClient | Prisma.TransactionClient;
 type ReceiptLineWithMovement = PurchaseReceiptLineRecord & { movement: { id: string } | null };

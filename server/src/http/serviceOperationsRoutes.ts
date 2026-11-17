@@ -1,4 +1,4 @@
-import { Router, type Response } from "express";
+import { Router } from "express";
 import { z } from "zod";
 import { menuInputSchema, slotSchema } from "../../../shared/serviceOperations.js";
 import { getServiceMenu, menuDto, saveServiceMenu } from "../application/workspace/serviceMenuService.js";
@@ -6,8 +6,8 @@ import { getOperationalForecast } from "../application/workspace/operationalFore
 import { prisma } from "../infrastructure/database/prisma.js";
 import { refreshForecastWeather } from "../application/workspace/forecastWeatherService.js";
 import type { WeatherProvider } from "../integrations/weatherProvider.js";
+import { workspaceContext as context } from "./workspaceContext.js";
 
-const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const serviceQuery = z.object({ date: z.iso.date(), slot: slotSchema });
 export const serviceOperationsRoutes = Router();
 serviceOperationsRoutes.get("/service-menu", async (req, res) => {

@@ -1,7 +1,7 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { isDeepStrictEqual } from "node:util";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import type { MenuEntry, MenuInput, ServiceMenu } from "../../../../shared/serviceOperations.js";
 import type { ServiceSlot } from "../../../../shared/serviceCalendar.js";
 

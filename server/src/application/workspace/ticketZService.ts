@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { inspectTicketFile, type TicketFileMetadata } from "../../integrations/ticketFile.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { lockSalesWorkspace } from "./salesContributionLedger.js";
 
 const candidateSchema = z.object({

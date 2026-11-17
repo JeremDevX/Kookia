@@ -1,7 +1,8 @@
-import { Router, type Response } from "express";
+import { Router } from "express";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { workspaceContext } from "./workspaceContext.js";
 
 const notificationsSchema = z.array(z.object({
   id: z.string(), type: z.enum(["warning", "alert", "info"]), title: z.string(), message: z.string(),
@@ -9,18 +10,17 @@ const notificationsSchema = z.array(z.object({
   productName: z.string().optional(), suggestedQuantity: z.number().optional(), unit: z.string().optional(),
   currentStock: z.number().optional(), estimatedRunout: z.string().optional(),
 }));
-const restaurantId = (res: Response) => (res.locals.workspace as { restaurantId: string }).restaurantId;
 async function getNotifications(id: string) {
   const document = await prisma.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: id, kind: "notifications" } } });
   return document ? notificationsSchema.parse(document.data) : [];
 }
 export const notificationRoutes = Router();
 notificationRoutes.get("/notifications", async (_req, res) => {
-  res.json(await getNotifications(restaurantId(res)));
+  res.json(await getNotifications(workspaceContext(res).restaurantId));
 });
 notificationRoutes.post("/notifications/read", async (req, res) => {
   const { ids } = z.object({ ids: z.array(z.string().min(1).max(100)).max(100) }).strict().parse(req.body);
-  const id = restaurantId(res);
+  const id = workspaceContext(res).restaurantId;
   const result = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${id} FOR UPDATE`);
     const document = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: id, kind: "notifications" } } });

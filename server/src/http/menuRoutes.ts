@@ -1,13 +1,13 @@
-import { Router, type Response } from "express";
+import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../infrastructure/database/prisma.js";
-import { WorkspaceError } from "../application/workspace/catalogService.js";
+import { WorkspaceError } from "../application/workspace/workspaceError.js";
 import { createMenuIdeas, getMenuSurplusOptions } from "../application/workspace/menuIdeaService.js";
+import { workspaceContext as context } from "./workspaceContext.js";
 const menuSchema = z.object({ starter: z.string().trim().min(1).max(200), main: z.string().trim().min(1).max(200), dessert: z.string().trim().min(1).max(200),
   stockOptimizationText: z.string().nullable(), reclaimedStockKg: z.number().nullable(), criticalWindowHours: z.number().nullable(), source: z.enum(["demo", "manual"]),
   status: z.enum(["draft", "validated"]), validatedAt: z.iso.datetime().optional() });
-const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const menuIdeasRequestSchema = z.object({
   operationId: z.uuid(), surplus: z.array(z.object({ productId: z.string().min(1).max(100), stockCountId: z.uuid(),
     expectedStockRevision: z.number().int().positive(), quantity: z.number().finite().positive().max(1_000_000).multipleOf(0.001),

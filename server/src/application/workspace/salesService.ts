@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { createSaleContribution, lockSalesWorkspace, recordSaleContributionEvent } from "./salesContributionLedger.js";
 
 export interface SaleValues { saleItemId: string; serviceDate: string; quantity: number }

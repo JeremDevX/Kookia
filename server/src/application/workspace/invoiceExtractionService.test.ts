@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { mapInvoiceExtractionToSourceDocument } from "./invoiceExtractionService.js";
 import { describeInvoiceFile } from "../../integrations/invoiceExtractionAdapter.js";
 

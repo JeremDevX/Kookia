@@ -1,10 +1,10 @@
-import { Router, type Response } from "express";
+import { Router } from "express";
 import { cartMutationSchema, getCart, mutateCart } from "../application/workspace/cartService.js";
+import { workspaceContext } from "./workspaceContext.js";
 export const cartRoutes = Router();
-const restaurantId = (res: Response) => (res.locals.workspace as { restaurantId: string }).restaurantId;
 cartRoutes.get("/cart", async (_req, res) => {
-  res.json(await getCart(restaurantId(res)));
+  res.json(await getCart(workspaceContext(res).restaurantId));
 });
 cartRoutes.post("/cart", async (req, res) => {
-  res.json(await mutateCart(restaurantId(res), cartMutationSchema.parse(req.body)));
+  res.json(await mutateCart(workspaceContext(res).restaurantId, cartMutationSchema.parse(req.body)));
 });

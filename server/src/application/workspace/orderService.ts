@@ -2,7 +2,7 @@ import { getOrderStep, isOrderQuantity, orderStepLabel } from "../../../../share
 import { cartSchema } from "./cartService.js";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { getPurchaseSuggestions } from "./purchaseSuggestionService.js";
 
 export interface OrderInput {

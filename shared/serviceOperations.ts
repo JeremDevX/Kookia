@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { serviceSlots } from "./serviceCalendar.js";
 import type { ServiceSlot } from "./serviceCalendar.js";
 
-export const slotSchema = z.enum(["lunch", "dinner"]);
+export const slotSchema = z.enum(serviceSlots);
 const menuEntrySchema = z.object({
   id: z.uuid(), name: z.string().trim().min(1).max(120),
   category: z.enum(["Entrée", "Plat", "Dessert", "Boisson", "Formule"]),

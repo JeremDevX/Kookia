@@ -1,19 +1,19 @@
-import { Router, type Response } from "express";
+import { Router } from "express";
 import { formatParisDate } from "../../../shared/parisDate.js";
+import { slotSchema } from "../../../shared/serviceOperations.js";
 import { z } from "zod";
 import { getWeeklyServices, saveWeeklyService, getServiceCalendar, saveCalendarService,
   getSaleAllocation, saveSaleAllocation } from "../application/workspace/serviceCalendarService.js";
+import { workspaceContext as workspace } from "./workspaceContext.js";
 
 export const serviceCalendarRoutes = Router();
-const workspace = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
-const slot = z.enum(["lunch", "dinner"]);
 const revision = z.number().int().min(0);
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 const period = z.object({ from: z.iso.date(), to: z.iso.date() }).strict()
   .refine(({ from, to }) => from <= to && Date.parse(to) - Date.parse(from) <= 366 * 86400000);
-const weekly = z.object({ weekday: z.number().int().min(0).max(6), slot, opensAt: time, closesAt: time,
+const weekly = z.object({ weekday: z.number().int().min(0).max(6), slot: slotSchema, opensAt: time, closesAt: time,
   open: z.boolean(), expectedRevision: revision }).strict().refine((entry) => !entry.open || entry.opensAt < entry.closesAt);
-const session = z.object({ serviceDate: z.iso.date(), slot, plannedOpen: z.boolean(),
+const session = z.object({ serviceDate: z.iso.date(), slot: slotSchema, plannedOpen: z.boolean(),
   coverage: z.enum(["missing", "partial", "complete"]), actualCovers: z.number().int().min(0).max(100000).nullable(),
   note: z.string().trim().max(1000), expectedRevision: revision }).strict().refine((entry) => {
     const today = formatParisDate();

@@ -1,13 +1,14 @@
-import { Router, type Response } from "express";
+import { Router } from "express";
 import { formatParisDate } from "../../../shared/parisDate.js";
+import { slotSchema } from "../../../shared/serviceOperations.js";
 import { z } from "zod";
 import { getInventorySession, openInventorySession, saveInventorySession, validateInventorySession, refreshInventorySession, discardInventorySession } from "../application/workspace/inventorySessionService.js";
 import { listStockLots } from "../application/workspace/lotService.js";
 import { listWaste, recordWaste } from "../application/workspace/wasteService.js";
-const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
+import { rejectChangedWorkspace, workspaceContext as context } from "./workspaceContext.js";
 export const inventoryRoutes = Router();
 const wasteSchema = z.object({ operationId: z.uuid(), serviceDate: z.iso.date(),
-  serviceSlot: z.enum(["lunch", "dinner"]).nullable().optional(),
+  serviceSlot: slotSchema.nullable().optional(),
   kind: z.enum(["raw", "preparation", "unsold", "plate_return"]), avoidability: z.enum(["avoidable", "inedible"]),
   productId: z.string().min(1).max(100).optional(), lotId: z.uuid().optional(), productionId: z.uuid().optional(),
   quantity: z.number().finite().positive().max(1_000_000).multipleOf(0.001), unit: z.enum(["kg", "L", "dz", "pcs", "portion"]),
@@ -34,11 +35,7 @@ inventoryRoutes.get("/inventory-session/context", (_req, res) => {
   res.json({ restaurantId: context(res).restaurantId });
 });
 inventoryRoutes.use("/inventory-session", (req, res, next) => {
-  const expected = req.get("X-Expected-Restaurant-Id");
-  if (expected && expected !== context(res).restaurantId) {
-    res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return;
-  }
-  next();
+  if (!rejectChangedWorkspace(req, res)) next();
 });
 inventoryRoutes.get("/inventory-session", async (_req, res) => {
   res.json(await getInventorySession(context(res).restaurantId));

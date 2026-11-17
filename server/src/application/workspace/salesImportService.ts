@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { parseSalesCsv } from "./salesCsv.js";
 import { ensureOpenPartialServiceDay } from "./salesService.js";
 import { lockSalesWorkspace } from "./salesContributionLedger.js";

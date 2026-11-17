@@ -2,15 +2,15 @@ import express, { Router, type Response } from "express";
 import { z } from "zod";
 import { saveInvoiceRequestSchema, type SaveInvoiceResponse, type SourceInvoiceDetail,
   type SourceInvoiceSummary } from "../../../shared/invoice.js";
-import { invoiceDto } from "../application/workspace/invoiceData.js";
+import { invoiceDto, sourceInvoiceContentForWorkspace, sourceInvoiceDocumentSchema } from "../application/workspace/invoiceData.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { describeInvoiceFile, unconfiguredInvoiceExtractionAdapter, type InvoiceExtractionAdapter } from "../integrations/invoiceExtractionAdapter.js";
 import { inspectInvoiceExtractionUpload } from "../integrations/invoiceExtractionUpload.js";
 import { extractInvoiceCandidate } from "../application/workspace/invoiceExtractionService.js";
 import { createInvoiceDraftFromSource, getInvoices, getSourceInvoiceWorkflowStates,
-  saveInvoice, sourceInvoiceContentForWorkspace, sourceInvoiceDocumentSchema } from "../application/workspace/invoiceService.js";
+  saveInvoice } from "../application/workspace/invoiceService.js";
+import { workspaceContext as context } from "./workspaceContext.js";
 export const invoiceRoutes = Router();
-const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const extractionAdapter = (res: Response) =>
   (res.locals.invoiceExtractionAdapter as InvoiceExtractionAdapter | undefined) ?? unconfiguredInvoiceExtractionAdapter;
 const extractionUnavailable = (res: Response) => res.status(503).json({ error: { code: "EXTRACTION_UNAVAILABLE",

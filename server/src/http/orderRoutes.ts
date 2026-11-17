@@ -1,10 +1,10 @@
 import { purchaseCreditSchema, recordPurchaseCredit, getPurchaseReconciliation } from "../application/workspace/purchaseReconciliationService.js";
 import { purchaseDeliverySchema, updatePurchaseDelivery } from "../application/workspace/purchaseDeliveryService.js";
-import { Router, type Response } from "express";
+import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { getInvoices } from "../application/workspace/invoiceService.js";
-import { WorkspaceError } from "../application/workspace/catalogService.js";
+import { WorkspaceError } from "../application/workspace/workspaceError.js";
 import { orderDto, validateOrder } from "../application/workspace/orderService.js";
 import { getPurchaseSuggestions, recordPurchaseSuggestionDecision } from "../application/workspace/purchaseSuggestionService.js";
 import { getPurchaseReceiptLineEvidence, recordPurchaseReceipt } from "../application/workspace/purchaseReceiptService.js";
@@ -14,9 +14,9 @@ import type { Invoice } from "../../../shared/invoice.js";
 import { refreshForecastWeather } from "../application/workspace/forecastWeatherService.js";
 import { formatParisDate } from "../../../shared/parisDate.js";
 import type { WeatherProvider } from "../integrations/weatherProvider.js";
+import { rejectChangedWorkspace, workspaceContext as context } from "./workspaceContext.js";
 
 export const orderRoutes = Router();
-const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const orderSchema = z.object({ operationId: z.uuid(), lines: z.array(z.object({
   productId: z.string().min(1).max(100), quantity: z.number().finite().positive().max(1000000).multipleOf(0.001),
   cartId: z.string().min(1).max(100).optional(),
@@ -92,15 +92,11 @@ orderRoutes.patch("/orders/lines/:lineId/delivery", async (req, res) => {
   res.json(await updatePurchaseDelivery(restaurantId, actorId, lineId, input));
 });
 orderRoutes.get("/orders/:orderId/reconciliation", async (req, res) => {
-  if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== context(res).restaurantId) {
-    res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return;
-  }
+  if (rejectChangedWorkspace(req, res)) return;
   res.json(await getPurchaseReconciliation(context(res).restaurantId, z.uuid().parse(req.params.orderId)));
 });
 orderRoutes.post("/orders/credits", async (req, res) => {
-  if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== context(res).restaurantId) {
-    res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return;
-  }
+  if (rejectChangedWorkspace(req, res)) return;
   const { restaurantId, actorId } = context(res);
   res.status(201).json(await recordPurchaseCredit(restaurantId, actorId, purchaseCreditSchema.parse(req.body)));
 });

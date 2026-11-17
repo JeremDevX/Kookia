@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { getIngredientOutflowEstimates } from "../application/workspace/ingredientOutflowEstimateService.js";
+import { workspaceContext } from "./workspaceContext.js";
 
 export const ingredientOutflowEstimateRoutes = Router();
 const periodSchema = z.object({ from: z.iso.date(), to: z.iso.date() }).strict()
@@ -8,6 +9,6 @@ const periodSchema = z.object({ from: z.iso.date(), to: z.iso.date() }).strict()
 
 ingredientOutflowEstimateRoutes.get("/ingredient-outflow-estimates", async (req, res) => {
   const period = periodSchema.parse(req.query);
-  const restaurantId = (res.locals.workspace as { restaurantId: string }).restaurantId;
+  const restaurantId = workspaceContext(res).restaurantId;
   res.json(await getIngredientOutflowEstimates(restaurantId, period.from, period.to));
 });

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { CsvSyntaxError, splitCsv } from "../../../../shared/csv.js";
 
 interface CsvSaleRow {

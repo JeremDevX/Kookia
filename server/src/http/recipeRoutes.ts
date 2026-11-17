@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { formatParisDate } from "../../../shared/parisDate.js";
+import { slotSchema } from "../../../shared/serviceOperations.js";
 import { createRecipe, getRecipes, recordProduction, updateRecipe } from "../application/workspace/recipeService.js";
 import { createRecipeCandidate, decideRecipeCandidate, getRecipeCandidates, updateRecipeCandidate } from "../application/workspace/recipeCandidateService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
@@ -68,7 +69,7 @@ const productionSchema = z.object({
   expectedRecipeRevision: z.number().int().positive().optional(),
   recipeName: z.string().trim().min(1).max(120), portions: z.number().int().min(1).max(10000),
   prepTime: z.number().int().min(0).max(10080), notes: z.string().max(4000),
-  date: z.iso.date(), serviceSlot: z.enum(["lunch", "dinner"]).nullable().optional(), kind: z.enum(["production", "record", "refusal"]),
+  date: z.iso.date(), serviceSlot: slotSchema.nullable().optional(), kind: z.enum(["production", "record", "refusal"]),
 }).strict()
   .refine((data) => data.kind === "record"
     ? (data.recipeId === undefined && data.expectedRecipeRevision === undefined) ||

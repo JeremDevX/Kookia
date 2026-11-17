@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 
 export const purchaseDeliverySchema = z.object({ operationId: z.uuid(), expectedRevision: z.number().int().nonnegative(),
   expectedDeliveryDate: z.iso.date().nullable(), note: z.string().trim().min(1).max(500) }).strict();

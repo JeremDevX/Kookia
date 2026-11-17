@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { invoiceSchema } from "./invoiceData.js";
 import type { SaveInvoiceRequest } from "../../../../shared/invoice.js";
 

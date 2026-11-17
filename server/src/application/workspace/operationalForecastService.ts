@@ -7,7 +7,7 @@ import type { ServiceSlot } from "../../../../shared/serviceCalendar.js";
 import type { MenuEntry } from "../../../../shared/serviceOperations.js";
 import type { ForecastIngredient, ForecastService, OperationalForecast } from "../../../../shared/operationalForecast.js";
 import { forecastMenuEntry, projectMenuIngredients, type ServiceObservation } from "./operationalForecastPolicy.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { env } from "../../config/env.js";
 import { getWeatherLocation } from "./weatherPositionService.js";
 import { readWeatherCache } from "./weatherStorage.js";

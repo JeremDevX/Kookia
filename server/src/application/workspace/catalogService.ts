@@ -6,8 +6,6 @@ import { applyStockMovement, recordStockMovement } from "./stockWrite.js";
 import { purchaseAvailability } from "./purchaseAvailability.js";
 import { WorkspaceError } from "./workspaceError.js";
 
-export { WorkspaceError } from "./workspaceError.js";
-
 export const productDto = (product: Awaited<ReturnType<typeof prisma.product.findMany>>[number]) => ({
   id: product.id, name: product.name, category: product.category, unit: product.unit,
   currentStock: Number(product.currentStock), minThreshold: Number(product.minThreshold),

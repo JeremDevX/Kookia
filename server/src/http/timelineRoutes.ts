@@ -1,10 +1,10 @@
-import { Router, type Response } from "express";
+import { Router } from "express";
 import { formatParisDate } from "../../../shared/parisDate.js";
 import { z } from "zod";
 import { listTimeline } from "../application/workspace/timelineService.js";
+import { workspaceContext } from "./workspaceContext.js";
 
 export const timelineRoutes = Router();
-const workspace = (res: Response) => (res.locals.workspace as { restaurantId: string }).restaurantId;
 
 const cursorSchema = z.base64url().max(1024).transform((value, ctx): unknown => {
   try {
@@ -33,5 +33,5 @@ const querySchema = z.object({ from: z.iso.date(), to: z.iso.date(), asOf: z.iso
 timelineRoutes.get("/timeline", async (req, res) => {
   const { from, to, asOf, ...page } = querySchema.parse(req.query);
   const paginated = page.cursor !== undefined || page.q !== undefined || page.limit !== undefined;
-  res.json(await listTimeline(workspace(res), from, to, asOf, paginated ? page : undefined));
+  res.json(await listTimeline(workspaceContext(res).restaurantId, from, to, asOf, paginated ? page : undefined));
 });

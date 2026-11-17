@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { lockSalesWorkspace } from "./salesContributionLedger.js";
 import { posSalesBatchSchema, posSyncWindowSchema, type PosAdapter, type PosSalesRecord } from "../../integrations/posAdapter.js";
 

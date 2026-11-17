@@ -1,6 +1,6 @@
 import { Prisma, type SaleItemRecipeMapping as SaleItemRecipeMappingRecord } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { lockSalesWorkspace } from "./salesContributionLedger.js";
 import { findRecipeVersionForDate } from "./recipeVersionStorage.js";
 

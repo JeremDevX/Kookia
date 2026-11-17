@@ -3,7 +3,7 @@ import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import type { IncidentInput } from "../../../../shared/serviceOperations.js";
 import { getOperationalForecast } from "./operationalForecastService.js";
 

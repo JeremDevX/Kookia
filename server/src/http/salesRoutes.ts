@@ -1,4 +1,4 @@
-import express, { Router, type Request, type Response } from "express";
+import express, { Router, type Request } from "express";
 import { formatParisDate } from "../../../shared/parisDate.js";
 import { z } from "zod";
 import { createSale, correctSale, listSales, listSaleItems, createSaleItem, latestService, listServiceDays, saveServiceDay,
@@ -11,11 +11,11 @@ import { createSaleRecipeMapping, listSaleRecipeMappings } from "../application/
 import { syncPosSales } from "../application/workspace/posSalesSyncService.js";
 import { unconfiguredPosAdapter } from "../integrations/posAdapter.js";
 import { createTicketZCandidates, deleteUnusedTicketZBatch, inspectTicketZUpload, listTicketZBatches, registerTicketZUpload } from "../application/workspace/ticketZService.js";
-import { WorkspaceError } from "../application/workspace/catalogService.js";
+import { WorkspaceError } from "../application/workspace/workspaceError.js";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { workspaceContext as workspace } from "./workspaceContext.js";
 
 export const salesRoutes = Router();
-const workspace = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const saleValues = z.object({
   saleItemId: z.uuid(), serviceDate: z.iso.date(),
   quantity: z.number().int().min(1).max(1_000_000),

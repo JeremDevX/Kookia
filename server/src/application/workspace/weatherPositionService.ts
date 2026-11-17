@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { weatherPositionSchema, type ConfirmWeatherPosition, type WeatherLocationState } from "../../../../shared/serviceWeather.js";
 import type { WeatherProvider } from "../../integrations/weatherProvider.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { cacheKind, lockWeatherWorkspace, positionKind, weatherJson, weatherKey, type WeatherDatabase } from "./weatherStorage.js";
 
 export const locationFingerprint = (restaurant: { address: string; city: string }) =>

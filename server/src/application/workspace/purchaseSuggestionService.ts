@@ -9,7 +9,7 @@ import { getOrderStep, roundOrderQuantity, isOrderQuantity, orderStepLabel } fro
 import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient, type WorkspaceMode } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { countCompleteSalesBaselineDays } from "./salesBaselineService.js";
 import { forecastWeatherNotice, type ForecastWeatherReference } from "../../../../shared/forecastWeather.js";
 

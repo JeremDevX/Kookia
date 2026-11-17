@@ -3,7 +3,7 @@ import { z } from "zod";
 import { adjustStock, createProduct, editProduct, getCatalog } from "../application/workspace/catalogService.js";
 import { getStockCounts, recordStockCount } from "../application/workspace/stockCountService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
-import { workspaceContext as context } from "./workspaceContext.js";
+import { rejectChangedWorkspace, workspaceContext as context } from "./workspaceContext.js";
 
 export const catalogRoutes = Router();
 
@@ -55,7 +55,7 @@ catalogRoutes.post("/products/:id/counts", async (req, res) => {
 catalogRoutes.post("/products/:id/stock", async (req, res) => {
   const data = stockSchema.parse(req.body);
   const { restaurantId, actorId } = context(res);
-  if (req.get("X-Expected-Restaurant-Id") && req.get("X-Expected-Restaurant-Id") !== restaurantId) { res.status(409).json({ error: { code: "WORKSPACE_CHANGED", message: "Votre établissement a changé. Rechargez la page avant de continuer." } }); return; }
+  if (rejectChangedWorkspace(req, res)) return;
   res.json(await adjustStock(restaurantId, actorId, String(req.params.id), data.delta, data.operationId, data.reason, data.expectedStockRevision, data.expectedUnit));
 });
 catalogRoutes.get("/products/:id/movements", async (req, res) => {

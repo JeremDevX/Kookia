@@ -1,29 +1,14 @@
 import { checkInvoiceDuplicates } from "./invoiceDuplicates.js";
-import { invoiceSchema, recordSourceInvoiceRevision } from "./invoiceData.js";
+import { invoiceSchema, recordSourceInvoiceRevision, sourceInvoiceDocumentSchema } from "./invoiceData.js";
 import { creditReceiptStock, getReceiptProduct, lockReceiptProducts, lockReceiptWorkspace } from "./receiptStock.js";
 import { isSimulationStockMovement, simulatedInvoiceOperationPrefix, stockReceiptProvenance } from "./stockMovementProvenance.js";
+import { simulationActor } from "./operationProvenance.js";
 import { Prisma, type WorkspaceMode } from "@prisma/client";
-import { z } from "zod";
-import { sourceInvoiceLineSchema, sourceInvoiceTypeSchema, type Invoice, type InvoiceDraft,
-  type InvoiceStockEffect, type SaveInvoiceRequest, type SourceInvoiceSummary } from "../../../../shared/invoice.js";
+import type { z } from "zod";
+import type { sourceInvoiceLineSchema, Invoice, InvoiceDraft, InvoiceStockEffect, SaveInvoiceRequest,
+  SourceInvoiceSummary } from "../../../../shared/invoice.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
-
-export const sourceInvoiceDocumentSchema = z.object({
-  id: z.string().regex(/^[a-f0-9]{24}$/), contentHash: z.string().regex(/^[a-f0-9]{64}$/),
-  title: z.string().min(1).max(500), date: z.iso.date().nullable(), originalDate: z.iso.date().nullable(),
-  supplier: z.string().min(1).max(200), type: sourceInvoiceTypeSchema, status: z.string().max(200),
-  content: z.string(), stockLines: z.array(sourceInvoiceLineSchema).max(100),
-});
-
-export function sourceInvoiceContentForWorkspace(content: string, workingDate: string | null) {
-  return content.split(/\r?\n/).flatMap((line) => {
-    if (/^- Date[^\n]*\(pièce d’origine\)\s*:/i.test(line)) return [];
-    if (/^- Date décalée de la pièce \(démonstration\)\s*:/i.test(line))
-      return [`- Date de travail : ${workingDate ?? "inconnue"}`];
-    return [line];
-  }).join("\n");
-}
+import { WorkspaceError } from "./workspaceError.js";
 
 export const initialInvoice = { id: "demo", reference: "Rungis-2024-12-09", date: "2024-12-09", status: "draft" as const, source: "demo" as const,
   lines: [{ productId: "p1", quantity: 12, unitPrice: 2.4 }, { productId: "p2", quantity: 5, unitPrice: 8.5 },
@@ -33,7 +18,6 @@ const sourceInvoiceKind = (sourceDocumentId: string) => `invoice:source:${source
 const sourceInvoiceId = (sourceDocumentId: string) => `source:${sourceDocumentId}`;
 const sourceIdFromInvoiceId = (invoiceId: string) => invoiceId.match(/^source:([a-f0-9]{24})$/)?.[1];
 const simulationVersion = "restaurant-simulation-v1";
-const simulationActor = "restaurant-simulation:v1";
 const sourceMovementPrefix = (sourceDocumentId: string) => `${simulationVersion}:invoice:${sourceDocumentId}:`;
 const sourceStockEffect = (mode?: WorkspaceMode) => mode === "demo" ? "demo_simulation" as const : "none" as const;
 

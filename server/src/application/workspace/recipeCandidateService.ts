@@ -3,9 +3,9 @@ import { isDeepStrictEqual } from "node:util";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { createRecipeInTransaction, type RecipeValues } from "./recipeService.js";
-import { sourceInvoiceDocumentSchema } from "./invoiceService.js";
+import { sourceInvoiceDocumentSchema } from "./invoiceData.js";
 
 interface RecipeCandidateIngredientInput {
   productId: string;

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { getWeatherSources } from "../application/workspace/serviceWeatherService.js";
 import { weatherProviderFor } from "./weatherRoutes.js";
+import { workspaceContext } from "./workspaceContext.js";
 
 export const sourceRoutes = Router();
 
@@ -13,7 +14,7 @@ const sources = [
 ] as const;
 
 sourceRoutes.get("/sources", async (_req, res) => {
-  const { restaurantId } = res.locals.workspace as { restaurantId: string };
+  const { restaurantId } = workspaceContext(res);
   const weather = await getWeatherSources(restaurantId, weatherProviderFor(res).configured);
   res.json({ sources: sources.map(source => weather.find(entry => entry.kind === source.kind) ?? source) });
 });

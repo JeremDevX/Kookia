@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { WorkspaceError } from "./catalogService.js";
-import { sourceInvoiceDocumentSchema } from "./invoiceService.js";
+import { WorkspaceError } from "./workspaceError.js";
+import { sourceInvoiceDocumentSchema } from "./invoiceData.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { invoiceExtractionFileSchema, invoiceExtractionPayloadSchema,
   type InvoiceExtractionAdapter, type InvoiceExtractionFile } from "../../integrations/invoiceExtractionAdapter.js";

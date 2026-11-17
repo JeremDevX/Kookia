@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { getServiceMenu } from "./serviceMenuService.js";
 import { getOperationalForecast } from "./operationalForecastService.js";
 import { reconcileServiceSheet, serviceSheetClosureErrors, type SheetEvidence } from "./serviceSheetPolicy.js";

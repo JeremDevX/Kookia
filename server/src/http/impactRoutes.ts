@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { impactMonthPageCount } from "../application/workspace/impactMonthPolicy.js";
 import { getImpactMonthlyPage, getImpactReport } from "../application/workspace/impactService.js";
+import { workspaceContext } from "./workspaceContext.js";
 
 export const impactRoutes = Router();
 const datesSchema = z.object({ from: z.iso.date(), to: z.iso.date() }).strict()
@@ -18,13 +19,13 @@ const monthlySchema = datesSchema.safeExtend({ page: z.string().regex(/^\d+$/).t
 
 impactRoutes.get("/impact", async (req, res) => {
   const period = periodSchema.parse(req.query);
-  const restaurantId = (res.locals.workspace as { restaurantId: string }).restaurantId;
+  const restaurantId = workspaceContext(res).restaurantId;
   res.json(await getImpactReport(restaurantId, period.from, period.to, undefined,
     { includeMonthly: period.monthly === "true", monthlyPage: period.monthlyPage }));
 });
 
 impactRoutes.get("/impact/monthly", async (req, res) => {
   const { from, to, page } = monthlySchema.parse(req.query);
-  const restaurantId = (res.locals.workspace as { restaurantId: string }).restaurantId;
+  const restaurantId = workspaceContext(res).restaurantId;
   res.json(await getImpactMonthlyPage(restaurantId, from, to, page));
 });

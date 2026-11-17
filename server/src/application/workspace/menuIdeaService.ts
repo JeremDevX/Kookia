@@ -2,7 +2,7 @@ import { Prisma, type PrismaClient, type Prisma as PrismaTypes } from "@prisma/c
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 import { evaluateMenuRecipeIdea, type MenuRecipeCandidate, type MenuStockAvailability,
   type MenuSurplusLabel } from "./menuIdeasPolicy.js";
 

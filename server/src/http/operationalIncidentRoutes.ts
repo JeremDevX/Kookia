@@ -1,10 +1,10 @@
-import { Router, type Response } from "express";
+import { Router } from "express";
 import { z } from "zod";
 import { incidentInputSchema } from "../../../shared/serviceOperations.js";
 import { listOperationalIncidents, recordOperationalIncident, resolveOperationalIncident } from "../application/workspace/operationalIncidentService.js";
+import { workspaceContext as context } from "./workspaceContext.js";
 
 export const operationalIncidentRoutes = Router();
-const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 operationalIncidentRoutes.get("/service-incidents", async (req, res) => {
   const input = z.object({ from: z.iso.date(), to: z.iso.date() }).refine(v => v.from <= v.to && Date.parse(v.to) - Date.parse(v.from) <= 90 * 86400000).parse(req.query);
   res.json(await listOperationalIncidents(context(res).restaurantId, input.from, input.to));

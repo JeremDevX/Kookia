@@ -2,7 +2,7 @@ import { getOrderStep, isOrderQuantity, orderStepLabel } from "../../../../share
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 
 const cartItemSchema = z.object({
   id: z.string().min(1).max(100), productId: z.string().min(1).max(100),
