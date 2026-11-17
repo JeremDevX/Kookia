@@ -59,8 +59,9 @@ export function generateScenario(input: OptionsInput, continuation?: Checkpoint)
     if (day.incident === "stock_gap") countAdjustment(lots, day, options);
     // Ordering happens at closure, using today's available balance and future forecasts only.
     planTomorrow(date, lots, purchases, options);
+    const orderedToday = purchases.filter(p => p.placedOn === date);
     for (const stock of day.stock) {
-      stock.ordered = quantity(purchases.filter(p => p.placedOn === date).reduce((sum, p) => sum + (p.lines.find(l => l.productId === stock.id)?.ordered ?? 0), 0));
+      stock.ordered = quantity(orderedToday.reduce((sum, p) => sum + (p.lines.find(l => l.productId === stock.id)?.ordered ?? 0), 0));
       stock.closing = available(lots, stock.id);
     }
     day.closingLots = structuredClone(lots.filter(l => l.quantity > 0));

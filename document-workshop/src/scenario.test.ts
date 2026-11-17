@@ -79,8 +79,10 @@ describe("chronological restaurant engine", () => {
       { id: "old", productId: "pomme", quantity: 3, receivedOn: "2026-08-25", expiresOn: "2026-09-04", unitCost: 300 },
       { id: "urgent", productId: "pomme", quantity: 2, receivedOn: "2026-08-28", expiresOn: "2026-09-02", unitCost: 320 },
     ];
-    expect(take(lots, "pomme", 2.5)).toEqual([{ lotId: "urgent", quantity: 2 }, { lotId: "old", quantity: .5 }]);
-    expect(lots[0].quantity).toBe(2.5); expect(lots[0].expiresOn).toBe("2026-09-04");
+    take(lots, "pomme", 2.5);
+    expect(lots.map(lot => [lot.id, lot.quantity, lot.expiresOn])).toEqual([
+      ["old", 2.5, "2026-09-04"], ["urgent", 0, "2026-09-02"],
+    ]);
     expect(() => take(lots, "pomme", 3)).toThrow("Stock insuffisant");
   });
   it("expires stock on closed days and never counts cooked waste twice", () => {

@@ -15,7 +15,6 @@ export function grossDosages(recipe: Recipe, lossPercent: number): Record<string
 export function take(lots: Lot[], productId: string, amount: number) {
   if (amount < 0 || amount > available(lots, productId) + .00001) throw new Error(`Stock insuffisant : ${ingredientById(productId).name}.`);
   let remaining = quantity(amount);
-  const used: { lotId: string; quantity: number }[] = [];
   const sorted = lots.filter(l => l.productId === productId && l.quantity > 0)
     .sort((a, b) => a.expiresOn.localeCompare(b.expiresOn) || a.receivedOn.localeCompare(b.receivedOn) || a.id.localeCompare(b.id));
   for (const lot of sorted) {
@@ -23,14 +22,13 @@ export function take(lots: Lot[], productId: string, amount: number) {
     if (!removed) break;
     lot.quantity = quantity(lot.quantity - removed);
     remaining = quantity(remaining - removed);
-    used.push({ lotId: lot.id, quantity: removed });
   }
-  return used;
 }
 export function expireLots(lots: Lot[], day: Day) {
   for (const lot of lots) if (lot.quantity && lot.expiresOn < day.date) {
     const product = ingredientById(lot.productId);
-    day.stock.find(s => s.id === lot.productId)!.loss = quantity(day.stock.find(s => s.id === lot.productId)!.loss + lot.quantity);
+    const line = day.stock.find(s => s.id === lot.productId)!;
+    line.loss = quantity(line.loss + lot.quantity);
     day.waste.push({ kind: "expiry", productId: lot.productId, lotId: lot.id, quantity: lot.quantity, unit: product.unit,
       avoidable: true, stockEffect: true, note: `Échéance de travail ${lot.expiresOn} dépassée ; lot écarté avant service.` });
     lot.quantity = 0;

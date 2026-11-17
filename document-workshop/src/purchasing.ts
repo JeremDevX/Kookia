@@ -33,9 +33,11 @@ export function forecastNeeds(from: string, until: string, options: Options) {
 }
 function planPurchase(placedOn: string, deliveryOn: string, supplierId: string, lots: Lot[], purchases: Purchase[], options: Options, opening = false) {
   const needs = forecastNeeds(deliveryOn, nextDelivery(deliveryOn, supplierId), options);
+  const usableLots = lots.filter(l => l.expiresOn >= deliveryOn);
+  const pendingDeliveries = purchases.filter(p => !p.receivedOn && p.deliveryOn <= deliveryOn);
   const lines = ingredients.filter(p => p.supplier === supplierId && needs[p.id] > 0).flatMap(product => {
-    const usable = available(lots.filter(l => l.expiresOn >= deliveryOn), product.id);
-    const incoming = purchases.filter(p => !p.receivedOn && p.deliveryOn <= deliveryOn)
+    const usable = available(usableLots, product.id);
+    const incoming = pendingDeliveries
       .reduce((sum, p) => sum + (p.lines.find(l => l.productId === product.id)?.ordered ?? 0), 0);
     const ordered = roundOrderQuantity(Math.max(0, needs[product.id] + product.threshold - usable - incoming), product.packSize);
     return ordered ? [{ productId: product.id, ordered, received: 0, shortage: 0, unitPrice: purchasePrice(product, placedOn) }] : [];
