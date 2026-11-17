@@ -99,12 +99,15 @@ export default function ProducibleRecipes({ recipes, products, producedRecipeIds
       {unavailableRecipes.length > 0 && <section className="col-span-full" aria-label="Recettes non réalisables avec le stock actuel">
         <h3>Recettes non réalisables avec le stock actuel</h3>
         <p>Stock insuffisant pour une portion. Signalez les demandes refusées si besoin.</p>
-        <div className="recipes-grid">{unavailableRecipes.map((recipe) => <Card key={recipe.id} className="recipe-card">
-          <strong>{recipe.name}</strong>
-          {recipeStockWarnings(recipe, products).length > 0 && <ul>{recipeStockWarnings(recipe, products).map(warning => <li key={warning}>{warning}</li>)}</ul>}
-          <Button size="sm" variant="outline" onClick={() => onRefusal(recipe)}>Signaler un refus</Button>
-          <Button size="sm" variant="outline" disabled={editing} onClick={(event) => onEdit(recipe, event.currentTarget)}>Modifier la recette</Button>
-        </Card>)}</div>
+        <div className="recipes-grid">{unavailableRecipes.map((recipe) => {
+          const warnings = recipeStockWarnings(recipe, products);
+          return <Card key={recipe.id} className="recipe-card">
+            <strong>{recipe.name}</strong>
+            {warnings.length > 0 && <ul>{warnings.map(warning => <li key={warning}>{warning}</li>)}</ul>}
+            <Button size="sm" variant="outline" onClick={() => onRefusal(recipe)}>Signaler un refus</Button>
+            <Button size="sm" variant="outline" disabled={editing} onClick={(event) => onEdit(recipe, event.currentTarget)}>Modifier la recette</Button>
+          </Card>;
+        })}</div>
       </section>}
       {incompleteRecipes.length > 0 && <section className="col-span-full" aria-label="Recettes sans ingrédients renseignés">
         <p role="status">{incompleteRecipes.length} recette{incompleteRecipes.length > 1 ? "s" : ""} sans ingrédients renseignés ne peuvent pas être produites.</p>

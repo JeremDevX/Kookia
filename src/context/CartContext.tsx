@@ -42,9 +42,7 @@ function AccountCart({ children, authenticated }: { children: ReactNode; authent
   }, [authenticated, addToast]);
   useEffect(() => { void request(); }, [request]);
   const addToCart = useCallback((item: CartItem) => request({ action: "add", items: [item] }), [request]);
-  const addMultipleToCart = useCallback((items: CartItem[]) => request({ action: "add", items }), [request]);
   const removeFromCart = useCallback((id: string) => request({ action: "remove", ids: [id] }), [request]);
   const refreshCart = useCallback(() => request(), [request]);
-  return <CartContext.Provider value={{ cartItems, loadError, addToCart, addMultipleToCart, removeFromCart, refreshCart,
-    loading, cartCount: cartItems.length, isInCart: (id) => cartItems.some((item) => item.id === id) }}>{children}</CartContext.Provider>;
+  return <CartContext.Provider value={{ cartItems, loadError, addToCart, removeFromCart, refreshCart, loading }}>{children}</CartContext.Provider>;
 }
