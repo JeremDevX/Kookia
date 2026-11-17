@@ -51,6 +51,29 @@ it("records contextual incidents and a chef response without creating stock, sal
     decision: { in: ["incident_reported", "incident_resolved"] } } });
   expect(events).toHaveLength(2);
 });
+it("returns an incident on replay and resolution after it leaves the recent list", async () => {
+  const owner = await account();
+  const body = { operationId: randomUUID(), serviceDate: today(), serviceSlot: "lunch", kind: "demand_change",
+    productId: null, lotId: null, orderLineId: null, recipeId: null, quantity: null, unit: null, note: "Fréquentation à vérifier." };
+  const saved = await owner.client.post("/api/workspace/service-incidents").send(body).expect(201);
+  const id: string = saved.body.id;
+  await prisma.operationalIncident.createMany({ data: Array.from({ length: 200 }, () => ({
+    ...body, restaurantId: owner.restaurantId, operationId: randomUUID(), createdBy: saved.body.createdBy,
+    serviceDate: new Date(`${body.serviceDate}T00:00:00Z`), createdAt: new Date(Date.parse(saved.body.createdAt) + 1000),
+  })) });
+  const recent = await owner.client.get(`/api/workspace/service-incidents?from=${body.serviceDate}&to=${body.serviceDate}`).expect(200);
+  expect(recent.body).toHaveLength(200);
+  expect(recent.body).not.toContainEqual(expect.objectContaining({ id }));
+
+  const replay = await owner.client.post("/api/workspace/service-incidents").send(body).expect(201);
+  expect(replay.body).toMatchObject({ id, status: "open", revision: 1 });
+  const decision = { operationId: randomUUID(), expectedRevision: 1, actionNote: "Préparations revues." };
+  const path = `/api/workspace/service-incidents/${id}/resolve`;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const resolved = await owner.client.post(path).send(decision).expect(200);
+    expect(resolved.body).toMatchObject({ id, status: "resolved", revision: 2, actionNote: decision.actionNote });
+  }
+});
 it("isolates references and decisions by restaurant and validates linked lots and units", async () => {
   const owner = await account(), other = await account();
   const foreign = await prisma.product.findFirstOrThrow({ where: { restaurantId: other.restaurantId } });

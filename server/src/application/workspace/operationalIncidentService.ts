@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
-import { Prisma } from "@prisma/client";
+import { Prisma, type OperationalIncident } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
 import type { IncidentInput } from "../../../../shared/serviceOperations.js";
@@ -19,31 +19,38 @@ const suggestions: Record<IncidentInput["kind"], string[]> = {
 export async function listOperationalIncidents(restaurantId: string, from: string, to: string) {
   const rows = await prisma.operationalIncident.findMany({ where: { restaurantId, serviceDate: {
     gte: new Date(`${from}T00:00:00Z`), lte: new Date(`${to}T00:00:00Z`) } }, orderBy: [{ serviceDate: "desc" }, { createdAt: "desc" }], take: 200 });
-  const products = await prisma.product.findMany({ where: { restaurantId, id: { in: rows.flatMap(r => r.productId ? [r.productId] : []) } } });
-  const lots = await prisma.stockLot.findMany({ where: { restaurantId, id: { in: rows.flatMap(r => r.lotId ? [r.lotId] : []) } } });
+  return enrichIncidents(restaurantId, rows);
+}
+
+async function enrichIncidents(restaurantId: string, rows: OperationalIncident[]) {
+  if (!rows.length) return [];
   const horizon = formatParisDate(), end = addCalendarDays(horizon, 7);
-  const forecast = rows.length ? await getOperationalForecast(restaurantId, horizon, end) : null;
+  const [products, lots, forecast] = await Promise.all([
+    prisma.product.findMany({ where: { restaurantId, id: { in: rows.flatMap(r => r.productId ? [r.productId] : []) } } }),
+    prisma.stockLot.findMany({ where: { restaurantId, id: { in: rows.flatMap(r => r.lotId ? [r.lotId] : []) } } }),
+    getOperationalForecast(restaurantId, horizon, end),
+  ]);
   return rows.map(row => {
     const product = products.find(p => p.id === row.productId), lot = lots.find(l => l.id === row.lotId);
-    const need = forecast?.ingredientNeeds.find(n => n.productId === row.productId);
+    const need = forecast.ingredientNeeds.find(n => n.productId === row.productId);
     const consequences = ["Signalement uniquement : aucun stock, achat ou production n'est modifié."];
     if (product) consequences.push(`${product.name} : stock théorique enregistré ${Number(product.currentStock)} ${product.unit}.`);
     if (lot) consequences.push(`Lot concerné : ${Number(lot.remainingQuantity)} encore enregistrés ; échéance ${lot.expiresAt ? iso(lot.expiresAt) : "inconnue"}.`);
-    if (need) consequences.push(`Besoin estimé du ${horizon} au ${end} : ${need.quantity} ${need.unit}. ${forecast?.blockers.length ? "Projection partielle, des services restent à compléter." : "À revoir avec les réceptions attendues."}`);
-    if (forecast?.blockers.length) consequences.push("Conséquence chiffrée incomplète : consultez les prévisions pour les cartes, services ou historiques manquants.");
+    if (need) consequences.push(`Besoin estimé du ${horizon} au ${end} : ${need.quantity} ${need.unit}. ${forecast.blockers.length ? "Projection partielle, des services restent à compléter." : "À revoir avec les réceptions attendues."}`);
+    if (forecast.blockers.length) consequences.push("Conséquence chiffrée incomplète : consultez les prévisions pour les cartes, services ou historiques manquants.");
     return { ...row, serviceDate: iso(row.serviceDate), quantity: row.quantity === null ? null : Number(row.quantity),
       createdAt: row.createdAt.toISOString(), resolvedAt: row.resolvedAt?.toISOString() ?? null,
       consequences, suggestions: suggestions[row.kind as IncidentInput["kind"]] };
   });
 }
 export async function recordOperationalIncident(restaurantId: string, actorId: string, input: IncidentInput) {
-  await prisma.$transaction(async tx => {
+  const incident = await prisma.$transaction(async tx => {
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
     const prior = await tx.operationalIncident.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId: input.operationId } } });
     if (prior) {
       const decision = await tx.recommendationDecision.findFirst({ where: { restaurantId, operationId: input.operationId, decision: "incident_reported" } });
       if (!isDeepStrictEqual(decision?.snapshot, input)) throw new WorkspaceError(409, "OPERATION_CONFLICT", "Ce signalement a déjà été enregistré avec d'autres valeurs.");
-      return;
+      return prior;
     }
     const product = input.productId ? await tx.product.findFirst({ where: { restaurantId, id: input.productId } }) : null;
     const lot = input.lotId ? await tx.stockLot.findFirst({ where: { restaurantId, id: input.lotId } }) : null;
@@ -57,29 +64,30 @@ export async function recordOperationalIncident(restaurantId: string, actorId: s
       throw new WorkspaceError(400, "INVALID_INCIDENT_UNIT", "Renseignez l'unité du produit ou des portions.");
     if (input.kind === "lot_discarded" && !lot || input.kind === "delivery_delay" && !orderLine || input.kind === "substitution" && !recipe)
       throw new WorkspaceError(400, "INCIDENT_REFERENCE_REQUIRED", "Ce type de signalement nécessite son lot, sa ligne de commande ou sa recette.");
-    await tx.operationalIncident.create({ data: { ...input, restaurantId, createdBy: actorId, serviceDate: new Date(`${input.serviceDate}T00:00:00Z`) } });
+    const created = await tx.operationalIncident.create({ data: { ...input, restaurantId, createdBy: actorId, serviceDate: new Date(`${input.serviceDate}T00:00:00Z`) } });
     await tx.recommendationDecision.create({ data: { restaurantId, actorId, operationId: input.operationId,
       decision: "incident_reported", snapshot: input as unknown as Prisma.InputJsonValue } });
+    return created;
   });
-  return (await listOperationalIncidents(restaurantId, input.serviceDate, input.serviceDate)).find(r => r.operationId === input.operationId)!;
+  return (await enrichIncidents(restaurantId, [incident]))[0];
 }
 export async function resolveOperationalIncident(restaurantId: string, actorId: string, id: string,
   input: { operationId: string; expectedRevision: number; actionNote: string }) {
-  const day = await prisma.$transaction(async tx => {
+  const incident = await prisma.$transaction(async tx => {
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
     const incident = await tx.operationalIncident.findFirst({ where: { restaurantId, id } });
     if (!incident) throw new WorkspaceError(404, "NOT_FOUND", "Signalement introuvable.");
     const prior = await tx.recommendationDecision.findFirst({ where: { restaurantId, operationId: input.operationId, decision: "incident_resolved" } });
     if (prior) {
       if (!isDeepStrictEqual(prior.snapshot, { id, ...input })) throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette validation a déjà été utilisée.");
-      return iso(incident.serviceDate);
+      return incident;
     }
     if (incident.revision !== input.expectedRevision || incident.status !== "open") throw new WorkspaceError(409, "REVISION_CONFLICT", "Le signalement a changé. Rechargez-le.");
-    await tx.operationalIncident.update({ where: { id }, data: { status: "resolved", revision: { increment: 1 },
+    const resolved = await tx.operationalIncident.update({ where: { id }, data: { status: "resolved", revision: { increment: 1 },
       resolvedBy: actorId, resolvedAt: new Date(), actionNote: input.actionNote } });
     await tx.recommendationDecision.create({ data: { restaurantId, actorId, operationId: input.operationId,
       decision: "incident_resolved", snapshot: { id, ...input } } });
-    return iso(incident.serviceDate);
+    return resolved;
   });
-  return (await listOperationalIncidents(restaurantId, day, day)).find(r => r.id === id)!;
+  return (await enrichIncidents(restaurantId, [incident]))[0];
 }
