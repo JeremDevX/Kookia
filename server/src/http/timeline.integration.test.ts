@@ -26,8 +26,8 @@ async function account() {
 
 it("searches beyond the old caps and resumes ties in a stable order", async () => {
   const { agent, restaurantId } = await account();
-  const date = "2023-04-02";
-  const updatedAt = new Date("2023-04-02T17:00:00.000Z");
+  const date = "2018-04-02";
+  const updatedAt = new Date(`${date}T17:00:00.000Z`);
   const ids = Array.from({ length: 5_006 }, (_, index) => index.toString().padStart(6, "0"));
   await prisma.workspaceDocument.createMany({ data: ids.map((id, index) => ({
     restaurantId, kind: `source-invoice:${id}`, updatedAt,
@@ -41,12 +41,18 @@ it("searches beyond the old caps and resumes ties in a stable order", async () =
   expect(eventIds(first.body.events)).toEqual(docIds(ids.slice(0, 2)));
   expect(eventIds(second.body.events)).toEqual(docIds(ids.slice(2, 4)));
   await timeline().query({ cursor: "malformed" }).expect(400);
+  const legacy = await agent.get("/api/workspace/timeline").query({ from: date, to: date, asOf: date }).expect(200);
+  expect(legacy.body).toMatchObject({ count: 5_000, truncated: true });
+  expect(legacy.body).not.toHaveProperty("nextCursor");
 
   const search = () => timeline().query({ q: "CREME FRAICHE" });
   const scan1 = await search().expect(200);
   expect(scan1.body.events).toEqual([]);
+  const cursorId = (cursor: string) => JSON.parse(Buffer.from(cursor, "base64url").toString()).id;
+  expect(cursorId(scan1.body.nextCursor)).toBe(docIds([ids[1_999]])[0]);
   const scan2 = await search().query({ cursor: scan1.body.nextCursor }).expect(200);
   expect(scan2.body.events).toEqual([]);
+  expect(cursorId(scan2.body.nextCursor)).toBe(docIds([ids[3_999]])[0]);
   const found = await search().query({ cursor: scan2.body.nextCursor }).expect(200);
   expect(eventIds(found.body.events)).toEqual(docIds(ids.slice(5_003, 5_005)));
   const last = await search().query({ cursor: found.body.nextCursor }).expect(200);

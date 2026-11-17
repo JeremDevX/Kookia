@@ -53,8 +53,12 @@ Les données initiales de démonstration restent **des exemples**, même en base
 - Rapports : CSV, XML Excel et PDF via impression ; opérations filtrées par dates
   UTC. Les graphiques sans dates sont des instantanés de démonstration.
 
-Aucun POS, OCR, service météo, moteur IA ou envoi fournisseur externe n’est
-connecté. Les exports ne constituent pas une attestation de conformité.
+Open-Meteo est disponible pour le contexte météo du service. L’intégration est
+désactivée par défaut et exige une commune confirmée.
+Voir la [référence technique](docs/technical-development.md).
+
+Les intégrations POS, OCR, moteur IA et envoi fournisseur externe restent hors
+du fonctionnement actuel. Les exports ne constituent pas une attestation de conformité.
 
 ## Architecture
 

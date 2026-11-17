@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import type { timelineDateBounds } from "./timelineService.js";
 
-interface TimelineKey {
+export interface TimelineKey {
   source: string;
   rowId: string;
   id: string;

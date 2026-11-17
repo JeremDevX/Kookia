@@ -84,7 +84,7 @@ API Express → adaptateur Open-Meteo (optionnel) → cache serveur / contexte d
 
 La persistance active couvre `User`, `Session`, `Restaurant`, `Supplier`,
 `Product`, `Recipe`, `RecipeIngredient`, `StockMovement`, `StockCount`,
-`RecipeVersion`, `RecipeVersionIngredient`, `InvoiceDraftRevision`, `Production`, `Prediction`, `SaleItem`, `DailySale`,
+`RecipeVersion`, `RecipeVersionIngredient`, `InvoiceDraftRevision`, `Production`, `SaleItem`, `DailySale`,
 `SaleImport`, `SaleContribution`, `SaleContributionEvent`, `TicketZBatch`,
 `PosSalesBatch`, `ServiceDay`,
 `PurchaseOrder`, `PurchaseOrderLine`, `PurchaseReceipt`, `PurchaseReceiptLine`, `RecommendationDecision`
@@ -97,6 +97,42 @@ Les services opérationnels ajoutent `RestaurantServiceSchedule`,
 accompagné de décisions immuables et d'un constat figé à la clôture.
 Les mutations critiques sont transactionnelles. Les liens internes sont différés
 pour permettre la suppression en cascade d’un compte sans casser ses références.
+
+### Anciennes prévisions de démonstration
+
+La table `Prediction` reste dans le schéma avec ses liens vers `Restaurant` et
+`Product`. Les accès directs se limitent aux tests d’initialisation, qui
+vérifient qu’elle reste vide, et aux scripts `simulate:restaurant` et
+`restore:restaurant-simulation`, qui vérifient les références avant de supprimer
+des produits.
+Le champ `predictionId` de `RecommendationDecision` est une colonne historique
+facultative, sans clé étrangère. Le panier stocké et les instantanés de décision
+peuvent également porter ce marqueur dans leur JSON. Le panier accepte encore la
+lecture et le retrait d’une ancienne ligne marquée. Son ajout ou sa validation
+sont bloqués indépendamment de la présence de la ligne `Prediction`.
+
+Avant tout retrait, établir la présence de ces données sur une copie de la base.
+Cette requête en lecture seule renvoie uniquement des booléens, avec un délai
+maximal de cinq secondes pour le diagnostic.
+
+```sql
+BEGIN READ ONLY;
+SET LOCAL statement_timeout = '5s';
+SELECT
+  EXISTS (SELECT 1 FROM "Prediction") AS predictions,
+  EXISTS (SELECT 1 FROM "RecommendationDecision" WHERE "predictionId" IS NOT NULL) AS decision_ids,
+  EXISTS (SELECT 1 FROM "RecommendationDecision"
+    WHERE snapshot @? '$.input[*] ? (exists(@.predictionId))') AS legacy_order_snapshots,
+  EXISTS (SELECT 1 FROM "WorkspaceDocument" WHERE kind = 'cart'
+    AND data @? '$[*] ? (exists(@.predictionId))') AS legacy_carts;
+ROLLBACK;
+```
+
+La suppression de la table ou des marqueurs historiques requiert la sauvegarde,
+un plan de restauration et un accord explicite.
+
+### Données opérationnelles
+
 La fiche `Product` porte une révision pour détecter les modifications concurrentes ;
 la mise à jour ne change pas l'unité. Les lignes validées de `PurchaseOrderLine`
 gardent leur nom, fournisseur, unité et prix snapshotés lors de la commande.
@@ -363,8 +399,10 @@ de lecture seule GET /api/workspace/timeline, sans borne de durée et avec une
 coupe « Connu au ». L’interface charge 20 événements à la fois et transmet la
 recherche au serveur. L’API accepte `limit` (1 à 100), `q` et `cursor` et fournit
 `nextCursor` tant que la lecture peut reprendre. Une page de recherche peut être
-vide avec un curseur si le serveur a parcouru un lot sans trouver de résultat.
-L’interface poursuit alors la recherche. Un appel sans ces paramètres conserve
+vide avec un curseur. Chaque envoi du formulaire ou clic sur « Poursuivre la recherche »
+déclenche une requête qui examine jusqu’à 2 000 événements et cherche uniquement
+dans le libellé, le détail et la précision affichés. En cas d’échec, la reprise
+réutilise le dernier curseur. Un appel sans ces paramètres conserve
 la réponse historique plafonnée à 5 000 événements avec l’indicateur `truncated`.
 Chaque événement sépare date d'effet, date à laquelle
 son état est connu et date d'enregistrement ; les provenances affichées sont

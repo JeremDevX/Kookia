@@ -89,9 +89,13 @@ export default function Timeline() {
   const loading = validRequest && !currentState;
   const loadedCount = timeline?.events.length ?? 0;
   const plural = loadedCount === 1 ? "" : "s";
-  const resultsStatus = loadedCount > 0
-    ? `${loadedCount.toLocaleString("fr-FR")} ${search ? `résultat${plural}` : `événement${plural}`} affiché${plural}.`
-    : search ? "Aucun événement ne correspond à cette recherche." : "Aucun événement pour ces dates.";
+  let resultsStatus = "Aucun événement pour ces dates.";
+  if (currentState?.loadingMore) resultsStatus = search ? "Recherche en cours…" : "Chargement de la suite…";
+  else if (loadedCount > 0) {
+    resultsStatus = `${loadedCount.toLocaleString("fr-FR")} ${search ? `résultat${plural}` : `événement${plural}`} affiché${plural}.`;
+  } else if (search) {
+    resultsStatus = timeline?.nextCursor ? "Aucun résultat dans la partie parcourue." : "Aucun événement ne correspond à cette recherche.";
+  }
   const grouped = useMemo(() => {
     const groups = new Map<string, TimelineEvent[]>();
     for (const event of timeline?.events ?? []) {
@@ -210,7 +214,7 @@ export default function Timeline() {
         <Button type="submit" variant="outline">Rechercher</Button>
         {(search || searchDraft) && <Button type="button" variant="outline" onClick={clearSearch}>Effacer</Button>}
       </div>
-      <p id="timeline-search-help" className="timeline-search-help">Recherche dans toute la période sélectionnée.</p>
+      <p id="timeline-search-help" className="timeline-search-help">La recherche avance par étapes sur toute la période sélectionnée.</p>
     </form>
     <div className="timeline-status" ref={resultsStatusRef} tabIndex={-1}>
       <span role={error ? "alert" : "status"} aria-live={error ? "assertive" : "polite"}>
@@ -219,7 +223,7 @@ export default function Timeline() {
       {currentState?.error && <Button ref={retryButtonRef} type="button" variant="outline" size="sm"
         onClick={retryHistory}>Réessayer</Button>}
     </div>
-    {timeline && timeline.events.length > 0 && <>
+    {loadedCount > 0 && (
       <div className="timeline-days">
         {grouped.map(([key, events]) => <section className="timeline-day" key={key}>
           <h2>{key === "unknown" ? "Date d’effet inconnue" : displayDate(key)}</h2>
@@ -242,13 +246,13 @@ export default function Timeline() {
           </ol>
         </section>)}
       </div>
-      {currentState?.moreError && <p role="alert">Impossible de charger la suite de l’historique.</p>}
-      {timeline.nextCursor && <div className="timeline-load-more">
-        <Button ref={loadMoreButtonRef} type="button" variant="outline" aria-disabled={currentState?.loadingMore} onClick={showMoreEvents}>
-          {currentState?.loadingMore ? "Chargement…" : currentState?.moreError ? "Réessayer" : "Afficher la suite"}
-        </Button>
-      </div>}
-    </>}
+    )}
+    {currentState?.moreError && <p role="alert">Impossible de charger la suite de l’historique.</p>}
+    {timeline?.nextCursor && <div className="timeline-load-more">
+      <Button ref={loadMoreButtonRef} type="button" variant="outline" aria-disabled={currentState?.loadingMore} onClick={showMoreEvents}>
+        {currentState?.loadingMore ? "Chargement…" : currentState?.moreError ? "Réessayer" : search ? "Poursuivre la recherche" : "Afficher la suite"}
+      </Button>
+    </div>}
     <section className="timeline-read-only"><h2>Lecture seule</h2><p>Les liens ouvrent les espaces actuels sans rejouer une décision ni modifier les données. Les documents n’ont pas de journal de versions ; leur première saisie et leurs états antérieurs restent inconnus.</p></section>
   </div>;
 }

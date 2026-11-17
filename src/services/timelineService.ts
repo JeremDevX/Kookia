@@ -19,12 +19,8 @@ export interface TimelineResult {
   events: TimelineEvent[];
 }
 
-export async function getTimeline(from: string, to: string, asOf: string, q: string, signal: AbortSignal, cursor?: string) {
+export function getTimeline(from: string, to: string, asOf: string, q: string, signal: AbortSignal, cursor?: string) {
   const params = new URLSearchParams({ from, to, asOf, q, limit: "20" });
-  for (;;) {
-    if (cursor) params.set("cursor", cursor);
-    const page = await apiRequest<TimelineResult>(`/workspace/timeline?${params}`, { signal });
-    if (page.events.length || !page.nextCursor) return page;
-    cursor = page.nextCursor;
-  }
+  if (cursor) params.set("cursor", cursor);
+  return apiRequest<TimelineResult>(`/workspace/timeline?${params}`, { signal });
 }
