@@ -6,7 +6,6 @@ const dayOfWeek = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay();
 
 export const dateAt = (date: string, hour: number, minute = 0) =>
   `${date}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00.000Z`;
-export const dayOffset = (date: string, offset: number) => new Date(Date.parse(`${date}T00:00:00Z`) + offset * 86_400_000).toISOString().slice(0, 10);
 
 export function isOpen(date: string, openThroughDate: string) {
   if (date >= RECENT_OPENING && date <= openThroughDate) return true;

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { SourceInvoice } from "./sourceInvoices.js";
-import { dateAt, dayOffset } from "./restaurantSimulationDemand.js";
+import { addCalendarDays } from "../../../shared/calendarDate.js";
+import { dateAt } from "./restaurantSimulationDemand.js";
 import { auditMovements } from "./restaurantSimulationLedger.js";
 import { makeReceiptGroups } from "./restaurantSimulationReceipts.js";
 import {
@@ -79,7 +80,7 @@ export function buildRestaurantSimulation(invoices: SourceInvoice[], existingPro
     productMetadata.set(product.key, { supplierId: prior?.supplierId ?? product.supplierId });
     if (opening.quantity > 0) openings.push({ productId: product.id, productKey: product.key,
       delta: opening.quantity, reason: "simulation_opening", operationId: `${SIMULATION_VERSION}:opening:${product.id}`,
-      at: dateAt(dayOffset(SIMULATION_FROM, -1), 6) });
+      at: dateAt(addCalendarDays(SIMULATION_FROM, -1), 6) });
   }
 
   const { movements, sales, productions, stockCounts, recipeVersions, serviceDaysByDate, invoicePrices, receivedMetadata } =
@@ -103,9 +104,9 @@ export function buildRestaurantSimulation(invoices: SourceInvoice[], existingPro
     if (product.unit === "pcs" && !Number.isInteger(close)) throw new Error(`Stock de clôture fractionnaire en pièces : ${product.name}.`);
   }
   const asOf = SIMULATION_TO;
-  const baselineFrom = dayOffset(asOf, -28);
+  const baselineFrom = addCalendarDays(asOf, -28);
   for (const recipe of scenarioRecipes) {
-    for (let date = baselineFrom; date < asOf; date = dayOffset(date, 1)) {
+    for (let date = baselineFrom; date < asOf; date = addCalendarDays(date, 1)) {
       if (!serviceDaysByDate.has(date) || !sales.some((sale) => sale.recipeId === recipe.id && sale.date === date)) {
         throw new Error(`Fenêtre baseline incomplète pour ${recipe.name} au ${date}.`);
       }

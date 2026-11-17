@@ -1,4 +1,5 @@
-import { dateAt, dayOffset, estimatedUnsoldPortions, isOpen, soldPortions } from "./restaurantSimulationDemand.js";
+import { addCalendarDays } from "../../../shared/calendarDate.js";
+import { dateAt, estimatedUnsoldPortions, isOpen, soldPortions } from "./restaurantSimulationDemand.js";
 import { scenarioProducts, scenarioRecipes, type ScenarioProduct } from "./restaurantSimulationCatalog.js";
 import { sourceInvoiceSupplierId, type InvoiceReceipt } from "./restaurantSimulationReceipts.js";
 import { buildScenarioRecipeVersions, recipeVersionForDate } from "./restaurantSimulationVersions.js";
@@ -117,7 +118,7 @@ export function planSimulationChronology({ startDate, endDate, includeDemoStory,
     throw new Error("Les dates des événements de démonstration doivent rester des jours de service.");
   }
 
-  for (let date = startDate; date <= endDate; date = dayOffset(date, 1)) {
+  for (let date = startDate; date <= endDate; date = addCalendarDays(date, 1)) {
     const dayReceipts = receiptsByDate.get(date) ?? [];
     for (const receipt of dayReceipts) {
       const product = productByKey.get(receipt.productKey)!;
