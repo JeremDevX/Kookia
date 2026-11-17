@@ -12,7 +12,8 @@ export default function SplashScreen({ ready, caption, onComplete }: SplashScree
   const canDismiss = ready && minimumElapsed;
 
   useEffect(() => {
-    const minimumTimer = window.setTimeout(() => setMinimumElapsed(true), 3000);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const minimumTimer = window.setTimeout(() => setMinimumElapsed(true), reducedMotion ? 0 : 1400);
     return () => window.clearTimeout(minimumTimer);
   }, []);
 
@@ -26,18 +27,14 @@ export default function SplashScreen({ ready, caption, onComplete }: SplashScree
 
   return (
     <div className={`splash-screen ${canDismiss ? "fade-out" : ""}`} role="status" aria-label="Ouverture de KookiA">
-      <div className="splash-tide" aria-hidden="true">
-        <svg className="splash-wave splash-wave-back" viewBox="0 0 2400 240" preserveAspectRatio="none">
-          <path d="M0 80 C200 0 400 0 600 80 S1000 160 1200 80 S1600 0 1800 80 S2200 160 2400 80 V240 H0Z" />
-        </svg>
-        <svg className="splash-wave splash-wave-front" viewBox="0 0 2400 240" preserveAspectRatio="none">
-          <path d="M0 130 C200 190 400 190 600 130 S1000 70 1200 130 S1600 190 1800 130 S2200 70 2400 130 V240 H0Z" />
-        </svg>
-      </div>
       <div className="splash-content">
-        <img className="splash-logo" src="/logo_kookia.svg" alt="KookiA" width="190" height="48" />
-        <p className="splash-welcome">Heureux de vous retrouver en cuisine.</p>
+        <div className="splash-brand">
+          <span className="splash-mark" aria-hidden="true">K</span>
+          <strong className="splash-wordmark">KookIA</strong>
+        </div>
+        <p className="splash-welcome">Bienvenue en cuisine.</p>
         <p className="splash-caption">{ready ? "Ouverture de votre espace…" : caption}</p>
+        <div className="splash-loader" aria-hidden="true"><span /><span /><span /></div>
       </div>
     </div>
   );

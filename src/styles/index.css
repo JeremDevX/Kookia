@@ -17,10 +17,6 @@
 @custom-media --media-print (print);
 
 :root {
-  --unit-28vh: 28vh;
-  --unit-18vh: 18vh;
-  --unit-200percent: 200%;
-  --animation-direction-reverse: reverse;
   --text-wrap-balance: balance;
   --white-space-pre-wrap: pre-wrap;
   --overflow-wrap-anywhere: anywhere;
@@ -74,7 +70,6 @@
   --palette-rose-6: #b96945;
   --palette-rose-9: #99502e;
   --palette-sage-5: #a4b790;
-  --palette-sage-10: #668154;
   --palette-sage-11: #49663c;
   --palette-sage-12: #24634d;
   --palette-sand-1: #ecdfbf;
@@ -193,15 +188,11 @@
   --unit-1fr: 1fr;
   --unit-2fr: 2fr;
   --unit-2_5vw: 2.5vw;
-  --unit-3s: 3s;
   --unit-3vw: 3vw;
-  --unit-4s: 4s;
   --unit-20percent: 20%;
-  --unit-36vw: 36vw;
   --unit-42percent: 42%;
   --unit-50percent: 50%;
   --unit-85vh: 85vh;
-  --unit-90deg: 90deg;
   --unit-90vh: 90vh;
   --unit-100dvh: 100dvh;
   --unit-100percent: 100%;
