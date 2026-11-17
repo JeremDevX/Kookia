@@ -31,7 +31,7 @@ describe("workspace bootstrap on PostgreSQL", () => {
     expect(await prisma.recipeIngredient.count({ where: { restaurantId } })).toBe(
       catalog.recipes.reduce((sum, recipe) => sum + recipe.ingredients.length, 0),
     );
-    expect(await prisma.prediction.count({ where: { restaurantId } })).toBe(catalog.predictions.length);
+    expect(await prisma.prediction.count({ where: { restaurantId } })).toBe(0);
     const analytics = await prisma.workspaceDocument.findUniqueOrThrow({ where: { restaurantId_kind: { restaurantId, kind: "analytics" } } });
     expect(analytics.data).toEqual(catalog.analytics);
     const id = catalog.products[0].id;

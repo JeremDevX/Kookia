@@ -36,7 +36,7 @@ it("retains the complete workspace across logout and a new authenticated session
   await first.patch("/api/workspace/restaurant").send({ ...restaurant.body, city: "Lyon" }).expect(200);
   await first.post("/api/workspace/productions").send({ operationId: randomUUID(), recipeName: "Déclaration persistée", portions: 2, prepTime: 10, notes: "Audit", date: "2026-09-11", kind: "record" }).expect(201);
 
-  const paths = ["catalog", "recipes", "predictions", "analytics", "activity", "insights", "preferences", "notifications", "cart", "orders", "decisions", "invoices", "menu", "restaurant", "productions", `products/${product.id}/movements`, "report?from=2026-09-01&to=2026-09-30"];
+  const paths = ["catalog", "recipes", "analytics", "activity", "insights", "preferences", "notifications", "cart", "orders", "decisions", "invoices", "menu", "restaurant", "productions", `products/${product.id}/movements`, "report?from=2026-09-01&to=2026-09-30"];
   const snapshots = await Promise.all(paths.map(async (path) => (await first.get(`/api/workspace/${path}`).expect(200)).body));
   await first.post("/api/auth/logout").expect(204);
   await first.get("/api/workspace/catalog").expect(401);

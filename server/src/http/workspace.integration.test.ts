@@ -274,14 +274,10 @@ describe("persistent catalog HTTP", () => {
     expect((await agent.get("/api/workspace/catalog").expect(200)).body.products).toEqual(afterSecondProduction.body.products);
   });
 
-  it("serves persisted predictions/analytics and preserves server preferences during legacy initialization", async () => {
+  it("serves persisted analytics and preserves server preferences during legacy initialization", async () => {
     const agent = await account();
     const other = await account();
-    const predictions = await agent.get("/api/workspace/predictions").expect(200);
-    expect(predictions.body).toHaveLength(catalog.predictions.length);
-    for (const expected of catalog.predictions) {
-      expect(predictions.body.find((item: { id: string }) => item.id === expected.id)).toEqual(expected);
-    }
+    await agent.get("/api/workspace/predictions").expect(404);
     const analytics = await agent.get("/api/workspace/analytics").expect(200);
     expect(analytics.body).toEqual(catalog.analytics);
     const activity = await agent.get("/api/workspace/activity").expect(200);
@@ -305,13 +301,15 @@ describe("persistent catalog HTTP", () => {
   it("validates reviewed stock orders once without changing stock or accepting demo predictions", async () => {
     const agent = await account();
     const initial = await agent.get("/api/workspace/catalog").expect(200);
-    const predictions = await agent.get("/api/workspace/predictions").expect(200);
-    const prediction = predictions.body.find((item: { recommendation?: { action: string } }) => item.recommendation?.action === "buy");
-    await agent.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{ productId: prediction.productId, predictionId: prediction.id, quantity: 3 }] }).expect(400);
-    await agent.post("/api/workspace/cart").send({ action: "add", items: [{ id: "stale", productId: prediction.productId, productName: prediction.productName, quantity: 3, unit: "kg", source: "dashboard", predictionId: prediction.id }] }).expect(400);
+    const { id: productId, name: productName } = initial.body.products[0];
+    const { id: restaurantId } = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: ids.at(-1)! } });
+    const prediction = await prisma.prediction.create({ data: { id: "demo-prediction", restaurantId, productId,
+      predictedDate: new Date("2026-09-08"), predictedConsumption: 2, confidence: 0.88, action: "buy", quantity: 3 } });
+    await agent.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{ productId, predictionId: prediction.id, quantity: 3 }] }).expect(400);
+    await agent.post("/api/workspace/cart").send({ action: "add", items: [{ id: "stale", productId, productName, quantity: 3, unit: "kg", source: "dashboard", predictionId: prediction.id }] }).expect(400);
     const future = new Date();
     future.setUTCDate(future.getUTCDate() + 7);
-    const updated = await prisma.prediction.updateMany({ where: { id: prediction.id, restaurant: { ownerId: ids.at(-1)! } }, data: { predictedDate: future } });
+    const updated = await prisma.prediction.updateMany({ where: { restaurantId, id: prediction.id }, data: { predictedDate: future } });
     expect(updated.count).toBe(1);
     await agent.post("/api/workspace/orders").send({ operationId: randomUUID(), lines: [{ productId: prediction.productId, predictionId: prediction.id, quantity: 3 }] }).expect(400);
     const input = { operationId: randomUUID(), lines: [{ productId: prediction.productId, quantity: 3 }] };

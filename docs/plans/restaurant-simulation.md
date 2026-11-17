@@ -40,8 +40,9 @@ s’arrête pour protéger une éventuelle saisie humaine.
 Avant l’écriture, une sauvegarde JSON limitée aux lignes concernées est créée
 hors du dépôt dans un répertoire privé de `/private/tmp` (permissions `0700`,
 fichier `0600`). Le rollback restaure les lignes de stock, recettes et mouvements
-antérieurs puis retire le marqueur et les lignes de scénario. Il s’arrête si une
-vente, production, recette ou variation de stock a été modifiée depuis la
+antérieurs puis retire le marqueur et les lignes de scénario. Avant la connexion,
+il vérifie le format, le périmètre et la cohérence des lignes de la sauvegarde.
+Il s’arrête si une vente, production, recette ou variation de stock a été modifiée depuis la
 simulation ; il ne doit pas écraser ces saisies. Les fiches sources, comptes,
 autres espaces, commandes et décisions ne sont jamais restaurés ni supprimés.
 

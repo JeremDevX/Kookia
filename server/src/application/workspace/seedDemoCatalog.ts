@@ -26,13 +26,6 @@ export async function seedDemoCatalog(tx: Prisma.TransactionClient, restaurantId
           quantity: new Prisma.Decimal(ingredient.quantity) };
       }) });
   }
-  await tx.prediction.createMany({ data: catalog.predictions.map((prediction) => ({
-    id: prediction.id, restaurantId, productId: prediction.productId,
-    predictedDate: new Date(prediction.predictedDate),
-    predictedConsumption: prediction.predictedConsumption, confidence: prediction.confidence,
-    action: prediction.recommendation?.action, quantity: prediction.recommendation?.quantity,
-    reason: prediction.recommendation?.reason,
-  })) });
   await tx.workspaceDocument.createMany({ data: [
     { restaurantId, kind: "analytics", data: catalog.analytics },
     { restaurantId, kind: "activity", data: catalog.activity },

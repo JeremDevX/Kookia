@@ -28,7 +28,7 @@ it("requires setup once per authenticated account without creating demo data", a
   expect((await agent.get("/api/setup").expect(200)).body).toMatchObject({ configured: true, userId: ids[0], step: "team", revision: 1 });
   expect((await agent.get("/api/workspace/restaurant").expect(200)).body).toEqual({ ...input, openingWeekdays: [1, 2, 3, 4, 5] });
   expect((await agent.get("/api/workspace/catalog").expect(200)).body).toEqual({ products: [], suppliers: [] });
-  for (const path of ["recipes", "predictions", "notifications"]) {
+  for (const path of ["recipes", "notifications"]) {
     expect((await agent.get(`/api/workspace/${path}`).expect(200)).body).toEqual([]);
   }
   for (const path of ["analytics", "activity", "insights"]) {
