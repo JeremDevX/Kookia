@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { confirmedInvoiceDuplicatesSchema } from "./invoice.js";
 
 export const purchaseReceiptSchema = z.object({
-  confirmedDuplicates: z.array(z.object({ id: z.string().max(100), version: z.string().max(50) }).strict()).max(100).optional(),
+  confirmedDuplicates: confirmedInvoiceDuplicatesSchema.optional(),
   operationId: z.uuid(), invoiceDocumentId: z.string().trim().min(1).max(100),
   invoiceDocumentRevision: z.number().int().positive(), deliveryReference: z.string().trim().min(1).max(120),
   deliveryDate: z.iso.date(), lines: z.array(z.object({ invoiceLineIndex: z.number().int().min(0).max(99),

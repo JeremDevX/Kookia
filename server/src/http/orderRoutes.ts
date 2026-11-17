@@ -9,6 +9,7 @@ import { orderDto, validateOrder } from "../application/workspace/orderService.j
 import { getPurchaseSuggestions, recordPurchaseSuggestionDecision } from "../application/workspace/purchaseSuggestionService.js";
 import { getPurchaseReceiptLineEvidence, listPurchaseOrders, recordPurchaseReceipt } from "../application/workspace/purchaseReceiptService.js";
 import { purchaseReceiptSchema } from "../../../shared/purchaseReceipt.js";
+import type { Invoice } from "../../../shared/invoice.js";
 import { refreshForecastWeather } from "../application/workspace/forecastWeatherService.js";
 import { formatParisDate } from "../../../shared/parisDate.js";
 import type { WeatherProvider } from "../integrations/weatherProvider.js";
@@ -38,7 +39,7 @@ orderRoutes.get("/orders/:orderId/receipt-invoices", async (req, res) => {
     (order.status.startsWith("simulated") || invoice.source === "manual") &&
     order.lines.some((line) => line.supplierId === invoice.supplierId && invoice.lines.some((item) =>
       item.productId === line.productId && item.unit === line.unit)))
-    .map((invoice) => ({ id: invoice.id, revision: invoice.revision, source: invoice.source, status: invoice.status,
+    .map((invoice): Invoice => ({ id: invoice.id, revision: invoice.revision, source: invoice.source, status: invoice.status,
       reference: invoice.reference, date: invoice.date, supplierId: invoice.supplierId, lines: invoice.lines,
       sourceTypeConfirmed: invoice.sourceTypeConfirmed, sourceDateConfirmed: invoice.sourceDateConfirmed,
       receiptProgress: invoice.receiptProgress })));

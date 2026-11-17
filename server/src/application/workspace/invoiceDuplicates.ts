@@ -1,11 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { WorkspaceError } from "./catalogService.js";
-import { invoiceSchema } from "./invoiceService.js";
+import { invoiceSchema } from "./invoiceData.js";
+import type { SaveInvoiceRequest } from "../../../../shared/invoice.js";
 
 export const invoiceKey = (value: string) => value.trim().normalize("NFKC").replace(/\s+/g, " ").toLocaleUpperCase("fr-FR");
 
 export async function checkInvoiceDuplicates(tx: Prisma.TransactionClient, restaurantId: string, invoiceId: string,
-  supplierId: string | undefined, reference: string, confirmed: Array<{ id: string; version: string }> = []) {
+  supplierId: string | undefined, reference: string, confirmed: SaveInvoiceRequest["confirmedDuplicates"] = []) {
   const [documents, receipts] = await Promise.all([
     tx.workspaceDocument.findMany({ where: { restaurantId, kind: { startsWith: "invoice:" } }, select: { data: true, revision: true } }),
     tx.purchaseReceipt.findMany({ where: { restaurantId }, select: { invoiceDocumentId: true } }),

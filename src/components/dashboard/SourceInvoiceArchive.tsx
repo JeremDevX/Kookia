@@ -157,7 +157,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
     .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
   const currentArchiveError = loading ? "" : archiveError;
   const sourceConflict = !!selectedId && selectedId === sourceConflictId;
-  const linkedStatus = selected?.invoiceStatus === "received" ? "Réception rapprochée"
+  const linkedStatus = selected?.invoiceStatus === "received" ? "Pièce rapprochée"
     : selected?.invoiceStatus === "draft" ? "Brouillon lié à cette pièce"
       : "Aucun brouillon ni réception liée";
 
@@ -236,7 +236,7 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
           <details><summary>Lire la transcription (date de travail)</summary><pre className="source-invoice-content">{selected.content}</pre></details>
           <Button ref={resumeButtonRef} type="button" onClick={() => void resume()}
             disabled={sourceConflict} aria-disabled={opening || sourceConflict} aria-busy={opening}>
-            {opening ? "Ouverture…" : sourceConflict ? "Brouillon périmé" : selected.invoiceStatus === "draft" ? "Reprendre le brouillon" : selected.invoiceStatus === "received" ? "Voir la réception" :
+            {opening ? "Ouverture…" : sourceConflict ? "Brouillon périmé" : selected.invoiceStatus === "draft" ? "Reprendre le brouillon" : selected.invoiceStatus === "received" ? "Voir la pièce rapprochée" :
               selected.type === "invoice" ? "Créer un brouillon corrigible" : "Consulter et classer la pièce"}
           </Button>
         </section>}

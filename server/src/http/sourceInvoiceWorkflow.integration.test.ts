@@ -5,6 +5,7 @@ import request from "supertest";
 import { afterAll, expect, it } from "vitest";
 import { app } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { formatParisDate } from "../../../shared/parisDate.js";
 
 const users: string[] = [];
 afterAll(async () => { await prisma.user.deleteMany({ where: { id: { in: users } } }); await prisma.$disconnect(); });
@@ -44,6 +45,7 @@ async function storeSource(restaurantId: string, source: ReturnType<typeof sourc
 it("links a source draft once, preserves corrections, and receives exactly one simulated movement", async () => {
   const owner = await account("source-owner");
   const other = await account("source-other");
+  await prisma.restaurant.update({ where: { id: owner.restaurantId }, data: { mode: "demo" } });
   const source = sourceDocument();
   await storeSource(owner.restaurantId, source);
 
@@ -55,6 +57,10 @@ it("links a source draft once, preserves corrections, and receives exactly one s
   expect(draftResponses[0].body.sourceContentHash).toBe(source.contentHash);
   expect(draftResponses[0].body.sourceDocumentRevision).toBe(0);
   expect(draftResponses[0].body.provenance).toBe("demo_simulation");
+  expect(draftResponses[0].body.sourceReceiptStockEffect).toBe("demo_simulation");
+  expect(draftResponses[0].body.sourceDate).toBe(source.date);
+  expect(draftResponses[0].body).not.toHaveProperty("sourceOriginalDate");
+  expect(draftResponses[0].body).not.toHaveProperty("sourceDemoDate");
   await other.agent.post(`/api/workspace/invoices/from-source/${source.id}`).send({}).expect(404);
 
   const catalog = await owner.agent.get("/api/workspace/catalog").expect(200);
@@ -65,6 +71,7 @@ it("links a source draft once, preserves corrections, and receives exactly one s
   }] };
   const saved = await owner.agent.post(`/api/workspace/invoices/${pending.id}`).send({ draft, revision: pending.revision, receive: false }).expect(200);
   expect(saved.body.revision).toBe(2);
+  expect(saved.body.stockEffect).toBe("none");
   await owner.agent.post(`/api/workspace/invoices/${pending.id}`).send({ draft, revision: pending.revision, receive: false }).expect(409);
 
   const revisionHistory = await prisma.invoiceDraftRevision.findMany({
@@ -80,6 +87,7 @@ it("links a source draft once, preserves corrections, and receives exactly one s
     owner.agent.post(`/api/workspace/invoices/${pending.id}`).send(receivePayload)]);
   expect(receipts.map((response) => response.status)).toEqual([200, 200]);
   expect(receipts[0].body.status).toBe("received");
+  expect(receipts.map((response) => response.body.stockEffect)).toEqual(["demo_simulation", "demo_simulation"]);
   const after = await owner.agent.get("/api/workspace/catalog").expect(200);
   expect(after.body.products.find((item: { id: string }) => item.id === product.id).currentStock).toBe(product.currentStock + 5.5);
   const movements = await prisma.stockMovement.findMany({ where: { restaurantId: owner.restaurantId, sourceDocumentId: source.id } });
@@ -96,7 +104,7 @@ it("links a source draft once, preserves corrections, and receives exactly one s
   expect((await prisma.invoiceDraftRevision.findMany({ where: { restaurantId: owner.restaurantId, invoiceDocumentId: pending.id } }))
     .map((item) => item.revision).sort()).toEqual([1, 2, 3]);
   const repeated = await owner.agent.post(`/api/workspace/invoices/from-source/${source.id}`).send({}).expect(200);
-  expect(repeated.body).toMatchObject({ id: pending.id, status: "received", revision: 3 });
+  expect(repeated.body).toMatchObject({ id: pending.id, status: "received", revision: 3, stockEffect: "demo_simulation" });
   await owner.agent.post(`/api/workspace/invoices/${pending.id}`).send({ ...receivePayload, draft: { ...draft, reference: "Autre valeur" } }).expect(409);
   const listedSource = await owner.agent.get("/api/workspace/source-invoices").expect(200);
   expect(listedSource.body[0]).toMatchObject({ invoiceId: pending.id, invoiceStatus: "received", sourceMovementCount: 1 });
@@ -113,6 +121,42 @@ it("links a source draft once, preserves corrections, and receives exactly one s
   expect(await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId, sourceDocumentId: source.id } })).toBe(1);
   expect((await owner.agent.get("/api/workspace/catalog").expect(200)).body.products
     .find((item: { id: string }) => item.id === product.id).currentStock).toBe(product.currentStock + 5.5);
+});
+
+it("confirms an archive in an operational workspace without crediting stock or receiving a purchase order", async () => {
+  const owner = await account("source-operational");
+  const source = sourceDocument();
+  await storeSource(owner.restaurantId, source);
+  const catalog = (await owner.agent.get("/api/workspace/catalog").expect(200)).body;
+  const product = catalog.products.find((item: { unit: string }) => item.unit === "kg");
+  const order = (await owner.agent.post("/api/workspace/orders").send({
+    operationId: randomUUID(), lines: [{ productId: product.id, quantity: 4 }],
+  }).expect(201)).body;
+  const pending = (await owner.agent.post(`/api/workspace/invoices/from-source/${source.id}`).send({}).expect(200)).body;
+  expect(pending.sourceReceiptStockEffect).toBe("none");
+  const draft = { reference: pending.reference, date: pending.date, supplierId: product.supplierId,
+    sourceTypeConfirmed: true, sourceDateConfirmed: true, lines: [{
+      ...pending.lines[0], productId: product.id, quantity: 4, unitPrice: product.pricePerUnit, unit: product.unit, disposition: "stock",
+    }] };
+  const saved = (await owner.agent.post(`/api/workspace/invoices/${pending.id}`)
+    .send({ draft, revision: pending.revision, receive: false }).expect(200)).body;
+  await owner.agent.post(`/api/workspace/orders/${order.id}/receipts`).send({
+    operationId: randomUUID(), invoiceDocumentId: saved.id, invoiceDocumentRevision: saved.revision,
+    deliveryReference: "BL-ARCHIVE", deliveryDate: formatParisDate(),
+    lines: [{ invoiceLineIndex: 0, orderLineId: order.lines[0].id, receivedQuantity: 4 }],
+  }).expect(409).expect(({ body }) => expect(body.error.code).toBe("SIMULATION_IN_OPERATIONAL_WORKSPACE"));
+
+  const lotsBefore = await prisma.stockLot.count({ where: { restaurantId: owner.restaurantId } });
+  const confirmations = await Promise.all([1, 2].map(() => owner.agent.post(`/api/workspace/invoices/${saved.id}`)
+    .send({ draft, revision: saved.revision, receive: true }).expect(200)));
+  expect(confirmations[0].body).toEqual(confirmations[1].body);
+  expect(confirmations[0].body).toMatchObject({ status: "received", stockEffect: "none", provenance: "demo_simulation" });
+  expect((await owner.agent.get("/api/workspace/catalog").expect(200)).body).toEqual(catalog);
+  expect(await prisma.stockLot.count({ where: { restaurantId: owner.restaurantId } })).toBe(lotsBefore);
+  expect(await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId, invoiceDocumentId: saved.id } })).toBe(0);
+  expect(await prisma.purchaseReceipt.count({ where: { restaurantId: owner.restaurantId } })).toBe(0);
+  expect((await owner.agent.get("/api/workspace/source-invoices").expect(200)).body[0])
+    .toMatchObject({ invoiceStatus: "received", sourceMovementCount: 0 });
 });
 
 it("rejects stale source lines and snapshots without changing a reviewed draft or stock", async () => {

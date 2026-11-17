@@ -1,24 +1,20 @@
 import express, { Router, type Response } from "express";
 import { z } from "zod";
+import { saveInvoiceRequestSchema, type SaveInvoiceResponse, type SourceInvoiceDetail,
+  type SourceInvoiceSummary } from "../../../shared/invoice.js";
+import { invoiceDto } from "../application/workspace/invoiceData.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { describeInvoiceFile, unconfiguredInvoiceExtractionAdapter, type InvoiceExtractionAdapter } from "../integrations/invoiceExtractionAdapter.js";
 import { inspectInvoiceExtractionUpload } from "../integrations/invoiceExtractionUpload.js";
 import { extractInvoiceCandidate } from "../application/workspace/invoiceExtractionService.js";
 import { createInvoiceDraftFromSource, getInvoices, getSourceInvoiceWorkflowStates,
-  invoiceDraftSchema, saveInvoice, sourceInvoiceContentForWorkspace, sourceInvoiceDocumentSchema } from "../application/workspace/invoiceService.js";
+  saveInvoice, sourceInvoiceContentForWorkspace, sourceInvoiceDocumentSchema } from "../application/workspace/invoiceService.js";
 export const invoiceRoutes = Router();
 const context = (res: Response) => res.locals.workspace as { restaurantId: string; actorId: string };
 const extractionAdapter = (res: Response) =>
   (res.locals.invoiceExtractionAdapter as InvoiceExtractionAdapter | undefined) ?? unconfiguredInvoiceExtractionAdapter;
 const extractionUnavailable = (res: Response) => res.status(503).json({ error: { code: "EXTRACTION_UNAVAILABLE",
   message: "La lecture automatique n’est pas disponible pour cette pièce. Vous pouvez la saisir manuellement." } });
-
-function invoiceResponse<T extends { sourceDemoDate?: string | null; sourceOriginalDate?: string | null }>(invoice: T) {
-  const response = { ...invoice, ...(invoice.sourceDemoDate !== undefined ? { sourceDate: invoice.sourceDemoDate } : {}) };
-  Reflect.deleteProperty(response, "sourceDemoDate");
-  Reflect.deleteProperty(response, "sourceOriginalDate");
-  return response;
-}
 
 invoiceRoutes.get("/invoice-extraction/status", (_req, res) => {
   const mode = extractionAdapter(res).provider === "local_demo_fixture" ? "demo_fixture" : "manual";
@@ -52,11 +48,12 @@ invoiceRoutes.get("/source-invoices", async (_req, res) => {
   const documents = await prisma.workspaceDocument.findMany({ where: { restaurantId, kind: { startsWith: "source-invoice:" } }, select: { data: true } });
   const invoices = documents.map(({ data }) => sourceInvoiceDocumentSchema.parse(data));
   const workflow = await getSourceInvoiceWorkflowStates(restaurantId, invoices.map((invoice) => invoice.id));
-  res.json(invoices.map((invoice) => {
-    return { id: invoice.id, title: invoice.title, date: invoice.date,
-      supplier: invoice.supplier, type: invoice.type, status: invoice.status, stockLineCount: invoice.stockLines.length,
-      ...workflow.get(invoice.id) };
-  }).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.title.localeCompare(b.title)));
+  const summaries = invoices.map((invoice): SourceInvoiceSummary => ({
+    id: invoice.id, title: invoice.title, date: invoice.date,
+    supplier: invoice.supplier, type: invoice.type, status: invoice.status, stockLineCount: invoice.stockLines.length,
+    ...workflow.get(invoice.id)!,
+  })).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.title.localeCompare(b.title));
+  res.json(summaries);
 });
 invoiceRoutes.get("/source-invoices/:id", async (req, res) => {
   const id = z.string().regex(/^[a-f0-9]{24}$/).parse(req.params.id);
@@ -65,22 +62,27 @@ invoiceRoutes.get("/source-invoices/:id", async (req, res) => {
   if (!document) { res.status(404).json({ error: { code: "NOT_FOUND", message: "Pièce introuvable." } }); return; }
   const invoice = sourceInvoiceDocumentSchema.parse(document.data);
   const workflow = await getSourceInvoiceWorkflowStates(restaurantId, [invoice.id]);
-  res.json({ id: invoice.id, title: invoice.title, date: invoice.date,
-    supplier: invoice.supplier, type: invoice.type, status: invoice.status,
+  const detail: SourceInvoiceDetail = {
+    id: invoice.id, title: invoice.title, date: invoice.date,
+    supplier: invoice.supplier, type: invoice.type, status: invoice.status, stockLineCount: invoice.stockLines.length,
     content: sourceInvoiceContentForWorkspace(invoice.content, invoice.date),
-    stockLines: invoice.stockLines, ...workflow.get(invoice.id) });
+    stockLines: invoice.stockLines, ...workflow.get(invoice.id)!,
+  };
+  res.json(detail);
 });
 invoiceRoutes.get("/invoices", async (_req, res) => {
-  res.json((await getInvoices(context(res).restaurantId)).map(invoiceResponse));
+  res.json((await getInvoices(context(res).restaurantId)).map(invoiceDto));
 });
 invoiceRoutes.post("/invoices/from-source/:id", async (req, res) => {
   const sourceDocumentId = z.string().regex(/^[a-f0-9]{24}$/).parse(req.params.id);
   const { restaurantId, actorId } = context(res);
-  res.json(invoiceResponse(await createInvoiceDraftFromSource(restaurantId, actorId, sourceDocumentId)));
+  res.json(invoiceDto(await createInvoiceDraftFromSource(restaurantId, actorId, sourceDocumentId)));
 });
 invoiceRoutes.post("/invoices/:id", async (req, res) => {
   const id = z.union([z.literal("demo"), z.uuid(), z.string().regex(/^source:[a-f0-9]{24}$/)]).parse(req.params.id);
-  const { draft, revision, receive, confirmedDuplicates } = z.object({ draft: invoiceDraftSchema, revision: z.number().int().nonnegative(), receive: z.boolean(), confirmedDuplicates: z.array(z.object({ id: z.string().max(100), version: z.string().max(50) }).strict()).max(100).optional() }).strict().parse(req.body);
+  const { draft, revision, receive, confirmedDuplicates } = saveInvoiceRequestSchema.parse(req.body);
   const { restaurantId, actorId } = context(res);
-  res.json(invoiceResponse(await saveInvoice(restaurantId, actorId, id, revision, draft, receive, confirmedDuplicates)));
+  const saved = await saveInvoice(restaurantId, actorId, id, revision, draft, receive, confirmedDuplicates);
+  const response: SaveInvoiceResponse = { ...invoiceDto(saved), stockEffect: saved.stockEffect };
+  res.json(response);
 });

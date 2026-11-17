@@ -115,6 +115,12 @@ livrée ajoute du stock, dans la même transaction que son mouvement de provenan
 Les répétitions d'opération sont idempotentes, les doublons facture/livraison
 sont refusés et un écart de prix exige une explication. En espace démo, réception
 et commande restent simulées et ne changent pas le stock.
+La confirmation directe d’une facture opérationnelle ajoutée manuellement
+crédite le stock. Pour une pièce d’archive en espace opérationnel, elle
+enregistre uniquement le rapprochement et sa révision de revue. En espace démo,
+la confirmation directe crédite le stock du scénario. La réponse de
+`POST /api/workspace/invoices/:id` indique l’effet sur le stock avec
+`stockEffect` (`none`, `recorded` ou `demo_simulation`).
 Les nouveaux `StockMovement` gardent aussi des snapshots facultatifs du nom,
 de l'unité et du fournisseur au moment du mouvement. Les anciennes lignes restent
 sans snapshot plutôt que d'hériter d'un libellé actuel.

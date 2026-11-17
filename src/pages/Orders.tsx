@@ -12,6 +12,7 @@ import { useToast } from "../context/ToastContext";
 import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { createOrderRecommendationsFromCartItems } from "../features/orders/orderRecommendations";
 import type { Invoice } from "../services/invoiceService";
+import { invoiceReceiptFeedback } from "../features/orders/invoiceReceiptFeedback";
 import { formatLocalISODate } from "../utils/date";
 import { analyticsReturnHref, analyticsReturnTarget } from "../utils/analyticsNavigation";
 import "../styles/Workspace.css";
@@ -119,9 +120,9 @@ export default function Orders() {
         catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
         onInvoiceDataChanged={() => setInvoiceRefresh((value) => value + 1)}
         onValidate={(invoice) => {
-          addToast("success", invoice.source === "source_document" ? "Pièce rapprochée" : "Réception enregistrée",
-            invoice.source === "source_document" ? "La pièce est rapprochée sans créer d'achat ni modifier le stock." : "Le stock a été mis à jour.");
-          void refetch();
+          const { title, message } = invoiceReceiptFeedback[invoice.stockEffect];
+          addToast("success", title, message);
+          if (invoice.stockEffect !== "none") void refetch();
         }} onClose={() => setInvoiceOpen(false)} />}
   </div>;
 }

@@ -1,4 +1,5 @@
 import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
+import { lockReceiptWorkspace } from "../application/workspace/receiptStock.js";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it } from "vitest";
@@ -13,6 +14,20 @@ async function account() {
   agent.set("X-Expected-User-Id", response.body.user.id);
   await ensureWorkspace(response.body.user.id); return agent;
 }
+
+it("allows a concurrent stock write to acquire the workspace foreign-key lock", async () => {
+  const agent = await account();
+  const userId = (await agent.get("/api/auth/me").expect(200)).body.user.id as string;
+  const workspace = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: userId } });
+  await prisma.$transaction(async (tx) => {
+    await lockReceiptWorkspace(tx, workspace.id);
+    const stockWriteLock = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM "Restaurant" WHERE id = ${workspace.id} FOR KEY SHARE NOWAIT
+    `;
+    expect(stockWriteLock).toEqual([{ id: workspace.id }]);
+  });
+});
+
 it("persists corrected drafts, isolates accounts and receives invoices exactly once", async () => {
   const agent = await account(); const other = await account();
   await request(app).get("/api/workspace/invoices").expect(401);
@@ -23,6 +38,7 @@ it("persists corrected drafts, isolates accounts and receives invoices exactly o
   const id = randomUUID();
   const draft = { reference: "Manual invoice", date: "2026-09-11", lines: [{ productId: product.id, quantity: 4.5, unitPrice: 2 }] };
   const saved = await agent.post(`/api/workspace/invoices/${id}`).send({ draft, revision: 0, receive: false }).expect(200);
+  expect(saved.body.stockEffect).toBe("none");
   const corrected = { ...draft, lines: [{ ...draft.lines[0], quantity: 5.5 }] };
   const updated = await agent.post(`/api/workspace/invoices/${id}`).send({ draft: corrected, revision: saved.body.revision, receive: false }).expect(200);
   await agent.post(`/api/workspace/invoices/${id}`).send({ draft, revision: saved.body.revision, receive: false }).expect(409);
@@ -33,6 +49,7 @@ it("persists corrected drafts, isolates accounts and receives invoices exactly o
   const receipt = { draft: corrected, revision: updated.body.revision, receive: true };
   const results = await Promise.all([agent.post(`/api/workspace/invoices/${id}`).send(receipt), agent.post(`/api/workspace/invoices/${id}`).send(receipt)]);
   expect(results.map((result) => result.status)).toEqual([200, 200]);
+  expect(results.map((result) => result.body.stockEffect)).toEqual(["recorded", "recorded"]);
   const after = await agent.get("/api/workspace/catalog").expect(200);
   const receivedProduct = after.body.products.find((item: { id: string }) => item.id === product.id);
   expect(receivedProduct.currentStock).toBe(product.currentStock + 5.5);
@@ -44,7 +61,7 @@ it("persists corrected drafts, isolates accounts and receives invoices exactly o
   const rollback = await agent.get("/api/workspace/catalog").expect(200);
   expect(rollback.body).toEqual(after.body);
   const reread = await agent.get("/api/workspace/invoices").expect(200);
-  expect(reread.body.find((item: { id: string }) => item.id === id).status).toBe("received");
+  expect(reread.body.find((item: { id: string }) => item.id === id)).toMatchObject({ status: "received", stockEffect: "recorded" });
 });
 
 it("vérifie l’unité renseignée avant de créditer une facture manuelle", async () => {

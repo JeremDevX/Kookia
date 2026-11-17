@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import Modal from "../common/Modal";
+import InvoiceLinesEditor from "./InvoiceLinesEditor";
+import type { Invoice, SaveInvoiceResponse } from "../../../shared/invoice";
+import { invoiceReceiptFeedback } from "../../features/orders/invoiceReceiptFeedback";
 import { confirmInvoiceDuplicates } from "../../services/invoiceDuplicates";
 import { ApiError } from "../../config/api";
-import { getInvoices, saveInvoice, type Invoice, type InvoiceLine, type SourceLineDisposition } from "../../services/invoiceService";
+import { getInvoices, saveInvoice } from "../../services/invoiceService";
 import type { Product, Supplier } from "../../types";
 import { formatLocalISODate } from "../../utils/date";
 import "./InvoiceModal.css";
@@ -15,17 +18,10 @@ interface InvoiceModalProps {
   catalogLoading: boolean;
   catalogError: Error | null;
   onRetryCatalog: () => void;
-  onValidate: (invoice: Invoice) => void;
+  onValidate: (invoice: SaveInvoiceResponse) => void;
   onInvoiceDataChanged: () => void;
   onClose: () => void;
 }
-
-const exclusionLabels: Record<NonNullable<InvoiceLine["exclusionReason"]>, string> = {
-  not_stock_item: "Hors stock",
-  not_readable: "Ligne illisible ou incertaine",
-  not_applicable: "Ne correspond pas à cette réception",
-  other: "Autre motif",
-};
 
 export default function InvoiceModal({ initialInvoice, products, suppliers, catalogLoading, catalogError,
   onRetryCatalog, onValidate, onInvoiceDataChanged, onClose }: InvoiceModalProps) {
@@ -128,9 +124,6 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
     void onRetryCatalog();
   };
 
-  const updateLine = (index: number, change: Partial<InvoiceLine>) => setInvoice((current) => current
-    ? { ...current, lines: current.lines.map((line, lineIndex) => lineIndex === index ? { ...line, ...change } : line) }
-    : current);
   const createDraft = () => {
     setNotice(""); setError(""); setReloadConflictInvoice(false); setSourceConflictInvoiceId(null);
     setInvoice({ id: crypto.randomUUID(), reference: "", date: formatLocalISODate(new Date()), lines: [],
@@ -142,7 +135,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
     persistFocusPending.current = document.activeElement === actionButton ? (receive ? "receive" : "draft") : null;
     setSaving(true); setError(""); setNotice("");
     try {
-      let saved: Invoice;
+      let saved: SaveInvoiceResponse;
       try { saved = await saveInvoice(invoice, receive); } catch (cause) {
         const confirmed = confirmInvoiceDuplicates(cause);
         if (!confirmed) {
@@ -155,11 +148,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
       setInvoices((previous) => [saved, ...previous.filter((item) => item.id !== saved.id)]);
       setReloadConflictInvoice(false);
       setSourceConflictInvoiceId((conflictedId) => conflictedId === saved.id ? null : conflictedId);
-      setNotice(receive
-        ? invoice.source === "source_document"
-          ? "Pièce rapprochée. Aucun achat fournisseur ni ajout au stock n’a été créé."
-          : "Réception enregistrée. Les quantités ont été ajoutées au stock."
-        : "Brouillon enregistré.");
+      setNotice(receive ? invoiceReceiptFeedback[saved.stockEffect].message : "Brouillon enregistré.");
       onInvoiceDataChanged();
       if (receive) onValidate(saved);
     } catch (cause) {
@@ -186,12 +175,13 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
   };
 
   const received = invoice?.status === "received";
+  const sourceAddsToScenario = invoice?.sourceReceiptStockEffect === "demo_simulation";
   const disabled = saving || sourceConflict || catalogLoading || !!catalogError;
   const canReceive = !!invoice && !received && !!invoice.reference.trim() && !!invoice.date && invoice.lines.length > 0 &&
     (sourceLinked
       ? invoice.sourceType === "invoice" && invoice.sourceTypeConfirmed === true && invoice.sourceDateConfirmed === true &&
         !invoice.alreadyCreditedBySimulation && invoice.lines.length === invoice.sourceLineCount &&
-        invoice.lines.every((line) => line.disposition === "excluded"
+        invoice.lines.some((line) => line.disposition === "stock") && invoice.lines.every((line) => line.disposition === "excluded"
           ? !!line.exclusionReason
           : line.disposition === "stock" && !!line.productId && line.quantity > 0 && !!line.unit &&
             products.some((product) => product.id === line.productId && product.unit === line.unit))
@@ -202,7 +192,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
   return <Modal isOpen onClose={onClose} closeDisabled={saving} title="Revoir une facture" width="lg"><div className="invoice-modal flex flex-col gap-lg">
     <p>{sourceLinked
       ? received
-        ? "Réception liée à une pièce transcrite. Les lignes sont en lecture seule et ne pourront pas créditer le stock une seconde fois."
+        ? "Rapprochement d’une pièce transcrite. Les lignes sont en lecture seule."
         : "Brouillon lié à une pièce transcrite : vérifiez le type, la date et chaque ligne. L’enregistrement du brouillon ne modifie pas le stock."
       : "Saisie manuelle sans lecture automatique. Vérifiez les quantités et les produits avant tout ajout au stock."}</p>
     {error && <div role="alert"><p>{error}</p>
@@ -233,7 +223,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
         }}>
         <option value="" disabled>Nouveau brouillon</option>
         {invoices.map((item) => <option key={item.id} value={item.id}>
-          {item.reference} · {item.status === "received" ? "Réceptionnée" : "Brouillon"}
+          {item.reference} · {item.status === "draft" ? "Brouillon" : item.source === "source_document" ? "Rapprochée" : "Réceptionnée"}
         </option>)}
       </select>
       <Button variant="outline" onClick={createDraft} disabled={saving || sourceConflict}>Nouvelle facture manuelle</Button>
@@ -246,12 +236,13 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
           <p>Type transcrit : {invoice.sourceType === "invoice" ? "facture" : invoice.sourceType === "credit" ? "avoir" : "bon de livraison"} — à confirmer.
             Statut source : {invoice.sourceStatus ?? "inconnu"}.</p>
           <p>Date de travail de la pièce : {invoice.sourceDate ?? "inconnue"}.</p>
-          <p>Empreinte et révision source conservées côté serveur. Cette pièce ne confirme pas une livraison et ne met pas à jour le stock.</p>
+          {!received && <p>{sourceAddsToScenario
+            ? "La confirmation ajoutera les quantités retenues au stock du scénario."
+            : "Le rapprochement enregistre vos vérifications sur la pièce sans modifier le stock."}</p>}
           {invoice.sourceType !== "invoice" && <p role="alert">Un avoir ou un bon de livraison est consultable, mais ne peut pas créditer le stock dans ce flux.</p>}
           {invoice.alreadyCreditedBySimulation && <p role="alert">Cette pièce a déjà été rapprochée dans cet espace. Ce brouillon ne peut pas ajouter une seconde quantité.</p>}
         </section>}
-        {received && <p role="status">{sourceLinked ? "Rapprochement de pièce" : "Réception"} enregistré le {invoice.receivedAt ? new Date(invoice.receivedAt).toLocaleString("fr-FR") : "—"}.
-          Le stock ne sera pas crédité une seconde fois.</p>}
+        {received && <p role="status">{sourceLinked ? "Rapprochement de pièce enregistré" : "Réception enregistrée"} le {invoice.receivedAt ? new Date(invoice.receivedAt).toLocaleString("fr-FR") : "—"}.</p>}
         {!received && <>
           <label htmlFor="invoice-supplier">Fournisseur</label>
           <select className="input-field" id="invoice-supplier" value={invoice.supplierId ?? ""} disabled={disabled}
@@ -279,59 +270,8 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
             Je confirme la date utilisée pour ce rapprochement.
           </label>
         </>}
-        {invoice.lines.map((line, index) => <fieldset key={line.sourceLineNumber ?? index} disabled={disabled || received || line.disposition === "excluded"}
-          className="flex flex-col gap-sm">
-          <legend>{sourceLinked ? `Ligne source ${line.sourceLineNumber}` : `Ligne ${index + 1}`}</legend>
-          {line.sourceLineNumber !== undefined && <p className="invoice-source-line">
-            Transcription : {line.sourceName} · {line.sourceQuantityText} · {line.sourceUnitPrice?.toFixed(2) ?? "—"} € ({line.sourceTaxBasis ?? "base inconnue"}).
-            Vérifiez le produit, l’unité et le prix avant inclusion.
-          </p>}
-          <label htmlFor={`invoice-product-${index}`}>Produit</label>
-          <select ref={index === 0 ? firstProductSelectRef : undefined} className="input-field"
-            id={`invoice-product-${index}`} value={line.productId}
-            onChange={(event) => {
-              const product = products.find((item) => item.id === event.target.value);
-              const sameUnit = !!product && product.unit === line.sourceUnit;
-              updateLine(index, { productId: event.target.value, unit: product?.unit ?? "",
-                ...(sourceLinked ? { quantity: sameUnit ? line.sourceQuantity ?? 0 : 0,
-                  unitPrice: sameUnit ? line.sourceUnitPrice ?? 0 : 0, disposition: "pending" as const } : {}) });
-            }}>
-            <option value="">Choisir un produit</option>
-            {products.map((product) => <option key={product.id} value={product.id}>{product.name} ({product.unit})</option>)}
-          </select>
-          <label htmlFor={`invoice-quantity-${index}`}>Quantité à ajouter ({products.find((product) => product.id === line.productId)?.unit || line.unit || "unité du produit"})</label>
-          <input className="input-field" id={`invoice-quantity-${index}`} type="number" min="0" step="0.001"
-            value={line.quantity} onChange={(event) => updateLine(index, { quantity: Number(event.target.value), disposition: sourceLinked ? "pending" : line.disposition })} />
-          <label htmlFor={`invoice-price-${index}`}>Prix unitaire indicatif (€)</label>
-          <input className="input-field" id={`invoice-price-${index}`} type="number" min="0" step="0.0001"
-            value={line.unitPrice} onChange={(event) => updateLine(index, { unitPrice: Number(event.target.value), disposition: sourceLinked ? "pending" : line.disposition })} />
-          {!sourceLinked && <Button variant="outline" onClick={() => setInvoice({ ...invoice, lines: invoice.lines.filter((_, lineIndex) => lineIndex !== index) })}>
-            Retirer cette ligne
-          </Button>}
-        </fieldset>)}
-        {sourceLinked && !received && invoice.lines.map((line, index) => line.sourceLineNumber === undefined ? null : <div className="invoice-line-decision" key={`decision-${line.sourceLineNumber}`}>
-          <label htmlFor={`invoice-disposition-${index}`}>Décision pour la ligne {line.sourceLineNumber}</label>
-          <select className="input-field" id={`invoice-disposition-${index}`} value={line.disposition ?? "pending"}
-            disabled={disabled} onChange={(event) => updateLine(index, {
-              disposition: event.target.value as SourceLineDisposition,
-              ...(event.target.value === "excluded" ? {} : { exclusionReason: undefined }),
-            })}>
-            <option value="pending">À examiner</option>
-            <option value="stock">Inclure au stock</option>
-            <option value="excluded">Écarter — sans crédit stock</option>
-          </select>
-          {line.disposition === "excluded" && <>
-            <label htmlFor={`invoice-exclusion-${index}`}>Motif d’exclusion</label>
-            <select className="input-field" id={`invoice-exclusion-${index}`} value={line.exclusionReason ?? ""}
-              disabled={disabled} onChange={(event) => updateLine(index, { exclusionReason: event.target.value as InvoiceLine["exclusionReason"] })}>
-              <option value="">Choisir un motif</option>
-              {Object.entries(exclusionLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </select>
-          </>}
-        </div>)}
-        {!sourceLinked && !received && <Button variant="outline" disabled={disabled || products.length === 0}
-          onClick={() => setInvoice({ ...invoice, lines: [...invoice.lines, { productId: products[0].id, quantity: 1,
-            unitPrice: products[0].pricePerUnit, unit: products[0].unit }] })}>Ajouter une ligne</Button>}
+        <InvoiceLinesEditor invoice={invoice} products={products} disabled={disabled}
+          firstProductSelectRef={firstProductSelectRef} onLinesChange={(lines) => setInvoice({ ...invoice, lines })} />
         {sourceLinked
           ? <p>Total indicatif des lignes incluses : {total.toFixed(2)} €. Les bases HT/TTC de la transcription peuvent différer ; ce n’est pas un montant comptable.</p>
           : <strong>Total : {total.toFixed(2)} €</strong>}
@@ -339,7 +279,8 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
           <Button ref={saveDraftButtonRef} variant="outline" onClick={() => void persist(false)}
             disabled={disabled || persistenceBlocked || !invoice.reference.trim()}>Enregistrer le brouillon</Button>
           <Button ref={receiveButtonRef} onClick={() => void persist(true)} disabled={disabled || persistenceBlocked || !canReceive}>
-            {sourceLinked ? "Rapprocher sans ajout au stock" : "Réceptionner et ajouter au stock"}
+            {sourceLinked && !sourceAddsToScenario ? "Confirmer le rapprochement"
+              : sourceLinked ? "Ajouter au stock du scénario" : "Réceptionner et ajouter au stock"}
           </Button>
         </div>}
       </>}

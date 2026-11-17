@@ -1,13 +1,14 @@
 import { checkInvoiceDuplicates, invoiceKey } from "./invoiceDuplicates.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
-import { recordLotMovement } from "./lotService.js";
+import { invoiceSchema, recordSourceInvoiceRevision } from "./invoiceData.js";
+import { creditReceiptStock, getReceiptProduct, lockReceiptProducts, lockReceiptWorkspace } from "./receiptStock.js";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma, type PurchaseReceipt as PurchaseReceiptRecord, type PurchaseReceiptLine as PurchaseReceiptLineRecord,
   type PrismaClient } from "@prisma/client";
 import type { PurchaseReceiptInput, PurchaseReceiptLineEvidence } from "../../../../shared/purchaseReceipt.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./catalogService.js";
-import { invoiceSchema, sourceInvoiceDocumentSchema, validateSourceReview } from "./invoiceService.js";
+import { rejectPriorSourceCredit, sourceInvoiceDocumentSchema, validateSourceReview } from "./invoiceService.js";
 
 type ReceiptDatabase = PrismaClient | Prisma.TransactionClient;
 type ReceiptLineWithMovement = PurchaseReceiptLineRecord & { movement: { id: string } | null };
@@ -41,7 +42,7 @@ function sameSnapshot(left: Prisma.JsonValue, right: PurchaseReceiptInput) {
 export async function recordPurchaseReceipt(restaurantId: string, actorId: string, orderId: string,
   input: PurchaseReceiptInput) {
   return prisma.$transaction(async (tx) => {
-    await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
+    const mode = await lockReceiptWorkspace(tx, restaurantId);
     const prior = await tx.purchaseReceipt.findUnique({ where: { restaurantId_operationId: {
       restaurantId, operationId: input.operationId,
     } }, include: { lines: { include: { movement: { select: { id: true } } } } } });
@@ -52,12 +53,10 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
     }
 
     if (input.deliveryDate > formatParisDate()) throw new WorkspaceError(400, "FUTURE_DELIVERY_DATE", "La date de livraison ne peut pas être future.");
-    const [workspace, invoiceDocument, order] = await Promise.all([
-      tx.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } }),
+    const [invoiceDocument, order] = await Promise.all([
       tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind: `invoice:${input.invoiceDocumentId}` } } }),
       tx.purchaseOrder.findFirst({ where: { restaurantId, id: orderId }, include: { lines: true } }),
     ]);
-    if (!workspace) throw new WorkspaceError(404, "WORKSPACE_NOT_FOUND", "Espace introuvable.");
     if (!invoiceDocument) throw new WorkspaceError(404, "INVOICE_NOT_FOUND", "Facture brouillon introuvable dans cet espace.");
     if (invoiceDocument.revision !== input.invoiceDocumentRevision)
       throw new WorkspaceError(409, "INVOICE_REVISION_CONFLICT", "La facture a changé. Rechargez-la avant le rapprochement.");
@@ -66,9 +65,9 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
     if (!invoice.reference.trim() || !invoice.date || !invoice.supplierId)
       throw new WorkspaceError(409, "INVOICE_REVIEW_REQUIRED", "Enregistrez la référence, la date et le fournisseur de la facture avant rapprochement.");
     if (invoice.source === "manual") await checkInvoiceDuplicates(tx, restaurantId, invoice.id, invoice.supplierId, invoice.reference, input.confirmedDuplicates);
-    if (invoice.source === "demo" && workspace.mode !== "demo")
+    if (invoice.source === "demo" && mode !== "demo")
       throw new WorkspaceError(409, "DEMO_INVOICE_IN_OPERATIONAL_WORKSPACE", "Une facture d’exemple ne peut pas être utilisée dans un espace réel.");
-    if (invoice.source === "source_document" && workspace.mode !== "demo")
+    if (invoice.source === "source_document" && mode !== "demo")
       throw new WorkspaceError(409, "SIMULATION_IN_OPERATIONAL_WORKSPACE", "Une pièce de démonstration ne peut pas créditer une commande réelle.");
     if (invoice.source === "source_document") {
       if (!invoice.sourceDocumentId) throw new WorkspaceError(409, "SOURCE_ID_REQUIRED", "La pièce d’origine n’est plus liée à la facture.");
@@ -80,14 +79,10 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
       if (invoice.sourceContentHash !== source.contentHash || invoice.sourceDocumentRevision !== sourceDocument.revision)
         throw new WorkspaceError(409, "SOURCE_CHANGED", "La pièce d’origine a changé depuis la revue de cette facture.");
       validateSourceReview(source, invoice);
-      const sourcePrefix = `restaurant-simulation-v1:invoice:${invoice.sourceDocumentId}:`;
-      const priorCredit = await tx.stockMovement.findFirst({ where: { restaurantId, OR: [
-        { sourceDocumentId: invoice.sourceDocumentId }, { operationId: { startsWith: sourcePrefix } },
-      ] }, select: { id: true } });
-      if (priorCredit) throw new WorkspaceError(409, "SOURCE_ALREADY_CREDITED", "Cette pièce a déjà ajouté du stock dans la démonstration.");
+      await rejectPriorSourceCredit(tx, restaurantId, invoice.sourceDocumentId);
     }
     if (!order) throw new WorkspaceError(404, "ORDER_NOT_FOUND", "Commande introuvable dans cet espace.");
-    const simulated = workspace.mode === "demo";
+    const simulated = mode === "demo";
     if (simulated !== order.status.startsWith("simulated"))
       throw new WorkspaceError(409, "ORDER_MODE_MISMATCH", "Le statut de cette commande ne correspond pas au mode de l’espace.");
     if (["received", "simulated_received"].includes(order.status))
@@ -148,10 +143,8 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
     if (!validated.some((line) => line.receivedQuantity.greaterThan(0)))
       throw new WorkspaceError(409, "NO_RECEIVED_QUANTITY", "Aucune quantité n’a été confirmée comme livrée.");
 
-    const stockProductIds = [...new Set(validated.filter((line) => line.receivedQuantity.greaterThan(0))
-      .map((line) => line.orderLine.productId))].sort();
-    if (stockProductIds.length) await tx.$queryRaw(Prisma.sql`SELECT id FROM "Product"
-      WHERE "restaurantId" = ${restaurantId} AND id IN (${Prisma.join(stockProductIds)}) ORDER BY id FOR UPDATE`);
+    if (!simulated) await lockReceiptProducts(tx, restaurantId, validated.flatMap((line) =>
+      line.receivedQuantity.greaterThan(0) ? [line.orderLine.productId] : []));
 
     const priorReceiptKey = await tx.purchaseReceipt.findFirst({ where: { restaurantId, supplierId: supplier.id,
       invoiceReferenceNormalized: invoiceKey(invoice.reference), deliveryReference: input.deliveryReference.trim() }, select: { id: true } });
@@ -168,11 +161,12 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
     const invoiceComplete = includedInvoiceLines.every(({ line, index }) =>
       (newReceivedByInvoiceLine.get(index) ?? new Prisma.Decimal(0)).greaterThanOrEqualTo(new Prisma.Decimal(line.quantity)));
     const requestSnapshot = JSON.parse(JSON.stringify(input)) as Prisma.InputJsonValue;
+    const deliveryDate = day(input.deliveryDate);
     const receipt = await tx.purchaseReceipt.create({ data: { restaurantId, orderId, supplierId: supplier.id,
       actorId, operationId: input.operationId, invoiceReference: invoice.reference.trim(),
       invoiceReferenceNormalized: invoiceKey(invoice.reference), invoiceDocumentId: input.invoiceDocumentId,
       invoiceDocumentRevision: invoiceDocument.revision, deliveryReference: input.deliveryReference.trim(),
-      deliveryDate: day(input.deliveryDate), sourceDocumentId: invoice.sourceDocumentId ?? null,
+      deliveryDate, sourceDocumentId: invoice.sourceDocumentId ?? null,
       sourceContentHash: invoice.sourceContentHash ?? null, simulated, provenance: simulated ? "demo_simulation" : "recorded",
       invoiceComplete, requestSnapshot,
       lines: { create: validated.map((line) => ({ orderLineId: line.orderLine.id,
@@ -187,26 +181,18 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
     const stockMovementByReceiptLine = new Map<string, string>();
     if (!simulated) for (const line of receipt.lines) {
       if (!line.receivedQuantity.greaterThan(0)) continue;
-      const product = await tx.product.findUnique({ where: { restaurantId_id: { restaurantId, id: line.productId } },
-        include: { supplier: { select: { name: true } } } });
+      const product = await getReceiptProduct(tx, restaurantId, line.productId);
       if (!product || product.supplierId !== supplier.id || product.unit !== line.unit)
         throw new WorkspaceError(409, "PRODUCT_CHANGED", "Le produit, son fournisseur ou son unité a changé pendant le rapprochement.");
-      await tx.product.updateMany({ where: { restaurantId, id: product.id }, data: {
-        currentStock: { increment: line.receivedQuantity }, stockRevision: { increment: 1 },
-        ...(!product.lastDelivery || product.lastDelivery < day(input.deliveryDate) ? { lastDelivery: day(input.deliveryDate) } : {}),
-      } });
-      const movement = await tx.stockMovement.create({ data: { restaurantId, productId: product.id, purchaseReceiptLineId: line.id,
-        delta: line.receivedQuantity, reason: "purchase_receipt",
+      const expiresAt = input.lines.find((entry) => entry.invoiceLineIndex === line.invoiceLineIndex)?.expiresAt;
+      const movement = await creditReceiptStock(tx, restaurantId, product, deliveryDate, {
+        purchaseReceiptLineId: line.id, delta: line.receivedQuantity, reason: "purchase_receipt",
         operationId: `purchase-receipt:${receipt.id}:${line.orderLineId}`, actorId,
         invoiceDocumentId: input.invoiceDocumentId, invoiceRevision: invoiceDocument.revision,
         ...(invoice.sourceDocumentId ? { sourceDocumentId: invoice.sourceDocumentId,
           sourceContentHash: invoice.sourceContentHash, sourceDocumentRevision: invoice.sourceDocumentRevision } : {}),
-        productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: supplier.name,
         unitPriceSnapshot: line.invoiceUnitPrice,
-      } });
-      await recordLotMovement(tx, restaurantId, product.id, product.currentStock, movement, actorId, {
-        lineId: line.id, receivedAt: day(input.deliveryDate), expiresAt: input.lines.find((entry) => entry.orderLineId === line.orderLineId)?.expiresAt ? day(input.lines.find((entry) => entry.orderLineId === line.orderLineId)!.expiresAt!) : null, unitCost: line.invoiceUnitPrice,
-      });
+      }, { lineId: line.id, receivedAt: deliveryDate, expiresAt: expiresAt ? day(expiresAt) : null, unitCost: line.invoiceUnitPrice });
       stockMovementByReceiptLine.set(line.id, movement.id);
     }
 
@@ -220,15 +206,11 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
 
     if (invoiceComplete) {
       const nextInvoice = { ...invoice, status: "received" as const,
-        receivedAt: new Date().toISOString(), receivedBy: actorId };
+        receivedAt: new Date().toISOString(), receivedBy: actorId, stockEffect: simulated ? "none" as const : "recorded" as const };
       const saved = await tx.workspaceDocument.update({ where: { restaurantId_kind: {
         restaurantId, kind: `invoice:${input.invoiceDocumentId}`,
       } }, data: { data: nextInvoice, revision: { increment: 1 } } });
-      if (invoice.sourceDocumentId && invoice.sourceContentHash !== undefined && invoice.sourceDocumentRevision !== undefined)
-        await tx.invoiceDraftRevision.create({ data: { restaurantId, invoiceDocumentId: invoice.id,
-          sourceDocumentId: invoice.sourceDocumentId, sourceContentHash: invoice.sourceContentHash,
-          sourceDocumentRevision: invoice.sourceDocumentRevision, revision: saved.revision, actorId,
-          data: JSON.parse(JSON.stringify(nextInvoice)) as Prisma.InputJsonValue } });
+      await recordSourceInvoiceRevision(tx, restaurantId, actorId, nextInvoice, saved.revision);
     }
     const receiptWithMovement = { ...receipt, lines: receipt.lines.map((line) => ({ ...line,
       movement: stockMovementByReceiptLine.has(line.id) ? { id: stockMovementByReceiptLine.get(line.id)! } : null })) };

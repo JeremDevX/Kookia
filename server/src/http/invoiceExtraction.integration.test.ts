@@ -31,6 +31,7 @@ const uploadFixture = (agent: ReturnType<typeof request.agent>) => uploadBytes(a
 it("uploads only the local synthetic PDF, persists an isolated replayable candidate, then requires C1 review to receive", async () => {
   const owner = await account("extraction-owner");
   const other = await account("extraction-other");
+  await prisma.restaurant.update({ where: { id: owner.restaurantId }, data: { mode: "demo" } });
   await owner.agent.get("/api/workspace/invoice-extraction/status").expect(200)
     .expect(({ body }) => expect(body).toEqual({ mode: "demo_fixture" }));
   await request(fixtureApp).post("/api/workspace/invoice-extractions").set("Content-Type", "application/pdf")
@@ -84,7 +85,7 @@ it("uploads only the local synthetic PDF, persists an isolated replayable candid
   const received = await owner.agent.post(`/api/workspace/invoices/${pending.body.id}`).send({ draft: {
     ...correctedDraft, sourceTypeConfirmed: true, sourceDateConfirmed: true,
   }, revision: corrected.body.revision, receive: true }).expect(200);
-  expect(received.body).toMatchObject({ status: "received", revision: 3 });
+  expect(received.body).toMatchObject({ status: "received", revision: 3, stockEffect: "demo_simulation" });
   expect((await owner.agent.get("/api/workspace/catalog").expect(200)).body.products
     .find((item: { id: string }) => item.id === product.id).currentStock).toBe(beforeStock + 5.5);
   expect(await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId, sourceDocumentId: sourceId } })).toBe(1);
