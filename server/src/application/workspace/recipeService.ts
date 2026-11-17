@@ -1,11 +1,11 @@
-import { recordLotMovement } from "./lotService.js";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
 import { appendRecipeVersion, findRecipeVersionForDate } from "./recipeVersionStorage.js";
+import { applyStockMovement } from "./stockWrite.js";
+import { WorkspaceError } from "./workspaceError.js";
 
 const recipeInclude = {
   ingredients: { include: { product: { select: { id: true, name: true, unit: true } } } },
@@ -239,18 +239,14 @@ export async function recordProduction(restaurantId: string, actorId: string, in
         const amount = rawAmount
           .toDecimalPlaces(3, Prisma.Decimal.ROUND_HALF_UP);
         if (!amount.greaterThan(0)) throw new WorkspaceError(400, "INVALID_RECIPE_PRECISION", "La quantité par portion est inférieure à la précision de stock (0,001 unité).");
-        const updated = await tx.product.updateMany({
-          where: { restaurantId, id: ingredient.productId, currentStock: { gte: amount } },
-          data: { currentStock: { decrement: amount }, stockRevision: { increment: 1 } },
-        });
-        if (!updated.count) throw new WorkspaceError(409, "INSUFFICIENT_STOCK", "Stock insuffisant : ajustez les portions et réessayez.");
-        const movement = await tx.stockMovement.create({ data: {
+        await applyStockMovement(tx, {
           restaurantId, productId: ingredient.productId, delta: amount.negated(), reason: "production",
           actorId, operationId: input.operationId,
           productNameSnapshot: ingredient.productName, productUnitSnapshot: ingredient.productUnit, serviceSlot: input.serviceSlot ?? null,
-        } });
-        const product = await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: ingredient.productId } } });
-        await recordLotMovement(tx, restaurantId, ingredient.productId, product.currentStock.plus(amount), movement, actorId, undefined, undefined, date(input.date));
+        }, { condition: {
+          where: { currentStock: { gte: amount } },
+          error: new WorkspaceError(409, "INSUFFICIENT_STOCK", "Stock insuffisant : ajustez les portions et réessayez."),
+        }, lots: { usageDate: date(input.date) } });
       }
     }
     if (recipe && input.kind !== "refusal") {

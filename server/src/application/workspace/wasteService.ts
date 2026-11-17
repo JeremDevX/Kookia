@@ -1,8 +1,8 @@
 import { isDeepStrictEqual } from "node:util";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
-import { recordLotMovement } from "./lotService.js";
+import { applyStockMovement } from "./stockWrite.js";
+import { WorkspaceError } from "./workspaceError.js";
 
 export interface WasteInput {
   operationId: string; serviceDate: string; serviceSlot?: string | null;
@@ -76,12 +76,10 @@ export async function recordWaste(restaurantId: string, actorId: string, input: 
       if (!product || product.unit !== input.unit) throw new WorkspaceError(400, "INVALID_PRODUCT_UNIT", "Le produit et son unité doivent appartenir à votre stock.");
       if (product.unit === "pcs" && !Number.isInteger(input.quantity)) throw new WorkspaceError(400, "INVALID_QUANTITY", "La quantité en pièces doit être entière.");
       if (product.currentStock.lessThan(input.quantity)) throw new WorkspaceError(409, "INSUFFICIENT_STOCK", "Le stock est insuffisant.");
-      const movement = await tx.stockMovement.create({ data: { restaurantId, actorId, productId: product.id,
+      const movement = await applyStockMovement(tx, { restaurantId, actorId, productId: product.id,
         delta: new Prisma.Decimal(input.quantity).negated(), reason: "loss", operationId: input.operationId,
-        serviceSlot: input.serviceSlot ?? null, productNameSnapshot: product.name, productUnitSnapshot: product.unit } });
-      await recordLotMovement(tx, restaurantId, product.id, product.currentStock, movement, actorId, undefined, input.lotId);
-      await tx.product.update({ where: { restaurantId_id: { restaurantId, id: product.id } }, data: {
-        currentStock: { decrement: input.quantity }, stockRevision: { increment: 1 } } });
+        serviceSlot: input.serviceSlot ?? null, productNameSnapshot: product.name, productUnitSnapshot: product.unit },
+      { stockBefore: product.currentStock, lots: { selectedLotId: input.lotId } });
       stockMovementId = movement.id;
     }
     const row = await tx.wasteRecord.create({ data: { ...snapshot, restaurantId, actorId, stockMovementId,

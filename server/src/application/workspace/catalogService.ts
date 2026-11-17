@@ -1,13 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { recordLotMovement } from "./lotService.js";
 import { stockCountDto } from "./stockCountDto.js";
+import { applyStockMovement, recordStockMovement } from "./stockWrite.js";
 import { purchaseAvailability } from "./purchaseAvailability.js";
+import { WorkspaceError } from "./workspaceError.js";
 
-export class WorkspaceError extends Error {
-  constructor(public readonly status: number, public readonly code: string, message: string, public readonly duplicates?: Array<{ id: string; version: string; date: string }>) { super(message); }
-}
+export { WorkspaceError } from "./workspaceError.js";
 
 export const productDto = (product: Awaited<ReturnType<typeof prisma.product.findMany>>[number]) => ({
   id: product.id, name: product.name, category: product.category, unit: product.unit,
@@ -54,10 +53,9 @@ export async function createProduct(restaurantId: string, actorId: string, data:
     const supplier = await tx.supplier.findUnique({ where: { restaurantId_id: { restaurantId, id: data.supplierId } } });
     if (!supplier) throw new WorkspaceError(400, "INVALID_SUPPLIER", "Fournisseur introuvable dans votre espace.");
     const product = await tx.product.create({ data: { ...data, id: operationId, restaurantId } });
-    const movement = await tx.stockMovement.create({ data: { restaurantId, productId: product.id, actorId, operationId, delta: data.currentStock,
+    await recordStockMovement(tx, { restaurantId, productId: product.id, actorId, operationId, delta: data.currentStock,
       reason: "initial", productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: supplier.name,
-      unitPriceSnapshot: product.pricePerUnit } });
-    await recordLotMovement(tx, restaurantId, product.id, new Prisma.Decimal(0), movement, actorId);
+      unitPriceSnapshot: product.pricePerUnit }, new Prisma.Decimal(0));
     return productDto(product);
   });
 }
@@ -97,16 +95,14 @@ export async function adjustStock(restaurantId: string, actorId: string, product
       if (locked[0].stockRevision !== expectedStockRevision || locked[0].unit !== expectedUnit) {
         throw new WorkspaceError(409, "STOCK_CHANGED", "Le stock ou son unité a changé. Rechargez la fiche avant de recommencer.");
       }
-      const updated = await tx.product.updateMany({ where: {
-        restaurantId, id: productId, ...(delta < 0 ? { currentStock: { gte: -delta } } : {}),
-      }, data: { currentStock: { increment: delta }, stockRevision: { increment: 1 } } });
-      if (!updated.count) throw new WorkspaceError(409, "INSUFFICIENT_STOCK", "Le stock disponible est insuffisant.");
       const product = await tx.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId, id: productId } },
         include: { supplier: { select: { name: true } } } });
-      const movement = await tx.stockMovement.create({ data: { restaurantId, productId, delta, reason, operationId, actorId,
+      await applyStockMovement(tx, { restaurantId, productId, delta, reason, operationId, actorId,
         productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: product.supplier.name,
-        unitPriceSnapshot: product.pricePerUnit } });
-      await recordLotMovement(tx, restaurantId, productId, product.currentStock.minus(delta), movement, actorId);
+        unitPriceSnapshot: product.pricePerUnit }, { condition: {
+          where: delta < 0 ? { currentStock: { gte: -delta } } : {},
+          error: new WorkspaceError(409, "INSUFFICIENT_STOCK", "Le stock disponible est insuffisant."),
+        } });
     } else if (!prior.delta.equals(delta) || prior.reason !== reason || prior.productUnitSnapshot !== expectedUnit) {
       throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette opération a déjà été utilisée avec d’autres valeurs.");
     }

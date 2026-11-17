@@ -1,15 +1,21 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { WorkspaceError } from "./catalogService.js";
+import { WorkspaceError } from "./workspaceError.js";
 
 export function fefoOrder<T extends { id: string; expiresAt: Date | null; receivedAt: Date | null }>(lots: T[]): T[] {
   return [...lots].sort((a, b) => (a.expiresAt?.getTime() ?? Infinity) - (b.expiresAt?.getTime() ?? Infinity)
     || (a.receivedAt?.getTime() ?? Infinity) - (b.receivedAt?.getTime() ?? Infinity) || a.id.localeCompare(b.id));
 }
 
+export interface LotMovementOptions {
+  receipt?: { lineId: string; receivedAt: Date; expiresAt?: Date | null; unitCost: Prisma.Decimal };
+  selectedLotId?: string;
+  usageDate?: Date;
+}
+
 export async function recordLotMovement(tx: Prisma.TransactionClient, restaurantId: string, productId: string,
   stockBefore: Prisma.Decimal, movement: { id: string; delta: Prisma.Decimal }, actorId: string,
-  receipt?: { lineId: string; receivedAt: Date; expiresAt?: Date | null; unitCost: Prisma.Decimal }, selectedLotId?: string, usageDate?: Date) {
+  { receipt, selectedLotId, usageDate }: LotMovementOptions = {}) {
   await tx.$queryRaw(Prisma.sql`SELECT id FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${productId} FOR UPDATE`);
   const lots = await tx.stockLot.findMany({ where: { restaurantId, productId, remainingQuantity: { gt: 0 } } });
   const tracked = lots.reduce((sum, lot) => sum.plus(lot.remainingQuantity), new Prisma.Decimal(0));

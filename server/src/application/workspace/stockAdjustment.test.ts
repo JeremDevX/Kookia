@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Prisma } from "@prisma/client";
 
-const mocks = vi.hoisted(() => ({ tx: { $queryRaw: vi.fn(), stockMovement: { findUnique: vi.fn(), create: vi.fn() }, product: { updateMany: vi.fn(), findUniqueOrThrow: vi.fn() } }, lots: vi.fn() }));
+const mocks = vi.hoisted(() => ({ tx: { $queryRaw: vi.fn(), stockMovement: { findUnique: vi.fn(), create: vi.fn() }, product: { updateManyAndReturn: vi.fn(), findUniqueOrThrow: vi.fn() } }, lots: vi.fn() }));
 vi.mock("../../infrastructure/database/prisma.js", () => ({ prisma: { $transaction: (fn: (tx: typeof mocks.tx) => unknown) => fn(mocks.tx) } }));
 vi.mock("./lotService.js", () => ({ recordLotMovement: mocks.lots }));
 import { adjustStock } from "./catalogService.js";
@@ -14,19 +14,19 @@ beforeEach(() => {
   mocks.tx.$queryRaw.mockResolvedValue([{ id: "p", stockRevision: 2, unit: "kg" }]);
   mocks.tx.stockMovement.findUnique.mockResolvedValue(null);
   mocks.tx.product.findUniqueOrThrow.mockResolvedValue(product);
-  mocks.tx.product.updateMany.mockResolvedValue({ count: 1 });
+  mocks.tx.product.updateManyAndReturn.mockResolvedValue([product]);
   mocks.tx.stockMovement.create.mockResolvedValue({ id: "m" });
 });
 describe("ajustement : révision et rejeu", () => {
   it("refuse un premier envoi lorsque le stock ou son unité a changé", async () => {
     await expect(run()).rejects.toMatchObject({ code: "STOCK_CHANGED" });
     await expect(run(2, "L")).rejects.toMatchObject({ code: "STOCK_CHANGED" });
-    expect(mocks.tx.product.updateMany).not.toHaveBeenCalled();
+    expect(mocks.tx.product.updateManyAndReturn).not.toHaveBeenCalled();
   });
   it("rejoue une opération déjà appliquée avant de vérifier la révision courante", async () => {
     mocks.tx.stockMovement.findUnique.mockResolvedValue({ delta: new Prisma.Decimal(-2), reason: "loss", productUnitSnapshot: "kg" });
     await expect(run()).resolves.toMatchObject({ id: "p", stockRevision: 2 });
-    expect(mocks.tx.product.updateMany).not.toHaveBeenCalled();
+    expect(mocks.tx.product.updateManyAndReturn).not.toHaveBeenCalled();
   });
   it("refuse un rejeu dont la quantité ou l’unité diffère", async () => {
     mocks.tx.stockMovement.findUnique.mockResolvedValue({ delta: new Prisma.Decimal(-3), reason: "loss", productUnitSnapshot: "kg" });
@@ -36,7 +36,7 @@ describe("ajustement : révision et rejeu", () => {
   });
   it("applique une nouvelle intention lorsque la révision et l’unité concordent", async () => {
     await expect(run(2)).resolves.toMatchObject({ id: "p" });
-    expect(mocks.tx.product.updateMany).toHaveBeenCalledOnce();
+    expect(mocks.tx.product.updateManyAndReturn).toHaveBeenCalledOnce();
     expect(mocks.tx.stockMovement.create).toHaveBeenCalledOnce();
   });
 });

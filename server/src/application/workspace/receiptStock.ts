@@ -1,6 +1,7 @@
 import { Prisma, type WorkspaceMode } from "@prisma/client";
-import { WorkspaceError } from "./catalogService.js";
-import { recordLotMovement } from "./lotService.js";
+import type { LotMovementOptions } from "./lotService.js";
+import { applyStockMovement, type StockMovementInput } from "./stockWrite.js";
+import { WorkspaceError } from "./workspaceError.js";
 
 export async function lockReceiptWorkspace(tx: Prisma.TransactionClient, restaurantId: string) {
   const [workspace] = await tx.$queryRaw<Array<{ mode: WorkspaceMode }>>(
@@ -22,20 +23,15 @@ export function getReceiptProduct(tx: Prisma.TransactionClient, restaurantId: st
       supplierId: true, supplier: { select: { name: true } } } });
 }
 
-type ReceiptMovement = Pick<Prisma.StockMovementUncheckedCreateInput,
+type ReceiptMovement = Pick<StockMovementInput,
   "delta" | "reason" | "operationId" | "actorId" | "invoiceDocumentId" | "invoiceRevision" |
   "sourceDocumentId" | "sourceContentHash" | "sourceDocumentRevision" | "unitPriceSnapshot" | "purchaseReceiptLineId">;
 
 export async function creditReceiptStock(tx: Prisma.TransactionClient, restaurantId: string,
   product: NonNullable<Awaited<ReturnType<typeof getReceiptProduct>>>, deliveryDate: Date, input: ReceiptMovement,
-  receipt?: Parameters<typeof recordLotMovement>[6]) {
-  await tx.product.update({ where: { restaurantId_id: { restaurantId, id: product.id } }, data: {
-    currentStock: { increment: input.delta }, stockRevision: { increment: 1 },
-    ...(!product.lastDelivery || product.lastDelivery < deliveryDate ? { lastDelivery: deliveryDate } : {}),
-  } });
-  const movement = await tx.stockMovement.create({ data: { ...input, restaurantId, productId: product.id,
+  receipt?: LotMovementOptions["receipt"]) {
+  return applyStockMovement(tx, { ...input, restaurantId, productId: product.id,
     productNameSnapshot: product.name, productUnitSnapshot: product.unit, supplierNameSnapshot: product.supplier.name,
-  } });
-  await recordLotMovement(tx, restaurantId, product.id, product.currentStock, movement, input.actorId, receipt);
-  return movement;
+  }, { stockBefore: product.currentStock, lots: { receipt },
+    lastDelivery: !product.lastDelivery || product.lastDelivery < deliveryDate ? deliveryDate : undefined });
 }
