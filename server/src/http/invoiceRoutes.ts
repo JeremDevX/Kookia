@@ -7,8 +7,8 @@ import { prisma } from "../infrastructure/database/prisma.js";
 import { describeInvoiceFile, unconfiguredInvoiceExtractionAdapter, type InvoiceExtractionAdapter } from "../integrations/invoiceExtractionAdapter.js";
 import { inspectInvoiceExtractionUpload } from "../integrations/invoiceExtractionUpload.js";
 import { extractInvoiceCandidate } from "../application/workspace/invoiceExtractionService.js";
-import { createInvoiceDraftFromSource, getInvoices, getSourceInvoiceWorkflowStates,
-  saveInvoice } from "../application/workspace/invoiceService.js";
+import { createInvoiceDraftFromSource, saveInvoice } from "../application/workspace/invoiceService.js";
+import { getInvoices, getSourceInvoiceWorkflowStates } from "../application/workspace/invoiceReadService.js";
 import { workspaceContext as context } from "./workspaceContext.js";
 export const invoiceRoutes = Router();
 const extractionAdapter = (res: Response) =>

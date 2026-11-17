@@ -1,12 +1,12 @@
 import { checkInvoiceDuplicates } from "./invoiceDuplicates.js";
-import { invoiceSchema, recordSourceInvoiceRevision, sourceInvoiceDocumentSchema } from "./invoiceData.js";
+import { invoiceSchema, recordSourceInvoiceRevision, sourceInvoiceDocumentSchema,
+  sourceInvoiceKind, sourceMovementPrefix, sourceStockEffect } from "./invoiceData.js";
 import { creditReceiptStock, getReceiptProduct, lockReceiptProducts, lockReceiptWorkspace } from "./receiptStock.js";
 import { isSimulationStockMovement, simulatedInvoiceOperationPrefix, stockReceiptProvenance } from "./stockMovementProvenance.js";
 import { simulationActor } from "./operationProvenance.js";
 import { Prisma, type WorkspaceMode } from "@prisma/client";
 import type { z } from "zod";
-import type { sourceInvoiceLineSchema, Invoice, InvoiceDraft, InvoiceStockEffect, SaveInvoiceRequest,
-  SourceInvoiceSummary } from "../../../../shared/invoice.js";
+import type { sourceInvoiceLineSchema, InvoiceDraft, InvoiceStockEffect, SaveInvoiceRequest } from "../../../../shared/invoice.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
 
@@ -14,41 +14,8 @@ export const initialInvoice = { id: "demo", reference: "Rungis-2024-12-09", date
   lines: [{ productId: "p1", quantity: 12, unitPrice: 2.4 }, { productId: "p2", quantity: 5, unitPrice: 8.5 },
     { productId: "p15", quantity: 3, unitPrice: 1.5 }, { productId: "p4", quantity: 10, unitPrice: 12 }] };
 
-const sourceInvoiceKind = (sourceDocumentId: string) => `invoice:source:${sourceDocumentId}`;
 const sourceInvoiceId = (sourceDocumentId: string) => `source:${sourceDocumentId}`;
 const sourceIdFromInvoiceId = (invoiceId: string) => invoiceId.match(/^source:([a-f0-9]{24})$/)?.[1];
-const simulationVersion = "restaurant-simulation-v1";
-const sourceMovementPrefix = (sourceDocumentId: string) => `${simulationVersion}:invoice:${sourceDocumentId}:`;
-const sourceStockEffect = (mode?: WorkspaceMode) => mode === "demo" ? "demo_simulation" as const : "none" as const;
-
-type SourceInvoiceWorkflowState = Pick<SourceInvoiceSummary,
-  "invoiceId" | "invoiceStatus" | "receivedAt" | "alreadyCreditedBySimulation" | "sourceMovementCount">;
-
-export async function getSourceInvoiceWorkflowStates(restaurantId: string, sourceDocumentIds: string[]) {
-  if (sourceDocumentIds.length === 0) return new Map<string, SourceInvoiceWorkflowState>();
-  const kinds = sourceDocumentIds.map(sourceInvoiceKind);
-  const [draftDocuments, movements] = await prisma.$transaction([
-    prisma.workspaceDocument.findMany({ where: { restaurantId, kind: { in: kinds } }, select: { data: true } }),
-    prisma.stockMovement.findMany({ where: { restaurantId, reason: "invoice_import_demo" },
-      select: { operationId: true, actorId: true, invoiceDocumentId: true } }),
-  ]);
-  const draftBySource = new Map<string, z.infer<typeof invoiceSchema>>();
-  for (const { data } of draftDocuments) {
-    const invoice = invoiceSchema.parse(data);
-    if (invoice.sourceDocumentId) draftBySource.set(invoice.sourceDocumentId, invoice);
-  }
-  return new Map(sourceDocumentIds.map((sourceId) => {
-    const prefix = sourceMovementPrefix(sourceId);
-    const related = movements.filter((movement) => movement.operationId.startsWith(prefix));
-    const draft = draftBySource.get(sourceId);
-    return [sourceId, {
-      ...(draft ? { invoiceId: draft.id, invoiceStatus: draft.status,
-        ...(draft.receivedAt ? { receivedAt: draft.receivedAt } : {}) } : {}),
-      alreadyCreditedBySimulation: related.some((movement) => movement.actorId === simulationActor && !movement.invoiceDocumentId),
-      sourceMovementCount: related.length,
-    } satisfies SourceInvoiceWorkflowState];
-  }));
-}
 
 async function getSourceDocument(tx: Prisma.TransactionClient, restaurantId: string, sourceDocumentId: string) {
   const document = await tx.workspaceDocument.findUnique({
@@ -121,29 +88,6 @@ export async function createInvoiceDraftFromSource(restaurantId: string, actorId
     return { ...invoice, revision: saved.revision, sourceReceiptStockEffect,
       alreadyCreditedBySimulation: await hasSimulationCredit(tx, restaurantId, sourceDocumentId) };
   });
-}
-
-export async function getInvoices(restaurantId: string) {
-  const documents = await prisma.workspaceDocument.findMany({ where: { restaurantId, kind: { startsWith: "invoice:" } }, orderBy: { updatedAt: "desc" } });
-  const invoices = documents.map((document) => ({ ...invoiceSchema.parse(document.data), revision: document.revision }));
-  const sourceIds = invoices.flatMap((invoice) => invoice.sourceDocumentId ? [invoice.sourceDocumentId] : []);
-  const [workflow, workspace] = await Promise.all([
-    getSourceInvoiceWorkflowStates(restaurantId, sourceIds),
-    sourceIds.length ? prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } }) : null,
-  ]);
-  const sourceReceiptStockEffect = sourceStockEffect(workspace?.mode);
-  const invoiceIds = invoices.map((invoice) => invoice.id);
-  const receipts = invoiceIds.length ? await prisma.purchaseReceipt.findMany({ where: { restaurantId, invoiceDocumentId: { in: invoiceIds } },
-    select: { invoiceDocumentId: true, lines: { select: { invoiceLineIndex: true, orderLineId: true, receivedQuantity: true } } } }) : [];
-  const progressByInvoice = new Map<string, NonNullable<Invoice["receiptProgress"]>>();
-  for (const receipt of receipts) progressByInvoice.set(receipt.invoiceDocumentId,
-    [...(progressByInvoice.get(receipt.invoiceDocumentId) ?? []), ...receipt.lines.map((line) => ({ ...line,
-      receivedQuantity: Number(line.receivedQuantity) }))]);
-  return invoices.map((invoice) => ({ ...invoice,
-    ...(invoice.sourceDocumentId ? { sourceReceiptStockEffect,
-      alreadyCreditedBySimulation: workflow.get(invoice.sourceDocumentId)?.alreadyCreditedBySimulation ?? false } : {}),
-    ...(progressByInvoice.has(invoice.id) ? { receiptProgress: progressByInvoice.get(invoice.id) } : {}),
-  }));
 }
 
 function sameDraft(prior: z.infer<typeof invoiceSchema>, draft: InvoiceDraft) {

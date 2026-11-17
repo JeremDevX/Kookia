@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, WorkspaceMode } from "@prisma/client";
 import { z } from "zod";
 import { invoiceDraftSchema, invoiceFields, invoiceResponseSchema, sourceInvoiceLineSchema, sourceInvoiceTypeSchema,
   type Invoice } from "../../../../shared/invoice.js";
@@ -10,6 +10,11 @@ export const invoiceSchema = invoiceDraftSchema.safeExtend({
 });
 
 type StoredInvoice = z.infer<typeof invoiceSchema>;
+
+export const sourceInvoiceKind = (sourceDocumentId: string) => `invoice:source:${sourceDocumentId}`;
+export const sourceInvoiceMovementPrefix = "restaurant-simulation-v1:invoice:";
+export const sourceMovementPrefix = (sourceDocumentId: string) => `${sourceInvoiceMovementPrefix}${sourceDocumentId}:`;
+export const sourceStockEffect = (mode?: WorkspaceMode) => mode === "demo" ? "demo_simulation" as const : "none" as const;
 
 export function invoiceDto(invoice: StoredInvoice & Pick<Invoice, "revision" | "receiptProgress" | "sourceReceiptStockEffect">): Invoice {
   return invoiceResponseSchema.parse({ ...invoice, sourceDate: invoice.sourceDemoDate });

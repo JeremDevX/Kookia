@@ -200,6 +200,10 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
   const firstReceipt = await owner.agent.post(`/api/workspace/orders/${order.body.id}/receipts`).send(firstReceiptInput).expect(201);
   expect(firstReceipt.body).toMatchObject({ simulated: false, invoiceComplete: false, replayed: false,
     lines: [{ invoiceQuantity: 3, receivedQuantity: 2, quantityDifference: 1 }] });
+  const receiptCandidates = await owner.agent.get(`/api/workspace/orders/${order.body.id}/receipt-invoices`).expect(200);
+  expect(receiptCandidates.body).toMatchObject([{ id: invoiceId, status: "draft", receiptProgress: [
+    { invoiceLineIndex: 0, orderLineId: order.body.lines[0].id, receivedQuantity: 2 },
+  ] }]);
   const possibleDuplicate = await owner.agent.post(`/api/workspace/invoices/${randomUUID()}`).send({ revision: 0, receive: true,
     draft: { reference: "  facture-o2-1  ", date: parisToday(), supplierId: product.supplierId,
       lines: [{ productId: product.id, quantity: 1, unit: product.unit, unitPrice: invoicePrice }] } }).expect(409);
@@ -243,6 +247,8 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
   expect(secondReceipt.body).toMatchObject({ invoiceComplete: true, simulated: false });
   const savedInvoice = (await owner.agent.get("/api/workspace/invoices").expect(200)).body.find((item: { id: string }) => item.id === invoiceId);
   expect(savedInvoice).toMatchObject({ status: "received", supplierId: product.supplierId });
+  expect(savedInvoice.receiptProgress).toEqual(expect.arrayContaining([2, 1].map((receivedQuantity) =>
+    ({ invoiceLineIndex: 0, orderLineId: order.body.lines[0].id, receivedQuantity }))));
   const realImpact = await owner.agent.get(`/api/workspace/impact?from=${parisToday()}&to=${parisToday()}`).expect(200);
   expect(realImpact.body.current.recorded).toMatchObject({ receivedCost: invoicePrice * 3, receiptCount: 2 });
   expect(realImpact.body.current.recorded.receiptsByProduct).toMatchObject([{ productId: product.id,

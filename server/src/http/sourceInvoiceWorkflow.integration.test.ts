@@ -223,14 +223,18 @@ it("blocks simulated duplicates, partial/unreviewed sources and non-invoice type
   const afterSimulation = await owner.agent.get("/api/workspace/catalog").expect(200);
   expect(afterSimulation.body.products.find((item: { id: string }) => item.id === product.id).currentStock).toBe(product.currentStock + 3);
   expect(await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId, operationId: simulatedOperationId } })).toBe(1);
-  expect((await owner.agent.get("/api/workspace/source-invoices").expect(200)).body.find((item: { id: string }) => item.id === simulatedSource.id)
-    .alreadyCreditedBySimulation).toBe(true);
+  expect((await owner.agent.get(`/api/workspace/source-invoices/${simulatedSource.id}`).expect(200)).body)
+    .toMatchObject({ alreadyCreditedBySimulation: true, sourceMovementCount: 1 });
   expect((await owner.agent.get("/api/workspace/invoices").expect(200)).body.find((item: { id: string }) => item.id === sourceDraft.id)
     .alreadyCreditedBySimulation).toBe(true);
 
   const partialSource = sourceDocument("invoice", [sourceLine(8), sourceLine(12)]);
   await storeSource(owner.restaurantId, partialSource);
   const partialDraft = (await owner.agent.post(`/api/workspace/invoices/from-source/${partialSource.id}`).send({}).expect(200)).body;
+  expect((await owner.agent.get("/api/workspace/source-invoices").expect(200)).body).toEqual(expect.arrayContaining([
+    expect.objectContaining({ id: simulatedSource.id, invoiceId: sourceDraft.id, alreadyCreditedBySimulation: true, sourceMovementCount: 1 }),
+    expect.objectContaining({ id: partialSource.id, invoiceId: partialDraft.id, alreadyCreditedBySimulation: false, sourceMovementCount: 0 }),
+  ]));
   await owner.agent.post(`/api/workspace/invoices/${partialDraft.id}`).send({ draft: {
     reference: partialDraft.reference, date: partialDraft.date, sourceTypeConfirmed: true, sourceDateConfirmed: true,
     lines: [{ ...partialDraft.lines[0], productId: product.id, quantity: 1, unitPrice: 2, unit: product.unit, disposition: "stock" }],

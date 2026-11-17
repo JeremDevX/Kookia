@@ -3,14 +3,12 @@ import { purchaseDeliverySchema, updatePurchaseDelivery } from "../application/w
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../infrastructure/database/prisma.js";
-import { getInvoices } from "../application/workspace/invoiceService.js";
-import { WorkspaceError } from "../application/workspace/workspaceError.js";
+import { getOrderReceiptInvoices } from "../application/workspace/invoiceReadService.js";
 import { orderDto, validateOrder } from "../application/workspace/orderService.js";
 import { getPurchaseSuggestions, recordPurchaseSuggestionDecision } from "../application/workspace/purchaseSuggestionService.js";
 import { getPurchaseReceiptLineEvidence, recordPurchaseReceipt } from "../application/workspace/purchaseReceiptService.js";
 import { listPlanningOrders, listPurchaseOrderHistory, listPurchaseOrders } from "../application/workspace/purchaseOrderReadService.js";
 import { purchaseReceiptSchema } from "../../../shared/purchaseReceipt.js";
-import type { Invoice } from "../../../shared/invoice.js";
 import { refreshForecastWeather } from "../application/workspace/forecastWeatherService.js";
 import { formatParisDate } from "../../../shared/parisDate.js";
 import type { WeatherProvider } from "../integrations/weatherProvider.js";
@@ -38,20 +36,8 @@ orderRoutes.get("/orders/suggestions", async (_req, res) => {
   res.json(await getPurchaseSuggestions(context(res).restaurantId));
 });
 orderRoutes.get("/orders/:orderId/receipt-invoices", async (req, res) => {
-  const { restaurantId } = context(res);
   const orderId = z.string().trim().min(1).max(100).parse(req.params.orderId);
-  const order = await prisma.purchaseOrder.findUnique({ where: { restaurantId_id: { restaurantId, id: orderId } },
-    select: { status: true, lines: { select: { productId: true, supplierId: true, unit: true } } } });
-  if (!order) throw new WorkspaceError(404, "NOT_FOUND", "Commande introuvable.");
-  const invoices = await getInvoices(restaurantId);
-  res.json(invoices.filter((invoice) => invoice.status === "draft" && invoice.supplierId &&
-    (order.status.startsWith("simulated") || invoice.source === "manual") &&
-    order.lines.some((line) => line.supplierId === invoice.supplierId && invoice.lines.some((item) =>
-      item.productId === line.productId && item.unit === line.unit)))
-    .map((invoice): Invoice => ({ id: invoice.id, revision: invoice.revision, source: invoice.source, status: invoice.status,
-      reference: invoice.reference, date: invoice.date, supplierId: invoice.supplierId, lines: invoice.lines,
-      sourceTypeConfirmed: invoice.sourceTypeConfirmed, sourceDateConfirmed: invoice.sourceDateConfirmed,
-      receiptProgress: invoice.receiptProgress })));
+  res.json(await getOrderReceiptInvoices(context(res).restaurantId, orderId));
 });
 orderRoutes.get("/orders/receipt-lines/:lineId", async (req, res) => {
   const lineId = z.uuid().parse(req.params.lineId);
