@@ -1,54 +1,56 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
+import { useSalesRead } from "../../features/sales/useSalesReads";
 import { getServiceCalendar, saveCalendarService } from "../../services/serviceCalendarService";
 import { serviceSlotLabels, type CalendarService, type ServiceSlot, type SalesCoverage } from "../../../shared/serviceCalendar";
+
+type ServiceFields = Pick<CalendarService, "plannedOpen" | "coverage" | "actualCovers" | "note">;
 
 export default function DatedServices({ today, refreshToken }: { today: string; refreshToken: number }) {
   const [date, setDate] = useState(today);
   const [slot, setSlot] = useState<ServiceSlot>("lunch");
-  const [services, setServices] = useState<CalendarService[]>([]);
-  const [plannedOpen, setPlannedOpen] = useState(false);
-  const [coverage, setCoverage] = useState<SalesCoverage>("missing");
-  const [covers, setCovers] = useState("");
-  const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const read = useCallback(() => date ? getServiceCalendar(date, date) : Promise.resolve([]), [date]);
+  const { data: services = [], loading, error: loadError, reload } = useSalesRead(read, refreshToken);
+  const [draft, setDraft] = useState<{ base: CalendarService; changes: Partial<ServiceFields> } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [status, setStatus] = useState("");
-  const load = useCallback(async () => {
-    setBusy(true); setError("");
-    try {
-      const rows = await getServiceCalendar(date, date); setServices(rows);
-      const current = rows.find((entry) => entry.slot === slot);
-      setPlannedOpen(current?.plannedOpen ?? false); setCoverage(current?.coverage ?? "missing");
-      setCovers(current?.actualCovers === null || current?.actualCovers === undefined ? "" : String(current.actualCovers)); setNote(current?.note ?? "");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Services indisponibles."); }
-    finally { setBusy(false); }
-  }, [date, slot]);
-  useEffect(() => { void load(); }, [load, refreshToken]);
+  const selected = services.find((service) => service.serviceDate === date && service.slot === slot);
+  const changes = draft && draft.base === selected ? draft.changes : undefined;
+  const values = selected && { ...selected, ...changes };
+  const error = loadError || saveError;
+  const disabled = loading || saving || !!loadError || !selected;
+  const select = (nextDate: string, nextSlot: ServiceSlot) => {
+    setDate(nextDate); setSlot(nextSlot); setDraft(null); setSaveError(""); setStatus("");
+  };
+  const edit = (update: Partial<ServiceFields>) => {
+    if (selected) setDraft({ base: selected, changes: { ...changes, ...update } });
+  };
   const submit = async (event: FormEvent) => {
-    event.preventDefault(); setBusy(true); setError(""); setStatus("");
+    event.preventDefault();
+    if (!values || disabled || error) return;
+    setSaving(true); setSaveError(""); setStatus("");
     try {
-      await saveCalendarService({ serviceDate: date, slot, plannedOpen, coverage,
-        actualCovers: covers === "" ? null : Number(covers), note,
-        expectedRevision: services.find((entry) => entry.slot === slot)?.revision ?? 0 });
-      await load(); setStatus("Service enregistré. La planification et les observations restent distinctes.");
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Enregistrement impossible."); }
-    finally { setBusy(false); }
+      const { serviceDate, slot, plannedOpen, coverage, actualCovers, note, revision } = values;
+      await saveCalendarService({ serviceDate, slot, plannedOpen, coverage, actualCovers, note, expectedRevision: revision });
+      setDraft(null); reload(); setStatus("Service enregistré. La planification et les observations restent distinctes.");
+    } catch (cause) { setSaveError(cause instanceof Error ? cause.message : "Enregistrement impossible."); }
+    finally { setSaving(false); }
   };
   return <section className="sales-panel dated-services" aria-labelledby="dated-service-title">
     <h2 id="dated-service-title">Services midi et soir</h2>
     <p><Link to="/settings">Renseigner les horaires hebdomadaires</Link>. Ici, déclarez une fermeture exceptionnelle ou revoyez les ventes du service. Les anciennes ventes restent non ventilées tant que vous ne les attribuez pas.</p>
     <form className="sales-form dated-service-form" onSubmit={(event) => void submit(event)}>
-      <label>Date<input type="date" required value={date} onChange={(event) => { setDate(event.target.value); setStatus(""); }} /></label>
-      <label>Service<select value={slot} onChange={(event) => { setSlot(event.target.value as ServiceSlot); setStatus(""); }}><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
-      <label>Ouverture prévue<select disabled={busy} value={plannedOpen ? "open" : "closed"} onChange={(event) => setPlannedOpen(event.target.value === "open")}><option value="open">Ouvert</option><option value="closed">Fermé</option></select></label>
-      <label>Ventes revues<select disabled={busy || date > today} value={coverage} onChange={(event) => setCoverage(event.target.value as SalesCoverage)}><option value="missing">Non renseignées</option><option value="partial">Partielles</option><option value="complete">Complètes, après revue</option></select></label>
-      <label>Couverts observés (facultatif)<input type="number" min="0" max="100000" step="1" disabled={busy || date > today} value={covers} onChange={(event) => setCovers(event.target.value)} /></label>
-      <div className="dated-service-note"><label>Motif / contexte, sans donnée personnelle<input maxLength={1000} value={note} onChange={(event) => setNote(event.target.value)} /></label></div>
-      <div className="dated-service-submit"><Button disabled={busy || Boolean(error)} type="submit">{busy ? "Chargement…" : "Enregistrer le service"}</Button></div>
+      <label>Date<input type="date" required disabled={saving} value={date} onChange={(event) => select(event.target.value, slot)} /></label>
+      <label>Service<select disabled={saving} value={slot} onChange={(event) => select(date, event.target.value as ServiceSlot)}><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
+      <label>Ouverture prévue<select disabled={disabled} value={values?.plannedOpen ? "open" : "closed"} onChange={(event) => edit({ plannedOpen: event.target.value === "open" })}><option value="open">Ouvert</option><option value="closed">Fermé</option></select></label>
+      <label>Ventes revues<select disabled={disabled || date > today} value={values?.coverage ?? "missing"} onChange={(event) => edit({ coverage: event.target.value as SalesCoverage })}><option value="missing">Non renseignées</option><option value="partial">Partielles</option><option value="complete">Complètes, après revue</option></select></label>
+      <label>Couverts observés (facultatif)<input type="number" min="0" max="100000" step="1" disabled={disabled || date > today} value={values?.actualCovers ?? ""} onChange={(event) => edit({ actualCovers: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+      <div className="dated-service-note"><label>Motif / contexte, sans donnée personnelle<input maxLength={1000} disabled={disabled} value={values?.note ?? ""} onChange={(event) => edit({ note: event.target.value })} /></label></div>
+      <div className="dated-service-submit"><Button disabled={disabled || !!error} type="submit">{saving ? "Enregistrement…" : loading ? "Chargement…" : "Enregistrer le service"}</Button></div>
     </form>
-    {error && <p role="alert">{error} <button type="button" onClick={() => void load()}>Réessayer</button></p>}{status && <p role="status">{status}</p>}
+    {error && <p role="alert">{error} <button type="button" onClick={() => { setSaveError(""); reload(); }}>Réessayer</button></p>}{status && <p role="status">{status}</p>}
     <ul>{services.map((service) => <li key={service.slot}><strong>{serviceSlotLabels[service.slot]}</strong> · {service.plannedOpen ? "ouverture prévue" : "fermeture prévue"}
       {service.opensAt && ` ${service.opensAt}–${service.closesAt}`} · ventes {service.coverage === "complete" ? "complètes" : service.coverage === "partial" ? "partielles" : "non renseignées"} · {service.soldQuantity} unités attribuées.
       {service.actualCovers !== null && ` ${service.actualCovers} couverts observés.`}
