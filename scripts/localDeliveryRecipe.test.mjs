@@ -49,18 +49,18 @@ test("isolates the interactive demo in its own tmpfs-only database", () => {
   });
   assert.ok(args.includes("kookia.scope=disposable-local-demo"));
   assert.ok(args.includes("POSTGRES_DB=kookia_demo"));
-  assert.ok(args.includes("pg_isready -U kookia -d kookia_demo"));
+  assert.ok(args.includes("pg_isready -h 127.0.0.1 -U kookia -d kookia_demo"));
   assert.equal(disposableDatabaseUrl(55432, "temporary-password", "kookia_demo"),
     "postgresql://kookia:temporary-password@127.0.0.1:55432/kookia_demo");
   assert.throws(() => buildDisposablePostgresArgs("unsafe", "password", { database: "kookia" }));
 });
 
-test("retries the requested database and skips probes after interruption", async (t) => {
+test("retries TCP readiness for the requested database and skips probes after interruption", async (t) => {
   let attempts = 0;
   const docker = mockDocker(t, () => ({ status: ++attempts === 1 ? 1 : 0 }));
   await waitForPostgres("kookia-demo-test", "kookia_demo", () => false);
   await assert.rejects(waitForPostgres("kookia-demo-test", "kookia_demo", () => true), /interrompu/);
-  const probe = ["exec", "kookia-demo-test", "pg_isready", "-U", "kookia", "-d", "kookia_demo"];
+  const probe = ["exec", "kookia-demo-test", "pg_isready", "-h", "127.0.0.1", "-U", "kookia", "-d", "kookia_demo"];
   assert.deepEqual(docker.calls.map(call => call.arguments[1]), [probe, probe]);
 });
 

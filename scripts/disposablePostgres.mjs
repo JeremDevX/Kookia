@@ -1,6 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 
+// The image starts a socket-only server before PostgreSQL accepts TCP connections.
+const readinessCommand = (database) => ["pg_isready", "-h", "127.0.0.1", "-U", "kookia", "-d", database];
+
 export function parseLoopbackPort(output) {
   const match = /^127\.0\.0\.1:(\d+)$/.exec(output.trim());
   const port = Number(match?.[1]);
@@ -23,7 +26,7 @@ export function buildDisposablePostgresArgs(containerName, password, { database 
     "--env", `POSTGRES_DB=${database}`,
     "--env", "POSTGRES_USER=kookia",
     "--env", `POSTGRES_PASSWORD=${password}`,
-    "--health-cmd", `pg_isready -U kookia -d ${database}`,
+    "--health-cmd", readinessCommand(database).join(" "),
     "--health-interval", "1s", "--health-timeout", "2s", "--health-retries", "60",
     "postgres:16-alpine",
   ];
@@ -38,7 +41,7 @@ export function disposableDatabaseUrl(port, password, database) {
 export async function waitForPostgres(containerName, database, isInterrupted) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     if (isInterrupted()) throw new Error("Démarrage de PostgreSQL interrompu.");
-    const result = spawnSync("docker", ["exec", containerName, "pg_isready", "-U", "kookia", "-d", database], { stdio: "ignore" });
+    const result = spawnSync("docker", ["exec", containerName, ...readinessCommand(database)], { stdio: "ignore" });
     if (result.error) throw new Error(`Impossible de vérifier PostgreSQL : ${result.error.message}`);
     if (result.status === 0) return;
     await delay(500);
