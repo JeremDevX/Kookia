@@ -1,19 +1,19 @@
 import { createHash } from "node:crypto";
 import { addCalendarDays } from "../../../../shared/calendarDate.js";
-import { formatParisDate } from "../../../../shared/parisDate.js";
+import { formatParisDate, formatParisTime } from "../../../../shared/parisDate.js";
 import type { ServiceSlot } from "../../../../shared/serviceCalendar.js";
 import type { ServiceWeather, WeatherForecast, WeatherHour, WeatherPosition } from "../../../../shared/serviceWeather.js";
 import type { WeatherCache } from "./weatherStorage.js";
 
 export const WEATHER_FRESH_MS = 3_600_000;
 export const WEATHER_MAX_AGE_MS = 6 * WEATHER_FRESH_MS;
-const hourFormat = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", hourCycle: "h23", hour: "2-digit", minute: "2-digit" });
 export function weatherHours(date: string, opensAt: string, closesAt: string): string[] {
   // Include both occurrences of an autumn DST hour using UTC instants.
   if (opensAt >= closesAt) return [];
   const result: string[] = [];
-  for (let time = Date.parse(date) - 3 * WEATHER_FRESH_MS; time < Date.parse(date) + 25 * WEATHER_FRESH_MS; time += WEATHER_FRESH_MS) {
-    const instant = new Date(time), clock = hourFormat.format(instant);
+  const utcMidnight = Date.parse(date);
+  for (let time = utcMidnight - 3 * WEATHER_FRESH_MS; time < utcMidnight + 25 * WEATHER_FRESH_MS; time += WEATHER_FRESH_MS) {
+    const instant = new Date(time), clock = formatParisTime(instant);
     if (formatParisDate(instant) === date && clock >= opensAt && clock < closesAt) result.push(instant.toISOString());
   }
   return result;

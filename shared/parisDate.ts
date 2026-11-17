@@ -5,6 +5,12 @@ const isoDateFormatter = new Intl.DateTimeFormat("en-CA", {
   month: "2-digit",
   day: "2-digit",
 });
+const clockFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: RESTAURANT_TIME_ZONE,
+  hourCycle: "h23",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 export const formatParisDate = (date = new Date()): string => {
   const parts = isoDateFormatter.formatToParts(date);
@@ -19,3 +25,5 @@ export const formatParisDate = (date = new Date()): string => {
 
   return `${year}-${month}-${day}`;
 };
+
+export const formatParisTime = (date: Date): string => clockFormatter.format(date);

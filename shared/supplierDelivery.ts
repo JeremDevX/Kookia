@@ -1,4 +1,5 @@
 import { addCalendarDays } from "./calendarDate.js";
+import { formatParisDate, formatParisTime } from "./parisDate.js";
 
 export interface SupplierDeliveryConstraints {
   deliveryWeekdays?: number[];
@@ -21,10 +22,8 @@ export function supplierDeliveryHorizon(constraints: SupplierDeliveryConstraints
   if (openingKnown && compatibleDays.length === 0) {
     return { status: "unknown", code: "opening_days_incompatible", reason: "Aucun jour de livraison du fournisseur ne correspond aux jours d’ouverture du restaurant." };
   }
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
-  const part = (name: string) => parts.find((entry) => entry.type === name)!.value;
-  const today = `${part("year")}-${part("month")}-${part("day")}`;
-  const orderDate = `${part("hour")}:${part("minute")}` >= cutoff ? addCalendarDays(today, 1) : today;
+  const today = formatParisDate(now);
+  const orderDate = formatParisTime(now) >= cutoff ? addCalendarDays(today, 1) : today;
   const eligible = addCalendarDays(orderDate, lead);
   const deliveries: string[] = [];
   for (let offset = 0; offset < 15 && deliveries.length < 2; offset++) {
