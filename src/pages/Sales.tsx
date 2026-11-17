@@ -123,10 +123,10 @@ export default function Sales() {
       <small>Les ventes alimentent les indicateurs et peuvent contribuer aux achats suggérés lorsque les services, cartes, recettes et stocks nécessaires sont renseignés.</small>
     </section>
     <DatedServices today={today} refreshToken={salesRevision} />
-    <details className="sales-disclosure"><summary>Couverture quotidienne historique (non ventilée)</summary><ServiceCalendar from={from} to={to} today={today} onChanged={async () => {
+    <ServiceCalendar from={from} to={to} today={today} onChanged={async () => {
       setSalesRevision((current) => current + 1);
       latest.reload();
-    }} /></details>
+    }} />
     <SalesTicketImport onCandidatesSaved={async (serviceDate) => {
       setSalesRevision((current) => current + 1);
       includeDate(serviceDate);
