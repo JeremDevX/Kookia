@@ -48,8 +48,19 @@ it("ventilates only confirmed quantities, preserves unknown remainder, invalidat
   await owner.put(`/api/workspace/sales/${sale.id}/services`).send(allocation).expect(200);
   await owner.put(`/api/workspace/sales/${sale.id}/services`).send(allocation).expect(409);
   const query = { from: input.serviceDate, to: input.serviceDate };
-  expect((await owner.get("/api/workspace/services/calendar").query(query).expect(200)).body)
-    .toContainEqual(expect.objectContaining({ slot: "lunch", soldQuantity: 5, unallocatedQuantity: 3 }));
+  const nextDate = "2026-09-22";
+  const simulated = (await owner.post("/api/workspace/sales").send({ ...input, serviceDate: nextDate,
+    quantity: 7, operationId: randomUUID() }).expect(201)).body;
+  await prisma.dailySale.update({ where: { id: simulated.id }, data: { source: "demo_simulation" } });
+  await owner.put("/api/workspace/services/calendar").send({ serviceDate: nextDate, slot: "lunch", plannedOpen: true,
+    coverage: "complete", actualCovers: 0, note: "Revue sans ventes enregistrées", expectedRevision: 0 }).expect(200);
+  expect((await owner.get("/api/workspace/services/calendar").query({ from: input.serviceDate, to: nextDate }).expect(200)).body)
+    .toMatchObject([
+      { serviceDate: input.serviceDate, slot: "lunch", soldQuantity: 5, unallocatedQuantity: 3, excludedSimulationQuantity: 0 },
+      { serviceDate: input.serviceDate, slot: "dinner", soldQuantity: 4, unallocatedQuantity: 3, excludedSimulationQuantity: 0 },
+      { serviceDate: nextDate, slot: "lunch", coverage: "complete", soldQuantity: 0, unallocatedQuantity: 0, excludedSimulationQuantity: 7 },
+      { serviceDate: nextDate, slot: "dinner", coverage: "missing", soldQuantity: 0, unallocatedQuantity: 0, excludedSimulationQuantity: 7 },
+    ]);
   await owner.put("/api/workspace/services/calendar").send({ serviceDate: input.serviceDate, slot: "lunch", plannedOpen: false,
     coverage: "complete", actualCovers: 0, note: "Fermeture contradictoire", expectedRevision: 0 }).expect(409);
   await owner.put("/api/workspace/services/calendar").send({ serviceDate: input.serviceDate, slot: "dinner", plannedOpen: false,

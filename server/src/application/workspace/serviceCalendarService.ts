@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
-import { qualifiedAllocation, serviceSlots, type ServiceSlot, type SalesCoverage } from "../../../../shared/serviceCalendar.js";
+import { qualifiedAllocation, serviceSlots, type CalendarService, type ServiceSlot, type SalesCoverage } from "../../../../shared/serviceCalendar.js";
 
 const date = (value: string) => new Date(`${value}T00:00:00Z`);
 const conflict = () => new WorkspaceError(409, "REVISION_CONFLICT", "Ces données ont changé. Rechargez avant de valider.");
@@ -33,27 +33,45 @@ export async function getServiceCalendar(restaurantId: string, from: string, to:
   const range = { gte: date(from), lte: date(to) };
   const [weekly, sessions, sales] = await Promise.all([
     getWeeklyServices(restaurantId), prisma.restaurantServiceSession.findMany({ where: { restaurantId, serviceDate: range } }),
-    prisma.dailySale.findMany({ where: { restaurantId, serviceDate: range }, include: { serviceAllocation: true } }),
+    prisma.dailySale.findMany({ where: { restaurantId, serviceDate: range }, select: {
+      serviceDate: true, source: true, quantity: true, revision: true,
+      serviceAllocation: { select: { lunchQuantity: true, dinnerQuantity: true, saleRevision: true } },
+    } }),
   ]);
-  const result = [];
-  for (let timestamp = Date.parse(from); timestamp <= Date.parse(to); timestamp += 86400000) {
+  const sessionsBySlot = new Map(sessions.map((session) => [`${session.serviceDate.getTime()}:${session.slot}`, session]));
+  const emptyDay = { lunchQuantity: 0, dinnerQuantity: 0, unallocatedQuantity: 0, allocationNeedsReview: false,
+    hasIncompleteAllocation: false, excludedSimulationQuantity: 0 };
+  const salesByDay = new Map<number, typeof emptyDay>();
+  for (const sale of sales) {
+    const timestamp = sale.serviceDate.getTime();
+    const summary = salesByDay.get(timestamp) ?? { ...emptyDay };
+    salesByDay.set(timestamp, summary);
+    if (sale.source === "demo_simulation") {
+      summary.excludedSimulationQuantity += sale.quantity;
+      continue;
+    }
+    const allocation = qualifiedAllocation(sale, sale.serviceAllocation);
+    summary.lunchQuantity += allocation.lunchQuantity;
+    summary.dinnerQuantity += allocation.dinnerQuantity;
+    summary.unallocatedQuantity += allocation.unallocatedQuantity;
+    summary.allocationNeedsReview ||= allocation.needsReview;
+    summary.hasIncompleteAllocation ||= allocation.needsReview || allocation.unallocatedQuantity > 0;
+  }
+  const result: CalendarService[] = [];
+  const end = range.lte.getTime();
+  for (let timestamp = range.gte.getTime(); timestamp <= end; timestamp += 86_400_000) {
     const currentDate = new Date(timestamp), serviceDate = currentDate.toISOString().slice(0, 10);
-    const daySales = sales.filter((sale) => sale.serviceDate.getTime() === timestamp);
-    const recordedSales = daySales.filter((sale) => sale.source !== "demo_simulation");
-    const allocations = recordedSales.map((sale) => qualifiedAllocation(sale, sale.serviceAllocation));
-    const allocationNeedsReview = allocations.some((entry) => entry.needsReview);
-    const hasIncompleteAllocation = allocationNeedsReview || allocations.some((entry) => entry.unallocatedQuantity > 0);
-    const unallocatedQuantity = allocations.reduce((sum, entry) => sum + entry.unallocatedQuantity, 0);
-    const excludedSimulationQuantity = daySales.filter((sale) => sale.source === "demo_simulation").reduce((sum, sale) => sum + sale.quantity, 0);
+    const { lunchQuantity, dinnerQuantity, unallocatedQuantity, allocationNeedsReview, hasIncompleteAllocation,
+      excludedSimulationQuantity } = salesByDay.get(timestamp) ?? emptyDay;
     for (const slot of serviceSlots) {
       const schedule = weekly.find((entry) => entry.weekday === currentDate.getUTCDay() && entry.slot === slot);
-      const session = sessions.find((entry) => entry.serviceDate.getTime() === timestamp && entry.slot === slot);
+      const session = sessionsBySlot.get(`${timestamp}:${slot}`);
       result.push({ serviceDate, slot, plannedOpen: session?.plannedOpen ?? Boolean(schedule),
         opensAt: schedule?.opensAt ?? null, closesAt: schedule?.closesAt ?? null, exceptional: Boolean(session),
         coverage: session?.coverage === "complete" && hasIncompleteAllocation
           ? "partial" : session?.coverage ?? "missing", actualCovers: session?.actualCovers ?? null,
         note: session?.note ?? "", revision: session?.revision ?? 0,
-        soldQuantity: allocations.reduce((sum, entry) => sum + (slot === "lunch" ? entry.lunchQuantity : entry.dinnerQuantity), 0),
+        soldQuantity: slot === "lunch" ? lunchQuantity : dinnerQuantity,
         unallocatedQuantity, allocationNeedsReview, excludedSimulationQuantity });
     }
   }
