@@ -66,12 +66,14 @@ it("indique un échec d’actualisation après une sauvegarde réussie", async (
 
 it("avertit avant le rechargement avec une transcription non enregistrée", () => {
   render();
-  state.effects[1]();
+  const cleanup = state.effects[1]() as () => void;
   const [eventName, warn] = vi.mocked(window.addEventListener).mock.calls[0];
   expect(eventName).toBe("beforeunload");
   const event = { preventDefault: vi.fn(), returnValue: undefined };
   (warn as (event: unknown) => void)(event);
   expect(event.preventDefault).toHaveBeenCalledOnce();
+  cleanup();
+  expect(window.removeEventListener).toHaveBeenCalledWith(eventName, warn);
 });
 
 it("verrouille le brouillon pendant une suppression différée", async () => {

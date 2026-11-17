@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useBeforeUnloadWarning } from "../../hooks/useBeforeUnloadWarning";
 import { useBlocker, useLocation } from "react-router-dom";
 import { formatLocalISODate } from "../../utils/date";
 import Button from "../common/Button";
@@ -42,12 +43,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
     if (window.confirm("La transcription non enregistrée sera perdue. Quitter cette page ?")) blocker.proceed();
     else blocker.reset();
   }, [blocker, saving, deleting]);
-  useEffect(() => {
-    if (!dirty && !saving && !deleting) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty, saving, deleting]);
+  useBeforeUnloadWarning(dirty || saving || deleting);
 
   useEffect(() => {
     if (hash === "#sales-ticket-title") heading.current?.focus();

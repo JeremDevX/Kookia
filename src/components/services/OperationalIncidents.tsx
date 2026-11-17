@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { getProducts } from "../../services/productService";
@@ -95,9 +96,7 @@ export default function OperationalIncidents({ date, slot, loadRecipes }: {
     return () => { cancelled = true; };
   }, [formOpen, referenceKind, referenceAttempt]);
   useEffect(() => {
-    if (!choices || !retryFocusPending.current) return;
-    retryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
+    if (!choices || !consumeFocusRestoreRequest(retryFocusPending)) return;
     const target = choices.error ? retryButton.current
       : referenceField.current?.disabled ? productField.current : referenceField.current;
     target?.focus();

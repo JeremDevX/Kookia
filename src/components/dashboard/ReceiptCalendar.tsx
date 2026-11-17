@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { Link, useSearchParams } from "react-router-dom";
 import { getOrders, type PurchaseOrder } from "../../services/orderService";
 import { formatLocalISODate, shiftDays, startOfWeek } from "../../utils/date";
@@ -28,9 +29,8 @@ export function OrderReceiptCalendar({ refreshKey }: { refreshKey: number }) {
     return () => { active = false; };
   }, [requestKey]);
   useEffect(() => {
-    if (loading || !restoreFocus.current) return;
-    restoreFocus.current = false;
-    if (document.activeElement === document.body) (result?.orders ? section.current : retryButton.current)?.focus();
+    if (loading || !consumeFocusRestoreRequest(restoreFocus)) return;
+    (result?.orders ? section.current : retryButton.current)?.focus();
   }, [loading, result]);
   return <section ref={section} tabIndex={-1} aria-label="Calendrier des réceptions">
     {loading ? <p role="status">Chargement des réceptions…</p> : result?.orders ? <ReceiptCalendar orders={result.orders} />

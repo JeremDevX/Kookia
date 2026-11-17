@@ -1,4 +1,5 @@
 import { ApiError } from "../../config/api";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { confirmInvoiceDuplicates } from "../../services/invoiceDuplicates";
 import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
@@ -57,9 +58,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
   };
 
   useEffect(() => {
-    if (loading || !retryFocusPending.current) return;
-    retryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
+    if (loading || !consumeFocusRestoreRequest(retryFocusPending)) return;
     if (invoiceLoadError) retryButtonRef.current?.focus();
     else if (eligibleInvoices.length > 0) invoiceSelectRef.current?.focus();
     else summaryRef.current?.focus();

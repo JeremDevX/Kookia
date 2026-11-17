@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { History } from "lucide-react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
@@ -38,9 +39,7 @@ export default function ProductMovementHistory({
   }, [focusedMovementId, movements, movementsLoaded]);
 
   useEffect(() => {
-    if (!movementsLoaded || !movementRetryFocusPending.current) return;
-    movementRetryFocusPending.current = false;
-    if (document.activeElement !== document.body || movementHeadingRef.current?.closest("[inert]")) return;
+    if (!movementsLoaded || !consumeFocusRestoreRequest(movementRetryFocusPending) || movementHeadingRef.current?.closest("[inert]")) return;
     if (historyError) movementRetryButtonRef.current?.focus();
     else if (focusedMovementId && focusedMovementRef.current) focusedMovementRef.current.focus();
     else movementHeadingRef.current?.focus();

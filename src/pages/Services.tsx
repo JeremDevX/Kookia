@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useBeforeUnloadWarning } from "../hooks/useBeforeUnloadWarning";
 import { Link, useBlocker, useSearchParams } from "react-router-dom";
 import type { ServiceSlot } from "../../shared/serviceCalendar";
 import ServiceMenuEditor from "../components/services/ServiceMenuEditor";
@@ -23,12 +24,7 @@ export default function Services() {
     if (window.confirm("Les modifications non enregistrées de la carte ou de la fiche seront perdues. Quitter cette page ?")) blocker.proceed();
     else blocker.reset();
   }, [blocker]);
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  useBeforeUnloadWarning(dirty);
   const select = (nextDate: string, nextSlot: ServiceSlot) => {
     setParams({ serviceDate: nextDate, serviceSlot: nextSlot });
   };

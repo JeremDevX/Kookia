@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { suggestRecipeFromIncomingProduct, type RecipeSuggestion } from "../../domain/recipes/recipeSuggestionPolicy";
 import { getPurchaseReceiptLineEvidence, type PurchaseReceiptLineEvidence } from "../../services/orderService";
 import type { Product } from "../../types";
@@ -27,9 +28,7 @@ export default function ReceiptRecipeSuggestion({ receiptLineId, products, ready
   }, [receiptLineId, attempt]);
 
   useEffect(() => {
-    if (!result || !restoreFocus.current) return;
-    restoreFocus.current = false;
-    if (document.activeElement !== document.body) return;
+    if (!result || !consumeFocusRestoreRequest(restoreFocus)) return;
     if ("error" in result) retryButton.current?.focus();
     else pageHeading.current?.focus();
   }, [result, pageHeading]);

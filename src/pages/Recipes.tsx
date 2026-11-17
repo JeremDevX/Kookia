@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useBeforeUnloadWarning } from "../hooks/useBeforeUnloadWarning";
 import { ChefHat } from "lucide-react";
 import { Link, useBlocker, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
@@ -63,12 +64,7 @@ export default function Recipes() {
     return () => window.clearTimeout(timer);
   }, [csvBlocker]);
 
-  useEffect(() => {
-    if (!csvOpen) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [csvOpen]);
+  useBeforeUnloadWarning(csvOpen);
 
   const edit = (recipe: Recipe | null, trigger: HTMLButtonElement, suggestion: RecipeSuggestion | null = null) => {
     editorOrigin.current = trigger;

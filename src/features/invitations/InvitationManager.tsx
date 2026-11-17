@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useBeforeUnloadWarning } from "../../hooks/useBeforeUnloadWarning";
 import Button from "../../components/common/Button";
 import { createInvitation, listInvitations, revokeInvitation, type Invitation, type InvitationRole } from "./invitationApi";
 
@@ -15,12 +16,7 @@ export default function InvitationManager({ onPendingLinkChange }: { onPendingLi
   const [busy, setBusy] = useState(false);
   const [retry, setRetry] = useState(0);
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!link) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [link]);
+  useBeforeUnloadWarning(link !== null);
   useEffect(() => {
     let active = true;
     listInvitations().then((items) => { if (active) setInvitations(items); }, () => { if (active) setError("Impossible de charger les invitations."); });

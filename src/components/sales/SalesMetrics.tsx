@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { formatDisplayDate as displayDate } from "../../utils/format";
 import Button from "../common/Button";
 import { Link } from "react-router-dom";
@@ -43,9 +44,7 @@ export default function SalesMetrics({ from, to }: Props) {
     return () => { active = false; };
   }, [from, to, periodTooLong, requestKey]);
   useEffect(() => {
-    if (loading || !retryFocusPending.current) return;
-    retryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
+    if (loading || !consumeFocusRestoreRequest(retryFocusPending)) return;
     if (error) retryButtonRef.current?.focus();
     else headingRef.current?.focus();
   }, [error, loading, metrics]);

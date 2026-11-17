@@ -1,4 +1,5 @@
 import { getOrderStep, orderStepLabel } from "../../../shared/orderQuantity.js";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { useEffect, useRef, useState } from "react";
 import Button from "../common/Button";
 import Modal from "../common/Modal";
@@ -39,9 +40,7 @@ export default function OrderGenerator({ recommendations, products, suppliers, c
   const total = recommendations.reduce((sum, item, index) => sum + (products.find((product) => product.id === item.productId)?.pricePerUnit ?? 0) * (Number(quantities[index]) || 0), 0);
 
   useEffect(() => {
-    if (catalogLoading || !retryFocusPending.current) return;
-    retryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
+    if (catalogLoading || !consumeFocusRestoreRequest(retryFocusPending)) return;
     if (catalogError) retryButtonRef.current?.focus();
     else formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
   }, [catalogError, catalogLoading, products]);

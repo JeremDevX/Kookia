@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import Button from "../common/Button";
 import { getServiceDays, saveServiceDay, type ServiceCoverage, type ServiceDay, type ServiceStatus } from "../../services/salesService";
 import { describeServiceCoverage } from "../../features/sales/salesPresentation";
@@ -48,9 +49,7 @@ export default function ServiceCalendar({ from, to, today, onChanged }: {
   }, [selectedDate, days]);
   useEffect(() => { setSelectedDate(to); }, [from, to]);
   useEffect(() => {
-    if (saving || !restoreSubmitFocus.current) return;
-    restoreSubmitFocus.current = false;
-    if (document.activeElement !== document.body) return;
+    if (saving || !consumeFocusRestoreRequest(restoreSubmitFocus)) return;
     if (error) retryButton.current?.focus();
     else saveButton.current?.focus();
   }, [error, saving]);

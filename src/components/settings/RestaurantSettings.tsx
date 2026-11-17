@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import Card from "../common/Card";
 import Button from "../common/Button";
 import Input from "../common/Input";
@@ -24,9 +25,7 @@ export default function RestaurantSettings({ onSaved }: { onSaved?: () => void }
     return () => { active = false; };
   }, [reload]);
   useEffect(() => {
-    if (loading || !retryFocusPending.current) return;
-    retryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
+    if (loading || !consumeFocusRestoreRequest(retryFocusPending)) return;
     if (error) retryButtonRef.current?.focus();
     else formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
   }, [error, loading, restaurant]);

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import Button from "../common/Button";
 import Modal from "../common/Modal";
 import InvoiceLinesEditor from "./InvoiceLinesEditor";
@@ -87,17 +88,13 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
   }, [historyRetryRevision, initialInvoice]);
 
   useEffect(() => {
-    if (loading || !historyRetryFocusPending.current) return;
-    historyRetryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
+    if (loading || !consumeFocusRestoreRequest(historyRetryFocusPending)) return;
     if (currentInvoiceLoadError) historyRetryButtonRef.current?.focus();
     else invoiceHistorySelectRef.current?.focus();
   }, [currentInvoiceLoadError, invoices, loading]);
 
   useEffect(() => {
-    if (catalogLoading || !catalogRetryFocusPending.current) return;
-    catalogRetryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
+    if (catalogLoading || !consumeFocusRestoreRequest(catalogRetryFocusPending)) return;
     if (catalogError) catalogRetryButtonRef.current?.focus();
     else if (firstProductSelectRef.current) firstProductSelectRef.current.focus();
     else invoiceHistorySelectRef.current?.focus();

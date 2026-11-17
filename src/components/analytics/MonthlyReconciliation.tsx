@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { formatDisplayDate as displayDate, formatQuantity } from "../../utils/format";
 import Button from "../common/Button";
 import { getImpactMonthlyPage, type ImpactMonthlyPeriod, type ImpactMonthlyReport } from "../../services/impactService";
@@ -81,9 +82,7 @@ export default function MonthlyImpactPanel({ from, to }: { from: string; to: str
     return () => { active = false; };
   }, [from, to, request]);
   useEffect(() => {
-    if (!settled || !focusPending.current) return;
-    focusPending.current = false;
-    if (!disclosureRef.current?.open || document.activeElement !== document.body) return;
+    if (!settled || !consumeFocusRestoreRequest(focusPending) || !disclosureRef.current?.open) return;
     if ("error" in settled) retryButtonRef.current?.focus();
     else headingRef.current?.focus();
   }, [settled]);

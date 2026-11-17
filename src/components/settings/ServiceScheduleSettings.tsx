@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useBeforeUnloadWarning } from "../../hooks/useBeforeUnloadWarning";
 import Button from "../common/Button";
 import { getWeeklyServices, saveWeeklyService } from "../../services/serviceCalendarService";
 import { serviceSlotLabels, type ServiceSlot, type WeeklyService } from "../../../shared/serviceCalendar";
@@ -24,12 +25,7 @@ export default function ServiceScheduleSettings({ onPendingChange }: { onPending
   const dirty = loaded && (open !== Boolean(current) || (open && (opensAt !== initialOpensAt || closesAt !== initialClosesAt)));
   useEffect(() => { onPendingChange?.(dirty || saving); }, [onPendingChange, dirty, saving]);
   useEffect(() => () => { onPendingChange?.(false); }, [onPendingChange]);
-  useEffect(() => {
-    if (!dirty && !saving) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty, saving]);
+  useBeforeUnloadWarning(dirty || saving);
   const load = useCallback(async () => {
     const request = ++requestId.current;
     setBusy(true); setError("");

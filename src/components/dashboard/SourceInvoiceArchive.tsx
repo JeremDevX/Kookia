@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import Button from "../common/Button";
 import { ApiError } from "../../config/api";
 import { createInvoiceDraftFromSource, getSourceInvoice, getSourceInvoices, type Invoice,
@@ -90,17 +91,13 @@ export default function SourceInvoiceArchive({ refreshKey, sourceId, onCreateMan
   }, []);
 
   useEffect(() => {
-    if (loading || !archiveRetryFocusPending.current) return;
-    archiveRetryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
+    if (loading || !consumeFocusRestoreRequest(archiveRetryFocusPending)) return;
     if (archiveError) archiveRetryButtonRef.current?.focus();
     else archiveHeadingRef.current?.focus();
   }, [archiveError, invoices, loading]);
 
   useEffect(() => {
-    if (detailLoading || !detailRetryFocusPending.current) return;
-    detailRetryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
+    if (detailLoading || !consumeFocusRestoreRequest(detailRetryFocusPending)) return;
     if (detailError) detailRetryButtonRef.current?.focus();
     else detailHeadingRef.current?.focus();
   }, [detailError, detailLoading, selected]);

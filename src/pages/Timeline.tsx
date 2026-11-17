@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { consumeFocusRestoreRequest } from "../utils/focusRestoration";
 import type { FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Button from "../components/common/Button";
@@ -128,9 +129,7 @@ export default function Timeline() {
   }, [asOf, from, requestKey, search, to]);
 
   useEffect(() => {
-    if (loading || !retryFocusPending.current) return;
-    retryFocusPending.current = false;
-    if (document.activeElement !== document.body) return;
+    if (loading || !consumeFocusRestoreRequest(retryFocusPending)) return;
     if (currentState?.error) retryButtonRef.current?.focus();
     else headingRef.current?.focus();
   }, [currentState, loading]);

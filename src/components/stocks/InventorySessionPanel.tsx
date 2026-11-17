@@ -1,4 +1,5 @@
 import { useEffect, useRef, type MouseEvent } from "react";
+import { useBeforeUnloadWarning } from "../../hooks/useBeforeUnloadWarning";
 import { useBlocker } from "react-router-dom";
 import Button from "../common/Button";
 import { useAuth } from "../../features/auth/context/AuthContext";
@@ -28,12 +29,7 @@ function AccountInventorySessionPanel({ search, category, onRefresh, onClearFilt
     else blocker.reset();
   }, [blocker]);
 
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  useBeforeUnloadWarning(dirty);
 
   useEffect(() => {
     if (state.status === "loading" || busy || !focusOrigin.current) return;
