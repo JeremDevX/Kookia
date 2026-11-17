@@ -2,18 +2,22 @@ import { useEffect, useState, type FormEvent } from "react";
 import { getPurchaseReconciliation, recordPurchaseCredit, type PurchaseCreditInput, type PurchaseReconciliation as Reconciliation } from "../../services/orderService";
 import { useAuth } from "../../features/auth/context/AuthContext";
 import { definitiveCreditError, duplicateCreditError, readPendingCredit, submitPendingCredit } from "../../features/orders/pendingCredit";
-import { getInventoryWorkspace } from "../../services/inventorySessionService";
 import Button from "../common/Button";
 import Input from "../common/Input";
 
-export default function PurchaseReconciliation(props: { orderId: string; disabled: boolean }) {
+export default function PurchaseReconciliation(props: { orderId: string; restaurantId: string; disabled: boolean }) {
   const { user } = useAuth();
-  return user ? <AccountPurchaseReconciliation key={user.id} {...props} userId={user.id} /> : null;
+  const [unfolded, setUnfolded] = useState(false);
+  return user ? <details onToggle={(event) => { if (event.currentTarget.open) setUnfolded(true); }}>
+    <summary>Chaîne commande → livraison → facture → avoir</summary>
+    {unfolded && <AccountPurchaseReconciliation key={`${user.id}:${props.restaurantId}`} {...props} userId={user.id} />}
+  </details> : null;
 }
 
-export function AccountPurchaseReconciliation({ orderId, disabled, userId }: { orderId: string; disabled: boolean; userId: string }) {
+export function AccountPurchaseReconciliation({ orderId, restaurantId, disabled, userId }: {
+  orderId: string; restaurantId: string; disabled: boolean; userId: string;
+}) {
   const [data, setData] = useState<Reconciliation | null>(null);
-  const [restaurantId, setRestaurantId] = useState("");
   const [pending, setPending] = useState<PurchaseCreditInput | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [error, setError] = useState("");
@@ -27,18 +31,17 @@ export function AccountPurchaseReconciliation({ orderId, disabled, userId }: { o
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   useEffect(() => {
     let active = true;
-    setData(null); setRestaurantId(""); setPending(null); setBlocked(false);
-    void getInventoryWorkspace().then(async (workspace) => {
-      const saved = readPendingCredit(userId, workspace.restaurantId, orderId);
+    setData(null); setPending(null); setBlocked(false);
+    void Promise.resolve().then(async () => {
       if (!active) return;
-      setRestaurantId(workspace.restaurantId); setPending(saved);
-      const value = await getPurchaseReconciliation(orderId, workspace.restaurantId);
+      setPending(readPendingCredit(userId, restaurantId, orderId));
+      const value = await getPurchaseReconciliation(orderId, restaurantId);
       if (active) { setData(value); setError(""); }
     }).catch((cause: unknown) => {
       if (active) { setError(cause instanceof Error ? cause.message : "Pièces indisponibles."); }
     });
     return () => { active = false; };
-  }, [orderId, reload, userId]);
+  }, [orderId, reload, restaurantId, userId]);
   const change = (update: () => void) => { update(); setOperationId(crypto.randomUUID()); };
   async function save(input: PurchaseCreditInput, resume: boolean) {
     if (!restaurantId || disabled || saving || blocked) return;
@@ -66,7 +69,7 @@ export function AccountPurchaseReconciliation({ orderId, disabled, userId }: { o
     event.preventDefault(); if (!data || pending) return;
     void save({ operationId, receiptId, reference, amount: Number(amount), reason }, false);
   }
-  return <details><summary>Chaîne commande → livraison → facture → avoir</summary>
+  return <>
     {error && <p role="alert">{error} {!data && <Button type="button" variant="outline" onClick={() => { setError(""); setReload((value) => value + 1); }}>Réessayer</Button>}</p>}
     {notice && <p role="status">{notice}</p>}
     {!data && !error && <p role="status">Chargement des pièces…</p>}
@@ -86,5 +89,5 @@ export function AccountPurchaseReconciliation({ orderId, disabled, userId }: { o
       <Input id={`credit-reason-${orderId}`} label="Motif et rapprochement" required maxLength={500} value={reason} disabled={disabled || saving} onChange={(event) => change(() => setReason(event.target.value))} />
       <Button type="submit" disabled={disabled || saving || !receiptId}>{saving ? "Enregistrement…" : "Confirmer l’avoir rapproché"}</Button>
     </form>}</>}
-  </details>;
+  </>;
 }

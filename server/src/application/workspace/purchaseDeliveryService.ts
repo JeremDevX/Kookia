@@ -21,8 +21,9 @@ export async function updatePurchaseDelivery(restaurantId: string, actorId: stri
     }
     const line = await tx.purchaseOrderLine.findUnique({ where: { restaurantId_id: { restaurantId, id: lineId } }, include: { order: true, receiptLines: { select: { receivedQuantity: true } } } });
     if (!line) throw new WorkspaceError(404, "NOT_FOUND", "Ligne de commande introuvable.");
+    const received = line.receiptLines.reduce((total, receipt) => total.plus(receipt.receivedQuantity), new Prisma.Decimal(0));
     if (!["validated", "partially_received"].includes(line.order.status) ||
-        line.receiptLines.reduce((total, receipt) => total + Number(receipt.receivedQuantity), 0) >= Number(line.quantity))
+        received.greaterThanOrEqualTo(line.quantity))
       throw new WorkspaceError(409, "ORDER_NOT_PENDING", "Seule une commande en attente peut être reportée.");
     const updated = await tx.purchaseOrderLine.updateMany({ where: { restaurantId, id: lineId, deliveryRevision: input.expectedRevision },
       data: { expectedDeliveryDate: input.expectedDeliveryDate ? new Date(`${input.expectedDeliveryDate}T00:00:00Z`) : null,

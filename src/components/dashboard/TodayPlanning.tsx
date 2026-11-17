@@ -5,7 +5,7 @@ import { serviceSlotLabels } from "../../../shared/serviceCalendar";
 import { dateExceeded, receiptEventHref } from "../../features/orders/receiptCalendar";
 import { serviceContextHref } from "../../features/services/serviceNavigation";
 import { serviceSchedule, todayReceipts } from "../../features/dashboard/todayPlanning";
-import { getOrders, type PurchaseOrder } from "../../services/orderService";
+import { getPlanningOrders, type PurchaseOrder } from "../../services/orderService";
 import { getServiceCalendar } from "../../services/serviceCalendarService";
 import { formatLocalISODate } from "../../utils/date";
 import Button from "../common/Button";
@@ -46,7 +46,7 @@ export default function TodayPlanning() {
   }, [today, serviceAttempt]);
   useEffect(() => {
     let active = true;
-    getOrders().then((result) => { if (active) setOrders(result); }, () => { if (active) setOrderError(true); });
+    getPlanningOrders(today).then((result) => { if (active) setOrders(result); }, () => { if (active) setOrderError(true); });
     return () => { active = false; };
   }, [today, orderAttempt]);
   const receipts = orders && todayReceipts(orders, today);

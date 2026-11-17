@@ -5,6 +5,7 @@ import Button from "../components/common/Button";
 import InvoiceModal from "../components/dashboard/InvoiceModal";
 import OrderGenerator from "../components/dashboard/OrderGenerator";
 import OrderHistory from "../components/dashboard/OrderHistory";
+import { OrderReceiptCalendar } from "../components/dashboard/ReceiptCalendar";
 import PurchaseSuggestions from "../components/dashboard/PurchaseSuggestions";
 import SourceInvoiceArchive from "../components/dashboard/SourceInvoiceArchive";
 import { useCart } from "../context/useCart";
@@ -108,7 +109,7 @@ export default function Orders() {
       setInvoiceRefresh((value) => value + 1);
       setSuggestionsRevision((value) => value + 1);
     }} />}
-    {view === "receipts" && <OrderHistory refreshKey={historyRevision} calendarOnly />}
+    {view === "receipts" && <OrderReceiptCalendar refreshKey={historyRevision} />}
 
     <p className="orders-help"><Link to="/stocks">Consulter les stocks</Link> · <Link to="/analytics">Voir le bilan des achats réceptionnés</Link></p>
 

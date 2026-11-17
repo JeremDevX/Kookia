@@ -140,6 +140,12 @@ L'historique ne propose une fiche imprimable que pour une commande opérationnel
 au statut `validated` ; les lignes sont regroupées par identifiant fournisseur
 depuis ces snapshots. Chaque impression reste locale, ne modifie aucun statut et
 n'appelle aucun service d'envoi ; les taxes et frais ne sont pas calculés.
+La vue Commandes lit `GET /api/workspace/orders?view=history` par pages de dix.
+Le serveur applique la recherche et les filtres. Un lien direct retrouve sa
+commande même hors page, y compris s’il vise une réception. Le rapprochement se
+charge à l’ouverture de son volet. Le Planning demande
+`view=planning&date=AAAA-MM-JJ` pour les livraisons du jour, les retards et les
+lignes sans date prévue.
 `StockCount` conserve séparément quantité comptée, quantité théorique observée,
 écart, unité, date et acteur ; un écart accepté ajoute un `StockMovement` lié.
 `PurchaseReceipt` et `PurchaseReceiptLine` rapprochent une commande, un brouillon
@@ -335,10 +341,11 @@ inconnus restent indisponibles ; aucune économie réalisée n'est calculée.
 L'export opérationnel conserve aussi les mouvements de pertes et leur provenance,
 exclut les simulations et ne constitue pas une attestation AGEC.
 
-Avec `monthly=true`, la même route renvoie une page de 12 mois et une
-`monthlyPagination` (`page`, `pageCount`, `totalMonths`, `hasOlder`, `hasNewer`).
-La première page montre les mois les plus récents de la période choisie ; les
-pages plus anciennes restent accessibles sans borne totale de période.
+L'ouverture du détail mensuel appelle `GET /api/workspace/impact/monthly` avec
+`from`, `to` et `page`. Chaque page lit au plus 12 mois, des plus récents aux
+plus anciens, indépendamment du résumé et de la période de comparaison.
+`monthlyPagination` indique `page`, `pageCount`, `totalMonths`, `hasOlder` et
+`hasNewer`. L’API accepte encore l’ancienne requête combinée avec `monthly=true`.
 
 Les panneaux distincts **Sorties estimées par recette** de **Bilan** et
 **Prévisions** appellent

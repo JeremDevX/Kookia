@@ -63,3 +63,75 @@ it("validates supplier constraints and keeps confirmed ETA and credit separate f
   expect(Number((await prisma.product.findUniqueOrThrow({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: owner.product.id } } })).currentStock)).toBe(owner.product.currentStock);
   expect(await prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId } })).toBe(0);
 });
+
+it("pagine les commandes filtrées, retrouve les liens directs et ne charge que les réceptions du jour dans le planning", async () => {
+  const owner = await account(), other = await account();
+  const orderIds = Array.from({ length: 13 }, () => randomUUID());
+  const lineIds = orderIds.map(() => randomUUID());
+  const supplierId = owner.product.supplierId;
+  const alternateSupplierId = randomUUID();
+  await owner.agent.post("/api/workspace/suppliers").send({ id: alternateSupplierId, name: "Autre fournisseur",
+    email: "second@example.com", phone: "" }).expect(201);
+  await prisma.purchaseOrder.createMany({ data: orderIds.map((id, index) => ({
+    id, restaurantId: owner.restaurantId, actorId: owner.actorId, operationId: randomUUID(),
+    createdAt: new Date(Date.UTC(2026, 9, 1, 0, index)),
+    status: index === 0 ? "received" : index === 1 ? "partially_received" : index === 2 ? "simulated" : "validated",
+  })) });
+  const day = (date: string) => new Date(`${date}T00:00:00.000Z`);
+  await prisma.purchaseOrderLine.createMany({ data: orderIds.map((orderId, index) => ({
+    id: lineIds[index], restaurantId: owner.restaurantId, orderId, productId: owner.product.id,
+    productName: index === 0 ? "Farine spéciale" : "Farine courante", supplierId, supplierName: "Fournisseur test",
+    unit: "kg", pricePerUnit: 1, quantity: 0.3, expectedDeliveryDate: index === 2 ? null
+      : day(index === 1 ? "2026-10-10" : index === 3 ? "2026-10-09" : "2026-10-11"),
+  })) });
+  await prisma.purchaseOrderLine.create({ data: { restaurantId: owner.restaurantId, orderId: orderIds[1],
+    productId: owner.product.id, productName: "Farine prochaine", supplierId: alternateSupplierId,
+    supplierName: "Autre fournisseur", unit: "kg", pricePerUnit: 1, quantity: 0.3, expectedDeliveryDate: day("2026-10-11") } });
+  async function createReceipt(index: number, deliveryDate: string, deliveryReference: string, receivedQuantity: number) {
+    return prisma.purchaseReceipt.create({ data: {
+      restaurantId: owner.restaurantId, actorId: owner.actorId, orderId: orderIds[index], supplierId, operationId: randomUUID(),
+      invoiceReference: "FACTURE TEST", invoiceReferenceNormalized: "facture test", deliveryReference, deliveryDate: day(deliveryDate),
+      invoiceDocumentId: randomUUID(), invoiceDocumentRevision: 1, requestSnapshot: {},
+      lines: { create: { orderLineId: lineIds[index], productId: owner.product.id, productName: "Farine spéciale",
+        invoiceLineIndex: 0, invoiceQuantity: 0.3, receivedQuantity, quantityDifference: 0,
+        unit: "kg", orderedQuantity: 0.3, orderedUnitPrice: 1, invoiceUnitPrice: 1 } },
+    } });
+  }
+  await createReceipt(0, "2026-10-09", "BL AVANT", 0.1);
+  const target = await createReceipt(0, "2026-10-10", "BL DU JOUR", 0.2);
+  await createReceipt(1, "2026-10-09", "BL PARTIEL", 0.1);
+
+  const historyPath = "/api/workspace/orders?view=history";
+  const first = (await owner.agent.get(`${historyPath}&receiptId=${target.id}`).expect(200)).body;
+  expect(first).toMatchObject({ restaurantId: owner.restaurantId, page: 0, pageCount: 2, total: 13, filteredCount: 13,
+    statusCounts: { validated: 10, partially_received: 1, received: 1, simulated: 1 },
+    suppliers: [{ id: alternateSupplierId, name: "Autre fournisseur" }, { id: supplierId, name: "Fournisseur test" }],
+    targetOrder: { id: orderIds[0] },
+  });
+  expect(first.targetOrder.receipts.map((receipt: { id: string }) => receipt.id)).toContain(target.id);
+  expect(first.orders.map((order: { id: string }) => order.id)).toEqual(orderIds.slice(3).reverse());
+  const second = (await owner.agent.get(`${historyPath}&page=1&receiptId=${target.id}`).expect(200)).body;
+  expect(second.orders.map((order: { id: string }) => order.id)).toEqual(orderIds.slice(0, 3).reverse());
+  expect(second.orders.find((order: { id: string }) => order.id === orderIds[1]).lines)
+    .toContainEqual(expect.objectContaining({ id: lineIds[1], remainingQuantity: 0.2 }));
+  expect(second.targetOrder).toBeNull();
+  const filtered = (await owner.agent.get(historyPath).query({ status: "received", supplierId,
+    query: "spéciale fournisseur", orderId: orderIds[1] }).expect(200)).body;
+  expect(filtered).toMatchObject({ filteredCount: 1, orders: [{ id: orderIds[0] }], targetOrder: { id: orderIds[1] } });
+  const pending = (await owner.agent.get(historyPath).query({ status: "pending", supplierId: alternateSupplierId,
+    query: "courante fournisseur" }).expect(200)).body;
+  expect(pending).toMatchObject({ filteredCount: 1, orders: [{ id: orderIds[1] }] });
+  expect((await owner.agent.get(historyPath).query({ query: "du jour facture" }).expect(200)).body.filteredCount).toBe(1);
+  expect((await owner.agent.get(historyPath).query({ query: "%" }).expect(200)).body.filteredCount).toBe(0);
+  expect((await other.agent.get(historyPath).query({ receiptId: target.id }).expect(200)).body.targetOrder).toBeNull();
+  await owner.agent.get(`${historyPath}&page=-1`).expect(400);
+  await owner.agent.get("/api/workspace/orders?view=planning&date=2026-02-30").expect(400);
+
+  const planning = (await owner.agent.get("/api/workspace/orders?view=planning&date=2026-10-10").expect(200)).body;
+  expect(planning).toMatchObject([
+    { id: orderIds[3], lines: [{ expectedDeliveryDate: "2026-10-09" }], receipts: [] },
+    { id: orderIds[2], lines: [{ expectedDeliveryDate: null }], receipts: [] },
+    { id: orderIds[1], lines: [{ expectedDeliveryDate: "2026-10-10", remainingQuantity: 0.2 }], receipts: [] },
+    { id: orderIds[0], lines: [], receipts: [{ id: target.id }] },
+  ]);
+});

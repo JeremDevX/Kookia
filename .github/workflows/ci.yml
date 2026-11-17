@@ -70,5 +70,5 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps --only-shell chromium
 
-      - name: Browser inventory recovery
+      - name: Browser tests
         run: npm run test:browser

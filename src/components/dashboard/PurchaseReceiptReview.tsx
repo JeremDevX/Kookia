@@ -6,6 +6,7 @@ import { getInvoices, type Invoice } from "../../services/invoiceService";
 import { reconcilePurchaseReceipt, type PurchaseOrder, type PurchaseReceiptInput } from "../../services/orderService";
 import { useToast } from "../../context/ToastContext";
 import { formatLocalISODate } from "../../utils/date";
+import { availableReceiptThousandths, receivedThousandths, receiptThousandths } from "../../features/orders/receiptQuantity";
 import "./PurchaseReceiptReview.css";
 
 interface PurchaseReceiptReviewProps { order: PurchaseOrder; orderStateCurrent: boolean; onSaved: () => void; onNotice: (notice: string) => void; onSavingChange: (saving: boolean) => void; loadReceiptInvoices?: (orderId: string) => Promise<Invoice[]>; }
@@ -78,15 +79,13 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
     selected.lines.forEach((invoiceLine, index) => {
       if (selected.source === "source_document" && invoiceLine.disposition !== "stock") return;
       const progress = selected.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index) ?? [];
-      const alreadyReceived = progress.reduce((sum, entry) => sum + entry.receivedQuantity, 0);
       const priorOrderLineId = progress.at(-1)?.orderLineId;
       const candidate = order.lines.find((orderLine) => orderLine.supplierId === selected.supplierId &&
         orderLine.productId === invoiceLine.productId && orderLine.unit === invoiceLine.unit &&
         (orderLine.remainingQuantity > 0 || orderLine.id === priorOrderLineId));
-      const invoiceRemainder = Math.max(0, invoiceLine.quantity - alreadyReceived);
-      const orderRemainder = candidate?.remainingQuantity ?? 0;
+      const available = availableReceiptThousandths(invoiceLine.quantity, receivedThousandths(progress), candidate?.remainingQuantity ?? 0);
       nextLines[index] = { orderLineId: candidate?.id ?? "",
-        receivedQuantity: String(Math.max(0, Math.min(invoiceRemainder, orderRemainder))), priceDifferenceReason: "", expiresAt: "" };
+        receivedQuantity: String(available / 1_000), priceDifferenceReason: "", expiresAt: "" };
     });
     setLines(nextLines);
   };
@@ -108,12 +107,11 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
     includedLines.length > 0 && includedLines.every(({ line, index }) => {
       const draft = lines[index];
       const orderLine = order.lines.find((candidate) => candidate.id === draft?.orderLineId);
-      const quantity = Number(draft?.receivedQuantity ?? "");
-      const progress = invoice.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index)
-        .reduce((sum, entry) => sum + entry.receivedQuantity, 0) ?? 0;
+      const quantity = receiptThousandths(Number(draft?.receivedQuantity ?? ""));
+      const progress = receivedThousandths(invoice.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index) ?? []);
       return !!draft?.orderLineId && !!orderLine && orderLine.supplierId === invoice.supplierId &&
         orderLine.productId === line.productId && orderLine.unit === line.unit && validQuantity(draft.receivedQuantity) &&
-        quantity <= Math.min(Math.max(0, line.quantity - progress), orderLine.remainingQuantity) &&
+        quantity <= availableReceiptThousandths(line.quantity, progress, orderLine.remainingQuantity) &&
         (equalPrice(line.unitPrice, orderLine.pricePerUnit) || draft.priceDifferenceReason.trim().length > 0);
     }) && new Set(includedLines.map(({ index }) => lines[index]?.orderLineId)).size === includedLines.length &&
     includedLines.some(({ index }) => Number(lines[index]?.receivedQuantity ?? 0) > 0) &&
@@ -207,8 +205,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
             (orderLine.remainingQuantity > 0 || orderLine.id === draft?.orderLineId));
           const matched = order.lines.find((orderLine) => orderLine.id === draft?.orderLineId);
           const priceDiffers = !!matched && !equalPrice(line.unitPrice, matched.pricePerUnit);
-          const progress = invoice.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index)
-            .reduce((sum, entry) => sum + entry.receivedQuantity, 0) ?? 0;
+          const progress = receivedThousandths(invoice.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index) ?? []) / 1_000;
           return <fieldset key={index} className="purchase-receipt-line"
             disabled={saving || loading || !!invoiceLoadError || !orderStateCurrent || invoice.status === "received"}>
             <legend>{line.sourceName ? `Pièce revue : ${line.sourceName}` : `Ligne de facture ${index + 1}`}</legend>

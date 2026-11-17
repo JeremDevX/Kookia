@@ -20,6 +20,32 @@ export interface PurchaseOrder {
 }
 
 export const getOrders = () => apiRequest<PurchaseOrder[]>("/workspace/orders");
+export const getPendingOrders = () => apiRequest<PurchaseOrder[]>("/workspace/orders?view=pending");
+export const getPlanningOrders = (date: string) => apiRequest<PurchaseOrder[]>(`/workspace/orders?${new URLSearchParams({ view: "planning", date })}`);
+
+export type ReceiptStatusFilter = "all" | "pending" | "received";
+export interface PurchaseOrderHistory {
+  restaurantId: string;
+  orders: PurchaseOrder[];
+  targetOrder: PurchaseOrder | null;
+  page: number;
+  pageCount: number;
+  total: number;
+  filteredCount: number;
+  statusCounts: Record<string, number>;
+  suppliers: { id: string; name: string }[];
+}
+
+export const getOrderHistory = (input: {
+  page: number; query: string; status: ReceiptStatusFilter; supplierId: string; orderId?: string; receiptId?: string;
+}, signal: AbortSignal) => {
+  const { page, query, status, supplierId, orderId, receiptId } = input;
+  const params = new URLSearchParams({ view: "history", page: String(page), query: query.trim(), status });
+  if (supplierId) params.set("supplierId", supplierId);
+  if (orderId && orderId.length <= 100) params.set("orderId", orderId);
+  if (receiptId && receiptId.length <= 100) params.set("receiptId", receiptId);
+  return apiRequest<PurchaseOrderHistory>(`/workspace/orders?${params}`, { signal });
+};
 export const getPurchaseReceiptLineEvidence = (lineId: string) => apiRequest<PurchaseReceiptLineEvidence>(
   `/workspace/orders/receipt-lines/${encodeURIComponent(lineId)}`);
 export const validateOrder = (operationId: string, lines: OrderLineInput[]) => apiRequest<PurchaseOrder>("/workspace/orders", {

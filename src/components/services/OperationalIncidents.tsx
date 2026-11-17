@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { getProducts } from "../../services/productService";
-import { getOrders } from "../../services/orderService";
+import { getPendingOrders } from "../../services/orderService";
 import { getIncidentLots, getIncidents, recordIncident, resolveIncident, type OperationalIncident } from "../../services/serviceOperationsService";
 import type { IncidentInput } from "../../../shared/serviceOperations";
 import type { ServiceSlot } from "../../../shared/serviceCalendar";
@@ -17,7 +17,7 @@ type IncidentReference = { id: string; productId: string; label: string };
 
 async function loadReferences(kind: "delivery_delay" | "lot_discarded"): Promise<IncidentReference[]> {
   if (kind === "delivery_delay") {
-    const orders = await getOrders();
+    const orders = await getPendingOrders();
     return orders.flatMap(order => order.lines).filter(line => line.remainingQuantity > 0).map(line => ({
       id: line.id, productId: line.productId,
       label: `${line.productName} · ${line.supplierName} · ${line.expectedDeliveryDate ?? "date attendue inconnue"}`,

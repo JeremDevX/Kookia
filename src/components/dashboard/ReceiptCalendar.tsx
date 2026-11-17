@@ -1,5 +1,6 @@
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import type { PurchaseOrder } from "../../services/orderService";
+import { getOrders, type PurchaseOrder } from "../../services/orderService";
 import { formatLocalISODate, shiftDays, startOfWeek } from "../../utils/date";
 import { dateExceeded, isCalendarAnchor, receiptEventHref, receiptEvents, shiftMonth } from "../../features/orders/receiptCalendar";
 import Button from "../common/Button";
@@ -9,6 +10,37 @@ const displayDate = (date: string, options: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat("fr-FR", { ...options, timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
 const displayItems = (items: Array<{ name: string; quantity: number; unit: string }>) => items.length
   ? items.map((item) => `${item.name} · ${item.quantity.toLocaleString("fr-FR")} ${item.unit}`).join(" ; ") : "Aucun produit reçu";
+
+export function OrderReceiptCalendar({ refreshKey }: { refreshKey: number }) {
+  const [attempt, setAttempt] = useState(0);
+  const requestKey = `${refreshKey}:${attempt}`;
+  const [result, setResult] = useState<{ key: string; orders: PurchaseOrder[] | null }>();
+  const retryButton = useRef<HTMLButtonElement>(null);
+  const section = useRef<HTMLElement>(null);
+  const restoreFocus = useRef(false);
+  const loading = result?.key !== requestKey;
+  useEffect(() => {
+    let active = true;
+    void getOrders().then(
+      (orders) => { if (active) setResult({ key: requestKey, orders }); },
+      () => { if (active) setResult({ key: requestKey, orders: null }); },
+    );
+    return () => { active = false; };
+  }, [requestKey]);
+  useEffect(() => {
+    if (loading || !restoreFocus.current) return;
+    restoreFocus.current = false;
+    if (document.activeElement === document.body) (result?.orders ? section.current : retryButton.current)?.focus();
+  }, [loading, result]);
+  return <section ref={section} tabIndex={-1} aria-label="Calendrier des réceptions">
+    {loading ? <p role="status">Chargement des réceptions…</p> : result?.orders ? <ReceiptCalendar orders={result.orders} />
+      : <div role="alert"><p>Calendrier des réceptions indisponible.</p>
+        <Button ref={retryButton} type="button" variant="outline" onClick={() => {
+          restoreFocus.current = document.activeElement === retryButton.current;
+          setAttempt((value) => value + 1);
+        }}>Réessayer</Button></div>}
+  </section>;
+}
 
 export default function ReceiptCalendar({ orders }: { orders: PurchaseOrder[] }) {
   const [params, setParams] = useSearchParams();

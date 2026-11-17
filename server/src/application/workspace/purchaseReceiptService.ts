@@ -13,13 +13,9 @@ import { rejectPriorSourceCredit, sourceInvoiceDocumentSchema, validateSourceRev
 type ReceiptDatabase = PrismaClient | Prisma.TransactionClient;
 type ReceiptLineWithMovement = PurchaseReceiptLineRecord & { movement: { id: string } | null };
 type ReceiptWithLines = PurchaseReceiptRecord & { lines: ReceiptLineWithMovement[] };
-type PurchaseOrderWithReceipts = Prisma.PurchaseOrderGetPayload<{ include: {
-  lines: true; receipts: { include: { lines: { include: { movement: { select: { id: true } } } } } };
-} }>;
-
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
 
-function purchaseReceiptDto(receipt: ReceiptWithLines) {
+export function purchaseReceiptDto(receipt: ReceiptWithLines) {
   return { id: receipt.id, orderId: receipt.orderId, supplierId: receipt.supplierId,
     invoiceReference: receipt.invoiceReference, invoiceDocumentId: receipt.invoiceDocumentId,
     invoiceDocumentRevision: receipt.invoiceDocumentRevision, deliveryReference: receipt.deliveryReference,
@@ -218,14 +214,6 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
   });
 }
 
-export async function listPurchaseOrders(restaurantId: string, db: ReceiptDatabase = prisma) {
-  const orders = await db.purchaseOrder.findMany({ where: { restaurantId }, include: {
-    lines: true, receipts: { include: { lines: { include: { movement: { select: { id: true } } } } },
-      orderBy: { createdAt: "desc" } },
-  }, orderBy: { createdAt: "desc" } });
-  return orders.map(orderDtoWithReceipts);
-}
-
 export async function getPurchaseReceiptLineEvidence(restaurantId: string, lineId: string, db: ReceiptDatabase = prisma): Promise<PurchaseReceiptLineEvidence> {
   const line = await db.purchaseReceiptLine.findFirst({ where: { restaurantId, id: lineId }, include: {
     receipt: { select: { deliveryReference: true, deliveryDate: true, simulated: true, provenance: true } },
@@ -241,19 +229,4 @@ export async function getPurchaseReceiptLineEvidence(restaurantId: string, lineI
   return { receiptLineId: line.id, productId: line.productId, productName: line.productName,
     deliveryReference: line.receipt.deliveryReference, deliveryDate: line.receipt.deliveryDate.toISOString().slice(0, 10),
     receivedQuantity: Number(line.receivedQuantity), unit: line.unit };
-}
-
-function orderDtoWithReceipts(order: PurchaseOrderWithReceipts) {
-  const receivedByLine = new Map<string, Prisma.Decimal>();
-  for (const receipt of order.receipts) for (const line of receipt.lines)
-    receivedByLine.set(line.orderLineId, (receivedByLine.get(line.orderLineId) ?? new Prisma.Decimal(0)).plus(line.receivedQuantity));
-  return { id: order.id, status: order.status, createdAt: order.createdAt.toISOString(),
-    lines: order.lines.map((line) => {
-      const receivedQuantity = receivedByLine.get(line.id) ?? new Prisma.Decimal(0);
-      return { id: line.id, productId: line.productId, productName: line.productName, supplierId: line.supplierId,
-        supplierName: line.supplierName, expectedDeliveryDate: line.expectedDeliveryDate?.toISOString().slice(0, 10) ?? null, deliveryRevision: line.deliveryRevision, deliveryNote: line.deliveryNote, quantity: Number(line.quantity), receivedQuantity: Number(receivedQuantity),
-        remainingQuantity: Math.max(0, Number(line.quantity) - Number(receivedQuantity)),
-        unit: line.unit, pricePerUnit: Number(line.pricePerUnit) };
-    }), receipts: order.receipts.map(purchaseReceiptDto),
-  };
 }
