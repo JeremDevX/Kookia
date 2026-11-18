@@ -9,6 +9,7 @@ export interface CalendarService {
   opensAt: string | null; closesAt: string | null; exceptional: boolean;
   coverage: SalesCoverage; actualCovers: number | null; note: string; revision: number;
   soldQuantity: number; unallocatedQuantity: number; allocationNeedsReview: boolean; excludedSimulationQuantity: number;
+  simulated?: boolean; simulatedSoldQuantity?: number;
 }
 export interface SaleAllocation {
   saleId: string; lunchQuantity: number; dinnerQuantity: number; unallocatedQuantity: number;

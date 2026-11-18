@@ -7,7 +7,7 @@ import { formatLocalISODate } from "../../utils/date";
 import Button from "../common/Button";
 interface Lot { id: string; productId: string; source: string; receivedAt: string | null; expiresAt: string | null; remainingQuantity: number; unitCost: number | null; allocations: Array<{ stockMovementId: string; quantity: number }> }
 interface Lots { lots: Lot[]; unagedStock: Array<{ productId: string; productName: string; quantity: number; unit: string }> }
-interface Waste { id: string; kind: string; quantity: number; unit: string; serviceDate: string; serviceSlot: string | null; note: string; stockMovementId: string | null; cost: number | null }
+interface Waste { id: string; kind: string; quantity: number; unit: string; serviceDate: string; serviceSlot: string | null; note: string; stockMovementId: string | null; cost: number | null; simulated: boolean }
 const labels: Record<string, string> = { raw: "Matière brute", preparation: "Déchet de préparation", unsold: "Invendu", plate_return: "Retour d’assiette" };
 export default function StockLotsAndWaste({ products, catalogAvailable, onSaved }: {
   products: Product[];
@@ -92,7 +92,7 @@ export default function StockLotsAndWaste({ products, catalogAvailable, onSaved 
         {Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select></label>
       {kind !== "raw" && <label>Préparation liée<select required={kind !== "preparation"} value={productionId} onChange={(event) => setProductionId(event.target.value)}>
-        <option value="">Matière avant production</option>{productions.map((row) => <option key={row.id} value={row.id}>{row.date.slice(0, 10)} · {row.recipeName} · {row.portions} portions</option>)}
+        <option value="">Matière avant production</option>{productions.map((row) => <option key={row.id} value={row.id}>{row.date.slice(0, 10)} · {row.recipeName} · {row.portions} portions{row.simulated ? " · Hors bilan" : ""}</option>)}
       </select></label>}
       {!cooked && <><label>Produit<select required value={productId} onChange={(event) => setProductId(event.target.value)}>
         <option value="">Choisir</option>{products.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
@@ -108,6 +108,6 @@ export default function StockLotsAndWaste({ products, catalogAvailable, onSaved 
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     <h3>Déclarations récentes</h3>
-    <ul>{waste.slice(0, 20).map((row) => <li key={row.id}>{row.serviceDate} · {row.serviceSlot === "lunch" ? "midi" : row.serviceSlot === "dinner" ? "soir" : "non ventilé"} · {labels[row.kind]} : {row.quantity} {row.unit} · {row.stockMovementId ? "matière déduite" : "sans nouvelle déduction"} · {row.cost == null ? "non valorisé" : `${row.cost.toFixed(2)} € (coût des lots)`} {row.note}</li>)}</ul>
+    <ul>{waste.slice(0, 20).map((row) => <li key={row.id}>{row.serviceDate} · {row.serviceSlot === "lunch" ? "midi" : row.serviceSlot === "dinner" ? "soir" : "non ventilé"} · {labels[row.kind]} : {row.quantity} {row.unit}{row.simulated ? " · Hors bilan" : ""} · {row.stockMovementId ? "matière déduite" : "sans nouvelle déduction"} · {row.cost == null ? "non valorisé" : `${row.cost.toFixed(2)} € (coût des lots)`} {row.note}</li>)}</ul>
   </section>;
 }

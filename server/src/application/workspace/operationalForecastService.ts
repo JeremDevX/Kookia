@@ -15,6 +15,7 @@ import { readWeatherCache } from "./weatherStorage.js";
 import { projectServiceWeather } from "./weatherPolicy.js";
 import { applyForecastWeather, forecastWeatherAdjustment } from "./forecastWeatherPolicy.js";
 import { forecastWeatherNotice } from "../../../../shared/forecastWeather.js";
+import { simulationActor } from "./operationProvenance.js";
 
 type Database = PrismaClient | Prisma.TransactionClient;
 const date = (value: string) => new Date(`${value}T00:00:00Z`);
@@ -50,6 +51,7 @@ export async function getOperationalForecasts(restaurantId: string, fromDate: st
   ]) : [null, null];
   const menusByService = new Map<string, (typeof menus)[number]>();
   for (const menu of menus) {
+    if (menu.actorId === simulationActor) continue;
     const day = iso(menu.serviceDate), key = `${day}:${menu.slot}`;
     if (!menusByService.has(key) && (day > asOfDate || menu.createdAt < knownBefore)) menusByService.set(key, menu);
   }
@@ -70,6 +72,7 @@ export async function getOperationalForecasts(restaurantId: string, fromDate: st
   const mixTotals = new Map(serviceSlots.map(slot => [slot, { covers: 0, services: 0, portions: new Map<string, number>() }]));
   let excludedServices = 0;
   for (const session of sessions) {
+    if (session.actorId === simulationActor) { excludedServices++; continue; }
     const day = iso(session.serviceDate), slot = session.slot as ServiceSlot, key = `${day}:${slot}`;
     if (day > asOfDate) { futureSessions.set(key, session); continue; }
     if (restaurant.mode !== "operational" || !session.plannedOpen || session.coverage !== "complete" || session.updatedAt >= knownBefore || invalidDays.has(day)) { excludedServices++; continue; }

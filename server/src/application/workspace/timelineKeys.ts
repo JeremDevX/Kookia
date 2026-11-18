@@ -30,6 +30,8 @@ export function listTimelineKeys(db: Prisma.TransactionClient, restaurantId: str
     Prisma.sql`${field} BETWEEN ${from}::date AND ${to}::date AND ${known} <= ${knownAt}`;
   const sources = [
     { source: "stock", table: Prisma.sql`"StockMovement"`, rowId, at: timed, range: createdInRange },
+    { source: "waste", table: Prisma.sql`"WasteRecord"`, rowId, at: dated(Prisma.sql`"serviceDate"`),
+      range: Prisma.sql`${calendarRange(Prisma.sql`"serviceDate"`)} AND "stockMovementId" IS NULL` },
     { source: "production", table: Prisma.sql`"Production"`, rowId, at: dated(Prisma.sql`date`),
       range: calendarRange(Prisma.sql`date`) },
     { source: "sale", table: Prisma.sql`"DailySale"`, rowId, at: dated(Prisma.sql`"serviceDate"`),

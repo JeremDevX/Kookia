@@ -5,6 +5,7 @@ import { formatParisDate } from "../../shared/parisDate";
 import { offsetDate } from "./calendar";
 import { recipeById } from "./catalog";
 import { continuationStart, parseCheckpointFile } from "./continuation";
+import { dailyOperations } from "./dailyOperations";
 import { dailyStock } from "./dailyStock";
 import { dailySales } from "./documents";
 import type { Checkpoint, Scenario } from "./model";
@@ -15,6 +16,7 @@ interface SyncConfig {
   token: string;
   stateFile: string;
   includeStock: boolean;
+  includeOperations: boolean;
   openingFile?: string;
   startDate: string;
   variationFrom?: string;
@@ -38,10 +40,14 @@ export function readDailySyncConfig(env: NodeJS.ProcessEnv): SyncConfig {
   if (stockStateFile && (!isAbsolute(stockStateFile) || resolve(stockStateFile) === resolve(stateFile))) {
     throw new Error("WORKSHOP_STOCK_STATE_FILE doit être un chemin absolu distinct de WORKSHOP_STATE_FILE.");
   }
-  const activeStateFile = stockStateFile ?? stateFile;
+  const stateFiles = [stateFile, stockStateFile].filter(file => file !== undefined);
+  const operationsStateFile = env.WORKSHOP_OPERATIONS_STATE_FILE || undefined;
+  if (operationsStateFile && (!isAbsolute(operationsStateFile) || stateFiles.some(file => resolve(file) === resolve(operationsStateFile)))) {
+    throw new Error("WORKSHOP_OPERATIONS_STATE_FILE doit être un chemin absolu distinct des fichiers de reprise des ventes et des stocks.");
+  }
+  if (operationsStateFile) stateFiles.push(operationsStateFile);
   const openingFile = env.WORKSHOP_OPENING_CHECKPOINT_FILE || undefined;
-  if (openingFile && (!isAbsolute(openingFile) || resolve(openingFile) === resolve(stateFile)
-    || resolve(openingFile) === resolve(activeStateFile))) {
+  if (openingFile && (!isAbsolute(openingFile) || stateFiles.some(file => resolve(file) === resolve(openingFile)))) {
     throw new Error("WORKSHOP_OPENING_CHECKPOINT_FILE doit être un chemin absolu distinct des fichiers de reprise.");
   }
   const startDate = z.iso.date().safeParse(env.WORKSHOP_START_DATE);
@@ -53,7 +59,8 @@ export function readDailySyncConfig(env: NodeJS.ProcessEnv): SyncConfig {
     throw new Error("WORKSHOP_REQUEST_TIMEOUT_MS doit être compris entre 1000 et 120000.");
   }
 
-  return { apiOrigin, token, stateFile: activeStateFile, includeStock: Boolean(stockStateFile), openingFile,
+  return { apiOrigin, token, stateFile: operationsStateFile ?? stockStateFile ?? stateFile,
+    includeStock: Boolean(stockStateFile), includeOperations: Boolean(operationsStateFile), openingFile,
     startDate: startDate.data, variationFrom: variationFrom.data, timeoutMs };
 }
 
@@ -77,7 +84,8 @@ async function saveCheckpoint(file: string, checkpoint: Checkpoint) {
   }
 }
 
-const acknowledgmentSchema = z.object({ date: z.iso.date(), replayed: z.boolean(), stockApplied: z.literal(true).optional() });
+const acknowledgmentSchema = z.object({ date: z.iso.date(), replayed: z.boolean(),
+  stockApplied: z.literal(true).optional(), operationsApplied: z.literal(true).optional() });
 
 async function sendDay(config: SyncConfig, scenario: Scenario) {
   const day = scenario.days[0];
@@ -85,7 +93,12 @@ async function sendDay(config: SyncConfig, scenario: Scenario) {
     name: recipeById(recipeId).name.normalize("NFC"),
     quantity: sold,
   }));
-  const payload = { open: day.open, sales, ...(config.includeStock ? { stock: dailyStock(scenario) } : {}) };
+  const payload = {
+    open: day.open,
+    sales,
+    ...(config.includeStock ? { stock: dailyStock(scenario) } : {}),
+    ...(config.includeOperations ? { operations: dailyOperations(scenario) } : {}),
+  };
   const endpoint = new URL(`/api/integrations/workshop/days/${day.date}`, config.apiOrigin);
   let response: Response;
   try {
@@ -106,7 +119,8 @@ async function sendDay(config: SyncConfig, scenario: Scenario) {
 
   const acknowledgment = acknowledgmentSchema.safeParse(await response.json().catch(() => null));
   if (!acknowledgment.success || acknowledgment.data.date !== day.date
-    || (config.includeStock && acknowledgment.data.stockApplied !== true)) {
+    || (config.includeStock && acknowledgment.data.stockApplied !== true)
+    || (config.includeOperations && acknowledgment.data.operationsApplied !== true)) {
     throw new Error(`Kookia n’a pas confirmé la réception du ${day.date}.`);
   }
   return acknowledgment.data.replayed;

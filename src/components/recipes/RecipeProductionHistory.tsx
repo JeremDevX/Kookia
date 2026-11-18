@@ -93,9 +93,11 @@ export default function RecipeProductionHistory({ recipes, productions, today, l
       <h2>Productions enregistrées</h2>
       {productions.map((item) => {
         const visibleNote = productionNoteForDisplay(item);
+        const label = item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé"
+          : item.simulated ? "Production simulée" : "Production réalisée — stock déduit";
         return <Card key={item.id}>
           <strong>{item.recipeName}</strong>
-          <p>{item.portions} portions · {productionDate(item.date)} · {item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé" : "Production réalisée — stock déduit"}</p>
+          <p>{item.portions} portions · {productionDate(item.date)} · {label}{item.simulated ? " · Hors bilan" : ""}</p>
           {item.recipeVersion && <p>Version recette {item.recipeVersion.version} · rendement {item.recipeVersion.yieldPortions} portions · effet {item.recipeVersion.effectiveFrom ? productionDate(item.recipeVersion.effectiveFrom) : "date historique inconnue"}</p>}
           {visibleNote && <p>{visibleNote}</p>}
         </Card>;

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
+import { simulationActor } from "./operationProvenance.js";
 import { qualifiedAllocation, serviceSlots, type CalendarService, type ServiceSlot, type SalesCoverage } from "../../../../shared/serviceCalendar.js";
 
 const date = (value: string) => new Date(`${value}T00:00:00Z`);
@@ -40,17 +41,19 @@ export async function getServiceCalendar(restaurantId: string, from: string, to:
   ]);
   const sessionsBySlot = new Map(sessions.map((session) => [`${session.serviceDate.getTime()}:${session.slot}`, session]));
   const emptyDay = { lunchQuantity: 0, dinnerQuantity: 0, unallocatedQuantity: 0, allocationNeedsReview: false,
-    hasIncompleteAllocation: false, excludedSimulationQuantity: 0 };
+    hasIncompleteAllocation: false, excludedSimulationQuantity: 0, simulatedLunchQuantity: 0, simulatedDinnerQuantity: 0 };
   const salesByDay = new Map<number, typeof emptyDay>();
   for (const sale of sales) {
     const timestamp = sale.serviceDate.getTime();
     const summary = salesByDay.get(timestamp) ?? { ...emptyDay };
     salesByDay.set(timestamp, summary);
+    const allocation = qualifiedAllocation(sale, sale.serviceAllocation);
     if (sale.source === "demo_simulation") {
       summary.excludedSimulationQuantity += sale.quantity;
+      summary.simulatedLunchQuantity += allocation.lunchQuantity;
+      summary.simulatedDinnerQuantity += allocation.dinnerQuantity;
       continue;
     }
-    const allocation = qualifiedAllocation(sale, sale.serviceAllocation);
     summary.lunchQuantity += allocation.lunchQuantity;
     summary.dinnerQuantity += allocation.dinnerQuantity;
     summary.unallocatedQuantity += allocation.unallocatedQuantity;
@@ -62,7 +65,7 @@ export async function getServiceCalendar(restaurantId: string, from: string, to:
   for (let timestamp = range.gte.getTime(); timestamp <= end; timestamp += 86_400_000) {
     const currentDate = new Date(timestamp), serviceDate = currentDate.toISOString().slice(0, 10);
     const { lunchQuantity, dinnerQuantity, unallocatedQuantity, allocationNeedsReview, hasIncompleteAllocation,
-      excludedSimulationQuantity } = salesByDay.get(timestamp) ?? emptyDay;
+      excludedSimulationQuantity, simulatedLunchQuantity, simulatedDinnerQuantity } = salesByDay.get(timestamp) ?? emptyDay;
     for (const slot of serviceSlots) {
       const schedule = weekly.find((entry) => entry.weekday === currentDate.getUTCDay() && entry.slot === slot);
       const session = sessionsBySlot.get(`${timestamp}:${slot}`);
@@ -72,6 +75,8 @@ export async function getServiceCalendar(restaurantId: string, from: string, to:
           ? "partial" : session?.coverage ?? "missing", actualCovers: session?.actualCovers ?? null,
         note: session?.note ?? "", revision: session?.revision ?? 0,
         soldQuantity: slot === "lunch" ? lunchQuantity : dinnerQuantity,
+        ...(session?.actorId === simulationActor && { simulated: true,
+          simulatedSoldQuantity: slot === "lunch" ? simulatedLunchQuantity : simulatedDinnerQuantity }),
         unallocatedQuantity, allocationNeedsReview, excludedSimulationQuantity });
     }
   }
@@ -98,7 +103,7 @@ export async function saveCalendarService(restaurantId: string, actorId: string,
     }
     const { expectedRevision: _revision, ...values } = input;
     void _revision;
-    const data = { ...values, serviceDate: date(input.serviceDate), actorId };
+    const data = { ...values, serviceDate: date(input.serviceDate), actorId: current?.actorId === simulationActor ? simulationActor : actorId };
     return current ? tx.restaurantServiceSession.update({ where, data: { ...data, revision: { increment: 1 } } }) :
       tx.restaurantServiceSession.create({ data: { ...data, restaurantId } });
   });

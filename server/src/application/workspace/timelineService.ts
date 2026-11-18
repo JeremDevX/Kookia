@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { decisionEvent, documentEvent, mappingEvent, productionEvent, purchaseOrderEvent, purchaseReceiptEvent,
-  saleEvent, serviceEvent, stockEvent, versionEvent, type TimelineDocumentRow, type TimelineEvent } from "./timelineEventMappers.js";
+  saleEvent, serviceEvent, stockEvent, versionEvent, wasteEvent, type TimelineDocumentRow, type TimelineEvent } from "./timelineEventMappers.js";
 import { listTimelineKeys, type TimelineCursor, type TimelineKey } from "./timelineKeys.js";
 import { stockReceiptProvenance } from "./stockMovementProvenance.js";
 
@@ -68,10 +68,12 @@ async function readEvents(db: Prisma.TransactionClient, restaurantId: string, ke
     return sourceIds ? fetch(sourceIds) : [];
   };
   const whereIds = (sourceIds: string[]) => ({ restaurantId, id: { in: sourceIds } });
-  const [documents, movements, productions, sales, serviceDays, recipeVersions, mappings, decisions, orders, receipts] =
+  const [documents, movements, wastes, productions, sales, serviceDays, recipeVersions, mappings, decisions, orders, receipts] =
     await Promise.all([
       find("document", (ids) => listDocumentEvents(db, restaurantId, ids)),
       find("stock", (ids) => db.stockMovement.findMany({ where: whereIds(ids), include: { purchaseReceiptLine: stockReceiptProvenance } })),
+      find("waste", (ids) => db.wasteRecord.findMany({ where: whereIds(ids), include: { product: { select: { name: true } },
+        production: { select: { recipeName: true, actorId: true } } } })),
       find("production", (ids) => db.production.findMany({ where: whereIds(ids),
         include: { recipeVersion: { select: { version: true, effectiveFrom: true } } } })),
       find("sale", (ids) => db.dailySale.findMany({ where: whereIds(ids),
@@ -89,6 +91,7 @@ async function readEvents(db: Prisma.TransactionClient, restaurantId: string, ke
   const events: TimelineEvent[] = [
     ...documents.map((row) => documentEvent(row, workspaceMode)),
     ...movements.map((row) => stockEvent(row, workspaceMode)),
+    ...wastes.map((row) => wasteEvent(row, workspaceMode)),
     ...productions.map((row) => productionEvent(row, workspaceMode)),
     ...sales.map((row) => saleEvent(row, workspaceMode)),
     ...serviceDays.map((row) => serviceEvent(row, workspaceMode)),

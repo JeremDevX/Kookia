@@ -9,6 +9,7 @@ import { qualifiedAllocation, type ServiceSlot } from "../../../../shared/servic
 import type { MenuEntry, SheetInput } from "../../../../shared/serviceOperations.js";
 import type { ServiceSheet } from "../../../../shared/serviceSheet.js";
 import { weatherContextForDecision } from "./serviceWeatherService.js";
+import { simulationActor } from "./operationProvenance.js";
 
 type Database = PrismaClient | Prisma.TransactionClient;
 type StoredSheet = Omit<ServiceSheet, "serviceDate" | "slot" | "revision" | "facts" | "factsChangedSinceClosure">;
@@ -22,9 +23,10 @@ const empty = (): StoredSheet => ({ state: "draft", planned: [], outcomes: [], s
 async function evidence(restaurantId: string, serviceDate: string, slot: ServiceSlot, menuEntries: MenuEntry[], menuRevision: number, db: Database): Promise<SheetEvidence> {
   const serviceDay = date(serviceDate);
   const [productions, sales, wastes, session, recipes, restaurant, refunds] = await Promise.all([
-    db.production.findMany({ where: { restaurantId, date: serviceDay, kind: { in: ["production", "refusal"] } }, orderBy: { id: "asc" } }),
+    db.production.findMany({ where: { restaurantId, date: serviceDay, actorId: { not: simulationActor }, kind: { in: ["production", "refusal"] } }, orderBy: { id: "asc" } }),
     db.dailySale.findMany({ where: { restaurantId, serviceDate: serviceDay, source: { not: "demo_simulation" } }, include: { serviceAllocation: true } }),
-    db.wasteRecord.findMany({ where: { restaurantId, serviceDate: serviceDay }, orderBy: { id: "asc" } }),
+    db.wasteRecord.findMany({ where: { restaurantId, serviceDate: serviceDay, actorId: { not: simulationActor },
+      OR: [{ production: null }, { production: { actorId: { not: simulationActor } } }] }, orderBy: { id: "asc" } }),
     db.restaurantServiceSession.findUnique({ where: { restaurantId_serviceDate_slot: { restaurantId, serviceDate: serviceDay, slot } } }),
     db.recipe.findMany({ where: { restaurantId }, select: { id: true, name: true } }),
     db.restaurant.findUniqueOrThrow({ where: { id: restaurantId }, select: { mode: true } }),

@@ -5,11 +5,14 @@ import { lockReceiptWorkspace } from "./receiptStock.js";
 import { WorkspaceError } from "./workspaceError.js";
 import type { WorkshopStockInput } from "./workshopStockInput.js";
 import { applyWorkshopStock } from "./workshopStockService.js";
+import type { WorkshopOperationsInput } from "./workshopOperationsInput.js";
+import { applyWorkshopOperations } from "./workshopOperationsService.js";
 
 interface WorkshopServiceDay {
   open: boolean;
   sales: Array<{ name: string; normalizedName: string; quantity: number }>;
   stock?: WorkshopStockInput;
+  operations?: WorkshopOperationsInput;
 }
 
 const actorId = "workshop-import:v1";
@@ -21,7 +24,8 @@ export async function importWorkshopDay(restaurantId: string, date: string, day:
   const kind = `workshop-day:v1:${date}`;
   const sales = [...day.sales].sort((a, b) => a.normalizedName < b.normalizedName ? -1 : 1);
   const digest = createHash("sha256").update(JSON.stringify({ open: day.open, sales })).digest("hex");
-  const result = { date, saleCount: sales.length, ...(day.stock && { stockApplied: true }) };
+  const result = { date, saleCount: sales.length, ...(day.stock && { stockApplied: true }),
+    ...(day.operations && { operationsApplied: true }) };
 
   return prisma.$transaction(async (tx) => {
     const mode = await lockReceiptWorkspace(tx, restaurantId);
@@ -32,6 +36,7 @@ export async function importWorkshopDay(restaurantId: string, date: string, day:
     const prior = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind } }, select: { data: true } });
     if (prior?.data === digest) {
       if (day.stock) await applyWorkshopStock(tx, restaurantId, date, day.stock);
+      if (day.operations) await applyWorkshopOperations(tx, restaurantId, date, day.operations);
       return { ...result, replayed: true };
     }
     const existing = await tx.serviceDay.findUnique({
@@ -73,7 +78,8 @@ export async function importWorkshopDay(restaurantId: string, date: string, day:
       } });
     }
     if (day.stock) await applyWorkshopStock(tx, restaurantId, date, day.stock);
+    if (day.operations) await applyWorkshopOperations(tx, restaurantId, date, day.operations);
     await tx.workspaceDocument.create({ data: { restaurantId, kind, data: digest } });
     return { ...result, replayed: false };
-  });
+  }, { timeout: 20_000 });
 }

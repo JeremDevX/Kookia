@@ -222,4 +222,40 @@ describe("daily workshop sync", () => {
       dossier: "2026-11-20-1",
     });
   });
+
+  it("replays operations through a separate cursor and sends stock only when configured", async () => {
+    const openingFile = join(directory, "opening.json");
+    const opening = generateScenario(defaultScenarioOptions("2026-11-10", 7)).checkpoint;
+    const env = { ...fixtureEnv(), WORKSHOP_OPENING_CHECKPOINT_FILE: openingFile, WORKSHOP_START_DATE: "2026-11-17" };
+    await writeFile(openingFile, JSON.stringify(opening));
+    const stockStateFile = join(directory, "stock.json");
+    const oldCheckpoint = JSON.stringify(generateScenario(defaultScenarioOptions("2026-11-17", 1), opening).checkpoint);
+    await writeFile(env.WORKSHOP_STATE_FILE, oldCheckpoint);
+    await writeFile(stockStateFile, oldCheckpoint);
+    const history = readDailySyncConfig({ ...env, WORKSHOP_OPERATIONS_STATE_FILE: join(directory, "history.json") });
+    const daily = readDailySyncConfig({ ...env, WORKSHOP_STOCK_STATE_FILE: stockStateFile,
+      WORKSHOP_OPERATIONS_STATE_FILE: join(directory, "operations.json") });
+    const date = "2026-11-17";
+    const now = new Date("2026-11-18T03:00:00+01:00");
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ date, replayed: true, stockApplied: true }))
+      .mockResolvedValueOnce(Response.json({ date, replayed: true, stockApplied: true, operationsApplied: true }))
+      .mockResolvedValueOnce(Response.json({ date, replayed: true, operationsApplied: true }));
+    vi.stubGlobal("fetch", send);
+
+    await expect(syncDaily(daily, now)).rejects.toThrow("n’a pas confirmé la réception du 2026-11-17");
+    await expect(readFile(daily.stateFile, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(syncDaily(daily, now)).resolves.toEqual({ imported: 0, replayed: 1 });
+    await expect(syncDaily(history, now)).resolves.toEqual({ imported: 0, replayed: 1 });
+    const { stock, ...withOperations } = JSON.parse(String(send.mock.calls[1][1]?.body));
+    expect(stock).toHaveLength(13);
+    expect(withOperations.operations.services[0].items.length).toBeGreaterThan(0);
+    expect(JSON.parse(String(send.mock.calls[2][1]?.body))).toEqual(withOperations);
+    expect(send.mock.calls[0][1]?.body).toBe(send.mock.calls[1][1]?.body);
+    for (const path of [env.WORKSHOP_STATE_FILE, stockStateFile, daily.stateFile, history.stateFile]) {
+      expect(await readFile(path, "utf8")).toBe(oldCheckpoint);
+    }
+    expect(() => readDailySyncConfig({ ...env, WORKSHOP_STOCK_STATE_FILE: stockStateFile,
+      WORKSHOP_OPERATIONS_STATE_FILE: stockStateFile })).toThrow("distinct des fichiers de reprise des ventes et des stocks");
+  });
 });

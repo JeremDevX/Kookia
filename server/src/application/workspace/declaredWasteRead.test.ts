@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 import { summarizeDeclaredWaste, type WasteReadRow } from "./declaredWasteRead.js";
+import { simulationActor } from "./operationProvenance.js";
 const fixture = (id: string, kind: string, unit: string, serviceDate: string, actorId = "owner"): WasteReadRow => ({
   id, restaurantId: "fixture", operationId: id, actorId, serviceDate: new Date(serviceDate), serviceSlot: "lunch",
   kind, avoidability: "avoidable", productId: null, product: null, productionId: "production", production: { recipeName: "Dish", actorId },
@@ -19,5 +20,10 @@ describe("typed waste reporting", () => {
     const rows = [fixture("recorded", "unsold", "portion", "2026-01-01"), fixture("simulated", "unsold", "portion", "2026-01-01", "restaurant-simulation:v1")];
     expect(summarizeDeclaredWaste(rows, "2026-01-01", "2026-01-31", "operational")).toMatchObject({ excludedSimulationCount: 1, records: [{ id: "recorded" }] });
     expect(summarizeDeclaredWaste(rows, "2026-01-01", "2026-01-31", "demo")).toMatchObject({ records: [], totals: [], excludedSimulationCount: 2 });
+  });
+  it("excludes an imported raw loss even when no current stock lot can be linked", () => {
+    const imported = { ...fixture("archived", "raw", "kg", "2026-01-01", simulationActor), productionId: null, production: null };
+    expect(summarizeDeclaredWaste([imported], "2026-01-01", "2026-01-31", "operational"))
+      .toEqual({ records: [], totals: [], excludedSimulationCount: 1 });
   });
 });

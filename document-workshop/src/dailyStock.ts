@@ -14,7 +14,7 @@ interface DailyStockLot {
   addition: StockAddition;
 }
 
-const milli = (amount: number) => Math.round(amount * 1000);
+export const toMilliUnits = (amount: number) => Math.round(amount * 1000);
 
 export function dailyStock(scenario: Scenario) {
   const day = scenario.days[0];
@@ -22,7 +22,7 @@ export function dailyStock(scenario: Scenario) {
   const lossByReference = new Map<string, number>();
   for (const waste of day.waste) {
     if (!waste.stockEffect || !waste.lotId) continue;
-    lossByReference.set(waste.lotId, (lossByReference.get(waste.lotId) ?? 0) + milli(waste.quantity));
+    lossByReference.set(waste.lotId, (lossByReference.get(waste.lotId) ?? 0) + toMilliUnits(waste.quantity));
   }
 
   const lotsByProduct = new Map(scenario.catalog.ingredients.map(product => [product.id, [] as DailyStockLot[]]));
@@ -34,9 +34,9 @@ export function dailyStock(scenario: Scenario) {
       receivedOn: lot.receivedOn,
       expiresOn: lot.expiresOn,
       unitCostCents: lot.unitCost,
-      openingMilli: addition === null ? milli(lot.quantity) : 0,
-      addedMilli: addition === null ? 0 : milli(lot.quantity),
-      closingMilli: milli(closingByReference.get(lot.id)?.quantity ?? 0),
+      openingMilli: addition === null ? toMilliUnits(lot.quantity) : 0,
+      addedMilli: addition === null ? 0 : toMilliUnits(lot.quantity),
+      closingMilli: toMilliUnits(closingByReference.get(lot.id)?.quantity ?? 0),
       lossMilli: lossByReference.get(lot.id) ?? 0,
       addition,
     });

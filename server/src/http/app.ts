@@ -43,6 +43,7 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
     : new Set([env.APP_ORIGIN]);
   app.use("/api/workspace/inventory-session", express.json({ limit: "2mb", type: "application/json" }));
   app.use("/api/workspace/sales/imports", express.json({ limit: "512kb", type: "application/json" }));
+  app.use("/api/integrations/workshop/days", express.json({ limit: "128kb", type: "application/json" }));
   app.use(express.json({ limit: "16kb", type: "application/json" }));
   app.use(cookieParser());
   app.use((req, res, next) => {

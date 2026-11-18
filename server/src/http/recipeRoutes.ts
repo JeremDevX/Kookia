@@ -7,6 +7,7 @@ import { createRecipe, getRecipes, recordProduction, updateRecipe } from "../app
 import { createRecipeCandidate, decideRecipeCandidate, getRecipeCandidates, updateRecipeCandidate } from "../application/workspace/recipeCandidateService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { workspaceContext as context } from "./workspaceContext.js";
+import { simulationActor } from "../application/workspace/operationProvenance.js";
 
 export const recipeRoutes = Router();
 
@@ -78,12 +79,14 @@ const productionSchema = z.object({
     : data.recipeId !== undefined && data.expectedRecipeRevision !== undefined)
   .refine((data) => data.date <= formatParisDate());
 recipeRoutes.get("/productions", async (_req, res) => {
-  res.json(await prisma.production.findMany({ where: { restaurantId: context(res).restaurantId },
+  const rows = await prisma.production.findMany({ where: { restaurantId: context(res).restaurantId },
     include: { recipeVersion: { select: { version: true, effectiveFrom: true, yieldPortions: true } } },
-    orderBy: { date: "desc" } }));
+    orderBy: { date: "desc" } });
+  res.json(rows.map(row => ({ ...row, simulated: row.actorId === simulationActor })));
 });
 recipeRoutes.post("/productions", async (req, res) => {
   const input = productionSchema.parse(req.body);
   const { restaurantId, actorId } = context(res);
-  res.status(201).json(await recordProduction(restaurantId, actorId, input));
+  const row = await recordProduction(restaurantId, actorId, input);
+  res.status(201).json({ ...row, simulated: row.actorId === simulationActor });
 });

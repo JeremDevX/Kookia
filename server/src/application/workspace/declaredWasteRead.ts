@@ -29,7 +29,7 @@ export function summarizeDeclaredWaste(rows: WasteReadRow[], from: string, to: s
   for (const row of rows) {
     const serviceDate = row.serviceDate.toISOString().slice(0, 10);
     if (serviceDate < from || serviceDate > to) continue;
-    if (mode === "demo" || row.production?.actorId === simulationActor ||
+    if (mode === "demo" || row.actorId === simulationActor || row.production?.actorId === simulationActor ||
       (row.stockMovement && isSimulationStockMovement(row.stockMovement, mode))) { summary.excludedSimulationCount++; continue; }
     const knownCost = wasteLotCost(row);
     summary.records.push({ id: row.id, operationId: row.operationId, serviceDate, serviceSlot: row.serviceSlot, kind: row.kind,

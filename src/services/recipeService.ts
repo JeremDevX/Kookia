@@ -24,7 +24,7 @@ export interface ProductionInput {
   prepTime: number; notes: string; date: string; serviceSlot?: string | null; kind: "production" | "record" | "refusal";
 }
 export interface Production extends Omit<ProductionInput, "expectedRecipeRevision"> {
-  id: string; createdAt: string; recipeVersionId: string | null;
+  id: string; createdAt: string; recipeVersionId: string | null; simulated: boolean;
   recipeVersion: { version: number; effectiveFrom: string | null; yieldPortions: number } | null;
 }
 export const getProductions = (signal?: AbortSignal) => apiRequest<Production[]>("/workspace/productions", { signal });

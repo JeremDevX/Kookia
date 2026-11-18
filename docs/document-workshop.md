@@ -30,8 +30,11 @@ de l’espace de test désigné. Les ventes portent la provenance
 `demo_simulation`. Les quantités suivent les portions servies du CSV quotidien.
 Le mode de synchronisation avec stock rapproche les lots d’ouverture et ajoute
 les entrées et sorties simulées jusqu’au solde de clôture. Les mouvements portent
-la provenance de l’atelier. Les bons de livraison, fiches de production, factures
-et relevés restent disponibles dans le dossier documentaire.
+la provenance de l’atelier. Le mode avec opérations ajoute les commandes,
+réceptions et factures simulées, les préparations, refus et pertes, ainsi que les
+services et la ventilation des ventes. Les cartes sont renseignées lorsqu’une
+version datée de chaque recette existe. Les PDF restent dans le dossier
+documentaire.
 
 Variables du processus de synchronisation, à renseigner côté serveur :
 
@@ -42,6 +45,7 @@ Variables du processus de synchronisation, à renseigner côté serveur :
 | `WORKSHOP_START_DATE` | Première date à transmettre, au format `AAAA-MM-JJ`. Choisir une date libre dans l’espace de test. |
 | `WORKSHOP_STATE_FILE` | Chemin absolu du fichier de reprise, hors du répertoire de publication. Son dossier doit exister. |
 | `WORKSHOP_STOCK_STATE_FILE` | Facultatif. Chemin absolu distinct du fichier de reprise des ventes. Active l’envoi conjoint des ventes et des stocks. Le premier envoi compare le stock Kookia au stock d’ouverture du dossier. |
+| `WORKSHOP_OPERATIONS_STATE_FILE` | Facultatif. Chemin absolu distinct des autres fichiers de reprise. Active l’envoi des opérations en plus des ventes et, si configuré, du stock. |
 | `WORKSHOP_OPENING_CHECKPOINT_FILE` | Facultatif. Chemin absolu du `stock-reprise.json` du dossier précédent. Sa clôture doit précéder d’un jour la première date à transmettre. Conserver ce fichier pour les reprises suivantes. |
 | `WORKSHOP_VARIATION_FROM` | Facultatif. À partir de cette date de service (`AAAA-MM-JJ`), activer la météo simulée avec terrasse et les imprévus variés du scénario. Conserver cette date d’activation pour les rejeux. |
 | `WORKSHOP_REQUEST_TIMEOUT_MS` | Facultatif. Délai maximal par envoi, 30 000 ms par défaut. |
@@ -72,6 +76,13 @@ réutiliser le fichier d’ouverture et la première date du dossier avec un nou
 `WORKSHOP_STOCK_STATE_FILE`. Les ventes identiques sont reconnues. Les écritures
 de stock se font dans les lots rapprochés et s’arrêtent en cas d’écart d’ouverture.
 Un mouvement simulé met à jour le stock et n’atteste pas d’une réception fournisseur.
+
+Un rattrapage des opérations peut rejouer des journées déjà vendues depuis le
+point d’ouverture d’origine. Les réceptions et les productions enregistrent le
+détail simulé. Le stock est ajusté par son propre rapprochement, une fois par
+jour. Pour enrichir une période antérieure à la clôture initiale du stock,
+transmettre les opérations et les ventes avec une reprise distincte et sans
+fichier de reprise stock. La validation des décisions reste dans Kookia.
 
 ## Préparer un dossier
 

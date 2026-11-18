@@ -33,6 +33,7 @@ export interface TimelineDocumentRow {
 }
 
 type StockMovementRow = Prisma.StockMovementGetPayload<{ include: { purchaseReceiptLine: typeof stockReceiptProvenance } }>;
+type WasteRow = Prisma.WasteRecordGetPayload<{ include: { product: { select: { name: true } }; production: { select: { recipeName: true; actorId: true } } } }>;
 type RecipeVersionRow = RecipeVersion;
 type ProductionRow = Prisma.ProductionGetPayload<{ include: { recipeVersion: {
   select: { version: true; effectiveFrom: true };
@@ -58,6 +59,16 @@ const quantity = (value: Prisma.Decimal) => Number(value).toLocaleString("fr-FR"
 const safeText = (value: string, max = 120) => [...value]
   .filter((character) => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127)
   .join("").trim().slice(0, max);
+
+export function wasteEvent(row: WasteRow, workspaceMode: "operational" | "demo"): TimelineEvent {
+  const labels: Record<string, string> = { raw: "Perte de matière brute", preparation: "Perte de préparation",
+    unsold: "Invendu", plate_return: "Retour d’assiette" };
+  const item = row.product?.name ?? row.production?.recipeName;
+  return { id: `waste:${row.id}`, kind: "loss", effectiveAt: isoDate(row.serviceDate), knownAt: row.createdAt.toISOString(),
+    recordedAt: row.createdAt.toISOString(), label: labels[row.kind] ?? "Perte déclarée",
+    detail: [item && safeText(item), `${quantity(row.quantity)} ${safeText(row.unit, 24)}`, safeText(row.note)].filter(Boolean).join(" · "),
+    provenance: workspaceMode === "demo" || row.actorId === simulationActor || row.production?.actorId === simulationActor ? "simulation" : "recorded" };
+}
 
 export function documentEvent(row: TimelineDocumentRow, workspaceMode: "operational" | "demo"): TimelineEvent {
   const archivedSource = row.kind.startsWith("source-invoice:");

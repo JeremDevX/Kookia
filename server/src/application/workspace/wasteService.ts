@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { applyStockMovement } from "./stockWrite.js";
 import { WorkspaceError } from "./workspaceError.js";
+import { simulationActor } from "./operationProvenance.js";
 
 export interface WasteInput {
   operationId: string; serviceDate: string; serviceSlot?: string | null;
@@ -15,9 +16,10 @@ export function wasteDeductsStock(kind: WasteInput["kind"], productionId?: strin
 }
 const dto = (row: Awaited<ReturnType<typeof prisma.wasteRecord.findMany>>[number]) => ({
   ...row, quantity: Number(row.quantity), serviceDate: row.serviceDate.toISOString().slice(0, 10), createdAt: row.createdAt.toISOString(),
+  simulated: row.actorId === simulationActor,
 });
 export async function listWaste(restaurantId: string) {
-  const records = await prisma.wasteRecord.findMany({ where: { restaurantId }, orderBy: { createdAt: "desc" }, take: 500 });
+  const records = await prisma.wasteRecord.findMany({ where: { restaurantId }, orderBy: [{ serviceDate: "desc" }, { createdAt: "desc" }, { id: "asc" }], take: 500 });
   const allocations = await prisma.stockLotAllocation.findMany({ where: { restaurantId, stockMovementId: { in: records.flatMap((row) => row.stockMovementId ? [row.stockMovementId] : []) } }, include: { lot: true } });
   return records.map((row) => {
     const sources = allocations.filter((entry) => entry.stockMovementId === row.stockMovementId);

@@ -2,12 +2,12 @@ import { ingredientById, money, number, suppliers } from "./catalog";
 import { section } from "./documentModel";
 import type { WriteDocument } from "./documentModel";
 import type { Scenario } from "./model";
-import { receivedLot } from "./purchasing";
+import { purchaseReferences, receivedLot } from "./purchasing";
 
 export function purchaseDocuments(scenario: Scenario, add: WriteDocument) {
   for (const purchase of scenario.purchases) {
     const supplier = suppliers.find(s => s.id === purchase.supplierId)!;
-    const suffix = purchase.id.slice(3), invoice = `FA-${suffix}`, delivery = `BL-${suffix}`;
+    const { suffix, invoiceReference: invoice, deliveryReference: delivery } = purchaseReferences(purchase.id);
     const rows = purchase.lines.map(l => {
       const p = ingredientById(l.productId);
       return [p.name, `${number(l.ordered)} ${p.unit}`, money(l.unitPrice), money(Math.round(l.ordered * l.unitPrice))];

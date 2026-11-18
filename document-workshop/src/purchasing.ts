@@ -61,6 +61,11 @@ export function planTomorrow(date: string, lots: Lot[], purchases: Purchase[], o
     planPurchase(date, tomorrow, supplier.id, lots, purchases, options);
   }
 }
+export function purchaseReferences(orderReference: string) {
+  const suffix = orderReference.slice(3);
+  return { suffix, deliveryReference: `BL-${suffix}`, invoiceReference: `FA-${suffix}` };
+}
+
 export function receivedLot(purchaseId: string, line: Purchase["lines"][number], receivedOn: string): Lot {
   return {
     id: `LOT-${purchaseId}-${line.productId}`, productId: line.productId, receivedOn,
