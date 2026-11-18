@@ -5,14 +5,16 @@ import { formatParisDate } from "../../shared/parisDate";
 import { offsetDate } from "./calendar";
 import { recipeById } from "./catalog";
 import { continuationStart, parseCheckpointFile } from "./continuation";
+import { dailyStock } from "./dailyStock";
 import { dailySales } from "./documents";
-import type { Checkpoint, Day } from "./model";
+import type { Checkpoint, Scenario } from "./model";
 import { defaultScenarioOptions, generateScenario } from "./scenario";
 
 interface SyncConfig {
   apiOrigin: URL;
   token: string;
   stateFile: string;
+  includeStock: boolean;
   openingFile?: string;
   startDate: string;
   timeoutMs: number;
@@ -31,9 +33,15 @@ export function readDailySyncConfig(env: NodeJS.ProcessEnv): SyncConfig {
   if (!/^[A-Za-z0-9._~+/=-]{32,256}$/.test(token)) throw new Error("WORKSHOP_IMPORT_TOKEN est manquant ou invalide.");
   const stateFile = env.WORKSHOP_STATE_FILE ?? "";
   if (!isAbsolute(stateFile)) throw new Error("WORKSHOP_STATE_FILE doit être le chemin absolu du fichier de reprise.");
+  const stockStateFile = env.WORKSHOP_STOCK_STATE_FILE || undefined;
+  if (stockStateFile && (!isAbsolute(stockStateFile) || resolve(stockStateFile) === resolve(stateFile))) {
+    throw new Error("WORKSHOP_STOCK_STATE_FILE doit être un chemin absolu distinct de WORKSHOP_STATE_FILE.");
+  }
+  const activeStateFile = stockStateFile ?? stateFile;
   const openingFile = env.WORKSHOP_OPENING_CHECKPOINT_FILE || undefined;
-  if (openingFile && (!isAbsolute(openingFile) || resolve(openingFile) === resolve(stateFile))) {
-    throw new Error("WORKSHOP_OPENING_CHECKPOINT_FILE doit être un chemin absolu distinct de WORKSHOP_STATE_FILE.");
+  if (openingFile && (!isAbsolute(openingFile) || resolve(openingFile) === resolve(stateFile)
+    || resolve(openingFile) === resolve(activeStateFile))) {
+    throw new Error("WORKSHOP_OPENING_CHECKPOINT_FILE doit être un chemin absolu distinct des fichiers de reprise.");
   }
   const startDate = z.iso.date().safeParse(env.WORKSHOP_START_DATE);
   if (!startDate.success) throw new Error("WORKSHOP_START_DATE doit être une date valide au format AAAA-MM-JJ.");
@@ -42,7 +50,7 @@ export function readDailySyncConfig(env: NodeJS.ProcessEnv): SyncConfig {
     throw new Error("WORKSHOP_REQUEST_TIMEOUT_MS doit être compris entre 1000 et 120000.");
   }
 
-  return { apiOrigin, token, stateFile, openingFile, startDate: startDate.data, timeoutMs };
+  return { apiOrigin, token, stateFile: activeStateFile, includeStock: Boolean(stockStateFile), openingFile, startDate: startDate.data, timeoutMs };
 }
 
 async function readCheckpoint(file: string) {
@@ -65,20 +73,22 @@ async function saveCheckpoint(file: string, checkpoint: Checkpoint) {
   }
 }
 
-const acknowledgmentSchema = z.object({ date: z.iso.date(), replayed: z.boolean() });
+const acknowledgmentSchema = z.object({ date: z.iso.date(), replayed: z.boolean(), stockApplied: z.literal(true).optional() });
 
-async function sendDay(config: SyncConfig, day: Day) {
+async function sendDay(config: SyncConfig, scenario: Scenario) {
+  const day = scenario.days[0];
   const sales = Array.from(dailySales(day).articles, ([recipeId, { sold }]) => ({
     name: recipeById(recipeId).name.normalize("NFC"),
     quantity: sold,
   }));
+  const payload = { open: day.open, sales, ...(config.includeStock ? { stock: dailyStock(scenario) } : {}) };
   const endpoint = new URL(`/api/integrations/workshop/days/${day.date}`, config.apiOrigin);
   let response: Response;
   try {
     response = await fetch(endpoint, {
       method: "PUT",
       headers: { authorization: `Bearer ${config.token}`, "content-type": "application/json" },
-      body: JSON.stringify({ open: day.open, sales }),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(config.timeoutMs),
       redirect: "error",
     });
@@ -91,7 +101,8 @@ async function sendDay(config: SyncConfig, day: Day) {
   }
 
   const acknowledgment = acknowledgmentSchema.safeParse(await response.json().catch(() => null));
-  if (!acknowledgment.success || acknowledgment.data.date !== day.date) {
+  if (!acknowledgment.success || acknowledgment.data.date !== day.date
+    || (config.includeStock && acknowledgment.data.stockApplied !== true)) {
     throw new Error(`Kookia n’a pas confirmé la réception du ${day.date}.`);
   }
   return acknowledgment.data.replayed;
@@ -118,7 +129,7 @@ export async function syncDaily(config: SyncConfig, now = new Date()) {
   let replayed = 0;
   while (date <= through) {
     const scenario = generateScenario({ ...profile, start: date }, checkpoint);
-    const alreadyReceived = await sendDay(config, scenario.days[0]);
+    const alreadyReceived = await sendDay(config, scenario);
     await saveCheckpoint(config.stateFile, scenario.checkpoint);
     checkpoint = scenario.checkpoint;
     date = continuationStart(checkpoint);

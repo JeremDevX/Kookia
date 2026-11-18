@@ -35,6 +35,18 @@ async function workspace(mode: "demo" | "operational", id: string = randomUUID()
   return agent;
 }
 
+function workshopAppFor(targetId?: string) {
+  env.WORKSHOP_IMPORT_TOKEN = targetId ? token : undefined;
+  env.WORKSHOP_IMPORT_RESTAURANT_ID = targetId;
+  env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE = targetId ? "true" : undefined;
+  try { return createApp(); }
+  finally {
+    env.WORKSHOP_IMPORT_TOKEN = token;
+    env.WORKSHOP_IMPORT_RESTAURANT_ID = restaurantId;
+    env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE = undefined;
+  }
+}
+
 it("imports an atomic and replayable simulated day into the configured demo workspace only", async () => {
   const owner = await workspace("operational", restaurantId);
   const otherOwner = await workspace("demo");
@@ -101,15 +113,7 @@ it("admits only the opted-in operational test workspace and preserves its existi
     operationId: randomUUID(), saleItemId: item.body.id, serviceDate: legacyDate, quantity: 5,
   }).expect(201);
 
-  env.WORKSHOP_IMPORT_RESTAURANT_ID = targetId;
-  env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE = "true";
-  const optedInApp = (() => {
-    try { return createApp(); }
-    finally {
-      env.WORKSHOP_IMPORT_RESTAURANT_ID = restaurantId;
-      env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE = undefined;
-    }
-  })();
+  const optedInApp = workshopAppFor(targetId);
   const send = (serviceDate: string) => request(optedInApp).put(`/api/integrations/workshop/days/${serviceDate}`)
     .set("Authorization", `Bearer ${token}`);
   const day = { open: true, sales: [{ name: "Tarte", quantity: 9 }] };
@@ -125,4 +129,67 @@ it("admits only the opted-in operational test workspace and preserves its existi
   ]);
   expect((await otherOwner.get(salesPath).expect(200)).body).toEqual([]);
   expect(await prisma.restaurant.findUnique({ where: { id: targetId }, select: { mode: true } })).toEqual({ mode: "operational" });
+});
+
+it("reconciles dated stock lots on a sales-only replay and rolls back a new day when stock differs", async () => {
+  const targetId = randomUUID();
+  const owner = await workspace("operational", targetId);
+  const optedInApp = workshopAppFor(targetId);
+  const date = "2024-06-08", nextDate = "2024-06-09";
+  const send = (serviceDate: string) => request(optedInApp).put(`/api/integrations/workshop/days/${serviceDate}`)
+    .set("Authorization", `Bearer ${token}`);
+  const productId = "pears";
+  await prisma.supplier.create({ data: { id: "orchard", restaurantId: targetId, name: "Verger", email: "", phone: "" } });
+  await prisma.product.create({ data: { id: productId, restaurantId: targetId, supplierId: "orchard", name: "Poires",
+    unit: "kg", category: "Fruits", currentStock: 2, minThreshold: 1, pricePerUnit: 3.3 } });
+  const legacyLot = await prisma.stockLot.create({ data: { restaurantId: targetId, productId, actorId: "fixture",
+    source: "receipt", receivedAt: new Date("2024-06-05"), expiresAt: new Date(date), quantityReceived: 3, remainingQuantity: 2, unitCost: 2.99 } });
+
+  const day = { open: true, sales: [{ name: "Tarte", quantity: 9 }] };
+  const part = { reference: "remaining-pears", receivedOn: "2024-06-05", expiresOn: date, unitCostCents: 315,
+    openingMilli: 2000, addedMilli: 0, closingMilli: 500, lossMilli: 100, addition: null };
+  const delivery = { reference: "new-pears", receivedOn: date, expiresOn: "2024-06-20", unitCostCents: 350,
+    openingMilli: 0, addedMilli: 1000, closingMilli: 700, lossMilli: 100, addition: "delivery" };
+  const stock = { name: "Poires", unit: "kg", lots: [part, delivery] };
+  const currentStock = async () => (await owner.get("/api/workspace/catalog").expect(200)).body.products[0].currentStock;
+
+  await request(workshopAppFor()).put(`/api/integrations/workshop/days/${date}`)
+    .set("Authorization", `Bearer ${token}`).send({ ...day, stock: [stock] }).expect(404);
+  await request(workshopAppFor(randomUUID())).put(`/api/integrations/workshop/days/${date}`)
+    .set("Authorization", `Bearer ${token}`).send({ ...day, stock: [stock] }).expect(404);
+  await send(date).send(day).expect(200, { date, replayed: false, saleCount: 1 });
+  await send(date).send({ ...day, stock: [{ ...stock, lots: [{ ...part, receivedOn: date }, delivery] }] }).expect(400);
+  await send(date).send({ ...day, stock: [{ ...stock, lots: [part, part] }] }).expect(400);
+  await send(date).send({ ...day, stock: [{ ...stock, unit: "pcs" }] }).expect(400);
+  await send(date).send({ ...day, stock: [{ ...stock, lots: [{ ...part, openingMilli: 2500 }, delivery] }] }).expect(409);
+  expect(await currentStock()).toBe(2);
+  const acknowledged = { date, replayed: true, saleCount: 1, stockApplied: true };
+  await send(date).send({ ...day, stock: [stock] }).expect(200, acknowledged);
+  expect(await currentStock()).toBe(1.2);
+
+  const lots = (await owner.get(`/api/workspace/products/${productId}/lots`).expect(200)).body;
+  expect(lots.unagedStock).toEqual([]);
+  expect(lots.lots).toEqual([
+    expect.objectContaining({ id: legacyLot.id, source: "receipt", remainingQuantity: 0.5, unitCost: 2.99 }),
+    expect.objectContaining({ source: "demo_simulation", receivedAt: date, expiresAt: delivery.expiresOn,
+      remainingQuantity: 0.7, quantityReceived: 1, unitCost: 3.5, purchaseReceiptLineId: null }),
+  ]);
+  const movementPath = `/api/workspace/products/${productId}/movements`;
+  const movements = (await owner.get(movementPath).expect(200)).body;
+  expect(movements.map((row: { delta: number }) => row.delta).sort((a: number, b: number) => a - b)).toEqual([-1.4, -0.2, -0.1, -0.1, 1]);
+  await send(date).send({ ...day, stock: [{ ...stock, lots: [...stock.lots].reverse() }] }).expect(200, acknowledged);
+  expect((await owner.get(movementPath).expect(200)).body).toHaveLength(movements.length);
+  expect(await prisma.purchaseReceipt.count({ where: { restaurantId: targetId } })).toBe(0);
+
+  const expired = { ...part, openingMilli: 500, closingMilli: 0, lossMilli: 500 };
+  const remaining = { ...delivery, openingMilli: 700, addedMilli: 0, closingMilli: 600, lossMilli: 0, addition: null };
+  await send(nextDate).send({ ...day, stock: [{ ...stock, lots: [{ ...expired, closingMilli: 1, lossMilli: 499 }, remaining] }] }).expect(400);
+  await send(nextDate).send({ ...day, stock: [{ ...stock, lots: [expired, { ...remaining, openingMilli: 800 }] }] }).expect(409);
+  const nextPeriod = `from=${nextDate}&to=${nextDate}`;
+  expect((await owner.get(`/api/workspace/sales?${nextPeriod}`).expect(200)).body).toEqual([]);
+  expect((await owner.get(`/api/workspace/sales/service-days?${nextPeriod}`).expect(200)).body).toEqual([]);
+  expect(await currentStock()).toBe(1.2);
+  await send(nextDate).send({ ...day, stock: [{ ...stock, lots: [expired, remaining] }] })
+    .expect(200, { date: nextDate, replayed: false, saleCount: 1, stockApplied: true });
+  expect(await currentStock()).toBe(0.6);
 });

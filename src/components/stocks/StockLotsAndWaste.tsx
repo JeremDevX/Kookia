@@ -5,7 +5,7 @@ import { getProductions, type Production } from "../../services/recipeService";
 import type { Product } from "../../types";
 import { formatLocalISODate } from "../../utils/date";
 import Button from "../common/Button";
-interface Lot { id: string; productId: string; receivedAt: string | null; expiresAt: string | null; remainingQuantity: number; unitCost: number | null; allocations: Array<{ stockMovementId: string; quantity: number }> }
+interface Lot { id: string; productId: string; source: string; receivedAt: string | null; expiresAt: string | null; remainingQuantity: number; unitCost: number | null; allocations: Array<{ stockMovementId: string; quantity: number }> }
 interface Lots { lots: Lot[]; unagedStock: Array<{ productId: string; productName: string; quantity: number; unit: string }> }
 interface Waste { id: string; kind: string; quantity: number; unit: string; serviceDate: string; serviceSlot: string | null; note: string; stockMovementId: string | null; cost: number | null }
 const labels: Record<string, string> = { raw: "Matière brute", preparation: "Déchet de préparation", unsold: "Invendu", plate_return: "Retour d’assiette" };
@@ -82,7 +82,7 @@ export default function StockLotsAndWaste({ products, catalogAvailable, onSaved 
       void load();
     }}>Réessayer</Button></div>}
     <ul>{data.lots.map((lot) => <li key={lot.id}>
-      {products.find((row) => row.id === lot.productId)?.name ?? lot.productId} : {lot.remainingQuantity} {products.find((row) => row.id === lot.productId)?.unit} · reçu {lot.receivedAt ?? "date inconnue"} · échéance {lot.expiresAt ?? "inconnue"} · coût {lot.unitCost == null ? "inconnu" : `${lot.unitCost} € / unité`}
+      {products.find((row) => row.id === lot.productId)?.name ?? lot.productId} : {lot.remainingQuantity} {products.find((row) => row.id === lot.productId)?.unit} · {lot.source === "demo_simulation" ? "entrée simulée le" : "reçu"} {lot.receivedAt ?? "date inconnue"} · échéance {lot.expiresAt ?? "inconnue"} · coût {lot.unitCost == null ? "inconnu" : `${lot.unitCost} € / unité`}
       {lot.allocations.length > 0 && <details><summary>Sorties tracées</summary><ul>{lot.allocations.map((entry) => <li key={entry.stockMovementId}>{entry.quantity} · mouvement {entry.stockMovementId}</li>)}</ul></details>}
     </li>)}</ul>
     {data.unagedStock.map((row) => <p key={row.productId}>{row.productName} : {row.quantity} {row.unit} de stock sans âge renseigné.</p>)}

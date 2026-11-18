@@ -28,8 +28,10 @@ dates dans l’ordre. Elle reprend les lots et les commandes en attente de la
 dernière journée transmise. L’API alimente les ventes et le calendrier de service
 de l’espace de test désigné. Les ventes portent la provenance
 `demo_simulation`. Les quantités suivent les portions servies du CSV quotidien.
-L’interface de l’atelier continue à produire les autres pièces
-du dossier, dont les factures, les réceptions et les relevés de pertes.
+Le mode de synchronisation avec stock rapproche les lots d’ouverture et ajoute
+les entrées et sorties simulées jusqu’au solde de clôture. Les mouvements portent
+la provenance de l’atelier. Les bons de livraison, fiches de production, factures
+et relevés restent disponibles dans le dossier documentaire.
 
 Variables du processus de synchronisation, à renseigner côté serveur :
 
@@ -39,6 +41,7 @@ Variables du processus de synchronisation, à renseigner côté serveur :
 | `WORKSHOP_IMPORT_TOKEN` | Jeton dédié partagé avec l’API, distinct du mot de passe du compte. |
 | `WORKSHOP_START_DATE` | Première date à transmettre, au format `AAAA-MM-JJ`. Choisir une date libre dans l’espace de test. |
 | `WORKSHOP_STATE_FILE` | Chemin absolu du fichier de reprise, hors du répertoire de publication. Son dossier doit exister. |
+| `WORKSHOP_STOCK_STATE_FILE` | Facultatif. Chemin absolu distinct du fichier de reprise des ventes. Active l’envoi conjoint des ventes et des stocks. Le premier envoi compare le stock Kookia au stock d’ouverture du dossier. |
 | `WORKSHOP_OPENING_CHECKPOINT_FILE` | Facultatif. Chemin absolu du `stock-reprise.json` du dossier précédent. Sa clôture doit précéder d’un jour la première date à transmettre. Conserver ce fichier pour les reprises suivantes. |
 | `WORKSHOP_REQUEST_TIMEOUT_MS` | Facultatif. Délai maximal par envoi, 30 000 ms par défaut. |
 
@@ -56,6 +59,12 @@ relancer avec le même fichier de reprise. Si l’API avait enregistré la journ
 avant la coupure, elle reconnaît le même envoi et le générateur poursuit. Une
 date déjà occupée ou un contenu différent pour une date transmise déclenche un
 conflit à examiner dans Kookia.
+
+Pour ajouter les stocks à un dossier dont les ventes ont déjà été transmises,
+réutiliser le fichier d’ouverture et la première date du dossier avec un nouveau
+`WORKSHOP_STOCK_STATE_FILE`. Les ventes identiques sont reconnues. Les écritures
+de stock se font dans les lots rapprochés et s’arrêtent en cas d’écart d’ouverture.
+Un mouvement simulé met à jour le stock et n’atteste pas d’une réception fournisseur.
 
 ## Préparer un dossier
 

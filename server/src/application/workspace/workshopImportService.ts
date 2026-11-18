@@ -1,11 +1,15 @@
 import { createHash } from "node:crypto";
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { createSaleContribution, lockSalesWorkspace, recordSaleContributionEvent } from "./salesContributionLedger.js";
+import { createSaleContribution, recordSaleContributionEvent } from "./salesContributionLedger.js";
+import { lockReceiptWorkspace } from "./receiptStock.js";
 import { WorkspaceError } from "./workspaceError.js";
+import type { WorkshopStockInput } from "./workshopStockInput.js";
+import { applyWorkshopStock } from "./workshopStockService.js";
 
 interface WorkshopServiceDay {
   open: boolean;
   sales: Array<{ name: string; normalizedName: string; quantity: number }>;
+  stock?: WorkshopStockInput;
 }
 
 const actorId = "workshop-import:v1";
@@ -17,17 +21,19 @@ export async function importWorkshopDay(restaurantId: string, date: string, day:
   const kind = `workshop-day:v1:${date}`;
   const sales = [...day.sales].sort((a, b) => a.normalizedName < b.normalizedName ? -1 : 1);
   const digest = createHash("sha256").update(JSON.stringify({ open: day.open, sales })).digest("hex");
-  const result = { date, saleCount: sales.length };
+  const result = { date, saleCount: sales.length, ...(day.stock && { stockApplied: true }) };
 
   return prisma.$transaction(async (tx) => {
-    await lockSalesWorkspace(tx, restaurantId);
-    const workspace = await tx.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } });
-    if (workspace?.mode !== "demo" && !(allowOperationalTestWorkspace && workspace?.mode === "operational")) {
+    const mode = await lockReceiptWorkspace(tx, restaurantId);
+    if (mode !== "demo" && !(allowOperationalTestWorkspace && mode === "operational")) {
       throw new WorkspaceError(403, "DEMO_WORKSPACE_REQUIRED", "L’import exige un établissement de test autorisé.");
     }
 
     const prior = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind } }, select: { data: true } });
-    if (prior?.data === digest) return { ...result, replayed: true };
+    if (prior?.data === digest) {
+      if (day.stock) await applyWorkshopStock(tx, restaurantId, date, day.stock);
+      return { ...result, replayed: true };
+    }
     const existing = await tx.serviceDay.findUnique({
       where: { restaurantId_serviceDate: { restaurantId, serviceDate } }, select: { serviceDate: true },
     });
@@ -66,6 +72,7 @@ export async function importWorkshopDay(restaurantId: string, date: string, day:
         contributionId: contribution.id, createdBy: actorId, updatedBy: actorId,
       } });
     }
+    if (day.stock) await applyWorkshopStock(tx, restaurantId, date, day.stock);
     await tx.workspaceDocument.create({ data: { restaurantId, kind, data: digest } });
     return { ...result, replayed: false };
   });

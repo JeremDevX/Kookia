@@ -9,13 +9,14 @@ export function fefoOrder<T extends { id: string; expiresAt: Date | null; receiv
 
 export interface LotMovementOptions {
   receipt?: { lineId: string; receivedAt: Date; expiresAt?: Date | null; unitCost: Prisma.Decimal };
+  simulationLot?: { id: string; receivedAt: Date; expiresAt: Date; unitCost: Prisma.Decimal };
   selectedLotId?: string;
   usageDate?: Date;
 }
 
 export async function recordLotMovement(tx: Prisma.TransactionClient, restaurantId: string, productId: string,
   stockBefore: Prisma.Decimal, movement: { id: string; delta: Prisma.Decimal }, actorId: string,
-  { receipt, selectedLotId, usageDate }: LotMovementOptions = {}) {
+  { receipt, simulationLot, selectedLotId, usageDate }: LotMovementOptions = {}) {
   await tx.$queryRaw(Prisma.sql`SELECT id FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${productId} FOR UPDATE`);
   const lots = await tx.stockLot.findMany({ where: { restaurantId, productId, remainingQuantity: { gt: 0 } } });
   const tracked = lots.reduce((sum, lot) => sum.plus(lot.remainingQuantity), new Prisma.Decimal(0));
@@ -26,9 +27,11 @@ export async function recordLotMovement(tx: Prisma.TransactionClient, restaurant
       quantityReceived: missing, remainingQuantity: missing, receivedAt: null, expiresAt: null, unitCost: null } }));
   }
   if (movement.delta.greaterThan(0)) {
-    await tx.stockLot.create({ data: { restaurantId, productId, actorId, source: receipt ? "receipt" : "unaged",
-      purchaseReceiptLineId: receipt?.lineId ?? null, receivedAt: receipt?.receivedAt ?? null,
-      expiresAt: receipt?.expiresAt ?? null, unitCost: receipt?.unitCost ?? null,
+    const details = simulationLot ? { ...simulationLot, source: "demo_simulation" } : {
+      source: receipt ? "receipt" : "unaged", purchaseReceiptLineId: receipt?.lineId ?? null,
+      receivedAt: receipt?.receivedAt ?? null, expiresAt: receipt?.expiresAt ?? null, unitCost: receipt?.unitCost ?? null,
+    };
+    await tx.stockLot.create({ data: { restaurantId, productId, actorId, ...details,
       quantityReceived: movement.delta, remainingQuantity: movement.delta } });
     return;
   }

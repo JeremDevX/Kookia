@@ -147,4 +147,37 @@ describe("daily workshop sync", () => {
     );
     expect(send).not.toHaveBeenCalled();
   });
+
+  it("replays the same sales with stock and advances its own checkpoint only after stock confirmation", async () => {
+    const openingFile = join(directory, "opening.json");
+    const initial = generateScenario(defaultScenarioOptions("2026-11-10", 7));
+    await writeFile(openingFile, JSON.stringify(initial.checkpoint));
+    const env = { ...fixtureEnv(), WORKSHOP_OPENING_CHECKPOINT_FILE: openingFile, WORKSHOP_START_DATE: "2026-11-17" };
+    const saleOnly = readDailySyncConfig(env);
+    const stockSync = readDailySyncConfig({ ...env, WORKSHOP_STOCK_STATE_FILE: join(directory, "stock.json") });
+    const date = "2026-11-17";
+    const now = new Date("2026-11-18T00:30:00+01:00");
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ date, replayed: false }))
+      .mockResolvedValueOnce(Response.json({ date, replayed: true }))
+      .mockResolvedValueOnce(Response.json({ date, replayed: true, stockApplied: true }));
+    vi.stubGlobal("fetch", send);
+
+    await expect(syncDaily(saleOnly, now)).resolves.toEqual({ imported: 1, replayed: 0 });
+    const original = await readFile(saleOnly.stateFile, "utf8");
+    await expect(syncDaily(stockSync, now)).rejects.toThrow("n’a pas confirmé la réception du 2026-11-17");
+    await expect(readFile(stockSync.stateFile, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(syncDaily(stockSync, now)).resolves.toEqual({ imported: 0, replayed: 1 });
+    expect(await readFile(stockSync.stateFile, "utf8")).toEqual(original);
+    expect(await readFile(saleOnly.stateFile, "utf8")).toEqual(original);
+    const { stock, ...salesReplay } = JSON.parse(String(send.mock.calls[2][1]?.body));
+    expect(salesReplay).toEqual(JSON.parse(String(send.mock.calls[0][1]?.body)));
+    expect(stock).toHaveLength(initial.catalog.ingredients.length);
+    expect(send.mock.calls[2][1]?.body).toBe(send.mock.calls[1][1]?.body);
+    await expect(syncDaily(stockSync, now)).resolves.toEqual({ imported: 0, replayed: 0 });
+    expect(send).toHaveBeenCalledTimes(3);
+    expect(() => readDailySyncConfig({ ...env, WORKSHOP_STOCK_STATE_FILE: env.WORKSHOP_STATE_FILE })).toThrow(
+      "chemin absolu distinct",
+    );
+  });
 });
