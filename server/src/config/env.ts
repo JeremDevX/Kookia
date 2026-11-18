@@ -19,12 +19,15 @@ const envSchema = z.object({
   WORKSHOP_IMPORT_TOKEN: z.string().regex(/^[A-Za-z0-9._~+/=-]{32,256}$/).optional(),
   WORKSHOP_IMPORT_RESTAURANT_ID: z.uuid().optional(),
   WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE: z.literal("true").optional(),
+  WORKSHOP_FORECAST_ENABLED: z.literal("true").optional(),
 }).refine(value => value.OPEN_METEO_MODE !== "commercial" || Boolean(value.OPEN_METEO_API_KEY),
   { message: "OPEN_METEO_API_KEY is required for commercial weather access", path: ["OPEN_METEO_API_KEY"] })
   .refine(value => Boolean(value.WORKSHOP_IMPORT_TOKEN) === Boolean(value.WORKSHOP_IMPORT_RESTAURANT_ID),
     { message: "Configure the workshop import token and test restaurant ID together", path: ["WORKSHOP_IMPORT_TOKEN"] })
   .refine(value => !value.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE || Boolean(value.WORKSHOP_IMPORT_RESTAURANT_ID),
-    { message: "An explicitly configured test restaurant is required", path: ["WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE"] });
+    { message: "An explicitly configured test restaurant is required", path: ["WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE"] })
+  .refine(value => !value.WORKSHOP_FORECAST_ENABLED || Boolean(value.WORKSHOP_IMPORT_RESTAURANT_ID && value.WORKSHOP_IMPORT_TOKEN),
+    { message: "The workshop token and test restaurant are required for the dashboard forecast", path: ["WORKSHOP_FORECAST_ENABLED"] });
 
 export const env = envSchema.parse(process.env);
 export const sessionCookieName = "kookia_session";

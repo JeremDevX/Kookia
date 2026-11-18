@@ -5,6 +5,7 @@ import { formatParisDate } from "../../shared/parisDate";
 import { offsetDate } from "./calendar";
 import { recipeById } from "./catalog";
 import { continuationStart, parseCheckpointFile } from "./continuation";
+import { dailyForecast } from "./dailyForecast";
 import { dailyOperations } from "./dailyOperations";
 import { dailyStock } from "./dailyStock";
 import { dailySales } from "./documents";
@@ -17,6 +18,7 @@ interface SyncConfig {
   stateFile: string;
   includeStock: boolean;
   includeOperations: boolean;
+  includeForecast: boolean;
   openingFile?: string;
   startDate: string;
   variationFrom?: string;
@@ -54,13 +56,17 @@ export function readDailySyncConfig(env: NodeJS.ProcessEnv): SyncConfig {
   if (!startDate.success) throw new Error("WORKSHOP_START_DATE doit être une date valide au format AAAA-MM-JJ.");
   const variationFrom = z.iso.date().optional().safeParse(env.WORKSHOP_VARIATION_FROM || undefined);
   if (!variationFrom.success) throw new Error("WORKSHOP_VARIATION_FROM doit être une date valide au format AAAA-MM-JJ.");
+  const forecastEnabled = env.WORKSHOP_FORECAST_ENABLED || "false";
+  if (forecastEnabled !== "true" && forecastEnabled !== "false") {
+    throw new Error("WORKSHOP_FORECAST_ENABLED doit valoir true ou false.");
+  }
   const timeoutMs = Number(env.WORKSHOP_REQUEST_TIMEOUT_MS ?? 30_000);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 120_000) {
     throw new Error("WORKSHOP_REQUEST_TIMEOUT_MS doit être compris entre 1000 et 120000.");
   }
 
   return { apiOrigin, token, stateFile: operationsStateFile ?? stockStateFile ?? stateFile,
-    includeStock: Boolean(stockStateFile), includeOperations: Boolean(operationsStateFile), openingFile,
+    includeStock: Boolean(stockStateFile), includeOperations: Boolean(operationsStateFile), includeForecast: forecastEnabled === "true", openingFile,
     startDate: startDate.data, variationFrom: variationFrom.data, timeoutMs };
 }
 
@@ -86,6 +92,27 @@ async function saveCheckpoint(file: string, checkpoint: Checkpoint) {
 
 const acknowledgmentSchema = z.object({ date: z.iso.date(), replayed: z.boolean(),
   stockApplied: z.literal(true).optional(), operationsApplied: z.literal(true).optional() });
+const forecastAcknowledgmentSchema = z.object({ date: z.iso.date() });
+
+async function sendWorkshopPayload(config: SyncConfig, endpoint: string, date: string, payload: unknown): Promise<unknown> {
+  let response: Response;
+  try {
+    response = await fetch(new URL(endpoint, config.apiOrigin), {
+      method: "PUT",
+      headers: { authorization: `Bearer ${config.token}`, "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(config.timeoutMs),
+      redirect: "error",
+    });
+  } catch {
+    throw new Error(`Impossible de joindre Kookia pour le ${date}.`);
+  }
+  if (response.status !== 200) {
+    await response.body?.cancel();
+    throw new Error(`Kookia a refusé le ${date} (HTTP ${response.status}).`);
+  }
+  return response.json().catch(() => null);
+}
 
 async function sendDay(config: SyncConfig, scenario: Scenario) {
   const day = scenario.days[0];
@@ -99,25 +126,8 @@ async function sendDay(config: SyncConfig, scenario: Scenario) {
     ...(config.includeStock ? { stock: dailyStock(scenario) } : {}),
     ...(config.includeOperations ? { operations: dailyOperations(scenario) } : {}),
   };
-  const endpoint = new URL(`/api/integrations/workshop/days/${day.date}`, config.apiOrigin);
-  let response: Response;
-  try {
-    response = await fetch(endpoint, {
-      method: "PUT",
-      headers: { authorization: `Bearer ${config.token}`, "content-type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(config.timeoutMs),
-      redirect: "error",
-    });
-  } catch {
-    throw new Error(`Impossible de joindre Kookia pour le ${day.date}.`);
-  }
-  if (response.status !== 200) {
-    await response.body?.cancel();
-    throw new Error(`Kookia a refusé le ${day.date} (HTTP ${response.status}).`);
-  }
-
-  const acknowledgment = acknowledgmentSchema.safeParse(await response.json().catch(() => null));
+  const response = await sendWorkshopPayload(config, `/api/integrations/workshop/days/${day.date}`, day.date, payload);
+  const acknowledgment = acknowledgmentSchema.safeParse(response);
   if (!acknowledgment.success || acknowledgment.data.date !== day.date
     || (config.includeStock && acknowledgment.data.stockApplied !== true)
     || (config.includeOperations && acknowledgment.data.operationsApplied !== true)) {
@@ -127,9 +137,11 @@ async function sendDay(config: SyncConfig, scenario: Scenario) {
 }
 
 export async function syncDaily(config: SyncConfig, now = new Date()) {
-  const through = offsetDate(formatParisDate(now), -1);
+  const today = formatParisDate(now);
+  const through = offsetDate(today, -1);
   const profile = defaultScenarioOptions(config.startDate, 1);
   const variedProfile: typeof profile = { ...profile, incident: "mixed", weather: "varied", hasTerrace: true };
+  const profileFor = (date: string) => config.variationFrom && date >= config.variationFrom ? variedProfile : profile;
   const opening = config.openingFile ? await readCheckpoint(config.openingFile) : undefined;
   if (config.openingFile && !opening) throw new Error("Le fichier de reprise initiale est introuvable.");
   if (opening && (continuationStart(opening) !== config.startDate || opening.seed !== profile.seed)) {
@@ -147,14 +159,21 @@ export async function syncDaily(config: SyncConfig, now = new Date()) {
   let imported = 0;
   let replayed = 0;
   while (date <= through) {
-    const dayProfile = config.variationFrom && date >= config.variationFrom ? variedProfile : profile;
-    const scenario = generateScenario({ ...dayProfile, start: date }, checkpoint);
+    const scenario = generateScenario({ ...profileFor(date), start: date }, checkpoint);
     const alreadyReceived = await sendDay(config, scenario);
     await saveCheckpoint(config.stateFile, scenario.checkpoint);
     checkpoint = scenario.checkpoint;
     date = continuationStart(checkpoint);
     if (alreadyReceived) replayed += 1;
     else imported += 1;
+  }
+  if (config.includeForecast && checkpoint?.asOf === through) {
+    const forecast = dailyForecast(today, checkpoint, profileFor(today));
+    const response = await sendWorkshopPayload(config, `/api/integrations/workshop/forecast/${today}`, today, forecast);
+    const acknowledgment = forecastAcknowledgmentSchema.safeParse(response);
+    if (!acknowledgment.success || acknowledgment.data.date !== today) {
+      throw new Error(`Kookia n’a pas confirmé la prévision du ${today}.`);
+    }
   }
 
   return { imported, replayed };

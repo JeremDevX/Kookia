@@ -258,4 +258,38 @@ describe("daily workshop sync", () => {
     expect(() => readDailySyncConfig({ ...env, WORKSHOP_STOCK_STATE_FILE: stockStateFile,
       WORKSHOP_OPERATIONS_STATE_FILE: stockStateFile })).toThrow("distinct des fichiers de reprise des ventes et des stocks");
   });
+
+  it("publishes today's Paris forecast after yesterday and retries it alone if unacknowledged", async () => {
+    const openingFile = join(directory, "opening.json");
+    const opening = generateScenario(defaultScenarioOptions("2026-11-10", 7)).checkpoint;
+    await writeFile(openingFile, JSON.stringify(opening));
+    const config = readDailySyncConfig({ ...fixtureEnv(), WORKSHOP_OPENING_CHECKPOINT_FILE: openingFile,
+      WORKSHOP_START_DATE: "2026-11-17", WORKSHOP_VARIATION_FROM: "2026-11-18", WORKSHOP_FORECAST_ENABLED: "true" });
+    const now = new Date("2026-11-17T23:30:00Z");
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ date: "2026-11-17", replayed: false }))
+      .mockResolvedValueOnce(Response.json({ date: "2026-11-17" }))
+      .mockResolvedValueOnce(Response.json({ date: "2026-11-18" }));
+    vi.stubGlobal("fetch", send);
+
+    await expect(syncDaily(config, now)).rejects.toThrow("n’a pas confirmé la prévision du 2026-11-18");
+    expect(parseCheckpointFile(await readFile(config.stateFile, "utf8")).asOf).toBe("2026-11-17");
+    await expect(syncDaily(config, now)).resolves.toEqual({ imported: 0, replayed: 0 });
+    expect(send.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual([
+      "/api/integrations/workshop/days/2026-11-17",
+      "/api/integrations/workshop/forecast/2026-11-18",
+      "/api/integrations/workshop/forecast/2026-11-18",
+    ]);
+    const forecast = JSON.parse(String(send.mock.calls[1][1]?.body));
+    expect(forecast).toMatchObject({ provenance: "demo_simulation", date: "2026-11-18", basedOnDate: "2026-11-17", covers: 27 });
+    expect(send.mock.calls[2][1]?.body).toBe(send.mock.calls[1][1]?.body);
+  });
+
+  it("requires yesterday's checkpoint before sending a forecast", async () => {
+    const config = readDailySyncConfig({ ...fixtureEnv(), WORKSHOP_START_DATE: "2026-11-18", WORKSHOP_FORECAST_ENABLED: "true" });
+    const send = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", send);
+    await expect(syncDaily(config, new Date("2026-11-18T03:00:00+01:00"))).resolves.toEqual({ imported: 0, replayed: 0 });
+    expect(send).not.toHaveBeenCalled();
+  });
 });

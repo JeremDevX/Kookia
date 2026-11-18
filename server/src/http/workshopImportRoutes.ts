@@ -1,9 +1,11 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { Router } from "express";
+import { Router, type ErrorRequestHandler, type RequestHandler } from "express";
 import { z } from "zod";
 import { formatParisDate } from "../../../shared/parisDate.js";
+import { workshopForecastSchema } from "../../../shared/workshopForecast.js";
 import { WorkspaceError } from "../application/workspace/workspaceError.js";
 import { importWorkshopDay } from "../application/workspace/workshopImportService.js";
+import { storeWorkshopForecast } from "../application/workspace/workshopForecastService.js";
 import { workshopStockSchema } from "../application/workspace/workshopStockInput.js";
 import { workshopOperationsSchema } from "../application/workspace/workshopOperationsInput.js";
 import type { WorkshopOperationsInput } from "../application/workspace/workshopOperationsInput.js";
@@ -47,11 +49,11 @@ function operationsMatchDate(operations: WorkshopOperationsInput, date: string, 
   return delivered.size === 0;
 }
 
-export function createWorkshopImportRoutes(token: string, restaurantId: string, allowOperationalTestWorkspace: boolean) {
+export function createWorkshopImportRoutes(token: string, restaurantId: string, allowOperationalTestWorkspace: boolean, forecastEnabled: boolean) {
   const routes = Router();
   const expected = tokenDigest(token);
 
-  routes.put("/days/:date", async (req, res) => {
+  const authenticate: RequestHandler = (req, res, next) => {
     const supplied = /^Bearer (\S+)$/i.exec(req.get("authorization") ?? "")?.[1] ?? "";
     if (!timingSafeEqual(tokenDigest(supplied), expected)) {
       res.set("WWW-Authenticate", 'Bearer realm="kookia-workshop"').status(401).json({
@@ -59,7 +61,10 @@ export function createWorkshopImportRoutes(token: string, restaurantId: string, 
       });
       return;
     }
+    next();
+  };
 
+  routes.put("/days/:date", authenticate, async (req, res) => {
     const date = serviceDate.safeParse(req.params.date);
     const day = serviceDay.safeParse(req.body);
     if (!date.success || !day.success) {
@@ -81,13 +86,22 @@ export function createWorkshopImportRoutes(token: string, restaurantId: string, 
       res.status(400).json({ error: { code: "WORKSHOP_OPERATIONS_INVALID", message: "Les opérations ne correspondent pas à la journée, aux ventes ou aux entrées de stock." } });
       return;
     }
-    try {
-      res.json(await importWorkshopDay(restaurantId, date.data, day.data, allowOperationalTestWorkspace));
-    } catch (error) {
-      if (!(error instanceof WorkspaceError)) throw error;
-      res.status(error.status).json({ error: { code: error.code, message: error.message } });
-    }
+    res.json(await importWorkshopDay(restaurantId, date.data, day.data, allowOperationalTestWorkspace));
   });
 
+  if (forecastEnabled) routes.put("/forecast/:date", authenticate, async (req, res) => {
+    const forecast = workshopForecastSchema.safeParse(req.body);
+    if (!forecast.success || forecast.data.date !== req.params.date) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données de la prévision sont invalides." } });
+      return;
+    }
+    res.json(await storeWorkshopForecast(restaurantId, forecast.data, allowOperationalTestWorkspace));
+  });
+
+  const respondToWorkspaceError: ErrorRequestHandler = (error: unknown, _req, res, next) => {
+    if (!(error instanceof WorkspaceError)) { next(error); return; }
+    res.status(error.status).json({ error: { code: error.code, message: error.message } });
+  };
+  routes.use(respondToWorkspaceError);
   return routes;
 }

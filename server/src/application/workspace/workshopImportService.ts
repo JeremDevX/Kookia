@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { createSaleContribution, recordSaleContributionEvent } from "./salesContributionLedger.js";
-import { lockReceiptWorkspace } from "./receiptStock.js";
+import { lockWorkshopWorkspace, workshopDayKind } from "./workshopWorkspace.js";
 import { WorkspaceError } from "./workspaceError.js";
 import type { WorkshopStockInput } from "./workshopStockInput.js";
 import { applyWorkshopStock } from "./workshopStockService.js";
@@ -21,17 +21,14 @@ const reason = "Vente simulée importée depuis l’atelier documentaire.";
 
 export async function importWorkshopDay(restaurantId: string, date: string, day: WorkshopServiceDay, allowOperationalTestWorkspace: boolean) {
   const serviceDate = new Date(`${date}T00:00:00.000Z`);
-  const kind = `workshop-day:v1:${date}`;
+  const kind = workshopDayKind(date);
   const sales = [...day.sales].sort((a, b) => a.normalizedName < b.normalizedName ? -1 : 1);
   const digest = createHash("sha256").update(JSON.stringify({ open: day.open, sales })).digest("hex");
   const result = { date, saleCount: sales.length, ...(day.stock && { stockApplied: true }),
     ...(day.operations && { operationsApplied: true }) };
 
   return prisma.$transaction(async (tx) => {
-    const mode = await lockReceiptWorkspace(tx, restaurantId);
-    if (mode !== "demo" && !(allowOperationalTestWorkspace && mode === "operational")) {
-      throw new WorkspaceError(403, "DEMO_WORKSPACE_REQUIRED", "L’import exige un établissement de test autorisé.");
-    }
+    await lockWorkshopWorkspace(tx, restaurantId, allowOperationalTestWorkspace);
 
     const prior = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind } }, select: { data: true } });
     if (prior?.data === digest) {

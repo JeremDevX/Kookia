@@ -48,6 +48,7 @@ Variables du processus de synchronisation, à renseigner côté serveur :
 | `WORKSHOP_OPERATIONS_STATE_FILE` | Facultatif. Chemin absolu distinct des autres fichiers de reprise. Active l’envoi des opérations en plus des ventes et, si configuré, du stock. |
 | `WORKSHOP_OPENING_CHECKPOINT_FILE` | Facultatif. Chemin absolu du `stock-reprise.json` du dossier précédent. Sa clôture doit précéder d’un jour la première date à transmettre. Conserver ce fichier pour les reprises suivantes. |
 | `WORKSHOP_VARIATION_FROM` | Facultatif. À partir de cette date de service (`AAAA-MM-JJ`), activer la météo simulée avec terrasse et les imprévus variés du scénario. Conserver cette date d’activation pour les rejeux. |
+| `WORKSHOP_FORECAST_ENABLED` | Facultatif. `true` côté générateur et côté API pour publier la prévision simulée du jour dans le tableau de bord de l’espace de test configuré. |
 | `WORKSHOP_REQUEST_TIMEOUT_MS` | Facultatif. Délai maximal par envoi, 30 000 ms par défaut. |
 
 Configurer le même `WORKSHOP_IMPORT_TOKEN` dans l’API Kookia ainsi que
@@ -83,6 +84,12 @@ détail simulé. Le stock est ajusté par son propre rapprochement, une fois par
 jour. Pour enrichir une période antérieure à la clôture initiale du stock,
 transmettre les opérations et les ventes avec une reprise distincte et sans
 fichier de reprise stock. La validation des décisions reste dans Kookia.
+
+La prévision simulée utilise la clôture de la veille et le plan du jour. Le
+tableau de bord présente les couverts par heure, le chiffre d’affaires estimé aux
+prix de la carte et les produits suggérés par le scénario. La prévision expire
+en fin de journée à Paris. Les suggestions servent à tester l’affichage des
+besoins de l’atelier. Les achats du restaurant suivent leur parcours de revue.
 
 ## Préparer un dossier
 

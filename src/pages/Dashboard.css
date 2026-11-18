@@ -9,6 +9,7 @@
 .dashboard-metric span, .dashboard-metric small { font-size: var(--font-size-caption); color: var(--color-auth-icon-border); }
 .dashboard-metric small { color: var(--color-nav-muted); }
 .dashboard-metric strong { color: var(--color-nav-text); font-size: var(--font-size-2xl); line-height: var(--number-1_2); }
+.dashboard-revenue strong { font-size: clamp(var(--font-size-lg), var(--unit-3vw), var(--font-size-2xl)); overflow-wrap: var(--overflow-wrap-anywhere); }
 .dashboard-columns { display: grid; grid-template-columns: minmax(var(--number-0), var(--unit-2fr)) minmax(var(--size-280), var(--unit-1fr)); gap: var(--spacing-lg); align-items: start; }
 .dashboard-main-column { min-width: var(--number-0); display: flex; flex-direction: column; gap: var(--spacing-lg); }
 .today-focus { background: var(--color-surface); border: var(--size-1) solid var(--color-nav-border); border-radius: var(--radius-compact); box-shadow: var(--shadow-figma-panel); padding: var(--spacing-lg); display: flex; flex-direction: column; align-items: flex-start; gap: var(--spacing-md); }
@@ -42,13 +43,13 @@
 .today-stock-products { display: flex; flex-direction: column; gap: var(--spacing-md); list-style: none; margin: var(--spacing-sm) var(--number-0); padding: var(--number-0); }
 .today-stock-product-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spacing-sm); }
 .today-stock-product-heading a { color: var(--color-accent-text); font-weight: var(--font-weight-medium); text-underline-offset: var(--size-3); }
-.today-stock-products meter { display: block; width: var(--unit-100percent); height: var(--spacing-sm); appearance: none; border: none; border-radius: var(--radius-full); background: var(--color-nav-active); color: var(--color-text-secondary); }
+:is(.today-stock-products, .today-workshop-hours) meter { display: block; width: var(--unit-100percent); height: var(--spacing-sm); appearance: none; border: none; border-radius: var(--radius-full); background: var(--color-nav-active); color: var(--color-text-secondary); }
 .today-stock-products meter[data-status="urgent"] { color: var(--color-urgent); }
 .today-stock-products meter[data-status="moderate"] { color: var(--color-moderate); }
 .today-stock-products meter[data-status="optimal"] { color: var(--color-optimal); }
-.today-stock-products meter::-moz-meter-bar { border-radius: var(--radius-full); background: currentColor; }
-.today-stock-products meter::-webkit-meter-bar { border: none; border-radius: var(--radius-full); background: var(--color-nav-active); }
-.today-stock-products meter::-webkit-meter-optimum-value { border-radius: var(--radius-full); background: currentColor; }
+:is(.today-stock-products, .today-workshop-hours) meter::-moz-meter-bar { border-radius: var(--radius-full); background: currentColor; }
+:is(.today-stock-products, .today-workshop-hours) meter::-webkit-meter-bar { border: none; border-radius: var(--radius-full); background: var(--color-nav-active); }
+:is(.today-stock-products, .today-workshop-hours) meter::-webkit-meter-optimum-value { border-radius: var(--radius-full); background: currentColor; }
 .today-card .badge { align-self: flex-start; }
 .today-card small { color: var(--color-text-muted); font-size: var(--font-size-caption); }
 .today-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-md); margin-top: auto; padding-top: var(--spacing-sm); }
@@ -69,3 +70,8 @@
 
 .today-covers-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--spacing-xs); min-height: var(--size-180); padding: var(--spacing-lg); border-radius: var(--radius-compact); background: var(--color-bg); color: var(--color-text-secondary); text-align: center; font-size: var(--font-size-sm); }
 .today-covers-empty strong { color: var(--color-nav-text); }
+.today-workshop-hours, .today-workshop-products { display: grid; gap: var(--spacing-sm); list-style: none; padding: var(--number-0); margin: var(--spacing-sm) var(--number-0) var(--number-0); }
+.today-workshop-hours li { display: grid; grid-template-columns: var(--size-44) minmax(var(--number-0), var(--unit-1fr)) auto; align-items: center; gap: var(--spacing-sm); font-size: var(--font-size-sm); }
+.today-workshop-hours meter { color: var(--color-accent-text); }
+.today-workshop-products li { padding: var(--spacing-sm) var(--spacing-md); border: var(--size-1) solid var(--color-border-light); border-radius: var(--radius-md); overflow-wrap: var(--overflow-wrap-anywhere); }
+.today-workshop-products li div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--spacing-xs) var(--spacing-md); font-size: var(--font-size-sm); }

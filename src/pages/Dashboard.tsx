@@ -8,6 +8,8 @@ import TodayPurchaseForecast from "../components/dashboard/TodayPurchaseForecast
 import TodayContext from "../components/dashboard/TodayContext";
 import TodayPlanning from "../components/dashboard/TodayPlanning";
 import TodayStockPreview from "../components/dashboard/TodayStockPreview";
+import { WorkshopCoversForecast, WorkshopPurchaseForecast } from "../components/dashboard/WorkshopForecastPanels";
+import { useWorkshopForecast } from "../features/dashboard/useWorkshopForecast";
 import { purchaseForecastIndicator } from "../features/orders/purchaseForecastPresentation";
 import { purchasePreparationHref } from "../features/orders/orderNavigation";
 import { getPurchaseSuggestions, type PurchaseSuggestions } from "../services/orderService";
@@ -19,7 +21,10 @@ import { useInventoryCatalog } from "../features/inventory/useInventoryCatalog";
 import { getLatestService, type LatestService } from "../services/salesService";
 import { getRestaurant, type Restaurant } from "../services/restaurantService";
 import { formatLocalISODate, shiftDays } from "../utils/date";
+import { formatQuantity } from "../utils/format";
 import "./Dashboard.css";
+
+const formatRevenue = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format;
 
 export default function Dashboard() {
   const [params] = useSearchParams();
@@ -32,6 +37,9 @@ function DashboardOverview() {
   const { addToast } = useToast();
   const { cartItems, loading: cartLoading, loadError: cartError, refreshCart } = useCart();
   const { products, loading: productsLoading, error: productsError, refetch: refreshProducts } = useInventoryCatalog();
+  const workshopForecast = useWorkshopForecast();
+  const suggestedWorkshopProducts = workshopForecast?.products ?? [];
+  const suggestedWorkshopCount = new Set(suggestedWorkshopProducts.map(product => product.name.normalize("NFC").toLocaleLowerCase("fr-FR"))).size;
   const [latestService, setLatestService] = useState<LatestService | null | undefined>(undefined);
   const [salesError, setSalesError] = useState("");
   const [salesReload, setSalesReload] = useState(0);
@@ -137,18 +145,19 @@ function DashboardOverview() {
     </header>
 
     <div className="dashboard-metrics" aria-label="Situation du restaurant">
-      <div className="dashboard-metric"><span>Couverts prévus</span><strong>—</strong><small>Prévision indisponible</small></div>
-      <div className="dashboard-metric"><span>Chiffre d’affaires estimé</span><strong>—</strong><small>Estimation indisponible</small></div>
+      <div className="dashboard-metric"><span>Couverts prévus</span><strong>{workshopForecast ? formatQuantity(workshopForecast.covers) : "—"}</strong><small>{workshopForecast ? "Simulation" : "Prévision indisponible"}</small></div>
+      <div className={workshopForecast ? "dashboard-metric dashboard-revenue" : "dashboard-metric"}><span>Chiffre d’affaires estimé</span><strong>{workshopForecast ? formatRevenue(workshopForecast.revenueCents / 100) : "—"}</strong><small>{workshopForecast ? "Simulation" : "Estimation indisponible"}</small></div>
       <Link to="/stocks?stockView=review" className="dashboard-metric"><span>Alertes de stock</span><strong>{productsLoading || productsError || products.length === 0 ? "—" : stockToReview.length}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : products.length === 0 ? "Aucun produit enregistré" : "Produits à vérifier"}</small></Link>
-      <Link to={purchasePreparationHref} className="dashboard-metric"><span>Produits suggérés</span><strong>{purchaseIndicator.value}</strong><small>{purchaseIndicator.detail}</small></Link>
+      {workshopForecast ? <a href="#today-workshop-purchases-title" className="dashboard-metric"><span>Produits suggérés</span><strong>{suggestedWorkshopCount}</strong><small>Simulation</small></a>
+        : <Link to={purchasePreparationHref} className="dashboard-metric"><span>Produits suggérés</span><strong>{purchaseIndicator.value}</strong><small>{purchaseIndicator.detail}</small></Link>}
     </div>
 
     <div className="dashboard-columns"><div className="dashboard-main-column">
-    <section className="today-card today-covers" aria-labelledby="today-covers-title">
+    {workshopForecast ? <WorkshopCoversForecast forecast={workshopForecast} /> : <section className="today-card today-covers" aria-labelledby="today-covers-title">
       <h2 id="today-covers-title">Prévision des couverts</h2>
       <p>Répartition prévue par heure pour les services du jour.</p>
       <div className="today-covers-empty"><BarChart3 size={24} aria-hidden="true" /><strong>Prévision horaire indisponible</strong><span>Les données nécessaires ne sont pas encore disponibles.</span></div>
-    </section>
+    </section>}
     <section className="today-focus" aria-labelledby="today-focus-title">
       <span className="today-eyebrow">À faire</span>
       <h2 id="today-focus-title">{focus.title}</h2>
@@ -166,7 +175,8 @@ function DashboardOverview() {
       <p>Les prévisions et besoins d'achat nécessitent 28 jours de service complets et un comptage de stock récent ; chaque suggestion reste à revoir.</p>
     </section>}
 
-    <TodayPurchaseForecast data={purchaseForecast} loading={purchaseLoading} error={purchaseError} retry={refreshPurchase} />
+    {workshopForecast ? <WorkshopPurchaseForecast products={suggestedWorkshopProducts} />
+      : <TodayPurchaseForecast data={purchaseForecast} loading={purchaseLoading} error={purchaseError} retry={refreshPurchase} />}
     </div><div className="today-grid">
       <TodayContext />
       <section className="today-card" aria-labelledby="today-tasks-title"><h2 id="today-tasks-title">Tâches du jour</h2>
