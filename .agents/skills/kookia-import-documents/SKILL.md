@@ -34,8 +34,11 @@ utiliser un dossier temporaire distinct ; refuser chemins absolus, traversées
 
 Deux organisations peuvent être rencontrées :
 
-- Dossier récent : `installation/`, répertoires `AAAA-MM-JJ/` avec PDF et
-  `ventes.csv`, `ventes-periode-complete.csv`, `scenario.json` et `guide.md`.
+- Dossier récent : `installation/`, répertoires `AAAA-MM-JJ/` avec PDF et CSV
+  quotidiens (`ventes.csv` ou `ventes-a-partir-du-AAAA-MM-JJ.csv`),
+  `ventes-jusqu-au-AAAA-MM-JJ.csv` quand des ventes sont importables à la date
+  du ZIP, `scenario.json` et `guide.md`. Un ZIP antérieur peut avoir un
+  `ventes-periode-complete.csv` qui inclut aussi des dates futures.
 - Dossier initial : `documents/*.pdf`, `ventes.csv`, `scenario.json`, `guide.md`.
 
 `scenario.json` contient `options` et `days`. En version 1/non versionnée, les

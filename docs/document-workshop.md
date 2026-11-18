@@ -85,7 +85,11 @@ coefficient aux quantités déjà ajustées.
 - **Achats** : commandes sur besoins prévus jusqu’à la tournée suivante, après
   déduction du stock encore utilisable et des commandes attendues. Maraîcher les
   mardi/jeudi/samedi, frais mardi/vendredi, épicerie mercredi ; commande à la clôture
-  de la veille. Une livraison de mise en route est convenue avant le dossier neuf.
+  de la veille, avant 23 h 59. Une livraison de mise en route est convenue avant le dossier neuf.
+  Le répertoire donne les jours de livraison, le délai d’un jour calendaire et
+  l’heure limite à relever dans **Paramètres → Fournisseurs**. Kookia calcule ses
+  propositions sur les jours d’ouverture. Les bons indiquent les livraisons du
+  dossier, y compris celles reçues un jour de fermeture.
   Les conditionnements de travail sont des multiples des pas Kookia partagés,
   pas des conditionnements fournisseur certifiés. Le surplus réduit les achats.
 - **Réception et tri** : un retard repousse réellement l’entrée ; un manque
@@ -154,9 +158,13 @@ version datée lors de l’intégration, pas le remplacement d’une fiche pass�
 - `installation/` contient l’établissement, les fournisseurs, le catalogue, les
   fiches techniques et le calendrier. `installation/recettes/` fournit un CSV
   d’ingrédients par fiche, avec les dosages bruts pour dix portions.
-- Répertoires datés : pièces selon leur date d’émission, CSV de chaque journée
-  avec ventes et note `sans-ventes.md` pour les jours fermés ou sans vente.
-- `ventes-periode-complete.csv`, seulement si au moins une vente existe.
+- Répertoires datés : pièces selon leur date d’émission, `ventes.csv` pour les
+  ventes du jour ou des jours passés, et `ventes-a-partir-du-AAAA-MM-JJ.csv` pour
+  les jours à venir. Les jours sans vente ont une note.
+- `ventes-jusqu-au-AAAA-MM-JJ.csv` à la racine, si des ventes ont atteint leur
+  date de service au jour du téléchargement (Europe/Paris). Utiliser ce fichier
+  ou les CSV quotidiens correspondants. Les anciens ZIP peuvent contenir
+  `ventes-periode-complete.csv`, y compris des dates futures.
 - `scenario.json` : format 2, catalogue figé, options, commandes, journées,
   services, décisions, transactions, déchets et lots de clôture. Les journées
   ajoutent `baselineCovers` et une météo de provenance `scenario` avec ses
@@ -201,8 +209,8 @@ estimations en équivalents-portions. Voir
   pas une réception. Une commande reprise n’est pas une nouvelle commande.
 - Production par service pour le rapprochement de la fiche de service.
   Inclure les compléments dans le total. La confirmation dans **Recettes**
-  enregistre la production à la date de saisie. Pour une reprise historique,
-  vérifier le parcours et les dates avant toute écriture.
+  enregistre la production à la date de saisie. Pour une reprise historique qui
+  doit conserver les dates, garder cette production en attente dans ce parcours.
 - CSV OU Ticket Z OU saisie manuelle, jamais additionnés pour le même article/jour.
   La facture client est déjà incluse ; remboursement sans annulation de quantité.
 - Une régularisation par ajustement OU comptage, jamais les deux.

@@ -9,7 +9,7 @@ export interface ArticleSales { sold: number; gross: number }
 export interface DaySales { date: string; open: boolean; articles: ReadonlyMap<string, ArticleSales> }
 export const workflows = {
   identity: "Dans Paramètres, onglet Restaurant, revoir l'identité, les couverts de référence, les jours ouverts et la terrasse. Confirmer la commune depuis le bouton météo de Kookia.",
-  suppliers: "Dans Paramètres, onglet Fournisseurs, rapprocher les fiches et les tournées du dossier.",
+  suppliers: "Dans Paramètres, onglet Fournisseurs, renseigner les jours de livraison, le délai et l’heure limite indiqués.",
   catalog: "Stocks : rapprocher les produits, unités, prix et fournisseurs. Stock initial zéro seulement pour un dossier neuf sans stock préexistant ; ne jamais écraser le stock du compte.",
   recipes: "Dans Recettes, choisir « Importer une fiche CSV » et utiliser la fiche correspondante dans installation/recettes/. Associer les produits, puis renseigner un rendement de 10 portions et vérifier la date d'effet. Conserver les recettes inchangées à la reprise.",
   menu: "Dans Plus, ouvrir Services et carte. Choisir la date et le service. Vérifier les prix et associer chaque article vendu à une portion de la recette correspondante.",
@@ -18,7 +18,7 @@ export const workflows = {
   invoice: "Dans Mes commandes, ouvrir Factures & documents et rapprocher les références de commande et de livraison. Créditer le stock lors de la réception des quantités livrées.",
   delivery: "Dans Mes commandes, ouvrir Commandes & réceptions. Rapprocher les quantités livrées et vérifier les échéances proposées. Enregistrer chaque livraison une seule fois.",
   credit: "Dans Mes commandes, rapprocher l'avoir de la réception et de la facture, avec sa référence, son montant et son motif. L'avoir ne crédite pas le stock.",
-  production: "Dans Recettes, choisir « Produire » pour la recette concernée. Sélectionner Midi ou Soir et saisir le total préparé, compléments et invendus compris. Cette action déduit le stock et date la production du jour de saisie. Pour une reprise datée, vérifier les dates avant toute écriture.",
+  production: "Dans Recettes, choisir « Produire » le jour du service. Sélectionner Midi ou Soir et saisir le total préparé, compléments et invendus compris. Kookia déduit les ingrédients et enregistre la date de saisie. Garder les productions passées en attente si leurs dates doivent être conservées.",
   sales: "Dans Ventes, choisir une seule source par date et article. Dans Historique enregistré, utiliser « Attribuer à midi / soir » avec les quantités de ce bilan. Dans Services et carte, rapprocher les invendus conservés et écartés avant de clôturer.",
   ticket: "Dans Ventes, choisir « Transcrire un Ticket Z ». Vérifier les totaux par article pour la journée. Le CSV et les factures clients couvrent les mêmes ventes.",
   customer: "Justificatif d'une transaction déjà incluse dans le Z et le CSV. Ne pas ajouter ses quantités aux ventes ; pas d'import de comptabilité client.",

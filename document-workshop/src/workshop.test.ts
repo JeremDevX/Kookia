@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { offsetDate } from "./calendar";
-import { ingredientById, money, number, recipeById } from "./catalog";
+import { ingredientById, money, number, recipeById, suppliers } from "./catalog";
 import { parseCheckpointFile } from "./continuation";
 import { createDocuments, readySales, salesCsv } from "./documents";
 import { archiveFiles } from "./dossier";
@@ -13,6 +13,7 @@ import { mapRecipeColumns, parseRecipeCsv, validateImportRows } from "../../src/
 import type { Product } from "../../src/types";
 import { parseSalesCsv } from "../../server/src/application/workspace/salesCsv";
 import { inspectTicketZUpload } from "../../server/src/application/workspace/ticketZService";
+import { supplierDeliveryHorizon } from "../../shared/supplierDelivery";
 
 describe("workshop document contracts", () => {
   it("exports unique day/article CSV quantities from served transaction lines, not forecasts", () => {
@@ -113,9 +114,10 @@ describe("workshop document contracts", () => {
       expect(inspectTicketZUpload("application/pdf", Buffer.from(bytes)).mimeType).toBe("application/pdf");
     }
   });
-  it("packages daily CSVs only for actual sales, closed-day notes, catalog and continuation", () => {
+  it("packages only sales through the export date in the import CSV and labels future daily files", () => {
     const scenario = generateScenario({ ...input, days: 7 });
-    const files = archiveFiles(scenario);
+    const today = "2026-09-03";
+    const files = archiveFiles(scenario, today);
     expect(new Set(files.map(file => file.name)).size).toBe(files.length);
     const decoder = new TextDecoder();
     const decode = (name: string) => decoder.decode(files.find(file => file.name === name)!.bytes);
@@ -126,25 +128,52 @@ describe("workshop document contracts", () => {
     const header = "service_date,item_name,quantity\r\n";
     const dailyRows: string[] = [];
     for (const day of scenario.days) {
-      const csv = files.find(file => file.name === `${day.date}/ventes.csv`);
+      const file = day.date <= today ? "ventes.csv" : `ventes-a-partir-du-${day.date}.csv`;
+      const csv = files.find(entry => entry.name === `${day.date}/${file}`);
       if (!day.open) { expect(csv).toBeUndefined(); expect(files.some(f => f.name === `${day.date}/sans-ventes.md`)).toBe(true); }
       else {
         const text = decoder.decode(csv!.bytes);
         expect(text.startsWith(header)).toBe(true);
         expect(text.endsWith("\r\n")).toBe(true);
-        const parsed = parseSalesCsv(text, "2026-12-31");
+        const parsed = parseSalesCsv(text, day.date);
         expect(parsed.rows.every(row => row.serviceDate === day.date && !row.error)).toBe(true);
-        dailyRows.push(text.slice(header.length));
+        if (day.date <= today) dailyRows.push(text.slice(header.length));
+        else expect(files.some(entry => entry.name === `${day.date}/ventes.csv`)).toBe(false);
       }
     }
-    expect(decode("ventes-periode-complete.csv")).toBe(header + dailyRows.join(""));
+    expect(files.filter(entry => /^ventes.*\.csv$/.test(entry.name)).map(entry => entry.name))
+      .toEqual([`ventes-jusqu-au-${today}.csv`]);
+    const compiledCsv = decode(`ventes-jusqu-au-${today}.csv`);
+    expect(compiledCsv).toBe(header + dailyRows.join(""));
+    expect(parseSalesCsv(compiledCsv, today).rows.every(row => !row.error)).toBe(true);
+    expect(decode("guide.md")).toContain(`ventes-jusqu-au-${today}.csv`);
+    const future = archiveFiles(scenario, "2026-08-31");
+    expect(future.some(entry => /^ventes.*\.csv$/.test(entry.name))).toBe(false);
+    expect(future.some(entry => entry.name === "2026-09-01/ventes-a-partir-du-2026-09-01.csv")).toBe(true);
     const closed = generateScenario({ ...input, start: "2026-09-07", days: 1 });
-    expect(archiveFiles(closed).some(f => /(?:^|\/)ventes.*\.csv$/.test(f.name))).toBe(false);
+    expect(archiveFiles(closed, "2026-09-07").some(f => /(?:^|\/)ventes.*\.csv$/.test(f.name))).toBe(false);
+  });
+  it("provides supplier terms that reproduce regular delivery dates in Kookia", () => {
+    const scenario = generateScenario({ ...input, days: 7 });
+    const directory = createDocuments(scenario).docs.find(doc => doc.kind === "suppliers")!;
+    const regularOrders = scenario.purchases.filter(order => order.placedOn >= input.start);
+    expect(regularOrders.length).toBeGreaterThan(0);
+    for (const order of regularOrders) {
+      const supplier = suppliers.find(s => s.id === order.supplierId)!;
+      const terms = directory.sections[0].rows.find(([name]) => name === supplier.name)![3];
+      const [leadTime, orderCutoffTime] = terms.split(" · ");
+      const horizon = supplierDeliveryHorizon({
+        deliveryWeekdays: [...supplier.deliveryDays],
+        leadTimeDays: Number.parseInt(leadTime, 10),
+        orderCutoffTime,
+      }, new Date(`${order.placedOn}T20:00:00Z`), [0, 2, 3, 4, 5, 6]);
+      expect(horizon).toMatchObject({ status: "known", nextDeliveryDate: order.expectedOn });
+    }
   });
   it("imports the recipe CSVs through the Kookia validator with the same gross quantities as the PDFs", () => {
     const scenario = generateScenario({ ...input, days: 1, drinks: false, lossPercent: 17.5 });
     const { docs } = createDocuments(scenario);
-    const files = archiveFiles(scenario).filter(f => f.name.startsWith("installation/recettes/"));
+    const files = archiveFiles(scenario, input.start).filter(f => f.name.startsWith("installation/recettes/"));
     const sheets = docs.filter(doc => doc.kind === "recipes");
     expect(files).toHaveLength(sheets.length);
     expect(files.some(file => file.name.endsWith("/expresso.csv"))).toBe(false);

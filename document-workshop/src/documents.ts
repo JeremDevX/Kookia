@@ -53,3 +53,5 @@ export function recipeCsv(recipe: Recipe, lossPercent: number) {
 export function readySales(days: readonly DaySales[], today: string) {
   return days.filter(day => day.date <= today && day.articles.size > 0);
 }
+
+export const readySalesFilename = (today: string) => `ventes-jusqu-au-${today}.csv`;

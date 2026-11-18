@@ -3,6 +3,7 @@ export const identity = {
   name: "Maison Sureau", type: "Bistrot de saison", address: "18, passage des Tilleuls",
   city: "44000 Nantes", email: "bonjour@maison-sureau.example", chef: "Camille Morel",
 };
+export const supplierOrderTerms = { leadTimeDays: 1, orderCutoffTime: "23:59" } as const;
 export const suppliers = [
   { id: "MARA", name: "Les Jardins du Levant", email: "commandes@jardins-levant.example", address: "7, allée des Vergers · Nantes", deliveryDays: [2, 4, 6], style: "market" },
   { id: "FRAIS", name: "La Ferme des Aulnes", email: "commandes@ferme-aulnes.example", address: "12, chemin des Prés · Nantes", deliveryDays: [2, 5], style: "farm" },

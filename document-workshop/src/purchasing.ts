@@ -1,5 +1,5 @@
 import { roundOrderQuantity } from "../../shared/orderQuantity";
-import { ingredientById, ingredients, quantity, suppliers } from "./catalog";
+import { ingredientById, ingredients, quantity, supplierOrderTerms, suppliers } from "./catalog";
 import { draw, isOpen, offsetDate, purchasePrice, serviceNames, weekday } from "./calendar";
 import { planService } from "./forecast";
 import { available, grossDosages } from "./inventory";
@@ -54,7 +54,7 @@ export function bootstrapPurchases(options: Options, purchases: Purchase[]) {
   for (const supplier of suppliers) planPurchase(offsetDate(options.start, -1), first, supplier.id, [], purchases, options, true);
 }
 export function planTomorrow(date: string, lots: Lot[], purchases: Purchase[], options: Options) {
-  const tomorrow = offsetDate(date, 1);
+  const tomorrow = offsetDate(date, supplierOrderTerms.leadTimeDays);
   for (const supplier of suppliers) {
     if (!(supplier.deliveryDays as readonly number[]).includes(weekday(tomorrow))) continue;
     if (purchases.some(p => p.supplierId === supplier.id && !p.receivedOn)) continue;

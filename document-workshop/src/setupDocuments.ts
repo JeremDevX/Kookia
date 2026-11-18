@@ -1,4 +1,4 @@
-import { identity, includedRecipes, ingredients, money, number, suppliers } from "./catalog";
+import { identity, includedRecipes, ingredients, money, number, supplierOrderTerms, suppliers } from "./catalog";
 import { available, grossDosages } from "./inventory";
 import type { Scenario } from "./model";
 import { section, serviceLabel } from "./documentModel";
@@ -15,8 +15,16 @@ export function setupDocuments(scenario: Scenario, add: WriteDocument) {
   ])], ["Hypothèses de travail locales : calendrier, météo, rendements, fréquentation, prix et durées de conservation ne sont pas calibrés sur un établissement réel.",
     "Revoir le choix Terrasse dans les paramètres du restaurant. La commune météo se confirme séparément dans Kookia ; le dossier ne la configure pas."]);
   const weekdays = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
-  add("suppliers", "Répertoire fournisseurs", options.start, "01", [section("Approvisionnements", ["Fournisseur", "Contact", "Tournées prévues"], suppliers.map(s => [s.name, s.email, s.deliveryDays.map(d => weekdays[d]).join(", ")]))],
-    ["Commande la veille de la tournée. Livraison de mise en route convenue avant le premier service ; les jours fermés peuvent recevoir une livraison."]);
+  add("suppliers", "Répertoire fournisseurs", options.start, "01", [
+    section("Approvisionnements (Europe/Paris)", ["Fournisseur", "Contact", "Jours de livraison", "Délai / heure limite"],
+      suppliers.map(s => [s.name, s.email, s.deliveryDays.map(d => weekdays[d]).join(", "),
+        `${supplierOrderTerms.leadTimeDays} j · ${supplierOrderTerms.orderCutoffTime}`])),
+  ], [
+    "Conditions de travail du dossier. Commande de clôture avant l’heure limite. Livraison de mise en route convenue avant le premier service.",
+    ...(suppliers.some(s => s.deliveryDays.some(d => options.closedWeekdays.includes(d)))
+      ? ["Certains jours de livraison tombent sur une fermeture. Kookia calcule ses propositions sur les jours d’ouverture. Pour les réceptions du dossier, suivez les bons de livraison."]
+      : []),
+  ]);
   add("catalog", "Catalogue matières premières", options.start, "01", [section("Produits et ouverture", ["Produit / unité", "Prix HT indicatif", "Initial", "Pas d'achat"], ingredients.map(p => [
     `${p.name} / ${p.unit}`, money(p.price), number(available(opening?.lots ?? [], p.id)), `${number(p.packSize)} ${p.unit}`,
   ])), section("Hypothèses des lots", ["Produit", "Durée de travail", "Rendement net", "Fournisseur"], ingredients.map(p => [p.name, `${p.shelfLife} jours`, `${number(p.yield * 100)} %`, p.supplier]))],

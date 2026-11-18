@@ -64,7 +64,7 @@ describe("document workshop terrace and weather", () => {
     expect(forecast.sections[0].rows).toHaveLength(2);
     expect(forecast.notes.join(" ")).toContain("Météo de scénario");
     expect(forecast.notes.join(" ")).toContain("non calibrés");
-    const files = archiveFiles(scenario), decode = (name: string) => new TextDecoder().decode(files.find(f => f.name === name)!.bytes);
+    const files = archiveFiles(scenario, "2026-09-07"), decode = (name: string) => new TextDecoder().decode(files.find(f => f.name === name)!.bytes);
     expect(JSON.parse(decode("scenario.json")).days[0].weather).toEqual(scenario.days[0].weather);
     expect(decode("guide.md")).toContain("Ne pas réappliquer le coefficient");
     expect(decode("guide.md")).toContain("ne mesure donc pas un gain prédictif");

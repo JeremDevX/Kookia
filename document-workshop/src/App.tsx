@@ -5,7 +5,7 @@ import { displayDate } from "./calendar";
 import { identity, money } from "./catalog";
 import { labels, workflowEntries } from "./documentModel";
 import type { Document } from "./documentModel";
-import { createDocuments, readySales, salesCsv } from "./documents";
+import { createDocuments, readySales, readySalesFilename, salesCsv } from "./documents";
 import { download, pdfBytes } from "./exports";
 import { createArchive } from "./archiveExport";
 import { layoutDocument, svgColor } from "./layout";
@@ -73,7 +73,7 @@ export default function App() {
   const dirty = JSON.stringify(scenario.options) !== JSON.stringify(form) || JSON.stringify(scenario.opening) !== JSON.stringify(continuation);
   const documentDates = [...new Set([...scenario.days.map(day => day.date), ...docs.map(doc => doc.date)])].sort();
   const ready = readySales(sales, today);
-  const futureDays = scenario.days.filter(day => day.date > today).length;
+  const hasFutureDays = scenario.days.some(day => day.date > today);
   const generate = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault(); setError("");
     try {
@@ -101,9 +101,9 @@ export default function App() {
     setBusy(true); setError(""); setNotice(pendingNotice);
     try {
       const { options, opening } = scenario;
-      const zip = await createArchive({ options, opening });
+      const zip = await createArchive({ options, opening, today: formatParisDate() });
       download(zip, `dossier-${options.start}-${options.seed}.zip`, "application/zip");
-      setNotice(current => current === pendingNotice ? "Archive prête. Elle contient les PDF, les CSV de ventes et de recettes, le guide et l’état de reprise." : current);
+      setNotice(current => current === pendingNotice ? "Archive prête. Ouvrez le guide du dossier pour retrouver les pièces à utiliser dans Kookia." : current);
     } catch (cause) {
       setNotice(current => current === pendingNotice ? "" : current);
       setError(current => current || (cause instanceof Error ? cause.message : "L’archive n’a pas pu être créée."));
@@ -144,12 +144,13 @@ export default function App() {
               <button disabled={busy} onClick={archive}><Download size={16} aria-hidden="true" />{busy ? "Préparation…" : "Télécharger le ZIP"}</button>
             </div>
             <div className="export-actions">
-              <button className="secondary" disabled={!ready.length} onClick={() => download(salesCsv(ready), `ventes-jusqu-au-${today}.csv`, "text/csv;charset=utf-8")}>CSV jusqu’à aujourd’hui</button>
+              <button className="secondary" disabled={!ready.length} onClick={() => download(salesCsv(ready), readySalesFilename(today), "text/csv;charset=utf-8")}>CSV jusqu’à aujourd’hui</button>
               <button className="secondary" onClick={() => download(JSON.stringify(scenario.checkpoint, null, 2), "stock-reprise.json", "application/json")}>Télécharger l’état de reprise</button>
             </div>
-            <p className="hint">Le ZIP inclut les fiches recettes en CSV. Utilisez les données du dossier dans un espace de test.</p>
+            <p className="hint">{ready.length ? "Le ZIP inclut le CSV des ventes jusqu’à aujourd’hui." : "Aucune vente à importer à ce jour dans ce dossier."} Utilisez le dossier dans un espace de test.</p>
           </div>
-          {futureDays > 0 && <p className="future-note">{futureDays} journée(s) à venir. Dans votre espace de test, attendez la date du service pour importer ses ventes. La production saisie dans Recettes porte la date du jour.</p>}
+          {hasFutureDays && <p className="future-note">Pour les ventes à venir, importez le fichier du jour à partir de la date indiquée dans son nom.</p>}
+          {scenario.options.start < today && <p className="future-note">Pour les jours passés, les ventes gardent la date du service. « Produire » dans Recettes et « Faire l’inventaire » dans Stocks enregistrent la date de saisie.</p>}
           <div className="summary">
             <div className="panel"><span>Pièces PDF</span><strong>{docs.length}</strong></div>
             <div className="panel"><span>Jours du dossier</span><strong>{scenario.days.length}</strong></div>
