@@ -26,7 +26,7 @@ Sur le serveur du générateur, `npm run documents:sync` simule chaque journée 
 profil Maison Sureau jusqu’à la veille en heure de Paris. Une exécution traite les
 dates dans l’ordre. Elle reprend les lots et les commandes en attente de la
 dernière journée transmise. L’API alimente les ventes et le calendrier de service
-de l’espace de démonstration désigné. Les ventes portent la provenance
+de l’espace de test désigné. Les ventes portent la provenance
 `demo_simulation`. Les quantités suivent les portions servies du CSV quotidien.
 L’interface de l’atelier continue à produire les autres pièces
 du dossier, dont les factures, les réceptions et les relevés de pertes.
@@ -39,12 +39,15 @@ Variables du processus de synchronisation, à renseigner côté serveur :
 | `WORKSHOP_IMPORT_TOKEN` | Jeton dédié partagé avec l’API, distinct du mot de passe du compte. |
 | `WORKSHOP_START_DATE` | Première date à transmettre, au format `AAAA-MM-JJ`. Choisir une date libre dans l’espace de test. |
 | `WORKSHOP_STATE_FILE` | Chemin absolu du fichier de reprise, hors du répertoire de publication. Son dossier doit exister. |
+| `WORKSHOP_OPENING_CHECKPOINT_FILE` | Facultatif. Chemin absolu du `stock-reprise.json` du dossier précédent. Sa clôture doit précéder d’un jour la première date à transmettre. Conserver ce fichier pour les reprises suivantes. |
 | `WORKSHOP_REQUEST_TIMEOUT_MS` | Facultatif. Délai maximal par envoi, 30 000 ms par défaut. |
 
 Configurer le même `WORKSHOP_IMPORT_TOKEN` dans l’API Kookia ainsi que
 `WORKSHOP_IMPORT_RESTAURANT_ID`, l’identifiant serveur de l’espace du compte de
-test. Cet espace doit avoir le mode `demo`. Conserver le jeton dans les secrets
-des deux processus. L’API reste désactivée lorsque les deux variables sont absentes.
+test. Le mode `demo` est accepté par défaut. Si cet espace de test a déjà le
+mode `operational`, autoriser explicitement cette cible dans l’API avec
+`WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE=true`. Conserver le jeton dans
+les secrets des deux processus. L’API reste désactivée sans jeton ni identifiant.
 
 Planifier une exécution quotidienne après minuit, heure de Paris. Utiliser un
 seul service planifié par fichier de reprise et conserver ce fichier entre les

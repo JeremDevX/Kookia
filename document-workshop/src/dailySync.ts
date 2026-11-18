@@ -1,5 +1,5 @@
 import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
 import { formatParisDate } from "../../shared/parisDate";
 import { offsetDate } from "./calendar";
@@ -13,6 +13,7 @@ interface SyncConfig {
   apiOrigin: URL;
   token: string;
   stateFile: string;
+  openingFile?: string;
   startDate: string;
   timeoutMs: number;
 }
@@ -30,6 +31,10 @@ export function readDailySyncConfig(env: NodeJS.ProcessEnv): SyncConfig {
   if (!/^[A-Za-z0-9._~+/=-]{32,256}$/.test(token)) throw new Error("WORKSHOP_IMPORT_TOKEN est manquant ou invalide.");
   const stateFile = env.WORKSHOP_STATE_FILE ?? "";
   if (!isAbsolute(stateFile)) throw new Error("WORKSHOP_STATE_FILE doit être le chemin absolu du fichier de reprise.");
+  const openingFile = env.WORKSHOP_OPENING_CHECKPOINT_FILE || undefined;
+  if (openingFile && (!isAbsolute(openingFile) || resolve(openingFile) === resolve(stateFile))) {
+    throw new Error("WORKSHOP_OPENING_CHECKPOINT_FILE doit être un chemin absolu distinct de WORKSHOP_STATE_FILE.");
+  }
   const startDate = z.iso.date().safeParse(env.WORKSHOP_START_DATE);
   if (!startDate.success) throw new Error("WORKSHOP_START_DATE doit être une date valide au format AAAA-MM-JJ.");
   const timeoutMs = Number(env.WORKSHOP_REQUEST_TIMEOUT_MS ?? 30_000);
@@ -37,7 +42,7 @@ export function readDailySyncConfig(env: NodeJS.ProcessEnv): SyncConfig {
     throw new Error("WORKSHOP_REQUEST_TIMEOUT_MS doit être compris entre 1000 et 120000.");
   }
 
-  return { apiOrigin, token, stateFile, startDate: startDate.data, timeoutMs };
+  return { apiOrigin, token, stateFile, openingFile, startDate: startDate.data, timeoutMs };
 }
 
 async function readCheckpoint(file: string) {
@@ -95,11 +100,19 @@ async function sendDay(config: SyncConfig, day: Day) {
 export async function syncDaily(config: SyncConfig, now = new Date()) {
   const through = offsetDate(formatParisDate(now), -1);
   const profile = defaultScenarioOptions(config.startDate, 1);
-  let checkpoint = await readCheckpoint(config.stateFile);
-  if (checkpoint && (checkpoint.originStart !== config.startDate || checkpoint.seed !== profile.seed)) {
+  const opening = config.openingFile ? await readCheckpoint(config.openingFile) : undefined;
+  if (config.openingFile && !opening) throw new Error("Le fichier de reprise initiale est introuvable.");
+  if (opening && (continuationStart(opening) !== config.startDate || opening.seed !== profile.seed)) {
+    throw new Error("La reprise initiale doit précéder immédiatement la première journée à transmettre et conserver le numéro du dossier.");
+  }
+
+  const state = await readCheckpoint(config.stateFile);
+  const originStart = opening?.originStart ?? config.startDate;
+  if (state && (state.originStart !== originStart || state.seed !== profile.seed || state.asOf < config.startDate)) {
     throw new Error("Le fichier de reprise ne correspond pas au dossier planifié.");
   }
 
+  let checkpoint = state ?? opening;
   let date = checkpoint ? continuationStart(checkpoint) : config.startDate;
   let imported = 0;
   let replayed = 0;

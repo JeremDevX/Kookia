@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it, vi } from "vitest";
+import { env } from "../config/env.js";
 import { prisma } from "../infrastructure/database/prisma.js";
-import { app } from "./app.js";
+import { app, createApp } from "./app.js";
 
 const { restaurantId, token } = vi.hoisted(() => ({
   restaurantId: "fcb95406-85ab-4d26-a11f-2469c556366c", token: "workshop-test-token-".repeat(3),
@@ -10,7 +11,8 @@ const { restaurantId, token } = vi.hoisted(() => ({
 
 vi.mock("../config/env.js", async (importOriginal) => {
   const config = await importOriginal<typeof import("../config/env.js")>();
-  return { ...config, env: { ...config.env, WORKSHOP_IMPORT_RESTAURANT_ID: restaurantId, WORKSHOP_IMPORT_TOKEN: token } };
+  return { ...config, env: { ...config.env, WORKSHOP_IMPORT_RESTAURANT_ID: restaurantId, WORKSHOP_IMPORT_TOKEN: token,
+    WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE: undefined } };
 });
 
 const userIds: string[] = [];
@@ -85,4 +87,42 @@ it("imports an atomic and replayable simulated day into the configured demo work
   await owner.put(`/api/workspace/sales/service-days/${preexistingDate}`).send({ expectedRevision: 0, status: "closed", coverage: "complete" }).expect(200);
   await send(preexistingDate).send(closed).expect(409);
   expect(await prisma.workspaceDocument.count({ where: { restaurantId, kind: { startsWith: "workshop-day:v1:" } } })).toBe(2);
+});
+
+it("admits only the opted-in operational test workspace and preserves its existing records and mode", async () => {
+  const targetId = randomUUID();
+  const otherId = randomUUID();
+  const owner = await workspace("operational", targetId);
+  const otherOwner = await workspace("operational", otherId);
+  const legacyDate = "2024-06-07";
+  const date = "2024-06-08";
+  const item = await owner.post("/api/workspace/sales/items").send({ name: "Tarte" }).expect(201);
+  const legacy = await owner.post("/api/workspace/sales").send({
+    operationId: randomUUID(), saleItemId: item.body.id, serviceDate: legacyDate, quantity: 5,
+  }).expect(201);
+
+  env.WORKSHOP_IMPORT_RESTAURANT_ID = targetId;
+  env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE = "true";
+  const optedInApp = (() => {
+    try { return createApp(); }
+    finally {
+      env.WORKSHOP_IMPORT_RESTAURANT_ID = restaurantId;
+      env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE = undefined;
+    }
+  })();
+  const send = (serviceDate: string) => request(optedInApp).put(`/api/integrations/workshop/days/${serviceDate}`)
+    .set("Authorization", `Bearer ${token}`);
+  const day = { open: true, sales: [{ name: "Tarte", quantity: 9 }] };
+  await send(legacyDate).send(day).expect(409);
+  await send(date).query({ restaurantId: otherId }).send(day).expect(200, { date, replayed: false, saleCount: 1 });
+  await send(date).send(day).expect(200, { date, replayed: true, saleCount: 1 });
+
+  const period = `from=${legacyDate}&to=${date}`;
+  const salesPath = `/api/workspace/sales?${period}`;
+  expect((await owner.get(salesPath).expect(200)).body).toEqual([
+    expect.objectContaining({ saleItemId: item.body.id, serviceDate: date, quantity: 9, source: "demo_simulation" }),
+    legacy.body,
+  ]);
+  expect((await otherOwner.get(salesPath).expect(200)).body).toEqual([]);
+  expect(await prisma.restaurant.findUnique({ where: { id: targetId }, select: { mode: true } })).toEqual({ mode: "operational" });
 });

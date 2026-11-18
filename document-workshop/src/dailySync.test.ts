@@ -106,4 +106,45 @@ describe("daily workshop sync", () => {
     expect(send).not.toHaveBeenCalled();
     expect(await readFile(config.stateFile, "utf8")).toBe(checkpoint);
   });
+
+  it("continues an initial checkpoint without sending prior days or modifying the source file", async () => {
+    const openingFile = join(directory, "opening.json");
+    const initial = generateScenario(defaultScenarioOptions("2026-11-10", 7));
+    const source = JSON.stringify(initial.checkpoint);
+    await writeFile(openingFile, source);
+    const config = readDailySyncConfig({
+      ...fixtureEnv(), WORKSHOP_OPENING_CHECKPOINT_FILE: openingFile, WORKSHOP_START_DATE: "2026-11-17",
+    });
+    const send = vi.fn<typeof fetch>(async (input) => Response.json({ date: dayFromRequest(input), replayed: false }));
+    vi.stubGlobal("fetch", send);
+
+    await expect(syncDaily(config, new Date("2026-11-18T00:30:00+01:00"))).resolves.toEqual({ imported: 1, replayed: 0 });
+    await expect(syncDaily(config, new Date("2026-11-19T00:30:00+01:00"))).resolves.toEqual({ imported: 1, replayed: 0 });
+    expect(send.mock.calls.map(([url]) => dayFromRequest(url))).toEqual(["2026-11-17", "2026-11-18"]);
+    expect(parseCheckpointFile(await readFile(config.stateFile, "utf8"))).toEqual({
+      ...generateScenario(defaultScenarioOptions("2026-11-10", 9)).checkpoint,
+      dossier: "2026-11-18-1",
+    });
+    expect(await readFile(openingFile, "utf8")).toBe(source);
+  });
+
+  it("stops when the configured initial checkpoint is missing or cannot continue on the first date", async () => {
+    const env = fixtureEnv();
+    const openingFile = join(directory, "opening.json");
+    const config = readDailySyncConfig({ ...env, WORKSHOP_OPENING_CHECKPOINT_FILE: openingFile });
+    const send = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", send);
+
+    await expect(syncDaily(config, throughTuesday)).rejects.toThrow("reprise initiale est introuvable");
+    const incompatible = generateScenario({ ...defaultScenarioOptions("2026-09-06", 1), seed: 2 });
+    await writeFile(openingFile, JSON.stringify(incompatible.checkpoint));
+    await expect(syncDaily(config, throughTuesday)).rejects.toThrow("conserver le numéro du dossier");
+    const prior = generateScenario(defaultScenarioOptions("2026-09-05", 1));
+    await writeFile(openingFile, JSON.stringify(prior.checkpoint));
+    await expect(syncDaily(config, throughTuesday)).rejects.toThrow("précéder immédiatement");
+    expect(() => readDailySyncConfig({ ...env, WORKSHOP_OPENING_CHECKPOINT_FILE: env.WORKSHOP_STATE_FILE })).toThrow(
+      "chemin absolu distinct",
+    );
+    expect(send).not.toHaveBeenCalled();
+  });
 });

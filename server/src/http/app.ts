@@ -101,7 +101,8 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   app.use("/api/invitations", invitationAcceptRoutes);
   app.use("/api/workspace", workspaceRoutes);
   if (env.WORKSHOP_IMPORT_TOKEN && env.WORKSHOP_IMPORT_RESTAURANT_ID) {
-    app.use("/api/integrations/workshop", createWorkshopImportRoutes(env.WORKSHOP_IMPORT_TOKEN, env.WORKSHOP_IMPORT_RESTAURANT_ID));
+    app.use("/api/integrations/workshop", createWorkshopImportRoutes(env.WORKSHOP_IMPORT_TOKEN, env.WORKSHOP_IMPORT_RESTAURANT_ID,
+      env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE === "true"));
   }
 
   app.use((_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Ressource introuvable." } }));

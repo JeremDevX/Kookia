@@ -16,7 +16,7 @@ const serviceDay = z.strictObject({ open: z.boolean(), sales: z.array(sale).max(
 const serviceDate = z.iso.date().refine(date => date >= "0001-01-01");
 const tokenDigest = (token: string) => createHash("sha256").update(token).digest();
 
-export function createWorkshopImportRoutes(token: string, restaurantId: string) {
+export function createWorkshopImportRoutes(token: string, restaurantId: string, allowOperationalTestWorkspace: boolean) {
   const routes = Router();
   const expected = tokenDigest(token);
 
@@ -40,7 +40,7 @@ export function createWorkshopImportRoutes(token: string, restaurantId: string) 
       return;
     }
     try {
-      res.json(await importWorkshopDay(restaurantId, date.data, day.data));
+      res.json(await importWorkshopDay(restaurantId, date.data, day.data, allowOperationalTestWorkspace));
     } catch (error) {
       if (!(error instanceof WorkspaceError)) throw error;
       res.status(error.status).json({ error: { code: error.code, message: error.message } });

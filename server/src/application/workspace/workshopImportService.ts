@@ -12,7 +12,7 @@ const actorId = "workshop-import:v1";
 const source = "demo_simulation";
 const reason = "Vente simulée importée depuis l’atelier documentaire.";
 
-export async function importWorkshopDay(restaurantId: string, date: string, day: WorkshopServiceDay) {
+export async function importWorkshopDay(restaurantId: string, date: string, day: WorkshopServiceDay, allowOperationalTestWorkspace: boolean) {
   const serviceDate = new Date(`${date}T00:00:00.000Z`);
   const kind = `workshop-day:v1:${date}`;
   const sales = [...day.sales].sort((a, b) => a.normalizedName < b.normalizedName ? -1 : 1);
@@ -22,8 +22,8 @@ export async function importWorkshopDay(restaurantId: string, date: string, day:
   return prisma.$transaction(async (tx) => {
     await lockSalesWorkspace(tx, restaurantId);
     const workspace = await tx.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } });
-    if (workspace?.mode !== "demo") {
-      throw new WorkspaceError(403, "DEMO_WORKSPACE_REQUIRED", "L’import exige un établissement de démonstration configuré.");
+    if (workspace?.mode !== "demo" && !(allowOperationalTestWorkspace && workspace?.mode === "operational")) {
+      throw new WorkspaceError(403, "DEMO_WORKSPACE_REQUIRED", "L’import exige un établissement de test autorisé.");
     }
 
     const prior = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind } }, select: { data: true } });
