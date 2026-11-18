@@ -90,6 +90,9 @@ describe("daily workshop sync", () => {
       /^WORKSHOP_IMPORT_TOKEN est manquant ou invalide\.$/,
     );
     expect(readDailySyncConfig({ ...env, WORKSHOP_API_ORIGIN: "http://127.0.0.1:3001" }).timeoutMs).toBe(30_000);
+    expect(() => readDailySyncConfig({ ...env, WORKSHOP_VARIATION_FROM: "2026-02-29" })).toThrow(
+      "WORKSHOP_VARIATION_FROM doit être une date valide",
+    );
   });
 
   it("stops without sending if the saved checkpoint is invalid or belongs to another start", async () => {
@@ -179,5 +182,44 @@ describe("daily workshop sync", () => {
     expect(() => readDailySyncConfig({ ...env, WORKSHOP_STOCK_STATE_FILE: env.WORKSHOP_STATE_FILE })).toThrow(
       "chemin absolu distinct",
     );
+  });
+
+  it("preserves legacy sales and stock before the variation date and reproduces the varied payload on retry", async () => {
+    const openingFile = join(directory, "opening.json");
+    const opening = generateScenario(defaultScenarioOptions("2026-11-10", 7)).checkpoint;
+    await writeFile(openingFile, JSON.stringify(opening));
+    const env = { ...fixtureEnv(), WORKSHOP_OPENING_CHECKPOINT_FILE: openingFile, WORKSHOP_START_DATE: "2026-11-17" };
+    const legacy = readDailySyncConfig({ ...env, WORKSHOP_STOCK_STATE_FILE: join(directory, "legacy.json") });
+    const cutover = "2026-11-19";
+    const varied = readDailySyncConfig({ ...env, WORKSHOP_STOCK_STATE_FILE: join(directory, "varied.json"),
+      WORKSHOP_VARIATION_FROM: cutover });
+    const now = new Date("2026-11-21T03:00:00+01:00");
+    let failCutover = false;
+    const send = vi.fn<typeof fetch>(async (input) => {
+      const date = dayFromRequest(input);
+      if (failCutover && date === cutover) {
+        failCutover = false;
+        return new Response(null, { status: 503 });
+      }
+      return Response.json({ date, replayed: false, stockApplied: true });
+    });
+    vi.stubGlobal("fetch", send);
+
+    await expect(syncDaily(legacy, now)).resolves.toEqual({ imported: 4, replayed: 0 });
+    failCutover = true;
+    await expect(syncDaily(varied, now)).rejects.toThrow("2026-11-19 (HTTP 503)");
+    await expect(syncDaily(varied, now)).resolves.toEqual({ imported: 2, replayed: 0 });
+    const bodies = send.mock.calls.map(([, request]) => request?.body);
+    expect(bodies.slice(4, 6)).toEqual(bodies.slice(0, 2));
+    expect(bodies[6]).toBe(bodies[7]);
+    expect(bodies.slice(7)).not.toEqual(bodies.slice(2, 4));
+
+    const before = generateScenario(defaultScenarioOptions("2026-11-17", 2), opening);
+    const after = generateScenario({ ...defaultScenarioOptions(cutover, 2), incident: "mixed",
+      weather: "varied", hasTerrace: true }, before.checkpoint);
+    expect(parseCheckpointFile(await readFile(varied.stateFile, "utf8"))).toEqual({
+      ...after.checkpoint,
+      dossier: "2026-11-20-1",
+    });
   });
 });

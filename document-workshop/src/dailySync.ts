@@ -17,6 +17,7 @@ interface SyncConfig {
   includeStock: boolean;
   openingFile?: string;
   startDate: string;
+  variationFrom?: string;
   timeoutMs: number;
 }
 
@@ -45,12 +46,15 @@ export function readDailySyncConfig(env: NodeJS.ProcessEnv): SyncConfig {
   }
   const startDate = z.iso.date().safeParse(env.WORKSHOP_START_DATE);
   if (!startDate.success) throw new Error("WORKSHOP_START_DATE doit être une date valide au format AAAA-MM-JJ.");
+  const variationFrom = z.iso.date().optional().safeParse(env.WORKSHOP_VARIATION_FROM || undefined);
+  if (!variationFrom.success) throw new Error("WORKSHOP_VARIATION_FROM doit être une date valide au format AAAA-MM-JJ.");
   const timeoutMs = Number(env.WORKSHOP_REQUEST_TIMEOUT_MS ?? 30_000);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 120_000) {
     throw new Error("WORKSHOP_REQUEST_TIMEOUT_MS doit être compris entre 1000 et 120000.");
   }
 
-  return { apiOrigin, token, stateFile: activeStateFile, includeStock: Boolean(stockStateFile), openingFile, startDate: startDate.data, timeoutMs };
+  return { apiOrigin, token, stateFile: activeStateFile, includeStock: Boolean(stockStateFile), openingFile,
+    startDate: startDate.data, variationFrom: variationFrom.data, timeoutMs };
 }
 
 async function readCheckpoint(file: string) {
@@ -111,6 +115,7 @@ async function sendDay(config: SyncConfig, scenario: Scenario) {
 export async function syncDaily(config: SyncConfig, now = new Date()) {
   const through = offsetDate(formatParisDate(now), -1);
   const profile = defaultScenarioOptions(config.startDate, 1);
+  const variedProfile: typeof profile = { ...profile, incident: "mixed", weather: "varied", hasTerrace: true };
   const opening = config.openingFile ? await readCheckpoint(config.openingFile) : undefined;
   if (config.openingFile && !opening) throw new Error("Le fichier de reprise initiale est introuvable.");
   if (opening && (continuationStart(opening) !== config.startDate || opening.seed !== profile.seed)) {
@@ -128,7 +133,8 @@ export async function syncDaily(config: SyncConfig, now = new Date()) {
   let imported = 0;
   let replayed = 0;
   while (date <= through) {
-    const scenario = generateScenario({ ...profile, start: date }, checkpoint);
+    const dayProfile = config.variationFrom && date >= config.variationFrom ? variedProfile : profile;
+    const scenario = generateScenario({ ...dayProfile, start: date }, checkpoint);
     const alreadyReceived = await sendDay(config, scenario);
     await saveCheckpoint(config.stateFile, scenario.checkpoint);
     checkpoint = scenario.checkpoint;

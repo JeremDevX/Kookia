@@ -43,6 +43,7 @@ Variables du processus de synchronisation, à renseigner côté serveur :
 | `WORKSHOP_STATE_FILE` | Chemin absolu du fichier de reprise, hors du répertoire de publication. Son dossier doit exister. |
 | `WORKSHOP_STOCK_STATE_FILE` | Facultatif. Chemin absolu distinct du fichier de reprise des ventes. Active l’envoi conjoint des ventes et des stocks. Le premier envoi compare le stock Kookia au stock d’ouverture du dossier. |
 | `WORKSHOP_OPENING_CHECKPOINT_FILE` | Facultatif. Chemin absolu du `stock-reprise.json` du dossier précédent. Sa clôture doit précéder d’un jour la première date à transmettre. Conserver ce fichier pour les reprises suivantes. |
+| `WORKSHOP_VARIATION_FROM` | Facultatif. À partir de cette date de service (`AAAA-MM-JJ`), activer la météo simulée avec terrasse et les imprévus variés du scénario. Conserver cette date d’activation pour les rejeux. |
 | `WORKSHOP_REQUEST_TIMEOUT_MS` | Facultatif. Délai maximal par envoi, 30 000 ms par défaut. |
 
 Configurer le même `WORKSHOP_IMPORT_TOKEN` dans l’API Kookia ainsi que
@@ -59,6 +60,12 @@ relancer avec le même fichier de reprise. Si l’API avait enregistré la journ
 avant la coupure, elle reconnaît le même envoi et le générateur poursuit. Une
 date déjà occupée ou un contenu différent pour une date transmise déclenche un
 conflit à examiner dans Kookia.
+
+Les variations du scénario dépendent de la date et du numéro de dossier. Un
+rejeu reproduit la fréquentation, la météo et les incidents de la journée. Un
+créneau d’imprévu est prévu tous les trois jours calendaires si le restaurant est
+ouvert ce jour-là. Les commandes en attente à l’activation sont reprises depuis
+la clôture précédente.
 
 Pour ajouter les stocks à un dossier dont les ventes ont déjà été transmises,
 réutiliser le fichier d’ouverture et la première date du dossier avec un nouveau
