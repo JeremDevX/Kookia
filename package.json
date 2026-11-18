@@ -34,7 +34,8 @@
     "restore:restaurant-simulation": "node --import tsx server/src/scripts/restoreRestaurantSimulation.ts",
     "documents:dev": "vite document-workshop --host 127.0.0.1 --port 5180 --strictPort",
     "documents:build": "tsc -p document-workshop/tsconfig.json && vite build document-workshop --outDir ../dist/document-workshop",
-    "documents:preview": "vite preview document-workshop --outDir ../dist/document-workshop --host 127.0.0.1 --port 5180 --strictPort"
+    "documents:preview": "vite preview document-workshop --outDir ../dist/document-workshop --host 127.0.0.1 --port 5180 --strictPort",
+    "documents:sync": "node --import tsx document-workshop/src/syncDaily.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",

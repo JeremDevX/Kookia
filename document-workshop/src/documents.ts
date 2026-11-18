@@ -10,7 +10,7 @@ import { stockDocuments } from "./stockDocuments";
 
 const quoteCsv = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
-function dailySales(day: Day): DaySales {
+export function dailySales(day: Day): DaySales {
   const articles = new Map<string, ArticleSales>();
   for (const service of day.services) for (const transaction of service.transactions) for (const line of transaction.lines) {
     const article = articles.get(line.recipeId) ?? { sold: 0, gross: 0 };

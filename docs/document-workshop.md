@@ -9,8 +9,8 @@ npm run documents:dev
 ```
 
 Ouvrir <http://127.0.0.1:5180>. Arrêt : `Ctrl-C` dans le terminal concerné.
-L’atelier est une application locale séparée, sans API, PostgreSQL, compte,
-connexion caisse ni envoi fournisseur. Il ne modifie aucun enregistrement Kookia.
+L’interface de l’atelier est autonome. Elle prépare les dossiers dans le
+navigateur et les télécharge à la demande.
 
 ```bash
 npm run documents:build
@@ -19,6 +19,40 @@ npm run documents:preview
 
 Le build autonome est dans `dist/document-workshop`. Le build principal vide
 `dist` : reconstruire l’atelier après `npm run build` si nécessaire.
+
+## Synchroniser le compte de test Kookia
+
+Sur le serveur du générateur, `npm run documents:sync` simule chaque journée du
+profil Maison Sureau jusqu’à la veille en heure de Paris. Une exécution traite les
+dates dans l’ordre. Elle reprend les lots et les commandes en attente de la
+dernière journée transmise. L’API alimente les ventes et le calendrier de service
+de l’espace de démonstration désigné. Les ventes portent la provenance
+`demo_simulation`. Les quantités suivent les portions servies du CSV quotidien.
+L’interface de l’atelier continue à produire les autres pièces
+du dossier, dont les factures, les réceptions et les relevés de pertes.
+
+Variables du processus de synchronisation, à renseigner côté serveur :
+
+| Variable | Valeur |
+| --- | --- |
+| `WORKSHOP_API_ORIGIN` | Origine de l’API Kookia, en HTTPS ou en HTTP sur loopback. |
+| `WORKSHOP_IMPORT_TOKEN` | Jeton dédié partagé avec l’API, distinct du mot de passe du compte. |
+| `WORKSHOP_START_DATE` | Première date à transmettre, au format `AAAA-MM-JJ`. Choisir une date libre dans l’espace de test. |
+| `WORKSHOP_STATE_FILE` | Chemin absolu du fichier de reprise, hors du répertoire de publication. Son dossier doit exister. |
+| `WORKSHOP_REQUEST_TIMEOUT_MS` | Facultatif. Délai maximal par envoi, 30 000 ms par défaut. |
+
+Configurer le même `WORKSHOP_IMPORT_TOKEN` dans l’API Kookia ainsi que
+`WORKSHOP_IMPORT_RESTAURANT_ID`, l’identifiant serveur de l’espace du compte de
+test. Cet espace doit avoir le mode `demo`. Conserver le jeton dans les secrets
+des deux processus. L’API reste désactivée lorsque les deux variables sont absentes.
+
+Planifier une exécution quotidienne après minuit, heure de Paris. Utiliser un
+seul service planifié par fichier de reprise et conserver ce fichier entre les
+déploiements. Un échec arrête la transmission sur sa date. Après correction,
+relancer avec le même fichier de reprise. Si l’API avait enregistré la journée
+avant la coupure, elle reconnaît le même envoi et le générateur poursuit. Une
+date déjà occupée ou un contenu différent pour une date transmise déclenche un
+conflit à examiner dans Kookia.
 
 ## Préparer un dossier
 

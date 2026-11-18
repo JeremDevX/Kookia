@@ -14,6 +14,7 @@ import type { WeatherProvider } from "../integrations/weatherProvider.js";
 import { workspaceRoutes } from "./workspaceRoutes.js";
 import { setupRoutes } from "./setupRoutes.js";
 import { invitationAcceptRoutes } from "./invitationRoutes.js";
+import { createWorkshopImportRoutes } from "./workshopImportRoutes.js";
 
 const publicUserResponse = (user: Awaited<ReturnType<typeof getUserBySessionToken>>) => ({ user });
 const setSessionCookie = (res: Response, token: string, expiresAt: Date) => res.cookie(sessionCookieName, token, { httpOnly: true, sameSite: "strict", secure: env.NODE_ENV === "production", path: "/", expires: expiresAt });
@@ -99,11 +100,15 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   app.use("/api/setup", setupRoutes);
   app.use("/api/invitations", invitationAcceptRoutes);
   app.use("/api/workspace", workspaceRoutes);
+  if (env.WORKSHOP_IMPORT_TOKEN && env.WORKSHOP_IMPORT_RESTAURANT_ID) {
+    app.use("/api/integrations/workshop", createWorkshopImportRoutes(env.WORKSHOP_IMPORT_TOKEN, env.WORKSHOP_IMPORT_RESTAURANT_ID));
+  }
 
   app.use((_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Ressource introuvable." } }));
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     void _next;
     if (error && typeof error === "object" && "type" in error && error.type === "entity.too.large") { res.status(413).json({ error: { code: "TOO_LARGE", message: "Les données sont trop volumineuses pour être enregistrées." } }); return; }
+    if (error && typeof error === "object" && "type" in error && error.type === "entity.parse.failed") { res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données fournies sont invalides." } }); return; }
     if (error instanceof AuthError) { const status = error.code === "EMAIL_ALREADY_USED" ? 409 : error.code === "UNAUTHENTICATED" || error.code === "INVALID_CREDENTIALS" || error.code === "INVALID_CURRENT_PASSWORD" ? 401 : 400; res.status(status).json({ error: { code: error.code, message: error.message } }); return; }
     console.error("Unhandled API error", error instanceof Error ? error.message : "unknown error");
     res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Une erreur interne est survenue." } });

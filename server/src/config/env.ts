@@ -16,8 +16,12 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   OPEN_METEO_MODE: z.enum(["disabled", "evaluation", "commercial"]).default("disabled"),
   OPEN_METEO_API_KEY: z.string().min(1).optional(),
+  WORKSHOP_IMPORT_TOKEN: z.string().regex(/^[A-Za-z0-9._~+/=-]{32,256}$/).optional(),
+  WORKSHOP_IMPORT_RESTAURANT_ID: z.uuid().optional(),
 }).refine(value => value.OPEN_METEO_MODE !== "commercial" || Boolean(value.OPEN_METEO_API_KEY),
-  { message: "OPEN_METEO_API_KEY is required for commercial weather access", path: ["OPEN_METEO_API_KEY"] });
+  { message: "OPEN_METEO_API_KEY is required for commercial weather access", path: ["OPEN_METEO_API_KEY"] })
+  .refine(value => Boolean(value.WORKSHOP_IMPORT_TOKEN) === Boolean(value.WORKSHOP_IMPORT_RESTAURANT_ID),
+    { message: "Configure the workshop import token and demo restaurant ID together", path: ["WORKSHOP_IMPORT_TOKEN"] });
 
 export const env = envSchema.parse(process.env);
 export const sessionCookieName = "kookia_session";

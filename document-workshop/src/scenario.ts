@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CATALOG_VERSION, ingredients, quantity, recipes } from "./catalog";
+import { CATALOG_VERSION, identity, ingredients, quantity, recipes } from "./catalog";
 import { isOpen, offsetDate, draw, serviceNames } from "./calendar";
 import { continuationStart, validateCheckpoint } from "./continuation";
 import { available, countAdjustment, expireLots, spoilLot } from "./inventory";
@@ -11,6 +11,12 @@ import { refundTransaction } from "./till";
 import { scenarioWeather } from "./weather";
 
 const incidents: Incident[] = ["short_delivery", "late_delivery", "unavailable", "high_waste", "refund", "stock_gap", "demand_shift"];
+export function defaultScenarioOptions(start: string, days: number): Options {
+  const { name, address, city, email } = identity;
+  return optionsSchema.parse({ name, address, city, email, start, days, covers: 40, seed: 1,
+    incident: "normal", variationPercent: 20, lossPercent: 2, starterPercent: 65, dessertPercent: 60, incidentEvery: 3 });
+}
+
 function incidentOn(date: string, origin: string, options: Options): Incident {
   const index = Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${origin}T12:00:00Z`)) / 86400000);
   if (!isOpen(date, options) || (index + 1) % options.incidentEvery !== 0) return "normal";

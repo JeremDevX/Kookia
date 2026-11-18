@@ -2,22 +2,20 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Download, FileText, Info, Monitor, SlidersHorizontal } from "lucide-react";
 import { formatParisDate } from "../../shared/parisDate";
 import { displayDate } from "./calendar";
-import { identity, money } from "./catalog";
+import { money } from "./catalog";
 import { labels, workflowEntries } from "./documentModel";
 import type { Document } from "./documentModel";
 import { createDocuments, readySales, readySalesFilename, salesCsv } from "./documents";
 import { download, pdfBytes } from "./exports";
 import { createArchive } from "./archiveExport";
 import { layoutDocument, svgColor } from "./layout";
-import { generateScenario } from "./scenario";
-import { optionsSchema } from "./model";
+import { defaultScenarioOptions, generateScenario } from "./scenario";
 import type { Checkpoint, Options } from "./model";
 import { continuationStart, MAX_CHECKPOINT_BYTES, parseCheckpointFile } from "./continuation";
 import { ScenarioSummary } from "./ScenarioSummary";
 import { Settings } from "./Settings";
 
-const initial: Options = optionsSchema.parse({ name: identity.name, address: identity.address, city: identity.city, email: identity.email,
-  start: formatParisDate(), days: 7, covers: 40, seed: 1, incident: "normal", variationPercent: 20, lossPercent: 2, starterPercent: 65, dessertPercent: 60, incidentEvery: 3 });
+const initial = defaultScenarioOptions(formatParisDate(), 7);
 function Preview({ doc }: { doc: Document }) {
   const pages = useMemo(() => layoutDocument(doc), [doc]);
   return <section aria-label="Document sélectionné" className="preview">

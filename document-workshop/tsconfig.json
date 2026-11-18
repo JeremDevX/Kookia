@@ -1,6 +1,6 @@
 {
   "extends": "../tsconfig.app.json",
-  "compilerOptions": { "tsBuildInfoFile": "../node_modules/.tmp/workshop.tsbuildinfo" },
+  "compilerOptions": { "tsBuildInfoFile": "../node_modules/.tmp/workshop.tsbuildinfo", "types": ["vite/client", "node"] },
   "include": ["src"],
   "exclude": ["src/**/*.test.ts"]
 }
