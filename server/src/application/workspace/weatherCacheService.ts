@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WeatherProviderError, type WeatherProvider } from "../../integrations/weatherProvider.js";
 import { weatherForecastSchema, type WeatherPosition } from "../../../../shared/serviceWeather.js";
-import { getWeatherLocation } from "./weatherPositionService.js";
+import { getWeatherLocation, usableWeatherPosition } from "./weatherPositionService.js";
 import { cacheKind, lockWeatherWorkspace, readWeatherCache, weatherJson, weatherKey, type WeatherCache } from "./weatherStorage.js";
 import { completeWeatherForecast, WEATHER_FRESH_MS, WEATHER_MAX_AGE_MS } from "./weatherPolicy.js";
 
@@ -44,7 +44,7 @@ async function refresh(restaurantId: string, position: WeatherPosition, provider
   return prisma.$transaction(async tx => {
     await lockWeatherWorkspace(tx, restaurantId);
     const current = await getWeatherLocation(restaurantId, provider.configured, tx);
-    if (current.status !== "confirmed" || current.revision !== position.revision) return null;
+    if (!usableWeatherPosition(current) || current.revision !== position.revision) return null;
     await tx.workspaceDocument.upsert({ where: weatherKey(restaurantId, cacheKind),
       create: { restaurantId, kind: cacheKind, data: weatherJson(next) },
       update: { data: weatherJson(next), revision: { increment: 1 } } });

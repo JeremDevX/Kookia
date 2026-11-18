@@ -18,6 +18,7 @@ export default function WeatherLocationSettings({ onConfirmed, onConfirmingChang
   const resultsHeading = useRef<HTMLHeadingElement>(null);
   const locationHeading = useRef<HTMLHeadingElement>(null);
   const queryInput = useRef<HTMLInputElement>(null);
+  const hasPosition = location?.status === "confirmed" || location?.status === "matched";
   const load = useCallback(async () => {
     const request = ++requestId.current;
     setBusy(true); setError(""); setStatus("");
@@ -64,10 +65,12 @@ export default function WeatherLocationSettings({ onConfirmed, onConfirmingChang
     {error && <p role="alert">{error}</p>}
     {status && <p role="status">{status}</p>}
     {location && <>
-      {location.status === "confirmed" && location.position && <p>Commune confirmée : <strong>{location.position.place.name}</strong> · {location.position.place.region} · {location.position.place.country}.</p>}
-      {location.status === "needs_review" && <p role="status">Les informations du restaurant ont changé. Confirmez à nouveau sa commune.</p>}
-      {!location.configured ? <p>La connexion météo n’est pas activée. Vos services restent accessibles sans météo.</p> : location.status === "confirmed" && !editing ?
-        <Button type="button" variant="outline" onClick={() => { setEditing(true); setStatus(""); requestAnimationFrame(() => queryInput.current?.focus()); }}>Changer de commune</Button> : <>
+      {hasPosition && location.position && <p>{location.status === "matched" ? "Commune des réglages :" : "Commune confirmée :"} <strong>{location.position.place.name}</strong> · {location.position.place.region} · {location.position.place.country}.</p>}
+      {location.status === "needs_review" && <p role="status">Les informations du restaurant ont changé. Précisez sa commune si nécessaire.</p>}
+      {!location.configured ? <p>La connexion météo n’est pas activée. Vos services restent accessibles sans météo.</p> : hasPosition && !editing ?
+        <Button type="button" variant="outline" onClick={() => { setEditing(true); setStatus(""); requestAnimationFrame(() => queryInput.current?.focus()); }}>
+          {location.status === "matched" ? "Préciser la commune" : "Changer de commune"}
+        </Button> : <>
         <form className="weather-location-form" onSubmit={event => void search(event)}>
           <label className="input-label" htmlFor="weather-place-query">Commune ou code postal</label>
           <input className="input-field" id="weather-place-query" ref={queryInput} required minLength={2} maxLength={120} value={query} disabled={busy}
@@ -84,7 +87,7 @@ export default function WeatherLocationSettings({ onConfirmed, onConfirmingChang
           </label></li>)}</ul>
           {places.length > 0 && <Button type="button" disabled={busy || selectedId === null} onClick={() => void confirm()}>Confirmer cette commune</Button>}
         </div>}
-        {location.status === "confirmed" && <Button type="button" variant="outline" disabled={busy} onClick={() => {
+        {hasPosition && <Button type="button" variant="outline" disabled={busy} onClick={() => {
           setEditing(false); setPlaces(null); setSelectedId(null); setError("");
           requestAnimationFrame(() => locationHeading.current?.focus());
         }}>Annuler le changement</Button>}

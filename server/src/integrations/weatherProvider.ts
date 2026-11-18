@@ -3,7 +3,7 @@ import type { WeatherForecast, WeatherPlace } from "../../../shared/serviceWeath
 export interface WeatherProvider {
   configured: boolean;
   provenance: "live" | "fixture";
-  search(query: string): Promise<WeatherPlace[]>;
+  search(query: string, countryCode?: "FR"): Promise<WeatherPlace[]>;
   resolve(id: number): Promise<WeatherPlace>;
   forecast(place: WeatherPlace): Promise<WeatherForecast>;
 }

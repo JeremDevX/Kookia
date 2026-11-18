@@ -16,6 +16,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   OPEN_METEO_MODE: z.enum(["disabled", "evaluation", "commercial"]).default("disabled"),
   OPEN_METEO_API_KEY: z.string().min(1).optional(),
+  OPEN_METEO_EVALUATION_RESTAURANT_ID: z.uuid().optional(),
   WORKSHOP_IMPORT_TOKEN: z.string().regex(/^[A-Za-z0-9._~+/=-]{32,256}$/).optional(),
   WORKSHOP_IMPORT_RESTAURANT_ID: z.uuid().optional(),
   WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE: z.literal("true").optional(),

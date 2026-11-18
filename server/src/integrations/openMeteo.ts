@@ -36,7 +36,11 @@ export function createOpenMeteo(options: OpenMeteoOptions, transport: typeof fet
     }
   }
   return { configured, provenance: "live",
-    async search(query) { return parsePlaces(await request("geocoding", "search", { name: query, count: "10", language: "fr", format: "json" })); },
+    async search(query, countryCode) {
+      return parsePlaces(await request("geocoding", "search", {
+        name: query, count: "10", language: "fr", format: "json", ...(countryCode ? { countryCode } : {}),
+      }));
+    },
     async resolve(id) {
       const result = parsePlace(await request("geocoding", "get", { id: String(id), language: "fr" }));
       if (result.id !== id) throw new WeatherProviderError("invalid_data");

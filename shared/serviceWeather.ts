@@ -9,15 +9,18 @@ const weatherPlaceSchema = z.object({
   timezone: z.string().min(1).max(100),
 }).strict();
 export type WeatherPlace = z.infer<typeof weatherPlaceSchema>;
-export const weatherPositionSchema = z.object({
-  place: weatherPlaceSchema, precision: z.literal("city"), confirmedAt: z.iso.datetime(),
-  confirmedBy: z.string(), addressFingerprint: z.string(), invalidated: z.boolean(),
+const weatherPositionBase = z.object({
+  place: weatherPlaceSchema, precision: z.literal("city"), addressFingerprint: z.string(), invalidated: z.boolean(),
   provenance: z.enum(["live", "fixture"]),
-}).strict();
+});
+export const weatherPositionSchema = z.union([
+  weatherPositionBase.extend({ confirmedAt: z.iso.datetime(), confirmedBy: z.string() }).strict(),
+  weatherPositionBase.extend({ matchedAt: z.iso.datetime() }).strict(),
+]);
 export type WeatherPosition = z.infer<typeof weatherPositionSchema> & { revision: number };
 export interface WeatherLocationState {
   configured: boolean; city: string; addressFingerprint: string; revision: number;
-  status: "unconfirmed" | "confirmed" | "needs_review";
+  status: "unconfirmed" | "confirmed" | "matched" | "needs_review";
   position: WeatherPosition | null;
 }
 export const confirmWeatherPositionSchema = z.object({

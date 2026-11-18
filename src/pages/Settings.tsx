@@ -68,7 +68,7 @@ export default function Settings() {
         {pendingSchedule && <p role="status">Enregistrez ou annulez les modifications des horaires avant de quitter cette rubrique.</p>}
         <div className="settings-content" id="settings-panel">
           {activeTab === "restaurant" && <><RestaurantSettings onSaved={weather.state.reload} />
-            <Card title="Météo"><Button type="button" variant="outline" aria-haspopup="dialog" onClick={weather.openSettings}>Ouvrir les réglages météo</Button></Card>
+            <Card title="Météo"><p>La ville enregistrée sert à charger la météo locale.</p><Button type="button" variant="outline" aria-haspopup="dialog" onClick={weather.openSettings}>Ouvrir les réglages météo</Button></Card>
             <ServiceScheduleSettings onPendingChange={setPendingSchedule} /></>}
           {activeTab === "suppliers" && <SupplierSettings />}
           {activeTab === "connections" && <ConnectionsSettings onWeatherSettings={weather.openSettings} />}

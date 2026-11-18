@@ -53,17 +53,19 @@ Configuration dans l'environnement **serveur**, puis redémarrage de l'API :
 
 | Variable | Usage |
 | --- | --- |
-| `OPEN_METEO_MODE=disabled` | Valeur par défaut, aucun appel fournisseur |
+| `OPEN_METEO_MODE=disabled` | Valeur par défaut, aucun appel hors éventuel restaurant de test |
 | `OPEN_METEO_MODE=evaluation` | Endpoint public sans clé, prototypage local / usage non commercial autorisé |
 | `OPEN_METEO_MODE=commercial` | Endpoints `customer-`, abonnement adapté requis |
 | `OPEN_METEO_API_KEY` | Obligatoire en mode commercial ; aucun préfixe `VITE_`, aucune clé dans le dépôt |
+| `OPEN_METEO_EVALUATION_RESTAURANT_ID` | Avec `disabled`, accès aux prévisions météo en évaluation pour un seul restaurant de test non commercial |
 
-Après configuration : bouton météo dans la barre du haut → rechercher la commune,
-relire puis confirmer. Ensuite, seule la commune enregistrée et « Changer de commune » sont
-affichés ; les prévisions détaillées sont accessibles à la demande. « Terminer »,
+La consultation charge la météo depuis la ville enregistrée dans les réglages du restaurant
+lorsqu’un résultat unique correspond. Le code postal, s’il figure dans le champ Ville,
+sert à affiner la recherche. En cas d’ambiguïté, la modale météo permet de confirmer la
+commune. Les prévisions détaillées sont accessibles à la demande. « Terminer »,
 la croix ou Échap ferment la modale ; seul le résumé reste dans la barre. Réglages et
 Connexions ouvrent cette même modale, sans formulaire de localisation concurrent.
-Pour désactiver, remettre `disabled` et redémarrer ; les décisions passées restent lisibles.
+Pour désactiver, remettre `disabled`, retirer l’identifiant de test et redémarrer. Les décisions passées restent lisibles.
 Ne pas activer une offre payante ni changer le compte conservé dans le cadre des tests.
 
 ### Preuves et limites
@@ -116,17 +118,19 @@ Ne pas activer une offre payante ni changer le compte conservé dans le cadre de
 
 **Prérequis : S1**, contexte date/service et règles de retour définis.
 
-- Dans la modale ouverte depuis la barre du haut (également accessible depuis Réglages), proposer une recherche explicite depuis la ville du
-  restaurant ; afficher commune, région et pays puis faire confirmer le résultat.
+- Rechercher à partir de la ville enregistrée. Seule une correspondance exacte et unique
+  dans le fuseau Europe/Paris déclenche l’affichage automatique. Si nécessaire, la modale
+  permet de choisir une commune en affichant son nom, sa région et son pays.
   Open-Meteo recherche des lieux ou codes postaux, pas une adresse de rue certifiée :
   enregistrer `precision: city`, jamais `address`. [Documentation du géocodage](https://open-meteo.com/en/docs/geocoding-api)
 - Passer par le serveur ; valider la réponse et résoudre le lieu sélectionné depuis
   son identifiant fournisseur. Ne pas accepter de coordonnées client comme preuve.
   Aucun accès GPS au navigateur, aucune transmission du nom/contact du restaurant.
-- Conserver restaurant, identifiant fournisseur, libellé, coordonnées, fuseau,
-  précision, date/auteur de confirmation, révision et empreinte des champs de
-  localisation de l'établissement. Une modification les rend à reconfirmer ; pas
-  de météo présentée comme celle du nouveau lieu avec l'ancienne position.
+- Conserver la provenance du lieu, la date de correspondance ou la date et l’auteur
+  de confirmation, la révision et l’empreinte des champs de localisation. Une
+  modification invalide la position et le cache de l’ancienne commune. La correspondance
+  automatique alimente l’affichage. Les ajustements et les décisions gardent l’exigence
+  de confirmation explicite.
 - Stocker ce petit document typé avec le mécanisme `WorkspaceDocument` existant,
   sous un type réservé au serveur ; contrôler session, restaurant et révision.
   L'initiale reste Europe/Paris : ne pas convertir implicitement les services vers

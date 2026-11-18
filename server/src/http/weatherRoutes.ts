@@ -2,6 +2,8 @@ import { Router, type Response } from "express";
 import { z } from "zod";
 import { confirmWeatherPositionSchema } from "../../../shared/serviceWeather.js";
 import { slotSchema } from "../../../shared/serviceOperations.js";
+import { env } from "../config/env.js";
+import { createOpenMeteo } from "../integrations/openMeteo.js";
 import { WeatherProviderError, type WeatherProvider } from "../integrations/weatherProvider.js";
 import { getWeatherLocation, confirmWeatherLocation } from "../application/workspace/weatherPositionService.js";
 import { getServiceWeather } from "../application/workspace/serviceWeatherService.js";
@@ -9,7 +11,11 @@ import { rateLimit } from "./rateLimit.js";
 import { workspaceContext as context } from "./workspaceContext.js";
 
 export const weatherRoutes = Router();
-export const weatherProviderFor = (res: Response) => res.locals.weatherProvider as WeatherProvider;
+const evaluationProvider = createOpenMeteo({ mode: "evaluation" });
+export const weatherProviderFor = (res: Response): WeatherProvider => {
+  const provider = res.locals.weatherProvider as WeatherProvider;
+  return !provider.configured && context(res).restaurantId === env.OPEN_METEO_EVALUATION_RESTAURANT_ID ? evaluationProvider : provider;
+};
 const query = z.object({ date: z.iso.date(), slot: slotSchema }).strict();
 weatherRoutes.get("/weather/location", async (_req, res) => {
   res.json(await getWeatherLocation(context(res).restaurantId, weatherProviderFor(res).configured));
@@ -24,7 +30,7 @@ weatherRoutes.post("/weather/location", rateLimit(20, 60_000), async (req, res) 
 });
 weatherRoutes.get("/services/weather", async (req, res) => {
   const { date, slot } = query.parse(req.query);
-  res.json(await getServiceWeather(context(res).restaurantId, date, slot, weatherProviderFor(res)));
+  res.json(await getServiceWeather(context(res).restaurantId, date, slot, weatherProviderFor(res), { matchSavedCity: true }));
 });
 weatherRoutes.use((error: unknown, _req: import("express").Request, res: Response, next: import("express").NextFunction) => {
   if (!(error instanceof WeatherProviderError)) { next(error); return; }

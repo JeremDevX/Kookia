@@ -59,9 +59,10 @@ describe("Open-Meteo boundary", () => {
       .mockResolvedValueOnce(Response.json(place)).mockResolvedValueOnce(Response.json(rawForecast()));
     const provider = createOpenMeteo({ mode: "evaluation" }, transport);
     expect(provider.configured).toBe(true);
-    await provider.search("Paris"); await provider.resolve(place.id); await provider.forecast(parsePlace(place));
+    await provider.search("75001", "FR"); await provider.resolve(place.id); await provider.forecast(parsePlace(place));
     const urls = transport.mock.calls.map(([url]) => new URL(String(url)));
     expect(urls.map(url => url.hostname)).toEqual(["geocoding-api.open-meteo.com", "geocoding-api.open-meteo.com", "api.open-meteo.com"]);
+    expect(urls[0].searchParams.get("countryCode")).toBe("FR");
     expect(urls.every(url => !url.searchParams.has("apikey"))).toBe(true);
   });
   it("respects Retry-After without an automatic retry", async () => {

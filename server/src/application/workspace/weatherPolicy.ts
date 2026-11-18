@@ -65,7 +65,8 @@ export function projectServiceWeather(date: string, slot: ServiceSlot, position:
       maxWindSpeed: winds.length ? Math.max(...winds) : null },
     fetchedAt: forecast.fetchedAt, issuedAt: forecast.issuedAt,
     expiresAt: new Date(Date.parse(forecast.fetchedAt) + WEATHER_MAX_AGE_MS).toISOString(),
-    contextRef: createHash("sha256").update(JSON.stringify(["weather-day-v1", cache.id, position.revision, date, slot])).digest("hex"),
+    contextRef: "confirmedAt" in position
+      ? createHash("sha256").update(JSON.stringify(["weather-day-v1", cache.id, position.revision, date, slot])).digest("hex") : null,
   };
 }
 const nullReason = (stale: boolean, partial: boolean) => stale
