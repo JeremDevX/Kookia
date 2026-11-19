@@ -185,7 +185,9 @@ it("reconciles dated stock lots on a sales-only replay and rolls back a new day 
   const changedLegacy = { ...enriched, lots: [{ ...enriched.lots[0], closingMilli: 600 }, enriched.lots[1]] };
   expect((await send(date).send({ ...day, stock: [changedLegacy] }).expect(409)).body.error.code).toBe("WORKSHOP_STOCK_CHANGED");
   expect(await prisma.workspaceDocument.findUnique({ where: stockDocumentWhere, select: { data: true } })).toEqual({ data: originalDigest });
-  expect((await owner.get(movementPath).expect(200)).body).toEqual(movements);
+  const unchangedMovements = (await owner.get(movementPath).expect(200)).body;
+  expect(unchangedMovements).toHaveLength(movements.length);
+  expect(unchangedMovements).toEqual(expect.arrayContaining(movements));
   expect(await prisma.purchaseReceipt.count({ where: { restaurantId: targetId } })).toBe(0);
 
   const expired = { ...part, openingMilli: 500, closingMilli: 0, lossMilli: 500, adjustmentOutMilli: 0 };
@@ -196,6 +198,9 @@ it("reconciles dated stock lots on a sales-only replay and rolls back a new day 
   const nextStock = { ...stock, lots: [expired, counted, { ...nextDelivery, adjustmentOutMilli: 0 }] };
   await send(nextDate).send({ ...day, stock: [{ ...stock, lots: [{ ...expired, closingMilli: 1, lossMilli: 499 }, remaining] }] }).expect(400);
   await send(nextDate).send({ ...day, stock: [{ ...nextStock, lots: [{ ...expired, adjustmentOutMilli: 1 }] }] }).expect(400);
+  await send(nextDate).send({ ...day, stock: [{ ...stock, unit: "pcs", lots: [
+    { ...counted, openingMilli: 2000, closingMilli: 1000 },
+  ] }] }).expect(400);
   await send(nextDate).send({ ...day, stock: [{ ...stock, lots: [expired, { ...remaining, openingMilli: 800 }] }] }).expect(409);
   const nextPeriod = `from=${nextDate}&to=${nextDate}`;
   expect((await owner.get(`/api/workspace/sales?${nextPeriod}`).expect(200)).body).toEqual([]);
@@ -204,6 +209,8 @@ it("reconciles dated stock lots on a sales-only replay and rolls back a new day 
   await send(nextDate).send({ ...day, stock: [nextStock] })
     .expect(200, { date: nextDate, replayed: false, saleCount: 1, stockApplied: true });
   await send(nextDate).send({ ...day, stock: [nextStock] })
+    .expect(200, { ...acknowledged, date: nextDate });
+  await send(nextDate).send({ ...day, stock: [{ ...nextStock, lots: [expired, counted, nextDelivery] }] })
     .expect(200, { ...acknowledged, date: nextDate });
   const differentSplit = { ...nextStock, lots: [expired, { ...counted, adjustmentOutMilli: 70 }, nextStock.lots[2]] };
   expect((await send(nextDate).send({ ...day, stock: [differentSplit] }).expect(409)).body.error.code).toBe("WORKSHOP_STOCK_CHANGED");

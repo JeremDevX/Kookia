@@ -80,8 +80,12 @@ async function applyLot(tx: Prisma.TransactionClient, restaurantId: string, line
 
 export async function applyWorkshopStock(tx: Prisma.TransactionClient, restaurantId: string, date: string, stock: WorkshopStockInput) {
   const kind = `${prefix}${date}`;
-  const normalized = stock.map(line => ({ ...line, lots: [...line.lots].sort((a, b) => byKey(a.reference, b.reference)) }))
-    .sort((a, b) => byKey(productKey(a), productKey(b)));
+  const hasCountBreakdown = stock.some(line => line.lots.some(lot => lot.adjustmentOutMilli !== undefined));
+  const normalized = stock.map(line => ({
+    ...line,
+    lots: line.lots.map(lot => hasCountBreakdown ? { ...lot, adjustmentOutMilli: lot.adjustmentOutMilli ?? 0 } : lot)
+      .sort((a, b) => byKey(a.reference, b.reference)),
+  })).sort((a, b) => byKey(productKey(a), productKey(b)));
   const digest = stockDigest(normalized);
   const prior = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind } }, select: { data: true } });
   if (prior?.data === digest) return;
