@@ -37,12 +37,7 @@ invitationOwnerRoutes.delete("/:id", async (req, res) => {
 
 export const invitationAcceptRoutes = Router();
 invitationAcceptRoutes.post("/accept", rateLimit(20, 60_000), async (req, res) => {
-  let user;
-  try { user = await getUserBySessionToken(req.cookies[sessionCookieName]); }
-  catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") { res.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Authentification requise." } }); return; }
-    throw error;
-  }
+  const user = await getUserBySessionToken(req.cookies[sessionCookieName]);
   if (req.get("X-Expected-User-Id") !== user.id) { res.status(409).json({ error: { code: "SESSION_CHANGED", message: "Votre session a changé. Rechargez la page avant de continuer." } }); return; }
   const parsed = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) }).strict().safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données fournies sont invalides." } }); return; }

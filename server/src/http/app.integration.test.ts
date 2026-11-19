@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 import { app, createApp } from "./app.js";
-import { env } from "../config/env.js";
+import { env, sessionCookieName } from "../config/env.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 
 const email = `integration-${randomUUID()}@example.com`;
@@ -61,6 +61,8 @@ describe("authentication HTTP flow", () => {
 
   it("rejects unauthenticated account access", async () => {
     await request(app).get("/api/auth/me").expect(401);
+    const malformedSession = encodeURIComponent('j:{"session":"invalid"}');
+    await request(app).get("/api/auth/me").set("Cookie", `${sessionCookieName}=${malformedSession}`).expect(401);
     await request(app).patch("/api/account/profile").send({ displayName: "No access" }).expect(401);
   });
 });

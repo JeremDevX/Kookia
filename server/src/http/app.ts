@@ -27,6 +27,7 @@ const parseBody = <T>(schema: z.ZodType<T>, req: Request, res: Response): T | un
   return result.data;
 };
 const requireUser = async (req: Request) => getUserBySessionToken(req.cookies[sessionCookieName]);
+const accountUserId = (res: Response): string => res.locals.accountUserId;
 const matchesSession = (req: Request, res: Response, userId: string) => {
   if (req.get("X-Expected-User-Id") === userId) return true;
   res.status(409).json({ error: { code: "SESSION_CHANGED", message: "Votre session a changé. Rechargez la page avant de continuer." } });
@@ -86,12 +87,15 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   app.get("/api/auth/me", async (req, res) => { res.json(publicUserResponse(await requireUser(req))); });
 
   app.use("/api/account", async (req, res, next) => {
-    const user = await requireUser(req); if (matchesSession(req, res, user.id)) next();
+    const user = await requireUser(req);
+    if (!matchesSession(req, res, user.id)) return;
+    res.locals.accountUserId = user.id;
+    next();
   });
-  app.patch("/api/account/profile", async (req, res) => { const body = parseBody(profileSchema, req, res); if (!body) return; const user = await requireUser(req); res.json(publicUserResponse(await updateProfile(user.id, body.displayName))); });
-  app.post("/api/account/change-email", async (req, res) => { const body = parseBody(changeEmailSchema, req, res); if (!body) return; const user = await requireUser(req); res.json(publicUserResponse(await changeEmail(user.id, body.newEmail, body.currentPassword))); });
-  app.post("/api/account/change-password", rateLimit(8, 60_000), async (req, res) => { const body = parseBody(changePasswordSchema, req, res); if (!body) return; const user = await requireUser(req); const result = await changePassword(user.id, body.currentPassword, body.newPassword, req.cookies[sessionCookieName]); setSessionCookie(res, result.token, result.expiresAt); res.status(204).send(); });
-  app.delete("/api/account", async (req, res) => { const body = parseBody(deleteAccountSchema, req, res); if (!body) return; const user = await requireUser(req); await deleteAccount(user.id, body.currentPassword); clearSessionCookie(res); res.status(204).send(); });
+  app.patch("/api/account/profile", async (req, res) => { const body = parseBody(profileSchema, req, res); if (!body) return; res.json(publicUserResponse(await updateProfile(accountUserId(res), body.displayName))); });
+  app.post("/api/account/change-email", async (req, res) => { const body = parseBody(changeEmailSchema, req, res); if (!body) return; res.json(publicUserResponse(await changeEmail(accountUserId(res), body.newEmail, body.currentPassword))); });
+  app.post("/api/account/change-password", rateLimit(8, 60_000), async (req, res) => { const body = parseBody(changePasswordSchema, req, res); if (!body) return; const result = await changePassword(accountUserId(res), body.currentPassword, body.newPassword); setSessionCookie(res, result.token, result.expiresAt); res.status(204).send(); });
+  app.delete("/api/account", async (req, res) => { const body = parseBody(deleteAccountSchema, req, res); if (!body) return; await deleteAccount(accountUserId(res), body.currentPassword); clearSessionCookie(res); res.status(204).send(); });
 
   app.use((_, res, next) => {
     res.locals.invoiceExtractionAdapter = invoiceExtractionAdapter;
