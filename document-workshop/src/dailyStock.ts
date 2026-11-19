@@ -12,6 +12,7 @@ interface DailyStockLot {
   closingMilli: number;
   lossMilli: number;
   addition: StockAddition;
+  adjustmentOutMilli: number;
 }
 
 export const toMilliUnits = (amount: number) => Math.round(amount * 1000);
@@ -19,6 +20,7 @@ export const toMilliUnits = (amount: number) => Math.round(amount * 1000);
 export function dailyStock(scenario: Scenario) {
   const day = scenario.days[0];
   const closingByReference = new Map(day.closingLots.map(lot => [lot.id, lot]));
+  const adjustmentByReference = new Map(day.countRemovals.map(({ lotId, quantity }) => [lotId, toMilliUnits(quantity)]));
   const lossByReference = new Map<string, number>();
   for (const waste of day.waste) {
     if (!waste.stockEffect || !waste.lotId) continue;
@@ -39,6 +41,7 @@ export function dailyStock(scenario: Scenario) {
       closingMilli: toMilliUnits(closingByReference.get(lot.id)?.quantity ?? 0),
       lossMilli: lossByReference.get(lot.id) ?? 0,
       addition,
+      adjustmentOutMilli: adjustmentByReference.get(lot.id) ?? 0,
     });
   };
   for (const lot of scenario.opening?.lots ?? []) add(lot, null);

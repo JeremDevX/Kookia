@@ -20,6 +20,7 @@ const movementLabel = (reason: string) => ({
   invoice_import_demo: "Entrée depuis une transcription", simulated_consumption: "Sortie non rapprochée",
   simulated_unit_rounding: "Correction d’unité non rapprochée", simulation_opening: "Stock de départ à vérifier",
   simulation_restock: "Réapprovisionnement à vérifier", simulation_loss: "Perte estimée à vérifier",
+  simulation_stock_adjustment: "Écart d’inventaire à vérifier",
   production: "Production", stock_count: "Écart de comptage",
 }[reason] ?? "Ajustement");
 

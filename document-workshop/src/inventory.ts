@@ -16,7 +16,7 @@ export function grossDosages(recipe: Recipe, lossPercent: number): Record<string
   }));
 }
 /** FEFO, with reception/id as deterministic tie-breakers. Callers record why stock leaves. */
-export function take(lots: Lot[], productId: string, amount: number) {
+export function take(lots: Lot[], productId: string, amount: number, recordRemoval?: (lotId: string, quantity: number) => void) {
   if (amount < 0 || amount > available(lots, productId) + .00001) throw new Error(`Stock insuffisant : ${ingredientById(productId).name}.`);
   let remaining = quantity(amount);
   const sorted = lots.filter(l => l.productId === productId && l.quantity > 0)
@@ -26,6 +26,7 @@ export function take(lots: Lot[], productId: string, amount: number) {
     if (!removed) break;
     lot.quantity = quantity(lot.quantity - removed);
     remaining = quantity(remaining - removed);
+    recordRemoval?.(lot.id, removed);
   }
 }
 export function expireLots(lots: Lot[], day: Day) {
@@ -79,7 +80,7 @@ export function countAdjustment(lots: Lot[], day: Day, options: Options) {
   const product = ingredientById(lot.productId);
   const magnitude = quantity(Math.min(lot.quantity * .15, .1 + draw(options.seed, `${day.date}:count-size`) * .6));
   const delta = draw(options.seed, `${day.date}:count-sign`) < .5 ? -magnitude : magnitude;
-  if (delta < 0) take(lots, lot.productId, -delta);
+  if (delta < 0) take(lots, lot.productId, -delta, (lotId, quantity) => day.countRemovals.push({ lotId, quantity }));
   else lots.push({ ...lot, id: `count-${day.date}-${options.seed}-${lot.productId}`, quantity: delta,
     receivedOn: day.date, expiresOn: lot.expiresOn || offsetDate(day.date, 1) });
   day.stock.find(s => s.id === lot.productId)!.adjustment = delta;

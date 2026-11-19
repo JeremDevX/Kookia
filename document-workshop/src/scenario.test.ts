@@ -79,7 +79,9 @@ describe("chronological restaurant engine", () => {
       { id: "old", productId: "pomme", quantity: 3, receivedOn: "2026-08-25", expiresOn: "2026-09-04", unitCost: 300 },
       { id: "urgent", productId: "pomme", quantity: 2, receivedOn: "2026-08-28", expiresOn: "2026-09-02", unitCost: 320 },
     ];
-    take(lots, "pomme", 2.5);
+    const removals: Array<[string, number]> = [];
+    take(lots, "pomme", 2.5, (lotId, removed) => removals.push([lotId, removed]));
+    expect(removals).toEqual([["urgent", 2], ["old", 0.5]]);
     expect(lots.map(lot => [lot.id, lot.quantity, lot.expiresOn])).toEqual([
       ["old", 2.5, "2026-09-04"], ["urgent", 0, "2026-09-02"],
     ]);

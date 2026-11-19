@@ -81,7 +81,11 @@ Un mouvement simulé met à jour le stock et n’atteste pas d’une réception 
 Un rattrapage des opérations peut rejouer des journées déjà vendues depuis le
 point d’ouverture d’origine. Les réceptions et les productions enregistrent le
 détail simulé. Le stock est ajusté par son propre rapprochement, une fois par
-jour. Pour enrichir une période antérieure à la clôture initiale du stock,
+jour. Les nouveaux imports distinguent la consommation des écarts de
+comptage négatifs et rattachent chaque mouvement au lot concerné. Une journée
+importée avec l’ancien format reste rejouable si ses données d’origine
+concordent. Ses mouvements restent tels qu’enregistrés.
+Pour enrichir une période antérieure à la clôture initiale du stock,
 transmettre les opérations et les ventes avec une reprise distincte et sans
 fichier de reprise stock. La validation des décisions reste dans Kookia.
 

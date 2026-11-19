@@ -58,7 +58,7 @@ export interface Service {
 export interface Day {
   date: string; open: boolean; incident: Incident; events: string[];
   baselineCovers: number; forecastCovers: number; weather: ScenarioWeather; covers: number; services: Service[]; stock: StockLine[];
-  waste: Waste[]; closingLots: Lot[];
+  waste: Waste[]; countRemovals: Array<{ lotId: string; quantity: number }>; closingLots: Lot[];
   gross: number; discount: number; refunded: number; collected: number;
   net: number; tax: number; card: number; cash: number;
 }

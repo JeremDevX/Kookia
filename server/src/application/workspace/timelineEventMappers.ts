@@ -110,6 +110,7 @@ export function stockEvent(movement: StockMovementRow, workspaceMode: "operation
     receipt: "Réception enregistrée",
     initial: "Stock initial enregistré",
     adjustment: "Ajustement de stock enregistré",
+    simulation_stock_adjustment: "Écart d’inventaire à vérifier",
     stock_count: "Écart d’inventaire enregistré",
   };
   const isLoss = movement.reason === "loss" || movement.reason === "simulation_loss";
@@ -280,6 +281,7 @@ export function decisionEvent(decision: DecisionRow, workspaceMode: "operational
   const createdRecipeName = typeof createdRecipe?.name === "string" ? safeText(createdRecipe.name) : "";
   const receiptProductName = typeof receiptSource?.productName === "string" ? safeText(receiptSource.productName) : "";
   const receiptReference = typeof receiptSource?.reference === "string" ? safeText(receiptSource.reference) : "";
+  const receiptSourceLabel = typeof receiptSource?.stockMovementId === "string" ? "facture" : "livraison";
   const receiptQuantity = typeof receiptSource?.receivedQuantity === "number"
     ? receiptSource.receivedQuantity.toLocaleString("fr-FR", { maximumFractionDigits: 3 }) : "";
   const receiptUnit = typeof receiptSource?.unit === "string" ? safeText(receiptSource.unit, 24) : "";
@@ -292,7 +294,7 @@ export function decisionEvent(decision: DecisionRow, workspaceMode: "operational
     ? `${candidateName ? `« ${candidateName} »` : "Fiche candidate"}${candidateStatus ? ` · état : ${candidateStatus}` : ""}`
     : isReceiptLinkedRecipe
       ? `${createdRecipeName ? `« ${createdRecipeName} »` : "Recette"}${receiptProductName ? ` · ${receiptProductName}` : ""}` +
-        `${receiptReference ? ` · livraison ${receiptReference}` : ""}${receiptQuantity ? ` · ${receiptQuantity} ${receiptUnit}` : ""}`
+        `${receiptReference ? ` · ${receiptSourceLabel} ${receiptReference}` : ""}${receiptQuantity ? ` · ${receiptQuantity} ${receiptUnit}` : ""}`
     : decision.decision.startsWith("purchase_suggestion_") && productName
       ? `${productName}${quantityValue === null ? "" : ` · quantité retenue ${quantityValue.toLocaleString("fr-FR", { maximumFractionDigits: 3 })}`}`
       : "La décision est conservée séparément des recommandations actuelles.";

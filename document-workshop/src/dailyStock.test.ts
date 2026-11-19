@@ -14,6 +14,9 @@ it("projects receipts, raw loss, adjustments and exact closing balances in milli
   expect(withLoss.days[0].waste.some(waste => waste.stockEffect)).toBe(true);
   expect(withNegativeCount.days[0].stock.some(line => line.adjustment < 0)).toBe(true);
   expect(withPositiveCount.days[0].stock.some(line => line.adjustment > 0)).toBe(true);
+  expect(dailyStock(withNegativeCount).flatMap(({ lots }) => lots
+    .filter(lot => lot.adjustmentOutMilli > 0).map(({ reference, adjustmentOutMilli }) => ({ reference, adjustmentOutMilli }))))
+    .toEqual([{ reference: "LOT-BC-2026-11-16-1-MARA-poireau", adjustmentOutMilli: 159 }]);
   for (const scenario of [withLoss, withNegativeCount, withPositiveCount]) {
     const day = scenario.days[0];
     const stock = dailyStock(scenario);
@@ -28,14 +31,15 @@ it("projects receipts, raw loss, adjustments and exact closing balances in milli
         expect(lot.closingMilli).toBe(milli(closes?.quantity ?? 0));
         expect(lot.openingMilli > 0).toBe(lot.addition === null);
         expect(lot.addedMilli > 0).toBe(lot.addition !== null);
-        consumedMilli += lot.openingMilli + lot.addedMilli - lot.closingMilli - lot.lossMilli;
+        consumedMilli += lot.openingMilli + lot.addedMilli - lot.closingMilli - lot.lossMilli - lot.adjustmentOutMilli;
       }
       expect(lots.reduce((total, lot) => total + lot.openingMilli, 0)).toBe(milli(opening));
       expect(lots.reduce((total, lot) => total + (lot.addition === "delivery" ? lot.addedMilli : 0), 0)).toBe(milli(received));
       expect(lots.reduce((total, lot) => total + (lot.addition === "adjustment" ? lot.addedMilli : 0), 0)).toBe(milli(Math.max(0, adjustment)));
+      expect(lots.reduce((total, lot) => total + lot.adjustmentOutMilli, 0)).toBe(milli(Math.max(0, -adjustment)));
       expect(lots.reduce((total, lot) => total + lot.lossMilli, 0)).toBe(milli(loss));
       expect(lots.reduce((total, lot) => total + lot.closingMilli, 0)).toBe(milli(closing));
-      expect(consumedMilli).toBe(milli(consumed) + milli(Math.max(0, -adjustment)));
+      expect(consumedMilli).toBe(milli(consumed));
     }
   }
 });

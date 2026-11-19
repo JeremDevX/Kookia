@@ -16,6 +16,7 @@ const quantity = (milli: number) => new Prisma.Decimal(milli).div(1000);
 const cost = (cents: number) => new Prisma.Decimal(cents).div(100);
 const byKey = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0;
 const productKey = (line: { name: string; unit: string }) => `${line.name}\0${line.unit}`;
+const stockDigest = (stock: WorkshopStockInput) => createHash("sha256").update(JSON.stringify(stock)).digest("hex");
 
 function lotId(restaurantId: string, productId: string, reference: string) {
   const bytes = createHash("sha256").update(JSON.stringify([prefix, restaurantId, productId, reference])).digest();
@@ -65,10 +66,15 @@ async function applyLot(tx: Prisma.TransactionClient, restaurantId: string, line
     await applyStockMovement(tx, { ...movement, operationId: `${operation}:loss`, delta: quantity(-source.lossMilli),
       reason: "simulation_loss" }, { lots: { selectedLotId: id } });
   }
-  const consumed = source.openingMilli + source.addedMilli - source.lossMilli - source.closingMilli;
+  const adjustmentOut = source.adjustmentOutMilli ?? 0;
+  const consumed = source.openingMilli + source.addedMilli - source.lossMilli - source.closingMilli - adjustmentOut;
   if (consumed > 0) {
     await applyStockMovement(tx, { ...movement, operationId: `${operation}:out`, delta: quantity(-consumed),
       reason: "simulated_consumption" }, { lots: { selectedLotId: id, usageDate: day(serviceDate) } });
+  }
+  if (adjustmentOut > 0) {
+    await applyStockMovement(tx, { ...movement, operationId: `${operation}:adjustment`, delta: quantity(-adjustmentOut),
+      reason: "simulation_stock_adjustment" }, { lots: { selectedLotId: id } });
   }
 }
 
@@ -76,10 +82,15 @@ export async function applyWorkshopStock(tx: Prisma.TransactionClient, restauran
   const kind = `${prefix}${date}`;
   const normalized = stock.map(line => ({ ...line, lots: [...line.lots].sort((a, b) => byKey(a.reference, b.reference)) }))
     .sort((a, b) => byKey(productKey(a), productKey(b)));
-  const digest = createHash("sha256").update(JSON.stringify(normalized)).digest("hex");
+  const digest = stockDigest(normalized);
   const prior = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind } }, select: { data: true } });
   if (prior?.data === digest) return;
-  if (prior) throw new WorkspaceError(409, "WORKSHOP_STOCK_CHANGED", "Le stock de cette journée a déjà été synchronisé avec d’autres valeurs.");
+  if (prior) {
+    // Old imports folded count removals into consumption. Only their stored digest matches this projection.
+    const legacy = normalized.map(line => ({ ...line, lots: line.lots.map(lot => ({ ...lot, adjustmentOutMilli: undefined })) }));
+    if (prior.data === stockDigest(legacy)) return;
+    throw new WorkspaceError(409, "WORKSHOP_STOCK_CHANGED", "Le stock de cette journée a déjà été synchronisé avec d’autres valeurs.");
+  }
   const latest = await tx.workspaceDocument.findFirst({ where: { restaurantId, kind: { startsWith: prefix } },
     orderBy: { kind: "desc" }, select: { kind: true } });
   if (latest && addCalendarDays(latest.kind.slice(prefix.length), 1) !== date) {

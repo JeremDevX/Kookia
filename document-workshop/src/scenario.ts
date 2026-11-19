@@ -24,7 +24,7 @@ function incidentOn(date: string, origin: string, options: Options): Incident {
 }
 function openingDay(date: string, opening: Checkpoint["lots"], incident: Incident, options: Options): Day {
   return { date, open: isOpen(date, options), incident, events: [], baselineCovers: 0, forecastCovers: 0, covers: 0, weather: scenarioWeather(date, options),
-    services: [], waste: [], closingLots: [], stock: ingredients.map(p => ({ id: p.id, opening: available(opening, p.id), ordered: 0,
+    services: [], waste: [], countRemovals: [], closingLots: [], stock: ingredients.map(p => ({ id: p.id, opening: available(opening, p.id), ordered: 0,
       received: 0, shortage: 0, consumed: 0, loss: 0, adjustment: 0, closing: 0 })),
     gross: 0, discount: 0, refunded: 0, collected: 0, net: 0, tax: 0, card: 0, cash: 0 };
 }
