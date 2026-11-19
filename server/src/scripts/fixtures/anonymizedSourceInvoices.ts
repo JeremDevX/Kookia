@@ -1,11 +1,6 @@
 import { createHash } from "node:crypto";
+import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import type { SourceInvoice } from "../sourceInvoices.js";
-
-const day = 24 * 60 * 60 * 1000;
-
-function dateAt(start: string, offset: number) {
-  return new Date(Date.parse(`${start}T00:00:00.000Z`) + offset * day).toISOString().slice(0, 10);
-}
 
 export function createAnonymizedSourceInvoices(): SourceInvoice[] {
   const periods = [
@@ -20,7 +15,7 @@ export function createAnonymizedSourceInvoices(): SourceInvoice[] {
   for (const period of periods) {
     for (let offset = 0; offset < period.count; offset += 1) {
       sequence += 1;
-      const date = dateAt(period.start, offset);
+      const date = addCalendarDays(period.start, offset);
       const type: SourceInvoice["type"] = sequence >= 4 && sequence <= 18
         ? "credit"
         : sequence === 19 ? "delivery" : "invoice";

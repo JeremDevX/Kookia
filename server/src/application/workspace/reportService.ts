@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { readDeclaredWaste, summarizeDeclaredWaste } from "./declaredWasteRead.js";
 import { wasteKindLabels } from "../../../../shared/declaredWaste.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -18,7 +19,7 @@ interface DeclaredLossSummary {
 
 export async function getOperationalReport(restaurantId: string, from: string, to: string) {
   const start = new Date(`${from}T00:00:00Z`);
-  const end = new Date(`${to}T00:00:00Z`); end.setUTCDate(end.getUTCDate() + 1);
+  const end = new Date(`${addCalendarDays(to, 1)}T00:00:00Z`);
   const range = { gte: start, lt: end };
   const operationalScope = { restaurantId, restaurant: { mode: "operational" as const } };
   const [workspace, sales, movements, productions, orders, typedRows] = await prisma.$transaction([

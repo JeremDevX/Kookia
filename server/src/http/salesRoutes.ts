@@ -1,4 +1,5 @@
 import express, { Router, type Request } from "express";
+import { addCalendarDays } from "../../../shared/calendarDate.js";
 import { formatParisDate } from "../../../shared/parisDate.js";
 import { z } from "zod";
 import { createSale, correctSale, listSales, listSaleItems, createSaleItem, latestService, listServiceDays, saveServiceDay,
@@ -26,7 +27,7 @@ const period = z.object({ from: z.iso.date(), to: z.iso.date() }).strict().refin
 );
 const parsePeriod = (req: Request) => {
   const end = formatParisDate();
-  const start = new Date(Date.parse(end) - 29 * 86_400_000).toISOString().slice(0, 10);
+  const start = addCalendarDays(end, -29);
   return period.parse({ from: req.query.from ?? start, to: req.query.to ?? end });
 };
 
@@ -57,9 +58,9 @@ salesRoutes.put("/sales/service-days/:date", async (req, res) => {
 });
 salesRoutes.get("/sales/metrics", async (req, res) => {
   const { from, to } = parsePeriod(req);
-  const duration = Date.parse(to) - Date.parse(from) + 86_400_000;
-  const previousTo = new Date(Date.parse(from) - 86_400_000).toISOString().slice(0, 10);
-  const previousFrom = new Date(Date.parse(from) - duration).toISOString().slice(0, 10);
+  const dayCount = (Date.parse(to) - Date.parse(from)) / 86_400_000 + 1;
+  const previousTo = addCalendarDays(from, -1);
+  const previousFrom = addCalendarDays(from, -dayCount);
   const { restaurantId } = workspace(res);
   const start = new Date(`${previousFrom}T00:00:00Z`), end = new Date(`${to}T00:00:00Z`);
   const [rows, serviceDays] = await Promise.all([
