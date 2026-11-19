@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type RefObject } from "react";
+import { useEffect, useState, type FormEvent, type RefObject, type SetStateAction } from "react";
 import type { Product, Recipe } from "../../types";
 import type { RecipeSuggestion } from "../../domain/recipes/recipeSuggestionPolicy";
 import { createRecipe, updateRecipe, type RecipeMutation } from "../../services/recipeService";
@@ -13,18 +13,18 @@ interface RecipeDraft {
 const blankDraft = (): RecipeDraft => ({ name: "", category: "Plat", prepTime: 15, yieldPortions: 1,
   effectiveFrom: formatLocalISODate(), steps: [], ingredients: [{ productId: "", quantity: 0.1 }] });
 
-export default function RecipeEditor({ recipe, products, headingRef, initialSuggestion, initialImport = null, onClose, onSaved }: {
+export default function RecipeEditor({ recipe, products, headingRef, initialSuggestion, initialImport = null, onEdit, onClose, onSaved }: {
   recipe: Recipe | null; products: Product[]; headingRef: RefObject<HTMLHeadingElement | null>;
   initialSuggestion: RecipeSuggestion | null;
   initialImport?: ImportedIngredient[] | null;
-  onClose: () => void; onSaved: () => Promise<void>;
+  onEdit: () => void; onClose: () => void; onSaved: () => Promise<void>;
 }) {
-  const [draft, setDraft] = useState<RecipeDraft>(blankDraft);
+  const [draft, setRecipeDraft] = useState<RecipeDraft>(blankDraft);
   const [operationId, setOperationId] = useState(() => crypto.randomUUID());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
-    setDraft(recipe ? { name: recipe.name, category: recipe.category, prepTime: recipe.prepTime,
+    setRecipeDraft(recipe ? { name: recipe.name, category: recipe.category, prepTime: recipe.prepTime,
       yieldPortions: recipe.yieldPortions, effectiveFrom: formatLocalISODate(), steps: recipe.steps ?? [],
       ingredients: recipe.ingredients.map(({ productId, quantity, netQuantity }) => ({ productId, quantity, netQuantity })) }
       : initialSuggestion ? { name: initialSuggestion.name, category: initialSuggestion.category,
@@ -35,6 +35,11 @@ export default function RecipeEditor({ recipe, products, headingRef, initialSugg
     setOperationId(crypto.randomUUID()); setError("");
     requestAnimationFrame(() => headingRef.current?.focus());
   }, [recipe, initialSuggestion, initialImport, headingRef]);
+
+  const setDraft = (next: SetStateAction<RecipeDraft>) => {
+    setRecipeDraft(next);
+    onEdit();
+  };
 
   const setIngredient = (index: number, next: Partial<RecipeDraft["ingredients"][number]>) =>
     setDraft((current) => ({ ...current, ingredients: current.ingredients.map((row, rowIndex) =>

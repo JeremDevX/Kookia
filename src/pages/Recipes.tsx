@@ -45,27 +45,34 @@ export default function Recipes() {
     confirmProduction, reportRefusal } = useRecipeProduction(needsJournal, refetch, refreshProducts);
 
   const [editorFlow, setEditorFlow] = useState<EditorFlow | null>(null);
+  const [recipeEdited, setRecipeEdited] = useState(false);
   const [dialog, setDialog] = useState<ProductionDialog | null>(null);
   const editorHeading = useRef<HTMLHeadingElement>(null);
   const pageHeading = useRef<HTMLHeadingElement>(null);
   const editorOrigin = useRef<HTMLButtonElement | null>(null);
   const csvOpen = editorFlow?.kind === "csv";
-  const csvBlocker = useBlocker(csvOpen);
+  const recipeDirty = editorFlow?.kind === "editor"
+    && (recipeEdited || editorFlow.imported !== null || editorFlow.suggestion !== null);
+  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
+    csvOpen || (recipeDirty && currentLocation.pathname !== nextLocation.pathname));
 
   useEffect(() => {
-    if (csvBlocker.state !== "blocked") return;
-    if (!window.confirm("L’import en cours sera perdu. Quitter cette page ?")) {
-      csvBlocker.reset();
+    if (blocker.state !== "blocked") return;
+    const message = csvOpen ? "L’import en cours sera perdu. Quitter cette page ?"
+      : "La recette n’est pas enregistrée. Quitter cette page ?";
+    if (!window.confirm(message)) {
+      blocker.reset();
       return;
     }
     const timer = window.setTimeout(() => {
       setEditorFlow(null);
-      csvBlocker.proceed();
+      setRecipeEdited(false);
+      blocker.proceed();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [csvBlocker]);
+  }, [blocker, csvOpen]);
 
-  useBeforeUnloadWarning(csvOpen);
+  useBeforeUnloadWarning(csvOpen || recipeDirty);
 
   const edit = (recipe: Recipe | null, trigger: HTMLButtonElement, suggestion: RecipeSuggestion | null = null) => {
     editorOrigin.current = trigger;
@@ -73,6 +80,7 @@ export default function Recipes() {
   };
   const closeEditor = () => {
     setEditorFlow(null);
+    setRecipeEdited(false);
     requestAnimationFrame(() => {
       if (editorOrigin.current?.isConnected && !editorOrigin.current.disabled) editorOrigin.current.focus();
       else pageHeading.current?.focus();
@@ -144,7 +152,7 @@ export default function Recipes() {
       <p role="status">Enregistrez ou annulez la recette en cours avant d’en ouvrir une autre.</p>
       <RecipeEditor recipe={editorFlow.recipe} products={products} headingRef={editorHeading}
         initialSuggestion={editorFlow.suggestion} initialImport={editorFlow.imported}
-        onClose={closeEditor} onSaved={handleRecipeSaved} />
+        onEdit={() => setRecipeEdited(true)} onClose={closeEditor} onSaved={handleRecipeSaved} />
     </>}
     {csvOpen && <RecipeCsvImport products={products} onClose={closeEditor}
       onApply={(imported) => setEditorFlow({ kind: "editor", recipe: null, suggestion: null, imported })} />}
