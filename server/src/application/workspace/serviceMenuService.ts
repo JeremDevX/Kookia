@@ -7,14 +7,24 @@ import type { ServiceSlot } from "../../../../shared/serviceCalendar.js";
 
 type Database = PrismaClient | Prisma.TransactionClient;
 const date = (value: string) => new Date(`${value}T00:00:00Z`);
-export const menuDto = (row: { id: string; serviceDate: Date; slot: string; revision: number; entries: Prisma.JsonValue; note: string; createdAt: Date }): ServiceMenu => ({
+const menuDto = (row: { id: string; serviceDate: Date; slot: string; revision: number; entries: Prisma.JsonValue; note: string; createdAt: Date }): ServiceMenu => ({
   id: row.id, serviceDate: row.serviceDate.toISOString().slice(0, 10), slot: row.slot as ServiceSlot,
   revision: row.revision, entries: row.entries as unknown as MenuEntry[], note: row.note, createdAt: row.createdAt.toISOString(),
 });
+const menuVersionsQuery = (restaurantId: string, serviceDate: string, slot: ServiceSlot) => ({
+  where: { restaurantId, serviceDate: date(serviceDate), slot }, orderBy: { revision: "desc" },
+}) satisfies Prisma.ServiceMenuVersionFindManyArgs;
+
 export async function getServiceMenu(restaurantId: string, serviceDate: string, slot: ServiceSlot, db: Database = prisma): Promise<ServiceMenu> {
-  const menu = await db.serviceMenuVersion.findFirst({ where: { restaurantId, serviceDate: date(serviceDate), slot }, orderBy: { revision: "desc" } });
+  const menu = await db.serviceMenuVersion.findFirst(menuVersionsQuery(restaurantId, serviceDate, slot));
   return menu ? menuDto(menu) : { id: null, serviceDate, slot, revision: 0, entries: [], note: "", createdAt: null };
 }
+
+export async function getServiceMenuHistory(restaurantId: string, serviceDate: string, slot: ServiceSlot): Promise<ServiceMenu[]> {
+  const versions = await prisma.serviceMenuVersion.findMany(menuVersionsQuery(restaurantId, serviceDate, slot));
+  return versions.map(menuDto);
+}
+
 export async function saveServiceMenu(restaurantId: string, actorId: string, input: MenuInput) {
   return prisma.$transaction(async tx => {
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);

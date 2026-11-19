@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type DailySale, type SaleServiceAllocation } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
 import { simulationActor } from "./operationProvenance.js";
@@ -109,18 +109,22 @@ export async function saveCalendarService(restaurantId: string, actorId: string,
   });
 }
 
+function saleAllocationDto(sale: Pick<DailySale, "id" | "quantity" | "revision">, allocation: SaleServiceAllocation | null) {
+  return { saleId: sale.id, ...qualifiedAllocation(sale, allocation), revision: allocation?.revision ?? 0,
+    saleRevision: sale.revision, previousLunchQuantity: allocation?.lunchQuantity ?? 0,
+    previousDinnerQuantity: allocation?.dinnerQuantity ?? 0 };
+}
+
 export async function getSaleAllocation(restaurantId: string, saleId: string) {
   const sale = await prisma.dailySale.findUnique({ where: { restaurantId_id: { restaurantId, id: saleId } }, include: { serviceAllocation: true } });
   if (!sale) throw new WorkspaceError(404, "NOT_FOUND", "Vente introuvable.");
-  return { saleId, ...qualifiedAllocation(sale, sale.serviceAllocation), revision: sale.serviceAllocation?.revision ?? 0,
-    saleRevision: sale.revision, previousLunchQuantity: sale.serviceAllocation?.lunchQuantity ?? 0,
-    previousDinnerQuantity: sale.serviceAllocation?.dinnerQuantity ?? 0 };
+  return saleAllocationDto(sale, sale.serviceAllocation);
 }
 
 export async function saveSaleAllocation(restaurantId: string, actorId: string, saleId: string, input: {
   lunchQuantity: number; dinnerQuantity: number; expectedRevision: number; expectedSaleRevision: number;
 }) {
-  await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     await lock(tx, restaurantId);
     const sale = await tx.dailySale.findUnique({ where: { restaurantId_id: { restaurantId, id: saleId } }, include: { serviceAllocation: true } });
     if (!sale) throw new WorkspaceError(404, "NOT_FOUND", "Vente introuvable.");
@@ -129,7 +133,7 @@ export async function saveSaleAllocation(restaurantId: string, actorId: string, 
       throw new WorkspaceError(400, "INVALID_ALLOCATION", "La ventilation ne peut pas dépasser les ventes enregistrées.");
     const where = { restaurantId_saleId: { restaurantId, saleId } };
     const data = { lunchQuantity: input.lunchQuantity, dinnerQuantity: input.dinnerQuantity, saleRevision: sale.revision, actorId };
-    await tx.saleServiceAllocation.upsert({ where, create: { restaurantId, saleId, ...data }, update: { ...data, revision: { increment: 1 } } });
+    const allocation = await tx.saleServiceAllocation.upsert({ where, create: { restaurantId, saleId, ...data }, update: { ...data, revision: { increment: 1 } } });
     for (const slot of serviceSlots) {
       const key = { restaurantId_serviceDate_slot: { restaurantId, serviceDate: sale.serviceDate, slot } };
       const session = await tx.restaurantServiceSession.findUnique({ where: key });
@@ -137,6 +141,6 @@ export async function saveSaleAllocation(restaurantId: string, actorId: string, 
         throw new WorkspaceError(409, "SERVICE_PLANNED_CLOSED", "Ce service est déclaré fermé. Déclarez-le ouvert avant de lui attribuer des ventes.");
       if (session?.coverage === "complete") await tx.restaurantServiceSession.update({ where: key, data: { coverage: "partial", revision: { increment: 1 }, actorId } });
     }
+    return saleAllocationDto(sale, allocation);
   });
-  return getSaleAllocation(restaurantId, saleId);
 }

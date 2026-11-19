@@ -1,9 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { menuInputSchema, slotSchema } from "../../../shared/serviceOperations.js";
-import { getServiceMenu, menuDto, saveServiceMenu } from "../application/workspace/serviceMenuService.js";
+import { getServiceMenu, getServiceMenuHistory, saveServiceMenu } from "../application/workspace/serviceMenuService.js";
 import { getOperationalForecast } from "../application/workspace/operationalForecastService.js";
-import { prisma } from "../infrastructure/database/prisma.js";
 import { refreshForecastWeather } from "../application/workspace/forecastWeatherService.js";
 import type { WeatherProvider } from "../integrations/weatherProvider.js";
 import { workspaceContext as context } from "./workspaceContext.js";
@@ -15,9 +14,7 @@ serviceOperationsRoutes.get("/service-menu", async (req, res) => {
 });
 serviceOperationsRoutes.get("/service-menu/history", async (req, res) => {
   const query = serviceQuery.parse(req.query);
-  const rows = await prisma.serviceMenuVersion.findMany({ where: { restaurantId: context(res).restaurantId,
-    serviceDate: new Date(`${query.date}T00:00:00Z`), slot: query.slot }, orderBy: { revision: "desc" } });
-  res.json(rows.map(menuDto));
+  res.json(await getServiceMenuHistory(context(res).restaurantId, query.date, query.slot));
 });
 serviceOperationsRoutes.post("/service-menu", async (req, res) => {
   const { restaurantId, actorId } = context(res); res.status(201).json(await saveServiceMenu(restaurantId, actorId, menuInputSchema.parse(req.body)));
