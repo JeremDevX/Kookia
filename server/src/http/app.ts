@@ -45,6 +45,9 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   app.use("/api/workspace/inventory-session", express.json({ limit: "2mb", type: "application/json" }));
   app.use("/api/workspace/sales/imports", express.json({ limit: "512kb", type: "application/json" }));
   app.use("/api/integrations/workshop/days", express.json({ limit: "128kb", type: "application/json" }));
+  // Cards with formulas and sheets with detailed notes can exceed the default limit.
+  app.post("/api/workspace/service-menu", express.json({ limit: "1mb", type: "application/json" }));
+  app.post("/api/workspace/services/sheet", express.json({ limit: "640kb", type: "application/json" }));
   app.use(express.json({ limit: "16kb", type: "application/json" }));
   app.use(cookieParser());
   app.use((req, res, next) => {
