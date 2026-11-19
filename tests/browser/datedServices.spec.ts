@@ -2,13 +2,14 @@ import { expect } from "@playwright/test";
 import { serviceSlots, type CalendarService } from "../../shared/serviceCalendar";
 import { test } from "./restaurantFixture";
 
+const calendarPath = "/api/workspace/services/calendar";
+
 test("conserve le bon service quand une lecture précédente arrive en retard", async ({ page, restaurant }) => {
   await restaurant.completeSetup();
   const olderDate = "2025-05-04";
   const selectedDate = "2025-05-05";
   const reads: string[] = [];
   const olderRead = Promise.withResolvers<void>();
-  const calendarPath = "/api/workspace/services/calendar";
   const isCalendarRead = (method: string, url: string, date: string) => {
     const request = new URL(url);
     return method === "GET" && request.pathname === calendarPath && request.searchParams.get("from") === date;
@@ -73,6 +74,76 @@ test("conserve le bon service quand une lecture précédente arrive en retard", 
   } finally {
     olderRead.resolve();
   }
+});
+
+test("permet de corriger une saisie refusée sans perdre le motif ni les couverts", async ({ page, restaurant }) => {
+  await restaurant.completeSetup();
+  await page.goto("/sales");
+  await expect(page.getByRole("status", { name: "Ouverture de KookiA" })).toBeHidden();
+  const editor = page.getByRole("region", { name: "Services midi et soir" });
+  const note = editor.getByLabel("Motif / contexte, sans donnée personnelle");
+  const covers = editor.getByRole("spinbutton", { name: "Couverts observés (facultatif)" });
+  const opening = editor.getByRole("combobox", { name: "Ouverture prévue", exact: true });
+  const save = editor.getByRole("button", { name: "Enregistrer le service" });
+  await editor.getByLabel("Date", { exact: true }).fill("2025-05-05");
+  await expect(covers).toBeEnabled();
+  await opening.selectOption("closed");
+  await note.fill("Petit groupe accueilli");
+  await covers.fill("12");
+  await expect(note).toHaveValue("Petit groupe accueilli");
+  await expect(covers).toHaveValue("12");
+  await save.press("Enter");
+  await expect(editor.getByRole("alert")).toContainText("Ce service a des ventes attribuées ou des couverts observés");
+  await expect(note).toHaveValue("Petit groupe accueilli");
+  await expect(covers).toHaveValue("12");
+
+  await opening.selectOption("open");
+  await expect(save).toBeEnabled();
+  await save.press("Enter");
+  await expect(editor.getByRole("status")).toContainText("Service enregistré.");
+  await expect(note).toHaveValue("Petit groupe accueilli");
+  await expect(covers).toHaveValue("12");
+});
+
+test("préserve la saisie et présente la version enregistrée en cas de modification concurrente", async ({ page, restaurant }) => {
+  await restaurant.completeSetup();
+  await page.goto("/sales");
+  await expect(page.getByRole("status", { name: "Ouverture de KookiA" })).toBeHidden();
+  const editor = page.getByRole("region", { name: "Services midi et soir" });
+  const date = "2025-05-05";
+  const note = editor.getByLabel("Motif / contexte, sans donnée personnelle");
+  const covers = editor.getByRole("spinbutton", { name: "Couverts observés (facultatif)" });
+  const save = editor.getByRole("button", { name: "Enregistrer le service" });
+  await editor.getByLabel("Date", { exact: true }).fill(date);
+  await expect(note).toBeEnabled();
+  await note.fill("Motif saisi par le chef");
+  await expect(note).toHaveValue("Motif saisi par le chef");
+  const concurrent = await page.request.put(calendarPath, { headers: restaurant.headers, data: {
+    serviceDate: date, slot: "lunch", plannedOpen: true, actualCovers: 18, coverage: "missing",
+    note: "Motif déjà enregistré", expectedRevision: 0,
+  } });
+  expect(concurrent.ok()).toBe(true);
+
+  await save.press("Enter");
+  const reload = editor.getByRole("button", { name: "Recharger le service" });
+  await expect(reload).toBeEnabled();
+  await expect(save).toBeDisabled();
+  await expect(note).toHaveValue("Motif saisi par le chef");
+  await reload.press("Enter");
+  const resume = editor.getByRole("button", { name: "Reprendre ma saisie" });
+  await expect(resume).toBeEnabled();
+  await expect(note).toHaveValue("Motif déjà enregistré");
+  await expect(save).toBeDisabled();
+
+  await resume.press("Enter");
+  await expect(editor.getByRole("heading", { name: "Services midi et soir" })).toBeFocused();
+  await expect(note).toHaveValue("Motif saisi par le chef");
+  await expect(covers).toHaveValue("18");
+  await expect(save).toBeEnabled();
+  await save.press("Enter");
+  await expect(editor.getByRole("status")).toContainText("Service enregistré.");
+  await expect(note).toHaveValue("Motif saisi par le chef");
+  await expect(covers).toHaveValue("18");
 });
 
 test("suspend les saisies pendant le rechargement de la fiche de service", async ({ page, restaurant }) => {
