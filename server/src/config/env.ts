@@ -10,7 +10,7 @@ const envSchema = z.object({
     const origin = new URL(value);
     return origin.protocol === "http:" && localHosts.has(origin.hostname) && origin.pathname === "/" &&
       !origin.search && !origin.hash && !origin.username && !origin.password;
-  }, "APP_ORIGIN must be an HTTP loopback origin"),
+  }, "APP_ORIGIN must be an HTTP loopback origin").transform((value) => new URL(value).origin),
   PORT: z.coerce.number().int().positive().default(3001),
   SESSION_TTL_DAYS: z.coerce.number().int().positive().default(7),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
