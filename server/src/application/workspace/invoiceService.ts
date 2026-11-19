@@ -7,6 +7,7 @@ import { simulationActor } from "./operationProvenance.js";
 import { Prisma, type WorkspaceMode } from "@prisma/client";
 import type { z } from "zod";
 import type { sourceInvoiceLineSchema, InvoiceDraft, InvoiceStockEffect, SaveInvoiceRequest } from "../../../../shared/invoice.js";
+import { formatParisDate } from "../../../../shared/parisDate.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
 
@@ -173,6 +174,10 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
 
     if (receive && prior?.source === "demo" && mode !== "demo")
       throw new WorkspaceError(409, "DEMO_INVOICE_IN_OPERATIONAL_WORKSPACE", "Une facture d’exemple ne peut pas ajouter de quantités au stock de cet espace.");
+    const stockEffect: InvoiceStockEffect = !receive ? "none" : source ? sourceReceiptStockEffect
+      : mode === "demo" ? "demo_simulation" : "recorded";
+    if (stockEffect === "recorded" && draft.date > formatParisDate())
+      throw new WorkspaceError(400, "FUTURE_DELIVERY_DATE", "La date de réception ne peut pas être future.");
     if (receive && !linkedSourceId && prior?.source !== "demo")
       await checkInvoiceDuplicates(tx, restaurantId, id, draft.supplierId, draft.reference, confirmedDuplicates);
 
@@ -192,8 +197,6 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
         ...(sourceLine.code ? { sourceCode: sourceLine.code } : {}) };
     });
     const savedDraft = { ...draft, lines };
-    const stockEffect: InvoiceStockEffect = !receive ? "none" : source ? sourceReceiptStockEffect
-      : mode === "demo" ? "demo_simulation" : "recorded";
     if (receive) {
       const receivableLines = source ? savedDraft.lines.filter((line) => line.disposition === "stock") : savedDraft.lines;
       if (receivableLines.length === 0) throw new WorkspaceError(409, "NO_RECEIVABLE_LINES", "Aucune ligne n’a été retenue.");
@@ -207,11 +210,12 @@ export async function saveInvoice(restaurantId: string, actorId: string, id: str
         const operationId = linkedSourceId
           ? `${sourceMovementPrefix(linkedSourceId)}${line.sourceLineNumber}:${product.id}`
           : mode === "demo" ? `${simulatedInvoiceOperationPrefix}${id}` : `invoice:${id}`;
+        const unitCost = new Prisma.Decimal(line.unitPrice);
         await creditReceiptStock(tx, restaurantId, product, deliveryDate, {
           delta: line.quantity, reason: source ? "invoice_import_demo" : "receipt", operationId, actorId,
-          unitPriceSnapshot: new Prisma.Decimal(line.unitPrice), invoiceDocumentId: id, invoiceRevision: nextRevision,
+          unitPriceSnapshot: unitCost, invoiceDocumentId: id, invoiceRevision: nextRevision,
           ...(source ? { sourceDocumentId: linkedSourceId, sourceContentHash, sourceDocumentRevision } : {}),
-        });
+        }, stockEffect === "recorded" ? { receivedAt: deliveryDate, unitCost } : undefined);
       }
     }
 

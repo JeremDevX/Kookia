@@ -105,6 +105,28 @@ describe("lot and waste mutations", () => {
     ]);
   });
 
+  it("keeps losses tied to lots already received on the declared date, even when expired", async () => {
+    const { owner, restaurantId, addProduct } = await stockFixture();
+    const product = await addProduct("Dated waste lot");
+    const lot = await prisma.stockLot.findFirstOrThrow({ where: { restaurantId, productId: product.id } });
+    await prisma.stockLot.update({ where: { id: lot.id }, data: { receivedAt: new Date("2026-01-03") } });
+    const input = { operationId: randomUUID(), serviceDate: "2026-01-02", kind: "raw" as const,
+      avoidability: "avoidable" as const, productId: product.id, quantity: 1, unit: "kg", note: "" };
+
+    await expect(recordWaste(restaurantId, owner.id, input)).rejects.toMatchObject({ code: "INSUFFICIENT_LOT_STOCK" });
+    const selectedLot = { ...input, lotId: lot.id };
+    await expect(recordWaste(restaurantId, owner.id, selectedLot)).rejects.toMatchObject({ code: "INVALID_LOT" });
+    expect(await prisma.stockMovement.count({ where: { restaurantId, operationId: input.operationId } })).toBe(0);
+    expect(await prisma.wasteRecord.count({ where: { restaurantId, operationId: input.operationId } })).toBe(0);
+
+    const priorDate = new Date("2026-01-01");
+    await prisma.stockLot.update({ where: { id: lot.id }, data: { receivedAt: priorDate, expiresAt: priorDate } });
+    const waste = await recordWaste(restaurantId, owner.id, selectedLot);
+    expect(waste.stockMovementId).toBeTruthy();
+    expect(await prisma.stockLotAllocation.count({ where: { lotId: lot.id, stockMovementId: waste.stockMovementId! } })).toBe(1);
+    expect((await prisma.stockLot.findUniqueOrThrow({ where: { id: lot.id } })).remainingQuantity.toNumber()).toBe(9);
+  });
+
   it("accepts only one concurrent write against the same stock revision and replays its movement once", async () => {
     const { owner, restaurantId, addProduct } = await stockFixture();
     const product = await addProduct("Concurrent stock");
@@ -157,7 +179,14 @@ describe("lot and waste mutations", () => {
     expect(await movements()).toHaveLength(0);
     expect(await prisma.production.count({ where: { restaurantId, operationId: input.operationId } })).toBe(0);
 
-    await prisma.stockLot.update({ where: { id: lastLot.id }, data: { expiresAt: null } });
+    await prisma.stockLot.update({ where: { id: lastLot.id }, data: { expiresAt: null, receivedAt: new Date("2026-01-03") } });
+    const beforeLaterReceipt = await stock();
+    await expect(produce()).rejects.toMatchObject({ code: "INSUFFICIENT_LOT_STOCK" });
+    expect(await stock()).toEqual(beforeLaterReceipt);
+    expect(await movements()).toHaveLength(0);
+    expect(await prisma.production.count({ where: { restaurantId, operationId: input.operationId } })).toBe(0);
+
+    await prisma.stockLot.update({ where: { id: lastLot.id }, data: { receivedAt: new Date(input.date) } });
     const [saved, replay] = await Promise.all([produce(), produce()]);
     expect(replay.id).toBe(saved.id);
     const written = await movements();

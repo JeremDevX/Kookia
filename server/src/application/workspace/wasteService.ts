@@ -70,6 +70,7 @@ export async function recordWaste(restaurantId: string, actorId: string, input: 
       if (new Prisma.Decimal(input.quantity).plus(previous._sum.quantity ?? 0).greaterThan(production.portions))
         throw new WorkspaceError(409, "WASTE_EXCEEDS_PRODUCTION", "Les pertes cumulées dépassent les portions préparées.");
     }
+    const serviceDate = new Date(`${input.serviceDate}T00:00:00.000Z`);
     let stockMovementId: string | null = null;
     if (wasteDeductsStock(input.kind, input.productionId)) {
       if (!input.productId) throw new WorkspaceError(400, "PRODUCT_REQUIRED", "Sélectionnez le produit perdu.");
@@ -81,11 +82,10 @@ export async function recordWaste(restaurantId: string, actorId: string, input: 
       const movement = await applyStockMovement(tx, { restaurantId, actorId, productId: product.id,
         delta: new Prisma.Decimal(input.quantity).negated(), reason: "loss", operationId: input.operationId,
         serviceSlot: input.serviceSlot ?? null, productNameSnapshot: product.name, productUnitSnapshot: product.unit },
-      { stockBefore: product.currentStock, lots: { selectedLotId: input.lotId } });
+      { stockBefore: product.currentStock, lots: { selectedLotId: input.lotId, usageDate: serviceDate, allowExpired: true } });
       stockMovementId = movement.id;
     }
-    const row = await tx.wasteRecord.create({ data: { ...snapshot, restaurantId, actorId, stockMovementId,
-      serviceDate: new Date(`${input.serviceDate}T00:00:00.000Z`) } });
+    const row = await tx.wasteRecord.create({ data: { ...snapshot, restaurantId, actorId, stockMovementId, serviceDate } });
     return dto(row);
   });
 }

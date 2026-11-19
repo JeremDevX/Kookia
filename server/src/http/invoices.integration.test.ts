@@ -1,3 +1,4 @@
+import { registerUser } from "../application/auth/authService.js";
 import { ensureWorkspace } from "../application/workspace/ensureWorkspace.js";
 import { lockReceiptWorkspace } from "../application/workspace/receiptStock.js";
 import { randomUUID } from "node:crypto";
@@ -5,6 +6,8 @@ import request from "supertest";
 import { afterAll, expect, it } from "vitest";
 import { app } from "./app.js";
 import { prisma } from "../infrastructure/database/prisma.js";
+import { addCalendarDays } from "../../../shared/calendarDate.js";
+import { formatParisDate } from "../../../shared/parisDate.js";
 const users: string[] = [];
 afterAll(async () => { await prisma.user.deleteMany({ where: { id: { in: users } } }); await prisma.$disconnect(); });
 async function account() {
@@ -16,9 +19,9 @@ async function account() {
 }
 
 it("allows a concurrent stock write to acquire the workspace foreign-key lock", async () => {
-  const agent = await account();
-  const userId = (await agent.get("/api/auth/me").expect(200)).body.user.id as string;
-  const workspace = await prisma.restaurant.findUniqueOrThrow({ where: { ownerId: userId } });
+  const { user } = await registerUser("Invoice lock test", `invoice-${randomUUID()}@example.test`, "invoice test password");
+  users.push(user.id);
+  const workspace = await ensureWorkspace(user.id);
   await prisma.$transaction(async (tx) => {
     await lockReceiptWorkspace(tx, workspace.id);
     const stockWriteLock = await prisma.$queryRaw<Array<{ id: string }>>`
@@ -57,11 +60,34 @@ it("persists corrected drafts, isolates accounts and receives invoices exactly o
   await agent.post(`/api/workspace/invoices/${id}`).send({ draft, revision: results[0].body.revision, receive: false }).expect(409);
   const history = await agent.get(`/api/workspace/products/${product.id}/movements`).expect(200);
   expect(history.body.filter((item: { reason: string }) => item.reason === "receipt")).toHaveLength(1);
+  const lots = (await agent.get(`/api/workspace/products/${product.id}/lots`).expect(200)).body.lots;
+  expect(lots.filter((lot: { source: string }) => lot.source === "receipt")).toMatchObject([{
+    receivedAt: corrected.date, expiresAt: null, quantityReceived: 5.5, remainingQuantity: 5.5, unitCost: 2,
+    purchaseReceiptLineId: null,
+  }]);
   await agent.post(`/api/workspace/invoices/${randomUUID()}`).send({ draft: { ...draft, reference: "Invalid product invoice", lines: [...draft.lines, { productId: "zzmissing", quantity: 2, unitPrice: 1 }] }, revision: 0, receive: true }).expect(400);
   const rollback = await agent.get("/api/workspace/catalog").expect(200);
   expect(rollback.body).toEqual(after.body);
   const reread = await agent.get("/api/workspace/invoices").expect(200);
   expect(reread.body.find((item: { id: string }) => item.id === id)).toMatchObject({ status: "received", stockEffect: "recorded" });
+});
+
+it("enregistre en brouillon une facture future et attend une date passée ou du jour pour créditer le stock", async () => {
+  const agent = await account();
+  const catalog = (await agent.get("/api/workspace/catalog").expect(200)).body;
+  const product = catalog.products[0];
+  const today = formatParisDate();
+  const path = `/api/workspace/invoices/${randomUUID()}`;
+  const draft = { reference: "Future invoice", date: addCalendarDays(today, 1),
+    lines: [{ productId: product.id, quantity: 1, unitPrice: 2, unit: product.unit }] };
+  const saved = await agent.post(path).send({ draft, revision: 0, receive: false }).expect(200);
+  const revision = saved.body.revision;
+  await agent.post(path).send({ draft, revision, receive: true }).expect(400)
+    .expect(({ body }) => expect(body.error.code).toBe("FUTURE_DELIVERY_DATE"));
+  expect((await agent.get("/api/workspace/catalog").expect(200)).body).toEqual(catalog);
+  expect((await agent.get("/api/workspace/invoices").expect(200)).body).toMatchObject([{ status: "draft", revision, date: draft.date }]);
+  await agent.post(path).send({ draft: { ...draft, date: today }, revision, receive: true }).expect(200)
+    .expect(({ body }) => expect(body.stockEffect).toBe("recorded"));
 });
 
 it("vérifie l’unité renseignée avant de créditer une facture manuelle", async () => {

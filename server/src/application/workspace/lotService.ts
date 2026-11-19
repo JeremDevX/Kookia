@@ -8,15 +8,16 @@ export function fefoOrder<T extends { id: string; expiresAt: Date | null; receiv
 }
 
 export interface LotMovementOptions {
-  receipt?: { lineId: string; receivedAt: Date; expiresAt?: Date | null; unitCost: Prisma.Decimal };
+  receipt?: { lineId?: string; receivedAt: Date; expiresAt?: Date | null; unitCost: Prisma.Decimal };
   simulationLot?: { id: string; receivedAt: Date; expiresAt: Date; unitCost: Prisma.Decimal };
   selectedLotId?: string;
   usageDate?: Date;
+  allowExpired?: boolean;
 }
 
 export async function recordLotMovement(tx: Prisma.TransactionClient, restaurantId: string, productId: string,
   stockBefore: Prisma.Decimal, movement: { id: string; delta: Prisma.Decimal }, actorId: string,
-  { receipt, simulationLot, selectedLotId, usageDate }: LotMovementOptions = {}) {
+  { receipt, simulationLot, selectedLotId, usageDate, allowExpired }: LotMovementOptions = {}) {
   await tx.$queryRaw(Prisma.sql`SELECT id FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${productId} FOR UPDATE`);
   const lots = await tx.stockLot.findMany({ where: { restaurantId, productId, remainingQuantity: { gt: 0 } } });
   const tracked = lots.reduce((sum, lot) => sum.plus(lot.remainingQuantity), new Prisma.Decimal(0));
@@ -36,9 +37,12 @@ export async function recordLotMovement(tx: Prisma.TransactionClient, restaurant
     return;
   }
   let needed = movement.delta.negated();
-  const eligible = usageDate ? lots.filter((lot) => !lot.expiresAt || lot.expiresAt >= usageDate) : lots;
+  const eligible = usageDate ? lots.filter((lot) => (!lot.receivedAt || lot.receivedAt <= usageDate) &&
+    (allowExpired || !lot.expiresAt || lot.expiresAt >= usageDate)) : lots;
   const candidates = selectedLotId ? eligible.filter((lot) => lot.id === selectedLotId) : fefoOrder(eligible);
-  if (selectedLotId && !candidates.length) throw new WorkspaceError(400, "INVALID_LOT", "Le lot doit appartenir au produit et à votre espace et être disponible.");
+  if (selectedLotId && !candidates.length) throw new WorkspaceError(400, "INVALID_LOT", usageDate
+    ? "Le lot sélectionné est indisponible pour ce produit à la date indiquée."
+    : "Le lot doit appartenir au produit et à votre espace et être disponible.");
   for (const lot of candidates) {
     if (!needed.greaterThan(0)) break;
     const quantity = Prisma.Decimal.min(needed, lot.remainingQuantity);
@@ -48,7 +52,9 @@ export async function recordLotMovement(tx: Prisma.TransactionClient, restaurant
     await tx.stockLotAllocation.create({ data: { restaurantId, lotId: lot.id, stockMovementId: movement.id, quantity } });
     needed = needed.minus(quantity);
   }
-  if (needed.greaterThan(0)) throw new WorkspaceError(409, "INSUFFICIENT_LOT_STOCK", usageDate ? "Les lots utilisables à cette date sont insuffisants ; les lots à échéance dépassée ne sont pas proposés." : "La quantité disponible dans les lots est insuffisante.");
+  if (needed.greaterThan(0)) throw new WorkspaceError(409, "INSUFFICIENT_LOT_STOCK", usageDate && !allowExpired
+    ? "Les lots reçus et non échus à cette date sont insuffisants."
+    : "La quantité disponible dans les lots est insuffisante.");
 }
 
 export async function listStockLots(restaurantId: string, productId?: string) {
