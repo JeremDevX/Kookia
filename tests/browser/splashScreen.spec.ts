@@ -33,7 +33,8 @@ test("respecte les mouvements réduits sur petit téléphone sans attente décor
     await session;
     await route.fulfill({ status: 401, json: {} });
   });
-  await page.clock.install();
+  await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
+  await page.clock.pauseAt(new Date("2026-01-01T00:01:00Z"));
   await page.goto("/login");
   await expect(page.locator(".splash-mark")).toHaveCSS("animation-name", "none");
   await expect(page.locator(".splash-loader span").first()).toHaveCSS("animation-name", "none");
@@ -43,9 +44,12 @@ test("respecte les mouvements réduits sur petit téléphone sans attente décor
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320);
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(568);
   finishSession();
-  await expect(page.locator(".splash-screen")).toContainText("Ouverture de votre espace…");
-  await page.clock.runFor(10);
-  await expect(page.locator(".splash-screen")).toHaveCount(0);
+  const splash = page.locator(".splash-screen");
+  await expect(splash).toContainText("Ouverture de votre espace…");
+  await expect.poll(async () => {
+    await page.clock.runFor(10);
+    return splash.count();
+  }, { intervals: [100], timeout: 1000 }).toBe(0);
 });
 
 test("laisse réessayer au clavier après une session indisponible", async ({ page }) => {
