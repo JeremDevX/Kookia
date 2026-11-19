@@ -108,5 +108,57 @@ test("réceptionne 0,1 puis 0,2 kg et ouvre le mouvement de stock sur mobile", a
   await expect(movementLink).toHaveAttribute("href", new RegExp(`#stock-movement-${movement.id}$`));
   await movementLink.click();
   await expect(page.locator(`#stock-movement-${movement.id}`)).toBeFocused();
-  await expect(page.locator(`#stock-movement-${movement.id}`)).toContainText("+0.2 kg");
+  await expect(page.locator(`#stock-movement-${movement.id}`)).toContainText("+0.2 kg (Réception)");
+});
+
+test("recharge une facture modifiée avant de confirmer les quantités livrées", async ({ page, restaurant }) => {
+  const { headers, addFlour, completeSetup } = restaurant;
+  const { productId, supplierId } = await addFlour();
+  await completeSetup();
+  const order = await page.request.post("/api/workspace/orders", { headers, data: {
+    operationId: randomUUID(), lines: [{ productId, quantity: 4 }],
+  } });
+  expect(order.status()).toBe(201);
+  const { id: orderId } = await order.json() as { id: string };
+
+  const invoiceId = randomUUID();
+  const invoicePath = `/api/workspace/invoices/${invoiceId}`;
+  const date = formatParisDate();
+  const draft = { reference: "FACT-RÉVISÉE", date, supplierId,
+    lines: [{ productId, quantity: 4, unit: "kg", unitPrice: 1 }] };
+  const invoice = await page.request.post(invoicePath, { headers, data: { revision: 0, receive: false, draft } });
+  expect(invoice.status()).toBe(200);
+  const { revision } = await invoice.json() as { revision: number };
+
+  await page.goto(`/orders?view=orders#order-${orderId}`);
+  await expect(page.getByRole("status", { name: "Ouverture de KookiA" })).toBeHidden();
+  const orderCard = page.locator(`#order-${orderId}`);
+  await orderCard.getByText("Rapprocher une facture et une livraison", { exact: true }).press("Enter");
+  const invoiceSelect = orderCard.getByLabel("Facture revue");
+  const quantity = orderCard.getByRole("spinbutton", { name: "Quantité réellement livrée" });
+  const receiptReference = orderCard.getByLabel("Référence du bon de livraison");
+  const submit = orderCard.getByRole("button", { name: "Rapprocher et ajouter au stock" });
+  await invoiceSelect.selectOption(invoiceId);
+  await receiptReference.fill("BL-RÉVISÉ");
+  await quantity.fill("1");
+
+  const revisedInvoice = await page.request.post(invoicePath, { headers, data: { revision, receive: false,
+    draft: { ...draft, lines: [{ ...draft.lines[0], quantity: 3 }] },
+  } });
+  expect(revisedInvoice.status()).toBe(200);
+  await submit.press("Enter");
+  const reload = orderCard.getByRole("button", { name: "Recharger la facture modifiée" });
+  await expect(reload).toBeFocused();
+  await expect(submit).toBeDisabled();
+  await expect(quantity).toHaveValue("1");
+
+  await reload.press("Enter");
+  await expect(invoiceSelect).toBeFocused();
+  await expect(receiptReference).toHaveValue("BL-RÉVISÉ");
+  await expect(orderCard.getByText(/Facturé : 3 kg/)).toBeVisible();
+  await expect(quantity).toHaveValue("0");
+  await expect(submit).toBeDisabled();
+  await quantity.fill("1");
+  await submit.press("Enter");
+  await expect(orderCard.getByRole("heading", { name: "BL-RÉVISÉ" })).toBeVisible();
 });

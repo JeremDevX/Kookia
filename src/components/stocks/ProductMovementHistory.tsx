@@ -16,7 +16,7 @@ interface ProductMovementHistoryProps {
 }
 
 const movementLabel = (reason: string) => ({
-  loss: "Perte", initial: "Stock initial", receipt: "Réception",
+  loss: "Perte", initial: "Stock initial", receipt: "Réception", purchase_receipt: "Réception",
   invoice_import_demo: "Entrée depuis une transcription", simulated_consumption: "Sortie non rapprochée",
   simulated_unit_rounding: "Correction d’unité non rapprochée", simulation_opening: "Stock de départ à vérifier",
   simulation_restock: "Réapprovisionnement à vérifier", simulation_loss: "Perte estimée à vérifier",

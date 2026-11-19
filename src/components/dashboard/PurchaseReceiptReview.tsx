@@ -25,6 +25,22 @@ function invoiceQuantityError(invoiced: number, ordered: number) {
   return "";
 }
 
+function draftReceiptLines(order: PurchaseOrder, invoice: Invoice, prefillQuantity: boolean) {
+  const lines: Record<number, ReceiptLineDraft> = {};
+  invoice.lines.forEach((invoiceLine, index) => {
+    if (invoice.source === "source_document" && invoiceLine.disposition !== "stock") return;
+    const progress = invoice.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index) ?? [];
+    const priorOrderLineId = progress.at(-1)?.orderLineId;
+    const candidate = order.lines.find((orderLine) => orderLine.supplierId === invoice.supplierId &&
+      orderLine.productId === invoiceLine.productId && orderLine.unit === invoiceLine.unit &&
+      (orderLine.remainingQuantity > 0 || orderLine.id === priorOrderLineId));
+    const available = availableReceiptThousandths(invoiceLine.quantity, receivedThousandths(progress), candidate?.remainingQuantity ?? 0);
+    lines[index] = { orderLineId: candidate?.id ?? "", receivedQuantity: prefillQuantity ? String(available / 1_000) : "0",
+      priceDifferenceReason: "", expiresAt: "" };
+  });
+  return lines;
+}
+
 export default function PurchaseReceiptReview({ order, orderStateCurrent, onSaved, onNotice, onSavingChange, loadReceiptInvoices }: PurchaseReceiptReviewProps) {
   const clientPresentation = useClientPresentation();
   const { addToast } = useToast();
@@ -40,6 +56,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [invoiceLoadError, setInvoiceLoadError] = useState("");
+  const [invoiceConflict, setInvoiceConflict] = useState(false);
   const operation = useRef<{ signature: string; id: string; confirmedDuplicates?: Array<{ id: string; version: string }> } | null>(null);
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const invoiceSelectRef = useRef<HTMLSelectElement>(null);
@@ -57,45 +74,40 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
     ? line.disposition === "stock" ? [{ line, index }] : []
     : [{ line, index }]) ?? [];
 
-  const loadInvoices = async () => {
+  const loadInvoices = async (recheckChangedInvoice = false) => {
     setLoading(true); setError(""); setInvoiceLoadError("");
     try {
       const result = await (loadReceiptInvoices ? loadReceiptInvoices(order.id) : getInvoices());
       setInvoices(result); setLoaded(true);
+      if (recheckChangedInvoice) {
+        const latest = result.find((item) => item.id === invoiceId);
+        setLines(latest ? draftReceiptLines(order, latest, false) : {});
+        if (!latest) setInvoiceId("");
+        operation.current = null;
+        setInvoiceConflict(false);
+      }
     } catch (cause) { setInvoiceLoadError(cause instanceof Error ? cause.message : "Factures indisponibles."); }
     finally { setLoading(false); }
   };
 
   useEffect(() => {
+    if (!saving && invoiceConflict && consumeFocusRestoreRequest(saveFocusPending)) retryButtonRef.current?.focus();
     if (loading || !consumeFocusRestoreRequest(retryFocusPending)) return;
     if (invoiceLoadError) retryButtonRef.current?.focus();
     else if (eligibleInvoices.length > 0) invoiceSelectRef.current?.focus();
     else summaryRef.current?.focus();
-  }, [eligibleInvoices.length, invoiceLoadError, loading]);
+  }, [eligibleInvoices.length, invoiceConflict, invoiceLoadError, loading, saving]);
 
   const retryInvoices = () => {
     retryFocusPending.current = document.activeElement === retryButtonRef.current;
-    void loadInvoices();
+    void loadInvoices(invoiceConflict);
   };
 
   const chooseInvoice = (id: string) => {
     const selected = invoices.find((candidate) => candidate.id === id);
     setInvoiceId(id); setError(""); onNotice(""); setDeliveryReference("");
     setDeliveryDate(selected?.date ?? formatLocalISODate());
-    if (!selected) { setLines({}); return; }
-    const nextLines: Record<number, ReceiptLineDraft> = {};
-    selected.lines.forEach((invoiceLine, index) => {
-      if (selected.source === "source_document" && invoiceLine.disposition !== "stock") return;
-      const progress = selected.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index) ?? [];
-      const priorOrderLineId = progress.at(-1)?.orderLineId;
-      const candidate = order.lines.find((orderLine) => orderLine.supplierId === selected.supplierId &&
-        orderLine.productId === invoiceLine.productId && orderLine.unit === invoiceLine.unit &&
-        (orderLine.remainingQuantity > 0 || orderLine.id === priorOrderLineId));
-      const available = availableReceiptThousandths(invoiceLine.quantity, receivedThousandths(progress), candidate?.remainingQuantity ?? 0);
-      nextLines[index] = { orderLineId: candidate?.id ?? "",
-        receivedQuantity: String(available / 1_000), priceDifferenceReason: "", expiresAt: "" };
-    });
-    setLines(nextLines);
+    setLines(selected ? draftReceiptLines(order, selected, true) : {});
   };
 
   const updateLine = (index: number, change: Partial<ReceiptLineDraft>) => setLines((current) => ({
@@ -110,8 +122,9 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
     })),
   } satisfies Omit<PurchaseReceiptInput, "operationId">);
 
+  const formDisabled = !orderStateCurrent || saving || loading || !!invoiceLoadError || invoiceConflict;
   const canSubmit = !!invoice && !!payload && deliveryReference.trim().length > 0 && !!deliveryDate &&
-    orderStateCurrent && !loading && !invoiceLoadError && invoice.status === "draft" &&
+    !formDisabled && invoice.status === "draft" &&
     includedLines.length > 0 && includedLines.every(({ line, index }) => {
       const draft = lines[index];
       const orderLine = order.lines.find((candidate) => candidate.id === draft?.orderLineId);
@@ -160,6 +173,10 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
     } catch (cause) {
       const message = invoiceReceiptError(cause, "Réception non enregistrée.", clientPresentation);
       if (!mounted.current) { addToast("info", "Réception non enregistrée", message); return; }
+      if (cause instanceof ApiError && cause.details.code === "INVOICE_REVISION_CONFLICT") {
+        setInvoiceConflict(true);
+        return;
+      }
       if (saveFocusPending.current && document.activeElement === document.body) summaryRef.current?.focus();
       saveFocusPending.current = false;
       setError(message);
@@ -170,7 +187,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
   return <details className="purchase-receipt-review" onToggle={(event) => {
     const nextOpen = event.currentTarget.open;
     setOpen(nextOpen);
-    if (nextOpen && !loaded && !loading) void loadInvoices();
+    if (nextOpen && !loaded && !loading) void loadInvoices(invoiceConflict);
   }}>
     <summary ref={summaryRef} aria-disabled={saving || undefined}
       onClick={(event) => { if (saving) event.preventDefault(); }}>Rapprocher une facture et une livraison</summary>
@@ -178,8 +195,12 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
       {demoOrder && <p className="purchase-receipt-note">Dans cet espace, le rapprochement ne modifie pas le stock. Vérifiez la livraison avant tout ajout de quantité.</p>}
       {saving && <p role="status">Enregistrement en cours…</p>}
       {loading && <p role="status">Chargement des factures brouillon…</p>}
-      {invoiceLoadError && <div role="alert"><p>Factures brouillon indisponibles : {invoiceLoadError}</p>
-        <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryInvoices}>Recharger les factures</Button>
+      {(invoiceLoadError || invoiceConflict) && <div><p role="alert">{invoiceLoadError
+        ? `Factures brouillon indisponibles : ${invoiceLoadError}`
+        : "La facture a changé. Rechargez-la, puis vérifiez les lignes et ressaisissez les quantités livrées."}</p>
+        <Button ref={retryButtonRef} type="button" variant="outline" disabled={loading || saving} onClick={retryInvoices}>
+          {invoiceConflict ? "Recharger la facture modifiée" : "Recharger les factures"}
+        </Button>
       </div>}
       {error && <p role="alert">{error}</p>}
       {!loading && !invoiceLoadError && eligibleInvoices.length === 0 && !invoice &&
@@ -187,7 +208,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
       {eligibleInvoices.length > 0 && <>
         <label htmlFor={`receipt-invoice-${order.id}`}>Facture revue</label>
         <select ref={invoiceSelectRef} className="input-field" id={`receipt-invoice-${order.id}`} value={invoiceId}
-          disabled={saving || loading || !!invoiceLoadError || !orderStateCurrent}
+          disabled={formDisabled}
           onChange={(event) => chooseInvoice(event.target.value)}>
           <option value="">Choisir une facture</option>
           {eligibleInvoices.map((item) => <option key={item.id} value={item.id}>
@@ -200,11 +221,11 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
         {invoice.status === "received" && <p role="status">Cette facture est déjà entièrement rapprochée ; aucune seconde réception n’est possible.</p>}
         <label htmlFor={`receipt-delivery-reference-${order.id}`}>Référence du bon de livraison</label>
         <input className="input-field" id={`receipt-delivery-reference-${order.id}`} value={deliveryReference}
-          disabled={saving || loading || !!invoiceLoadError || !orderStateCurrent || invoice.status === "received"}
+          disabled={formDisabled || invoice.status === "received"}
           onChange={(event) => setDeliveryReference(event.target.value)} />
         <label htmlFor={`receipt-delivery-date-${order.id}`}>Date de livraison</label>
         <input className="input-field" id={`receipt-delivery-date-${order.id}`} type="date" value={deliveryDate}
-          disabled={saving || loading || !!invoiceLoadError || !orderStateCurrent || invoice.status === "received"}
+          disabled={formDisabled || invoice.status === "received"}
           onChange={(event) => setDeliveryDate(event.target.value)} />
         {invoice.source === "source_document" && <p>Pièce d’archive · vérifiez le type, la date et chaque ligne sur la facture avant tout rapprochement.</p>}
         {includedLines.map(({ line, index }) => {
@@ -217,7 +238,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
           const priceDiffers = !!matched && !equalPrice(line.unitPrice, matched.pricePerUnit);
           const progress = receivedThousandths(invoice.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index) ?? []) / 1_000;
           return <fieldset key={index} className="purchase-receipt-line"
-            disabled={saving || loading || !!invoiceLoadError || !orderStateCurrent || invoice.status === "received"}>
+            disabled={formDisabled || invoice.status === "received"}>
             <legend>{line.sourceName ? `Pièce revue : ${line.sourceName}` : `Ligne de facture ${index + 1}`}</legend>
             <p>{line.productId ? order.lines.find((candidate) => candidate.productId === line.productId)?.productName ?? "Produit" : "Produit non associé"} · Facturé : {line.quantity} {line.unit ?? "unité"} × {line.unitPrice.toFixed(4)} €</p>
             {progress > 0 && <p>Déjà rapproché : {progress} {line.unit}.</p>}
@@ -248,7 +269,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
         })}
         {invoice.source === "source_document" && invoice.lines.some((line) => line.disposition === "pending") &&
           <p role="alert">Terminez d’abord la revue des lignes source dans la facture.</p>}
-        <Button ref={submitButtonRef} onClick={() => void submit()} disabled={!canSubmit || saving}>
+        <Button ref={submitButtonRef} onClick={() => void submit()} disabled={!canSubmit}>
           {saving ? "Enregistrement…" : demoOrder ? "Enregistrer sans ajout au stock" : "Rapprocher et ajouter au stock"}
         </Button>
       </>}
