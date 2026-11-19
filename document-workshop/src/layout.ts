@@ -5,11 +5,10 @@ interface TextRun { x: number; y: number; text: string; size: number; bold: bool
 interface Rule { x: number; y: number; width: number; height: number; color: Color }
 export interface Page { width: number; height: number; runs: TextRun[]; rules: Rule[]; accent: Color }
 export const svgColor = (color: Color) => `rgb(${color.map(n => Math.round(n * 255)).join(",")})`;
-const clean = (text: string) => text.replace(/[\u00a0\u202f]/g, " ").replace(/[–—]/g, "-").replace(/[’]/g, "'").replace(/œ/g, "oe");
 function wrap(text: string, width: number, size: number): string[] {
   const limit = Math.max(1, Math.floor(width / (size * .62)));
   const chunkPattern = new RegExp(`.{1,${limit}}`, "gu");
-  const chunks = clean(text).split(/\s+/).flatMap(word => word.match(chunkPattern) ?? []);
+  const chunks = text.normalize("NFC").split(/\s+/).flatMap(word => word.match(chunkPattern) ?? []);
   const lines: string[] = [];
   let line = "";
   for (const chunk of chunks) {
@@ -28,7 +27,7 @@ export function layoutDocument(doc: Document): Page[] {
   const pages: Page[] = [];
   let y = 40, page: Page;
   const add = (text: string, x: number, top: number, size = 10, bold = false, muted = false) =>
-    page.runs.push({ text: clean(text), x, y: top, size, bold, muted, font });
+    page.runs.push({ text, x, y: top, size, bold, muted, font });
   const rule = (top: number, thickness = 1) => page.rules.push({ x: margin, y: top, width: content, height: thickness, color: accent });
   const newPage = () => {
     page = { width, height, runs: [], rules: [], accent }; pages.push(page); y = 38;

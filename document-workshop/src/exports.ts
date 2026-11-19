@@ -1,15 +1,23 @@
 import type { Document } from "./documentModel";
 import { layoutDocument } from "./layout";
 
-// PDF 1.4, embedded text via standard Helvetica/WinAnsi fonts. No server or remote service.
+// Printable WinAnsi characters outside ASCII and Latin-1.
+const winAnsiCodes: Record<string, number> = {
+  "€": 0x80, "‚": 0x82, "ƒ": 0x83, "„": 0x84, "…": 0x85, "†": 0x86, "‡": 0x87,
+  "ˆ": 0x88, "‰": 0x89, "Š": 0x8a, "‹": 0x8b, "Œ": 0x8c, "Ž": 0x8e,
+  "‘": 0x91, "’": 0x92, "“": 0x93, "”": 0x94, "•": 0x95, "–": 0x96, "—": 0x97,
+  "˜": 0x98, "™": 0x99, "š": 0x9a, "›": 0x9b, "œ": 0x9c, "ž": 0x9e, "Ÿ": 0x9f,
+};
+
 function pdfString(value: string) {
   return [...value].map(char => {
-    const code = char === "€" ? 128 : char === "·" ? 183 : char.codePointAt(0)!;
-    if (code > 255) return "?";
-    if (code < 32 || code > 126) return `\\${code.toString(8).padStart(3, "0")}`;
+    const code = winAnsiCodes[char] ?? char.codePointAt(0)!;
+    if (code < 32 || code > 255 || (code >= 127 && code < 160 && winAnsiCodes[char] === undefined)) return "?";
+    if (code > 126) return `\\${code.toString(8).padStart(3, "0")}`;
     return /[\\()]/.test(char) ? `\\${char}` : char;
   }).join("");
 }
+// PDF 1.4, embedded text via standard Helvetica/WinAnsi fonts. No server or remote service.
 export function pdfBytes(doc: Document): Uint8Array<ArrayBuffer> {
   const pages = layoutDocument(doc);
   const objects = ["<< /Type /Catalog /Pages 2 0 R >>", "", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
