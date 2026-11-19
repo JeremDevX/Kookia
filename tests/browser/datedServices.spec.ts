@@ -74,3 +74,35 @@ test("conserve le bon service quand une lecture précédente arrive en retard", 
     olderRead.resolve();
   }
 });
+
+test("suspend les saisies pendant le rechargement de la fiche de service", async ({ page, restaurant }) => {
+  await restaurant.completeSetup();
+  await page.goto("/services");
+  const sheet = page.getByRole("region", { name: "Fiche de service" });
+  const reload = sheet.getByRole("button", { name: "Recharger le constat enregistré" });
+  const plannedPortions = sheet.getByRole("spinbutton", { name: "Portions prévues" });
+  const fields = [
+    ...["Recette", "Recette remplacée", "Recette retenue"].map((name) => sheet.getByRole("combobox", { name, exact: true })),
+    plannedPortions,
+    sheet.getByRole("spinbutton", { name: "Portions remplacées" }),
+    sheet.getByRole("textbox", { name: "Explication" }),
+  ];
+  await expect(page.getByRole("status", { name: "Ouverture de KookiA" })).toBeHidden();
+  await expect(fields[0]).toBeEnabled();
+
+  const release = Promise.withResolvers<void>();
+  await page.route((url) => url.pathname === "/api/workspace/services/sheet", async (route) => {
+    await release.promise;
+    await route.continue();
+  }, { times: 1 });
+  try {
+    await reload.press("Enter");
+    await expect(sheet.getByRole("status").filter({ hasText: "Chargement / enregistrement…" })).toBeVisible();
+    for (const field of fields) await expect(field).toBeDisabled();
+  } finally {
+    release.resolve();
+  }
+  for (const field of fields) await expect(field).toBeEnabled();
+  await plannedPortions.fill("4");
+  await expect(plannedPortions).toHaveValue("4");
+});

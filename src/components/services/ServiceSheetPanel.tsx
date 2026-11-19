@@ -135,18 +135,18 @@ export default function ServiceSheetPanel({ date, slot, loadRecipes, onDirtyChan
       {!validated && (!planned.length || forecastKey) && <Button type="button" variant="outline" disabled={busy} onClick={() => void importForecast()}>{planned.length ? "Actualiser la référence de prévision, conserver le plan" : "Reprendre les estimations dans le brouillon"}</Button>}
       {!validated && forecastKey && <Button type="button" variant="outline" disabled={busy} onClick={() => { setForecastKey(null); changed(); }}>Conserver les quantités comme plan manuel</Button>}
       {!validated && <form className="sales-form" onSubmit={addPlan}>
-        <label>Recette<select required value={recipeId} onChange={(event) => setRecipeId(event.target.value)}><option value="">Choisir une recette</option>{recipes.map(recipe => <option key={recipe.id} value={recipe.id}>{recipe.name}</option>)}</select></label>
-        <label>Portions prévues<input type="number" required min="0" max="10000" step="1" value={portions} onChange={(event) => setPortions(Number(event.target.value))} /></label>
+        <label>Recette<select required disabled={busy} value={recipeId} onChange={(event) => setRecipeId(event.target.value)}><option value="">Choisir une recette</option>{recipes.map(recipe => <option key={recipe.id} value={recipe.id}>{recipe.name}</option>)}</select></label>
+        <label>Portions prévues<input type="number" required disabled={busy} min="0" max="10000" step="1" value={portions} onChange={(event) => setPortions(Number(event.target.value))} /></label>
         <Button type="submit" disabled={busy}>Ajouter / actualiser au plan</Button>
       </form>}
       <ul>{planned.map(row => <li key={row.recipeId}>{recipeName(row.recipeId)} : {row.portions} portions {!validated && <button type="button" disabled={busy} onClick={() => { setPlanned(current => current.filter(entry => entry.recipeId !== row.recipeId)); changed(); }}>Retirer {recipeName(row.recipeId)}</button>}</li>)}</ul>
       {!planned.length && <p>Aucune quantité prévue enregistrée. Les prévisions restent des suggestions à revoir.</p>}
       <h3>Substitutions et écarts</h3>
       {!closed && <form className="sales-form" onSubmit={addSubstitution}>
-        <label>Recette remplacée<select required value={fromRecipeId} onChange={(event) => setFromRecipeId(event.target.value)}><option value="">Choisir</option>{planned.map(row => <option key={row.recipeId} value={row.recipeId}>{recipeName(row.recipeId)}</option>)}</select></label>
-        <label>Recette retenue<select required value={toRecipeId} onChange={(event) => setToRecipeId(event.target.value)}><option value="">Choisir</option>{recipes.map(recipe => <option key={recipe.id} value={recipe.id}>{recipe.name}</option>)}</select></label>
-        <label>Portions remplacées<input type="number" required min="1" max="10000" step="1" value={replacementPortions} onChange={(event) => setReplacementPortions(Number(event.target.value))} /></label>
-        <label>Explication<input required maxLength={500} value={replacementNote} onChange={(event) => setReplacementNote(event.target.value)} /></label>
+        <label>Recette remplacée<select required disabled={busy} value={fromRecipeId} onChange={(event) => setFromRecipeId(event.target.value)}><option value="">Choisir</option>{planned.map(row => <option key={row.recipeId} value={row.recipeId}>{recipeName(row.recipeId)}</option>)}</select></label>
+        <label>Recette retenue<select required disabled={busy} value={toRecipeId} onChange={(event) => setToRecipeId(event.target.value)}><option value="">Choisir</option>{recipes.map(recipe => <option key={recipe.id} value={recipe.id}>{recipe.name}</option>)}</select></label>
+        <label>Portions remplacées<input type="number" required disabled={busy} min="1" max="10000" step="1" value={replacementPortions} onChange={(event) => setReplacementPortions(Number(event.target.value))} /></label>
+        <label>Explication<input required disabled={busy} maxLength={500} value={replacementNote} onChange={(event) => setReplacementNote(event.target.value)} /></label>
         <Button type="submit" disabled={busy || fromRecipeId === toRecipeId}>Ajouter la substitution</Button>
       </form>}
       <ul>{substitutions.map((row, index) => <li key={index}>{recipeName(row.fromRecipeId)} → {recipeName(row.toRecipeId)} : {row.portions} portions. {row.note} {!closed && <button type="button" disabled={busy} onClick={() => { setSubstitutions(current => current.filter((_, itemIndex) => itemIndex !== index)); changed(); }}>Retirer la substitution {index + 1}</button>}</li>)}</ul>

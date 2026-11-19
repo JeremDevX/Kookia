@@ -19,6 +19,12 @@ const validQuantity = (value: string) => /^\d+(?:\.\d{1,3})?$/.test(value.trim()
   Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 1_000_000;
 const equalPrice = (left: number, right: number) => Math.round(left * 10_000) === Math.round(right * 10_000);
 
+function invoiceQuantityError(invoiced: number, ordered: number) {
+  if (invoiced <= 0) return "La quantité facturée doit être supérieure à zéro. Vérifiez la facture.";
+  if (invoiced > ordered) return "La quantité facturée dépasse la quantité commandée. Vérifiez la facture et la ligne de commande choisie.";
+  return "";
+}
+
 export default function PurchaseReceiptReview({ order, orderStateCurrent, onSaved, onNotice, onSavingChange, loadReceiptInvoices }: PurchaseReceiptReviewProps) {
   const clientPresentation = useClientPresentation();
   const { addToast } = useToast();
@@ -113,6 +119,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
       const progress = receivedThousandths(invoice.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index) ?? []);
       return !!draft?.orderLineId && !!orderLine && orderLine.supplierId === invoice.supplierId &&
         orderLine.productId === line.productId && orderLine.unit === line.unit && validQuantity(draft.receivedQuantity) &&
+        !invoiceQuantityError(line.quantity, orderLine.quantity) &&
         quantity <= availableReceiptThousandths(line.quantity, progress, orderLine.remainingQuantity) &&
         (equalPrice(line.unitPrice, orderLine.pricePerUnit) || draft.priceDifferenceReason.trim().length > 0);
     }) && new Set(includedLines.map(({ index }) => lines[index]?.orderLineId)).size === includedLines.length &&
@@ -206,6 +213,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
             orderLine.productId === line.productId && orderLine.unit === line.unit &&
             (orderLine.remainingQuantity > 0 || orderLine.id === draft?.orderLineId));
           const matched = order.lines.find((orderLine) => orderLine.id === draft?.orderLineId);
+          const quantityError = matched && invoiceQuantityError(line.quantity, matched.quantity);
           const priceDiffers = !!matched && !equalPrice(line.unitPrice, matched.pricePerUnit);
           const progress = receivedThousandths(invoice.receiptProgress?.filter((entry) => entry.invoiceLineIndex === index) ?? []) / 1_000;
           return <fieldset key={index} className="purchase-receipt-line"
@@ -222,6 +230,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
               </option>)}
             </select>
             {candidateLines.length === 0 && <p role="alert">Aucune ligne de commande restante avec ce produit, ce fournisseur et cette unité.</p>}
+            {quantityError && <p role="alert">{quantityError}</p>}
             <label htmlFor={`receipt-quantity-${order.id}-${index}`}>Quantité réellement livrée</label>
             <input className="input-field" id={`receipt-quantity-${order.id}-${index}`} type="number" min="0" step="0.001"
               value={draft?.receivedQuantity ?? "0"} onChange={(event) => updateLine(index, { receivedQuantity: event.target.value })} />

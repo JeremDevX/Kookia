@@ -53,7 +53,7 @@ test("garde la révision de la période courante quand une ancienne lecture arri
   expect(savedDay.ok()).toBe(true);
   const staleDay = { ...await savedDay.json() as ServiceDay, status: "open", coverage: "partial", revision: 0 };
   const olderRead = Promise.withResolvers<void>();
-  const isOlderRead = (url: string) => {
+  const isOlderRead = (url: string | URL) => {
     const requestUrl = new URL(url);
     return requestUrl.pathname === calendarPath && requestUrl.searchParams.get("from") === olderFrom;
   };

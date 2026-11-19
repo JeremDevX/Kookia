@@ -26,6 +26,12 @@ test("réceptionne 0,1 puis 0,2 kg et ouvre le mouvement de stock sur mobile", a
       lines: [{ productId, quantity: 0.3, unit: "kg", unitPrice: 1 }] },
   } });
   expect(invoice.status()).toBe(200);
+  const excessiveInvoiceId = randomUUID();
+  const excessiveInvoice = await page.request.post(`/api/workspace/invoices/${excessiveInvoiceId}`, { headers, data: {
+    revision: 0, receive: false, draft: { reference: "FACT-400", date, supplierId,
+      lines: [{ productId, quantity: 0.4, unit: "kg", unitPrice: 1 }] },
+  } });
+  expect(excessiveInvoice.status()).toBe(200);
 
   const reconciliationRequests: string[] = [];
   page.on("request", (request) => {
@@ -58,7 +64,14 @@ test("réceptionne 0,1 puis 0,2 kg et ouvre le mouvement de stock sur mobile", a
   const receiptReference = orderCard.getByLabel("Référence du bon de livraison");
   const submit = orderCard.getByRole("button", { name: "Rapprocher et ajouter au stock" });
   await review.press("Enter");
+  await orderCard.getByLabel("Facture revue").selectOption(excessiveInvoiceId);
+  await expect(quantity).toHaveValue("0.3");
+  await receiptReference.fill("BL-400");
+  await expect(orderCard.getByText(/La quantité facturée dépasse la quantité commandée/)).toBeVisible();
+  await expect(submit).toBeDisabled();
+
   await orderCard.getByLabel("Facture revue").selectOption(invoiceId);
+  await expect(orderCard.getByText(/La quantité facturée dépasse la quantité commandée/)).toHaveCount(0);
   await expect(quantity).toHaveValue("0.3");
   await quantity.fill("0.1");
   await receiptReference.fill("BL-100");
