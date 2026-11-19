@@ -14,14 +14,14 @@ interface CsvSaleRow {
   error?: string;
 }
 
-
 export function parseSalesCsv(csv: string, today: string) {
   if (Buffer.byteLength(csv, "utf8") > 256_000) throw new WorkspaceError(400, "CSV_TOO_LARGE", "Le fichier CSV dépasse 256 Ko.");
   if (csv.includes("\uFFFD") || csv.includes("\0")) throw new WorkspaceError(400, "INVALID_CSV", "Le fichier doit être en UTF-8 valide.");
   let records: ReturnType<typeof splitCsv>;
   try { records = splitCsv(csv.replace(/^\uFEFF/, "")); }
   catch (error) { if (error instanceof CsvSyntaxError) throw new WorkspaceError(400, "INVALID_CSV", error.message); throw error; }
-  if (records.length < 2 || records[0].fields.join(",") !== "service_date,item_name,quantity")
+  const header = records[0]?.fields;
+  if (records.length < 2 || header?.length !== 3 || header.join(",") !== "service_date,item_name,quantity")
     throw new WorkspaceError(400, "INVALID_CSV", "En-tête attendu : service_date,item_name,quantity, suivi d’au moins une ligne.");
   if (records.length > 5001) throw new WorkspaceError(400, "CSV_TOO_LARGE", "Le fichier est limité à 5 000 lignes de ventes.");
   const rows: CsvSaleRow[] = records.slice(1).map(({ line, fields }) => {

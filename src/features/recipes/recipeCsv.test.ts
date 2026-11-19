@@ -23,6 +23,10 @@ describe("import CSV de fiche", () => {
     expect(file.rows.map((row) => row.fields)).toEqual([['Farine; "bio"', "1,25", "kg"], ["Œuf\nplein air", "2", "pcs"]]);
     expect(file.rows.map((row) => row.line)).toEqual([2, 3]);
   });
+  it("ignore les lignes vides, y compris sans saut de ligne final", () => {
+    const file = parseRecipeCsv("Article;Quantité;Unité\n  \nFarine;1,25;kg\n  ");
+    expect(file.rows).toEqual([{ line: 3, fields: ["Farine", "1,25", "kg"] }]);
+  });
   it("refuse un CSV mal formé, des colonnes ambiguës ou dupliquées", () => {
     expect(() => parseRecipeCsv('a,b,c\n"non fermé')).toThrow();
     expect(() => parseRecipeCsv('Article,article,unité\na,b,kg')).toThrow("distincts");

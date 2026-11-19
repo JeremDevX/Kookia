@@ -12,3 +12,8 @@ it("parses documented CSV with quoted names, BOM and CRLF while rejecting invali
   expect(result.rows[0].error).toBeUndefined();
   expect(() => parseSalesCsv('service_date,item_name,quantity\n2026-09-20,"Pizza,2', "2026-09-23")).toThrow("Champ CSV non fermé");
 });
+
+it("requires three separate header columns", () => {
+  expect(() => parseSalesCsv('"service_date,item_name,quantity"\n2026-09-20,Pizza,2', "2026-09-23"))
+    .toThrow("En-tête attendu");
+});
