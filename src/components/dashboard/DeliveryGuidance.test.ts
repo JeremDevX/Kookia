@@ -12,11 +12,12 @@ const render = (element: React.ReactElement) => renderToStaticMarkup(createEleme
 
 describe("delivery guidance", () => {
   it("shows missing opening days on the dashboard without suggestions or sales data", () => {
-    const data = { status: "no_data", forecastDate: "2026-09-26", deliveryWarnings: [{ code: "opening_days_unknown", message: "Jours d’ouverture inconnus" }],
+    const data = { status: "ready", forecastDate: "2026-09-26", asOfDate: "2026-09-25", deliveryWarnings: [{ code: "opening_days_unknown", message: "Jours d’ouverture inconnus" }],
       suggestions: [], blockers: [] } as unknown as PurchaseSuggestions;
     const html = render(createElement(TodayPurchaseForecast, { data, loading: false, error: "", retry: () => {} }));
     expect(html).toContain("Jours d’ouverture inconnus");
     expect(html).toContain('/settings?section=restaurant');
+    expect(html).toContain("Aucun achat proposé pour les services planifiés.");
   });
 
   it("shows actionable and incomplete products alongside service blockers", () => {
@@ -30,6 +31,7 @@ describe("delivery guidance", () => {
       ] } as unknown as PurchaseSuggestions;
     const html = render(createElement(TodayPurchaseForecast, { data, loading: false, error: "", retry: () => {} }));
     expect(html).toContain("Service incomplet");
+    expect(html).toMatch(/<a href="\/services"[^>]*>Vérifier les services et leurs cartes<\/a>/);
     expect(html).toContain("Tomate");
     expect(html).toContain("Carotte — Prévision incomplète");
     expect(html).toContain("Préparer ma commande");

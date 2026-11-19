@@ -32,7 +32,7 @@ function ChefOrders() {
   const invalid = cartItems.some((item) => item.predictionId || !products.some((product) => product.id === item.productId));
   return <div className="member-page orders-container stocks-container workspace-page"><h1>Préparer une commande</h1>
     <p>Examinez votre sélection. La validation enregistre la commande sans l’envoyer au fournisseur.</p>
-    <PurchaseSuggestions refreshKey={revision} limited salesHref={null} stocksHref="/orders?view=prepare#member-select-products" />
+    <PurchaseSuggestions refreshKey={revision} limited stocksHref="/orders?view=prepare#member-select-products" />
     <section id="member-select-products" aria-labelledby="member-products-title"><h2 id="member-products-title">Choisir des produits</h2>
       {loading ? <p role="status">Chargement des produits…</p> : error ? <div role="alert"><p>Catalogue indisponible.</p><Button type="button" variant="outline" onClick={() => void refetch()}>Réessayer</Button></div> : <>
         <StockInventoryTable products={products} selecting={cartLoading} onInspect={setCountId} onSelect={(product) => void add(product)} />

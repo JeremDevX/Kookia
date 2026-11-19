@@ -2,6 +2,18 @@ import { randomUUID } from "node:crypto";
 import { expect } from "@playwright/test";
 import { test } from "./restaurantFixture";
 
+test("ouvre au clavier les services à compléter depuis les achats", async ({ page, restaurant }) => {
+  await restaurant.addFlour();
+  await restaurant.completeSetup();
+  await page.goto("/orders?view=prepare");
+  await expect(page.getByRole("status", { name: "Ouverture de KookiA" })).toBeHidden();
+
+  const suggestions = page.getByRole("region", { name: "Vos recommandations d’achat" });
+  await expect(suggestions.getByRole("status").filter({ hasText: "Horaires de service non renseignés." })).toBeVisible();
+  await suggestions.getByRole("link", { name: "Vérifier les services et leurs cartes" }).press("Enter");
+  await expect(page.getByRole("heading", { name: "Services et carte" })).toBeVisible();
+});
+
 test("confirme les lignes revues quand le panier change après la validation", async ({ page, restaurant }) => {
   const { headers, addFlour, completeSetup } = restaurant;
   const { productId: flourId, supplierId } = await addFlour();
