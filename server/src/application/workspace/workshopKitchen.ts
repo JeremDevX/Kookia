@@ -5,9 +5,50 @@ import { findRecipeVersionForDate } from "./recipeVersionStorage.js";
 import { WorkspaceError } from "./workspaceError.js";
 import type { WorkshopOperationsInput } from "./workshopOperationsInput.js";
 
+type Loss = WorkshopOperationsInput["losses"][number];
 const preparationKey = (slot: string, name: string) => `${slot}\0${name}`;
 const lossMovementKey = (date: string, reference: string) => `workshop-stock:v1:${date}:${reference}:loss`;
+const lossOperationId = (date: string, index: number) => `workshop-kitchen:v1:${date}:loss:${index}`;
 const quantity = (milli: number) => new Prisma.Decimal(milli).div(1000);
+
+function findUnlinkedLossMovements(tx: Prisma.TransactionClient, restaurantId: string, date: string, losses: Loss[]) {
+  return tx.stockMovement.findMany({ where: { restaurantId, reason: "simulation_loss", wasteRecord: null,
+    operationId: { in: losses.flatMap(loss => loss.kind === "raw" && loss.lotReference ? [lossMovementKey(date, loss.lotReference)] : []) } },
+    select: { id: true, operationId: true, productId: true, productUnitSnapshot: true, delta: true,
+      lotAllocations: { select: { lotId: true, quantity: true } } } });
+}
+
+function matchRawLoss(movements: Awaited<ReturnType<typeof findUnlinkedLossMovements>>, linked: Set<string>,
+  date: string, loss: Loss, productId: string | null) {
+  if (loss.kind !== "raw" || !loss.lotReference) return;
+  const key = lossMovementKey(date, loss.lotReference);
+  const amount = quantity(loss.quantityMilli);
+  const movement = movements.find(row => row.operationId === key && row.productId === productId &&
+    row.productUnitSnapshot === loss.unit && row.delta.eq(amount.negated()) && row.lotAllocations.length === 1 &&
+    row.lotAllocations[0].quantity.eq(amount) && !linked.has(row.id));
+  if (!movement) return;
+  linked.add(movement.id);
+  return { stockMovementId: movement.id, lotId: movement.lotAllocations[0].lotId };
+}
+
+export async function linkWorkshopRawLosses(tx: Prisma.TransactionClient, restaurantId: string, date: string, losses: Loss[]) {
+  const operationIds = losses.flatMap((loss, index) => loss.kind === "raw" ? [lossOperationId(date, index)] : []);
+  if (!operationIds.length) return;
+  const records = await tx.wasteRecord.findMany({ where: { restaurantId, actorId: simulationActor, kind: "raw",
+    operationId: { in: operationIds }, stockMovementId: null }, select: { operationId: true, productId: true } });
+  if (!records.length) return;
+
+  const movements = await findUnlinkedLossMovements(tx, restaurantId, date, losses);
+  const recordsByOperation = new Map(records.map(record => [record.operationId, record]));
+  const linked = new Set<string>();
+  for (const [index, loss] of losses.entries()) {
+    const operationId = lossOperationId(date, index);
+    const record = recordsByOperation.get(operationId);
+    if (!record) continue;
+    const data = matchRawLoss(movements, linked, date, loss, record.productId);
+    if (data) await tx.wasteRecord.update({ where: { restaurantId_operationId: { restaurantId, operationId } }, data });
+  }
+}
 
 export async function applyWorkshopKitchen(tx: Prisma.TransactionClient, restaurantId: string, date: string,
   { services, losses }: WorkshopOperationsInput) {
@@ -17,10 +58,7 @@ export async function applyWorkshopKitchen(tx: Prisma.TransactionClient, restaur
     tx.recipe.findMany({ where: { restaurantId, name: { in: [...recipeNames] } }, select: { id: true, name: true } }),
     tx.product.findMany({ where: { restaurantId, name: { in: losses.flatMap(loss => loss.product ? [loss.product] : []) } },
       select: { id: true, name: true, unit: true } }),
-    tx.stockMovement.findMany({ where: { restaurantId, reason: "simulation_loss", wasteRecord: null,
-      operationId: { in: losses.flatMap(loss => loss.kind === "raw" && loss.lotReference ? [lossMovementKey(date, loss.lotReference)] : []) } },
-      select: { id: true, operationId: true, productId: true, productUnitSnapshot: true, delta: true,
-        lotAllocations: { select: { lotId: true, quantity: true } } } }),
+    findUnlinkedLossMovements(tx, restaurantId, date, losses),
   ]);
 
   const recipeByName = new Map<string, { id: string; versionId: string | null }>();
@@ -56,16 +94,10 @@ export async function applyWorkshopKitchen(tx: Prisma.TransactionClient, restaur
     const productionId = loss.recipe && loss.slot ? preparationIds.get(preparationKey(loss.slot, loss.recipe)) ?? null : null;
     if (loss.kind !== "raw" && !productionId)
       throw new WorkspaceError(400, "WORKSHOP_KITCHEN_PREPARATION", "Une perte est associée à une préparation absente du service.");
-    const amount = quantity(loss.quantityMilli);
-    const movementKey = loss.kind === "raw" && loss.lotReference ? lossMovementKey(date, loss.lotReference) : null;
-    const movement = movementKey
-      ? movements.find(row => row.operationId === movementKey && row.productId === productId &&
-        row.productUnitSnapshot === loss.unit && row.delta.eq(amount.negated()) && row.lotAllocations.length === 1 &&
-        row.lotAllocations[0].quantity.eq(amount) && !linkedMovements.has(row.id)) : undefined;
-    if (movement) linkedMovements.add(movement.id);
-    return { restaurantId, serviceDate, actorId: simulationActor, operationId: `workshop-kitchen:v1:${date}:loss:${index}`,
-      serviceSlot: loss.slot, kind: loss.kind, productId, productionId, lotId: movement?.lotAllocations[0].lotId ?? null,
-      stockMovementId: movement?.id ?? null, quantity: amount, unit: loss.unit, note: loss.note,
+    const link = matchRawLoss(movements, linkedMovements, date, loss, productId);
+    return { restaurantId, serviceDate, actorId: simulationActor, operationId: lossOperationId(date, index),
+      serviceSlot: loss.slot, kind: loss.kind, productId, productionId, ...link,
+      quantity: quantity(loss.quantityMilli), unit: loss.unit, note: loss.note,
       avoidability: loss.avoidable ? "avoidable" : "inedible" };
   });
 

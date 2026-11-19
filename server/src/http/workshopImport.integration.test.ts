@@ -229,3 +229,37 @@ it("reconciles dated stock lots on a sales-only replay and rolls back a new day 
   expect(await prisma.stockCount.count({ where: { restaurantId: targetId } })).toBe(0);
   expect(await currentStock()).toBe(0.6);
 });
+
+it.each(["stock", "operations"] as const)("links a raw loss once when %s arrive first", async first => {
+  const targetId = randomUUID();
+  const owner = await workspace("operational", targetId);
+  const optedInApp = workshopAppFor(targetId);
+  const date = "2024-06-08", receivedOn = "2024-06-05", reference = "pear-lot";
+  const send = () => request(optedInApp).put(`/api/integrations/workshop/days/${date}`).set("Authorization", `Bearer ${token}`);
+  const productId = "pears", productName = "Poires";
+  await prisma.supplier.create({ data: { id: "orchard", restaurantId: targetId, name: "Verger", email: "", phone: "" } });
+  await prisma.product.create({ data: { id: productId, restaurantId: targetId, supplierId: "orchard", name: productName,
+    unit: "kg", category: "Fruits", currentStock: 2, minThreshold: 1, pricePerUnit: 3.3 } });
+  const lot = await prisma.stockLot.create({ data: { restaurantId: targetId, productId, actorId: "fixture",
+    source: "receipt", receivedAt: new Date(receivedOn), expiresAt: new Date(date), quantityReceived: 2, remainingQuantity: 2, unitCost: 2 } });
+  const day = { open: false, sales: [] };
+  const stock = [{ name: productName, unit: "kg", lots: [{ reference, receivedOn, expiresOn: date, unitCostCents: 200,
+    openingMilli: 2000, addedMilli: 0, closingMilli: 1500, lossMilli: 500, addition: null }] }];
+  const operations = { purchases: [], services: [], incident: "normal", events: [], losses: [{ kind: "raw", slot: null,
+    recipe: null, product: productName, lotReference: reference, quantityMilli: 500, unit: "kg", avoidable: true, note: "Lot écarté" }] };
+
+  await send().send({ ...day, [first]: first === "stock" ? stock : operations }).expect(200);
+  const before = (await owner.get("/api/workspace/waste").expect(200)).body;
+  if (first === "operations") expect(before).toEqual([expect.objectContaining({ stockMovementId: null, lotId: null, cost: null })]);
+  else expect(before).toEqual([]);
+
+  const acknowledged = { date, replayed: true, saleCount: 0, stockApplied: true, operationsApplied: true };
+  await send().send({ ...day, stock, operations }).expect(200, acknowledged);
+  await send().send({ ...day, stock, operations }).expect(200, acknowledged);
+  const movements = await prisma.stockMovement.findMany({ where: { restaurantId: targetId, reason: "simulation_loss" } });
+  expect(movements).toHaveLength(1);
+  expect((await owner.get("/api/workspace/waste").expect(200)).body).toEqual([expect.objectContaining({
+    ...(first === "operations" && { id: before[0].id }), stockMovementId: movements[0].id, lotId: lot.id, quantity: 0.5, cost: 1,
+  })]);
+  expect((await owner.get("/api/workspace/catalog").expect(200)).body.products[0].currentStock).toBe(1.5);
+});
