@@ -527,8 +527,9 @@ de régression sont intégrés à `npm test`.
 Le workflow GitHub Actions se déclenche sur les demandes de fusion, les mises à
 jour de `main` et les lancements manuels. Il exécute `check:quality` et les builds
 web, API et atelier. Il applique les migrations sur un service PostgreSQL
-éphémère, puis lance les tests unitaires, d’intégration et le parcours navigateur
-de reprise d’un inventaire après une réponse de validation perdue.
+éphémère, puis lance les tests unitaires, d’intégration et la suite Playwright.
+Les tests navigateur couvrent notamment la reprise d’un inventaire, la revue
+d’une facture et le retour du focus dans un tiroir de produit.
 
 En local, les tests d’intégration et navigateur exigent une
 [base dédiée](setup-auth.md#base-isolée-pour-les-tests-dintégration). Exporter

@@ -62,7 +62,7 @@ async function main() {
     const databaseUrl = disposableDatabaseUrl(port, password, "kookia_test");
     validateIntegrationDatabaseUrl(databaseUrl);
     const testEnv = { ...process.env, DATABASE_URL: databaseUrl, NODE_ENV: "test" };
-    for (const script of ["lint", "build", "build:api"]) {
+    for (const script of ["check:quality", "build", "build:api", "documents:build"]) {
       console.log(`\n==> npm run ${script}`);
       await run("npm", ["run", script]);
     }

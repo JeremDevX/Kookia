@@ -59,10 +59,10 @@ Navigateur → Vite :5173 -- /api proxy (développement seulement) → Express :
 - Cette commande démarre un conteneur PostgreSQL 16 au nom aléatoire, publie un
   port éphémère uniquement sur `127.0.0.1`, monte les données PostgreSQL sur un
   tmpfs de 2 Gio et le répertoire temporaire sur un tmpfs de 512 Mio, sans volume
-  Docker. Elle utilise un mot de passe généré pour cette exécution, applique les
-  migrations, vérifie leur parité avec Prisma, lance `lint`, les builds web/API,
-  les tests unitaires et toute l'intégration, puis supprime le conteneur même en
-  cas d'échec ou d'interruption.
+  Docker. Elle utilise un mot de passe généré pour cette exécution. Elle lance
+  `check:quality`, compile le web, l'API et l'atelier, applique les migrations,
+  vérifie leur parité avec Prisma et lance les tests unitaires et d'intégration.
+  Elle supprime le conteneur même en cas d'échec ou d'interruption.
 - La fin de recette crée un témoin synthétique, produit un dump PostgreSQL au
   format custom dans le tmpfs, le restaure dans une seconde base temporaire et
   vérifie le témoin et l'état des migrations. Aucun dump n'est exporté ni gardé

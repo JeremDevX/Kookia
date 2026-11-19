@@ -8,8 +8,9 @@ description: Apply when adding or changing tests, fixing a reproducible bug, cha
 Choose the smallest validation that gives reasonable confidence. Reproduce a bug
 when practical, then add a focused regression test if it is affordable in the
 existing test setup. Prefer unit tests for deterministic policies, services, and
-state transitions; this repository has Vitest in Node and no declared DOM or E2E
-test infrastructure.
+state transitions with Vitest in Node. Reuse the Playwright tests in
+`tests/browser/` for end-to-end checks and run them against an isolated
+`kookia_test` database.
 
 During iteration, run the narrowest relevant test or static check. Use the local
 quality command in `AGENTS.md` before completing the change. Choose behavior
