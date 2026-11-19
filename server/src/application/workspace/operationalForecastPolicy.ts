@@ -33,14 +33,14 @@ export function projectMenuIngredients(entries: MenuEntry[], items: ForecastItem
     const entry = entries.find(e => e.id === item.entryId);
     if (!entry?.available || item.quantity === null) continue;
     for (const component of entry.components) for (const ingredient of component.ingredients) {
-      const quantity = round(item.quantity * component.portions * ingredient.quantity / component.yieldPortions);
+      const quantity = item.quantity * component.portions * ingredient.quantity / component.yieldPortions;
       const row = ingredients.get(ingredient.productId);
       if (row && row.unit !== ingredient.unit) { blockers.push(`${ingredient.productName} : unités incompatibles dans la carte.`); continue; }
       const next = row ?? { productId: ingredient.productId, productName: ingredient.productName, unit: ingredient.unit, quantity: 0, sources: [] };
-      next.quantity = round(next.quantity + quantity);
-      next.sources.push({ saleItemName: entry.name, recipeName: component.recipeName, recipeVersion: component.recipeVersion, quantity });
+      next.quantity += quantity;
+      next.sources.push({ saleItemName: entry.name, recipeName: component.recipeName, recipeVersion: component.recipeVersion, quantity: round(quantity) });
       ingredients.set(ingredient.productId, next);
     }
   }
-  return { ingredients: [...ingredients.values()], blockers };
+  return { ingredients: [...ingredients.values()].map(ingredient => ({ ...ingredient, quantity: round(ingredient.quantity) })), blockers };
 }

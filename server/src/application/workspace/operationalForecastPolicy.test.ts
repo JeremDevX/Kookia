@@ -36,4 +36,11 @@ describe("qualified service forecast", () => {
     expect(projectMenuIngredients([{ ...meal, available: false }], [item]).ingredients).toEqual([]);
     expect(projectMenuIngredients([{ ...meal, components: [component, { ...component, recipeId: "other", ingredients: [{ ...component.ingredients[0], unit: "pcs" }] }] }], [item]).blockers).toHaveLength(1);
   });
+  it.each([0.002, 0.003])("rounds the ingredient total after combining two dosages of %s kg per batch", quantity => {
+    const smallDose = { ...component, yieldPortions: 5, ingredients: [{ ...component.ingredients[0], quantity }] };
+    const meal: MenuEntry = { ...entry, category: "Formule", components: [smallDose, { ...smallDose, recipeId: "starter" }] };
+    const item = { ...forecastMenuEntry(meal, "2026-09-29", "lunch", []), quantity: 1 };
+
+    expect(projectMenuIngredients([meal], [item]).ingredients).toMatchObject([{ productId: "carrot", quantity: 0.001 }]);
+  });
 });
