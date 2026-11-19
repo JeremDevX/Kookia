@@ -80,12 +80,13 @@ it("publishes only a current forecast for the authorized test restaurant and own
     hours: [{ hour: 12, covers: 16 }, { hour: 13, covers: 8 }],
     products: [{ name: "Poires", supplier: "Verger", unit: "kg", quantityMilli: 2500, deliveryDate: date }],
   };
-  const send = () => request(app).put(writePath).set("Authorization", `Bearer ${token}`);
-  await request(app).get(readPath).expect(401);
+  const workshop = request.agent(app);
+  const send = () => workshop.put(writePath).set("Authorization", `Bearer ${token}`);
+  await workshop.get(readPath).expect(401);
   await member.agent.get(readPath).expect(403);
   await owner.agent.get(readPath).expect(200, { forecast: null });
   await owner.agent.put(writePath).send(valid).expect(401);
-  await request(app).put(writePath).set("Authorization", "Bearer invalid").send(valid).expect(401);
+  await workshop.put(writePath).set("Authorization", "Bearer invalid").send(valid).expect(401);
   await send().send({ ...valid, restaurantId: otherRestaurantId }).expect(400);
   await send().send({ ...valid, covers: 23 }).expect(400);
   await send().send({ ...valid, hours: [{ hour: 12, covers: 16 }, { hour: 12, covers: 8 }] }).expect(400);
@@ -102,11 +103,11 @@ it("publishes only a current forecast for the authorized test restaurant and own
   ] });
   await owner.agent.get(readPath).expect(200, { forecast: null });
   await other.agent.get(readPath).expect(200, { forecast: null });
-  const wrongDay = await request(app).put(`/api/integrations/workshop/forecast/${basedOnDate}`)
+  const wrongDay = await workshop.put(`/api/integrations/workshop/forecast/${basedOnDate}`)
     .set("Authorization", `Bearer ${token}`).send(stale).expect(400);
   expect(wrongDay.body.error.code).toBe("WORKSHOP_FORECAST_DATE");
 
-  await request(app).put(`/api/integrations/workshop/days/${basedOnDate}`).set("Authorization", `Bearer ${token}`)
+  await workshop.put(`/api/integrations/workshop/days/${basedOnDate}`).set("Authorization", `Bearer ${token}`)
     .send({ open: false, sales: [] }).expect(200);
   await send().query({ restaurantId: otherRestaurantId }).send(valid).expect(200, { date });
   await send().send(valid).expect(200, { date });
@@ -118,15 +119,16 @@ it("publishes only a current forecast for the authorized test restaurant and own
 
   await prisma.restaurant.update({ where: { id: targetId }, data: { mode: "operational" } });
   await owner.agent.get(readPath).expect(200, { forecast: null });
-  await send().send(valid).expect(403);
+  const refused = await send().send(valid).expect(403);
+  expect(refused.body.error.code).toBe("DEMO_WORKSPACE_REQUIRED");
   try {
     env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE = "true";
     const optedIn = createApp();
-    await request(optedIn).put(writePath).set("Authorization", `Bearer ${token}`).send(valid).expect(200, { date });
+    await request.agent(optedIn).put(writePath).set("Authorization", `Bearer ${token}`).send(valid).expect(200, { date });
     await owner.agent.get(readPath).expect(200, { forecast: valid });
     env.WORKSHOP_FORECAST_ENABLED = undefined;
     const disabled = createApp();
-    await request(disabled).put(writePath).set("Authorization", `Bearer ${token}`).send(valid).expect(404);
+    await request.agent(disabled).put(writePath).set("Authorization", `Bearer ${token}`).send(valid).expect(404);
     await owner.agent.get(readPath).expect(200, { forecast: null });
   } finally {
     env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE = undefined;
