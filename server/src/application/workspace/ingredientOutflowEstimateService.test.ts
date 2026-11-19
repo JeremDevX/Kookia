@@ -7,6 +7,7 @@ it("reads only recorded receipts and joins their dated recipe to transparent est
   const to = "2026-09-30";
   const deliveryDate = new Date("2026-09-15T00:00:00.000Z");
   const db = {
+    workspaceDocument: { findMany: vi.fn().mockResolvedValue([]) },
     purchaseReceiptLine: { findMany: vi.fn().mockResolvedValue([
       { id: "tomato-line", productId: "tomatoes", productName: "Tomates", unit: "kg",
         receivedQuantity: new Prisma.Decimal("8"), receipt: { id: "receipt-1", deliveryReference: "BL-2026-01", deliveryDate } },

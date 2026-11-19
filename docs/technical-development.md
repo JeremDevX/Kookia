@@ -349,11 +349,15 @@ plus anciens, indépendamment du résumé et de la période de comparaison.
 
 Les panneaux distincts **Sorties estimées par recette** de **Bilan** et
 **Prévisions** appellent
-`GET /api/workspace/ingredient-outflow-estimates`. L'API ne lit que les lignes
-positives de réceptions enregistrées et non simulées, tenant-scopées ; pour
-chaque entrée, elle utilise la dernière version datée effective à la livraison
-qui contient le même produit dans la même unité. Elle expose portions possibles
-et quantités estimées en ventes/pertes selon l'hypothèse 90/10, sans écrire de
+`GET /api/workspace/ingredient-outflow-estimates`. Le calcul inclut les
+quantités positives des réceptions rapprochées et des factures dont la
+réception directe a crédité le stock. La période suit la date de livraison ou
+la date de travail de la facture. Les simulations sont exclues. Chaque entrée
+renvoie à sa réception dans Achats ou à son mouvement dans Stocks. Pour une
+ancienne réception directe sans unité archivée, le calcul reprend l’unité du
+catalogue. Il utilise la version de recette effective à la livraison qui
+contient le même produit dans la même unité. Il indique les portions possibles
+et les quantités estimées en ventes et pertes selon l’hypothèse 90/10, sans écrire de
 vente, perte, production, mouvement ni stock. Les recettes alternatives et les
 lignes de plusieurs ingrédients d'une même recette ne s'additionnent pas ; les
 autres ingrédients et le stock déjà présent ne sont pas vérifiés. La réponse
@@ -371,9 +375,9 @@ aperçu reste séparé des ventes mesurées et ne crée aucune écriture. Dans
 à tout l'historique ; aucun plafond de quatre ans n'est appliqué. Une
 association non reconnue conserve
 le parcours de création manuelle. Lors de la création depuis une réception, le
-serveur vérifie le tenant, la ligne enregistrée, l'unité, le produit inclus et
-la date d'effet, puis conserve la provenance dans la décision consultable. La
-création enregistre une recette versionnée, pas une vente, perte, production ou
+serveur vérifie l’établissement, la réception enregistrée, l’unité, le produit
+inclus et la date d’effet, puis conserve la provenance dans la décision
+consultable. La création enregistre une recette versionnée, pas une vente, perte, production ou
 sortie de stock. La fenêtre de requête reste choisie par l'utilisateur et ne
 fixe pas de limite produit à l'historique.
 

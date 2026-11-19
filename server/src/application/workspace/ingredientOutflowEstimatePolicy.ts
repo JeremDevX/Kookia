@@ -36,14 +36,8 @@ export function estimateIngredientOutflows(receipts: ReceivedIngredient[], versi
       const portions = splitEstimatedQuantity(receipt.receivedQuantity / quantityPerPortion);
       const ingredientSplit = splitEstimatedQuantity(receipt.receivedQuantity);
       receiptEstimates.push({
+        ...receipt,
         id: `${receipt.id}:${recipe.recipeId}:${recipe.version}`,
-        receiptId: receipt.receiptId,
-        receiptReference: receipt.receiptReference,
-        deliveryDate: receipt.deliveryDate,
-        productId: receipt.productId,
-        productName: receipt.productName,
-        unit: receipt.unit,
-        receivedQuantity: receipt.receivedQuantity,
         recipeId: recipe.recipeId,
         recipeName: recipe.recipeName,
         recipeVersion: recipe.version,

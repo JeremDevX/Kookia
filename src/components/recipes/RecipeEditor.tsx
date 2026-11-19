@@ -64,7 +64,7 @@ export default function RecipeEditor({ recipe, products, headingRef, initialSugg
       <h3 id="recipe-editor-title" ref={headingRef} tabIndex={-1}>{recipe ? `Modifier ${recipe.name}` : initialSuggestion ? "Revoir la proposition" : initialImport ? "Revoir la fiche importée" : "Nouvelle recette"}</h3>
       {initialImport && <p>Vérifiez les quantités, complétez les informations de la recette, puis créez-la si elles sont correctes.</p>}
       {initialSuggestion && <p>Cette proposition part de « {initialSuggestion.sourceProductName} »{initialSuggestion.sourceReceipt
-        ? ` — livraison ${initialSuggestion.sourceReceipt.reference}.` : "."} Corrigez les ingrédients, les quantités, le rendement et la date. La créer l’ajoute au catalogue pour alimenter les estimations ; aucune vente, perte ou sortie de stock n’est enregistrée.</p>}
+        ? ` — ${initialSuggestion.sourceReceipt.stockMovementId ? "facture" : "livraison"} ${initialSuggestion.sourceReceipt.reference}.` : "."} Corrigez les ingrédients, les quantités, le rendement et la date. La créer l’ajoute au catalogue pour alimenter les estimations ; aucune vente, perte ou sortie de stock n’est enregistrée.</p>}
       {recipe && <p>Version actuelle : {recipe.version} · rendement {recipe.yieldPortions} portions · date d’effet {recipe.effectiveFrom ?? "historique antérieur, date inconnue"}.</p>}
       <div className="recipe-editor-fields">
         <label>Nom de la recette<input required maxLength={120} value={draft.name}

@@ -181,3 +181,96 @@ it("estimates only dated recipes from recorded in-scope receipts without creatin
   expect(await prisma.production.count({ where: { restaurantId: owner.restaurantId } })).toBe(productionsBefore);
   expect(await readStock()).toEqual(stockBefore);
 });
+
+it("includes confirmed direct invoices and their legacy movements in the working period", async () => {
+  const owner = await account("Direct receipt owner");
+  const other = await account("Direct receipt other");
+  type Product = { id: string; name: string; unit: string; supplierId: string; pricePerUnit: number };
+  const { products } = (await owner.agent.get("/api/workspace/catalog").expect(200)).body as { products: Product[] };
+  const tomatoes = products.find((product) => product.name === "Tomates")!;
+  const cream = products.find((product) => product.name.toLocaleLowerCase("fr") === "crème fraîche")!;
+  const date = "2022-06-10";
+  const recipe = { name: "Salade de tomates", category: "Entrée", prepTime: 15, yieldPortions: 4, effectiveFrom: date,
+    ingredients: [{ productId: tomatoes.id, quantity: 0.4 }] };
+  await owner.agent.post("/api/workspace/recipes").send({ ...recipe, operationId: randomUUID() }).expect(201);
+  const makeDraft = (reference: string) => ({ reference, date, lines: [
+    { productId: tomatoes.id, quantity: 8, unitPrice: 2, unit: tomatoes.unit },
+    { productId: cream.id, quantity: 3, unitPrice: 4, unit: cream.unit },
+  ] });
+  const saveDirectInvoice = (invoiceId: string, reference: string, receive: boolean) =>
+    owner.agent.post(`/api/workspace/invoices/${invoiceId}`).send({ revision: 0, receive, draft: makeDraft(reference) });
+  const invoiceId = randomUUID();
+  const invoice = await saveDirectInvoice(invoiceId, "FACT-DIRECTE", true).expect(200);
+  await saveDirectInvoice(invoiceId, "FACT-DIRECTE", true).expect(200);
+  await saveDirectInvoice(randomUUID(), "FACT-BROUILLON", false).expect(200);
+  const [tomatoMovement, creamMovement] = await Promise.all([tomatoes, cream].map((product) =>
+    prisma.stockMovement.findUniqueOrThrow({ where: { restaurantId_operationId_productId: {
+      restaurantId: owner.restaurantId, operationId: `invoice:${invoiceId}`, productId: product.id,
+    } } })));
+  expect(tomatoMovement.invoiceRevision).toBe(invoice.body.revision);
+
+  const legacyInvoiceId = randomUUID();
+  const legacyOperationId = `invoice:${legacyInvoiceId}`;
+  await prisma.workspaceDocument.create({ data: { restaurantId: owner.restaurantId, kind: legacyOperationId, revision: 2,
+    data: { id: legacyInvoiceId, reference: "FACT-ANCIENNE", date, source: "manual", status: "received",
+      lines: [{ productId: tomatoes.id, quantity: 2, unitPrice: 2 }] } } });
+  const legacyMovement = await prisma.stockMovement.create({ data: { restaurantId: owner.restaurantId, productId: tomatoes.id,
+    delta: 2, reason: "receipt", operationId: legacyOperationId, actorId: owner.actorId } });
+  const orderReceipt = await addReceipt(owner, tomatoes, date, { receivedQuantity: 1 });
+  await prisma.restaurant.update({ where: { id: owner.restaurantId }, data: { mode: "demo" } });
+  const simulatedId = randomUUID();
+  const simulatedInvoice = await saveDirectInvoice(simulatedId, "FACT-SIMULÉE", true).expect(200);
+  expect(simulatedInvoice.body.stockEffect).toBe("demo_simulation");
+  const simulatedMovement = await prisma.stockMovement.findFirstOrThrow({ where: { restaurantId: owner.restaurantId,
+    invoiceDocumentId: simulatedId, productId: tomatoes.id } });
+  await prisma.restaurant.update({ where: { id: owner.restaurantId }, data: { mode: "operational" } });
+
+  const report = (from = date, to = date) =>
+    owner.agent.get("/api/workspace/ingredient-outflow-estimates").query({ from, to }).expect(200);
+  const evidencePath = (id: string) => `/api/workspace/orders/receipt-lines/${id}`;
+  const movementCount = () => prisma.stockMovement.count({ where: { restaurantId: owner.restaurantId } });
+  const movementsBefore = await movementCount();
+  const outflows = (await report()).body;
+  expect(outflows.estimates).toHaveLength(3);
+  expect(outflows.estimates).toEqual(expect.arrayContaining([
+    expect.objectContaining({ stockMovementId: tomatoMovement.id, receiptId: invoiceId, receiptReference: "FACT-DIRECTE",
+      deliveryDate: date, receivedQuantity: 8, possiblePortions: 80 }),
+    expect.objectContaining({ stockMovementId: legacyMovement.id, receiptId: legacyInvoiceId, receiptReference: "FACT-ANCIENNE",
+      deliveryDate: date, receivedQuantity: 2, unit: tomatoes.unit, possiblePortions: 20 }),
+    expect.objectContaining({ receiptId: orderReceipt.id, receivedQuantity: 1, possiblePortions: 10 }),
+  ]));
+  expect(outflows.unestimatedReceipts).toEqual([expect.objectContaining({
+    id: creamMovement.id, stockMovementId: creamMovement.id, receiptId: invoiceId, receivedQuantity: 3,
+  })]);
+  expect((await report("2022-06-09", "2022-06-09")).body.estimates).toEqual([]);
+  await other.agent.get(evidencePath(creamMovement.id)).expect(404);
+  await owner.agent.get(evidencePath(simulatedMovement.id)).expect(404);
+  const evidence = await owner.agent.get(evidencePath(creamMovement.id)).expect(200);
+  expect(evidence.body).toMatchObject({ receiptLineId: creamMovement.id, stockMovementId: creamMovement.id,
+    deliveryReference: "FACT-DIRECTE", deliveryDate: date, productId: cream.id, receivedQuantity: 3, unit: cream.unit });
+
+  const operationId = randomUUID();
+  const review = { ...recipe, operationId, name: "Sauce à la crème", sourceReceiptLineId: creamMovement.id,
+    ingredients: [{ productId: cream.id, quantity: 0.6 }] };
+  const savedRecipe = await owner.agent.post("/api/workspace/recipes").send(review).expect(201);
+  const replay = await owner.agent.post("/api/workspace/recipes").send(review).expect(201);
+  expect(replay.body.id).toBe(savedRecipe.body.id);
+  expect(await prisma.recommendationDecision.findFirstOrThrow({ where: { restaurantId: owner.restaurantId, operationId } }))
+    .toMatchObject({ decision: "recipe_created_from_receipt_estimate", snapshot: { source: { stockMovementId: creamMovement.id,
+      receiptId: invoiceId, reference: "FACT-DIRECTE", deliveryDate: date } } });
+  const afterReview = (await report()).body;
+  expect(afterReview.estimates).toContainEqual(expect.objectContaining({
+    stockMovementId: creamMovement.id, recipeId: savedRecipe.body.id, possiblePortions: 20,
+  }));
+  expect(afterReview.unestimatedReceipts).toEqual([]);
+
+  const legacyReview = { ...recipe, operationId: randomUUID(), name: "Tomates anciennes", sourceReceiptLineId: legacyMovement.id };
+  const legacyRecipe = await owner.agent.post("/api/workspace/recipes").send(legacyReview).expect(201);
+  await prisma.product.update({ where: { restaurantId_id: { restaurantId: owner.restaurantId, id: tomatoes.id } },
+    data: { name: "Tomates rondes" } });
+  const legacyReplay = await owner.agent.post("/api/workspace/recipes").send(legacyReview).expect(201);
+  expect(legacyReplay.body.id).toBe(legacyRecipe.body.id);
+  await owner.agent.post("/api/workspace/recipes").send({ ...legacyReview, sourceReceiptLineId: tomatoMovement.id })
+    .expect(409).expect(({ body }) => expect(body.error.code).toBe("OPERATION_CONFLICT"));
+  expect(await movementCount()).toBe(movementsBefore);
+});

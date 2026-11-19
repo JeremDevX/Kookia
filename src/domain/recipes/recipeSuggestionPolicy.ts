@@ -4,6 +4,7 @@ import type { Recipe } from "./recipe.types";
 type IngredientInput = Pick<Product, "id" | "name" | "category" | "unit">;
 export interface RecipeSuggestionReceipt {
   receiptLineId: string;
+  stockMovementId?: string;
   reference: string;
   receivedQuantity: number;
   unit: string;

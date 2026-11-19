@@ -15,6 +15,7 @@ export type PurchaseReceiptInput = z.infer<typeof purchaseReceiptSchema>;
 
 export interface PurchaseReceiptLineEvidence {
   receiptLineId: string;
+  stockMovementId?: string;
   productId: string;
   productName: string;
   deliveryReference: string;

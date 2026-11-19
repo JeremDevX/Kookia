@@ -7,7 +7,8 @@ import { getIngredientOutflowEstimates } from "../../services/ingredientOutflowE
 import { getProducts } from "../../services/productService";
 import type { Product } from "../../domain/inventory/product.types";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
-import { receiptDetailsHref } from "../../utils/analyticsNavigation";
+import { receiptDetailsHref, stockMovementHref } from "../../utils/analyticsNavigation";
+import type { ReceivedIngredient } from "../../../shared/ingredientOutflowEstimate";
 import { currentEstimateRequest, type StoredEstimateRequest } from "./estimatedOutflowsState";
 import ConditionalReceiptOutflow from "./ConditionalReceiptOutflow";
 
@@ -32,7 +33,8 @@ export default function EstimatedOutflows({ from, to }: Props) {
   const query = search.trim().toLocaleLowerCase("fr");
   const estimates = (report?.estimates ?? []).filter((entry) => `${entry.productName} ${entry.recipeName} ${entry.receiptReference}`.toLocaleLowerCase("fr").includes(query));
   const unmatched = (report?.unestimatedReceipts ?? []).filter((entry) => `${entry.productName} ${entry.receiptReference}`.toLocaleLowerCase("fr").includes(query));
-  const receiptCount = new Set([...(report?.estimates ?? []), ...(report?.unestimatedReceipts ?? [])].map((entry) => entry.receiptId)).size;
+  const receiptCount = new Set([...(report?.estimates ?? []), ...(report?.unestimatedReceipts ?? [])]
+    .map((entry) => `${entry.stockMovementId ? "invoice" : "order"}:${entry.receiptId}`)).size;
   const recipeCount = new Set((report?.estimates ?? []).map((entry) => entry.recipeId)).size;
   const unmatchedReceiptIds = report?.unestimatedReceipts.map((entry) => entry.id).join(",") ?? "";
   const catalogRequestKey = JSON.stringify([from, to, revision, catalogRevision, unmatchedReceiptIds]);
@@ -93,7 +95,7 @@ export default function EstimatedOutflows({ from, to }: Props) {
       <Button ref={retryButtonRef} type="button" variant="outline" onClick={retry}>Recharger les estimations</Button>
     </div> : report && <>
       <div className="bilan-kpis">
-        <article><h3>Réceptions analysées</h3><p className="bilan-kpi-value">{receiptCount}</p><p>Livraisons avec quantités positives</p><small>Sur la période sélectionnée</small></article>
+        <article><h3>Réceptions analysées</h3><p className="bilan-kpi-value">{receiptCount}</p><p>Entrées en stock confirmées</p><small>Sur la période sélectionnée</small></article>
         <article><h3>Recettes compatibles</h3><p className="bilan-kpi-value">{recipeCount}</p><p>{report.estimates.length} calculs disponibles</p><small>Recettes alternatives non cumulables</small></article>
         <article><h3>Entrées à examiner</h3><p className="bilan-kpi-value">{report.unestimatedReceipts.length}</p><p>Sans recette datée compatible</p><small>Propositions conditionnelles à vérifier</small></article>
       </div>
@@ -105,7 +107,7 @@ export default function EstimatedOutflows({ from, to }: Props) {
       <p>Chaque ligne estime un ingrédient reçu. Les recettes alternatives ne s’additionnent pas ; les autres ingrédients et le stock ne sont pas vérifiés.</p>
       <p>Hypothèse de répartition : {formatPercent(report.assumptions.estimatedSalesShare)} en ventes estimées, {formatPercent(report.assumptions.estimatedLossShare)} en pertes estimées. À valider. Les quantités sont arrondies au millième ; le solde d’arrondi revient aux pertes estimées.</p></details>
       <div className="bilan-toolbar">
-        <label>Rechercher une entrée<input type="search" value={search} placeholder="Ingrédient, recette ou livraison" onChange={(event) => { setSearch(event.target.value); setEstimatePage(0); setUnmatchedPage(0); }} /></label>
+        <label>Rechercher une entrée<input type="search" value={search} placeholder="Ingrédient, recette ou référence" onChange={(event) => { setSearch(event.target.value); setEstimatePage(0); setUnmatchedPage(0); }} /></label>
         <label>Afficher<select value={scope} onChange={(event) => { setScope(event.target.value); setEstimatePage(0); setUnmatchedPage(0); }}><option value="all">Toutes les entrées</option><option value="recipes">Avec recette compatible</option><option value="review">À examiner</option></select></label>
         <p role="status">{scope !== "review" ? `${estimates.length} calcul(s)` : ""}{scope === "all" ? " · " : ""}{scope !== "recipes" ? `${unmatched.length} entrée(s) à examiner` : ""}</p>
       </div>
@@ -117,8 +119,7 @@ export default function EstimatedOutflows({ from, to }: Props) {
       <div className="sales-table-wrap" role="region" aria-label="Sorties estimées des ingrédients" aria-describedby="estimated-outflows-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
         <table className="sales-table"><thead><tr><th scope="col">Réception</th><th scope="col">Ingrédient reçu</th><th scope="col">Recette</th><th scope="col">Ventes estimées</th><th scope="col">Pertes estimées</th><th scope="col">Calcul</th></tr></thead><tbody>
           {estimates.slice(estimatePage * PAGE_SIZE, (estimatePage + 1) * PAGE_SIZE).map((estimate) => <tr key={estimate.id}>
-            <td>{displayDate(estimate.deliveryDate)}<br /><Link to={receiptDetailsHref(estimate.receiptId, from, to, "estimated-outflows-title")}
-              aria-label={`Ouvrir la réception ${estimate.receiptReference} dans Achats`}>{estimate.receiptReference}</Link></td>
+            <td><OutflowReceiptSource entry={estimate} from={from} to={to} /></td>
             <th scope="row">{estimate.productName}<br /><span className="outflow-secondary">{formatQuantity(estimate.receivedQuantity)} {estimate.unit}</span></th>
             <td>{estimate.recipeName}<br /><span className="outflow-secondary">v{estimate.recipeVersion} du {displayDate(estimate.recipeEffectiveFrom)}</span></td>
             <td>{formatQuantity(estimate.estimatedSoldQuantity)} {estimate.unit}<br /><span className="outflow-secondary">{formatQuantity(estimate.estimatedSoldPortions)} portions</span></td>
@@ -145,8 +146,7 @@ export default function EstimatedOutflows({ from, to }: Props) {
         <div className="sales-table-wrap" role="region" aria-label="Entrées sans recette datée compatible" aria-describedby="unmatched-table-hint" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
           <table className="sales-table"><thead><tr><th scope="col">Réception</th><th scope="col">Ingrédient</th><th scope="col">Quantité reçue</th><th scope="col">Proposition à vérifier</th></tr></thead>
             <tbody>{unmatched.slice(unmatchedPage * PAGE_SIZE, (unmatchedPage + 1) * PAGE_SIZE).map((entry) => <tr key={entry.id}>
-              <td>{displayDate(entry.deliveryDate)}<br /><Link to={receiptDetailsHref(entry.receiptId, from, to, "estimated-outflows-title")}
-                aria-label={`Ouvrir la réception ${entry.receiptReference} dans Achats`}>{entry.receiptReference}</Link></td>
+              <td><OutflowReceiptSource entry={entry} from={from} to={to} /></td>
               <th scope="row">{entry.productName}</th>
               <td>{formatQuantity(entry.receivedQuantity)} {entry.unit}</td>
               <td>{catalogProducts ? <details className="outflow-details"><summary aria-label={`Examiner la proposition pour ${entry.productName}, réception ${entry.receiptReference}`}>Examiner la proposition</summary>
@@ -159,6 +159,16 @@ export default function EstimatedOutflows({ from, to }: Props) {
       </section>}
     </>}
   </section>;
+}
+
+function OutflowReceiptSource({ entry, from, to }: Props & { entry: ReceivedIngredient }) {
+  const anchor = "estimated-outflows-title";
+  const { stockMovementId, productId, receiptId, receiptReference, deliveryDate } = entry;
+  const href = stockMovementId ? stockMovementHref(productId, stockMovementId, from, to, anchor)
+    : receiptDetailsHref(receiptId, from, to, anchor);
+  const label = stockMovementId ? `Ouvrir le mouvement de la facture ${receiptReference} dans Stocks`
+    : `Ouvrir la réception ${receiptReference} dans Achats`;
+  return <>{displayDate(deliveryDate)}<br /><Link to={href} aria-label={label}>{receiptReference}</Link></>;
 }
 
 function OutflowPagination({ page, total, onChange, label }: { page: number; total: number; onChange: (page: number) => void; label: string }) {

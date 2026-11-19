@@ -13,11 +13,12 @@ interface Props {
 
 export default function RecipeSuggestionPanel({ suggestion, onReview, disabled = false }: Props) {
   const estimate = estimateSuggestedRecipeOutflow(suggestion);
+  const source = suggestion.sourceReceipt;
   return <section className="recipe-suggestion" aria-labelledby="recipe-suggestion-title">
     <div>
       <h2 id="recipe-suggestion-title">Proposition à vérifier</h2>
-      <p>À partir de l’entrée reçue « {suggestion.sourceProductName} »{suggestion.sourceReceipt &&
-        ` — ${quantity(suggestion.sourceReceipt.receivedQuantity)} ${suggestion.sourceReceipt.unit} · livraison ${suggestion.sourceReceipt.reference}`},
+      <p>À partir de l’entrée reçue « {suggestion.sourceProductName} »{source &&
+        ` — ${quantity(source.receivedQuantity)} ${source.unit} · ${source.stockMovementId ? "facture" : "livraison"} ${source.reference}`},
         pour une prise d’effet proposée au {displayDate(suggestion.effectiveFrom)}.</p>
     </div>
     <div className="recipe-suggestion-summary">

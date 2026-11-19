@@ -47,7 +47,7 @@ export default function ReceiptRecipeSuggestion({ receiptLineId, products, ready
   const product = products.find((item) => item.id === evidence.productId);
   const suggestion = product && suggestRecipeFromIncomingProduct(product, products, evidence.deliveryDate, {
     receiptLineId: evidence.receiptLineId, reference: evidence.deliveryReference,
-    receivedQuantity: evidence.receivedQuantity, unit: evidence.unit,
+    receivedQuantity: evidence.receivedQuantity, unit: evidence.unit, stockMovementId: evidence.stockMovementId,
   });
   return suggestion ? <RecipeSuggestionPanel disabled={editing} suggestion={suggestion} onReview={(trigger) => onReview(suggestion, trigger)} />
     : <p role="status">Aucune proposition de recette automatique n’est disponible pour cette réception. Vous pouvez créer une recette depuis le catalogue.</p>;

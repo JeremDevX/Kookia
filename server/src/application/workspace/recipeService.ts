@@ -2,10 +2,12 @@ import { formatParisDate } from "../../../../shared/parisDate.js";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { appendRecipeVersion, findRecipeVersionForDate } from "./recipeVersionStorage.js";
 import { applyStockMovement } from "./stockWrite.js";
 import { WorkspaceError } from "./workspaceError.js";
+import { getRecordedReceiptLine } from "./receiptLineEvidence.js";
 
 const recipeInclude = {
   ingredients: { include: { product: { select: { id: true, name: true, unit: true } } } },
@@ -123,27 +125,17 @@ export async function createRecipeInTransaction(tx: Prisma.TransactionClient, re
 
 async function incomingReceiptEvidence(tx: Prisma.TransactionClient, restaurantId: string, sourceReceiptLineId: string,
   input: RecipeValues) {
-  const line = await tx.purchaseReceiptLine.findFirst({ where: { restaurantId, id: sourceReceiptLineId },
-    include: { receipt: { select: { id: true, deliveryReference: true, deliveryDate: true, simulated: true, provenance: true } },
-      product: { select: { unit: true } } } });
-  if (!line) throw new WorkspaceError(404, "RECEIPT_LINE_NOT_FOUND", "Ligne de réception introuvable dans cet espace.");
-  if (line.receipt.simulated || line.receipt.provenance !== "recorded")
-    throw new WorkspaceError(409, "SIMULATED_RECEIPT_NOT_ELIGIBLE", "Une réception simulée ne peut pas fonder une proposition opérationnelle.");
-  if (!line.receivedQuantity.greaterThan(0))
-    throw new WorkspaceError(409, "EMPTY_RECEIPT_LINE", "La ligne de réception ne contient aucune quantité positive.");
-  if (line.unit !== line.product.unit)
-    throw new WorkspaceError(409, "RECEIPT_PRODUCT_UNIT_CHANGED", "L’unité du produit ne correspond plus à celle de la réception.");
-  if (!input.ingredients.some((ingredient) => ingredient.productId === line.productId))
+  const { id, stockMovementId, receiptId, receiptReference, deliveryDate, productId, productName, unit, receivedQuantity } =
+    await getRecordedReceiptLine(tx, restaurantId, sourceReceiptLineId);
+  if (!input.ingredients.some((ingredient) => ingredient.productId === productId))
     throw new WorkspaceError(409, "SOURCE_PRODUCT_NOT_IN_RECIPE", "La recette doit contenir le produit de la ligne source.");
-  const deliveryDate = dateOnly(line.receipt.deliveryDate);
   if (input.effectiveFrom < deliveryDate)
     throw new WorkspaceError(409, "RECIPE_PRECEDES_RECEIPT", "La date d’effet ne peut pas précéder la réception qui fonde la proposition.");
-  return { receiptLineId: line.id, receiptId: line.receipt.id, reference: line.receipt.deliveryReference,
-    deliveryDate, productId: line.productId, productName: line.productName,
-    receivedQuantity: Number(line.receivedQuantity), unit: line.unit };
+  return { receiptLineId: id, receiptId, reference: receiptReference, deliveryDate, productId, productName, receivedQuantity, unit,
+    ...(stockMovementId ? { stockMovementId } : {}) };
 }
 
-const dateOnly = (value: Date) => value.toISOString().slice(0, 10);
+const decisionProductNameSchema = z.object({ source: z.object({ productName: z.string() }) });
 
 export async function createRecipe(restaurantId: string, actorId: string, operationId: string, input: RecipeValues,
   sourceReceiptLineId?: string) {
@@ -157,8 +149,12 @@ export async function createRecipe(restaurantId: string, actorId: string, operat
     }
 
     const source = await incomingReceiptEvidence(tx, restaurantId, sourceReceiptLineId, input);
-    const snapshot = JSON.parse(JSON.stringify({ source, recipe: input })) as Prisma.InputJsonValue;
     const priorDecision = await tx.recommendationDecision.findFirst({ where: { restaurantId, operationId } });
+    const priorSource = source.stockMovementId && priorDecision
+      ? decisionProductNameSchema.safeParse(priorDecision.snapshot) : null;
+    // Legacy movements use the catalog name, which may have changed since the review.
+    const productName = priorSource?.success ? priorSource.data.source.productName : source.productName;
+    const snapshot = JSON.parse(JSON.stringify({ source: { ...source, productName }, recipe: input })) as Prisma.InputJsonValue;
     const priorVersion = await tx.recipeVersion.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId } },
       select: { id: true } });
     if (priorDecision && (priorDecision.decision !== "recipe_created_from_receipt_estimate" ||

@@ -3,14 +3,12 @@ import { formatParisDate } from "../../../../shared/parisDate.js";
 import { invoiceSchema, recordSourceInvoiceRevision, sourceInvoiceDocumentSchema } from "./invoiceData.js";
 import { creditReceiptStock, getReceiptProduct, lockReceiptProducts, lockReceiptWorkspace } from "./receiptStock.js";
 import { isDeepStrictEqual } from "node:util";
-import { Prisma, type PurchaseReceipt as PurchaseReceiptRecord, type PurchaseReceiptLine as PurchaseReceiptLineRecord,
-  type PrismaClient } from "@prisma/client";
-import type { PurchaseReceiptInput, PurchaseReceiptLineEvidence } from "../../../../shared/purchaseReceipt.js";
+import { Prisma, type PurchaseReceipt as PurchaseReceiptRecord, type PurchaseReceiptLine as PurchaseReceiptLineRecord } from "@prisma/client";
+import type { PurchaseReceiptInput } from "../../../../shared/purchaseReceipt.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
 import { rejectPriorSourceCredit, validateSourceReview } from "./invoiceService.js";
 
-type ReceiptDatabase = PrismaClient | Prisma.TransactionClient;
 type ReceiptLineWithMovement = PurchaseReceiptLineRecord & { movement: { id: string } | null };
 type ReceiptWithLines = PurchaseReceiptRecord & { lines: ReceiptLineWithMovement[] };
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
@@ -212,21 +210,4 @@ export async function recordPurchaseReceipt(restaurantId: string, actorId: strin
       movement: stockMovementByReceiptLine.has(line.id) ? { id: stockMovementByReceiptLine.get(line.id)! } : null })) };
     return { ...purchaseReceiptDto(receiptWithMovement), replayed: false };
   });
-}
-
-export async function getPurchaseReceiptLineEvidence(restaurantId: string, lineId: string, db: ReceiptDatabase = prisma): Promise<PurchaseReceiptLineEvidence> {
-  const line = await db.purchaseReceiptLine.findFirst({ where: { restaurantId, id: lineId }, include: {
-    receipt: { select: { deliveryReference: true, deliveryDate: true, simulated: true, provenance: true } },
-    product: { select: { unit: true } },
-  } });
-  if (!line) throw new WorkspaceError(404, "RECEIPT_LINE_NOT_FOUND", "Ligne de réception introuvable dans cet espace.");
-  if (line.receipt.simulated || line.receipt.provenance !== "recorded")
-    throw new WorkspaceError(409, "SIMULATED_RECEIPT_NOT_ELIGIBLE", "Cette réception ne peut pas fonder une proposition opérationnelle.");
-  if (!line.receivedQuantity.greaterThan(0))
-    throw new WorkspaceError(409, "EMPTY_RECEIPT_LINE", "La ligne de réception ne contient aucune quantité positive.");
-  if (line.unit !== line.product.unit)
-    throw new WorkspaceError(409, "RECEIPT_PRODUCT_UNIT_CHANGED", "L’unité du produit ne correspond plus à celle de la réception.");
-  return { receiptLineId: line.id, productId: line.productId, productName: line.productName,
-    deliveryReference: line.receipt.deliveryReference, deliveryDate: line.receipt.deliveryDate.toISOString().slice(0, 10),
-    receivedQuantity: Number(line.receivedQuantity), unit: line.unit };
 }

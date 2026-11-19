@@ -1,5 +1,6 @@
 export interface ReceivedIngredient {
   id: string;
+  stockMovementId?: string;
   receiptId: string;
   receiptReference: string;
   deliveryDate: string;
