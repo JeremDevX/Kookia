@@ -23,7 +23,7 @@ export default function SetupReview({ onReadyChange }: { onReadyChange: (ready: 
   if (!data) return <p role="status">Chargement des informations enregistrées…</p>;
   const { restaurant, suppliers, members } = data;
   return <div className="setup-review">
-    <section className="setup-review-restaurant" aria-labelledby="review-restaurant"><h3 id="review-restaurant">{restaurant.name}</h3>
+    <section aria-labelledby="review-restaurant"><h3 id="review-restaurant">{restaurant.name}</h3>
       <dl><div><dt>Type d’établissement</dt><dd>{restaurant.type}</dd></div>
         <div><dt>Couverts moyens par jour</dt><dd>{restaurant.dailyCovers}</dd></div>
         <div><dt>Adresse</dt><dd>{[restaurant.address, restaurant.city].filter(Boolean).join(", ")}</dd></div>

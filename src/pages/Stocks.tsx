@@ -230,7 +230,6 @@ const Stocks: React.FC = () => {
       />
 
       {isFiltersModalOpen && <FiltersModal
-        isOpen
         onClose={() => setIsFiltersModalOpen(false)}
         onApply={handleApplyFilters}
         suppliers={suppliers}

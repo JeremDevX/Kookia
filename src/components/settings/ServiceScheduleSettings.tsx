@@ -79,7 +79,7 @@ export default function ServiceScheduleSettings({ onPendingChange }: { onPending
       {dirty && <Button type="button" variant="outline" disabled={busy} onClick={cancel}>Annuler</Button>}
       {dirty && <p>Enregistrez ou annulez les modifications avant de changer de jour ou de service.</p>}
     </form>
-    {error && <p role="alert">{error} <button type="button" disabled={busy || dirty} onClick={() => void load()}>Réessayer</button></p>}{status && <p role="status">{status}</p>}
+    {error && <p role="alert">{error} <Button type="button" size="sm" variant="outline" disabled={busy || dirty} onClick={() => void load()}>Réessayer</Button></p>}{status && <p role="status">{status}</p>}
     <ul>{entries.map((entry) => <li key={`${entry.weekday}:${entry.slot}`}>{weekdays[entry.weekday]} · {serviceSlotLabels[entry.slot]} : {entry.opensAt}–{entry.closesAt}</li>)}</ul>
     {loaded && !busy && !entries.length && <p>Aucun horaire renseigné. Aucune ouverture n’est supposée.</p>}
   </section>;

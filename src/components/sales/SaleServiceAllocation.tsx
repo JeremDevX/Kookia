@@ -42,6 +42,6 @@ export default function SaleServiceAllocation({ sale, onChanged }: { sale: Daily
       <p>Non ventilées : {sale.quantity - lunch - dinner} unités.</p>
       <Button type="submit" size="sm" disabled={busy || !allocation || lunch + dinner > sale.quantity}>{busy ? "Enregistrement…" : "Confirmer l’attribution"}</Button>
     </form>}
-    {error && <p role="alert">{error} <button type="button" onClick={() => setReload((current) => current + 1)}>Recharger la ventilation</button></p>}{status && <p role="status">{status}</p>}
+    {error && <p role="alert">{error} <Button type="button" size="sm" variant="outline" onClick={() => setReload((current) => current + 1)}>Recharger la ventilation</Button></p>}{status && <p role="status">{status}</p>}
   </details>;
 }

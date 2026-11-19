@@ -126,7 +126,7 @@ function PendingContribution({ row, items, ticketPreview, onReview }: {
       {row.posBatch ? ` Lot ${row.posBatch.batchId}, données ${row.posBatch.coverage === "complete" ? "complètes" : "partielles"}${row.posBatch.provenance === "demo_simulation" && !clientPresentation ? " (hors bilan)" : ""}.` : ""}
       {row.importLine !== null ? ` Ligne CSV ${row.importLine}.` : ""}
       {row.ticketLineNumber !== null ? ` Ligne Ticket Z ${row.ticketLineNumber}.` : ""}</p>
-    {row.ticketBatch && <div className="ticket-review-layout">
+    {row.ticketBatch && <div>
       {ticketPreview?.contentHash === row.ticketBatch.contentHash ? <figure className="ticket-original-preview">
         <figcaption>Original local · date lue : {row.ticketBatch.sourceDateText || "non lisible"} · service retenu : {row.serviceDate}</figcaption>
         {ticketPreview.mimeType === "application/pdf" ? <iframe title={`Original Ticket Z, ligne ${row.ticketLineNumber ?? ""}`} src={ticketPreview.url} /> :

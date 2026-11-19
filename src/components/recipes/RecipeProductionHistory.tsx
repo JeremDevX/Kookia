@@ -51,14 +51,14 @@ export default function RecipeProductionHistory({ recipes, productions, today, l
             </div>
             <p>Version {recipe.version} · {recipe.effectiveFrom ? `effective depuis ${recipe.effectiveFrom}` : "date d’effet historique inconnue"} · rendement {recipe.yieldPortions} portions.</p>
             <div className="recipe-ingredients">
-              <h4 className="text-xs font-semibold uppercase text-secondary mb-2">Ingrédients du lot ({recipe.yieldPortions} portions)</h4>
+              <h4 className="text-secondary">Ingrédients du lot ({recipe.yieldPortions} portions)</h4>
               {recipe.ingredients.map((ing, i) => (
                 <div key={i} className="ingredient-item">
                   <span>{ing.productName || getProductName(ing.productId)}</span>
                   <span>{ing.quantity} {ing.unit || getProductUnit(ing.productId)}</span>
                 </div>
               ))}
-              <div className="cost-row mt-3">
+              <div className="cost-row">
                 <div className="cost-col">
                   <span className="cost-label">Coût matière par portion</span>
                   <span className="cost-value">
@@ -67,12 +67,11 @@ export default function RecipeProductionHistory({ recipes, productions, today, l
                 </div>
               </div>
             </div>
-            <div className="recipe-actions mt-auto pt-3">
+            <div className="recipe-actions">
               <Button
                 size="sm"
                 variant="outline"
-                className="btn-danger-outline w-full"
-                icon={<AlertTriangle size={14} />}
+                icon={<AlertTriangle size={14} aria-hidden="true" />}
                 onClick={() => onRefusal(recipe)}
               >
                 Signaler un refus
@@ -82,11 +81,7 @@ export default function RecipeProductionHistory({ recipes, productions, today, l
           </Card>
         ))
       ) : !loading && (
-        <div className="empty-week col-span-full">
-          <ChefHat
-            size={48}
-            className="mx-auto mb-4 text-secondary opacity-50"
-          />
+        <div className="empty-week">
           <p>Aucune recette du catalogue produite cette semaine.</p>
         </div>
       )}

@@ -28,12 +28,6 @@
 .justify-center {
   justify-content: center;
 }
-.justify-end {
-  justify-content: flex-end;
-}
-.flex-1 {
-  flex: var(--number-1);
-}
 .gap-sm {
   gap: var(--spacing-sm);
 }

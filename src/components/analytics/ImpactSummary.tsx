@@ -115,7 +115,7 @@ export default function ImpactSummary({ from, to }: Props) {
       <RecordedOperations bucket={report.current.recorded} currency={report.currency} from={from} to={to} excludedLosses={report.current.excluded.lossUnitMismatch} />
       <details className="impact-reading-guide"><summary>Comprendre les chiffres et leurs limites</summary>
       <p>La comparaison porte sur des périodes de même durée calendaire. Les ventes et les pertes déclarées par service suivent le jour du service (Europe/Paris). Les anciens mouvements de perte suivent leur date d’enregistrement (UTC). Les achats suivent leur date de livraison. Les unités restent séparées par produit.</p>
-      <p className="impact-unmeasured"><strong>Non mesuré dans le système :</strong> ruptures de stock et inventaire complet des invendus. Seuls les invendus explicitement déclarés sont disponibles. Un seuil de stock bas ou une production ne prouvent pas une rupture ou un invendu. Les économies réalisées ne sont pas calculées.</p>
+      <p><strong>Non mesuré dans le système :</strong> ruptures de stock et inventaire complet des invendus. Seuls les invendus explicitement déclarés sont disponibles. Un seuil de stock bas ou une production ne prouvent pas une rupture ou un invendu. Les économies réalisées ne sont pas calculées.</p>
       {(report.current.excluded.lossUnitMismatch > 0 || report.current.excluded.receiptUnitMismatch > 0) &&
         <p>Éléments écartés pour unité incompatible : {report.current.excluded.lossUnitMismatch} mouvement(s) de perte et {report.current.excluded.receiptUnitMismatch} ligne(s) de réception.</p>}
       </details>

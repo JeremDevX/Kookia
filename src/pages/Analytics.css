@@ -1,10 +1,3 @@
-.analytics-container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xl);
-  padding: var(--spacing-xl);
-  padding-top: var(--spacing-lg);
-}
 .workspace-page:is(.analytics-container, .predictions-container).workspace-page { background: var(--color-auth-field); }
 .analytics-container .workspace-header h1, .predictions-container .workspace-header h1 { color: var(--color-nav-text); font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); letter-spacing: normal; }
 .analytics-container .workspace-subtitle, .predictions-container .workspace-subtitle { margin-top: var(--spacing-xs); color: var(--color-nav-muted); line-height: var(--number-1_5); }
@@ -45,12 +38,10 @@
 .analytics-container :is(a, button, summary, input):focus-visible { outline: var(--size-3) solid var(--color-focus); outline-offset: var(--spacing-xs); }
 
 @media (--media-mobile) {
-  .analytics-container { padding: var(--spacing-md); gap: var(--spacing-md); }
   .impact-monthly-navigation { align-items: stretch; flex-direction: column; }
 }
 
 @media (--media-phone) {
-  .analytics-container { padding: var(--spacing-sm); gap: var(--spacing-sm); }
   .bilan-period { align-items: stretch; flex-direction: column; padding: var(--spacing-md); }
   .bilan-period label { align-items: flex-start; flex-direction: column; }
   .bilan-period input { width: var(--unit-100percent); }

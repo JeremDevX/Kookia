@@ -10,6 +10,7 @@ import {
 import type { Recipe } from "../../types";
 import { validateProductionQuantity } from "../../utils/formValidation";
 import { productionIngredientAmount } from "../../domain/recipes/productionIngredientAmount";
+import "./ProductionDialogs.css";
 
 interface ProductionConfirmModalProps {
   isOpen: boolean;
@@ -70,29 +71,33 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={() => { if (!saving) onClose(); }}
+      onClose={onClose}
+      closeDisabled={saving}
       title="Produire une recette"
       width="lg"
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-md production-dialog">
         {/* Recipe Header */}
-        <div className="flex items-center justify-between pb-4 border-b">
+        <div className="production-dialog-heading">
           <div>
-            <h3 className="text-2xl font-bold">{recipe.name}</h3>
-            <p className="text-sm text-secondary mt-1">
+            <h3>{recipe.name}</h3>
+            <p className="production-dialog-detail">
               {recipe.category} · version {recipe.version} · effet {recipe.effectiveFrom ?? "historique inconnu"}
             </p>
           </div>
           <Badge label={safeMaxYield > 0 ? "Stock disponible" : "Stock insuffisant"} status={safeMaxYield > 0 ? "optimal" : "urgent"} />
         </div>
 
-        <label>Service<select value={serviceSlot} onChange={(event) => setServiceSlot(event.target.value)}><option value="">Non ventilé</option><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
+        <label className="production-dialog-service">
+          Service
+          <select value={serviceSlot} onChange={(event) => setServiceSlot(event.target.value)}>
+            <option value="">Non ventilé</option><option value="lunch">Midi</option><option value="dinner">Soir</option>
+          </select>
+        </label>
         {/* Quantity Selector */}
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <label htmlFor="production-quantity" className="block text-sm font-semibold text-blue-900 mb-2">
-            Portions à produire
-          </label>
-          <div className="flex items-center gap-4 production-quantity-row">
+        <div className="flex flex-col gap-sm production-dialog-panel">
+          <label htmlFor="production-quantity" className="input-label">Portions à produire</label>
+          <div className="flex items-center gap-md production-quantity-row">
             <input
               id="production-quantity"
               aria-invalid={Boolean(visibleQuantityError)}
@@ -105,61 +110,49 @@ const ProductionConfirmModal: React.FC<ProductionConfirmModalProps> = ({
                 setQuantity(e.target.value);
                 setQuantityError(undefined);
               }}
-              className="flex-1 px-4 py-2 text-2xl font-bold border-2 border-blue-300 rounded-md text-center"
+              className={visibleQuantityError ? "input-field has-error" : "input-field"}
             />
-            <div className="text-sm text-blue-700">
+            <div className="production-dialog-detail">
               <div>Maximum avec les lots proposés :</div>
-              <div className="font-bold text-lg">{safeMaxYield} portions</div>
+              <strong>{safeMaxYield} portions</strong>
             </div>
           </div>
           {visibleQuantityError && (
-            <span id="production-quantity-error" role="alert" className="text-sm text-red-600 mt-2 block">{visibleQuantityError}</span>
+            <span id="production-quantity-error" role="alert" className="production-dialog-error">{visibleQuantityError}</span>
           )}
         </div>
-        {availabilityWarnings.length > 0 && <ul>{availabilityWarnings.map(warning => <li key={warning}>{warning}</li>)}</ul>}
+        {availabilityWarnings.length > 0 && <ul className="production-dialog-warnings">{availabilityWarnings.map(warning => <li key={warning}>{warning}</li>)}</ul>}
 
         {/* Economics */}
-        <div className="grid grid-cols-1 gap-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Package size={16} className="text-secondary" />
-              <span className="text-xs font-semibold text-secondary uppercase">
-                Coût matière estimé
-              </span>
-            </div>
-            <p className="text-2xl font-bold">{totalCost === null ? "Indisponible" : `${totalCost.toFixed(2)} €`}</p>
-            <p className="text-xs text-secondary mt-1">
-              {costPerPortion === null ? "Prix d’un ingrédient indisponible" : `${costPerPortion.toFixed(2)} € / portion, aux prix catalogue`}
-            </p>
-          </div>
+        <div className="production-dialog-panel">
+          <h4 className="flex items-center gap-sm"><Package size={16} aria-hidden="true" />Coût matière estimé</h4>
+          <p><strong>{totalCost === null ? "Indisponible" : `${totalCost.toFixed(2)} €`}</strong></p>
+          <p className="production-dialog-detail">
+            {costPerPortion === null ? "Prix d’un ingrédient indisponible" : `${costPerPortion.toFixed(2)} € / portion, aux prix catalogue`}
+          </p>
         </div>
 
         {/* Ingredients Check */}
-        <div className="bg-white p-4 rounded-lg border">
-          <div className="flex items-center gap-2 mb-3">
-            <CheckCircle size={18} className="text-optimal" />
-              <h4 className="font-semibold">Ingrédients à déduire</h4>
-          </div>
-          <div className="space-y-2">
+        <div className="flex flex-col gap-sm production-dialog-panel">
+          <h4 className="flex items-center gap-sm"><CheckCircle size={18} className="text-optimal" aria-hidden="true" />Ingrédients à déduire</h4>
+          <ul className="production-dialog-ingredients">
             {recipe.ingredients.map((ing, index) => (
-              <div key={ing.productId} className="flex justify-between text-sm">
+              <li key={ing.productId} className="flex justify-between gap-sm">
                 <span>{ing.productName || getProductName(ing.productId)}</span>
                 <span>{amounts[index] == null ? "—" : `${amounts[index]} ${ing.unit || getProductUnit(ing.productId)}`}</span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
 
         {/* Warning */}
-        <div className="bg-yellow-50 p-3 rounded-md border border-yellow-200 flex items-start gap-2">
-          <AlertTriangle size={16} className="text-yellow-600 mt-0.5" />
-          <div className="text-sm text-yellow-800">
-            Le stock sera revérifié, puis les ingrédients seront déduits à la validation.
-          </div>
-        </div>
+        <p className="flex items-start gap-sm production-dialog-panel production-dialog-warning">
+          <AlertTriangle size={16} aria-hidden="true" />
+          <span>Le stock sera revérifié, puis les ingrédients seront déduits à la validation.</span>
+        </p>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+        <div className="modal-actions">
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Annuler
           </Button>

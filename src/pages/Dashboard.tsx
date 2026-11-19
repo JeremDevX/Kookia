@@ -156,7 +156,7 @@ function DashboardOverview() {
     </div>
 
     <div className="dashboard-columns"><div className="dashboard-main-column">
-    {workshopForecast ? <WorkshopCoversForecast forecast={workshopForecast} /> : <section className="today-card today-covers" aria-labelledby="today-covers-title">
+    {workshopForecast ? <WorkshopCoversForecast forecast={workshopForecast} /> : <section className="today-card" aria-labelledby="today-covers-title">
       <h2 id="today-covers-title">Prévision des couverts</h2>
       <p>Répartition prévue par heure pour les services du jour.</p>
       <div className="today-covers-empty"><BarChart3 size={24} aria-hidden="true" /><strong>Prévision horaire indisponible</strong><span>Les données nécessaires ne sont pas encore disponibles.</span></div>

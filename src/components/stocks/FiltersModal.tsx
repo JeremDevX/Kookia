@@ -5,7 +5,6 @@ import type { StockFilters } from "../../types/callbacks";
 import type { Supplier } from "../../types";
 
 interface FiltersModalProps {
-  isOpen: boolean;
   onClose: () => void;
   onApply: (filters: StockFilters) => void;
   suppliers: Supplier[];
@@ -13,7 +12,6 @@ interface FiltersModalProps {
 }
 
 const FiltersModal: React.FC<FiltersModalProps> = ({
-  isOpen,
   onClose,
   onApply,
   suppliers,
@@ -37,14 +35,14 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Filtrer les produits" width="md">
-      <div className="flex flex-col gap-4">
-        <div>
-          <label htmlFor="filtersmodal-1" className="block text-sm font-medium mb-2">
+    <Modal isOpen onClose={onClose} title="Filtrer les produits">
+      <div className="flex-col gap-md">
+        <div className="input-wrapper">
+          <label htmlFor="filtersmodal-1" className="input-label">
             État du stock
           </label>
           <select id="filtersmodal-1"
-            className="w-full px-3 py-2 border rounded-md"
+            className="input-field"
             value={filters.status}
             onChange={(e) =>
               setFilters({
@@ -61,10 +59,10 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
           </select>
         </div>
 
-        <div>
-          <label htmlFor="filtersmodal-2" className="block text-sm font-medium mb-2">Fournisseur</label>
+        <div className="input-wrapper">
+          <label htmlFor="filtersmodal-2" className="input-label">Fournisseur</label>
           <select id="filtersmodal-2"
-            className="w-full px-3 py-2 border rounded-md"
+            className="input-field"
             value={filters.supplier}
             onChange={(e) =>
               setFilters({ ...filters, supplier: e.target.value })
@@ -75,12 +73,12 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
           </select>
         </div>
 
-        <div>
-          <label htmlFor="filtersmodal-3" className="block text-sm font-medium mb-2">
+        <div className="input-wrapper">
+          <label htmlFor="filtersmodal-3" className="input-label">
             Niveau de stock
           </label>
           <select id="filtersmodal-3"
-            className="w-full px-3 py-2 border rounded-md"
+            className="input-field"
             value={filters.stockLevel}
             onChange={(e) =>
               setFilters({
@@ -96,16 +94,14 @@ const FiltersModal: React.FC<FiltersModalProps> = ({
           </select>
         </div>
 
-        <div className="flex justify-between gap-3 mt-4">
-          <Button variant="outline" onClick={handleReset}>
+        <div className="modal-actions">
+          <Button type="button" variant="outline" onClick={handleReset}>
             Réinitialiser
           </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Annuler
-            </Button>
-            <Button onClick={handleApply}>Afficher les résultats</Button>
-          </div>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button type="button" onClick={handleApply}>Afficher les résultats</Button>
         </div>
       </div>
     </Modal>

@@ -18,10 +18,10 @@ export default function StockVerificationSummary({ product, onCount }: StockVeri
         {product.currentStock} <span className="unit">{product.unit}</span>
       </span>
     </div>
-    <div className="flex items-center justify-between gap-3 mt-3">
+    <div className="flex items-center justify-between gap-sm">
       <div>
         <Badge label={verification === "counted" ? "Compté · inchangé depuis" : "À vérifier"} status={verification === "counted" ? "optimal" : "neutral"} />
-        {product.latestCount && <p className="drawer-source mt-1">Dernier comptage : {product.latestCount.countedQuantity} {product.latestCount.unit}, le {product.latestCount.countDate}. Attribution conservée.</p>}
+        {product.latestCount && <p className="drawer-source">Dernier comptage : {product.latestCount.countedQuantity} {product.latestCount.unit}, le {product.latestCount.countDate}. Attribution conservée.</p>}
       </div>
       <Button size="sm" variant="outline" icon={<ClipboardCheck size={14} />} onClick={onCount}>Compter</Button>
     </div>

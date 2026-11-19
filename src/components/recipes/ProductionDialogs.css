@@ -1,0 +1,98 @@
+.production-dialog {
+  min-width: var(--number-0);
+}
+
+.production-dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  overflow-wrap: var(--overflow-wrap-anywhere);
+}
+
+.production-dialog-service {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.production-dialog :is(select, textarea) {
+  min-height: var(--size-40);
+}
+
+.production-dialog-panel {
+  padding: var(--spacing-md);
+  border: var(--size-1) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+}
+
+.production-dialog-detail {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.production-quantity-row {
+  flex-wrap: wrap;
+}
+
+.production-quantity-row > input {
+  width: var(--size-120);
+  min-height: var(--size-40);
+}
+
+.production-dialog-ingredients {
+  display: grid;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  overflow-wrap: var(--overflow-wrap-anywhere);
+}
+
+.production-dialog-ingredients > li > :last-child,
+.production-dialog-warning > svg {
+  flex-shrink: var(--number-0);
+}
+
+.production-dialog-warnings {
+  padding-inline-start: var(--size-20);
+}
+
+.production-dialog-warning {
+  font-size: var(--font-size-sm);
+  background: var(--color-warning-soft);
+  border-color: var(--palette-sand-1);
+}
+
+.production-dialog-fields {
+  display: grid;
+  grid-template-columns: repeat(var(--number-2), minmax(var(--number-0), var(--unit-1fr)));
+  gap: var(--spacing-md);
+}
+
+.production-dialog-error {
+  font-size: var(--font-size-sm);
+  color: var(--color-urgent-text);
+}
+
+@media (--media-compact) {
+  .production-dialog-fields {
+    grid-template-columns: var(--unit-1fr);
+  }
+}
+
+@media (--media-phone-small) {
+  .production-quantity-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .production-quantity-row > input {
+    flex: none;
+    width: var(--unit-100percent);
+    min-width: var(--number-0);
+  }
+}

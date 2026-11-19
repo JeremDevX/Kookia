@@ -29,7 +29,7 @@ const Modal: React.FC<ModalProps> = ({
   return (
     <div className="modal-overlay" onClick={closeDisabled ? undefined : onClose}>
       <div
-        className={`modal-container modal-${width} animate-scale-in`}
+        className={`modal-container modal-${width}`}
         onClick={(e) => e.stopPropagation()}
         ref={modalRef}
         role="dialog"

@@ -139,7 +139,7 @@ export default function ServiceSheetPanel({ date, slot, loadRecipes, onDirtyChan
         <label>Portions prévues<input type="number" required disabled={busy} min="0" max="10000" step="1" value={portions} onChange={(event) => setPortions(Number(event.target.value))} /></label>
         <Button type="submit" disabled={busy}>Ajouter / actualiser au plan</Button>
       </form>}
-      <ul>{planned.map(row => <li key={row.recipeId}>{recipeName(row.recipeId)} : {row.portions} portions {!validated && <button type="button" disabled={busy} onClick={() => { setPlanned(current => current.filter(entry => entry.recipeId !== row.recipeId)); changed(); }}>Retirer {recipeName(row.recipeId)}</button>}</li>)}</ul>
+      <ul>{planned.map(row => <li key={row.recipeId}>{recipeName(row.recipeId)} : {row.portions} portions {!validated && <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => { setPlanned(current => current.filter(entry => entry.recipeId !== row.recipeId)); changed(); }}>Retirer {recipeName(row.recipeId)}</Button>}</li>)}</ul>
       {!planned.length && <p>Aucune quantité prévue enregistrée. Les prévisions restent des suggestions à revoir.</p>}
       <h3>Substitutions et écarts</h3>
       {!closed && <form className="sales-form" onSubmit={addSubstitution}>
@@ -149,7 +149,7 @@ export default function ServiceSheetPanel({ date, slot, loadRecipes, onDirtyChan
         <label>Explication<input required disabled={busy} maxLength={500} value={replacementNote} onChange={(event) => setReplacementNote(event.target.value)} /></label>
         <Button type="submit" disabled={busy || fromRecipeId === toRecipeId}>Ajouter la substitution</Button>
       </form>}
-      <ul>{substitutions.map((row, index) => <li key={index}>{recipeName(row.fromRecipeId)} → {recipeName(row.toRecipeId)} : {row.portions} portions. {row.note} {!closed && <button type="button" disabled={busy} onClick={() => { setSubstitutions(current => current.filter((_, itemIndex) => itemIndex !== index)); changed(); }}>Retirer la substitution {index + 1}</button>}</li>)}</ul>
+      <ul>{substitutions.map((row, index) => <li key={index}>{recipeName(row.fromRecipeId)} → {recipeName(row.toRecipeId)} : {row.portions} portions. {row.note} {!closed && <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={() => { setSubstitutions(current => current.filter((_, itemIndex) => itemIndex !== index)); changed(); }}>Retirer la substitution {index + 1}</Button>}</li>)}</ul>
       <h3>Rapprochement courant</h3>
       <p>« Inconnu » signifie que la couverture ou l’attribution est incomplète. Les invendus ne sont pas automatiquement du gaspillage. Les pertes de préparation en kg/L restent distinctes des portions ; les retours d’assiette sont déjà compris dans les ventes.</p>
       {sheet.facts.gaps.length > 0 && <ul>{sheet.facts.gaps.map(gap => <li key={gap}>

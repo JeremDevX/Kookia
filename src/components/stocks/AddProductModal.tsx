@@ -85,7 +85,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       title="Ajouter un produit"
       width="md"
     >
-      <div className="add-product-form">
+      <div className="flex-col gap-md">
         {saveError && <p role="alert">{saveError}</p>}
         {suppliers.length === 0 && <p role="status">Aucun fournisseur disponible. L’ajout d’un produit est indisponible.</p>}
         <div className="input-wrapper"><label className="input-label" htmlFor="product-supplier">Fournisseur</label><select className="input-field" id="product-supplier" value={supplierId || suppliers[0]?.id || ""} onChange={(event) => setSupplierId(event.target.value)}>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></div>
@@ -193,7 +193,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           />
         </div>
 
-        <div className="add-product-actions">
+        <div className="modal-actions">
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Annuler
           </Button>

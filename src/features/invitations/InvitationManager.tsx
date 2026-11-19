@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useBeforeUnloadWarning } from "../../hooks/useBeforeUnloadWarning";
 import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
 import { createInvitation, listInvitations, revokeInvitation, type Invitation, type InvitationRole } from "./invitationApi";
 
 const roleLabel: Record<InvitationRole, string> = { chef: "Chef", kitchen: "Cuisine" };
@@ -43,7 +44,7 @@ export default function InvitationManager({ onPendingLinkChange }: { onPendingLi
     {!invitations ? !error && <p role="status">Chargement des invitations…</p> : <>
       <div className="invitation-create"><label htmlFor="invite-role">Rôle<select id="invite-role" className="input-field" value={role} disabled={busy} onChange={(event) => setRole(event.target.value as InvitationRole)}><option value="kitchen">Cuisine</option><option value="chef">Chef</option></select></label>
       <Button type="button" disabled={busy || !!link} onClick={() => void create()}>{busy ? "Veuillez patienter…" : "Créer un lien"}</Button></div>
-      {link && <div><label htmlFor="invitation-link">Lien à transmettre</label><input id="invitation-link" className="input-field" readOnly value={link.value} onFocus={(event) => event.currentTarget.select()} />
+      {link && <div><Input id="invitation-link" label="Lien à transmettre" readOnly value={link.value} onFocus={(event) => event.currentTarget.select()} />
         <p>Copiez ce lien maintenant : il ne pourra pas être affiché à nouveau. Si vous quittez la page, vous pourrez révoquer l’invitation et créer un autre lien.</p><Button type="button" variant="outline" onClick={() => { if (!navigator.clipboard) { setNotice("Sélectionnez le lien pour le copier."); return; } void navigator.clipboard.writeText(link.value).then(() => setNotice("Lien copié.")).catch(() => setNotice("Sélectionnez le lien pour le copier.")); }}>Copier le lien</Button><Button type="button" variant="ghost" onClick={() => updateLink(null)}>J’ai terminé</Button></div>}
       <h3>Invitations</h3>{invitations.length === 0 ? <p>Aucune invitation créée.</p> : <ul>{invitations.map((invitation) => <li key={invitation.id}>
         {roleLabel[invitation.role]} · {status(invitation)} · expire le {new Date(invitation.expiresAt).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}

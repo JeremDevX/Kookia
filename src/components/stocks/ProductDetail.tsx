@@ -94,7 +94,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
           </section>
 
           <section className="drawer-section">
-            <div className="flex items-center justify-between gap-3"><h3 className="section-heading">
+            <div className="flex items-center justify-between gap-sm"><h3 className="section-heading">
               <Package size={18} /> Quantités et prix
             </h3><Button size="sm" variant="outline" icon={<Pencil size={14} />} onClick={() => setChildDialog("edit")}>Modifier la fiche</Button></div>
             <div className="info-grid">
@@ -133,9 +133,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({
                   {supplier?.name || "Fournisseur"}
                 </span>
                 {supplier?.phone && (
-                  <span className="text-xs text-secondary block mt-1">
+                  <small className="drawer-source">
                     {supplier.phone}
-                  </span>
+                  </small>
                 )}
               </div>
               <div className="supplier-actions">

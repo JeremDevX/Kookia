@@ -65,7 +65,7 @@ export default function ProductMovementHistory({
           <div className="history-item" id={`stock-movement-${movement.id}`} key={movement.id} tabIndex={-1}
             ref={movement.id === focusedMovementId ? focusedMovementRef : undefined}>
             <span className="date">{new Date(movement.createdAt).toLocaleDateString("fr-FR")}</span>
-            <span className="action">{movement.delta > 0 ? "+" : ""}{movement.delta} {unit} ({movementLabel(movement.reason)})</span>
+            <span>{movement.delta > 0 ? "+" : ""}{movement.delta} {unit} ({movementLabel(movement.reason)})</span>
             {movement.sourceDocumentId && <Link to={`/orders?source=${encodeURIComponent(movement.sourceDocumentId)}#invoices`}>Ouvrir la pièce source</Link>}
             {movement.id === focusedMovementId && returnHref &&
               <Link to={returnHref}>Retour au Bilan (même période)</Link>}

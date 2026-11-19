@@ -8,6 +8,7 @@ import {
   validateRecordProductionForm,
   type RecordProductionFormErrors,
 } from "../../utils/formValidation";
+import "./ProductionDialogs.css";
 
 interface RecordProductionModalProps {
   isOpen: boolean;
@@ -66,75 +67,64 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={() => { if (!saving) onClose(); }}
+      onClose={onClose}
+      closeDisabled={saving}
       title="Noter une préparation hors catalogue"
       width="md"
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-md production-dialog">
         <p>Cette préparation sera ajoutée au journal. Le stock ne sera pas modifié.</p>
-        <label>Service<select value={serviceSlot} onChange={(event) => setServiceSlot(event.target.value)}><option value="">Non ventilé</option><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
-        {saveError && <p role="alert">{saveError}</p>}
-        <div>
-          <label htmlFor="recordproductionmodal-1" className="block text-sm font-medium mb-2">
-            Nom du plat ou de la préparation *
-          </label>
-          <Input id="recordproductionmodal-1"
-            placeholder="Ex: Tarte aux tomates"
-            icon={<ChefHat size={16} />}
-            value={formData.recipeName}
-            error={errors.recipeName}
-            onChange={(e) =>
-              setFormData({ ...formData, recipeName: e.target.value })
-            }
+        <label className="production-dialog-service">
+          Service
+          <select value={serviceSlot} onChange={(event) => setServiceSlot(event.target.value)}>
+            <option value="">Non ventilé</option><option value="lunch">Midi</option><option value="dinner">Soir</option>
+          </select>
+        </label>
+        {saveError && <p className="production-dialog-error" role="alert">{saveError}</p>}
+        <Input
+          id="recordproductionmodal-1"
+          label="Nom du plat ou de la préparation *"
+          placeholder="Ex: Tarte aux tomates"
+          icon={<ChefHat size={16} aria-hidden="true" />}
+          value={formData.recipeName}
+          error={errors.recipeName}
+          onChange={(e) => setFormData({ ...formData, recipeName: e.target.value })}
+        />
+
+        <div className="production-dialog-fields">
+          <Input
+            id="recordproductionmodal-2"
+            label="Nombre de portions *"
+            type="number"
+            min="1"
+            max="10000"
+            step="1"
+            placeholder="0"
+            icon={<Users size={16} aria-hidden="true" />}
+            value={formData.portions}
+            error={errors.portions}
+            onChange={(e) => setFormData({ ...formData, portions: e.target.value })}
+          />
+          <Input
+            id="recordproductionmodal-3"
+            label="Temps de préparation (min)"
+            type="number"
+            min="0"
+            max="1440"
+            step="1"
+            placeholder="30"
+            icon={<Clock size={16} aria-hidden="true" />}
+            value={formData.prepTime}
+            error={errors.prepTime}
+            onChange={(e) => setFormData({ ...formData, prepTime: e.target.value })}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="recordproductionmodal-2" className="block text-sm font-medium mb-2">
-              Nombre de portions *
-            </label>
-          <Input id="recordproductionmodal-2"
-              type="number"
-              min="1"
-              max="10000"
-              step="1"
-              placeholder="0"
-              icon={<Users size={16} />}
-              value={formData.portions}
-              error={errors.portions}
-              onChange={(e) =>
-                setFormData({ ...formData, portions: e.target.value })
-              }
-            />
-          </div>
-
-          <div>
-            <label htmlFor="recordproductionmodal-3" className="block text-sm font-medium mb-2">
-              Temps de préparation (min)
-            </label>
-          <Input id="recordproductionmodal-3"
-              type="number"
-              min="0"
-              max="1440"
-              step="1"
-              placeholder="30"
-              icon={<Clock size={16} />}
-              value={formData.prepTime}
-              error={errors.prepTime}
-              onChange={(e) =>
-                setFormData({ ...formData, prepTime: e.target.value })
-              }
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="recordproductionmodal-4" className="block text-sm font-medium mb-2">
+        <div className="input-wrapper">
+          <label htmlFor="recordproductionmodal-4" className="input-label">
             Notes facultatives
           </label>
           <textarea id="recordproductionmodal-4"
-            className="w-full px-3 py-2 border rounded-md resize-none"
             rows={3}
             placeholder="Précisions utiles pour l’équipe"
             value={formData.notes}
@@ -145,11 +135,11 @@ const RecordProductionModal: React.FC<RecordProductionModalProps> = ({
             }
           />
           {errors.notes && (
-            <span id="record-notes-error" className="text-sm text-red-600 mt-1 block">{errors.notes}</span>
+            <span id="record-notes-error" className="production-dialog-error" role="alert">{errors.notes}</span>
           )}
         </div>
 
-        <div className="flex justify-end gap-3 mt-4">
+        <div className="modal-actions">
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Annuler
           </Button>

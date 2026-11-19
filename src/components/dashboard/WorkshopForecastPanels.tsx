@@ -7,7 +7,7 @@ export function WorkshopCoversForecast({ forecast }: { forecast: WorkshopForecas
   const clientPresentation = useClientPresentation();
   const maximum = Math.max(1, ...forecast.hours.map(row => row.covers));
   const hours = [...forecast.hours].sort((left, right) => left.hour - right.hour);
-  return <section className="today-card today-covers" aria-labelledby="today-covers-title">
+  return <section className="today-card" aria-labelledby="today-covers-title">
     <h2 id="today-covers-title">Prévision des couverts</h2>
     {!clientPresentation && <Badge label="Simulation" status="neutral" />}
     <p>Estimation du {formatDisplayDate(forecast.date)} à partir de la clôture du {formatDisplayDate(forecast.basedOnDate)}.</p>

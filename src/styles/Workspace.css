@@ -25,7 +25,6 @@
 .workspace-page .badge { font-size: var(--font-size-caption); font-weight: var(--font-weight-medium); border-radius: var(--radius-sm); letter-spacing: var(--number-0); text-transform: none; }
 .workspace-empty { padding: var(--spacing-xl) var(--spacing-lg); font-size: var(--font-size-base); color: var(--color-text-muted); line-height: var(--number-1_8); text-align: center; }
 .workspace-page .stocks-toolbar { padding: var(--size-20) var(--spacing-lg); }
-.workspace-page .stocks-toolbar .card-content { padding: var(--number-0); }
 .workspace-page .toolbar-content { align-items: flex-end; }
 .workspace-page .search-wrapper { min-width: var(--number-0); flex: var(--number-1) var(--number-1) var(--size-250); max-width: var(--size-460); }
 .workspace-page .filters-wrapper { align-items: flex-end; gap: var(--size-12); }

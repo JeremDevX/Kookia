@@ -15,7 +15,7 @@ export function Settings({ value, onChange }: Props) {
         <button type="button" className="secondary" onClick={() => preset(0, 7)}>7 jours dès aujourd’hui</button>
         <button type="button" className="secondary" onClick={() => preset(1, 14)}>14 jours à venir</button>
       </div>
-      <div className="field-pair fields"><label>À partir du<input required type="date" value={value.start} onChange={e => update("start", e.target.value)}/></label>
+      <div className="field-pair"><label>À partir du<input required type="date" value={value.start} onChange={e => update("start", e.target.value)}/></label>
         <label>Nombre de jours<input required type="number" min={1} max={90} value={value.days || ""} onChange={e => update("days", Number(e.target.value))}/></label></div>
       <p className="period-note">Jusqu’au <strong>{end === "—" ? end : displayDate(end)}</strong> inclus. De 1 à 90 jours, passés ou futurs.</p>
     </fieldset>
@@ -66,7 +66,7 @@ export function Settings({ value, onChange }: Props) {
       {value.incident !== "normal" && <><label>Un incident tous les… jours<input required type="number" min={1} max={90} value={value.incidentEvery || ""} onChange={e => update("incidentEvery", Number(e.target.value))}/></label>
         <p className="hint">Un créneau tous les {value.incidentEvery || "…"} jours calendaires, depuis le début du dossier initial. Sur un jour fermé ou sans livraison concernée, l’incident peut être sans effet. Même sans incident ajouté, la demande peut dépasser la préparation.</p></>}
     </div></fieldset>
-    <details className="identity-settings"><summary>Restaurant et numéro de dossier</summary><div className="fields">
+    <details><summary>Restaurant et numéro de dossier</summary><div className="fields">
       <label>Nom<input required maxLength={80} value={value.name} onChange={e => update("name", e.target.value)}/></label>
       <label>Adresse<input required maxLength={120} value={value.address} onChange={e => update("address", e.target.value)}/></label>
       <label>Ville<input required maxLength={80} value={value.city} onChange={e => update("city", e.target.value)}/></label>

@@ -7,7 +7,7 @@
   background-color: rgba(var(--rgb-palette-neutral-2), var(--number-0_4));
   z-index: var(--number-50);
   backdrop-filter: blur(var(--size-2));
-  animation: fadeIn var(--unit-0_25s) ease-out;
+  animation: drawer-fade-in var(--unit-0_25s) ease-out;
 }
 
 .product-drawer {
@@ -23,10 +23,10 @@
     var(--number-0) var(--size-10) var(--size-10) var(--size-negative-6) rgba(var(--rgb-color-info), var(--number-0_05));
   display: flex;
   flex-direction: column;
-  animation: slideIn var(--unit-0_25s) cubic-bezier(var(--number-0_16), var(--number-1), var(--number-0_3), var(--number-1));
+  animation: drawer-slide-in var(--unit-0_25s) cubic-bezier(var(--number-0_16), var(--number-1), var(--number-0_3), var(--number-1));
 }
 
-@keyframes slideIn {
+@keyframes drawer-slide-in {
   from {
     transform: translateX(var(--unit-100percent));
   }
@@ -35,7 +35,7 @@
   }
 }
 
-@keyframes fadeIn {
+@keyframes drawer-fade-in {
   from {
     opacity: var(--number-0);
   }

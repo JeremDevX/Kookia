@@ -20,7 +20,7 @@
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-md);
-  animation: slideIn var(--unit-0_4s) cubic-bezier(var(--number-0_16), var(--number-1), var(--number-0_3), var(--number-1));
+  animation: toast-slide-in var(--unit-0_4s) cubic-bezier(var(--number-0_16), var(--number-1), var(--number-0_3), var(--number-1));
   border-left: var(--size-6) solid;
 }
 
@@ -95,7 +95,7 @@
   background-color: var(--color-info-soft);
 }
 
-@keyframes slideIn {
+@keyframes toast-slide-in {
   from {
     transform: translateX(var(--unit-100percent));
     opacity: var(--number-0);

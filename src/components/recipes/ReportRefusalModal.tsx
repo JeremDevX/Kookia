@@ -33,8 +33,8 @@ export default function ReportRefusalModal({ recipe, onClose, onConfirm }: Repor
     }
   };
 
-  return <Modal isOpen onClose={() => { if (!saving) onClose(); }} title="Demandes refusées" width="sm">
-    <div className="flex flex-col gap-4">
+  return <Modal isOpen onClose={onClose} closeDisabled={saving} title="Demandes refusées" width="sm">
+    <div className="flex flex-col gap-md">
       <p>{recipe.name} · Aucun ingrédient ne sera déduit du stock.</p>
       <label>Service<select value={serviceSlot} disabled={saving} onChange={(event) => setServiceSlot(event.target.value as ServiceSlot | "")}><option value="">Non ventilé</option><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
       <label htmlFor="refused-portions">Nombre de demandes refusées</label>
@@ -43,7 +43,7 @@ export default function ReportRefusalModal({ recipe, onClose, onConfirm }: Repor
         value={quantity} onChange={(event) => { setQuantity(event.target.value); setError(""); }}
         aria-invalid={Boolean(error)} aria-describedby={error ? "refusal-hint refusal-error" : "refusal-hint"} />
       {error && <p id="refusal-error" role="alert">{error}</p>}
-      <div className="flex justify-end gap-3">
+      <div className="modal-actions">
         <Button variant="outline" onClick={onClose} disabled={saving}>Annuler</Button>
         <Button onClick={() => void submit()} disabled={!valid || saving}>Enregistrer</Button>
       </div>

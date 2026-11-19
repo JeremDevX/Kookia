@@ -39,7 +39,7 @@ export default function Settings() {
 
   return (
     <div className="settings-container workspace-page">
-      <div className="settings-heading-panel">
+      <div>
       <header className="workspace-header">
         <div>
           <h1>Paramètres</h1>

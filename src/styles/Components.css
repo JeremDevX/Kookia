@@ -163,16 +163,6 @@
   height: var(--size-40);
 }
 
-.btn-danger-outline {
-  background-color: transparent;
-  border: var(--size-1) solid var(--color-urgent);
-  color: var(--color-urgent);
-}
-
-.btn-danger-outline:hover {
-  background-color: rgba(var(--rgb-color-urgent), var(--number-0_05));
-}
-
 .btn-icon {
   display: flex;
   align-items: center;
