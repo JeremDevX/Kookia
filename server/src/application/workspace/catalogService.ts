@@ -88,7 +88,8 @@ export async function editProduct(restaurantId: string, productId: string, data:
 
 export async function adjustStock(restaurantId: string, actorId: string, productId: string, delta: number, operationId: string, reason: string, expectedStockRevision: number, expectedUnit: string) {
   return prisma.$transaction(async (tx) => {
-    // Serialize mutations of the same product; the idempotency lookup occurs after the lock.
+    // Match the lock order used by waste, production and receipts before writing a movement.
+    await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR NO KEY UPDATE`);
     const locked = await tx.$queryRaw<{ id: string; stockRevision: number; unit: string }[]>(Prisma.sql`SELECT id, "stockRevision", unit FROM "Product" WHERE "restaurantId" = ${restaurantId} AND id = ${productId} FOR UPDATE`);
     if (!locked.length) throw new WorkspaceError(404, "NOT_FOUND", "Produit introuvable.");
     const prior = await tx.stockMovement.findUnique({ where: { restaurantId_operationId_productId: { restaurantId, operationId, productId } } });

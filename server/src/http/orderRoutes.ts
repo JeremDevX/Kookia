@@ -4,7 +4,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { getOrderReceiptInvoices } from "../application/workspace/invoiceReadService.js";
-import { orderDto, validateOrder } from "../application/workspace/orderService.js";
+import { validateOrder } from "../application/workspace/orderService.js";
 import { getPurchaseSuggestions, recordPurchaseSuggestionDecision } from "../application/workspace/purchaseSuggestionService.js";
 import { getPurchaseReceiptLineEvidence, recordPurchaseReceipt } from "../application/workspace/purchaseReceiptService.js";
 import { listPlanningOrders, listPurchaseOrderHistory, listPurchaseOrders } from "../application/workspace/purchaseOrderReadService.js";
@@ -63,7 +63,7 @@ orderRoutes.get("/orders", async (req, res) => {
 orderRoutes.post("/orders", async (req, res) => {
   const input = orderSchema.parse(req.body);
   const { restaurantId, actorId } = context(res);
-  res.status(201).json(orderDto(await validateOrder(restaurantId, actorId, input)));
+  res.status(201).json(await validateOrder(restaurantId, actorId, input));
 });
 orderRoutes.post("/orders/:orderId/receipts", async (req, res) => {
   const orderId = z.string().trim().min(1).max(100).parse(req.params.orderId);

@@ -290,7 +290,10 @@ it("requires a current count, stores immutable suggestion decisions, rejects sim
     operationId: randomUUID() }).expect(409);
   await other.agent.post(`/api/workspace/orders/${order.body.id}/receipts`).send(secondReceiptInput).expect(404);
   const orderReplays = await Promise.all([1, 2].map(() => owner.agent.post("/api/workspace/orders").send(orderInput).expect(201)));
-  expect(orderReplays.map((response) => response.body.id)).toEqual([order.body.id, order.body.id]);
+  const currentOrder = (await owner.agent.get("/api/workspace/orders").expect(200)).body[0];
+  expect(currentOrder).toMatchObject({ id: order.body.id, status: "partially_received",
+    lines: [{ receivedQuantity: 3, remainingQuantity: 1 }] });
+  expect(orderReplays.map((response) => response.body)).toEqual([currentOrder, currentOrder]);
   await owner.agent.post("/api/workspace/cart").send({ action: "add", items: [{ id: randomUUID(), productId: product.id,
     productName: product.name, quantity: 5, unit: product.unit, source: "dashboard",
     purchaseSuggestionOperationId: decision.body.operationId }] }).expect(409);

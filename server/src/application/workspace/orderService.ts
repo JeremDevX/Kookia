@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { WorkspaceError } from "./workspaceError.js";
 import { getPurchaseSuggestions } from "./purchaseSuggestionService.js";
+import { purchaseOrderDto, purchaseOrderInclude } from "./purchaseOrderReadService.js";
 
 export interface OrderInput {
   operationId: string;
@@ -13,7 +14,7 @@ export interface OrderInput {
 export async function validateOrder(restaurantId: string, actorId: string, input: OrderInput) {
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw(Prisma.sql`SELECT id FROM "Restaurant" WHERE id = ${restaurantId} FOR UPDATE`);
-    const prior = await tx.purchaseOrder.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId: input.operationId } }, include: { lines: true } });
+    const prior = await tx.purchaseOrder.findUnique({ where: { restaurantId_operationId: { restaurantId, operationId: input.operationId } }, include: purchaseOrderInclude });
     if (prior) {
       const decision = await tx.recommendationDecision.findFirst({ where: { restaurantId, operationId: input.operationId } });
       const snapshot = decision?.snapshot;
@@ -23,7 +24,7 @@ export async function validateOrder(restaurantId: string, actorId: string, input
         const current = input.lines[index];
         return line.productId === current.productId && line.quantity === current.quantity && (line.predictionId ?? null) === (current.predictionId ?? null) && (line.cartId ?? null) === (current.cartId ?? null);
       })) throw new WorkspaceError(409, "OPERATION_CONFLICT", "Cette validation a déjà été utilisée avec une autre commande.");
-      return prior;
+      return purchaseOrderDto(prior);
     }
     const cart = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind: "cart" } } });
     const cartItems = cartSchema.parse(cart?.data ?? []);
@@ -86,7 +87,7 @@ export async function validateOrder(restaurantId: string, actorId: string, input
     }
     const simulated = restaurant.mode === "demo";
     const order = await tx.purchaseOrder.create({ data: { restaurantId, actorId, operationId: input.operationId,
-      status: simulated ? "simulated" : "validated", lines: { create: lines } }, include: { lines: true } });
+      status: simulated ? "simulated" : "validated", lines: { create: lines } }, include: purchaseOrderInclude });
     await tx.recommendationDecision.create({ data: { restaurantId, actorId, operationId: input.operationId,
       decision: simulated ? "order_simulated_validated" : "order_validated",
       snapshot: { input: input.lines, suggestions: suggestionDecisions.map(({ id, operationId, snapshot }) => ({ id, operationId, snapshot })),
@@ -96,15 +97,6 @@ export async function validateOrder(restaurantId: string, actorId: string, input
       await tx.workspaceDocument.update({ where: { restaurantId_kind: { restaurantId, kind: "cart" } },
         data: { data: cartItems.filter((item) => !ids.includes(item.id)), revision: { increment: 1 } } });
     }
-    return order;
+    return purchaseOrderDto(order);
   });
 }
-
-export const orderDto = (order: Awaited<ReturnType<typeof validateOrder>>) => ({
-  id: order.id, status: order.status, createdAt: order.createdAt.toISOString(),
-  lines: order.lines.map(({ id, productId, productName, supplierId, supplierName, quantity, unit, pricePerUnit }) => ({
-    id, productId, productName, supplierId, supplierName, quantity: Number(quantity), receivedQuantity: 0,
-    remainingQuantity: Number(quantity), unit, pricePerUnit: Number(pricePerUnit),
-  })),
-  receipts: [],
-});

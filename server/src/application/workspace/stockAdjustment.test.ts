@@ -36,6 +36,10 @@ describe("ajustement : révision et rejeu", () => {
   });
   it("applique une nouvelle intention lorsque la révision et l’unité concordent", async () => {
     await expect(run(2)).resolves.toMatchObject({ id: "p" });
+    expect(mocks.tx.$queryRaw.mock.calls.map(([query]) => query.sql)).toEqual([
+      expect.stringMatching(/FROM "Restaurant".*FOR NO KEY UPDATE/),
+      expect.stringMatching(/FROM "Product".*FOR UPDATE/),
+    ]);
     expect(mocks.tx.product.updateManyAndReturn).toHaveBeenCalledOnce();
     expect(mocks.tx.stockMovement.create).toHaveBeenCalledOnce();
   });

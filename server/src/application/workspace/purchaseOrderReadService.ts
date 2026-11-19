@@ -9,8 +9,8 @@ const receiptsWithMovements = {
   include: { lines: { include: { movement: { select: { id: true } } } } },
   orderBy: { createdAt: "desc" },
 } as const;
-const historyInclude = { lines: true, receipts: receiptsWithMovements } as const;
-type PurchaseOrderWithReceipts = Prisma.PurchaseOrderGetPayload<{ include: typeof historyInclude }>;
+export const purchaseOrderInclude = { lines: true, receipts: receiptsWithMovements } as const;
+type PurchaseOrderWithReceipts = Prisma.PurchaseOrderGetPayload<{ include: typeof purchaseOrderInclude }>;
 type ReceiptQuantities = Map<string, Prisma.Decimal>;
 
 function totalReceived(order: PurchaseOrderWithReceipts): ReceiptQuantities {
@@ -20,7 +20,7 @@ function totalReceived(order: PurchaseOrderWithReceipts): ReceiptQuantities {
   return receivedByLine;
 }
 
-function orderDtoWithReceipts(order: PurchaseOrderWithReceipts, receivedByLine = totalReceived(order)) {
+export function purchaseOrderDto(order: PurchaseOrderWithReceipts, receivedByLine = totalReceived(order)) {
   return { id: order.id, status: order.status, createdAt: order.createdAt.toISOString(),
     lines: order.lines.map((line) => {
       const receivedQuantity = receivedByLine.get(line.id) ?? new Prisma.Decimal(0);
@@ -36,9 +36,9 @@ function orderDtoWithReceipts(order: PurchaseOrderWithReceipts, receivedByLine =
 
 export async function listPurchaseOrders(restaurantId: string, pending = false) {
   const orders = await prisma.purchaseOrder.findMany({
-    where: { restaurantId, ...(pending ? { status: { in: pendingStatuses } } : {}) }, include: historyInclude, orderBy,
+    where: { restaurantId, ...(pending ? { status: { in: pendingStatuses } } : {}) }, include: purchaseOrderInclude, orderBy,
   });
-  return orders.map((order) => orderDtoWithReceipts(order));
+  return orders.map((order) => purchaseOrderDto(order));
 }
 
 export async function listPlanningOrders(restaurantId: string, date: string) {
@@ -61,7 +61,7 @@ export async function listPlanningOrders(restaurantId: string, date: string) {
   return orders.flatMap((order) => {
     const received: ReceiptQuantities = new Map(order.lines.map((line) => [line.id,
       line.receiptLines.reduce((sum, receipt) => sum.plus(receipt.receivedQuantity), new Prisma.Decimal(0))]));
-    const dto = orderDtoWithReceipts(order, received);
+    const dto = purchaseOrderDto(order, received);
     dto.lines = dto.lines.filter((line) => line.remainingQuantity > 0);
     return dto.lines.length > 0 || dto.receipts.length > 0 ? [dto] : [];
   });
@@ -116,20 +116,20 @@ export async function listPurchaseOrderHistory(restaurantId: string, input: Hist
     const filteredCount = filteredTotal ?? total;
     const pageCount = Math.ceil(filteredCount / pageSize);
     const page = Math.min(input.page, Math.max(0, pageCount - 1));
-    const orders = await tx.purchaseOrder.findMany({ where, include: historyInclude, orderBy, skip: page * pageSize, take: pageSize });
+    const orders = await tx.purchaseOrder.findMany({ where, include: purchaseOrderInclude, orderBy, skip: page * pageSize, take: pageSize });
     const targetOnPage = orders.some((order) => orderId ? order.id === orderId : order.receipts.some((receipt) => receipt.id === receiptId));
     const target = !targetOnPage && (orderId || receiptId)
       ? await tx.purchaseOrder.findFirst({
         where: { ...scope, ...(orderId ? { id: orderId } : { receipts: { some: { id: receiptId } } }) },
-        include: historyInclude,
+        include: purchaseOrderInclude,
       })
       : null;
     return { restaurantId, page, pageCount, total, filteredCount,
       statusCounts: Object.fromEntries(statusCounts.map((result) => [result.status, result._count._all])),
       suppliers: suppliers.map(({ supplierId: id, _max }) => ({ id, name: _max.supplierName ?? "" }))
         .sort((a, b) => a.name.localeCompare(b.name, "fr")),
-      orders: orders.map((order) => orderDtoWithReceipts(order)),
-      targetOrder: target ? orderDtoWithReceipts(target) : null,
+      orders: orders.map((order) => purchaseOrderDto(order)),
+      targetOrder: target ? purchaseOrderDto(target) : null,
     };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }
