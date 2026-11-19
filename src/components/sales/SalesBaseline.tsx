@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useEffect, useRef, useState } from "react";
 import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { formatQuantity, formatDisplayDate as displayDate } from "../../utils/format";
@@ -28,13 +29,14 @@ function RecipeProjectionDetails({ item }: { item: BaselineItem }) {
 }
 
 export default function SalesBaseline() {
+  const clientPresentation = useClientPresentation();
   const [refreshRevision, setRefreshRevision] = useState(0);
   const requestKey = String(refreshRevision);
   const [baseline, setBaseline] = useState<Baseline | null>(null);
   const [error, setError] = useState("");
   const [loadedRequestKey, setLoadedRequestKey] = useState("");
   const loading = loadedRequestKey !== requestKey;
-  const sourceLabels = baselineSourceLabels(baseline?.provenance ?? "recorded_sales");
+  const sourceLabels = baselineSourceLabels(baseline?.provenance ?? "recorded_sales", clientPresentation);
   const [page, setPage] = useState(0);
   const retryButtonRef = useRef<HTMLButtonElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);

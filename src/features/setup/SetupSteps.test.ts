@@ -10,7 +10,7 @@ vi.mock("../invitations/InvitationManager", () => ({ default: () => createElemen
 vi.mock("../members/MemberManager", () => ({ default: () => createElement("p", null, "Membres de l’équipe") }));
 vi.mock("../../components/settings/SupplierSettings", () => ({ default: () => createElement("p", null, "Fournisseurs enregistrés") }));
 const render = (step: SetupStep) => renderToStaticMarkup(createElement(MemoryRouter, null,
-  createElement(SetupSteps, { initialProgress: { configured: true, step, revision: 1, role: "owner", restaurantName: "Restaurant", capabilities: { viewStock: true, countStock: true, receiveOrders: true, validateOrders: true, manageSettings: true } } })));
+  createElement(SetupSteps, { initialProgress: { configured: true, step, revision: 1, role: "owner", restaurantName: "Restaurant", clientPresentation: false, capabilities: { viewStock: true, countStock: true, receiveOrders: true, validateOrders: true, manageSettings: true } } })));
 
 describe("étapes de configuration", () => {
   it("présente le compte et les invitations réelles", () => {

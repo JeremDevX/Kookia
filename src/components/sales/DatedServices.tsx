@@ -1,13 +1,16 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useCallback, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Button from "../common/Button";
 import { useSalesRead } from "../../features/sales/useSalesReads";
+import { displayServiceNote } from "../../features/services/serviceNotePresentation";
 import { getServiceCalendar, saveCalendarService } from "../../services/serviceCalendarService";
 import { serviceSlotLabels, type CalendarService, type ServiceSlot, type SalesCoverage } from "../../../shared/serviceCalendar";
 
 type ServiceFields = Pick<CalendarService, "plannedOpen" | "coverage" | "actualCovers" | "note">;
 
 export default function DatedServices({ today, refreshToken }: { today: string; refreshToken: number }) {
+  const clientPresentation = useClientPresentation();
   const [date, setDate] = useState(today);
   const [slot, setSlot] = useState<ServiceSlot>("lunch");
   const read = useCallback(() => date ? getServiceCalendar(date, date) : Promise.resolve([]), [date]);
@@ -45,18 +48,18 @@ export default function DatedServices({ today, refreshToken }: { today: string; 
       <label>Date<input type="date" required disabled={saving} value={date} onChange={(event) => select(event.target.value, slot)} /></label>
       <label>Service<select disabled={saving} value={slot} onChange={(event) => select(date, event.target.value as ServiceSlot)}><option value="lunch">Midi</option><option value="dinner">Soir</option></select></label>
       <label>Ouverture prévue<select disabled={disabled} value={values?.plannedOpen ? "open" : "closed"} onChange={(event) => edit({ plannedOpen: event.target.value === "open" })}><option value="open">Ouvert</option><option value="closed">Fermé</option></select></label>
-      <label>{selected?.simulated ? "Couverture simulée" : "Ventes revues"}<select disabled={disabled || date > today} value={values?.coverage ?? "missing"} onChange={(event) => edit({ coverage: event.target.value as SalesCoverage })}><option value="missing">Non renseignées</option><option value="partial">Partielles</option><option value="complete">{selected?.simulated ? "Complètes" : "Complètes, après revue"}</option></select></label>
-      <label>{selected?.simulated ? "Couverts simulés" : "Couverts observés (facultatif)"}<input type="number" min="0" max="100000" step="1" disabled={disabled || date > today} value={values?.actualCovers ?? ""} onChange={(event) => edit({ actualCovers: event.target.value === "" ? null : Number(event.target.value) })} /></label>
-      <div className="dated-service-note"><label>Motif / contexte, sans donnée personnelle<input maxLength={1000} disabled={disabled} value={values?.note ?? ""} onChange={(event) => edit({ note: event.target.value })} /></label></div>
+      <label>{selected?.simulated ? (clientPresentation ? "Couverture des ventes" : "Couverture simulée") : "Ventes revues"}<select disabled={disabled || date > today} value={values?.coverage ?? "missing"} onChange={(event) => edit({ coverage: event.target.value as SalesCoverage })}><option value="missing">Non renseignées</option><option value="partial">Partielles</option><option value="complete">{selected?.simulated ? "Complètes" : "Complètes, après revue"}</option></select></label>
+      <label>{selected?.simulated ? (clientPresentation ? "Couverts (facultatif)" : "Couverts simulés") : "Couverts observés (facultatif)"}<input type="number" min="0" max="100000" step="1" disabled={disabled || date > today} value={values?.actualCovers ?? ""} onChange={(event) => edit({ actualCovers: event.target.value === "" ? null : Number(event.target.value) })} /></label>
+      <div className="dated-service-note"><label>Motif / contexte, sans donnée personnelle<input maxLength={1000} disabled={disabled} value={changes?.note ?? displayServiceNote(selected?.note ?? "", clientPresentation)} onChange={(event) => edit({ note: event.target.value })} /></label></div>
       <div className="dated-service-submit"><Button disabled={disabled || !!error} type="submit">{saving ? "Enregistrement…" : loading ? "Chargement…" : "Enregistrer le service"}</Button></div>
     </form>
     {error && <p role="alert">{error} <button type="button" onClick={() => { setSaveError(""); reload(); }}>Réessayer</button></p>}{status && <p role="status">{status}</p>}
     <ul>{services.map((service) => <li key={service.slot}><strong>{serviceSlotLabels[service.slot]}</strong> · {service.plannedOpen ? "ouverture prévue" : "fermeture prévue"}
-      {service.opensAt && ` ${service.opensAt}–${service.closesAt}`} · ventes {service.coverage === "complete" ? "complètes" : service.coverage === "partial" ? "partielles" : "non renseignées"} · {service.simulated ? `${service.simulatedSoldQuantity ?? 0} unités simulées` : `${service.soldQuantity} unités attribuées`}.
-      {service.actualCovers !== null && ` ${service.actualCovers} couverts ${service.simulated ? "simulés" : "observés"}.`}
+      {service.opensAt && ` ${service.opensAt}–${service.closesAt}`} · ventes {service.coverage === "complete" ? "complètes" : service.coverage === "partial" ? "partielles" : "non renseignées"} · {service.simulated ? `${service.simulatedSoldQuantity ?? 0} unités ${clientPresentation ? "attribuées" : "simulées"}` : `${service.soldQuantity} unités attribuées`}.
+      {service.actualCovers !== null && ` ${service.actualCovers} couverts${service.simulated ? (clientPresentation ? "" : " simulés") : " observés"}.`}
       {service.unallocatedQuantity > 0 && ` ${service.unallocatedQuantity} unités de la journée restent non ventilées.`}
       {service.allocationNeedsReview && " Une vente a été corrigée : revoyez sa ventilation."}
-      {!service.simulated && service.excludedSimulationQuantity > 0 && ` ${service.excludedSimulationQuantity} unités hors bilan exclues de ces observations.`}
+      {!service.simulated && service.excludedSimulationQuantity > 0 && ` ${service.excludedSimulationQuantity} unités${clientPresentation ? "" : " hors bilan"} exclues de ces observations.`}
     </li>)}</ul>
   </section>;
 }

@@ -1,3 +1,5 @@
+import { displayForecastNote } from "../services/forecastPresentation";
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useEffect, useRef, useState } from "react";
 import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { Link, useLocation } from "react-router-dom";
@@ -12,6 +14,7 @@ import "./PurchaseSuggestions.css";
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 
 export default function PurchaseSuggestions({ refreshKey, salesHref = "/sales#sales-start", stocksHref = "/stocks", limited = false }: { refreshKey: number; salesHref?: string | null; stocksHref?: string; limited?: boolean }) {
+  const clientPresentation = useClientPresentation();
   const location = useLocation();
   const { cartItems, addToCart } = useCart();
   const [filter, setFilter] = useState<"toReview" | "needsCheck" | "covered" | "handled">("toReview");
@@ -136,7 +139,7 @@ export default function PurchaseSuggestions({ refreshKey, salesHref = "/sales#sa
                 onDecide={(decision) => void decide(item.productId, item.suggestionKey, decision)} />)}</tbody>
             </table></div>}
           </>}
-          <details><summary>Comprendre les hypothèses</summary><ul className="purchase-suggestions-assumptions">{data.assumptions.map((assumption) => <li key={assumption}>{assumption}</li>)}</ul></details>
+          <details><summary>Comprendre les hypothèses</summary><ul className="purchase-suggestions-assumptions">{data.assumptions.map((assumption) => <li key={assumption}>{displayForecastNote(assumption, clientPresentation)}</li>)}</ul></details>
         </>}
       </>}
     {error && data && <div role="alert"><p>{error}</p><Button ref={retryButtonRef} type="button" variant="outline" onClick={retrySuggestions}>

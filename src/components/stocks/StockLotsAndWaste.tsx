@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import "./StockLotsAndWaste.css";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { apiRequest } from "../../config/api";
@@ -14,6 +15,7 @@ export default function StockLotsAndWaste({ products, catalogAvailable, onSaved 
   catalogAvailable: boolean;
   onSaved: () => Promise<boolean>;
 }) {
+  const clientPresentation = useClientPresentation();
   const [data, setData] = useState<Lots>({ lots: [], unagedStock: [] });
   const [waste, setWaste] = useState<Waste[]>([]);
   const [productions, setProductions] = useState<Production[]>([]);
@@ -82,7 +84,7 @@ export default function StockLotsAndWaste({ products, catalogAvailable, onSaved 
       void load();
     }}>Réessayer</Button></div>}
     <ul>{data.lots.map((lot) => <li key={lot.id}>
-      {products.find((row) => row.id === lot.productId)?.name ?? lot.productId} : {lot.remainingQuantity} {products.find((row) => row.id === lot.productId)?.unit} · {lot.source === "demo_simulation" ? "entrée simulée le" : "reçu"} {lot.receivedAt ?? "date inconnue"} · échéance {lot.expiresAt ?? "inconnue"} · coût {lot.unitCost == null ? "inconnu" : `${lot.unitCost} € / unité`}
+      {products.find((row) => row.id === lot.productId)?.name ?? lot.productId} : {lot.remainingQuantity} {products.find((row) => row.id === lot.productId)?.unit} · {lot.source === "demo_simulation" ? (clientPresentation ? "entrée du" : "entrée simulée le") : "reçu"} {lot.receivedAt ?? "date inconnue"} · échéance {lot.expiresAt ?? "inconnue"} · coût {lot.unitCost == null ? "inconnu" : `${lot.unitCost} € / unité`}
       {lot.allocations.length > 0 && <details><summary>Sorties tracées</summary><ul>{lot.allocations.map((entry) => <li key={entry.stockMovementId}>{entry.quantity} · mouvement {entry.stockMovementId}</li>)}</ul></details>}
     </li>)}</ul>
     {data.unagedStock.map((row) => <p key={row.productId}>{row.productName} : {row.quantity} {row.unit} de stock sans âge renseigné.</p>)}
@@ -92,7 +94,7 @@ export default function StockLotsAndWaste({ products, catalogAvailable, onSaved 
         {Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select></label>
       {kind !== "raw" && <label>Préparation liée<select required={kind !== "preparation"} value={productionId} onChange={(event) => setProductionId(event.target.value)}>
-        <option value="">Matière avant production</option>{productions.map((row) => <option key={row.id} value={row.id}>{row.date.slice(0, 10)} · {row.recipeName} · {row.portions} portions{row.simulated ? " · Hors bilan" : ""}</option>)}
+        <option value="">Matière avant production</option>{productions.map((row) => <option key={row.id} value={row.id}>{row.date.slice(0, 10)} · {row.recipeName} · {row.portions} portions{row.simulated && !clientPresentation ? " · Hors bilan" : ""}</option>)}
       </select></label>}
       {!cooked && <><label>Produit<select required value={productId} onChange={(event) => setProductId(event.target.value)}>
         <option value="">Choisir</option>{products.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
@@ -108,6 +110,6 @@ export default function StockLotsAndWaste({ products, catalogAvailable, onSaved 
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     <h3>Déclarations récentes</h3>
-    <ul>{waste.slice(0, 20).map((row) => <li key={row.id}>{row.serviceDate} · {row.serviceSlot === "lunch" ? "midi" : row.serviceSlot === "dinner" ? "soir" : "non ventilé"} · {labels[row.kind]} : {row.quantity} {row.unit}{row.simulated ? " · Hors bilan" : ""} · {row.stockMovementId ? "matière déduite" : "sans nouvelle déduction"} · {row.cost == null ? "non valorisé" : `${row.cost.toFixed(2)} € (coût des lots)`} {row.note}</li>)}</ul>
+    <ul>{waste.slice(0, 20).map((row) => <li key={row.id}>{row.serviceDate} · {row.serviceSlot === "lunch" ? "midi" : row.serviceSlot === "dinner" ? "soir" : "non ventilé"} · {labels[row.kind]} : {row.quantity} {row.unit}{row.simulated && !clientPresentation ? " · Hors bilan" : ""} · {row.stockMovementId ? "matière déduite" : "sans nouvelle déduction"} · {row.cost == null ? "non valorisé" : `${row.cost.toFixed(2)} € (coût des lots)`} {row.note}</li>)}</ul>
   </section>;
 }

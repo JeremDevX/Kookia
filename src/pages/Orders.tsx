@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../features/members/workspaceContext";
 import { getOrderView, orderViewHref } from "../features/orders/orderNavigation";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -19,6 +20,7 @@ import "../styles/Workspace.css";
 import "./Orders.css";
 
 export default function Orders() {
+  const clientPresentation = useClientPresentation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -112,7 +114,7 @@ export default function Orders() {
         catalogLoading={catalogLoading} catalogError={catalogError} onRetryCatalog={refetch}
         onInvoiceDataChanged={() => setInvoiceRefresh((value) => value + 1)}
         onValidate={(invoice) => {
-          const { title, message } = invoiceReceiptFeedback[invoice.stockEffect];
+          const { title, message } = invoiceReceiptFeedback(invoice.stockEffect, clientPresentation);
           addToast("success", title, message);
           if (invoice.stockEffect !== "none") void refetch();
         }} onClose={() => setInvoiceDraft(null)} />}

@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import PurchaseReconciliation from "./PurchaseReconciliation";
 import PurchaseDeliveryReview from "./PurchaseDeliveryReview";
 import { useEffect, useRef, useState } from "react";
@@ -29,6 +30,7 @@ interface OrderHistoryProps { refreshKey?: number; focusReceiptId?: string; retu
   returnTarget?: AnalyticsReturnTarget; onReceiptSaved?: () => void; }
 
 export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHref, returnTarget, onReceiptSaved }: OrderHistoryProps) {
+  const clientPresentation = useClientPresentation();
   const location = useLocation();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ReceiptStatusFilter>("all");
@@ -182,7 +184,7 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
             <h4 data-receipt-heading tabIndex={-1}>{receipt.deliveryReference}</h4>
             {receipt.id === focusReceiptId && returnHref && <p><Link to={returnHref}>Retour au Bilan (même période)</Link></p>}
             <p>Facture {receipt.invoiceReference} · {receipt.deliveryDate}
-              {receipt.simulated ? " · hors bilan" : ""} · {receipt.invoiceComplete ? "facture rapprochée" : "facture encore à compléter"}</p>
+              {receipt.simulated && !clientPresentation ? " · hors bilan" : ""} · {receipt.invoiceComplete ? "facture rapprochée" : "facture encore à compléter"}</p>
             <ul>{receipt.lines.filter((line) => line.receivedQuantity > 0).map((line) => <li key={line.id}>
               <span>{line.productName} · {line.receivedQuantity} {line.unit} · prix facture {money.format(line.invoiceUnitPrice)}
                 {line.priceDifferenceReason ? ` · écart expliqué : ${line.priceDifferenceReason}` : ""}

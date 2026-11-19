@@ -1,3 +1,5 @@
+import { displayForecastNote } from "../services/forecastPresentation";
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { purchasePreparationHref } from "../../features/orders/orderNavigation";
 import { orderStepLabel } from "../../../shared/orderQuantity.js";
 import { useRef } from "react";
@@ -21,6 +23,7 @@ export default function TodayPurchaseForecast({ data, loading, error, retry }: {
   error: string;
   retry: () => void;
 }) {
+  const clientPresentation = useClientPresentation();
   const { cartItems, loading: cartLoading, loadError: cartError } = useCart();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -85,7 +88,7 @@ export default function TodayPurchaseForecast({ data, loading, error, retry }: {
                 : "La liste ne peut pas encore être calculée. Vérifiez les ventes et les recettes de vos plats."}</p>}
             {summary.needsCheck.length > 0 && <div className="today-forecast-guidance">
               <h3>Vérifiez les données de {summary.needsCheck.length} produit{summary.needsCheck.length > 1 ? "s" : ""} pour compléter la liste</h3>
-              <ul>{summary.needsCheck.map((item) => <li key={item.productId}>{item.status === "ready" ? <>{item.productName} — {item.reason}</> : item.status === "supplier_constraints_missing" ? <>{item.productName} — {item.deliveryHorizon.status === "unknown" ? item.deliveryHorizon.reason : item.reason} <Link to="/settings?section=suppliers">Paramètres fournisseur</Link> · <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Conditionnement</Link></> : <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>
+              <ul>{summary.needsCheck.map((item) => <li key={item.productId}>{item.status === "ready" ? <>{item.productName} — {displayForecastNote(item.reason, clientPresentation)}</> : item.status === "supplier_constraints_missing" ? <>{item.productName} — {item.deliveryHorizon.status === "unknown" ? item.deliveryHorizon.reason : item.reason} <Link to="/settings?section=suppliers">Paramètres fournisseur</Link> · <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Conditionnement</Link></> : <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>
                 {item.productName} — {item.status === "unit_mismatch" ? "vérifier l’unité" : item.status === "availability_conflict" ? "résoudre un manque avant livraison ou rapprocher les lots" : "compter le stock"}</Link>}</li>)}</ul>
             </div>}
             {summary.covered.length > 0 && <details><summary>Produits sans quantité à commander : {summary.covered.length}</summary>

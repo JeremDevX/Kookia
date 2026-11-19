@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import type { Ref } from "react";
 import type { Invoice, InvoiceLine, SourceLineDisposition } from "../../../shared/invoice";
 import type { Product } from "../../types";
@@ -20,6 +21,7 @@ const exclusionLabels: Record<NonNullable<InvoiceLine["exclusionReason"]>, strin
 
 export default function InvoiceLinesEditor({ invoice, products, disabled, firstProductSelectRef,
   onLinesChange }: InvoiceLinesEditorProps) {
+  const clientPresentation = useClientPresentation();
   const sourceLinked = invoice.source === "source_document";
   const documentaryReview = sourceLinked && (invoice.status === "received"
     ? invoice.stockEffect !== "demo_simulation" : invoice.sourceReceiptStockEffect !== "demo_simulation");
@@ -67,7 +69,7 @@ export default function InvoiceLinesEditor({ invoice, products, disabled, firstP
           ...(event.target.value === "excluded" ? {} : { exclusionReason: undefined }),
         })}>
         <option value="pending">À examiner</option>
-        <option value="stock">{documentaryReview ? "Retenir pour le rapprochement" : "Inclure au stock du scénario"}</option>
+        <option value="stock">{documentaryReview ? "Retenir pour le rapprochement" : clientPresentation ? "Inclure au stock" : "Inclure au stock du scénario"}</option>
         <option value="excluded">Écarter la ligne</option>
       </select>
       {line.disposition === "excluded" && <>

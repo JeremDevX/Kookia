@@ -14,11 +14,13 @@ import { WeatherDecisionSummary } from "./ServiceWeatherPanel";
 import ForecastWeatherSummary from "./ForecastWeatherSummary";
 import type { ForecastWeatherAdjustment } from "../../../shared/forecastWeather";
 import { hasPendingServiceSheetFields } from "./serviceSheetPendingFields";
+import { useClientPresentation } from "../../features/members/workspaceContext";
 
 export default function ServiceSheetPanel({ date, slot, loadRecipes, onDirtyChange, menuChange, weatherContextRef }: {
   date: string; slot: ServiceSlot; loadRecipes: () => Promise<Recipe[]>; onDirtyChange?: (dirty: boolean) => void;
   menuChange: number; weatherContextRef?: string;
 }) {
+  const clientPresentation = useClientPresentation();
   const [sheet, setSheet] = useState<ServiceSheet | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [planned, setPlanned] = useState<SheetInput["planned"]>([]);
@@ -150,7 +152,10 @@ export default function ServiceSheetPanel({ date, slot, loadRecipes, onDirtyChan
       <ul>{substitutions.map((row, index) => <li key={index}>{recipeName(row.fromRecipeId)} → {recipeName(row.toRecipeId)} : {row.portions} portions. {row.note} {!closed && <button type="button" disabled={busy} onClick={() => { setSubstitutions(current => current.filter((_, itemIndex) => itemIndex !== index)); changed(); }}>Retirer la substitution {index + 1}</button>}</li>)}</ul>
       <h3>Rapprochement courant</h3>
       <p>« Inconnu » signifie que la couverture ou l’attribution est incomplète. Les invendus ne sont pas automatiquement du gaspillage. Les pertes de préparation en kg/L restent distinctes des portions ; les retours d’assiette sont déjà compris dans les ventes.</p>
-      {sheet.facts.gaps.length > 0 && <ul>{sheet.facts.gaps.map(gap => <li key={gap}>{gap}</li>)}</ul>}
+      {sheet.facts.gaps.length > 0 && <ul>{sheet.facts.gaps.map(gap => <li key={gap}>
+        {clientPresentation && gap === "Les données hors bilan ne constituent pas des observations opérationnelles."
+          ? "La clôture nécessite des observations confirmées." : gap}
+      </li>)}</ul>}
       <ul>{sheet.facts.lines.filter(line => line.refused > 0).map(line => <li key={line.recipeId}>{line.recipeName} : {line.refused} demandes non servies, distinctes des ventes et des pertes.</li>)}</ul>
       {sheet.facts.unallocatedRefusals > 0 && <p>{sheet.facts.unallocatedRefusals} demandes non servies de la journée restent non ventilées ; aucune attribution n’est supposée.</p>}
       <details><summary>Remboursements monétaires signalés dans la journée ({sheet.facts.dailyRefunds.length})</summary>

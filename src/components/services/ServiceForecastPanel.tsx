@@ -1,8 +1,9 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useEffect, useState } from "react";
 import type { ServiceSlot } from "../../../shared/serviceCalendar";
 import type { ForecastIngredient, ForecastService, OperationalForecast } from "../../../shared/operationalForecast";
 import { getOperationalForecast } from "../../services/serviceOperationsService";
-import { selectedForecastService } from "./forecastPresentation";
+import { displayForecastNote, selectedForecastService } from "./forecastPresentation";
 import { formatLocalISODate } from "../../utils/date";
 import Button from "../common/Button";
 import "./ServiceOperations.css";
@@ -16,11 +17,12 @@ function IngredientNeeds({ ingredients }: { ingredients: ForecastIngredient[] })
     </li>)}</ul></>;
 }
 function ForecastServiceView({ service }: { service: ForecastService | null }) {
+  const clientPresentation = useClientPresentation();
   if (!service) return <p>Aucune prévision pour ce service. Vérifiez l’ouverture planifiée et la carte datée.</p>;
   return <>
     <p>{service.plannedOpen ? "Service planifié ouvert" : "Service planifié fermé"} · carte version {service.menuRevision}. L’ouverture ne prouve pas que les ventes sont complètes.</p>
     {service.plannedOpen && <ForecastWeatherSummary adjustment={service.weatherAdjustment} />}
-    {service.blockers.length > 0 && <ul aria-label="Limites du service">{service.blockers.map((limit, index) => <li key={index}>{limit}</li>)}</ul>}
+    {service.blockers.length > 0 && <ul aria-label="Limites du service">{service.blockers.map((limit, index) => <li key={index}>{displayForecastNote(limit, clientPresentation)}</li>)}</ul>}
     {service.items.length === 0 && <p>Aucun article éligible à une prévision.</p>}
     <ul>{service.items.map((item) => <li key={item.entryId}>
       <strong>{item.name} · {item.category}</strong> : {item.quantity == null ? "prévision indisponible" : `${item.quantity.toLocaleString("fr-FR")} articles estimés`}
@@ -39,12 +41,13 @@ function ForecastServiceView({ service }: { service: ForecastService | null }) {
   </>;
 }
 export function ForecastPanelContent({ forecast, date, slot }: { forecast: OperationalForecast; date: string; slot: ServiceSlot }) {
+  const clientPresentation = useClientPresentation();
   return <>
     <p>Source : {provenanceLabels[forecast.provenance]} · calcul au {forecast.asOfDate} · {forecast.excludedServices} services exclus de l’historique qualifié.</p>
     <ForecastServiceView service={selectedForecastService(forecast, date, slot)} />
-    {forecast.blockers.length > 0 && <ul aria-label="Limites de la prévision">{forecast.blockers.map((limit, index) => <li key={index}>{limit}</li>)}</ul>}
+    {forecast.blockers.length > 0 && <ul aria-label="Limites de la prévision">{forecast.blockers.map((limit, index) => <li key={index}>{displayForecastNote(limit, clientPresentation)}</li>)}</ul>}
     <details><summary>Hypothèses et méthode de calcul</summary>
-      <ul>{forecast.assumptions.map((assumption, index) => <li key={index}>{assumption}</li>)}</ul>
+      <ul>{forecast.assumptions.map((assumption, index) => <li key={index}>{displayForecastNote(assumption, clientPresentation)}</li>)}</ul>
       <p>Les prévisions restent des suggestions à revoir par le chef. Les ventes incomplètes et l’absence de carte peuvent limiter le résultat ; la dispersion observée n’est pas une garantie de précision.</p>
     </details>
     <details><summary>Besoins matières estimés pour la journée entière (midi et soir)</summary>

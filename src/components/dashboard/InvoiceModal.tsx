@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useEffect, useRef, useState } from "react";
 import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import Button from "../common/Button";
@@ -5,7 +6,7 @@ import Modal from "../common/Modal";
 import InvoiceLinesEditor from "./InvoiceLinesEditor";
 import type { Invoice, SaveInvoiceResponse } from "../../../shared/invoice";
 import { createManualInvoiceDraft } from "../../features/orders/invoiceDraft";
-import { invoiceReceiptFeedback } from "../../features/orders/invoiceReceiptFeedback";
+import { invoiceReceiptError, invoiceReceiptFeedback } from "../../features/orders/invoiceReceiptFeedback";
 import { confirmInvoiceDuplicates } from "../../services/invoiceDuplicates";
 import { ApiError } from "../../config/api";
 import { getInvoices, saveInvoice } from "../../services/invoiceService";
@@ -26,6 +27,7 @@ interface InvoiceModalProps {
 
 export default function InvoiceModal({ initialInvoice, products, suppliers, catalogLoading, catalogError,
   onRetryCatalog, onValidate, onInvoiceDataChanged, onClose }: InvoiceModalProps) {
+  const clientPresentation = useClientPresentation();
   const [historyRetryRevision, setHistoryRetryRevision] = useState(0);
   const [loadedHistoryRetryRevision, setLoadedHistoryRetryRevision] = useState(-1);
   const loading = loadedHistoryRetryRevision !== historyRetryRevision;
@@ -140,7 +142,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
       setInvoices((previous) => [saved, ...previous.filter((item) => item.id !== saved.id)]);
       setReloadConflictInvoice(false);
       setSourceConflictInvoiceId((conflictedId) => conflictedId === saved.id ? null : conflictedId);
-      setNotice(receive ? invoiceReceiptFeedback[saved.stockEffect].message : "Brouillon enregistré.");
+      setNotice(receive ? invoiceReceiptFeedback(saved.stockEffect, clientPresentation).message : "Brouillon enregistré.");
       onInvoiceDataChanged();
       if (receive) onValidate(saved);
     } catch (cause) {
@@ -161,7 +163,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
       } else {
         setReloadConflictInvoice(cause instanceof ApiError && ["REVISION_CONFLICT", "ALREADY_RECEIVED", "INVOICE_PARTIALLY_RECONCILED"]
           .includes(cause.details.code));
-        setError(cause instanceof Error ? cause.message : "Enregistrement impossible.");
+        setError(invoiceReceiptError(cause, "Enregistrement impossible.", clientPresentation));
       }
     } finally { setSaving(false); }
   };
@@ -230,7 +232,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
           Statut source : {invoice.sourceStatus ?? "inconnu"}.</p>
         <p>Date de travail de la pièce : {invoice.sourceDate ?? "inconnue"}.</p>
         {!received && <p>{sourceAddsToScenario
-          ? "La confirmation ajoutera les quantités retenues au stock du scénario."
+          ? (clientPresentation ? "La confirmation ajoutera les quantités retenues au stock." : "La confirmation ajoutera les quantités retenues au stock du scénario.")
           : "Le rapprochement enregistre vos vérifications sur la pièce sans modifier le stock."}</p>}
         {invoice.sourceType !== "invoice" && <p role="alert">Un avoir ou un bon de livraison est consultable, mais ne peut pas créditer le stock dans ce flux.</p>}
         {invoice.alreadyCreditedBySimulation && <p role="alert">Cette pièce a déjà été rapprochée dans cet espace. Ce brouillon ne peut pas ajouter une seconde quantité.</p>}
@@ -273,7 +275,7 @@ export default function InvoiceModal({ initialInvoice, products, suppliers, cata
           disabled={disabled || persistenceBlocked || !invoice.reference.trim()}>Enregistrer le brouillon</Button>
         <Button ref={receiveButtonRef} onClick={() => void persist(true)} disabled={disabled || persistenceBlocked || !canReceive}>
           {sourceLinked && !sourceAddsToScenario ? "Confirmer le rapprochement"
-            : sourceLinked ? "Ajouter au stock du scénario" : "Réceptionner et ajouter au stock"}
+            : sourceLinked ? (clientPresentation ? "Ajouter au stock" : "Ajouter au stock du scénario") : "Réceptionner et ajouter au stock"}
         </Button>
       </div>}
     </>}

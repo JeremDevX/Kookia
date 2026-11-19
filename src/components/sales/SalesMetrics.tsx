@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useEffect, useRef, useState } from "react";
 import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { formatDisplayDate as displayDate } from "../../utils/format";
@@ -15,6 +16,7 @@ const PAGE_SIZE = 10;
 const MAX_PERIOD_SPAN_MS = 366 * 86_400_000;
 
 export default function SalesMetrics({ from, to }: Props) {
+  const clientPresentation = useClientPresentation();
   const periodTooLong = Date.parse(to) - Date.parse(from) > MAX_PERIOD_SPAN_MS;
   const [refreshRevision, setRefreshRevision] = useState(0);
   const requestKey = `${from}:${to}:${refreshRevision}`;
@@ -55,7 +57,7 @@ export default function SalesMetrics({ from, to }: Props) {
 
   return <section className="sales-panel sales-metrics" aria-labelledby="sales-metrics-title">
     <h2 ref={headingRef} id="sales-metrics-title" tabIndex={-1}>Comprendre vos ventes</h2>
-    {metrics && <details className="impact-reading-guide"><summary>Sources et qualité des ventes</summary><p>{describeSalesMetricsSources(metrics.provenance)} Une ligne absente ne vaut zéro que si le calendrier du jour est complet ; les jours partiels, manquants ou non renseignés restent inconnus.</p></details>}
+    {metrics && <details className="impact-reading-guide"><summary>Sources et qualité des ventes</summary><p>{describeSalesMetricsSources(metrics.provenance, clientPresentation)} Une ligne absente ne vaut zéro que si le calendrier du jour est complet ; les jours partiels, manquants ou non renseignés restent inconnus.</p></details>}
     {loading ? <p role="status">Calcul des indicateurs…</p> : periodTooLong ?
       <p role="status">Les indicateurs de ventes sont limités à une période d’environ un an. Raccourcissez les dates pour les consulter ; le rapport Impact reste disponible sur la période choisie.</p> : error ? <div role="alert"><p>Indicateurs indisponibles : {error}</p>
       <Button ref={retryButtonRef} type="button" variant="outline" onClick={retryMetrics}>Recharger les indicateurs</Button>

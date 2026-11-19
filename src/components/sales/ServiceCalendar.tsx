@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import Button from "../common/Button";
@@ -27,6 +28,7 @@ export default function ServiceCalendar(props: ServiceCalendarProps) {
 }
 
 function ServiceCalendarPeriod({ from, to, today, onChanged }: ServiceCalendarProps) {
+  const clientPresentation = useClientPresentation();
   const [days, setDays] = useState<ServiceDay[] | null>(null);
   const [selectedDate, setSelectedDate] = useState(to);
   const [draft, setDraft] = useState<Pick<ServiceDay, "status" | "coverage"> | null>(null);
@@ -122,7 +124,7 @@ function ServiceCalendarPeriod({ from, to, today, onChanged }: ServiceCalendarPr
           const day = daysByDate.get(date);
           return <tr key={date} aria-current={selectedDate === date ? "date" : undefined}>
             <td>{date}</td><td>{day ? statusLabels[day.status] : "Non renseigné"}</td>
-            <td>{day ? `${describeServiceCoverage(day.coverage)}${day.source === "recorded" ? "" : ` · provenance ${sourceLabels[day.source]}`}` : "Manquante"}</td>
+            <td>{day ? `${describeServiceCoverage(day.coverage)}${(clientPresentation || day.source === "recorded") ? "" : ` · provenance ${sourceLabels[day.source]}`}` : "Manquante"}</td>
             <td>{!day ? "Inconnu" : day.status === "closed" ? "Pas de service" : day.coverage === "complete" && day.salesCount === 0 ? "0 observé" : `${day.salesCount} ligne(s)`}</td>
           </tr>;
         })}</tbody>

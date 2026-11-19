@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { CalendarService } from "../../../shared/serviceCalendar";
@@ -12,6 +13,7 @@ import Button from "../common/Button";
 import "./TodayPlanning.css";
 
 export default function TodayPlanning() {
+  const clientPresentation = useClientPresentation();
   const [today, setToday] = useState(() => formatLocalISODate(new Date()));
   const todayRef = useRef(today);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -66,11 +68,11 @@ export default function TodayPlanning() {
         {orderError ? <div role="alert"><p>Les réceptions sont indisponibles.</p><Button variant="outline" onClick={() => { setOrders(null); setOrderError(false); setOrderAttempt((value) => value + 1); }}>Réessayer</Button></div>
           : !receipts ? <p role="status">Chargement des réceptions…</p> : <>
             {receipts.events.length === 0 ? <p>Aucune livraison ou réception datée aujourd’hui.</p> : <ul className="today-planning-list">{receipts.events.map((event, index) => <li key={`${event.orderId}-${event.kind}-${index}`}>
-              <div><strong>{event.label}</strong><p>{dateExceeded(event, today) ? `Date prévue dépassée : ${new Date(`${event.date}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "UTC" })}` : event.kind === "expected" ? "Livraison attendue" : "Réception enregistrée"}{event.simulated ? " · simulation" : ""}</p>
+              <div><strong>{event.label}</strong><p>{dateExceeded(event, today) ? `Date prévue dépassée : ${new Date(`${event.date}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "UTC" })}` : event.kind === "expected" ? "Livraison attendue" : "Réception enregistrée"}{!clientPresentation && event.simulated ? " · simulation" : ""}</p>
                 {event.items.length > 0 && <p>{event.items.map((item) => `${item.name} · ${item.quantity.toLocaleString("fr-FR")} ${item.unit}`).join(" ; ")}</p>}</div>
               <Link to={receiptEventHref(event)}>{event.kind === "expected" ? "Rapprocher la livraison" : "Voir la réception"}</Link>
             </li>)}</ul>}
-            {receipts.undated > 0 && <p>{receipts.undated} ligne{receipts.undated > 1 ? "s" : ""} attendue{receipts.undated > 1 ? "s" : ""} sans date de livraison{receipts.simulatedUndated > 0 && `, dont ${receipts.simulatedUndated} en simulation`}.</p>}
+            {receipts.undated > 0 && <p>{receipts.undated} ligne{receipts.undated > 1 ? "s" : ""} attendue{receipts.undated > 1 ? "s" : ""} sans date de livraison{!clientPresentation && receipts.simulatedUndated > 0 && `, dont ${receipts.simulatedUndated} en simulation`}.</p>}
           </>}
         <p className="today-planning-links"><Link to="/orders?view=receipts">Voir les réceptions</Link></p>
       </section>

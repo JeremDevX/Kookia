@@ -1,14 +1,15 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Button from "../common/Button";
 import { getSaleContributions, getSales, reviewSaleContribution, type DailySale, type SaleContribution, type SaleItem } from "../../services/salesService";
 import { useSalesRead } from "../../features/sales/useSalesReads";
 
-const sourceLabel = (source: SaleContribution["source"] | DailySale["source"], posBatch = false,
+const sourceLabel = (source: SaleContribution["source"] | DailySale["source"], clientPresentation: boolean, posBatch = false,
   ticketBatch?: SaleContribution["ticketBatch"]) => ticketBatch ?
-  ticketBatch.provenance === "demo_simulation" ? "Ticket Z hors bilan" : "Ticket Z transcrit" : posBatch ?
-  source === "demo_simulation" ? "Caisse POS hors bilan" : "Caisse POS" : source === "csv" ? "CSV" :
-  source === "pos" ? "Caisse POS" : source === "demo_simulation" ? "Hors bilan" : source === "ticket_z" ? "Ticket Z transcrit" : "Saisie manuelle";
+  !clientPresentation && ticketBatch.provenance === "demo_simulation" ? "Ticket Z hors bilan" : "Ticket Z transcrit" : posBatch ?
+  source === "demo_simulation" && !clientPresentation ? "Caisse POS hors bilan" : "Caisse POS" : source === "csv" ? "CSV" :
+  source === "pos" ? "Caisse POS" : source === "demo_simulation" ? (clientPresentation ? "Import" : "Hors bilan") : source === "ticket_z" ? "Ticket Z transcrit" : "Saisie manuelle";
 const statusLabel = (status: SaleContribution["status"]) => ({ pending: "À réconcilier", accepted: "Accepté",
   rejected: "Rejeté", superseded: "Remplacé", voided: "Annulé" })[status];
 const eventLabel: Record<string, string> = { source_received: "Ligne reçue", accepted: "Accepté", conflict_detected: "Conflit détecté", rejected: "Rejeté",
@@ -20,6 +21,7 @@ export default function SalesReconciliation({ from, to, refreshToken, items, tic
   ticketPreview: { contentHash: string; url: string; mimeType: "application/pdf" | "image/jpeg" | "image/png" } | null;
   onChanged: () => Promise<void>;
 }) {
+  const clientPresentation = useClientPresentation();
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
@@ -57,12 +59,12 @@ export default function SalesReconciliation({ from, to, refreshToken, items, tic
       {history.length === 0 ? <p>Aucun apport sur cette période.</p> : <ul className="sales-contribution-history">
         {history.map((row) => <li key={row.id}>
           <strong>{row.serviceDate ?? row.sourceDate} · {row.saleItemName ?? row.sourceItemName} · {row.quantity ?? row.sourceQuantity}</strong>
-          <span>{sourceLabel(row.source, Boolean(row.posBatch), row.ticketBatch)} · {statusLabel(row.status)} · source révision {row.sourceRevision}</span>
-          {row.posBatch && <span>Lot {row.posBatch.batchId} · période {row.posBatch.from}–{row.posBatch.to} · {row.posBatch.coverage === "complete" ? "données complètes reçues" : "données partielles reçues"} · {row.posBatch.provenance === "demo_simulation" ? "hors bilan" : "source enregistrée"}</span>}
+          <span>{sourceLabel(row.source, clientPresentation, Boolean(row.posBatch), row.ticketBatch)} · {statusLabel(row.status)} · source révision {row.sourceRevision}</span>
+          {row.posBatch && <span>Lot {row.posBatch.batchId} · période {row.posBatch.from}–{row.posBatch.to} · {row.posBatch.coverage === "complete" ? "données complètes reçues" : "données partielles reçues"} · {row.posBatch.provenance === "demo_simulation" ? (clientPresentation ? "à rapprocher" : "hors bilan") : "source enregistrée"}</span>}
           {row.ticketBatch && <span>Ticket Z · service {row.ticketBatch.serviceDate ?? "à vérifier"} · date lue {row.ticketBatch.sourceDateText || "illisible/non renseignée"} · empreinte {row.ticketBatch.contentHash.slice(0, 12)}… · original non conservé</span>}
           {row.ticketLineNumber !== null && <span>Ligne Ticket Z {row.ticketLineNumber}</span>}
           {row.importLine !== null && <span>Ligne CSV {row.importLine} · empreinte {row.sourceFileHash?.slice(0, 12) ?? "indisponible"}</span>}
-          {row.reviewReason && <span>Motif : {row.reviewReason}</span>}
+          {row.reviewReason && <span>Motif : {clientPresentation && row.reviewReason === "Vente simulée importée depuis l’atelier documentaire." ? "Vente importée." : row.reviewReason}</span>}
           {row.reviewedAt && <span>Revu par {row.reviewedBy ?? "acteur inconnu"} · {new Date(row.reviewedAt).toLocaleString("fr-FR")}</span>}
           {row.events.map((event, index) => <span key={`${row.id}-${index}`}>{eventLabel[event.kind] ?? event.kind} · révision {event.revision} · par {event.actorId} · {new Date(event.createdAt).toLocaleString("fr-FR")} · {event.reason}</span>)}
         </li>)}
@@ -76,6 +78,7 @@ function PendingContribution({ row, items, ticketPreview, onReview }: {
   ticketPreview: { contentHash: string; url: string; mimeType: "application/pdf" | "image/jpeg" | "image/png" } | null;
   onReview: (row: SaleContribution, decision: "replace" | "keep" | "reject", reason: string, saleItemId?: string) => Promise<void>;
 }) {
+  const clientPresentation = useClientPresentation();
   const [reason, setReason] = useState("");
   const [selectedSaleItemId, setSelectedSaleItemId] = useState(row.saleItemId ?? "");
   const [lookupResult, setLookupResult] = useState<{ itemId: string; state: "loading" } | { itemId: string; state: "loaded"; sale: DailySale | null } | { itemId: string; state: "error"; message: string } | null>(null);
@@ -118,9 +121,9 @@ function PendingContribution({ row, items, ticketPreview, onReview }: {
 
   return <article className="sales-reconciliation-card" aria-labelledby={`contribution-${row.id}`}>
     <h3 id={`contribution-${row.id}`}>{row.sourceRefunded ? "Remboursement à vérifier" : currentSale ? "Vente à rapprocher" : "Vente à vérifier"} · {row.serviceDate ?? row.sourceDate} · {row.saleItemName ?? row.sourceItemName}</h3>
-    <p>Apport candidat : {sourceLabel(row.source, Boolean(row.posBatch), row.ticketBatch)}, {row.quantity ?? row.sourceQuantity} unité(s), révision {row.sourceRevision}.
+    <p>Apport candidat : {sourceLabel(row.source, clientPresentation, Boolean(row.posBatch), row.ticketBatch)}, {row.quantity ?? row.sourceQuantity} unité(s), révision {row.sourceRevision}.
       {row.sourceRecordId ? ` Référence caisse ${row.sourceRecordId}.` : ""}
-      {row.posBatch ? ` Lot ${row.posBatch.batchId}, données ${row.posBatch.coverage === "complete" ? "complètes" : "partielles"}${row.posBatch.provenance === "demo_simulation" ? " (hors bilan)" : ""}.` : ""}
+      {row.posBatch ? ` Lot ${row.posBatch.batchId}, données ${row.posBatch.coverage === "complete" ? "complètes" : "partielles"}${row.posBatch.provenance === "demo_simulation" && !clientPresentation ? " (hors bilan)" : ""}.` : ""}
       {row.importLine !== null ? ` Ligne CSV ${row.importLine}.` : ""}
       {row.ticketLineNumber !== null ? ` Ligne Ticket Z ${row.ticketLineNumber}.` : ""}</p>
     {row.ticketBatch && <div className="ticket-review-layout">
@@ -142,7 +145,7 @@ function PendingContribution({ row, items, ticketPreview, onReview }: {
     </label>}
     {lookup && <p role="status">Vérification d’une vente déjà enregistrée…</p>}
     {lookupError && <p role="alert">Ventes du jour indisponibles : {lookupError} Aucune décision de remplacement ne peut être prise sans cette vérification.</p>}
-    {currentSale ? <p>Vente actuellement enregistrée : {currentSale.quantity} unité(s), {sourceLabel(currentSale.source)}.</p> :
+    {currentSale ? <p>Vente actuellement enregistrée : {currentSale.quantity} unité(s), {sourceLabel(currentSale.source, clientPresentation)}.</p> :
       !row.sourceRefunded && saleChecked && <p>Aucune vente enregistrée pour cet article et ce service ; l’apport restera en attente tant que vous ne le confirmez pas.</p>}
     <label htmlFor={`pos-review-reason-${row.id}`}>Motif de réconciliation, sans donnée personnelle<textarea id={`pos-review-reason-${row.id}`} required maxLength={240} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
     <div className="sales-actions">

@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { useBeforeUnloadWarning } from "../../hooks/useBeforeUnloadWarning";
 import { useBlocker, useLocation } from "react-router-dom";
@@ -17,6 +18,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
   onCandidatesSaved: (serviceDate: string) => Promise<void>;
   onPreviewChanged: (preview: TicketPreview | null) => void;
 }) {
+  const clientPresentation = useClientPresentation();
   const [batches, setBatches] = useState<TicketZBatch[]>([]);
   const [batch, setBatch] = useState<TicketZBatch | null>(null);
   const [preview, setPreview] = useState<TicketPreview | null>(null);
@@ -181,7 +183,7 @@ export default function SalesTicketImport({ onCandidatesSaved, onPreviewChanged 
     {!listError && batches.length > 0 && <details className="sales-disclosure"><summary>Tickets et transcriptions récents ({batches.length})</summary>
       <ul className="sales-contribution-history">{batches.map((row) => <li key={row.id}>
         <strong>{row.serviceDate ?? "Date de service à vérifier"} · {statusLabel[row.status]}</strong>
-        <span>{row.recordCount} ligne(s) · {row.provenance === "demo_simulation" ? "hors bilan" : "donnée transcrite"} · empreinte {row.contentHash.slice(0, 12)}… · original non conservé</span>
+        <span>{row.recordCount} ligne(s) · {row.provenance === "demo_simulation" && !clientPresentation ? "hors bilan" : "donnée transcrite"} · empreinte {row.contentHash.slice(0, 12)}… · original non conservé</span>
         {(row.status === "uploaded" || row.status === "no_details") && <Button type="button" variant="outline" disabled={saving || loading || deleting} onClick={() => void removeBatch(row.id)}>Supprimer ce brouillon</Button>}
       </li>)}</ul>
     </details>}

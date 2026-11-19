@@ -2,10 +2,11 @@ import { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { z } from "zod";
 import { restaurantSchema } from "./restaurantSchema.js";
-import { sessionCookieName } from "../config/env.js";
+import { env, sessionCookieName } from "../config/env.js";
 import { getUserBySessionToken } from "../application/auth/authService.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { resolveWorkspace, workspaceCapabilities } from "../application/workspace/workspaceIdentity.js";
+import { findLocalCamilleRestaurant, localCamilleRestaurantName } from "../application/workspace/localCamilleWorkspace.js";
 
 const stepSchema = z.enum(["team", "suppliers", "review"]);
 const progressSchema = z.object({ version: z.literal(1), step: stepSchema.nullable() }).strict();
@@ -21,8 +22,11 @@ setupRoutes.get("/", async (req, res) => {
   const workspace = await resolveWorkspace(user.id);
   const document = workspace?.role === "owner" ? await prisma.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId: workspace.restaurantId, kind: "onboarding" } } }) : null;
   const step = document ? progressSchema.parse(document.data).step : null;
+  const presentationId = env.WORKSHOP_IMPORT_RESTAURANT_ID ??
+    (workspace?.restaurantName === localCamilleRestaurantName ? (await findLocalCamilleRestaurant())?.restaurantId : undefined);
   res.json({ configured: workspace !== null, userId: user.id, step, revision: document?.revision ?? 0,
-    role: workspace?.role ?? null, restaurantName: workspace?.restaurantName ?? null, capabilities: workspace ? workspaceCapabilities(workspace.role) : null });
+    role: workspace?.role ?? null, restaurantName: workspace?.restaurantName ?? null, capabilities: workspace ? workspaceCapabilities(workspace.role) : null,
+    clientPresentation: workspace !== null && workspace.restaurantId === presentationId });
 });
 setupRoutes.post("/", async (req, res, next) => {
   try {

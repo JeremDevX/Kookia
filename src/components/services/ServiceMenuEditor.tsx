@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useClientPresentation } from "../../features/members/workspaceContext";
+import { displayServiceNote } from "../../features/services/serviceNotePresentation";
 import type { ServiceSlot } from "../../../shared/serviceCalendar";
 import { menuInputSchema, type MenuEntryInput, type ServiceMenu } from "../../../shared/serviceOperations";
 import type { Recipe } from "../../types";
@@ -9,19 +11,24 @@ import ServiceMenuEntryEditor from "./ServiceMenuEntryEditor";
 import { menuDraft, newMenuEntry } from "./serviceMenuDraft";
 import "./ServiceOperations.css";
 export function ServiceMenuHistory({ history }: { history: ServiceMenu[] }) {
+  const clientPresentation = useClientPresentation();
   return <details><summary>Historique des cartes ({history.length})</summary>
     {!history.length && <p>Aucune version enregistrée.</p>}
-    <ol>{history.map((menu) => <li key={menu.id ?? menu.revision}>
+    <ol>{history.map((menu) => {
+      const note = displayServiceNote(menu.note, clientPresentation);
+      return <li key={menu.id ?? menu.revision}>
       <strong>Version {menu.revision}</strong> · {menu.createdAt ? new Date(menu.createdAt).toLocaleString("fr-FR") : "date inconnue"}
       <ul>{menu.entries.map((entry) => <li key={entry.id}>{entry.name} · {entry.category} · {(entry.priceCents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })} · {entry.available ? "disponible" : "indisponible"}
         <ul>{entry.components.map((part) => <li key={part.recipeId}>{part.recipeName} · {part.portions} portions · recette version {part.recipeVersion}</li>)}</ul>
-      </li>)}</ul>{menu.note && <p>{menu.note}</p>}
-    </li>)}</ol>
+      </li>)}</ul>{note && <p>{note}</p>}
+      </li>;
+    })}</ol>
   </details>;
 }
 export default function ServiceMenuEditor({ date, slot, loadRecipes, onChanged, onDirtyChange }: {
   date: string; slot: ServiceSlot; loadRecipes: () => Promise<Recipe[]>; onChanged?: () => void; onDirtyChange?: (dirty: boolean) => void;
 }) {
+  const clientPresentation = useClientPresentation();
   const [menu, setMenu] = useState<ServiceMenu | null>(null);
   const [history, setHistory] = useState<ServiceMenu[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -77,7 +84,7 @@ export default function ServiceMenuEditor({ date, slot, loadRecipes, onChanged, 
         onChange={(next) => { setMessage(""); setDirty(true); setEntries((current) => current.map((row) => row.id === next.id ? next : row)); }}
         onRemove={() => { setMessage(""); setDirty(true); setEntries((current) => current.filter((row) => row.id !== entry.id)); }} />)}
       <Button type="button" variant="outline" disabled={saving || entries.length >= 60} onClick={() => { setMessage(""); setDirty(true); setEntries((current) => [...current, newMenuEntry()]); }}>Ajouter un choix</Button>
-      <label>Notes de la carte<textarea maxLength={2000} value={note} disabled={saving} onChange={(event) => { setMessage(""); setDirty(true); setNote(event.target.value); }} /></label>
+      <label>Notes de la carte<textarea maxLength={2000} value={note === menu.note ? displayServiceNote(note, clientPresentation) : note} disabled={saving} onChange={(event) => { setMessage(""); setDirty(true); setNote(event.target.value); }} /></label>
       <Button type="submit" disabled={saving}>{saving ? "Enregistrement…" : "Valider et enregistrer la carte"}</Button>
     </form>}
     {!loading && <Button type="button" variant="outline" disabled={saving} onClick={() => { if (!dirty || window.confirm("Les modifications non enregistrées de la carte seront perdues. Recharger la carte ?")) setReload((value) => value + 1); }}>Recharger / annuler les modifications</Button>}

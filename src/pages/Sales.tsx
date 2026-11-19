@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../features/members/workspaceContext";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Button from "../components/common/Button";
@@ -20,6 +21,7 @@ const initialFrom = () => shiftDays(formatLocalISODate(), -29);
 const message = (error: unknown) => error instanceof Error ? error.message : "Réessayez.";
 
 export default function Sales() {
+  const clientPresentation = useClientPresentation();
   const today = formatLocalISODate();
   const [salesRevision, setSalesRevision] = useState(0);
   const [ticketPreview, setTicketPreview] = useState<TicketPreview | null>(null);
@@ -27,6 +29,7 @@ export default function Sales() {
   const { history, latest, catalog, items, rememberItems } = useSalesReads(from, to);
   const sales = history.data ?? [];
   const latestService = latest.data;
+  const latestServiceSource = latestService && describeServiceSources(latestService.sources, clientPresentation);
   const [values, setValues] = useState<SaleValues>({ saleItemId: "", serviceDate: today, quantity: 1 });
   const [itemName, setItemName] = useState("");
   const [itemSaving, setItemSaving] = useState(false);
@@ -116,7 +119,7 @@ export default function Sales() {
         }}>Réessayer</Button></div> : latestService ?
         <p>Dernière date de service renseignée : {new Date(`${latestService.serviceDate}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })} · {latestService.status === "open" ? "restaurant ouvert" : "restaurant fermé"} · couverture {describeServiceCoverage(latestService.coverage).toLocaleLowerCase("fr-FR")}.
           {latestService.status === "closed" ? " Aucune activité n’était prévue." : latestService.coverage === "complete" && latestService.salesCount === 0 ? " Zéro vente observé après revue complète." : latestService.coverage !== "complete" ? " " + latestService.salesCount + " ligne(s) enregistrée(s) ; les absences restent inconnues." : " " + latestService.salesCount + " ligne(s) enregistrée(s)."}
-          {latestService.salesCount > 0 ? ` Sources : ${describeServiceSources(latestService.sources)}.` : ""}</p> :
+          {latestService.salesCount > 0 && latestServiceSource ? ` Sources : ${latestServiceSource}.` : ""}</p> :
         <p>Aucun jour de service renseigné. Une absence de donnée n'est ni un jour fermé ni zéro vente.</p>}
       <div className="sales-actions"><a href="#sales-import-title">Importer un CSV Kookia</a><a href="#sales-ticket-title">Transcrire un Ticket Z</a><a href="#sales-entry-title">Saisir une vente</a>
         <Link to="/predictions">Voir les prévisions</Link></div>
@@ -181,7 +184,7 @@ export default function Sales() {
           <th>Date de service</th><th>Article vendu</th><th>Quantité</th><th>Provenance</th><th>Dernière modification</th><th>Action</th>
         </tr></thead><tbody>{sales.map((sale) => <tr key={sale.id}>
           <td>{sale.serviceDate}</td><td>{sale.saleItemName}</td><td>{sale.quantity} unités</td>
-          <td>{sale.source === "demo_simulation" ? "Hors bilan" : sale.source === "manual" ? "Saisie manuelle" : sale.source === "pos" ? sale.revision ? "Caisse POS corrigée" : "Caisse POS" : sale.source === "ticket_z" ? "Ticket Z vérifié" : sale.revision ? "Import CSV corrigé manuellement" : "Import CSV"}</td>
+          <td>{sale.source === "demo_simulation" ? (clientPresentation ? "Import" : "Hors bilan") : sale.source === "manual" ? "Saisie manuelle" : sale.source === "pos" ? sale.revision ? "Caisse POS corrigée" : "Caisse POS" : sale.source === "ticket_z" ? "Ticket Z vérifié" : sale.revision ? "Import CSV corrigé manuellement" : "Import CSV"}</td>
           <td>{new Date(sale.updatedAt).toLocaleString("fr-FR")}</td>
           <td><div className="sales-history-actions"><Button type="button" size="sm" variant="outline" onClick={(event) => { editOrigin.current = event.currentTarget; setEditing(sale); setCorrectionOperationId(crypto.randomUUID()); setValues({ saleItemId: sale.saleItemId, serviceDate: sale.serviceDate, quantity: sale.quantity }); setEditReason(""); setError(""); setStatus(""); document.getElementById("sales-entry-title")?.scrollIntoView(); }}>Corriger</Button>
             <SaleServiceAllocation sale={sale} onChanged={() => setSalesRevision((current) => current + 1)} />

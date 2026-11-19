@@ -1,3 +1,5 @@
+import { displayForecastNote } from "../services/forecastPresentation";
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { isPurchaseSuggestionHandled } from "../../features/orders/purchaseForecastPresentation";
 import { Link } from "react-router-dom";
 import { Check, Plus, X } from "lucide-react";
@@ -22,6 +24,7 @@ interface Props {
 }
 
 export default function PurchaseSuggestionCard({ item, value, inCart, busy, saving, onChange, onDecide, limited = false }: Props) {
+  const clientPresentation = useClientPresentation();
   const valid = isValidOrderQuantity(value, item.orderStep);
   const editable = item.canAdd && !isPurchaseSuggestionHandled(item, inCart);
   return <tr className="purchase-suggestion-card">
@@ -55,7 +58,7 @@ export default function PurchaseSuggestionCard({ item, value, inCart, busy, savi
     {item.decision?.orderId ? <p className="purchase-item-status">Commande enregistrée. <Link to={limited ? `/orders?view=receipts#order-${item.decision.orderId}` : `/orders#order-${item.decision.orderId}`}>Voir la commande</Link></p>
       : inCart ? null
       : item.decision?.kind === "excluded" ? <p className="purchase-item-status">Écarté de cette proposition.</p>
-      : !item.canAdd && <p className="purchase-item-status">{item.status === "covered" ? item.reason : item.status === "needs_stock_count" || item.status === "unit_mismatch" ? <><Link to={limited ? "/stocks" : `/stocks?product=${encodeURIComponent(item.productId)}`}>Vérifier {item.status === "unit_mismatch" ? "l’unité" : "le stock"} de {item.productName}</Link> avant de commander.</> : item.status === "supplier_constraints_missing" ? <>{item.deliveryHorizon.status === "unknown" ? item.deliveryHorizon.reason : item.reason} {limited ? "Demandez au propriétaire de vérifier les paramètres." : <>{item.deliveryHorizon.status === "unknown" && item.deliveryHorizon.code === "opening_days_incompatible" && <><Link to="/settings?section=restaurant">Paramètres du restaurant</Link> · </>}<Link to="/settings?section=suppliers">Paramètres fournisseur</Link> · <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Conditionnement du produit</Link></>}</> : item.reason}</p>}
+      : !item.canAdd && <p className="purchase-item-status">{item.status === "covered" ? item.reason : item.status === "needs_stock_count" || item.status === "unit_mismatch" ? <><Link to={limited ? "/stocks" : `/stocks?product=${encodeURIComponent(item.productId)}`}>Vérifier {item.status === "unit_mismatch" ? "l’unité" : "le stock"} de {item.productName}</Link> avant de commander.</> : item.status === "supplier_constraints_missing" ? <>{item.deliveryHorizon.status === "unknown" ? item.deliveryHorizon.reason : item.reason} {limited ? "Demandez au propriétaire de vérifier les paramètres." : <>{item.deliveryHorizon.status === "unknown" && item.deliveryHorizon.code === "opening_days_incompatible" && <><Link to="/settings?section=restaurant">Paramètres du restaurant</Link> · </>}<Link to="/settings?section=suppliers">Paramètres fournisseur</Link> · <Link to={`/stocks?product=${encodeURIComponent(item.productId)}`}>Conditionnement du produit</Link></>}</> : displayForecastNote(item.reason, clientPresentation)}</p>}
     </td>
   </tr>;
 }

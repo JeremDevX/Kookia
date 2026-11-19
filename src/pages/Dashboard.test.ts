@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
 import Dashboard from "./Dashboard";
 import type { WorkshopForecast } from "../../shared/workshopForecast";
+import { WorkspaceContext } from "../features/members/workspaceContext";
 
 const state = vi.hoisted(() => ({ productsLoading: false, productsError: null as string | null, forecast: null as WorkshopForecast | null }));
 vi.mock("../features/inventory/useInventoryCatalog", () => ({ useInventoryCatalog: () => ({ products: [], loading: state.productsLoading, error: state.productsError, refetch: vi.fn() }) }));
@@ -13,7 +14,10 @@ vi.mock("../context/ToastContext", () => ({ useToast: () => ({ addToast: vi.fn()
 vi.mock("../components/dashboard/TodayPurchaseForecast", () => ({ default: () => "Prévisions d’achat opérationnelles" }));
 vi.mock("../components/dashboard/TodayContext", () => ({ default: () => null }));
 
-const render = () => renderToStaticMarkup(createElement(MemoryRouter, null, createElement(Dashboard)));
+const render = (clientPresentation = false) => renderToStaticMarkup(createElement(MemoryRouter, null,
+  createElement(WorkspaceContext.Provider, { value: {
+    configured: true, step: null, revision: 0, role: "owner", restaurantName: "Restaurant", capabilities: null, clientPresentation,
+  } }, createElement(Dashboard))));
 beforeEach(() => { state.productsLoading = false; state.productsError = null; state.forecast = null; });
 
 it("indique l’absence de produits dans la carte et les indicateurs", () => {
@@ -59,6 +63,11 @@ it("montre couverts, chiffre d’affaires et quantités simulées sans lien de c
   expect(html).toContain("Maraîcher de test · Livraison estimée le 20/11/2026");
   expect(html).not.toContain("Prévisions d’achat opérationnelles");
   expect(html).not.toContain('href="/orders?view=prepare#purchase-suggestions-title"');
+  const presentation = render(true);
+  expect(presentation).not.toMatch(/simulation|scénario/i);
+  expect(presentation).toContain("Couverts prévus</span><strong>42</strong></div>");
+  expect(presentation).toContain('href="#today-workshop-purchases-title"');
+  expect(presentation).toContain("Carottes</strong><strong>1,5 kg");
 });
 
 it("affiche une journée simulée à zéro et une liste de produits vide", () => {
@@ -68,6 +77,10 @@ it("affiche une journée simulée à zéro et une liste de produits vide", () =>
   expect(html).toContain("Couverts prévus</span><strong>0</strong><small>Simulation");
   expect(html).toContain("Aucun couvert prévu ce jour dans le scénario.");
   expect(html).toContain("Aucun produit à prévoir dans le scénario du jour.");
+  const presentation = render(true);
+  expect(presentation).not.toMatch(/simulation|scénario/i);
+  expect(presentation).toContain("Aucun couvert prévu ce jour.");
+  expect(presentation).toContain("Aucun produit à prévoir aujourd’hui.");
 });
 
 it("ouvre le planning demandé et permet de revenir au tableau de bord", () => {

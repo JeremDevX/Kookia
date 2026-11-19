@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { OperationalForecast } from "../../../shared/operationalForecast";
@@ -5,12 +6,14 @@ import { getOperationalForecast } from "../../services/serviceOperationsService"
 import { forecastWeek } from "./forecastNeedsDate";
 import { scrollScrollableRegionWithArrowKeys } from "../../utils/scrollableRegion";
 import Button from "../common/Button";
+import { displayForecastNote } from "../services/forecastPresentation";
 import ForecastWeatherSummary from "../services/ForecastWeatherSummary";
 
 const date = (value: string) => new Date(`${value}T12:00:00Z`).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
 type Result = { status: "loading" } | { status: "error"; message: string } | { status: "success"; forecast: OperationalForecast };
 
 export function ForecastNeedsContent({ result, retry }: { result: Result; retry: () => void }) {
+  const clientPresentation = useClientPresentation();
   if (result.status === "loading") return <p role="status">Calcul des besoins prévus…</p>;
   if (result.status === "error") return <div role="alert"><p>Besoins indisponibles : {result.message}</p>
     <Button type="button" variant="outline" onClick={retry}>Réessayer</Button></div>;
@@ -21,7 +24,7 @@ export function ForecastNeedsContent({ result, retry }: { result: Result; retry:
     <p>Estimations issues des ventes complètes par service et des cartes datées. Elles ne tiennent pas compte du stock et ne créent aucune commande.</p>
     {forecast.blockers.length > 0 && <div className="sales-baseline-guidance"><h3>Estimation partielle</h3>
       <p>Certains besoins ne peuvent pas être calculés. Vérifiez les horaires, les cartes et les ventes des services.</p>
-      <details><summary>Voir les limites</summary><ul>{forecast.blockers.map((blocker, index) => <li key={index}>{blocker}</li>)}</ul></details>
+      <details><summary>Voir les limites</summary><ul>{forecast.blockers.map((blocker, index) => <li key={index}>{displayForecastNote(blocker, clientPresentation)}</li>)}</ul></details>
       <Link to="/services">Vérifier les services</Link></div>}
     {forecast.ingredientNeeds.length ? <div className="sales-table-wrap forecast-needs-table" role="region" aria-label="Besoins estimés en ingrédients" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
       <table className="sales-table"><thead><tr><th scope="col">Produit</th><th scope="col">Besoin estimé</th></tr></thead>
@@ -33,8 +36,8 @@ export function ForecastNeedsContent({ result, retry }: { result: Result; retry:
       {weather.map((service) => <div key={`${service.date}:${service.slot}`}><h3>{date(service.date)} · {service.slot === "lunch" ? "midi" : "soir"}</h3>
         <ForecastWeatherSummary adjustment={service.weatherAdjustment} /></div>)}</details>}
     <details className="sales-baseline-method"><summary>Comprendre les estimations</summary>
-      <p>Source : {forecast.provenance === "recorded_sales" ? "ventes enregistrées" : forecast.provenance === "demo_simulation" ? "espace de démonstration" : "historique de provenance mixte"} · {forecast.excludedServices} services exclus.</p>
-      <ul>{forecast.assumptions.map((assumption, index) => <li key={index}>{assumption}</li>)}</ul>
+      <p>Source : {forecast.provenance === "recorded_sales" ? "ventes enregistrées" : forecast.provenance === "demo_simulation" ? (clientPresentation ? "estimations historiques" : "espace de démonstration") : "historique de provenance mixte"} · {forecast.excludedServices} services exclus.</p>
+      <ul>{forecast.assumptions.map((assumption, index) => <li key={index}>{displayForecastNote(assumption, clientPresentation)}</li>)}</ul>
     </details>
   </>;
 }

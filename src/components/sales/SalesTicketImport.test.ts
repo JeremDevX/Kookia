@@ -5,6 +5,7 @@ import SalesTicketImport from "./SalesTicketImport";
 const state = vi.hoisted(() => ({ index: 0, values: [] as unknown[], setters: [] as ReturnType<typeof vi.fn>[], block: undefined as unknown, effects: [] as Array<() => unknown>, blocker: { state: "unblocked" } as unknown }));
 const api = vi.hoisted(() => ({ createTicketZCandidates: vi.fn(), deleteTicketZBatch: vi.fn(), getTicketZBatches: vi.fn(), uploadTicketZFile: vi.fn() }));
 vi.mock("../../services/salesService", () => api);
+vi.mock("../../features/members/workspaceContext", () => ({ useClientPresentation: () => false }));
 vi.mock("react", async (original) => ({ ...await original<typeof import("react")>(),
   useState: () => { const i = state.index++; return [state.values[i], state.setters[i]]; },
   useEffect: (effect: () => unknown) => { state.effects.push(effect); }, useCallback: (fn: unknown) => fn, useRef: (initial: unknown) => ({ current: initial }),

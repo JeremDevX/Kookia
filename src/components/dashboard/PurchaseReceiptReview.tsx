@@ -1,4 +1,6 @@
 import { ApiError } from "../../config/api";
+import { useClientPresentation } from "../../features/members/workspaceContext";
+import { invoiceReceiptError } from "../../features/orders/invoiceReceiptFeedback";
 import { consumeFocusRestoreRequest } from "../../utils/focusRestoration";
 import { confirmInvoiceDuplicates } from "../../services/invoiceDuplicates";
 import { useEffect, useRef, useState } from "react";
@@ -18,6 +20,7 @@ const validQuantity = (value: string) => /^\d+(?:\.\d{1,3})?$/.test(value.trim()
 const equalPrice = (left: number, right: number) => Math.round(left * 10_000) === Math.round(right * 10_000);
 
 export default function PurchaseReceiptReview({ order, orderStateCurrent, onSaved, onNotice, onSavingChange, loadReceiptInvoices }: PurchaseReceiptReviewProps) {
+  const clientPresentation = useClientPresentation();
   const { addToast } = useToast();
   const mounted = useRef(true);
   const [open, setOpen] = useState(false);
@@ -148,7 +151,7 @@ export default function PurchaseReceiptReview({ order, orderStateCurrent, onSave
       saveFocusPending.current = false;
       onSaved();
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "Réception non enregistrée.";
+      const message = invoiceReceiptError(cause, "Réception non enregistrée.", clientPresentation);
       if (!mounted.current) { addToast("info", "Réception non enregistrée", message); return; }
       if (saveFocusPending.current && document.activeElement === document.body) summaryRef.current?.focus();
       saveFocusPending.current = false;

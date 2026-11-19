@@ -41,12 +41,37 @@ async function fixtureRestaurant(id: string, ownerId: string) {
   } });
 }
 
+it("recognizes the existing Camille workspace from its unique archive when no workshop target is configured", async () => {
+  const owner = await account(), other = await account();
+  const restaurantId = randomUUID(), otherRestaurantId = randomUUID();
+  for (const [id, userId] of [[restaurantId, owner.userId], [otherRestaurantId, other.userId]]) {
+    await fixtureRestaurant(id, userId);
+    await prisma.restaurant.update({ where: { id }, data: { name: "La Pizzeria de Camille" } });
+  }
+  const archive = (id: string) => Array.from({ length: 431 }, (_, number) => ({
+    restaurantId: id, kind: `source-invoice:fixture-${number}`, data: {},
+  }));
+  await prisma.workspaceDocument.createMany({ data: archive(restaurantId) });
+  try {
+    env.WORKSHOP_IMPORT_RESTAURANT_ID = undefined;
+    expect((await owner.agent.get("/api/setup").expect(200)).body.clientPresentation).toBe(true);
+    expect((await other.agent.get("/api/setup").expect(200)).body.clientPresentation).toBe(false);
+    await prisma.workspaceDocument.createMany({ data: archive(otherRestaurantId) });
+    expect((await owner.agent.get("/api/setup").expect(200)).body.clientPresentation).toBe(false);
+  } finally {
+    env.WORKSHOP_IMPORT_RESTAURANT_ID = targetId;
+  }
+});
+
 it("publishes only a current forecast for the authorized test restaurant and owner", async () => {
   const owner = await account(), other = await account(), member = await account();
   const otherRestaurantId = randomUUID();
   await fixtureRestaurant(targetId, owner.userId);
   await fixtureRestaurant(otherRestaurantId, other.userId);
   await prisma.membership.create({ data: { userId: member.userId, restaurantId: targetId, role: "chef" } });
+  expect((await owner.agent.get("/api/setup").expect(200)).body.clientPresentation).toBe(true);
+  expect((await member.agent.get("/api/setup").expect(200)).body.clientPresentation).toBe(true);
+  expect((await other.agent.get("/api/setup").expect(200)).body.clientPresentation).toBe(false);
   const date = formatParisDate(), basedOnDate = addCalendarDays(date, -1);
   const readPath = "/api/workspace/dashboard/forecast";
   const writePath = `/api/integrations/workshop/forecast/${date}`;

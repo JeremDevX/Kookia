@@ -78,7 +78,7 @@ describe("setup API", () => {
   it("records a revision-checked step transition and rereads the saved state", async () => {
     request.mockResolvedValueOnce({ configured: true, userId: "account-id", step: "suppliers", revision: 2, ...owner });
     request.mockResolvedValueOnce({ configured: true, userId: "account-id", step: "suppliers", revision: 2, ...owner });
-    await expect(changeSetupStep("account-id", "team", "suppliers", 1, vi.fn())).resolves.toEqual({ configured: true, step: "suppliers", revision: 2, ...owner });
+    await expect(changeSetupStep("account-id", "team", "suppliers", 1, vi.fn())).resolves.toEqual({ configured: true, step: "suppliers", revision: 2, clientPresentation: false, ...owner });
     expect(request).toHaveBeenNthCalledWith(1, "/setup/step", { method: "PATCH", body: JSON.stringify({ expectedUserId: "account-id", expectedStep: "team", nextStep: "suppliers", expectedRevision: 1 }) });
   });
   it("never accepts malformed progression as finished", async () => {

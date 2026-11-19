@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { AlertTriangle, ChefHat, Clock } from "lucide-react";
 import Badge from "../common/Badge";
 import Button from "../common/Button";
@@ -19,6 +20,7 @@ export default function RecipeProductionHistory({ recipes, productions, today, l
   onEdit: (recipe: Recipe, trigger: HTMLButtonElement) => void;
   onRefusal: (recipe: Recipe) => void;
 }) {
+  const clientPresentation = useClientPresentation();
   const weekStart = startOfWeek(today);
   const nextWeekStart = shiftDays(weekStart, 7);
   const historyRecipes = recipes.filter(({ lastMade }) => {
@@ -27,7 +29,7 @@ export default function RecipeProductionHistory({ recipes, productions, today, l
   });
 
   return <>
-    {productions.some((item) => isScenarioProduction(item.operationId)) && <p className="workspace-subtitle" role="note">
+    {!clientPresentation && productions.some((item) => isScenarioProduction(item.operationId)) && <p className="workspace-subtitle" role="note">
       Le journal contient des enregistrements de QA isolés ; ils ne décrivent pas des productions observées du restaurant.
     </p>}
     {!recipeError && <div className="recipes-grid">
@@ -94,10 +96,10 @@ export default function RecipeProductionHistory({ recipes, productions, today, l
       {productions.map((item) => {
         const visibleNote = productionNoteForDisplay(item);
         const label = item.kind === "refusal" ? "Demandes refusées" : item.kind === "record" ? "Préparation notée — stock inchangé"
-          : item.simulated ? "Production simulée" : "Production réalisée — stock déduit";
+          : item.simulated ? (clientPresentation ? "Production à rapprocher" : "Production simulée") : "Production réalisée — stock déduit";
         return <Card key={item.id}>
           <strong>{item.recipeName}</strong>
-          <p>{item.portions} portions · {productionDate(item.date)} · {label}{item.simulated ? " · Hors bilan" : ""}</p>
+          <p>{item.portions} portions · {productionDate(item.date)} · {label}{item.simulated && !clientPresentation ? " · Hors bilan" : ""}</p>
           {item.recipeVersion && <p>Version recette {item.recipeVersion.version} · rendement {item.recipeVersion.yieldPortions} portions · effet {item.recipeVersion.effectiveFrom ? productionDate(item.recipeVersion.effectiveFrom) : "date historique inconnue"}</p>}
           {visibleNote && <p>{visibleNote}</p>}
         </Card>;

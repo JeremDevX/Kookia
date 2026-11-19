@@ -4,7 +4,7 @@ import type { Restaurant } from "../../services/restaurantService";
 export type SetupStep = "team" | "suppliers" | "review";
 type WorkspaceRole = "owner" | "chef" | "kitchen";
 interface WorkspaceCapabilities { viewStock: boolean; countStock: boolean; receiveOrders: boolean; validateOrders: boolean; manageSettings: boolean; }
-export interface SetupProgress { configured: boolean; step: SetupStep | null; revision: number; role: WorkspaceRole | null; restaurantName: string | null; capabilities: WorkspaceCapabilities | null; }
+export interface SetupProgress { configured: boolean; step: SetupStep | null; revision: number; role: WorkspaceRole | null; restaurantName: string | null; capabilities: WorkspaceCapabilities | null; clientPresentation: boolean; }
 
 export async function checkSetup(expectedUserId: string, refreshUser: () => Promise<void>): Promise<SetupProgress> {
   try {
@@ -24,7 +24,8 @@ export async function checkSetup(expectedUserId: string, refreshUser: () => Prom
       await refreshUser();
       throw new Error("La session a changé. Réessayez.");
     }
-    return { configured: result.configured, step: result.step, revision: result.revision, role: result.role, restaurantName: result.restaurantName, capabilities: capabilities as WorkspaceCapabilities | null };
+    return { configured: result.configured, step: result.step, revision: result.revision, role: result.role, restaurantName: result.restaurantName, capabilities: capabilities as WorkspaceCapabilities | null,
+      clientPresentation: result.configured && "clientPresentation" in result && result.clientPresentation === true };
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) await refreshUser();
     throw error;

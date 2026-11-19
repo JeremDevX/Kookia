@@ -1,4 +1,4 @@
-import { createContext, lazy, useContext, type ReactNode } from "react";
+import { lazy, type ReactNode } from "react";
 import { Link, Outlet, useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import Layout from "../../components/layout/Layout";
 import { CartProvider } from "../../context/CartContext";
@@ -8,13 +8,12 @@ import type { SetupProgress } from "../setup/setupApi";
 import { getOrderView } from "../orders/orderNavigation";
 import MemberShell from "./MemberShell";
 import MemberHome from "./MemberHome";
+import { WorkspaceContext, useWorkspace } from "./workspaceContext";
 
 const MemberStocks = lazy(() => import("./MemberStocks"));
 const MemberReceipts = lazy(() => import("./MemberReceipts"));
 const MemberOrders = lazy(() => import("./MemberOrders"));
 
-const WorkspaceContext = createContext<SetupProgress | null>(null);
-const useWorkspace = () => { const value = useContext(WorkspaceContext); if (!value) throw new Error("Workspace unavailable"); return value; };
 export function WorkspaceLayout() {
   const workspace = useOutletContext<SetupProgress>();
   const { logout } = useAuth();

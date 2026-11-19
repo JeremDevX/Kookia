@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../../features/members/workspaceContext";
 import { useId } from "react";
 import Button from "../common/Button";
 import { serviceSlotLabels } from "../../../shared/serviceCalendar";
@@ -9,10 +10,11 @@ import "./ServiceWeather.css";
 const number = (value: number | null | undefined) => value == null ? "Inconnu" : value.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
 const dateTime = (value: string) => new Date(value).toLocaleString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "short", timeStyle: "short" });
 export function WeatherSummary({ weather }: { weather: ServiceWeather }) {
+  const clientPresentation = useClientPresentation();
   return <>
     {weather.position && <p>{weather.position.place.name} · {weather.position.place.region} · {weather.position.place.country} <small>(prévision à l’échelle de la commune)</small></p>}
     {weather.window && <p>{weather.window.basis === "day" ? "Journée entière" : `${serviceSlotLabels[weather.slot]} · ${weather.window.opensAt}–${weather.window.closesAt}`} · heure de Paris</p>}
-    {weather.provenance === "fixture" && <p>Données de test, sans observation météo réelle.</p>}
+    {weather.provenance === "fixture" && <p>{clientPresentation ? "Valeurs indicatives, sans relevé météo." : "Données de test, sans observation météo réelle."}</p>}
     {weather.reason && <p role="status">{weather.reason}</p>}
     {weather.summary && <>
       {weather.window?.basis === "day" && <p><strong>{weatherCondition(weather.summary.weatherCode).label}</strong> · prévision de la journée.</p>}

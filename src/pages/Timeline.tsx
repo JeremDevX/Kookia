@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../features/members/workspaceContext";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { consumeFocusRestoreRequest } from "../utils/focusRestoration";
 import type { FormEvent } from "react";
@@ -48,12 +49,22 @@ function dayKey(value: string | null) {
   return Number.isNaN(date.getTime()) ? "unknown" : formatLocalISODate(date);
 }
 
+function presentationQualifier(qualifier: string | undefined) {
+  return qualifier?.replace(" et reste hors bilan.", ".")
+    .replace("Cette vente est hors bilan.", "Vente exclue du calcul des ventes enregistrées.")
+    .replace("Cet état de service est hors bilan et ne complète pas le calendrier enregistré.", "Cet état de service ne complète pas le calendrier enregistré.")
+    .replace("hors bilan des livraisons", "sans effet sur le bilan des livraisons")
+    .replace("Décision liée à des éléments hors bilan ; elle ne vaut pas un achat confirmé.", "Achat à confirmer.");
+}
+
 function eventTime(event: TimelineEvent) {
   return event.effectiveAt && !/^\d{4}-\d{2}-\d{2}$/.test(event.effectiveAt)
     ? displayDate(event.effectiveAt, true) : displayDate(event.effectiveAt);
 }
 
 export default function Timeline() {
+  const clientPresentation = useClientPresentation();
+  const labels = clientPresentation ? { ...provenanceLabels, simulation: "Non retenu au bilan" } : provenanceLabels;
   const [searchParams, setSearchParams] = useSearchParams();
   const [today, setToday] = useState(() => formatLocalISODate(new Date()));
   const [from, setFrom] = useState(() => dateParam(searchParams, "from", `${today.slice(0, 4)}-01-01`));
@@ -199,9 +210,9 @@ export default function Timeline() {
 
     <section className="timeline-key" aria-label="Origine et niveau de preuve">
       <h2>Origine et niveau de preuve</h2>
-      {(Object.entries(provenanceLabels) as Array<[TimelineProvenance, string]>).map(([key, label]) =>
+      {(Object.entries(labels) as Array<[TimelineProvenance, string]>).map(([key, label]) =>
         <span className={`timeline-badge provenance-${key}`} key={key}>{label}</span>)}
-      <p>Une pièce d’archive ne confirme pas une livraison. Les éléments hors bilan et les hypothèses restent distincts des opérations enregistrées.</p>
+      <p>Une pièce d’archive ne confirme pas une livraison.{!clientPresentation && " Les éléments hors bilan et les hypothèses restent distincts des opérations enregistrées."}</p>
     </section>
 
     <form className="timeline-search" onSubmit={applySearch}>
@@ -230,15 +241,15 @@ export default function Timeline() {
             {events.map((event) => <li key={event.id}>
               <article className="timeline-event">
                 <div className="timeline-event-heading">
-                  <h3>{event.label}</h3><span className={`timeline-badge provenance-${event.provenance}`}>{provenanceLabels[event.provenance]}</span>
+                  <h3>{event.label}</h3><span className={`timeline-badge provenance-${event.provenance}`}>{labels[event.provenance]}</span>
                 </div>
-                <p>{event.detail}</p>
+                <p>{clientPresentation && event.kind === "service" ? event.detail.replace(" · origine hors bilan", "") : event.detail}</p>
                 <p className="timeline-event-times">
                   <span>Effet : {eventTime(event)}</span>
                   {event.knownAt && <span>Connu le : {displayDate(event.knownAt, true)}</span>}
                   {event.recordedAt && <span>Enregistré le : {displayDate(event.recordedAt, true)}</span>}
                 </p>
-                {event.qualifier && <p className="timeline-qualifier">{event.qualifier}</p>}
+                {event.qualifier && <p className="timeline-qualifier">{clientPresentation ? presentationQualifier(event.qualifier) : event.qualifier}</p>}
                 {event.href && <Link to={event.href} aria-label={`Ouvrir ${event.label} dans l’espace actuel`}>Ouvrir la rubrique actuelle</Link>}
               </article>
             </li>)}

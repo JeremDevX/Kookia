@@ -1,3 +1,4 @@
+import { useClientPresentation } from "../features/members/workspaceContext";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, BarChart3, BookOpen, Calendar, ClipboardList, ShoppingCart } from "lucide-react";
@@ -32,6 +33,7 @@ export default function Dashboard() {
 }
 
 function DashboardOverview() {
+  const clientPresentation = useClientPresentation();
   const today = formatLocalISODate(new Date());
   const thirtyDaysAgo = shiftDays(today, -29);
   const { addToast } = useToast();
@@ -41,6 +43,7 @@ function DashboardOverview() {
   const suggestedWorkshopProducts = workshopForecast?.products ?? [];
   const suggestedWorkshopCount = new Set(suggestedWorkshopProducts.map(product => product.name.normalize("NFC").toLocaleLowerCase("fr-FR"))).size;
   const [latestService, setLatestService] = useState<LatestService | null | undefined>(undefined);
+  const latestServiceSource = latestService && describeServiceSources(latestService.sources, clientPresentation);
   const [salesError, setSalesError] = useState("");
   const [salesReload, setSalesReload] = useState(0);
   const stockHeading = useRef<HTMLHeadingElement>(null);
@@ -145,10 +148,10 @@ function DashboardOverview() {
     </header>
 
     <div className="dashboard-metrics" aria-label="Situation du restaurant">
-      <div className="dashboard-metric"><span>Couverts prévus</span><strong>{workshopForecast ? formatQuantity(workshopForecast.covers) : "—"}</strong><small>{workshopForecast ? "Simulation" : "Prévision indisponible"}</small></div>
-      <div className={workshopForecast ? "dashboard-metric dashboard-revenue" : "dashboard-metric"}><span>Chiffre d’affaires estimé</span><strong>{workshopForecast ? formatRevenue(workshopForecast.revenueCents / 100) : "—"}</strong><small>{workshopForecast ? "Simulation" : "Estimation indisponible"}</small></div>
+      <div className="dashboard-metric"><span>Couverts prévus</span><strong>{workshopForecast ? formatQuantity(workshopForecast.covers) : "—"}</strong>{(!workshopForecast || !clientPresentation) && <small>{workshopForecast ? "Simulation" : "Prévision indisponible"}</small>}</div>
+      <div className={workshopForecast ? "dashboard-metric dashboard-revenue" : "dashboard-metric"}><span>Chiffre d’affaires estimé</span><strong>{workshopForecast ? formatRevenue(workshopForecast.revenueCents / 100) : "—"}</strong>{(!workshopForecast || !clientPresentation) && <small>{workshopForecast ? "Simulation" : "Estimation indisponible"}</small>}</div>
       <Link to="/stocks?stockView=review" className="dashboard-metric"><span>Alertes de stock</span><strong>{productsLoading || productsError || products.length === 0 ? "—" : stockToReview.length}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : products.length === 0 ? "Aucun produit enregistré" : "Produits à vérifier"}</small></Link>
-      {workshopForecast ? <a href="#today-workshop-purchases-title" className="dashboard-metric"><span>Produits suggérés</span><strong>{suggestedWorkshopCount}</strong><small>Simulation</small></a>
+      {workshopForecast ? <a href="#today-workshop-purchases-title" className="dashboard-metric"><span>Produits suggérés</span><strong>{suggestedWorkshopCount}</strong>{!clientPresentation && <small>Simulation</small>}</a>
         : <Link to={purchasePreparationHref} className="dashboard-metric"><span>Produits suggérés</span><strong>{purchaseIndicator.value}</strong><small>{purchaseIndicator.detail}</small></Link>}
     </div>
 
@@ -186,7 +189,7 @@ function DashboardOverview() {
           requestAnimationFrame(() => salesHeading.current?.focus());
         }}>Réessayer</Button></div> : latestService === undefined ? <p role="status">Chargement des ventes…</p> :
           <p>{latestService ? `Dernier service enregistré le ${new Date(`${latestService.serviceDate}T12:00:00`).toLocaleDateString("fr-FR")}.` : "Aucune vente enregistrée."}</p>}
-        {latestService && <small>Source : {describeServiceSources(latestService.sources)}.</small>}
+        {latestServiceSource && <small>Source : {latestServiceSource}.</small>}
         <div className="today-card-actions"><Link to="/sales#sales-start">Ajouter ou corriger des ventes</Link></div>
       </section>
       <section className="today-task" aria-labelledby="today-order-title"><ShoppingCart aria-hidden="true" size={20} /><h3 id="today-order-title">Commande en préparation</h3>
@@ -209,7 +212,7 @@ function DashboardOverview() {
           <p>{products.length === 0 ? "Aucun produit enregistré. Ajoutez vos produits pour suivre vos stocks." : stockToReview.length === 0 ? "Aucun produit sous le seuil théorique." : `${stockToReview.length} produit${stockToReview.length > 1 ? "s" : ""} à vérifier ou sous le seuil théorique.`}</p>}
         {!productsLoading && !productsError && <TodayStockPreview products={stockToReview} />}
         {!productsLoading && !productsError && confirmedStockoutCount > 0 && <Badge label={`${confirmedStockoutCount} rupture${confirmedStockoutCount > 1 ? "s" : ""} confirmée${confirmedStockoutCount > 1 ? "s" : ""}`} status="urgent" />}
-        {(productsLoading || productsError || products.length > 0) && <small>{latestService?.sources.includes("demo_simulation")
+        {!clientPresentation && (productsLoading || productsError || products.length > 0) && <small>{latestService?.sources.includes("demo_simulation")
           ? "Certaines opérations du service ne sont pas retenues dans l’inventaire enregistré ; vérifiez les pièces et les mouvements."
           : "Les seuils actuels restent à confirmer ; vérifiez la provenance des quantités et mouvements avant vos décisions."}</small>}
         <div className="today-card-actions"><Link to="/stocks">Ouvrir les stocks</Link><Link to="/orders#invoices">Revoir les factures</Link></div>
