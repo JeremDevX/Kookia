@@ -10,6 +10,8 @@ import { getOperationalReport } from "./reportService.js";
 import { getServiceSheet } from "./serviceSheetService.js";
 import { applyStockMovement } from "./stockWrite.js";
 import { listWaste } from "./wasteService.js";
+import { getWorkshopDayDetails } from "./workshopDayDetails.js";
+import { importWorkshopDay } from "./workshopImportService.js";
 import { applyWorkshopKitchen } from "./workshopKitchen.js";
 import type { WorkshopOperationsInput } from "./workshopOperationsInput.js";
 
@@ -35,12 +37,15 @@ it("imports dated preparations, refusals and losses outside measured activity wi
   const earlier = "2026-08-14";
   const raw = { kind: "raw", slot: null, recipe: null, product: product.name, lotReference: "lot-test", quantityMilli: 500,
     unit: "kg", avoidable: false, note: "Lot écarté" } as const;
-  const operations: WorkshopOperationsInput = { purchases: [], incident: "normal", events: [],
+  const operations: WorkshopOperationsInput = { purchases: [], incident: "high_waste", events: ["Lot écarté."],
     services: [{ slot: "lunch", covers: 3, items: [{ name: recipe.name, category: "Entrée", prepTime: 20, priceCents: 900,
       planned: 5, prepared: 4, sold: 3, refused: 1 }] }], losses: [raw, { kind: "unsold", slot: "lunch", recipe: recipe.name,
       product: null, lotReference: null, quantityMilli: 1000, unit: "portion", avoidable: true, note: "Une portion écartée" }] };
   const beforeCount = await prisma.stockMovement.count({ where: { restaurantId } });
-  for (const day of [date, earlier]) await prisma.$transaction(tx => applyWorkshopKitchen(tx, restaurantId, day, operations));
+  await importWorkshopDay(restaurantId, date, { open: true, sales: [{
+    name: recipe.name, normalizedName: recipe.name.toLocaleLowerCase("fr-FR"), quantity: 3,
+  }], operations }, true);
+  await prisma.$transaction(tx => applyWorkshopKitchen(tx, restaurantId, earlier, operations));
 
   const productions = await prisma.production.findMany({ where: { restaurantId }, orderBy: [{ date: "asc" }, { kind: "asc" }] });
   expect(productions.map(row => [row.kind, row.portions, row.recipeVersionId, row.actorId])).toEqual([
@@ -63,4 +68,22 @@ it("imports dated preparations, refusals and losses outside measured activity wi
   expect(report.rows.some(row => row.section === "Productions et refus" || row.section === "Pertes et déchets déclarés par service")).toBe(false);
   const sheet = await getServiceSheet(restaurantId, date, "lunch");
   expect(sheet.facts.productionIds).toEqual([]);
+
+  await prisma.restaurantServiceSession.update({ where: { restaurantId_serviceDate_slot: {
+    restaurantId, serviceDate: new Date(date), slot: "lunch",
+  } }, data: { actualCovers: 9, revision: { increment: 1 } } });
+  await prisma.dailySale.updateMany({ where: { restaurantId, serviceDate: new Date(date) },
+    data: { quantity: 8, source: "manual", revision: { increment: 1 } } });
+  const detail = await getWorkshopDayDetails(restaurantId, date);
+  expect(detail).toMatchObject({
+    sections: { sales: true, stock: false, operations: true },
+    incident: "high_waste", events: ["Lot écarté."],
+    services: [{ slot: "lunch", covers: 3 }],
+    sales: [{ name: recipe.name, quantity: 3 }],
+    preparations: [{ slot: "lunch", name: recipe.name, prepared: 4, refused: 1 }],
+    losses: [
+      { name: product.name, quantity: 0.5, unit: "kg", reason: "Lot écarté" },
+      { name: recipe.name, quantity: 1, unit: "portion", reason: "Une portion écartée" },
+    ],
+  });
 });

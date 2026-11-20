@@ -19,6 +19,7 @@ import { workspaceReadRoutes } from "./workspaceReadRoutes.js";
 import { timelineRoutes } from "./timelineRoutes.js";
 import { sourceRoutes } from "./sourceRoutes.js";
 import { weatherRoutes } from "./weatherRoutes.js";
+import { workshopControlRoutes } from "./workshopControlRoutes.js";
 import { catalogRoutes } from "./catalogRoutes.js";
 import { recipeRoutes } from "./recipeRoutes.js";
 import { Router } from "express";
@@ -38,6 +39,7 @@ workspaceRoutes.use(async (req, res, next) => {
   if (!workspace) { res.status(409).json({ error: { code: "SETUP_REQUIRED", message: "Créez votre établissement pour accéder à votre espace." } }); return; }
   if (!canAccessWorkspace(workspace.role, req.method, `${req.baseUrl}${req.path}`)) { res.status(403).json({ error: { code: "FORBIDDEN", message: "Vous ne pouvez pas effectuer cette action." } }); return; }
   res.locals.workspace = { restaurantId: workspace.restaurantId, actorId: user.id } satisfies WorkspaceContext;
+  res.locals.canManageWorkshop = workspace.role === "owner";
   next();
 });
 
@@ -47,6 +49,7 @@ workspaceRoutes.use(workspaceReadRoutes);
 workspaceRoutes.use(timelineRoutes);
 workspaceRoutes.use(sourceRoutes);
 workspaceRoutes.use(weatherRoutes);
+workspaceRoutes.use("/workshop", workshopControlRoutes);
 workspaceRoutes.use(preferencesRoutes);
 workspaceRoutes.use(orderRoutes);
 workspaceRoutes.use(cartRoutes);

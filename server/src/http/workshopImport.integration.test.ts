@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, expect, it, vi } from "vitest";
+import { getWorkshopDayDetails } from "../application/workspace/workshopDayDetails.js";
+import { workshopStockBalancesKind } from "../application/workspace/workshopStockService.js";
 import { env } from "../config/env.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { app, createApp } from "./app.js";
@@ -228,6 +230,21 @@ it("reconciles dated stock lots on a sales-only replay and rolls back a new day 
   ]);
   expect(await prisma.stockCount.count({ where: { restaurantId: targetId } })).toBe(0);
   expect(await currentStock()).toBe(0.6);
+
+  const detail = await getWorkshopDayDetails(targetId, date);
+  expect(detail.sections).toEqual({ sales: true, stock: true, operations: false });
+  expect(detail.sales).toEqual([{ name: "Tarte", quantity: 9 }]);
+  expect(detail.stock).toEqual([{ name: "Poires", unit: "kg", supplier: "Verger", opening: 2,
+    received: 1, consumed: 1.6, lost: 0.2, adjustment: 0, closing: 1.2 }]);
+  expect((await getWorkshopDayDetails(targetId, nextDate)).stock).toEqual([{ name: "Poires", unit: "kg", supplier: "Verger",
+    opening: 1.2, received: 0.3, consumed: 0.34, lost: 0.5, adjustment: -0.06, closing: 0.6 }]);
+  await prisma.workspaceDocument.delete({
+    where: { restaurantId_kind: { restaurantId: targetId, kind: workshopStockBalancesKind(date) } },
+  });
+  await send(date).send({ ...day, stock: [enriched] }).expect(200, acknowledged);
+  expect((await getWorkshopDayDetails(targetId, date)).stock).toEqual([{
+    ...detail.stock[0], supplier: null, opening: null, closing: null,
+  }]);
 });
 
 it.each(["stock", "operations"] as const)("links a raw loss once when %s arrive first", async first => {

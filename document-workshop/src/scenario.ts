@@ -35,7 +35,7 @@ function openingDay(date: string, opening: Checkpoint["lots"], incident: Inciden
     gross: 0, discount: 0, refunded: 0, collected: 0, net: 0, tax: 0, card: 0, cash: 0 };
 }
 export function generateScenario(input: OptionsInput, continuation?: Checkpoint, approved?: readonly WorkshopApprovedLine[],
-  weather?: WorkshopWeather): Scenario {
+  weather?: WorkshopWeather, profileFor?: (date: string) => Options): Scenario {
   const parsed = optionsSchema.safeParse(input);
   if (!parsed.success) throw new Error("Vérifiez les champs : durée de 1 à 90 jours, 5 à 200 couverts de référence, au moins un jour ouvert et réglages dans les limites indiquées.");
   const options = parsed.data;
@@ -50,7 +50,7 @@ export function generateScenario(input: OptionsInput, continuation?: Checkpoint,
     purchases.push(...approved.filter(line => line.dueOn <= options.start)
       .sort((a, b) => a.lineId.localeCompare(b.lineId))
       .map(line => approvedPurchase(line, options.start, options)));
-  } else if (!opening) bootstrapPurchases(options, purchases);
+  } else if (!opening) bootstrapPurchases(options, purchases, profileFor);
   const days: Day[] = [];
   for (let index = 0; index < options.days; index++) {
     const date = offsetDate(options.start, index);
@@ -60,8 +60,8 @@ export function generateScenario(input: OptionsInput, continuation?: Checkpoint,
     receivePurchases(purchases, lots, day, options, approved !== undefined);
     if (day.incident === "high_waste") spoilLot(lots, day, options);
     if (day.open) {
-      for (const name of serviceNames(options)) {
-        const live = weather && liveServiceWeather(date, name, weather);
+      for (const name of serviceNames(date, options)) {
+        const live = weather && liveServiceWeather(date, name, weather, options);
         if (live) {
           const terrace = live.terrace === "open" ? "Terrasse ouverte dans la simulation. "
             : live.terrace === "closed" ? "Terrasse fermée dans la simulation. " : "";
@@ -87,7 +87,7 @@ export function generateScenario(input: OptionsInput, continuation?: Checkpoint,
     }
     if (day.incident === "stock_gap") countAdjustment(lots, day, options);
     // Ordering happens at closure, using today's available balance and future forecasts only.
-    if (!approved) planTomorrow(date, lots, purchases, options, weather);
+    if (!approved) planTomorrow(date, lots, purchases, options, weather, profileFor);
     const orderedToday = purchases.filter(p => p.placedOn === date);
     for (const stock of day.stock) {
       stock.ordered = quantity(orderedToday.reduce((sum, p) => sum + (p.lines.find(l => l.productId === stock.id)?.ordered ?? 0), 0));

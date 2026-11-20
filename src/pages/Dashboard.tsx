@@ -1,5 +1,5 @@
-import { useClientPresentation } from "../features/members/workspaceContext";
-import { useEffect, useRef, useState } from "react";
+import { WorkspaceContext } from "../features/members/workspaceContext";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, BarChart3, BookOpen, Calendar, ClipboardList, ShoppingCart } from "lucide-react";
 import Button from "../components/common/Button";
@@ -33,7 +33,8 @@ export default function Dashboard() {
 }
 
 function DashboardOverview() {
-  const clientPresentation = useClientPresentation();
+  const workspace = useContext(WorkspaceContext);
+  const clientPresentation = workspace?.clientPresentation === true;
   const today = formatLocalISODate(new Date());
   const thirtyDaysAgo = shiftDays(today, -29);
   const { addToast } = useToast();
@@ -144,7 +145,9 @@ function DashboardOverview() {
   return <div className="dashboard-container">
     <header className="dashboard-header"><div><h1>Tableau de bord</h1>
       <span className="dashboard-date"><Calendar size={16} aria-hidden="true" />{new Date().toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", weekday: "long", day: "numeric", month: "long" })}</span></div>
-      <div className="dashboard-header-actions"><Link to="/?view=planning" className="btn btn-outline">Planning du jour</Link><Link to="/sales#sales-start" className="btn btn-primary dashboard-import">Ajouter des ventes</Link></div>
+      <div className="dashboard-header-actions">
+        {workspace?.workshopAvailable && <a href="/generateur/?vue=automatique" className="btn btn-outline">Génération automatique</a>}
+        <Link to="/?view=planning" className="btn btn-outline">Planning du jour</Link><Link to="/sales#sales-start" className="btn btn-primary dashboard-import">Ajouter des ventes</Link></div>
     </header>
 
     <div className="dashboard-metrics" aria-label="Situation du restaurant">

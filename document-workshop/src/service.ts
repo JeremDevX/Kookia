@@ -1,6 +1,6 @@
 import { quantity, recipeById } from "./catalog";
 import type { Recipe } from "./catalog";
-import { draw, salePrice, serviceTimes } from "./calendar";
+import { draw, minuteClock, salePrice, serviceWindow } from "./calendar";
 import { planService } from "./forecast";
 import { prepare } from "./inventory";
 import type { Day, Lot, Options, RecipeRun, Service, ServiceName } from "./model";
@@ -23,7 +23,7 @@ function customerRequests(date: string, name: ServiceName, menu: Recipe[], forec
 export function runService(day: Day, name: ServiceName, lots: Lot[], options: Options, weatherPercent = day.weather.percent): Service {
   const { baselineCovers, forecastCovers, menu } = planService(day.date, name, options, weatherPercent);
   const service: Service = { name, baselineCovers, forecastCovers, covers: 0, runs: [], decisions: [], transactions: [] };
-  const prepTime = serviceTimes[name].prepareAt;
+  const { start, end, prepareAt: prepTime } = serviceWindow(day.date, name, options);
   // The initial kitchen decision depends exclusively on the forecast and physical stock.
   for (const { recipe, forecast, planned } of menu) {
     const prepared = recipe.category === "Boisson" ? 0 : prepare(lots, recipe, planned, options, day, name);
@@ -56,12 +56,13 @@ export function runService(day: Day, name: ServiceName, lots: Lot[], options: Op
     }
     run.unserved++; return [];
   }));
-  for (const run of service.runs) finishRun(run, service, day, options);
+  const during = minuteClock(Math.min(start + 60, end - 1));
+  for (const run of service.runs) finishRun(run, service, day, options, during);
   service.transactions = buildTransactions(served, day.date, name, options);
   return service;
 }
-function finishRun(run: RecipeRun, service: Service, day: Day, options: Options) {
-  const recipe = recipeById(run.recipeId), during = service.name === "lunch" ? "13:00" : "20:00";
+function finishRun(run: RecipeRun, service: Service, day: Day, options: Options, during: string) {
+  const recipe = recipeById(run.recipeId);
   run.unsold = run.prepared - run.sold;
   if (run.extraPrepared) service.decisions.push({ time: during, recipeId: run.recipeId, kind: "top_up", portions: run.extraPrepared,
     reason: recipe.category === "Boisson" ? "Préparation à la commande, selon les demandes reçues." : "Complément limité lancé à la demande pendant le service, dans la limite des matières et du temps disponibles." });

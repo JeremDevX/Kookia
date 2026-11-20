@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { workshopWeeklyServiceSchema } from "../../shared/workshopControl";
 import type { Ingredient, Recipe } from "./catalog";
 import type { ScenarioWeather } from "./weather";
 
@@ -13,6 +14,7 @@ export const optionsSchema = z.object({
   incident: z.enum(["normal", "short_delivery", "late_delivery", "unavailable", "high_waste", "refund", "stock_gap", "demand_shift", "mixed"]),
   closedWeekdays: z.array(z.number().int().min(0).max(6)).max(6).refine(v => new Set(v).size === v.length).default([1]),
   services: z.enum(["lunch", "dinner", "both"]).default("lunch"),
+  weeklyServices: z.array(workshopWeeklyServiceSchema).max(14).optional(),
   drinks: z.boolean().default(true), mealDeals: z.boolean().default(true),
   hasTerrace: z.boolean().nullable().default(null),
   weather: z.enum(["none", "varied", "clear", "rain", "fog", "storm"]).default("none"),

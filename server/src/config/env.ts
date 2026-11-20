@@ -21,6 +21,7 @@ const envSchema = z.object({
   WORKSHOP_IMPORT_RESTAURANT_ID: z.uuid().optional(),
   WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE: z.literal("true").optional(),
   WORKSHOP_FORECAST_ENABLED: z.literal("true").optional(),
+  WORKSHOP_SCHEDULE_TIME: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
   WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM: z.iso.date().optional(),
 }).refine(value => value.OPEN_METEO_MODE !== "commercial" || Boolean(value.OPEN_METEO_API_KEY),
   { message: "OPEN_METEO_API_KEY is required for commercial weather access", path: ["OPEN_METEO_API_KEY"] })

@@ -14,9 +14,10 @@ describe("vues membres", () => {
     expect(html).not.toContain("Revoir la commande");
   });
   it("ne propose que les capacités confirmées", () => {
-    const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(MemberHome, { role: "chef", restaurantName: "Restaurant", canStock: true, canReceive: false, canOrder: false })));
+    const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(MemberHome, { role: "chef", restaurantName: "Restaurant", canStock: true, canReceive: false, canOrder: false, workshopAvailable: false })));
     expect(html).toContain("Ouvrir les stocks");
     expect(html).not.toContain("Ouvrir les réceptions");
     expect(html).not.toContain("Préparer une commande");
+    expect(html).not.toContain("Génération automatique");
   });
 });

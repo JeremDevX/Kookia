@@ -1,9 +1,12 @@
 import { recipeById } from "./catalog";
-import { draw, salePrice } from "./calendar";
+import { draw, minuteClock, salePrice, serviceWindow } from "./calendar";
 import type { Options, ServiceName, Transaction, TransactionLine } from "./model";
 
 export function buildTransactions(customers: string[][], date: string, service: ServiceName, options: Options): Transaction[] {
   const transactions: Transaction[] = [];
+  const { start: opens, end } = serviceWindow(date, service, options);
+  const firstTicket = Math.min(opens + 20, end - 1);
+  const ticketSpan = Math.min(120, end - firstTicket);
   let cursor = 0;
   while (cursor < customers.length) {
     const start = cursor;
@@ -29,10 +32,10 @@ export function buildTransactions(customers: string[][], date: string, service: 
     const gross = lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0);
     const discount = lines.reduce((sum, l) => sum + l.discount, 0), total = gross - discount;
     const net = Math.round(total / 1.1);
-    const minute = (service === "lunch" ? 12 * 60 + 20 : 19 * 60 + 20) + Math.floor(start / Math.max(1, customers.length) * 120);
+    const minute = firstTicket + Math.floor(start / customers.length * ticketSpan);
     transactions.push({ id: `T-${date}-${options.seed}-${service}-${start + 1}`, service,
       table: 1 + Math.floor(draw(options.seed, `${date}:${service}:${start}:table`) * 18),
-      time: `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`,
+      time: minuteClock(minute),
       covers: count, payment: draw(options.seed, `${date}:${service}:${start}:payment`) < .76 ? "card" : "cash",
       invoiceRequested: draw(options.seed, `${date}:${service}:${start}:invoice`) < .13,
       lines, gross, discount, total, net, tax: total - net, refund: 0, refundNet: 0 });

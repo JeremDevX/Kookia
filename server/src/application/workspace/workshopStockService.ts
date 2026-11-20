@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { Prisma, type StockLot } from "@prisma/client";
+import { z } from "zod";
 import { addCalendarDays } from "../../../../shared/calendarDate.js";
 import { lockReceiptProducts } from "./receiptStock.js";
 import { applyStockMovement } from "./stockWrite.js";
@@ -10,7 +11,13 @@ type StockLine = WorkshopStockInput[number];
 type SourceLot = StockLine["lots"][number];
 
 const prefix = "workshop-stock:v1:";
-const actorId = "workshop-import:v1";
+export const workshopStockKind = (date: string) => `${prefix}${date}`;
+export const workshopStockBalancesKind = (date: string) => `workshop-stock-balances:v1:${date}`;
+export const workshopStockActor = "workshop-import:v1";
+export const workshopStockBalancesSchema = z.array(z.object({
+  productId: z.string(), name: z.string(), unit: z.string(), supplier: z.string(),
+  openingMilli: z.number().int().nonnegative(), closingMilli: z.number().int().nonnegative(),
+}));
 const day = (value: string) => new Date(`${value}T00:00:00.000Z`);
 const quantity = (milli: number) => new Prisma.Decimal(milli).div(1000);
 const cost = (cents: number) => new Prisma.Decimal(cents).div(100);
@@ -55,8 +62,8 @@ function matchOpeningLots(line: StockLine, currentStock: Prisma.Decimal, activeL
 
 async function applyLot(tx: Prisma.TransactionClient, restaurantId: string, line: StockLine,
   productId: string, source: SourceLot, serviceDate: string, id: string) {
-  const operation = `${prefix}${serviceDate}:${source.reference}`;
-  const movement = { restaurantId, productId, actorId, productNameSnapshot: line.name, productUnitSnapshot: line.unit };
+  const operation = `${workshopStockKind(serviceDate)}:${source.reference}`;
+  const movement = { restaurantId, productId, actorId: workshopStockActor, productNameSnapshot: line.name, productUnitSnapshot: line.unit };
   if (source.addedMilli > 0) {
     await applyStockMovement(tx, { ...movement, operationId: `${operation}:in`, delta: quantity(source.addedMilli),
       reason: source.addition === "adjustment" ? "simulation_stock_adjustment" : "simulation_restock" },
@@ -79,7 +86,7 @@ async function applyLot(tx: Prisma.TransactionClient, restaurantId: string, line
 }
 
 export async function applyWorkshopStock(tx: Prisma.TransactionClient, restaurantId: string, date: string, stock: WorkshopStockInput) {
-  const kind = `${prefix}${date}`;
+  const kind = workshopStockKind(date);
   const hasCountBreakdown = stock.some(line => line.lots.some(lot => lot.adjustmentOutMilli !== undefined));
   const normalized = stock.map(line => ({
     ...line,
@@ -128,5 +135,13 @@ export async function applyWorkshopStock(tx: Prisma.TransactionClient, restauran
       await applyLot(tx, restaurantId, line, product.id, lot, date, id);
     }
   }
-  await tx.workspaceDocument.create({ data: { restaurantId, kind, data: digest } });
+  const balances = plan.map(({ line, product }) => ({
+    productId: product.id, name: line.name, unit: line.unit, supplier: product.supplier.name,
+    openingMilli: line.lots.reduce((sum, lot) => sum + lot.openingMilli, 0),
+    closingMilli: line.lots.reduce((sum, lot) => sum + lot.closingMilli, 0),
+  }));
+  await tx.workspaceDocument.createMany({ data: [
+    { restaurantId, kind, data: digest },
+    { restaurantId, kind: workshopStockBalancesKind(date), data: balances },
+  ] });
 }

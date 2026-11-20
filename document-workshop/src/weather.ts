@@ -2,7 +2,7 @@ import { weatherCondition } from "../../shared/weatherConditions";
 import { weatherScenarioEffect, type WeatherScenarioConditions } from "../../shared/weatherScenario";
 import { formatParisDate, formatParisTime } from "../../shared/parisDate";
 import type { WorkshopServiceWeather, WorkshopWeather } from "../../shared/workshopWeather";
-import { draw, serviceTimes } from "./calendar";
+import { clockMinutes, draw, serviceWindow } from "./calendar";
 import type { Options, ServiceName } from "./model";
 
 export interface ScenarioWeather {
@@ -33,20 +33,24 @@ export function scenarioWeather(date: string, options: Options): ScenarioWeather
     ? { reason: "Terrasse non renseignée : base semaine/saison conservée." }
     : weatherScenarioEffect(options.hasTerrace, conditions)) };
 }
-export function liveServiceWeather(date: string, slot: ServiceName, input: WorkshopWeather): WorkshopServiceWeather {
+export function liveServiceWeather(date: string, slot: ServiceName, input: WorkshopWeather, options?: Options): WorkshopServiceWeather {
   const { forecast, hasTerrace } = input;
   const unavailable: WorkshopServiceWeather = { slot, fetchedAt: null, terrace: hasTerrace === false ? "none" : "unknown",
     percent: 0, reason: "Prévision indisponible pour ce service. Fréquentation de référence conservée." };
   if (!forecast) return unavailable;
   const captured = new Date(forecast.fetchedAt), capturedOn = formatParisDate(captured);
-  const { startHour, prepareAt } = serviceTimes[slot];
+  const { start, end, prepareAt } = serviceWindow(date, slot, options);
+  const firstHour = Math.floor(start / 60);
+  const lastHour = Math.ceil(end / 60);
+  const requiredHours = lastHour - firstHour;
   if (capturedOn > date || (capturedOn === date && formatParisTime(captured) >= prepareAt)) return unavailable;
   const hours = forecast.hours.filter(hour => {
     const instant = new Date(hour.time);
-    const clock = formatParisTime(instant), localHour = Number(clock.slice(0, 2));
-    return formatParisDate(instant) === date && clock.endsWith(":00") && localHour >= startHour && localHour < startHour + 3;
+    const clock = formatParisTime(instant), localHour = clockMinutes(clock) / 60;
+    return formatParisDate(instant) === date && Number.isInteger(localHour) && localHour >= firstHour && localHour < lastHour;
   });
-  if (hours.length !== 3 || new Set(hours.map(hour => hour.time)).size !== 3 || hours.some(hour =>
+  if (new Set(hours.map(hour => hour.time)).size !== hours.length ||
+    new Set(hours.map(hour => formatParisTime(new Date(hour.time)))).size !== requiredHours || hours.some(hour =>
     hour.temperature === null || hour.windSpeed === null || hour.precipitation === null || hour.precipitationProbability === null)) return unavailable;
   const base = { ...unavailable, fetchedAt: forecast.fetchedAt };
   if (hasTerrace === null) return { ...base, reason: "Terrasse non renseignée. Fréquentation de référence conservée." };

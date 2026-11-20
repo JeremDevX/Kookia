@@ -1,93 +1,22 @@
+import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { z } from "zod";
 import { formatParisDate } from "../../shared/parisDate";
+import { workshopRunnerControlSchema, type WorkshopRunEvent, type WorkshopRunIssue, type WorkshopRunnerControl } from "../../shared/workshopControl";
 import { workshopApprovedOrdersSchema } from "../../shared/workshopOrders";
 import { workshopWeatherSchema, type WorkshopWeather } from "../../shared/workshopWeather";
 import { offsetDate } from "./calendar";
 import { recipeById } from "./catalog";
 import { continuationStart, parseCheckpointFile, validateCheckpoint } from "./continuation";
 import { dailyForecast } from "./dailyForecast";
+import { requestWorkshop, WorkshopRequestError } from "./dailySyncClient";
+import type { SyncConfig } from "./dailySyncConfig";
 import { dailyOperations } from "./dailyOperations";
 import { dailyStock } from "./dailyStock";
 import { dailySales } from "./documents";
-import type { Checkpoint, Scenario } from "./model";
+import type { Checkpoint, Options, Scenario } from "./model";
 import { defaultScenarioOptions, generateScenario } from "./scenario";
-
-interface SyncConfig {
-  apiOrigin: URL;
-  token: string;
-  stateFile: string;
-  includeStock: boolean;
-  includeOperations: boolean;
-  includeForecast: boolean;
-  openingFile?: string;
-  startDate: string;
-  variationFrom?: string;
-  followOrdersFrom?: string;
-  liveWeatherFrom?: string;
-  timeoutMs: number;
-}
-
-export function readDailySyncConfig(env: NodeJS.ProcessEnv): SyncConfig {
-  const apiOrigin = URL.parse(env.WORKSHOP_API_ORIGIN ?? "");
-  const loopback = apiOrigin && ["localhost", "127.0.0.1", "[::1]"].includes(apiOrigin.hostname);
-  const secure = apiOrigin?.protocol === "https:" || (apiOrigin?.protocol === "http:" && loopback);
-  if (!apiOrigin || !secure || apiOrigin.pathname !== "/" || apiOrigin.username || apiOrigin.password
-    || apiOrigin.search || apiOrigin.hash) {
-    throw new Error("WORKSHOP_API_ORIGIN doit être une origine HTTPS ou une adresse HTTP locale.");
-  }
-
-  const token = env.WORKSHOP_IMPORT_TOKEN ?? "";
-  if (!/^[A-Za-z0-9._~+/=-]{32,256}$/.test(token)) throw new Error("WORKSHOP_IMPORT_TOKEN est manquant ou invalide.");
-  const stateFile = env.WORKSHOP_STATE_FILE ?? "";
-  if (!isAbsolute(stateFile)) throw new Error("WORKSHOP_STATE_FILE doit être le chemin absolu du fichier de reprise.");
-  const stockStateFile = env.WORKSHOP_STOCK_STATE_FILE || undefined;
-  if (stockStateFile && (!isAbsolute(stockStateFile) || resolve(stockStateFile) === resolve(stateFile))) {
-    throw new Error("WORKSHOP_STOCK_STATE_FILE doit être un chemin absolu distinct de WORKSHOP_STATE_FILE.");
-  }
-  const stateFiles = [stateFile, stockStateFile].filter(file => file !== undefined);
-  const operationsStateFile = env.WORKSHOP_OPERATIONS_STATE_FILE || undefined;
-  if (operationsStateFile && (!isAbsolute(operationsStateFile) || stateFiles.some(file => resolve(file) === resolve(operationsStateFile)))) {
-    throw new Error("WORKSHOP_OPERATIONS_STATE_FILE doit être un chemin absolu distinct des fichiers de reprise des ventes et des stocks.");
-  }
-  if (operationsStateFile) stateFiles.push(operationsStateFile);
-  const openingFile = env.WORKSHOP_OPENING_CHECKPOINT_FILE || undefined;
-  if (openingFile && (!isAbsolute(openingFile) || stateFiles.some(file => resolve(file) === resolve(openingFile)))) {
-    throw new Error("WORKSHOP_OPENING_CHECKPOINT_FILE doit être un chemin absolu distinct des fichiers de reprise.");
-  }
-  const startDate = z.iso.date().safeParse(env.WORKSHOP_START_DATE);
-  if (!startDate.success) throw new Error("WORKSHOP_START_DATE doit être une date valide au format AAAA-MM-JJ.");
-  const variationFrom = z.iso.date().optional().safeParse(env.WORKSHOP_VARIATION_FROM || undefined);
-  if (!variationFrom.success) throw new Error("WORKSHOP_VARIATION_FROM doit être une date valide au format AAAA-MM-JJ.");
-  const forecastEnabled = env.WORKSHOP_FORECAST_ENABLED || "false";
-  if (forecastEnabled !== "true" && forecastEnabled !== "false") {
-    throw new Error("WORKSHOP_FORECAST_ENABLED doit valoir true ou false.");
-  }
-  const followOrdersFrom = z.iso.date().optional().safeParse(env.WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM || undefined);
-  if (!followOrdersFrom.success || (followOrdersFrom.data && (!stockStateFile || !operationsStateFile || forecastEnabled !== "true"))) {
-    throw new Error("WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM exige une date valide, les stocks, les opérations et la prévision.");
-  }
-  const liveWeatherFrom = z.iso.date().optional().safeParse(env.WORKSHOP_LIVE_WEATHER_FROM || undefined);
-  if (!liveWeatherFrom.success) throw new Error("WORKSHOP_LIVE_WEATHER_FROM doit être une date valide.");
-  const activeStateFile = operationsStateFile ?? stockStateFile ?? stateFile;
-  const configuredFiles = [...stateFiles, openingFile].flatMap(file => file ? [resolve(file)] : []);
-  if ((followOrdersFrom.data || liveWeatherFrom.data) && configuredFiles.includes(resolve(`${activeStateFile}.pending`))) {
-    throw new Error("Le fichier de reprise suivi de .pending est réservé à la journée préparée.");
-  }
-  if (liveWeatherFrom.data && configuredFiles.includes(resolve(`${activeStateFile}.weather`))) {
-    throw new Error("Le fichier de reprise suivi de .weather est réservé aux prévisions relevées.");
-  }
-  const timeoutMs = Number(env.WORKSHOP_REQUEST_TIMEOUT_MS ?? 30_000);
-  if (!Number.isInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 120_000) {
-    throw new Error("WORKSHOP_REQUEST_TIMEOUT_MS doit être compris entre 1000 et 120000.");
-  }
-
-  return { apiOrigin, token, stateFile: activeStateFile,
-    includeStock: Boolean(stockStateFile), includeOperations: Boolean(operationsStateFile), includeForecast: forecastEnabled === "true", openingFile,
-    startDate: startDate.data, variationFrom: variationFrom.data, followOrdersFrom: followOrdersFrom.data,
-    liveWeatherFrom: liveWeatherFrom.data, timeoutMs };
-}
 
 async function readCheckpoint(file: string) {
   try {
@@ -112,33 +41,6 @@ async function writeState(file: string, state: unknown) {
 const acknowledgmentSchema = z.object({ date: z.iso.date(), replayed: z.boolean(),
   stockApplied: z.literal(true).optional(), operationsApplied: z.literal(true).optional() });
 const forecastAcknowledgmentSchema = z.object({ date: z.iso.date() });
-
-class ApprovedOrderChangedError extends Error {}
-
-async function requestWorkshop(config: SyncConfig, endpoint: string, date: string, payload?: unknown): Promise<unknown> {
-  let response: Response;
-  try {
-    response = await fetch(new URL(endpoint, config.apiOrigin), {
-      method: payload === undefined ? "GET" : "PUT",
-      headers: { authorization: `Bearer ${config.token}`, ...(payload !== undefined && { "content-type": "application/json" }) },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(config.timeoutMs),
-      redirect: "error",
-    });
-  } catch {
-    throw new Error(`Impossible de joindre Kookia pour le ${date}.`);
-  }
-  if (response.status !== 200) {
-    const message = `Kookia a refusé le ${date} (HTTP ${response.status}).`;
-    if (response.status === 409 && payload !== undefined) {
-      const detail = await response.json().catch(() => null);
-      if (detail?.error?.code === "WORKSHOP_APPROVED_ORDER_CONFLICT")
-        throw new ApprovedOrderChangedError(`Une commande validée a changé pour le ${date}. La prochaine reprise relira les commandes de Kookia.`);
-    } else await response.body?.cancel();
-    throw new Error(message);
-  }
-  return response.json().catch(() => null);
-}
 
 function dayPayload(config: SyncConfig, scenario: Scenario) {
   const day = scenario.days[0];
@@ -207,13 +109,25 @@ async function captureWeather(config: SyncConfig, today: string) {
   return (date: string) => date >= config.liveWeatherFrom! ? byDate.get(date) ?? unavailableWeather : undefined;
 }
 
-export async function syncDaily(config: SyncConfig, now = new Date()) {
-  const today = formatParisDate(now);
+type SyncStage = Pick<WorkshopRunEvent, "date" | "step">;
+const runAcknowledgment = z.strictObject({ ok: z.literal(true) });
+
+async function transferDays(config: SyncConfig, today: string, control?: WorkshopRunnerControl,
+  setStage?: (stage: SyncStage) => Promise<void>) {
   const through = offsetDate(today, -1);
   const profile = defaultScenarioOptions(config.startDate, 1);
-  const variedProfile: typeof profile = { ...profile, incident: "mixed", weather: "varied", hasTerrace: true };
+  const variedProfile: Options = { ...profile, incident: "mixed", weather: "varied", hasTerrace: true };
   const connectedOn = (date: string) => Boolean(config.followOrdersFrom && date >= config.followOrdersFrom);
-  const profileFor = (date: string) => connectedOn(date) || (config.variationFrom && date >= config.variationFrom) ? variedProfile : profile;
+  const controlledOn = (date: string) => Boolean(control && config.controlFrom && date >= config.controlFrom);
+  const settings = [...(control?.settings ?? [])].sort((a, b) =>
+    (b.effectiveFrom ?? "").localeCompare(a.effectiveFrom ?? "") || b.revision - a.revision);
+  const profileFor = (date: string): Options => {
+    const base = connectedOn(date) || (config.variationFrom && date >= config.variationFrom) ? variedProfile : profile;
+    if (!controlledOn(date)) return base;
+    const setting = settings.find(version => version.effectiveFrom === null || version.effectiveFrom <= date);
+    return { ...base, incident: "mixed", ...(setting && { covers: setting.covers, incidentEvery: setting.incidentEvery }),
+      weeklyServices: control?.weeklyServices };
+  };
   const pendingFile = `${config.stateFile}.pending`;
   const opening = config.openingFile ? await readCheckpoint(config.openingFile) : undefined;
   if (config.openingFile && !opening) throw new Error("Le fichier de reprise initiale est introuvable.");
@@ -233,41 +147,106 @@ export async function syncDaily(config: SyncConfig, now = new Date()) {
   let date = checkpoint ? continuationStart(checkpoint) : config.startDate;
   let imported = 0;
   let replayed = 0;
+  let confirmedDate: string | null = null;
   while (date <= through) {
+    await setStage?.({ date, step: "prepare" });
     const connected = connectedOn(date);
     const weather = weatherFor(date);
-    const replayPrepared = connected || weather !== undefined;
+    const replayPrepared = connected || weather !== undefined || controlledOn(date);
     let prepared: { payload: unknown; checkpoint: Checkpoint } | undefined = replayPrepared ? await readPreparedDay(pendingFile, date) : undefined;
     if (!prepared) {
+      if (connected) await setStage?.({ date, step: "orders" });
       const approved = connected ? workshopApprovedOrdersSchema.parse(
         await requestWorkshop(config, `/api/integrations/workshop/approved-orders/${date}`, date)) : undefined;
-      const scenario = generateScenario({ ...profileFor(date), start: date }, checkpoint, approved, weather);
+      await setStage?.({ date, step: "prepare" });
+      const scenario = generateScenario({ ...profileFor(date), start: date }, checkpoint, approved, weather,
+        controlledOn(date) ? profileFor : undefined);
       prepared = { payload: dayPayload(config, scenario), checkpoint: scenario.checkpoint };
       if (replayPrepared) await writeState(pendingFile, prepared);
     }
     if (prepared.checkpoint.originStart !== originStart || prepared.checkpoint.seed !== profile.seed)
       throw new Error("La journée préparée ne correspond pas au dossier planifié.");
+    await setStage?.({ date, step: "import" });
     let alreadyReceived: boolean;
     try { alreadyReceived = await sendDay(config, date, prepared.payload); }
     catch (cause) {
-      if (connected && cause instanceof ApprovedOrderChangedError) await rm(pendingFile, { force: true });
+      if (connected && cause instanceof WorkshopRequestError && cause.issue.code === "ORDER_CHANGED") await rm(pendingFile, { force: true });
       throw cause;
     }
     await writeState(config.stateFile, prepared.checkpoint);
     if (replayPrepared) await rm(pendingFile, { force: true });
     checkpoint = prepared.checkpoint;
+    confirmedDate = date;
     date = continuationStart(checkpoint);
     if (alreadyReceived) replayed += 1;
     else imported += 1;
   }
   if (config.includeForecast && checkpoint?.asOf === through) {
-    const forecast = dailyForecast(today, checkpoint, profileFor(today), connectedOn(today), weatherFor(today));
+    await setStage?.({ date: today, step: "forecast" });
+    const forecast = dailyForecast(today, checkpoint, profileFor(today), connectedOn(today), weatherFor(today),
+      controlledOn(today) ? profileFor : undefined);
     const response = await requestWorkshop(config, `/api/integrations/workshop/forecast/${today}`, today, forecast);
     const acknowledgment = forecastAcknowledgmentSchema.safeParse(response);
     if (!acknowledgment.success || acknowledgment.data.date !== today) {
       throw new Error(`Kookia n’a pas confirmé la prévision du ${today}.`);
     }
+    confirmedDate = today;
   }
 
+  return { imported, replayed, confirmedDate };
+}
+
+export async function syncDaily(config: SyncConfig, now = new Date(), retryRequested = false) {
+  const today = formatParisDate(now);
+  if (!config.controlFrom || today < config.controlFrom) {
+    if (retryRequested) return undefined;
+    const { imported, replayed } = await transferDays(config, today);
+    return { imported, replayed };
+  }
+
+  const control = workshopRunnerControlSchema.safeParse(await requestWorkshop(config, "/api/integrations/workshop/control", today));
+  if (!control.success) throw new Error("Kookia a transmis des réglages d’atelier invalides.");
+  if (retryRequested && !control.data.retryRequested) return undefined;
+
+  const id = randomUUID();
+  let stage: SyncStage = { date: null, step: "prepare" };
+  async function publish(event: Omit<WorkshopRunEvent, "id">) {
+    const response = await requestWorkshop(config, "/api/integrations/workshop/run", event.date ?? today, { id, ...event });
+    if (!runAcknowledgment.safeParse(response).success) throw new Error("Kookia n’a pas confirmé l’état du transfert.");
+  }
+  try {
+    await publish({ state: "running", ...stage, issue: null });
+  } catch (cause) {
+    if (cause instanceof WorkshopRequestError && cause.issue.status === 409) return undefined;
+    throw cause;
+  }
+
+  let lastReportAt = Date.now();
+  async function setStage(nextStage: SyncStage) {
+    stage = nextStage;
+    // Refresh the server lease during a multi-day catch-up.
+    if (Date.now() - lastReportAt < 10 * 60_000) return;
+    await publish({ state: "running", ...stage, issue: null });
+    lastReportAt = Date.now();
+  }
+
+  let result: Awaited<ReturnType<typeof transferDays>>;
+  try {
+    result = await transferDays(config, today, control.data, setStage);
+  } catch (cause) {
+    const fallbackCode = cause instanceof z.ZodError ? "INVALID_INPUT" : stage.step === "forecast" ? "FORECAST" : "UNKNOWN";
+    const incomingIssue = cause instanceof WorkshopRequestError ? cause.issue : null;
+    const issue: WorkshopRunIssue = { product: null, status: null, ...incomingIssue,
+      code: incomingIssue && incomingIssue.code !== "UNKNOWN" ? incomingIssue.code : fallbackCode };
+    try {
+      await publish({ state: "failed", ...stage, issue });
+    } catch {
+      console.warn("Kookia n’a pas confirmé le signalement de l’échec du transfert.");
+    }
+    throw cause;
+  }
+
+  const { imported, replayed, confirmedDate } = result;
+  await publish({ state: "succeeded", date: confirmedDate, step: null, issue: null });
   return { imported, replayed };
 }

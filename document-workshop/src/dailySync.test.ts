@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { recipeById } from "./catalog";
 import { parseCheckpointFile } from "./continuation";
-import { readDailySyncConfig, syncDaily } from "./dailySync";
+import { syncDaily } from "./dailySync";
+import { readDailySyncConfig } from "./dailySyncConfig";
 import { defaultScenarioOptions, generateScenario } from "./scenario";
 
 const throughTuesday = new Date("2026-09-08T22:30:00Z");

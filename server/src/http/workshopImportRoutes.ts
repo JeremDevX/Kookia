@@ -3,6 +3,9 @@ import { Router, type ErrorRequestHandler, type RequestHandler } from "express";
 import { z } from "zod";
 import { formatParisDate } from "../../../shared/parisDate.js";
 import { workshopForecastSchema } from "../../../shared/workshopForecast.js";
+import { workshopRunEventSchema } from "../../../shared/workshopControl.js";
+import { getWorkshopRunnerControl, recordWorkshopRun,
+  type WorkshopControlScope } from "../application/workspace/workshopControlService.js";
 import { WorkspaceError } from "../application/workspace/workspaceError.js";
 import { getWorkshopApprovedOrders } from "../application/workspace/workshopApprovedOrders.js";
 import { workshopApprovedPurchaseReference } from "../../../shared/workshopOrders.js";
@@ -71,9 +74,9 @@ function operationsMatchDate(operations: WorkshopOperationsInput, date: string, 
   return delivered.size === 0;
 }
 
-export function createWorkshopImportRoutes(token: string, restaurantId: string, allowOperationalTestWorkspace: boolean,
-  forecastEnabled: boolean, followOrdersFrom?: string) {
+export function createWorkshopImportRoutes(token: string, scope: WorkshopControlScope) {
   const routes = Router();
+  const { restaurantId, allowOperationalTestWorkspace, forecastEnabled, followOrdersFrom } = scope;
   const expected = tokenDigest(token);
 
   const authenticate: RequestHandler = (req, res, next) => {
@@ -86,6 +89,16 @@ export function createWorkshopImportRoutes(token: string, restaurantId: string, 
     }
     next();
   };
+
+  routes.get("/control", authenticate, async (_req, res) => {
+    res.set("Cache-Control", "no-store").json(await getWorkshopRunnerControl(scope));
+  });
+
+  routes.put("/run", authenticate, async (req, res) => {
+    const event = workshopRunEventSchema.safeParse(req.body);
+    if (!event.success) throw new WorkspaceError(400, "VALIDATION_ERROR", "L’état du transfert est invalide.");
+    res.set("Cache-Control", "no-store").json(await recordWorkshopRun(scope, event.data));
+  });
 
   routes.get("/weather", authenticate, async (_req, res) => {
     const provider = weatherProviderForRestaurant(restaurantId, res.locals.weatherProvider as WeatherProvider);

@@ -15,6 +15,7 @@ import { workspaceRoutes } from "./workspaceRoutes.js";
 import { setupRoutes } from "./setupRoutes.js";
 import { invitationAcceptRoutes } from "./invitationRoutes.js";
 import { createWorkshopImportRoutes } from "./workshopImportRoutes.js";
+import type { WorkshopControlScope } from "../application/workspace/workshopControlService.js";
 
 const publicUserResponse = (user: Awaited<ReturnType<typeof getUserBySessionToken>>) => ({ user });
 const setSessionCookie = (res: Response, token: string, expiresAt: Date) => res.cookie(sessionCookieName, token, { httpOnly: true, sameSite: "strict", secure: env.NODE_ENV === "production", path: "/", expires: expiresAt });
@@ -38,6 +39,15 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   databaseReadinessProbe: () => Promise<void> = checkDatabaseReadiness,
   weatherProvider: WeatherProvider = configuredWeatherProvider) {
   const app = express();
+  const workshopToken = env.WORKSHOP_IMPORT_TOKEN;
+  const workshopRestaurantId = env.WORKSHOP_IMPORT_RESTAURANT_ID;
+  const workshopControlScope: WorkshopControlScope | undefined = workshopToken && workshopRestaurantId ? {
+    restaurantId: workshopRestaurantId,
+    allowOperationalTestWorkspace: env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE === "true",
+    forecastEnabled: env.WORKSHOP_FORECAST_ENABLED === "true",
+    followOrdersFrom: env.WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM,
+    scheduleTime: env.WORKSHOP_SCHEDULE_TIME,
+  } : undefined;
   app.disable("x-powered-by");
   const allowedOrigins = env.APP_ORIGIN === "http://127.0.0.1:5173"
     ? new Set(["http://localhost:5173", env.APP_ORIGIN])
@@ -104,15 +114,14 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   app.use((_, res, next) => {
     res.locals.invoiceExtractionAdapter = invoiceExtractionAdapter;
     res.locals.weatherProvider = weatherProvider;
+    res.locals.workshopControlScope = workshopControlScope;
     next();
   });
   app.use("/api/setup", setupRoutes);
   app.use("/api/invitations", invitationAcceptRoutes);
   app.use("/api/workspace", workspaceRoutes);
-  if (env.WORKSHOP_IMPORT_TOKEN && env.WORKSHOP_IMPORT_RESTAURANT_ID) {
-    app.use("/api/integrations/workshop", createWorkshopImportRoutes(env.WORKSHOP_IMPORT_TOKEN, env.WORKSHOP_IMPORT_RESTAURANT_ID,
-      env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE === "true", env.WORKSHOP_FORECAST_ENABLED === "true",
-      env.WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM));
+  if (workshopToken && workshopControlScope) {
+    app.use("/api/integrations/workshop", createWorkshopImportRoutes(workshopToken, workshopControlScope));
   }
 
   app.use((_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Ressource introuvable." } }));

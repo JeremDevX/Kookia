@@ -8,6 +8,7 @@ const allRoles = [
   "GET /orders", "POST /orders/:id/receipts", "GET /orders/:id/receipt-invoices",
 ];
 const chefAndOwner = [
+  "GET /workshop", "GET /workshop/days/:date",
   "GET /orders/suggestions", "GET /cart", "POST /cart", "POST /orders/suggestions/:id/decision", "POST /orders",
 ];
 function safeSegment(segment: string): boolean {

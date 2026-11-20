@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { serviceSlots } from "../../shared/serviceCalendar";
 import { recipes } from "./catalog";
 import type { Ingredient, Recipe } from "./catalog";
 import type { Options, ServiceName } from "./model";
@@ -11,7 +12,7 @@ export function displayDate(date: string) {
 }
 export { addCalendarDays as offsetDate } from "../../shared/calendarDate";
 export const weekday = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();
-export const isOpen = (date: string, options: Options) => !options.closedWeekdays.includes(weekday(date));
+export const isOpen = (date: string, options: Options) => serviceNames(date, options).length > 0;
 // Independent keyed draws: adding a payment or waste draw never changes demand.
 export function draw(seed: number, key: string) {
   let hash = seed ^ 2166136261;
@@ -20,18 +21,45 @@ export function draw(seed: number, key: string) {
   hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
   return ((hash ^ (hash >>> 16)) >>> 0) / 4294967296;
 }
-export const serviceTimes = {
-  lunch: { startHour: 12, prepareAt: "10:30" },
-  dinner: { startHour: 19, prepareAt: "18:00" },
+const defaultServiceHours = {
+  lunch: { opensAt: "12:00", closesAt: "15:00" },
+  dinner: { opensAt: "19:00", closesAt: "22:00" },
 } as const;
-export const serviceNames = (options: Options): ServiceName[] => options.services === "both" ? ["lunch", "dinner"] : [options.services];
+
+export function clockMinutes(clock: string) {
+  const [hours, minutes] = clock.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+export function minuteClock(minute: number) {
+  return new Date(minute * 60_000).toISOString().slice(11, 16);
+}
+
+export function serviceWindow(date: string, slot: ServiceName, options?: Options) {
+  const row = options?.weeklyServices?.find(service => service.weekday === weekday(date) && service.slot === slot);
+  const { opensAt, closesAt } = row ?? defaultServiceHours[slot];
+  const start = clockMinutes(opensAt), end = clockMinutes(closesAt);
+  const prepareAt = minuteClock(Math.max(0, start - (slot === "lunch" ? 90 : 60)));
+  return { opensAt, closesAt, start, end, prepareAt };
+}
+
+export function serviceNames(date: string, options: Options): ServiceName[] {
+  const day = weekday(date);
+  if (options.weeklyServices?.length) {
+    return serviceSlots.filter(slot => options.weeklyServices?.some(service => service.weekday === day && service.slot === slot));
+  }
+  if (options.closedWeekdays.includes(day)) return [];
+  return options.services === "both" ? [...serviceSlots] : [options.services];
+}
+
 export function expectedCovers(date: string, service: ServiceName, options: Options) {
-  if (!isOpen(date, options)) return 0;
+  const slots = serviceNames(date, options);
+  if (!slots.includes(service)) return 0;
   // Calendar factors reuse restaurantSimulationDemand's principles, without fixed dates.
   const day = weekday(date), month = Number(date.slice(5, 7));
   const weekly = day === 5 || day === 6 ? 1.28 : day === 0 ? 1.12 : .9;
   const seasonal = month >= 5 && month <= 8 ? 1.14 : month <= 2 || month >= 11 ? .82 : 1;
-  const share = options.services === "both" ? (service === "lunch" ? .6 : .4) : 1;
+  const share = slots.length === 2 ? (service === "lunch" ? .6 : .4) : 1;
   return Math.max(1, Math.round(options.covers * weekly * seasonal * share));
 }
 export function menuFor(date: string, service: ServiceName, options: Options): Recipe[] {

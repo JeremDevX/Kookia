@@ -20,6 +20,31 @@ npm run documents:preview
 Le build autonome est dans `dist/document-workshop`. Le build principal vide
 `dist` : reconstruire l’atelier après `npm run build` si nécessaire.
 
+## Suivre la génération automatique
+
+Depuis le tableau de bord de l’espace de test, ouvrir **Génération automatique**.
+Le générateur retrouve la session Kookia sur le même domaine. **Dossiers à
+exporter** permet de préparer un dossier autonome.
+
+Le suivi affiche la dernière journée confirmée, le dernier passage et la
+prochaine exécution en heure de Paris. **Aujourd’hui** présente les services
+ouverts, leur fréquentation prévue et l’effet de la météo. Dans l’historique,
+une journée détaille les ventes, préparations, pertes et mouvements transmis.
+Pour les transferts anciens, certains stocks d’ouverture et de clôture sont
+inconnus. Les nouveaux transferts conservent ces soldes avec la date.
+
+Le propriétaire peut ajuster les couverts de référence et la cadence des
+imprévus à partir de la prochaine journée indiquée. La grille hebdomadaire
+de Kookia, si elle est renseignée, fixe les services à simuler. Une journée
+déjà préparée conserve son scénario lors d’une reprise. En cas d’échec, le
+panneau indique l’étape concernée et conserve la dernière clôture confirmée.
+Après correction du blocage, **Relancer le transfert** ajoute une demande au
+processus habituel. Une journée confirmée ne génère aucun double mouvement.
+
+Le suivi des suggestions, commandes validées et réceptions liées s’appuie sur
+le mode connecté de l’espace de démonstration. Les validations restent dans
+**Achats**.
+
 ## Synchroniser le compte de test Kookia
 
 Sur le serveur du générateur, `npm run documents:sync` simule chaque journée du
@@ -48,6 +73,8 @@ Variables du processus de synchronisation, à renseigner côté serveur :
 | `WORKSHOP_OPERATIONS_STATE_FILE` | Facultatif. Chemin absolu distinct des autres fichiers de reprise. Active l’envoi des opérations en plus des ventes et, si configuré, du stock. |
 | `WORKSHOP_OPENING_CHECKPOINT_FILE` | Facultatif. Chemin absolu du `stock-reprise.json` du dossier précédent. Sa clôture doit précéder d’un jour la première date à transmettre. Conserver ce fichier pour les reprises suivantes. |
 | `WORKSHOP_LIVE_WEATHER_FROM` | Facultatif côté générateur. Première journée qui utilise la prévision Open-Meteo de l’espace de test. Choisir une journée encore à transmettre. |
+| `WORKSHOP_CONTROL_FROM` | Facultatif côté générateur. Date de début des réglages liés à l’espace Kookia et du suivi des passages. |
+| `WORKSHOP_SCHEDULE_TIME` | Facultatif côté API. Heure planifiée en Europe/Paris, au format `HH:MM`. Elle doit correspondre à la tâche du serveur. |
 | `WORKSHOP_VARIATION_FROM` | Facultatif. À partir de cette date de service (`AAAA-MM-JJ`), activer la météo simulée avec terrasse et les imprévus variés du scénario. Conserver cette date d’activation pour les rejeux. |
 | `WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM` | Facultatif. Date de début du mode connecté, identique côté API et générateur. Exige un espace de démonstration dédié, les stocks, les opérations et la prévision. |
 | `WORKSHOP_FORECAST_ENABLED` | Facultatif. `true` côté générateur et côté API pour publier la prévision simulée du jour dans le tableau de bord de l’espace de test configuré. |
@@ -60,9 +87,13 @@ mode `operational`, autoriser explicitement cette cible dans l’API avec
 `WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE=true`. Conserver le jeton dans
 les secrets des deux processus. L’API reste désactivée sans jeton ni identifiant.
 
-Planifier une exécution quotidienne après minuit, heure de Paris. Utiliser un
-seul service planifié par fichier de reprise et conserver ce fichier entre les
-déploiements. Un échec arrête la transmission sur sa date. Après correction,
+Planifier une exécution quotidienne après minuit, heure de Paris. Conserver
+le fichier de reprise entre les déploiements. Si la relance est activée, planifier
+aussi `npm run documents:sync -- --retry-requested` toutes les minutes. Ce passage
+ne lance le transfert qu’en présence d’une demande. Les deux tâches doivent
+partager un verrou exclusif pour le même fichier de reprise. Le [script d’activation du VPS](../scripts/enable-workshop-control.sh) configure les deux tâches et vérifie la version attendue.
+
+Un échec arrête la transmission sur sa date. Après correction,
 relancer avec le même fichier de reprise. Si l’API avait enregistré la journée
 avant la coupure, elle reconnaît le même envoi et le générateur poursuit. Une
 date déjà occupée ou un contenu différent pour une date transmise déclenche un

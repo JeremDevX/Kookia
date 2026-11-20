@@ -35,12 +35,18 @@ const loss = z.strictObject({ kind: z.enum(["raw", "preparation", "unsold", "pla
   .refine(row => row.kind === "raw" ? Boolean(row.product && row.lotReference && !row.recipe && row.unit !== "portion") :
     Boolean(row.recipe && row.slot && (row.kind === "preparation" ? row.product && row.unit !== "portion" : !row.product && row.unit === "portion")));
 
+export const workshopOperationsMetadataSchema = z.object({
+  incident: z.enum(["normal", "short_delivery", "late_delivery", "unavailable", "high_waste", "refund", "stock_gap", "demand_shift"]),
+  events: z.array(note).max(100),
+  services: z.array(z.object({ slot, covers: portions })).max(2).optional(),
+});
+
 export const workshopOperationsSchema = z.strictObject({
   purchases: z.array(purchase).max(32),
   services: z.array(service).max(2),
   losses: z.array(loss).max(180),
-  incident: z.enum(["normal", "short_delivery", "late_delivery", "unavailable", "high_waste", "refund", "stock_gap", "demand_shift"]),
-  events: z.array(note).max(100),
+  incident: workshopOperationsMetadataSchema.shape.incident,
+  events: workshopOperationsMetadataSchema.shape.events,
 }).refine(value => {
   const approvedCount = value.purchases.filter(row => row.approvedOrderId).length;
   return approvedCount <= 16 && value.purchases.length - approvedCount <= 16 &&

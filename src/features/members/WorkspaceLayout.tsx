@@ -29,7 +29,7 @@ export function WorkspaceHome({ owner }: { owner: ReactNode }) {
   if (workspace.role === "owner") return owner;
   if (!workspace.role || !workspace.capabilities || !workspace.restaurantName) return null;
   const { viewStock, receiveOrders, validateOrders } = workspace.capabilities;
-  return <MemberHome role={workspace.role} restaurantName={workspace.restaurantName} canStock={viewStock} canReceive={receiveOrders} canOrder={validateOrders} />;
+  return <MemberHome role={workspace.role} restaurantName={workspace.restaurantName} canStock={viewStock} canReceive={receiveOrders} canOrder={validateOrders} workshopAvailable={workspace.workshopAvailable === true} />;
 }
 export function WorkspaceStocks({ owner }: { owner: ReactNode }) {
   const workspace = useWorkspace();

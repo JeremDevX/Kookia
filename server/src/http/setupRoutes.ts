@@ -24,9 +24,15 @@ setupRoutes.get("/", async (req, res) => {
   const step = document ? progressSchema.parse(document.data).step : null;
   const presentationId = env.WORKSHOP_IMPORT_RESTAURANT_ID ??
     (workspace?.restaurantName === localCamilleRestaurantName ? (await findLocalCamilleRestaurant())?.restaurantId : undefined);
+  const workshopTarget = env.WORKSHOP_IMPORT_TOKEN && workspace && workspace.role !== "kitchen" &&
+    workspace.restaurantId === env.WORKSHOP_IMPORT_RESTAURANT_ID;
+  const workshopAvailable = workshopTarget && Boolean(await prisma.restaurant.findFirst({
+    where: { id: workspace.restaurantId, mode: { in: env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE === "true"
+      ? ["demo", "operational"] : ["demo"] } }, select: { id: true },
+  }));
   res.json({ configured: workspace !== null, userId: user.id, step, revision: document?.revision ?? 0,
     role: workspace?.role ?? null, restaurantName: workspace?.restaurantName ?? null, capabilities: workspace ? workspaceCapabilities(workspace.role) : null,
-    clientPresentation: workspace !== null && workspace.restaurantId === presentationId });
+    clientPresentation: workspace !== null && workspace.restaurantId === presentationId, workshopAvailable: Boolean(workshopAvailable) });
 });
 setupRoutes.post("/", async (req, res, next) => {
   try {

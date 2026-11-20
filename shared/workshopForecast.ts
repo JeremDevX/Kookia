@@ -23,11 +23,18 @@ export const workshopForecastSchema = z.strictObject({
   hours: z.array(z.strictObject({ hour: z.number().int().min(0).max(23), covers })).max(24),
   products: z.array(product.extend({ deliveryDate: date })).max(32),
   serviceWeather: z.array(workshopServiceWeatherSchema).max(2).optional(),
+  plannedServices: z.array(z.strictObject({
+    slot: z.enum(["lunch", "dinner"]), baselineCovers: covers, forecastCovers: covers, plannedPortions: amount,
+    opensAt: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), closesAt: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  }).refine(({ opensAt, closesAt }) => opensAt < closesAt)).max(2).optional(),
   purchaseNeeds: z.array(z.strictObject({ date, products: z.array(product).max(25) })).min(1).max(21).optional(),
 }).refine(({ date, basedOnDate }) => stamp(date) - stamp(basedOnDate) === dayMs)
   .refine(({ covers, hours }) => new Set(hours.map(row => row.hour)).size === hours.length &&
     hours.reduce((sum, row) => sum + row.covers, 0) === covers)
   .refine(({ serviceWeather }) => !serviceWeather || new Set(serviceWeather.map(service => service.slot)).size === serviceWeather.length)
+  .refine(({ plannedServices, covers }) => !plannedServices ||
+    new Set(plannedServices.map(service => service.slot)).size === plannedServices.length &&
+    plannedServices.reduce((sum, service) => sum + service.forecastCovers, 0) === covers)
   .refine(({ date, purchaseNeeds }) => !purchaseNeeds || purchaseNeeds.every((day, index) =>
     stamp(day.date) === stamp(date) + index * dayMs &&
     new Set(day.products.map(row => JSON.stringify([normalized(row.name), normalized(row.supplier), row.unit]))).size === day.products.length))
