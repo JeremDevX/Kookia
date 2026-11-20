@@ -82,6 +82,20 @@ it("renvoie aux suggestions dans Achats lorsque la prévision est connectée", (
   expect(html).not.toContain("Aucun produit à prévoir");
 });
 
+it("indique l’effet de la prévision réelle sur la terrasse et les couverts par service", () => {
+  state.forecast = { provenance: "demo_simulation", date: "2026-11-18", basedOnDate: "2026-11-17", covers: 42,
+    revenueCents: 123456, hours: [{ hour: 12, covers: 22 }, { hour: 19, covers: 20 }], products: [],
+    serviceWeather: [
+      { slot: "lunch", terrace: "closed", percent: -15, reason: "Pluie probable.", fetchedAt: "2026-11-18T02:00:00Z" },
+      { slot: "dinner", terrace: "open", percent: 10, reason: "Service prévu au sec.", fetchedAt: "2026-11-18T02:00:00Z" },
+    ] };
+  const html = render(true);
+  expect(html).toContain("Midi · Terrasse fermée (simulation)");
+  expect(html).toContain("Soir · Terrasse ouverte (simulation)");
+  expect(html).toContain("Relevé à 03:00");
+  expect(html).toContain('href="https://open-meteo.com/"');
+});
+
 it("affiche une journée simulée à zéro et une liste de produits vide", () => {
   state.forecast = { provenance: "demo_simulation", date: "2026-11-18", basedOnDate: "2026-11-17", covers: 0,
     revenueCents: 0, hours: [], products: [] };

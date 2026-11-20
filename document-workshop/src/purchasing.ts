@@ -1,11 +1,12 @@
 import { roundOrderQuantity } from "../../shared/orderQuantity";
 import { workshopApprovedPurchaseReference, type WorkshopApprovedLine } from "../../shared/workshopOrders";
+import type { WorkshopWeather } from "../../shared/workshopWeather";
 import { ingredientById, ingredients, quantity, supplierOrderTerms, suppliers } from "./catalog";
 import { draw, isOpen, offsetDate, purchasePrice, serviceNames, weekday } from "./calendar";
 import { planService } from "./forecast";
 import { available, grossDosages } from "./inventory";
 import type { Day, Lot, Options, Purchase } from "./model";
-import { scenarioWeather } from "./weather";
+import { liveServiceWeather, scenarioWeather } from "./weather";
 
 function nextDelivery(date: string, supplierId: string) {
   const supplier = suppliers.find(s => s.id === supplierId)!;
@@ -16,13 +17,14 @@ function nextDelivery(date: string, supplierId: string) {
   throw new Error("Calendrier fournisseur vide.");
 }
 // No actual service demand, incident, or future waste enters this planning function.
-export function forecastNeeds(from: string, until: string, options: Options) {
+export function forecastNeeds(from: string, until: string, options: Options, weather?: WorkshopWeather) {
   const needs: Record<string, number> = {};
   for (let date = from; date < until; date = offsetDate(date, 1)) {
     if (!isOpen(date, options)) continue;
-    const weather = scenarioWeather(date, options);
+    const scenarioPercent = weather ? 0 : scenarioWeather(date, options).percent;
     for (const service of serviceNames(options)) {
-      const { menu } = planService(date, service, options, weather.percent);
+      const percent = weather ? liveServiceWeather(date, service, weather).percent : scenarioPercent;
+      const { menu } = planService(date, service, options, percent);
       for (const { recipe, planned } of menu) {
         for (const [id, dosage] of Object.entries(grossDosages(recipe, options.lossPercent))) {
           needs[id] = quantity((needs[id] ?? 0) + quantity(dosage * planned / 10));
@@ -59,8 +61,9 @@ export function approvedPurchase(line: WorkshopApprovedLine, date: string, optio
   };
 }
 
-function planPurchase(placedOn: string, deliveryOn: string, supplierId: string, lots: Lot[], purchases: Purchase[], options: Options, opening = false) {
-  const needs = forecastNeeds(deliveryOn, nextDelivery(deliveryOn, supplierId), options);
+function planPurchase(placedOn: string, deliveryOn: string, supplierId: string, lots: Lot[], purchases: Purchase[], options: Options,
+  opening = false, weather?: WorkshopWeather) {
+  const needs = forecastNeeds(deliveryOn, nextDelivery(deliveryOn, supplierId), options, weather);
   const usableLots = lots.filter(l => l.expiresOn >= deliveryOn);
   const pendingDeliveries = purchases.filter(p => !p.receivedOn && p.deliveryOn <= deliveryOn);
   const lines = ingredients.filter(p => p.supplier === supplierId && needs[p.id] > 0).flatMap(product => {
@@ -81,12 +84,12 @@ export function bootstrapPurchases(options: Options, purchases: Purchase[]) {
   while (!isOpen(first, options)) first = offsetDate(first, 1);
   for (const supplier of suppliers) planPurchase(offsetDate(options.start, -1), first, supplier.id, [], purchases, options, true);
 }
-export function planTomorrow(date: string, lots: Lot[], purchases: Purchase[], options: Options) {
+export function planTomorrow(date: string, lots: Lot[], purchases: Purchase[], options: Options, weather?: WorkshopWeather) {
   const tomorrow = offsetDate(date, supplierOrderTerms.leadTimeDays);
   for (const supplier of suppliers) {
     if (!(supplier.deliveryDays as readonly number[]).includes(weekday(tomorrow))) continue;
     if (purchases.some(p => p.supplierId === supplier.id && !p.receivedOn)) continue;
-    planPurchase(date, tomorrow, supplier.id, lots, purchases, options);
+    planPurchase(date, tomorrow, supplier.id, lots, purchases, options, false, weather);
   }
 }
 export function purchaseReferences(orderReference: string) {

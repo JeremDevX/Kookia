@@ -1,6 +1,6 @@
 import { quantity, recipeById } from "./catalog";
 import type { Recipe } from "./catalog";
-import { draw, salePrice } from "./calendar";
+import { draw, salePrice, serviceTimes } from "./calendar";
 import { planService } from "./forecast";
 import { prepare } from "./inventory";
 import type { Day, Lot, Options, RecipeRun, Service, ServiceName } from "./model";
@@ -20,10 +20,10 @@ function customerRequests(date: string, name: ServiceName, menu: Recipe[], forec
     ...(options.drinks && draw(options.seed, `${key}:${index}:coffee`) < .55 ? ["expresso"] : []),
   ]);
 }
-export function runService(day: Day, name: ServiceName, lots: Lot[], options: Options): Service {
-  const { baselineCovers, forecastCovers, menu } = planService(day.date, name, options, day.weather.percent);
+export function runService(day: Day, name: ServiceName, lots: Lot[], options: Options, weatherPercent = day.weather.percent): Service {
+  const { baselineCovers, forecastCovers, menu } = planService(day.date, name, options, weatherPercent);
   const service: Service = { name, baselineCovers, forecastCovers, covers: 0, runs: [], decisions: [], transactions: [] };
-  const prepTime = name === "lunch" ? "10:30" : "18:00";
+  const prepTime = serviceTimes[name].prepareAt;
   // The initial kitchen decision depends exclusively on the forecast and physical stock.
   for (const { recipe, forecast, planned } of menu) {
     const prepared = recipe.category === "Boisson" ? 0 : prepare(lots, recipe, planned, options, day, name);

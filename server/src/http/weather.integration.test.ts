@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterAll, afterEach, beforeEach, expect, it } from "vitest";
 import { vi } from "vitest";
+import { createApp } from "./app.js";
+import { env } from "../config/env.js";
 import { prisma } from "../infrastructure/database/prisma.js";
 import { WeatherProviderError } from "../integrations/weatherProvider.js";
 import { readWeatherCache, weatherJson, weatherKey, cacheKind } from "../application/workspace/weatherStorage.js";
@@ -162,4 +164,35 @@ it("never stores a new unseen forecast or an in-flight response for a replaced l
   await owner.confirm(); finish(weatherForecast());
   expect(await pending).toMatchObject({ status: "not_configured", position: null, contextRef: null });
   expect(await readWeatherCache(prisma, owner.restaurantId)).toBeNull();
+});
+
+it("gives the atelier only fresh live weather from its authenticated test restaurant", async () => {
+  const provider = weatherProvider("live"), owner = await weatherAccount(users, provider);
+  const token = "workshop-weather-fixture-".repeat(3);
+  const previous = { WORKSHOP_IMPORT_TOKEN: env.WORKSHOP_IMPORT_TOKEN,
+    WORKSHOP_IMPORT_RESTAURANT_ID: env.WORKSHOP_IMPORT_RESTAURANT_ID,
+    WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE: env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE };
+  Object.assign(env, { WORKSHOP_IMPORT_TOKEN: token, WORKSHOP_IMPORT_RESTAURANT_ID: owner.restaurantId,
+    WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE: undefined });
+  const weather = (app = createApp(undefined, undefined, provider)) =>
+    request(app).get("/api/integrations/workshop/weather").set("Authorization", `Bearer ${token}`);
+  try {
+    await prisma.restaurant.update({ where: { id: owner.restaurantId }, data: { mode: "operational", hasTerrace: true } });
+    await request(createApp(undefined, undefined, provider)).get("/api/integrations/workshop/weather").expect(401);
+    await weather().expect(403);
+    expect(provider.forecast).not.toHaveBeenCalled();
+    env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE = "true";
+    await owner.confirm();
+    const result = await weather().expect(200);
+    expect(result.body).toEqual({ hasTerrace: true, forecast: weatherForecast() });
+    expect(result.headers["cache-control"]).toBe("no-store");
+    expect(provider.forecast).toHaveBeenCalledTimes(1);
+    vi.setSystemTime(new Date(`${weatherDate}T09:30:00Z`));
+    provider.forecast.mockRejectedValueOnce(new WeatherProviderError("unavailable"));
+    await weather().expect(200, { hasTerrace: true, forecast: null });
+    provider.provenance = "fixture";
+    await weather().expect(200, { hasTerrace: true, forecast: null });
+  } finally {
+    Object.assign(env, previous);
+  }
 });

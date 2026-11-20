@@ -8,6 +8,9 @@ import { getWorkshopApprovedOrders } from "../application/workspace/workshopAppr
 import { workshopApprovedPurchaseReference } from "../../../shared/workshopOrders.js";
 import { importWorkshopDay } from "../application/workspace/workshopImportService.js";
 import { storeWorkshopForecast } from "../application/workspace/workshopForecastService.js";
+import { getWorkshopWeather } from "../application/workspace/workshopWeatherService.js";
+import type { WeatherProvider } from "../integrations/weatherProvider.js";
+import { weatherProviderForRestaurant } from "./weatherRoutes.js";
 import { workshopStockSchema } from "../application/workspace/workshopStockInput.js";
 import { workshopOperationsSchema } from "../application/workspace/workshopOperationsInput.js";
 import type { WorkshopOperationsInput } from "../application/workspace/workshopOperationsInput.js";
@@ -83,6 +86,12 @@ export function createWorkshopImportRoutes(token: string, restaurantId: string, 
     }
     next();
   };
+
+  routes.get("/weather", authenticate, async (_req, res) => {
+    const provider = weatherProviderForRestaurant(restaurantId, res.locals.weatherProvider as WeatherProvider);
+    const weather = await getWorkshopWeather(restaurantId, provider, allowOperationalTestWorkspace);
+    res.set("Cache-Control", "no-store").json(weather);
+  });
 
   if (followOrdersFrom) routes.get("/approved-orders/:date", authenticate, async (req, res) => {
     const date = serviceDate.safeParse(req.params.date);

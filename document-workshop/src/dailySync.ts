@@ -3,6 +3,7 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
 import { formatParisDate } from "../../shared/parisDate";
 import { workshopApprovedOrdersSchema } from "../../shared/workshopOrders";
+import { workshopWeatherSchema, type WorkshopWeather } from "../../shared/workshopWeather";
 import { offsetDate } from "./calendar";
 import { recipeById } from "./catalog";
 import { continuationStart, parseCheckpointFile, validateCheckpoint } from "./continuation";
@@ -24,6 +25,7 @@ interface SyncConfig {
   startDate: string;
   variationFrom?: string;
   followOrdersFrom?: string;
+  liveWeatherFrom?: string;
   timeoutMs: number;
 }
 
@@ -66,18 +68,25 @@ export function readDailySyncConfig(env: NodeJS.ProcessEnv): SyncConfig {
   if (!followOrdersFrom.success || (followOrdersFrom.data && (!stockStateFile || !operationsStateFile || forecastEnabled !== "true"))) {
     throw new Error("WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM exige une date valide, les stocks, les opérations et la prévision.");
   }
-  if (followOrdersFrom.data && [...stateFiles, openingFile].some(file =>
-    file && resolve(file) === resolve(`${operationsStateFile}.pending`))) {
-    throw new Error("Le fichier de reprise des opérations suivi de .pending est réservé à la journée préparée.");
+  const liveWeatherFrom = z.iso.date().optional().safeParse(env.WORKSHOP_LIVE_WEATHER_FROM || undefined);
+  if (!liveWeatherFrom.success) throw new Error("WORKSHOP_LIVE_WEATHER_FROM doit être une date valide.");
+  const activeStateFile = operationsStateFile ?? stockStateFile ?? stateFile;
+  const configuredFiles = [...stateFiles, openingFile].flatMap(file => file ? [resolve(file)] : []);
+  if ((followOrdersFrom.data || liveWeatherFrom.data) && configuredFiles.includes(resolve(`${activeStateFile}.pending`))) {
+    throw new Error("Le fichier de reprise suivi de .pending est réservé à la journée préparée.");
+  }
+  if (liveWeatherFrom.data && configuredFiles.includes(resolve(`${activeStateFile}.weather`))) {
+    throw new Error("Le fichier de reprise suivi de .weather est réservé aux prévisions relevées.");
   }
   const timeoutMs = Number(env.WORKSHOP_REQUEST_TIMEOUT_MS ?? 30_000);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 120_000) {
     throw new Error("WORKSHOP_REQUEST_TIMEOUT_MS doit être compris entre 1000 et 120000.");
   }
 
-  return { apiOrigin, token, stateFile: operationsStateFile ?? stockStateFile ?? stateFile,
+  return { apiOrigin, token, stateFile: activeStateFile,
     includeStock: Boolean(stockStateFile), includeOperations: Boolean(operationsStateFile), includeForecast: forecastEnabled === "true", openingFile,
-    startDate: startDate.data, variationFrom: variationFrom.data, followOrdersFrom: followOrdersFrom.data, timeoutMs };
+    startDate: startDate.data, variationFrom: variationFrom.data, followOrdersFrom: followOrdersFrom.data,
+    liveWeatherFrom: liveWeatherFrom.data, timeoutMs };
 }
 
 async function readCheckpoint(file: string) {
@@ -172,6 +181,32 @@ async function readPreparedDay(file: string, date: string) {
   return { payload: prepared.payload, checkpoint };
 }
 
+const weatherStateSchema = z.array(z.strictObject({ date: z.iso.date(), weather: workshopWeatherSchema })).max(7);
+const unavailableWeather: WorkshopWeather = { hasTerrace: null, forecast: null };
+
+async function captureWeather(config: SyncConfig, today: string) {
+  const file = `${config.stateFile}.weather`;
+  let saved: z.infer<typeof weatherStateSchema> = [];
+  try { saved = weatherStateSchema.parse(JSON.parse(await readFile(file, "utf8"))); }
+  catch (cause) {
+    if (!(cause instanceof SyntaxError) && !(cause instanceof z.ZodError) && (cause as NodeJS.ErrnoException).code !== "ENOENT") throw cause;
+  }
+  const byDate = new Map(saved.map(row => [row.date, row.weather]));
+  if (!byDate.get(today)?.forecast) {
+    let observed: WorkshopWeather | undefined;
+    try {
+      observed = workshopWeatherSchema.parse(await requestWorkshop(config, "/api/integrations/workshop/weather", today));
+    } catch {
+      console.warn(`Météo de Kookia indisponible pour le ${today}. Le transfert continue.`);
+    }
+    if (observed) {
+      byDate.set(today, observed);
+      await writeState(file, [...byDate].sort(([a], [b]) => a.localeCompare(b)).slice(-7).map(([date, weather]) => ({ date, weather })));
+    }
+  }
+  return (date: string) => date >= config.liveWeatherFrom! ? byDate.get(date) ?? unavailableWeather : undefined;
+}
+
 export async function syncDaily(config: SyncConfig, now = new Date()) {
   const today = formatParisDate(now);
   const through = offsetDate(today, -1);
@@ -192,19 +227,23 @@ export async function syncDaily(config: SyncConfig, now = new Date()) {
     throw new Error("Le fichier de reprise ne correspond pas au dossier planifié.");
   }
 
+  const weatherFor = config.liveWeatherFrom && today >= config.liveWeatherFrom ? await captureWeather(config, today) : () => undefined;
+
   let checkpoint = state ?? opening;
   let date = checkpoint ? continuationStart(checkpoint) : config.startDate;
   let imported = 0;
   let replayed = 0;
   while (date <= through) {
     const connected = connectedOn(date);
-    let prepared: { payload: unknown; checkpoint: Checkpoint } | undefined = connected ? await readPreparedDay(pendingFile, date) : undefined;
+    const weather = weatherFor(date);
+    const replayPrepared = connected || weather !== undefined;
+    let prepared: { payload: unknown; checkpoint: Checkpoint } | undefined = replayPrepared ? await readPreparedDay(pendingFile, date) : undefined;
     if (!prepared) {
       const approved = connected ? workshopApprovedOrdersSchema.parse(
         await requestWorkshop(config, `/api/integrations/workshop/approved-orders/${date}`, date)) : undefined;
-      const scenario = generateScenario({ ...profileFor(date), start: date }, checkpoint, approved);
+      const scenario = generateScenario({ ...profileFor(date), start: date }, checkpoint, approved, weather);
       prepared = { payload: dayPayload(config, scenario), checkpoint: scenario.checkpoint };
-      if (connected) await writeState(pendingFile, prepared);
+      if (replayPrepared) await writeState(pendingFile, prepared);
     }
     if (prepared.checkpoint.originStart !== originStart || prepared.checkpoint.seed !== profile.seed)
       throw new Error("La journée préparée ne correspond pas au dossier planifié.");
@@ -215,14 +254,14 @@ export async function syncDaily(config: SyncConfig, now = new Date()) {
       throw cause;
     }
     await writeState(config.stateFile, prepared.checkpoint);
-    if (connected) await rm(pendingFile, { force: true });
+    if (replayPrepared) await rm(pendingFile, { force: true });
     checkpoint = prepared.checkpoint;
     date = continuationStart(checkpoint);
     if (alreadyReceived) replayed += 1;
     else imported += 1;
   }
   if (config.includeForecast && checkpoint?.asOf === through) {
-    const forecast = dailyForecast(today, checkpoint, profileFor(today), connectedOn(today));
+    const forecast = dailyForecast(today, checkpoint, profileFor(today), connectedOn(today), weatherFor(today));
     const response = await requestWorkshop(config, `/api/integrations/workshop/forecast/${today}`, today, forecast);
     const acknowledgment = forecastAcknowledgmentSchema.safeParse(response);
     if (!acknowledgment.success || acknowledgment.data.date !== today) {

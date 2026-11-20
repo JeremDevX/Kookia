@@ -1,9 +1,14 @@
 import { Link } from "react-router-dom";
 import { purchasePreparationHref } from "../../features/orders/orderNavigation";
 import { useClientPresentation } from "../../features/members/workspaceContext";
+import { formatParisTime } from "../../../shared/parisDate";
 import type { WorkshopForecast } from "../../../shared/workshopForecast";
 import { formatDisplayDate, formatQuantity } from "../../utils/format";
 import Badge from "../common/Badge";
+
+const terraces = { open: "Terrasse ouverte (simulation)", closed: "Terrasse fermée (simulation)",
+  none: "Sans terrasse", unknown: "Terrasse indéterminée" } as const;
+const percent = new Intl.NumberFormat("fr-FR", { style: "percent", signDisplay: "exceptZero" });
 
 export function WorkshopCoversForecast({ forecast }: { forecast: WorkshopForecast }) {
   const clientPresentation = useClientPresentation();
@@ -13,6 +18,13 @@ export function WorkshopCoversForecast({ forecast }: { forecast: WorkshopForecas
     <h2 id="today-covers-title">Prévision des couverts</h2>
     {!clientPresentation && <Badge label="Simulation" status="neutral" />}
     <p>Estimation du {formatDisplayDate(forecast.date)} à partir de la clôture du {formatDisplayDate(forecast.basedOnDate)}.</p>
+    {forecast.serviceWeather?.map(weather => <p key={weather.slot}>
+      <strong>{weather.slot === "lunch" ? "Midi" : "Soir"} · {terraces[weather.terrace]}</strong><br />
+      {weather.reason}{weather.percent !== 0 && ` Couverts prévus ${percent.format(weather.percent / 100)}.`}
+      {weather.fetchedAt && <small> · Relevé à {formatParisTime(new Date(weather.fetchedAt))}</small>}
+    </p>)}
+    {forecast.serviceWeather?.some(weather => weather.fetchedAt) &&
+      <p><small>Coefficients de simulation indicatifs. Prévisions <a href="https://open-meteo.com/">Open-Meteo</a>.</small></p>}
     {hours.length ? <ul className="today-workshop-hours" role="list" aria-label="Couverts estimés par heure">
       {hours.map(({ hour, covers }) => <li key={hour}>
         <time dateTime={`${String(hour).padStart(2, "0")}:00`}>{hour} h</time>

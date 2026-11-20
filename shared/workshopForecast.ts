@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { workshopServiceWeatherSchema } from "./workshopWeather.js";
 
 const date = z.iso.date().refine(value => value >= "0001-01-01");
 const label = z.string().trim().min(1).max(120).refine(value => !/\p{Cc}/u.test(value));
@@ -21,10 +22,12 @@ export const workshopForecastSchema = z.strictObject({
   revenueCents: amount,
   hours: z.array(z.strictObject({ hour: z.number().int().min(0).max(23), covers })).max(24),
   products: z.array(product.extend({ deliveryDate: date })).max(32),
+  serviceWeather: z.array(workshopServiceWeatherSchema).max(2).optional(),
   purchaseNeeds: z.array(z.strictObject({ date, products: z.array(product).max(25) })).min(1).max(21).optional(),
 }).refine(({ date, basedOnDate }) => stamp(date) - stamp(basedOnDate) === dayMs)
   .refine(({ covers, hours }) => new Set(hours.map(row => row.hour)).size === hours.length &&
     hours.reduce((sum, row) => sum + row.covers, 0) === covers)
+  .refine(({ serviceWeather }) => !serviceWeather || new Set(serviceWeather.map(service => service.slot)).size === serviceWeather.length)
   .refine(({ date, purchaseNeeds }) => !purchaseNeeds || purchaseNeeds.every((day, index) =>
     stamp(day.date) === stamp(date) + index * dayMs &&
     new Set(day.products.map(row => JSON.stringify([normalized(row.name), normalized(row.supplier), row.unit]))).size === day.products.length))

@@ -1,7 +1,9 @@
 import { weatherCondition } from "../../shared/weatherConditions";
 import { weatherScenarioEffect, type WeatherScenarioConditions } from "../../shared/weatherScenario";
-import { draw } from "./calendar";
-import type { Options } from "./model";
+import { formatParisDate, formatParisTime } from "../../shared/parisDate";
+import type { WorkshopServiceWeather, WorkshopWeather } from "../../shared/workshopWeather";
+import { draw, serviceTimes } from "./calendar";
+import type { Options, ServiceName } from "./model";
 
 export interface ScenarioWeather {
   source: "scenario";
@@ -31,6 +33,36 @@ export function scenarioWeather(date: string, options: Options): ScenarioWeather
     ? { reason: "Terrasse non renseignée : base semaine/saison conservée." }
     : weatherScenarioEffect(options.hasTerrace, conditions)) };
 }
+export function liveServiceWeather(date: string, slot: ServiceName, input: WorkshopWeather): WorkshopServiceWeather {
+  const { forecast, hasTerrace } = input;
+  const unavailable: WorkshopServiceWeather = { slot, fetchedAt: null, terrace: hasTerrace === false ? "none" : "unknown",
+    percent: 0, reason: "Prévision indisponible pour ce service. Fréquentation de référence conservée." };
+  if (!forecast) return unavailable;
+  const captured = new Date(forecast.fetchedAt), capturedOn = formatParisDate(captured);
+  const { startHour, prepareAt } = serviceTimes[slot];
+  if (capturedOn > date || (capturedOn === date && formatParisTime(captured) >= prepareAt)) return unavailable;
+  const hours = forecast.hours.filter(hour => {
+    const instant = new Date(hour.time);
+    const clock = formatParisTime(instant), localHour = Number(clock.slice(0, 2));
+    return formatParisDate(instant) === date && clock.endsWith(":00") && localHour >= startHour && localHour < startHour + 3;
+  });
+  if (hours.length !== 3 || new Set(hours.map(hour => hour.time)).size !== 3 || hours.some(hour =>
+    hour.temperature === null || hour.windSpeed === null || hour.precipitation === null || hour.precipitationProbability === null)) return unavailable;
+  const base = { ...unavailable, fetchedAt: forecast.fetchedAt };
+  if (hasTerrace === null) return { ...base, reason: "Terrasse non renseignée. Fréquentation de référence conservée." };
+
+  const wind = Math.max(...hours.map(hour => hour.windSpeed!));
+  const strongRain = hours.some(hour => hour.precipitation! >= 2);
+  const wet = hours.some(hour => hour.precipitation! >= .2 || hour.precipitationProbability! >= 70);
+  const comfortable = hours.every(hour => hour.temperature! >= 15 && hour.temperature! <= 28);
+  const terrace = hasTerrace ? wet || wind >= 25 || !comfortable ? "closed" : "open" : "none";
+  if (wind >= 40) return { ...base, terrace, percent: hasTerrace ? -30 : -10, reason: "Vent fort prévu pendant le service." };
+  if (strongRain) return { ...base, terrace, percent: hasTerrace ? -25 : -8, reason: "Fortes précipitations prévues pendant le service." };
+  if (wet) return { ...base, terrace, percent: hasTerrace ? -15 : -5, reason: "Pluie probable pendant le service." };
+  if (terrace === "closed") return { ...base, terrace, percent: -10, reason: "Température ou vent défavorables à la terrasse." };
+  return { ...base, terrace, percent: terrace === "open" ? 10 : 0, reason: "Service prévu au sec." };
+}
+
 export function scenarioWeatherSummary(weather: ScenarioWeather) {
   if (!weather.conditions) return "Météo non renseignée · sans ajustement";
   const { weatherCode, temperatureMax, maxWindSpeed } = weather.conditions;

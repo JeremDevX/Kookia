@@ -12,10 +12,11 @@ import { workspaceContext as context } from "./workspaceContext.js";
 
 export const weatherRoutes = Router();
 const evaluationProvider = createOpenMeteo({ mode: "evaluation" });
-export const weatherProviderFor = (res: Response): WeatherProvider => {
-  const provider = res.locals.weatherProvider as WeatherProvider;
-  return !provider.configured && context(res).restaurantId === env.OPEN_METEO_EVALUATION_RESTAURANT_ID ? evaluationProvider : provider;
-};
+export const weatherProviderForRestaurant = (restaurantId: string, provider: WeatherProvider): WeatherProvider =>
+  !provider.configured && restaurantId === env.OPEN_METEO_EVALUATION_RESTAURANT_ID ? evaluationProvider : provider;
+
+export const weatherProviderFor = (res: Response): WeatherProvider =>
+  weatherProviderForRestaurant(context(res).restaurantId, res.locals.weatherProvider as WeatherProvider);
 const query = z.object({ date: z.iso.date(), slot: slotSchema }).strict();
 weatherRoutes.get("/weather/location", async (_req, res) => {
   res.json(await getWeatherLocation(context(res).restaurantId, weatherProviderFor(res).configured));

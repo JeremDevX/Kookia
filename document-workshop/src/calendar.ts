@@ -20,6 +20,10 @@ export function draw(seed: number, key: string) {
   hash = Math.imul(hash ^ (hash >>> 13), 3266489909);
   return ((hash ^ (hash >>> 16)) >>> 0) / 4294967296;
 }
+export const serviceTimes = {
+  lunch: { startHour: 12, prepareAt: "10:30" },
+  dinner: { startHour: 19, prepareAt: "18:00" },
+} as const;
 export const serviceNames = (options: Options): ServiceName[] => options.services === "both" ? ["lunch", "dinner"] : [options.services];
 export function expectedCovers(date: string, service: ServiceName, options: Options) {
   if (!isOpen(date, options)) return 0;

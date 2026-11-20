@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { formatParisDate, formatParisTime } from "../../shared/parisDate";
 import type { WorkshopApprovedLine } from "../../shared/workshopOrders";
+import type { WorkshopWeather } from "../../shared/workshopWeather";
 import { CATALOG_VERSION, identity, ingredients, quantity, recipes } from "./catalog";
 import { isOpen, offsetDate, draw, serviceNames } from "./calendar";
 import { continuationStart, validateCheckpoint } from "./continuation";
@@ -9,7 +11,7 @@ import type { Checkpoint, Day, Incident, Options, OptionsInput, Scenario } from 
 import { approvedPurchase, bootstrapPurchases, planTomorrow, receivePurchases } from "./purchasing";
 import { runService } from "./service";
 import { refundTransaction } from "./till";
-import { scenarioWeather } from "./weather";
+import { liveServiceWeather, scenarioWeather, weatherPercent } from "./weather";
 
 const incidents: Incident[] = ["short_delivery", "late_delivery", "unavailable", "high_waste", "refund", "stock_gap", "demand_shift"];
 const connectedIncidents: Incident[] = ["short_delivery", "late_delivery", "refund", "stock_gap"];
@@ -32,7 +34,8 @@ function openingDay(date: string, opening: Checkpoint["lots"], incident: Inciden
       received: 0, shortage: 0, consumed: 0, loss: 0, adjustment: 0, closing: 0 })),
     gross: 0, discount: 0, refunded: 0, collected: 0, net: 0, tax: 0, card: 0, cash: 0 };
 }
-export function generateScenario(input: OptionsInput, continuation?: Checkpoint, approved?: readonly WorkshopApprovedLine[]): Scenario {
+export function generateScenario(input: OptionsInput, continuation?: Checkpoint, approved?: readonly WorkshopApprovedLine[],
+  weather?: WorkshopWeather): Scenario {
   const parsed = optionsSchema.safeParse(input);
   if (!parsed.success) throw new Error("Vérifiez les champs : durée de 1 à 90 jours, 5 à 200 couverts de référence, au moins un jour ouvert et réglages dans les limites indiquées.");
   const options = parsed.data;
@@ -51,12 +54,23 @@ export function generateScenario(input: OptionsInput, continuation?: Checkpoint,
   const days: Day[] = [];
   for (let index = 0; index < options.days; index++) {
     const date = offsetDate(options.start, index);
-    const day = openingDay(date, lots, incidentOn(date, origin, options, approved !== undefined), options);
+    const day = openingDay(date, lots, incidentOn(date, origin, options, approved !== undefined),
+      weather ? { ...options, hasTerrace: weather.hasTerrace, weather: "none" } : options);
     expireLots(lots, day);
     receivePurchases(purchases, lots, day, options, approved !== undefined);
     if (day.incident === "high_waste") spoilLot(lots, day, options);
     if (day.open) {
-      for (const name of serviceNames(options)) day.services.push(runService(day, name, lots, options));
+      for (const name of serviceNames(options)) {
+        const live = weather && liveServiceWeather(date, name, weather);
+        if (live) {
+          const terrace = live.terrace === "open" ? "Terrasse ouverte dans la simulation. "
+            : live.terrace === "closed" ? "Terrasse fermée dans la simulation. " : "";
+          const captured = live.fetchedAt ? new Date(live.fetchedAt) : null;
+          const source = captured ? `Open-Meteo, prévision relevée le ${formatParisDate(captured)} à ${formatParisTime(captured)}. ` : "";
+          day.events.push(`${name === "lunch" ? "Midi" : "Soir"} : ${terrace}${source}${live.reason} Ajustement des couverts : ${weatherPercent(live.percent)}.`);
+        }
+        day.services.push(runService(day, name, lots, options, live?.percent));
+      }
       day.baselineCovers = day.services.reduce((sum, s) => sum + s.baselineCovers, 0);
       day.forecastCovers = day.services.reduce((sum, s) => sum + s.forecastCovers, 0);
       day.covers = day.services.reduce((sum, s) => sum + s.covers, 0);
@@ -73,7 +87,7 @@ export function generateScenario(input: OptionsInput, continuation?: Checkpoint,
     }
     if (day.incident === "stock_gap") countAdjustment(lots, day, options);
     // Ordering happens at closure, using today's available balance and future forecasts only.
-    if (!approved) planTomorrow(date, lots, purchases, options);
+    if (!approved) planTomorrow(date, lots, purchases, options, weather);
     const orderedToday = purchases.filter(p => p.placedOn === date);
     for (const stock of day.stock) {
       stock.ordered = quantity(orderedToday.reduce((sum, p) => sum + (p.lines.find(l => l.productId === stock.id)?.ordered ?? 0), 0));

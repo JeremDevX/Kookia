@@ -47,6 +47,7 @@ Variables du processus de synchronisation, à renseigner côté serveur :
 | `WORKSHOP_STOCK_STATE_FILE` | Facultatif. Chemin absolu distinct du fichier de reprise des ventes. Active l’envoi conjoint des ventes et des stocks. Le premier envoi compare le stock Kookia au stock d’ouverture du dossier. |
 | `WORKSHOP_OPERATIONS_STATE_FILE` | Facultatif. Chemin absolu distinct des autres fichiers de reprise. Active l’envoi des opérations en plus des ventes et, si configuré, du stock. |
 | `WORKSHOP_OPENING_CHECKPOINT_FILE` | Facultatif. Chemin absolu du `stock-reprise.json` du dossier précédent. Sa clôture doit précéder d’un jour la première date à transmettre. Conserver ce fichier pour les reprises suivantes. |
+| `WORKSHOP_LIVE_WEATHER_FROM` | Facultatif côté générateur. Première journée qui utilise la prévision Open-Meteo de l’espace de test. Choisir une journée encore à transmettre. |
 | `WORKSHOP_VARIATION_FROM` | Facultatif. À partir de cette date de service (`AAAA-MM-JJ`), activer la météo simulée avec terrasse et les imprévus variés du scénario. Conserver cette date d’activation pour les rejeux. |
 | `WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM` | Facultatif. Date de début du mode connecté, identique côté API et générateur. Exige un espace de démonstration dédié, les stocks, les opérations et la prévision. |
 | `WORKSHOP_FORECAST_ENABLED` | Facultatif. `true` côté générateur et côté API pour publier la prévision simulée du jour dans le tableau de bord de l’espace de test configuré. |
@@ -95,6 +96,27 @@ tableau de bord présente les couverts par heure, le chiffre d’affaires estim�
 prix de la carte et les produits suggérés par le scénario. La prévision expire
 en fin de journée à Paris. En mode autonome, les besoins de l’atelier
 s’affichent à titre indicatif. En mode connecté, ils sont proposés dans **Achats**.
+
+### Tenir compte de la météo de Kookia
+
+Le jour du service, la synchronisation relève la prévision Open-Meteo pour
+la commune enregistrée ou confirmée dans Kookia. Elle utilise aussi le réglage
+Terrasse de l’établissement. Le fichier `.weather` conserve le relevé avant
+la préparation. Au transfert nocturne, l’atelier reprend ce relevé pour simuler
+la veille. Une demande en retard conserve la fréquentation de référence si le
+relevé du jour manque. Les journées déjà importées gardent leur historique.
+
+Le midi utilise les heures de 12 h à 15 h et le soir celles de 19 h à 22 h.
+La simulation ouvre la terrasse sur un créneau sec, de 15 à 28 °C et avec un
+vent inférieur à 25 km/h. La pluie, le vent fort et la fermeture de la terrasse
+peuvent réduire les couverts prévus. Les portions et besoins d’achat suivent la
+même estimation. Les coefficients sont des hypothèses indicatives. Une heure
+manquante ou une prévision relevée après le début de la préparation laisse les
+couverts de référence. Le tableau de bord indique l’effet par service.
+
+Conserver les fichiers `.weather` et `.pending` avec le fichier de reprise.
+L’atelier autonome et les jours qui précèdent l’activation suivent les réglages
+de scénario habituels.
 
 ### Suivre les commandes validées dans Kookia
 
