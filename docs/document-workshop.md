@@ -48,6 +48,7 @@ Variables du processus de synchronisation, à renseigner côté serveur :
 | `WORKSHOP_OPERATIONS_STATE_FILE` | Facultatif. Chemin absolu distinct des autres fichiers de reprise. Active l’envoi des opérations en plus des ventes et, si configuré, du stock. |
 | `WORKSHOP_OPENING_CHECKPOINT_FILE` | Facultatif. Chemin absolu du `stock-reprise.json` du dossier précédent. Sa clôture doit précéder d’un jour la première date à transmettre. Conserver ce fichier pour les reprises suivantes. |
 | `WORKSHOP_VARIATION_FROM` | Facultatif. À partir de cette date de service (`AAAA-MM-JJ`), activer la météo simulée avec terrasse et les imprévus variés du scénario. Conserver cette date d’activation pour les rejeux. |
+| `WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM` | Facultatif. Date de début du mode connecté, identique côté API et générateur. Exige un espace de démonstration dédié, les stocks, les opérations et la prévision. |
 | `WORKSHOP_FORECAST_ENABLED` | Facultatif. `true` côté générateur et côté API pour publier la prévision simulée du jour dans le tableau de bord de l’espace de test configuré. |
 | `WORKSHOP_REQUEST_TIMEOUT_MS` | Facultatif. Délai maximal par envoi, 30 000 ms par défaut. |
 
@@ -92,8 +93,39 @@ fichier de reprise stock. La validation des décisions reste dans Kookia.
 La prévision simulée utilise la clôture de la veille et le plan du jour. Le
 tableau de bord présente les couverts par heure, le chiffre d’affaires estimé aux
 prix de la carte et les produits suggérés par le scénario. La prévision expire
-en fin de journée à Paris. Les suggestions servent à tester l’affichage des
-besoins de l’atelier. Les achats du restaurant suivent leur parcours de revue.
+en fin de journée à Paris. En mode autonome, les besoins de l’atelier
+s’affichent à titre indicatif. En mode connecté, ils sont proposés dans **Achats**.
+
+### Suivre les commandes validées dans Kookia
+
+Choisir comme date de début la première journée encore à transmettre. Régler
+`WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM` des deux côtés avec la même valeur.
+L’espace ciblé doit être en mode démonstration. Les fiches du catalogue Maison
+Sureau doivent correspondre par produit, unité et fournisseur.
+
+La prévision transmet les besoins simulés par date sur 21 jours. Dans **Achats**,
+Kookia rapproche ces besoins des lots, du dernier comptage et des quantités en
+attente. Vérifier le stock, revoir la suggestion puis valider la commande. La
+quantité choisie à la validation et la date prévue alimentent le scénario.
+Une suggestion écartée ou laissée dans le panier ne déclenche rien. Aucun
+message fournisseur n’est envoyé.
+
+La simulation reprend les stocks et les livraisons déjà en transit. Les
+nouvelles réceptions suivent les commandes issues d’une suggestion validée,
+à partir du jour suivant la validation. Les 16 lignes les plus anciennes
+arrivées à échéance sont traitées en premier. Le reste demeure en attente.
+Un retard peut reporter la réception d’un jour. En cas de livraison partielle,
+seule la quantité reçue alimente le stock et le reliquat est à nouveau
+éligible le lendemain. Les pertes, écarts de comptage et variations de
+fréquentation se répercutent sur la préparation, les ventes et la clôture.
+Les imprévus dépendent du jour et du numéro du dossier pour rester rejouables.
+Les pièces, réceptions et mouvements restent des données de simulation.
+
+Conserver le fichier `.pending` au côté du fichier de reprise pendant une
+coupure. Il contient la journée préparée et permet de renvoyer les mêmes
+données lorsque l’accusé de réception manque. Après un changement de commande
+détecté par l’API, le prochain passage recharge les quantités validées.
+Conserver la date de début si une journée a déjà été transmise dans ce mode.
 
 ## Préparer un dossier
 

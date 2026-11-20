@@ -1,3 +1,4 @@
+import { workshopPurchaseNeedsModel } from "../../../../shared/workshopForecast.js";
 import { getOrderStep, isOrderQuantity, orderStepLabel } from "../../../../shared/orderQuantity.js";
 import { cartSchema } from "./cartService.js";
 import { Prisma } from "@prisma/client";
@@ -53,15 +54,18 @@ export async function validateOrder(restaurantId: string, actorId: string, input
     }
     const restaurant = await tx.restaurant.findUnique({ where: { id: restaurantId }, select: { mode: true } });
     if (!restaurant) throw new WorkspaceError(404, "WORKSPACE_NOT_FOUND", "Espace introuvable.");
+    const workshopDeliveryDates = new Map<string, Date>();
     if (suggestionDecisions.length) {
       if (new Set(suggestionDecisions.map(({ id }) => id)).size !== suggestionDecisions.length)
         throw new WorkspaceError(409, "SUGGESTION_ALREADY_ORDERED", "Une même proposition ne peut apparaître qu’une fois dans une commande.");
       const currentSuggestions = await getPurchaseSuggestions(restaurantId, tx);
-      for (const { snapshot } of suggestionDecisions) {
-        if (snapshot.workspaceMode !== currentSuggestions.workspaceMode ||
-            typeof snapshot.suggestionKey !== "string" || !currentSuggestions.suggestions.some((suggestion) =>
-              suggestion.suggestionKey === snapshot.suggestionKey && suggestion.canAdd)) {
+      for (const { id, snapshot } of suggestionDecisions) {
+        const suggestion = currentSuggestions.suggestions.find(row => row.suggestionKey === snapshot.suggestionKey && row.canAdd);
+        if (snapshot.workspaceMode !== currentSuggestions.workspaceMode || !suggestion) {
           throw new WorkspaceError(409, "SUGGESTION_CHANGED", "Le besoin ou le stock a changé depuis la revue. Rechargez la proposition.");
+        }
+        if (currentSuggestions.model === workshopPurchaseNeedsModel && suggestion.deliveryHorizon.status === "known") {
+          workshopDeliveryDates.set(id, new Date(`${suggestion.deliveryHorizon.nextDeliveryDate}T00:00:00Z`));
         }
       }
       if (await tx.purchaseOrderLine.findFirst({ where: { suggestionDecisionId: { in: suggestionDecisions.map(({ id }) => id) } },
@@ -80,10 +84,10 @@ export async function validateOrder(restaurantId: string, actorId: string, input
       const orderStep = getOrderStep(product);
       if (!isOrderQuantity(line.quantity, orderStep))
         throw new WorkspaceError(400, "INVALID_ORDER_QUANTITY", `${product.name} : ${orderStepLabel(orderStep, product.unit)} ; quantité maximale : 1 000 000.`);
+      const suggestionDecisionId = line.cartId ? suggestionDecisionByCartId.get(line.cartId) : undefined;
       lines.push({ productId: product.id, productName: product.name, supplierId: product.supplierId,
         supplierName: product.supplier.name, unit: product.unit, quantity: line.quantity, pricePerUnit: product.pricePerUnit,
-        ...(line.cartId && suggestionDecisionByCartId.has(line.cartId)
-          ? { suggestionDecisionId: suggestionDecisionByCartId.get(line.cartId)! } : {}) });
+        ...(suggestionDecisionId && { suggestionDecisionId, expectedDeliveryDate: workshopDeliveryDates.get(suggestionDecisionId) }) });
     }
     const simulated = restaurant.mode === "demo";
     const order = await tx.purchaseOrder.create({ data: { restaurantId, actorId, operationId: input.operationId,

@@ -45,6 +45,7 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   app.use("/api/workspace/inventory-session", express.json({ limit: "2mb", type: "application/json" }));
   app.use("/api/workspace/sales/imports", express.json({ limit: "512kb", type: "application/json" }));
   app.use("/api/integrations/workshop/days", express.json({ limit: "128kb", type: "application/json" }));
+  app.use("/api/integrations/workshop/forecast", express.json({ limit: "64kb", type: "application/json" }));
   // Cards with formulas and sheets with detailed notes can exceed the default limit.
   app.post("/api/workspace/service-menu", express.json({ limit: "1mb", type: "application/json" }));
   app.post("/api/workspace/services/sheet", express.json({ limit: "640kb", type: "application/json" }));
@@ -110,7 +111,8 @@ export function createApp(invoiceExtractionAdapter: InvoiceExtractionAdapter = u
   app.use("/api/workspace", workspaceRoutes);
   if (env.WORKSHOP_IMPORT_TOKEN && env.WORKSHOP_IMPORT_RESTAURANT_ID) {
     app.use("/api/integrations/workshop", createWorkshopImportRoutes(env.WORKSHOP_IMPORT_TOKEN, env.WORKSHOP_IMPORT_RESTAURANT_ID,
-      env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE === "true", env.WORKSHOP_FORECAST_ENABLED === "true"));
+      env.WORKSHOP_IMPORT_ALLOW_OPERATIONAL_TEST_WORKSPACE === "true", env.WORKSHOP_FORECAST_ENABLED === "true",
+      env.WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM));
   }
 
   app.use((_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "Ressource introuvable." } }));

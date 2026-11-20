@@ -151,7 +151,7 @@ function DashboardOverview() {
       <div className="dashboard-metric"><span>Couverts prévus</span><strong>{workshopForecast ? formatQuantity(workshopForecast.covers) : "—"}</strong>{(!workshopForecast || !clientPresentation) && <small>{workshopForecast ? "Simulation" : "Prévision indisponible"}</small>}</div>
       <div className={workshopForecast ? "dashboard-metric dashboard-revenue" : "dashboard-metric"}><span>Chiffre d’affaires estimé</span><strong>{workshopForecast ? formatRevenue(workshopForecast.revenueCents / 100) : "—"}</strong>{(!workshopForecast || !clientPresentation) && <small>{workshopForecast ? "Simulation" : "Estimation indisponible"}</small>}</div>
       <Link to="/stocks?stockView=review" className="dashboard-metric"><span>Alertes de stock</span><strong>{productsLoading || productsError || products.length === 0 ? "—" : stockToReview.length}</strong><small>{productsError ? "Stock indisponible" : productsLoading ? "Chargement…" : products.length === 0 ? "Aucun produit enregistré" : "Produits à vérifier"}</small></Link>
-      {workshopForecast ? <a href="#today-workshop-purchases-title" className="dashboard-metric"><span>Produits suggérés</span><strong>{suggestedWorkshopCount}</strong>{!clientPresentation && <small>Simulation</small>}</a>
+      {workshopForecast && !workshopForecast.purchaseNeeds ? <a href="#today-workshop-purchases-title" className="dashboard-metric"><span>Produits suggérés</span><strong>{suggestedWorkshopCount}</strong>{!clientPresentation && <small>Simulation</small>}</a>
         : <Link to={purchasePreparationHref} className="dashboard-metric"><span>Produits suggérés</span><strong>{purchaseIndicator.value}</strong><small>{purchaseIndicator.detail}</small></Link>}
     </div>
 
@@ -178,7 +178,7 @@ function DashboardOverview() {
       <p>Les prévisions et besoins d'achat nécessitent 28 jours de service complets et un comptage de stock récent ; chaque suggestion reste à revoir.</p>
     </section>}
 
-    {workshopForecast ? <WorkshopPurchaseForecast products={suggestedWorkshopProducts} />
+    {workshopForecast ? <WorkshopPurchaseForecast forecast={workshopForecast} />
       : <TodayPurchaseForecast data={purchaseForecast} loading={purchaseLoading} error={purchaseError} retry={refreshPurchase} />}
     </div><div className="today-grid">
       <TodayContext />

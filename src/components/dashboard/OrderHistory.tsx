@@ -13,6 +13,8 @@ import "./OrderHistory.css";
 
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 const orderTotal = (order: PurchaseOrder) => order.lines.reduce((total, line) => total + line.quantity * line.pricePerUnit, 0);
+const updatedSimulatedStock = (receipt: PurchaseOrder["receipts"][number]) =>
+  receipt.simulated && receipt.lines.some(line => line.stockMovementId);
 
 function whenOrderInteractive(element: HTMLElement, focus: () => void) {
   const inert = element.closest("[inert]");
@@ -122,12 +124,15 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
     if (paginationRef.current?.contains(document.activeElement)) focusAfterRead.current = "page";
     setPage(history.page + offset);
   };
-  const statusLabel = (status: string) => status === "validated" ? "Validée, à transmettre"
-    : status === "partially_received" ? "Réception partielle"
-      : status === "received" ? "Entièrement réceptionnée"
-        : status === "simulated" ? "Commande non transmise"
-          : status === "simulated_partially_received" ? "Réception partielle — stock inchangé"
-            : status === "simulated_received" ? "Réception sans ajout au stock" : status;
+  const statusLabel = ({ status, receipts }: PurchaseOrder) => {
+    if (status === "simulated_partially_received")
+      return receipts.some(updatedSimulatedStock) ? "Réception partielle simulée" : "Réception partielle — stock inchangé";
+    if (status === "simulated_received")
+      return receipts.some(updatedSimulatedStock) ? "Réception simulée" : "Réception sans ajout au stock";
+    return status === "validated" ? "Validée, à transmettre"
+      : status === "partially_received" ? "Réception partielle"
+        : status === "received" ? "Entièrement réceptionnée" : status === "simulated" ? "Commande non transmise" : status;
+  };
 
   return <section id="to-transmit" className="orders-history" aria-labelledby="orders-history-title">
     <div className="workspace-section-heading"><h2 ref={headingRef} id="orders-history-title" tabIndex={-1}>Suivre vos commandes</h2><span>{history && !loading && !currentError && `${history.total} commande${history.total > 1 ? "s" : ""}`}</span></div>
@@ -163,12 +168,14 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
           if (savingReceipts.includes(order.id)) event.preventDefault();
           else if (event.currentTarget.parentElement instanceof HTMLDetailsElement && event.currentTarget.parentElement.open)
             setPinnedReceipts((current) => current.filter((item) => item.id !== order.id));
-        }}><span className="order-record-main"><strong>{new Date(order.createdAt).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}</strong><span>{[...new Set(order.lines.map((line) => line.supplierName))].join(" · ")}</span><small>{order.lines.length} article{order.lines.length > 1 ? "s" : ""} · {statusLabel(order.status)}</small></span><strong className="order-record-total">{money.format(orderTotal(order))}</strong></summary>
+        }}><span className="order-record-main"><strong>{new Date(order.createdAt).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}</strong><span>{[...new Set(order.lines.map((line) => line.supplierName))].join(" · ")}</span><small>{order.lines.length} article{order.lines.length > 1 ? "s" : ""} · {statusLabel(order)}</small></span><strong className="order-record-total">{money.format(orderTotal(order))}</strong></summary>
       <div className="order-record-body">
         {pinnedReceipts.some((item) => item.id === order.id) && !orders.some((item) => item.id === order.id) &&
           <p role="status">Cette commande reste affichée pour conserver le rapprochement.</p>}
         <p>Référence : {order.id}</p>
-        <p>{order.status.startsWith("simulated") ? "Aucun achat ni envoi fournisseur n’a été confirmé et le stock n’a pas changé." : "Prix enregistrés à la validation. Aucun envoi fournisseur."}</p>
+        <p>{order.status.startsWith("simulated") && !order.receipts.some(updatedSimulatedStock)
+          ? "Aucun achat ni envoi fournisseur n’a été confirmé et le stock n’a pas changé."
+          : "Prix enregistrés à la validation. Aucun envoi fournisseur."}</p>
         <div className="orders-table-wrap" role="region" aria-label="Produits de la commande — défilement horizontal avec les flèches" tabIndex={0} onKeyDown={scrollScrollableRegionWithArrowKeys}>
           <table className="orders-table"><thead><tr><th scope="col">Produit / fournisseur</th><th scope="col">Commandé</th><th scope="col">Reçu</th><th scope="col">Reste à recevoir</th><th scope="col">Montant</th></tr></thead>
             <tbody>{order.lines.map((line) => <tr key={line.id}><th scope="row">{line.productName}<small>{line.supplierName} · {money.format(line.pricePerUnit)} / {line.unit}</small></th>
@@ -184,7 +191,8 @@ export default function OrderHistory({ refreshKey = 0, focusReceiptId, returnHre
             <h4 data-receipt-heading tabIndex={-1}>{receipt.deliveryReference}</h4>
             {receipt.id === focusReceiptId && returnHref && <p><Link to={returnHref}>Retour au Bilan (même période)</Link></p>}
             <p>Facture {receipt.invoiceReference} · {receipt.deliveryDate}
-              {receipt.simulated && !clientPresentation ? " · hors bilan" : ""} · {receipt.invoiceComplete ? "facture rapprochée" : "facture encore à compléter"}</p>
+              {receipt.simulated && !clientPresentation ? " · hors bilan" : ""} · {receipt.invoiceComplete ? "facture rapprochée" : "facture encore à compléter"}
+              {updatedSimulatedStock(receipt) && " · Stock simulé mis à jour"}</p>
             <ul>{receipt.lines.filter((line) => line.receivedQuantity > 0).map((line) => <li key={line.id}>
               <span>{line.productName} · {line.receivedQuantity} {line.unit} · prix facture {money.format(line.invoiceUnitPrice)}
                 {line.priceDifferenceReason ? ` · écart expliqué : ${line.priceDifferenceReason}` : ""}

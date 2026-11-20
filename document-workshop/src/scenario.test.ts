@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { ingredientById, ingredients, quantity, recipeById } from "./catalog";
 import { draw, menuFor, offsetDate } from "./calendar";
+import { dailyOperations } from "./dailyOperations";
+import { dailyStock } from "./dailyStock";
 import { MAX_CHECKPOINT_BYTES, parseCheckpointFile, validateCheckpoint } from "./continuation";
 import { available, grossDosages, take } from "./inventory";
 import type { Checkpoint, Incident, Lot, Scenario } from "./model";
 import { generateScenario } from "./scenario";
 import { workshopOptions as input } from "./testFixtures";
 import { getOrderStep, isOrderQuantity } from "../../shared/orderQuantity";
+import { workshopApprovedPurchaseReference, type WorkshopApprovedLine } from "../../shared/workshopOrders";
 
 const sold = (s: Scenario) => s.days.reduce((n, d) => n + d.services.reduce((n, s) => n + s.runs.reduce((n, r) => n + r.sold, 0), 0), 0);
 describe("chronological restaurant engine", () => {
@@ -131,6 +134,75 @@ describe("chronological restaurant engine", () => {
     expect(generateScenario({ ...input, start: "2030-12-29", days: 7 }).days.at(-1)?.date).toBe("2031-01-04");
     for (const change of [{ days: 91 }, { start: "2026-02-30" }, { start: "9999-12-31" }, { covers: 0 }, { closedWeekdays: [0, 1, 2, 3, 4, 5, 6] }, { closedWeekdays: [1, 1] }]) expect(() => generateScenario({ ...input, ...change })).toThrow();
     expect(ingredients.every(p => p.yield > 0 && p.yield <= 1)).toBe(true);
+  });
+});
+
+
+describe("validated Kookia orders in the nightly scenario", () => {
+  const order: WorkshopApprovedLine = {
+    orderId: "5cc79a57-539c-4728-a9d0-9603a3a2afc2", lineId: "46688366-2218-4153-af06-c5f891c58dc0",
+    orderedOn: "2026-08-31", dueOn: input.start, name: "Café en grains", unit: "kg",
+    supplier: "Le Comptoir des Grains", quantityMilli: 1000, unitPriceCents: 1726,
+  };
+  const options = { ...input, days: 1 };
+
+  it("resumes the legacy stock and incoming orders while creating no automatic orders", () => {
+    const empty = generateScenario(options, undefined, []);
+    expect(empty.purchases).toEqual([]);
+    expect(sold(empty)).toBe(0);
+
+    const previous = generateScenario({ ...options, start: offsetDate(input.start, -1) });
+    const priorOrders = structuredClone(previous.checkpoint.pendingOrders);
+    const next = generateScenario(options, previous.checkpoint, []);
+    expect(priorOrders.length).toBeGreaterThan(0);
+    expect(next.purchases.map(purchase => purchase.id)).toEqual(priorOrders.map(purchase => purchase.id));
+    expect(next.purchases.every(purchase => purchase.receivedOn === input.start)).toBe(true);
+    expect(previous.checkpoint.pendingOrders).toEqual(priorOrders);
+    expect(next.checkpoint.pendingOrders).toEqual([]);
+    expect(sold(next)).toBeGreaterThan(0);
+  });
+
+  it("uses only due quantities and validation prices to receive stock before service", () => {
+    const after = { ...order, dueOn: offsetDate(input.start, 1) };
+    expect(generateScenario(options, undefined, [after]).purchases).toEqual([]);
+    const result = generateScenario(options, undefined, [order]);
+    const reference = workshopApprovedPurchaseReference(input.start, order.lineId);
+    expect(result).toEqual(generateScenario(options, undefined, [order]));
+    expect(result.purchases).toEqual([expect.objectContaining({
+      id: reference, placedOn: order.orderedOn, expectedOn: order.dueOn, receivedOn: input.start,
+      lines: [{ productId: "cafe", approvedLineId: order.lineId, ordered: 1, received: 1, shortage: 0, unitPrice: 1726 }],
+    })]);
+    expect(dailyOperations(result).purchases).toEqual([expect.objectContaining({
+      reference, approvedOrderId: order.orderId,
+      lines: [expect.objectContaining({ approvedLineId: order.lineId, receivedMilli: 1000, unitPriceCents: 1726 })],
+    })]);
+    expect(dailyStock(result).find(product => product.name === order.name)?.lots).toEqual([
+      expect.objectContaining({ reference: `LOT-${reference}`, unitCostCents: 1726, addedMilli: 1000 }),
+    ]);
+    expect(result.days[0].closingLots).toContainEqual(expect.objectContaining({ id: `LOT-${reference}`, unitCost: 1726 }));
+    expect(sold(result)).toBeGreaterThan(0);
+    expect(() => generateScenario(options, undefined, [{ ...order, supplier: "Autre fournisseur" }])).toThrow("catalogue de l’atelier");
+  });
+
+  it("delays a receipt once and reports a small partial shipment without creating stock for the missing quantity", () => {
+    const delayed = generateScenario({ ...options, incident: "late_delivery" }, undefined, [order]);
+    expect(delayed.purchases[0]).toMatchObject({ receivedOn: null, deliveryOn: offsetDate(input.start, 1) });
+    expect(delayed.checkpoint.pendingOrders).toEqual([]);
+    expect(dailyOperations(delayed).purchases).toEqual([]);
+    expect(sold(delayed)).toBe(0);
+
+    const nextDate = offsetDate(input.start, 1);
+    const received = generateScenario({ ...options, start: nextDate, incident: "late_delivery" }, delayed.checkpoint, [order]);
+    expect(received.purchases[0]).toMatchObject({ receivedOn: nextDate, expectedOn: order.dueOn, delayed: true });
+    const partial = generateScenario({ ...options, incident: "short_delivery" }, undefined, [order]);
+    const line = partial.purchases[0].lines[0];
+    expect(line.shortage).toBeGreaterThanOrEqual(.1);
+    expect(line.shortage).toBeLessThanOrEqual(.2);
+    expect(dailyOperations(partial).purchases[0].lines[0].receivedMilli).toBe(Math.round((1 - line.shortage) * 1000));
+
+    const unavailable = generateScenario({ ...options, incident: "unavailable" }, undefined, [order]);
+    expect(dailyOperations(unavailable).purchases[0].lines[0].receivedMilli).toBe(0);
+    expect(dailyStock(unavailable).every(product => product.lots.length === 0)).toBe(true);
   });
 });
 

@@ -9,6 +9,7 @@ function dailyPurchase(purchase: Purchase, date: string) {
   const { deliveryReference, invoiceReference } = purchaseReferences(purchase.id);
   return {
     reference: purchase.id,
+    ...(purchase.approvedOrderId && { approvedOrderId: purchase.approvedOrderId }),
     supplier: supplier.name.normalize("NFC"),
     orderedOn: purchase.placedOn,
     expectedOn: purchase.expectedOn,
@@ -17,6 +18,7 @@ function dailyPurchase(purchase: Purchase, date: string) {
       const product = ingredientById(line.productId);
       return {
         name: product.name.normalize("NFC"),
+        ...(line.approvedLineId && { approvedLineId: line.approvedLineId }),
         unit: product.unit,
         orderedMilli: toMilliUnits(line.ordered),
         receivedMilli: received ? toMilliUnits(line.received) : 0,
@@ -29,7 +31,7 @@ function dailyPurchase(purchase: Purchase, date: string) {
 export function dailyOperations(scenario: Scenario) {
   const day = scenario.days[0];
   const purchases = scenario.purchases
-    .filter(purchase => purchase.placedOn === day.date || purchase.receivedOn === day.date)
+    .filter(purchase => purchase.receivedOn === day.date || (!purchase.approvedOrderId && purchase.placedOn === day.date))
     .map(purchase => dailyPurchase(purchase, day.date));
   const services = day.services.map(service => ({
     slot: service.name,

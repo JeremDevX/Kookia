@@ -22,11 +22,11 @@ export type OptionsInput = z.input<typeof optionsSchema>;
 export type Incident = Exclude<Options["incident"], "mixed">;
 export type ServiceName = "lunch" | "dinner";
 export interface Lot { id: string; productId: string; receivedOn: string; expiresOn: string; quantity: number; unitCost: number }
-interface PurchaseLine { productId: string; ordered: number; received: number; shortage: number; unitPrice: number }
+interface PurchaseLine { productId: string; ordered: number; received: number; shortage: number; unitPrice: number; approvedLineId?: string }
 export interface Purchase {
   id: string; supplierId: string; placedOn: string; expectedOn: string; deliveryOn: string;
   receivedOn: string | null; invoiceOn: string | null; time: string; delayed: boolean;
-  lines: PurchaseLine[]; note: string;
+  lines: PurchaseLine[]; note: string; approvedOrderId?: string;
 }
 interface Waste {
   kind: "preparation" | "expiry" | "spoilage" | "unsold" | "plate_return";

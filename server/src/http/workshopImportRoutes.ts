@@ -4,6 +4,8 @@ import { z } from "zod";
 import { formatParisDate } from "../../../shared/parisDate.js";
 import { workshopForecastSchema } from "../../../shared/workshopForecast.js";
 import { WorkspaceError } from "../application/workspace/workspaceError.js";
+import { getWorkshopApprovedOrders } from "../application/workspace/workshopApprovedOrders.js";
+import { workshopApprovedPurchaseReference } from "../../../shared/workshopOrders.js";
 import { importWorkshopDay } from "../application/workspace/workshopImportService.js";
 import { storeWorkshopForecast } from "../application/workspace/workshopForecastService.js";
 import { workshopStockSchema } from "../application/workspace/workshopStockInput.js";
@@ -40,6 +42,16 @@ function operationsMatchDate(operations: WorkshopOperationsInput, date: string, 
     const stockSupplier = suppliersByProduct.get(`${product}:${unit}`);
     return supplier && stockSupplier && supplier !== stockSupplier;
   })) return false;
+  for (const purchase of operations.purchases.filter(row => row.approvedOrderId)) {
+    const [line] = purchase.lines;
+    if (!purchase.receipt || !line.approvedLineId || purchase.reference !== workshopApprovedPurchaseReference(date, line.approvedLineId)) return false;
+    const reference = `LOT-${purchase.reference}`;
+    const product = stock.find(row => row.name === line.name && row.unit === line.unit && row.supplier === purchase.supplier);
+    const lot = product?.lots.find(row => row.reference === reference);
+    if (line.receivedMilli > 0
+      ? !lot || lot.addition !== "delivery" || lot.addedMilli !== line.receivedMilli || lot.unitCostCents !== line.unitPriceCents
+      : stock.some(row => row.lots.some(entry => entry.reference === reference))) return false;
+  }
   const delivered = new Map<string, number>();
   for (const purchase of operations.purchases) for (const line of purchase.lines) if (line.receivedMilli > 0) {
     const key = `${line.name}:${line.unit}`;
@@ -56,7 +68,8 @@ function operationsMatchDate(operations: WorkshopOperationsInput, date: string, 
   return delivered.size === 0;
 }
 
-export function createWorkshopImportRoutes(token: string, restaurantId: string, allowOperationalTestWorkspace: boolean, forecastEnabled: boolean) {
+export function createWorkshopImportRoutes(token: string, restaurantId: string, allowOperationalTestWorkspace: boolean,
+  forecastEnabled: boolean, followOrdersFrom?: string) {
   const routes = Router();
   const expected = tokenDigest(token);
 
@@ -71,6 +84,14 @@ export function createWorkshopImportRoutes(token: string, restaurantId: string, 
     next();
   };
 
+  if (followOrdersFrom) routes.get("/approved-orders/:date", authenticate, async (req, res) => {
+    const date = serviceDate.safeParse(req.params.date);
+    if (!date.success || date.data < followOrdersFrom || date.data >= formatParisDate()) {
+      throw new WorkspaceError(400, "WORKSHOP_APPROVED_ORDER_DATE", "Les commandes sont disponibles pour une journée passée du scénario connecté.");
+    }
+    res.set("Cache-Control", "no-store").json(await getWorkshopApprovedOrders(restaurantId, date.data));
+  });
+
   routes.put("/days/:date", authenticate, async (req, res) => {
     const date = serviceDate.safeParse(req.params.date);
     const day = serviceDay.safeParse(req.body);
@@ -83,6 +104,15 @@ export function createWorkshopImportRoutes(token: string, restaurantId: string, 
       res.status(400).json({ error: { code: "FUTURE_SERVICE_DATE", message: "La date de service ne peut pas être future." } });
       return;
     }
+    const connected = Boolean(followOrdersFrom && date.data >= followOrdersFrom);
+    if (connected && date.data >= today)
+      throw new WorkspaceError(400, "WORKSHOP_APPROVED_ORDER_DATE", "La synchronisation des commandes concerne une journée clôturée.");
+    const purchases = day.data.operations?.purchases ?? [];
+    if (connected ? !day.data.stock || !day.data.operations ||
+      purchases.some(purchase => !purchase.approvedOrderId && (purchase.orderedOn >= followOrdersFrom! || !purchase.receipt))
+      : purchases.some(purchase => purchase.approvedOrderId)) {
+      throw new WorkspaceError(400, "WORKSHOP_ORDER_MODE", "Le scénario connecté exige les stocks, les opérations et des réceptions de commandes existantes.");
+    }
     if (day.data.stock?.some(({ lots }) => lots.some(({ openingMilli, closingMilli, lossMilli, receivedOn, expiresOn }) =>
       (openingMilli > 0 ? receivedOn >= date.data : receivedOn !== date.data)
       || (expiresOn < date.data && (closingMilli !== 0 || lossMilli !== openingMilli))))) {
@@ -93,7 +123,7 @@ export function createWorkshopImportRoutes(token: string, restaurantId: string, 
       res.status(400).json({ error: { code: "WORKSHOP_OPERATIONS_INVALID", message: "Les opérations ne correspondent pas à la journée, aux ventes ou aux entrées de stock." } });
       return;
     }
-    res.json(await importWorkshopDay(restaurantId, date.data, day.data, allowOperationalTestWorkspace));
+    res.json(await importWorkshopDay(restaurantId, date.data, day.data, allowOperationalTestWorkspace && !connected, connected));
   });
 
   if (forecastEnabled) routes.put("/forecast/:date", authenticate, async (req, res) => {
@@ -102,7 +132,11 @@ export function createWorkshopImportRoutes(token: string, restaurantId: string, 
       res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Les données de la prévision sont invalides." } });
       return;
     }
-    res.json(await storeWorkshopForecast(restaurantId, forecast.data, allowOperationalTestWorkspace));
+    const connected = Boolean(followOrdersFrom && forecast.data.date >= followOrdersFrom);
+    if (connected !== Boolean(forecast.data.purchaseNeeds)) {
+      throw new WorkspaceError(400, "WORKSHOP_ORDER_MODE", "La prévision et le mode d’achat configuré doivent correspondre.");
+    }
+    res.json(await storeWorkshopForecast(restaurantId, forecast.data, allowOperationalTestWorkspace && !connected));
   });
 
   const respondToWorkspaceError: ErrorRequestHandler = (error: unknown, _req, res, next) => {

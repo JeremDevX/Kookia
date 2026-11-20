@@ -18,7 +18,7 @@ const byKey = (left: string, right: string) => left < right ? -1 : left > right 
 const productKey = (line: { name: string; unit: string }) => `${line.name}\0${line.unit}`;
 const stockDigest = (stock: WorkshopStockInput) => createHash("sha256").update(JSON.stringify(stock)).digest("hex");
 
-function lotId(restaurantId: string, productId: string, reference: string) {
+export function workshopStockLotId(restaurantId: string, productId: string, reference: string) {
   const bytes = createHash("sha256").update(JSON.stringify([prefix, restaurantId, productId, reference])).digest();
   bytes[6] = (bytes[6] & 0x0f) | 0x80;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
@@ -38,7 +38,7 @@ function matchOpeningLots(line: StockLine, currentStock: Prisma.Decimal, activeL
   const matched = new Map<string, string>();
   const used = new Set<string>();
   for (const source of opening) {
-    const expectedId = lotId(restaurantId, productId, source.reference);
+    const expectedId = workshopStockLotId(restaurantId, productId, source.reference);
     const candidates = activeLots.filter(lot => lot.receivedAt?.getTime() === day(source.receivedOn).getTime() &&
       lot.expiresAt?.getTime() === day(source.expiresOn).getTime() && lot.remainingQuantity.equals(quantity(source.openingMilli)));
     const simulated = candidates.find(lot => lot.id === expectedId && lot.source === "demo_simulation" &&
@@ -124,7 +124,7 @@ export async function applyWorkshopStock(tx: Prisma.TransactionClient, restauran
   });
   for (const { line, product, opening } of plan) {
     for (const lot of line.lots) {
-      const id = opening.get(lot.reference) ?? lotId(restaurantId, product.id, lot.reference);
+      const id = opening.get(lot.reference) ?? workshopStockLotId(restaurantId, product.id, lot.reference);
       await applyLot(tx, restaurantId, line, product.id, lot, date, id);
     }
   }

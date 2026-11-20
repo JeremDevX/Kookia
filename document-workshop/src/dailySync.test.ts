@@ -285,6 +285,44 @@ describe("daily workshop sync", () => {
     expect(send.mock.calls[2][1]?.body).toBe(send.mock.calls[1][1]?.body);
   });
 
+  it("replays a connected day's prepared payload after losing the acknowledgment", async () => {
+    const date = "2026-09-08";
+    const base = fixtureEnv();
+    const follow = { ...base, WORKSHOP_START_DATE: date, WORKSHOP_FORECAST_ENABLED: "true",
+      WORKSHOP_FOLLOW_VALIDATED_ORDERS_FROM: date };
+    expect(() => readDailySyncConfig(follow)).toThrow("les stocks, les opérations et la prévision");
+    const operationsFile = join(directory, "operations.json");
+    expect(() => readDailySyncConfig({ ...follow, WORKSHOP_STOCK_STATE_FILE: `${operationsFile}.pending`,
+      WORKSHOP_OPERATIONS_STATE_FILE: operationsFile })).toThrow("réservé à la journée préparée");
+    const config = readDailySyncConfig({ ...follow, WORKSHOP_STOCK_STATE_FILE: join(directory, "stock.json"),
+      WORKSHOP_OPERATIONS_STATE_FILE: operationsFile });
+    const orderId = "3d73590a-03af-4b44-a6a2-86bd894f9773", lineId = "7103ff8f-b7ab-4f31-8b47-7dc23e173f60";
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json([{ orderId, lineId, orderedOn: startDate, dueOn: date,
+        name: "Tomates", supplier: "Les Jardins du Levant", unit: "kg", quantityMilli: 5000, unitPriceCents: 380 }]))
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValueOnce(Response.json({ date, replayed: true, stockApplied: true, operationsApplied: true }))
+      .mockResolvedValueOnce(Response.json({ date: "2026-09-09" }));
+    vi.stubGlobal("fetch", send);
+
+    await expect(syncDaily(config, throughTuesday)).rejects.toThrow(`Impossible de joindre Kookia pour le ${date}`);
+    await expect(readFile(config.stateFile, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(syncDaily(config, throughTuesday)).resolves.toEqual({ imported: 0, replayed: 1 });
+    expect(send.mock.calls.map(([url, init]) => [new URL(String(url)).pathname, init?.method])).toEqual([
+      [`/api/integrations/workshop/approved-orders/${date}`, "GET"],
+      [`/api/integrations/workshop/days/${date}`, "PUT"],
+      [`/api/integrations/workshop/days/${date}`, "PUT"],
+      ["/api/integrations/workshop/forecast/2026-09-09", "PUT"],
+    ]);
+    expect(send.mock.calls[2][1]?.body).toBe(send.mock.calls[1][1]?.body);
+    const imported = JSON.parse(String(send.mock.calls[2][1]?.body));
+    expect(imported.operations.purchases).toEqual([expect.objectContaining({ approvedOrderId: orderId })]);
+    const forecast = JSON.parse(String(send.mock.calls[3][1]?.body));
+    expect(forecast.purchaseNeeds).toHaveLength(21);
+    expect(parseCheckpointFile(await readFile(config.stateFile, "utf8")).asOf).toBe(date);
+    await expect(readFile(`${config.stateFile}.pending`, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("requires yesterday's checkpoint before sending a forecast", async () => {
     const config = readDailySyncConfig({ ...fixtureEnv(), WORKSHOP_START_DATE: "2026-11-18", WORKSHOP_FORECAST_ENABLED: "true" });
     const send = vi.fn<typeof fetch>();

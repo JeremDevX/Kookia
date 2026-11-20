@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { purchasePreparationHref } from "../../features/orders/orderNavigation";
 import { useClientPresentation } from "../../features/members/workspaceContext";
 import type { WorkshopForecast } from "../../../shared/workshopForecast";
 import { formatDisplayDate, formatQuantity } from "../../utils/format";
@@ -21,12 +23,14 @@ export function WorkshopCoversForecast({ forecast }: { forecast: WorkshopForecas
   </section>;
 }
 
-export function WorkshopPurchaseForecast({ products }: { products: WorkshopForecast["products"] }) {
+export function WorkshopPurchaseForecast({ forecast }: { forecast: WorkshopForecast }) {
+  const { products, purchaseNeeds } = forecast;
   const clientPresentation = useClientPresentation();
   return <section className="today-card" aria-labelledby="today-workshop-purchases-title">
     <h2 id="today-workshop-purchases-title" tabIndex={-1}>Besoins d’achat estimés</h2>
-    {!clientPresentation && <Badge label="Simulation" status="neutral" />}
-    {products.length ? <ul className="today-workshop-products" role="list" aria-label={clientPresentation ? "Produits suggérés" : "Produits suggérés dans le scénario"}>
+    {!purchaseNeeds && !clientPresentation && <Badge label="Simulation" status="neutral" />}
+    {purchaseNeeds ? <div className="today-card-actions"><Link to={purchasePreparationHref}>Voir les suggestions d’achat</Link></div>
+      : products.length ? <ul className="today-workshop-products" role="list" aria-label={clientPresentation ? "Produits suggérés" : "Produits suggérés dans le scénario"}>
       {products.map(product => <li key={JSON.stringify([product.name, product.supplier, product.unit, product.deliveryDate])}>
         <div><strong>{product.name}</strong><strong>{formatQuantity(product.quantityMilli / 1000)} {product.unit}</strong></div>
         <small>{product.supplier} · Livraison estimée le {formatDisplayDate(product.deliveryDate)}</small>

@@ -1,26 +1,30 @@
 import { z } from "zod";
+import type { WorkshopApprovedLine } from "../../shared/workshopOrders";
 import { CATALOG_VERSION, identity, ingredients, quantity, recipes } from "./catalog";
 import { isOpen, offsetDate, draw, serviceNames } from "./calendar";
 import { continuationStart, validateCheckpoint } from "./continuation";
 import { available, countAdjustment, expireLots, spoilLot } from "./inventory";
 import { optionsSchema } from "./model";
 import type { Checkpoint, Day, Incident, Options, OptionsInput, Scenario } from "./model";
-import { bootstrapPurchases, planTomorrow, receivePurchases } from "./purchasing";
+import { approvedPurchase, bootstrapPurchases, planTomorrow, receivePurchases } from "./purchasing";
 import { runService } from "./service";
 import { refundTransaction } from "./till";
 import { scenarioWeather } from "./weather";
 
 const incidents: Incident[] = ["short_delivery", "late_delivery", "unavailable", "high_waste", "refund", "stock_gap", "demand_shift"];
+const connectedIncidents: Incident[] = ["short_delivery", "late_delivery", "refund", "stock_gap"];
+
 export function defaultScenarioOptions(start: string, days: number): Options {
   const { name, address, city, email } = identity;
   return optionsSchema.parse({ name, address, city, email, start, days, covers: 40, seed: 1,
     incident: "normal", variationPercent: 20, lossPercent: 2, starterPercent: 65, dessertPercent: 60, incidentEvery: 3 });
 }
 
-function incidentOn(date: string, origin: string, options: Options): Incident {
+function incidentOn(date: string, origin: string, options: Options, connected: boolean): Incident {
   const index = Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${origin}T12:00:00Z`)) / 86400000);
   if (!isOpen(date, options) || (index + 1) % options.incidentEvery !== 0) return "normal";
-  return options.incident === "mixed" ? incidents[Math.floor(draw(options.seed, `${date}:incident`) * incidents.length)] : options.incident;
+  const pool = connected ? connectedIncidents : incidents;
+  return options.incident === "mixed" ? pool[Math.floor(draw(options.seed, `${date}:incident`) * pool.length)] : options.incident;
 }
 function openingDay(date: string, opening: Checkpoint["lots"], incident: Incident, options: Options): Day {
   return { date, open: isOpen(date, options), incident, events: [], baselineCovers: 0, forecastCovers: 0, covers: 0, weather: scenarioWeather(date, options),
@@ -28,23 +32,28 @@ function openingDay(date: string, opening: Checkpoint["lots"], incident: Inciden
       received: 0, shortage: 0, consumed: 0, loss: 0, adjustment: 0, closing: 0 })),
     gross: 0, discount: 0, refunded: 0, collected: 0, net: 0, tax: 0, card: 0, cash: 0 };
 }
-export function generateScenario(input: OptionsInput, continuation?: Checkpoint): Scenario {
+export function generateScenario(input: OptionsInput, continuation?: Checkpoint, approved?: readonly WorkshopApprovedLine[]): Scenario {
   const parsed = optionsSchema.safeParse(input);
   if (!parsed.success) throw new Error("Vérifiez les champs : durée de 1 à 90 jours, 5 à 200 couverts de référence, au moins un jour ouvert et réglages dans les limites indiquées.");
   const options = parsed.data;
+  if (approved && options.days !== 1) throw new Error("La reprise des commandes validées se fait une journée à la fois.");
   // Future lot expiries and the next supplier cycle must also fit the date representation.
   if (![offsetDate(options.start, -1), offsetDate(options.start, options.days + 100)].every(d => z.iso.date().safeParse(d).success)) throw new Error("La période et les échéances des lots doivent rester des dates valides sur quatre chiffres.");
   const opening = continuation ? validateCheckpoint(continuation) : null;
   if (opening && continuationStart(opening) !== options.start) throw new Error(`La reprise doit commencer le ${continuationStart(opening)}, juste après la clôture du dossier précédent.`);
   const lots = structuredClone(opening?.lots ?? []), purchases = structuredClone(opening?.pendingOrders ?? []);
   const origin = opening?.originStart ?? options.start;
-  if (!opening) bootstrapPurchases(options, purchases);
+  if (approved) {
+    purchases.push(...approved.filter(line => line.dueOn <= options.start)
+      .sort((a, b) => a.lineId.localeCompare(b.lineId))
+      .map(line => approvedPurchase(line, options.start, options)));
+  } else if (!opening) bootstrapPurchases(options, purchases);
   const days: Day[] = [];
   for (let index = 0; index < options.days; index++) {
     const date = offsetDate(options.start, index);
-    const day = openingDay(date, lots, incidentOn(date, origin, options), options);
+    const day = openingDay(date, lots, incidentOn(date, origin, options, approved !== undefined), options);
     expireLots(lots, day);
-    receivePurchases(purchases, lots, day, options);
+    receivePurchases(purchases, lots, day, options, approved !== undefined);
     if (day.incident === "high_waste") spoilLot(lots, day, options);
     if (day.open) {
       for (const name of serviceNames(options)) day.services.push(runService(day, name, lots, options));
@@ -64,7 +73,7 @@ export function generateScenario(input: OptionsInput, continuation?: Checkpoint)
     }
     if (day.incident === "stock_gap") countAdjustment(lots, day, options);
     // Ordering happens at closure, using today's available balance and future forecasts only.
-    planTomorrow(date, lots, purchases, options);
+    if (!approved) planTomorrow(date, lots, purchases, options);
     const orderedToday = purchases.filter(p => p.placedOn === date);
     for (const stock of day.stock) {
       stock.ordered = quantity(orderedToday.reduce((sum, p) => sum + (p.lines.find(l => l.productId === stock.id)?.ordered ?? 0), 0));
@@ -77,5 +86,5 @@ export function generateScenario(input: OptionsInput, continuation?: Checkpoint)
   return { version: 2, options, days, purchases, opening,
     catalog: { version: CATALOG_VERSION, ingredients: structuredClone(ingredients), recipes: structuredClone(recipes) },
     checkpoint: { version: 2, catalogVersion: CATALOG_VERSION, asOf: days.at(-1)!.date, originStart: origin, seed: options.seed,
-      dossier: `${options.start}-${options.seed}`, lots: structuredClone(lots), pendingOrders: structuredClone(purchases.filter(p => !p.receivedOn)) } };
+      dossier: `${options.start}-${options.seed}`, lots: structuredClone(lots), pendingOrders: structuredClone(purchases.filter(p => !p.receivedOn && !p.approvedOrderId)) } };
 }

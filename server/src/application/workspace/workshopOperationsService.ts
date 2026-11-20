@@ -7,7 +7,7 @@ import { applyWorkshopKitchen, linkWorkshopRawLosses } from "./workshopKitchen.j
 import { applyWorkshopServiceViews } from "./workshopServiceViews.js";
 
 export async function applyWorkshopOperations(tx: Prisma.TransactionClient, restaurantId: string,
-  date: string, operations: WorkshopOperationsInput) {
+  date: string, operations: WorkshopOperationsInput, connected = false) {
   const kind = `workshop-operations:v1:${date}`;
   const digest = createHash("sha256").update(JSON.stringify(operations)).digest("hex");
   const prior = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind } } });
@@ -23,7 +23,7 @@ export async function applyWorkshopOperations(tx: Prisma.TransactionClient, rest
   }
 
   await applyWorkshopServiceViews(tx, restaurantId, new Date(`${date}T00:00:00.000Z`), operations, kind);
-  await applyWorkshopPurchases(tx, restaurantId, date, operations.purchases);
+  await applyWorkshopPurchases(tx, restaurantId, date, operations.purchases, connected);
   await applyWorkshopKitchen(tx, restaurantId, date, operations);
   await tx.workspaceDocument.create({ data: { restaurantId, kind,
     data: { digest, incident: operations.incident, events: operations.events } } });

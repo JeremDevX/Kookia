@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { formatParisDate } from "../../../../shared/parisDate.js";
 import { workshopForecastSchema, type WorkshopForecast } from "../../../../shared/workshopForecast.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
@@ -24,10 +25,11 @@ export async function storeWorkshopForecast(restaurantId: string, forecast: Work
   });
 }
 
-export async function readWorkshopForecast(restaurantId: string, allowOperationalTestWorkspace: boolean): Promise<WorkshopForecast | null> {
-  const document = await prisma.workspaceDocument.findFirst({ where: { restaurantId, kind,
+export async function readWorkshopForecast(restaurantId: string, allowOperationalTestWorkspace: boolean,
+  db: Prisma.TransactionClient = prisma, today = formatParisDate()): Promise<WorkshopForecast | null> {
+  const document = await db.workspaceDocument.findFirst({ where: { restaurantId, kind,
     restaurant: { mode: { in: allowOperationalTestWorkspace ? ["demo", "operational"] : ["demo"] } },
   }, select: { data: true } });
   const result = workshopForecastSchema.safeParse(document?.data);
-  return result.success && result.data.date === formatParisDate() ? result.data : null;
+  return result.success && result.data.date === today ? result.data : null;
 }

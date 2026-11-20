@@ -59,7 +59,7 @@ function fixture() {
       productId: id, countDate: date(asOfDate), unit, stockRevisionAfter: 1, countedQuantity: id === "cream" ? 0.283 : 0,
     }))),
     purchaseOrderLine: { findMany: vi.fn().mockResolvedValue(products.map(({ id, unit }) => ({
-      productId: id, unit, quantity: 0.1, receiptLines: [], expectedDeliveryDate: date(tomorrow),
+      productId: id, unit, quantity: 0.1, order: { status: "validated" }, receiptLines: [], expectedDeliveryDate: date(tomorrow),
     }))) },
     stockLot: { findMany: vi.fn().mockResolvedValue([]) },
     recommendationDecision: { findMany: vi.fn().mockResolvedValue([{

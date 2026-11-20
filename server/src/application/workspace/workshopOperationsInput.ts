@@ -11,14 +11,17 @@ const cents = z.number().int().min(1).max(10_000_000);
 const portions = z.number().int().min(0).max(10_000);
 const unique = (keys: string[]) => new Set(keys).size === keys.length;
 
-const purchaseLine = z.strictObject({ name: label, unit, orderedMilli: milli.min(1), receivedMilli: milli, unitPriceCents: cents })
+const purchaseLine = z.strictObject({ name: label, unit, orderedMilli: milli.min(1), receivedMilli: milli, unitPriceCents: cents,
+  approvedLineId: z.uuid().optional() })
   .refine(line => line.receivedMilli <= line.orderedMilli && (line.unit !== "pcs" || line.orderedMilli % 1000 === 0 && line.receivedMilli % 1000 === 0));
 const purchase = z.strictObject({
-  reference, supplier: label, orderedOn: date, expectedOn: date,
+  reference, supplier: label, orderedOn: date, expectedOn: date, approvedOrderId: z.uuid().optional(),
   receipt: z.strictObject({ deliveryReference: reference, invoiceReference: reference, invoiceOn: date }).nullable(),
   lines: z.array(purchaseLine).min(1).max(25),
 }).refine(row => row.orderedOn <= row.expectedOn && unique(row.lines.map(line => line.name)) &&
-  (row.receipt !== null || row.lines.every(line => line.receivedMilli === 0)));
+  (row.receipt !== null || row.lines.every(line => line.receivedMilli === 0)) &&
+  (row.approvedOrderId ? row.receipt !== null && row.lines.length === 1 && Boolean(row.lines[0].approvedLineId)
+    : row.lines.every(line => line.approvedLineId === undefined)));
 
 const item = z.strictObject({ name: label, category: z.enum(["Entrée", "Plat", "Dessert", "Boisson"]), priceCents: cents,
   prepTime: z.number().int().min(0).max(1440), planned: portions, prepared: portions, sold: portions, refused: portions })
@@ -33,11 +36,15 @@ const loss = z.strictObject({ kind: z.enum(["raw", "preparation", "unsold", "pla
     Boolean(row.recipe && row.slot && (row.kind === "preparation" ? row.product && row.unit !== "portion" : !row.product && row.unit === "portion")));
 
 export const workshopOperationsSchema = z.strictObject({
-  purchases: z.array(purchase).max(16),
+  purchases: z.array(purchase).max(32),
   services: z.array(service).max(2),
   losses: z.array(loss).max(180),
   incident: z.enum(["normal", "short_delivery", "late_delivery", "unavailable", "high_waste", "refund", "stock_gap", "demand_shift"]),
   events: z.array(note).max(100),
-}).refine(value => unique(value.purchases.map(row => row.reference)) && unique(value.services.map(row => row.slot)));
+}).refine(value => {
+  const approvedCount = value.purchases.filter(row => row.approvedOrderId).length;
+  return approvedCount <= 16 && value.purchases.length - approvedCount <= 16 &&
+    unique(value.purchases.map(row => row.reference)) && unique(value.services.map(row => row.slot));
+});
 
 export type WorkshopOperationsInput = z.infer<typeof workshopOperationsSchema>;

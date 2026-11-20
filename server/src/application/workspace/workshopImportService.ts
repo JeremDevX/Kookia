@@ -19,7 +19,8 @@ const actorId = "workshop-import:v1";
 const source = "demo_simulation";
 const reason = "Vente simulée importée depuis l’atelier documentaire.";
 
-export async function importWorkshopDay(restaurantId: string, date: string, day: WorkshopServiceDay, allowOperationalTestWorkspace: boolean) {
+export async function importWorkshopDay(restaurantId: string, date: string, day: WorkshopServiceDay,
+  allowOperationalTestWorkspace: boolean, connected = false) {
   const serviceDate = new Date(`${date}T00:00:00.000Z`);
   const kind = workshopDayKind(date);
   const sales = [...day.sales].sort((a, b) => a.normalizedName < b.normalizedName ? -1 : 1);
@@ -33,7 +34,7 @@ export async function importWorkshopDay(restaurantId: string, date: string, day:
     const prior = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind } }, select: { data: true } });
     if (prior?.data === digest) {
       if (day.stock) await applyWorkshopStock(tx, restaurantId, date, day.stock);
-      if (day.operations) await applyWorkshopOperations(tx, restaurantId, date, day.operations);
+      if (day.operations) await applyWorkshopOperations(tx, restaurantId, date, day.operations, connected);
       return { ...result, replayed: true };
     }
     const existing = await tx.serviceDay.findUnique({
@@ -75,7 +76,7 @@ export async function importWorkshopDay(restaurantId: string, date: string, day:
       } });
     }
     if (day.stock) await applyWorkshopStock(tx, restaurantId, date, day.stock);
-    if (day.operations) await applyWorkshopOperations(tx, restaurantId, date, day.operations);
+    if (day.operations) await applyWorkshopOperations(tx, restaurantId, date, day.operations, connected);
     await tx.workspaceDocument.create({ data: { restaurantId, kind, data: digest } });
     return { ...result, replayed: false };
   }, { timeout: 20_000 });

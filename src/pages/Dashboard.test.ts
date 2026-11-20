@@ -70,6 +70,18 @@ it("montre couverts, chiffre d’affaires et quantités simulées sans lien de c
   expect(presentation).toContain("Carottes</strong><strong>1,5 kg");
 });
 
+it("renvoie aux suggestions dans Achats lorsque la prévision est connectée", () => {
+  state.forecast = { provenance: "demo_simulation", date: "2026-11-18", basedOnDate: "2026-11-17", covers: 42,
+    revenueCents: 123456, hours: [{ hour: 12, covers: 42 }], products: [],
+    purchaseNeeds: [{ date: "2026-11-18", products: [] }] };
+  const html = render();
+  expect(html).toContain("Couverts prévus</span><strong>42</strong><small>Simulation");
+  expect(html).toContain("Produits suggérés</span><strong>—</strong><small>Chargement");
+  expect(html).toMatch(/href="\/orders\?view=prepare#purchase-suggestions-title"[^>]*>Voir les suggestions d’achat<\/a>/);
+  expect(html).not.toContain('href="#today-workshop-purchases-title"');
+  expect(html).not.toContain("Aucun produit à prévoir");
+});
+
 it("affiche une journée simulée à zéro et une liste de produits vide", () => {
   state.forecast = { provenance: "demo_simulation", date: "2026-11-18", basedOnDate: "2026-11-17", covers: 0,
     revenueCents: 0, hours: [], products: [] };

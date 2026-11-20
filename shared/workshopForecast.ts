@@ -7,6 +7,11 @@ const amount = z.number().int().min(0).max(1_000_000_000);
 const dayMs = 86_400_000;
 const stamp = (value: string) => Date.parse(`${value}T00:00:00.000Z`);
 const normalized = (value: string) => value.normalize("NFC").toLocaleLowerCase("fr-FR");
+const product = z.strictObject({
+  name: label, supplier: label, unit: z.enum(["kg", "L", "pcs"]), quantityMilli: amount.min(1),
+});
+
+export const workshopPurchaseNeedsModel = "workshop_purchase_needs_v1";
 
 export const workshopForecastSchema = z.strictObject({
   provenance: z.literal("demo_simulation"),
@@ -15,12 +20,14 @@ export const workshopForecastSchema = z.strictObject({
   covers,
   revenueCents: amount,
   hours: z.array(z.strictObject({ hour: z.number().int().min(0).max(23), covers })).max(24),
-  products: z.array(z.strictObject({
-    name: label, supplier: label, unit: z.enum(["kg", "L", "pcs"]), quantityMilli: amount.min(1), deliveryDate: date,
-  })).max(32),
+  products: z.array(product.extend({ deliveryDate: date })).max(32),
+  purchaseNeeds: z.array(z.strictObject({ date, products: z.array(product).max(25) })).min(1).max(21).optional(),
 }).refine(({ date, basedOnDate }) => stamp(date) - stamp(basedOnDate) === dayMs)
   .refine(({ covers, hours }) => new Set(hours.map(row => row.hour)).size === hours.length &&
     hours.reduce((sum, row) => sum + row.covers, 0) === covers)
+  .refine(({ date, purchaseNeeds }) => !purchaseNeeds || purchaseNeeds.every((day, index) =>
+    stamp(day.date) === stamp(date) + index * dayMs &&
+    new Set(day.products.map(row => JSON.stringify([normalized(row.name), normalized(row.supplier), row.unit]))).size === day.products.length))
   .refine(({ date, products }) => {
     const keys = products.map(row => JSON.stringify([normalized(row.name), normalized(row.supplier), row.unit, row.deliveryDate]));
     const start = stamp(date);
