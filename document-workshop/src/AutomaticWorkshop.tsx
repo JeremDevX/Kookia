@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import type { WorkshopControl } from "../../shared/workshopControl";
 import { formatParisDate } from "../../shared/parisDate";
 import { loadWorkshop, workshopAccessError } from "./automaticWorkshopApi";
@@ -43,32 +44,38 @@ export default function AutomaticWorkshop() {
     return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
   }, [active, busy, refresh]);
 
-  if (access) return <section className="panel workshop-structured" aria-labelledby="workshop-access">
-    <h2 id="workshop-access">Accès à la génération automatique</h2>
-    {access === "signin" && <><p role="status">Connectez-vous à Kookia pour ouvrir l’atelier de votre espace de test.</p>
-      <a className="workshop-link" href="/login?retour=atelier">Se connecter à Kookia</a></>}
-    {access === "reload" && <><p role="alert">Votre session Kookia a changé. Rechargez la page avant de poursuivre.</p>
-      <div><button type="button" onClick={() => window.location.reload()}>Recharger la page</button></div></>}
-    {access === "unavailable" && <p role="status">Le transfert automatique est réservé à l’espace de test configuré dans Kookia.</p>}
+  if (access) return <section className="panel workshop-state" aria-labelledby="workshop-access">
+    <div>
+      <h2 id="workshop-access">{access === "signin" ? "Connexion à Kookia" : access === "reload" ? "Session modifiée" : "Atelier indisponible"}</h2>
+      {access === "signin" && <p>Connectez-vous pour suivre les transferts de votre espace de test.</p>}
+      {access === "reload" && <p role="alert">Rechargez la page pour retrouver votre espace.</p>}
+      {access === "unavailable" && <p role="status">Le transfert automatique est réservé à l’espace de test configuré dans Kookia.</p>}
+    </div>
+    {access === "signin" && <a className="primary-link" href="/login?retour=atelier">Se connecter <ArrowRight size={16} aria-hidden="true" /></a>}
+    {access === "reload" && <button type="button" onClick={() => window.location.reload()}>Recharger</button>}
   </section>;
 
-  if (!control && !loadFailed) return <p role="status">Vérification du transfert…</p>;
+  if (!control && !loadFailed) return <p className="panel" role="status">Chargement du suivi…</p>;
   const date = formatParisDate();
   const forecast = control?.forecast?.date === date ? control.forecast : null;
   return <div className="automatic-workshop">
-    {loadFailed && <div className="panel workshop-structured">
-      <p role="alert" className="error">L’atelier automatique n’a pas pu être actualisé. Ouvrez le générateur depuis l’espace Kookia configuré ou réessayez.</p>
-      <div><button type="button" className="secondary" onClick={refresh}>Actualiser l’atelier</button></div>
+    {loadFailed && <div className="panel workshop-state">
+      <p role="alert">{control ? "Actualisation impossible." : "Suivi des transferts indisponible."}</p>
+      <button type="button" className="secondary" onClick={refresh}>Réessayer</button>
     </div>}
     {control && <>
-      <WorkshopTransfer control={{ ...control, forecast }} onRefresh={refresh} onAccessError={handleAccess} />
-      <WorkshopToday date={date} forecast={forecast} weeklyServices={control.restaurant.weeklyServices} />
-      <WorkshopPurchases purchases={control.purchases} />
-      <WorkshopHistory history={control.history} canManage={control.canManage} onAccessError={handleAccess} />
-      <WorkshopSettings control={control} onAccessError={handleAccess} onSaved={settings => {
-        setControl(current => current ? { ...current, settings } : current);
-        refresh();
-      }} />
+      <WorkshopTransfer control={control} onRefresh={refresh} onAccessError={handleAccess} />
+      <div className="workshop-overview">
+        <WorkshopToday date={date} forecast={forecast} weeklyServices={control.restaurant.weeklyServices} />
+        <WorkshopPurchases purchases={control.purchases} canManage={control.canManage} />
+      </div>
+      <div className="workshop-overview">
+        <WorkshopHistory history={control.history} canManage={control.canManage} onAccessError={handleAccess} />
+        <WorkshopSettings control={control} onAccessError={handleAccess} onSaved={settings => {
+          setControl(current => current ? { ...current, settings } : current);
+          refresh();
+        }} />
+      </div>
     </>}
   </div>;
 }

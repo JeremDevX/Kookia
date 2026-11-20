@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type MouseEvent } from "react";
-import { Monitor } from "lucide-react";
+import { ArrowUpRight, CalendarClock, FolderDown } from "lucide-react";
 import { workshopView, type WorkshopView } from "./workshopView";
 import "./automaticWorkshop.css";
 
@@ -29,25 +29,27 @@ export default function App() {
   };
 
   return <>
-    <header className="masthead"><div className="masthead-inner">
-      <a href="#main" className="brand"><span className="mark" aria-hidden="true">K</span>KookIA</a>
-      {view === "export" && <span className="local-badge"><Monitor size={16} aria-hidden="true" />Atelier local</span>}
-      {view === "automatique" && import.meta.env.BASE_URL === "/generateur/" && <a href="/" className="local-badge workshop-link">Ouvrir Kookia</a>}
-    </div></header>
-    <main id="main" tabIndex={-1}>
-      <header className="intro">
-        <h1>Atelier documentaire</h1>
-        {view === "export" && <p>Préparez un dossier de restaurant avec ses recettes, livraisons et ventes, classées jour par jour.</p>}
-      </header>
+    <a href="#main" className="skip-link">Aller au contenu</a>
+    <header className="masthead">
+      <div className="masthead-inner">
+        <div className="brand">
+          <span className="mark" aria-hidden="true">K</span>
+          <span>Kookia <span className="brand-context">Atelier documentaire</span></span>
+        </div>
+        {import.meta.env.BASE_URL === "/generateur/" && <a href="/" className="workshop-link back-link">Retour à Kookia <ArrowUpRight size={16} aria-hidden="true" /></a>}
+      </div>
       <nav className="workshop-nav" aria-label="Vues de l’atelier">
         <a href="?vue=automatique" aria-current={view === "automatique" ? "page" : undefined}
-          onClick={event => switchView(event, "automatique")}>Génération automatique</a>
+          onClick={event => switchView(event, "automatique")}><CalendarClock size={18} aria-hidden="true" />Génération automatique</a>
         <a href="?vue=export" aria-current={view === "export" ? "page" : undefined}
-          onClick={event => switchView(event, "export")}>Dossiers à exporter</a>
+          onClick={event => switchView(event, "export")}><FolderDown size={18} aria-hidden="true" />Dossiers à exporter</a>
       </nav>
-      {view === "automatique" && <Suspense fallback={<p role="status">Chargement de l’atelier…</p>}><AutomaticWorkshop /></Suspense>}
+    </header>
+    <main id="main" tabIndex={-1}>
+      <h1 className="page-title">{view === "automatique" ? "Génération automatique" : "Dossiers à exporter"}</h1>
+      {view === "automatique" && <Suspense fallback={<p className="panel" role="status">Chargement du suivi…</p>}><AutomaticWorkshop /></Suspense>}
       {visitedExport && <div hidden={view !== "export"}>
-        <Suspense fallback={<p role="status">Chargement du dossier…</p>}><ExportWorkshop /></Suspense>
+        <Suspense fallback={<p className="panel" role="status">Chargement du dossier…</p>}><ExportWorkshop /></Suspense>
       </div>}
     </main>
   </>;
