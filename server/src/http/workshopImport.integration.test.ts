@@ -253,13 +253,27 @@ it.each(["stock", "operations"] as const)("links a raw loss once when %s arrive 
   if (first === "operations") expect(before).toEqual([expect.objectContaining({ stockMovementId: null, lotId: null, cost: null })]);
   else expect(before).toEqual([]);
 
+  await prisma.supplier.create({ data: { id: "alternate", restaurantId: targetId, name: "Autre verger", email: "", phone: "" } });
+  await prisma.product.create({ data: { id: "alternate-pears", restaurantId: targetId, supplierId: "alternate", name: productName,
+    unit: "kg", category: "Fruits", currentStock: 0, minThreshold: 1, pricePerUnit: 3.3 } });
+  const withoutSupplier = await send().send({ ...day, stock, operations }).expect(409);
+  expect(withoutSupplier.body.error.code).toBe(first === "operations" ? "WORKSHOP_STOCK_CONFLICT" : "WORKSHOP_KITCHEN_PRODUCT");
+
+  const scopedStock = [{ ...stock[0], supplier: "Verger" }];
+  const scopedOperations = { ...operations, losses: [{ ...operations.losses[0], supplier: "Verger" }] };
   const acknowledged = { date, replayed: true, saleCount: 0, stockApplied: true, operationsApplied: true };
-  await send().send({ ...day, stock, operations }).expect(200, acknowledged);
-  await send().send({ ...day, stock, operations }).expect(200, acknowledged);
+  await send().send({ ...day, stock: scopedStock, operations: {
+    ...operations, losses: [{ ...operations.losses[0], supplier: "Autre verger" }],
+  } }).expect(400);
+  await send().send({ ...day, stock: scopedStock, operations: scopedOperations }).expect(200, acknowledged);
+  await send().send({ ...day, stock: scopedStock, operations: scopedOperations }).expect(200, acknowledged);
   const movements = await prisma.stockMovement.findMany({ where: { restaurantId: targetId, reason: "simulation_loss" } });
   expect(movements).toHaveLength(1);
   expect((await owner.get("/api/workspace/waste").expect(200)).body).toEqual([expect.objectContaining({
     ...(first === "operations" && { id: before[0].id }), stockMovementId: movements[0].id, lotId: lot.id, quantity: 0.5, cost: 1,
   })]);
-  expect((await owner.get("/api/workspace/catalog").expect(200)).body.products[0].currentStock).toBe(1.5);
+  expect((await owner.get("/api/workspace/catalog").expect(200)).body.products).toEqual([
+    expect.objectContaining({ id: "alternate-pears", currentStock: 0 }),
+    expect.objectContaining({ id: productId, currentStock: 1.5 }),
+  ]);
 });

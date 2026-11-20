@@ -57,7 +57,7 @@ export async function applyWorkshopKitchen(tx: Prisma.TransactionClient, restaur
   const [recipes, products, movements] = await Promise.all([
     tx.recipe.findMany({ where: { restaurantId, name: { in: [...recipeNames] } }, select: { id: true, name: true } }),
     tx.product.findMany({ where: { restaurantId, name: { in: losses.flatMap(loss => loss.product ? [loss.product] : []) } },
-      select: { id: true, name: true, unit: true } }),
+      select: { id: true, name: true, unit: true, supplier: { select: { name: true } } } }),
     findUnlinkedLossMovements(tx, restaurantId, date, losses),
   ]);
 
@@ -87,7 +87,8 @@ export async function applyWorkshopKitchen(tx: Prisma.TransactionClient, restaur
 
   const linkedMovements = new Set<string>();
   const wastes: Prisma.WasteRecordCreateManyInput[] = losses.map((loss, index) => {
-    const matches = products.filter(product => product.name === loss.product && product.unit === loss.unit);
+    const matches = products.filter(product => product.name === loss.product && product.unit === loss.unit
+      && (!loss.supplier || product.supplier.name === loss.supplier));
     if (loss.product && matches.length !== 1)
       throw new WorkspaceError(409, "WORKSHOP_KITCHEN_PRODUCT", `Le produit « ${loss.product} » ou son unité ne correspond pas au stock.`);
     const productId = matches[0]?.id ?? null;

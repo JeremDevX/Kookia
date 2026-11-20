@@ -26,8 +26,9 @@ const item = z.strictObject({ name: label, category: z.enum(["Entrée", "Plat", 
 const service = z.strictObject({ slot, covers: portions, items: z.array(item).max(25) })
   .refine(row => unique(row.items.map(entry => entry.name)));
 const loss = z.strictObject({ kind: z.enum(["raw", "preparation", "unsold", "plate_return"]), slot: slot.nullable(),
-  recipe: label.nullable(), product: label.nullable(), lotReference: reference.nullable(), quantityMilli: milli.min(1),
+  recipe: label.nullable(), product: label.nullable(), supplier: label.optional(), lotReference: reference.nullable(), quantityMilli: milli.min(1),
   unit: z.enum(["kg", "L", "pcs", "portion"]), avoidable: z.boolean(), note })
+  .refine(row => !row.supplier || Boolean(row.product))
   .refine(row => row.kind === "raw" ? Boolean(row.product && row.lotReference && !row.recipe && row.unit !== "portion") :
     Boolean(row.recipe && row.slot && (row.kind === "preparation" ? row.product && row.unit !== "portion" : !row.product && row.unit === "portion")));
 

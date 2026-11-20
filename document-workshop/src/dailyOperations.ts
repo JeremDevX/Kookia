@@ -51,11 +51,13 @@ export function dailyOperations(scenario: Scenario) {
   const losses = day.waste.map(waste => {
     const kind = waste.kind === "expiry" || waste.kind === "spoilage" ? "raw" : waste.kind;
     const unit = waste.unit === "portions" ? "portion" : waste.unit;
+    const product = waste.productId ? ingredientById(waste.productId) : undefined;
     return {
       kind,
       slot: waste.service ?? null,
       recipe: waste.recipeId ? recipeById(waste.recipeId).name.normalize("NFC") : null,
-      product: waste.productId ? ingredientById(waste.productId).name.normalize("NFC") : null,
+      product: product?.name.normalize("NFC") ?? null,
+      ...(product && { supplier: suppliers.find(supplier => supplier.id === product.supplier)!.name.normalize("NFC") }),
       lotReference: waste.lotId ?? null,
       quantityMilli: toMilliUnits(waste.quantity),
       unit,

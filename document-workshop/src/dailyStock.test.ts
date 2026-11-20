@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import { suppliers } from "./catalog";
 import { dailyStock } from "./dailyStock";
 import { defaultScenarioOptions, generateScenario } from "./scenario";
 
@@ -23,8 +24,10 @@ it("projects receipts, raw loss, adjustments and exact closing balances in milli
     expect(stock).toHaveLength(scenario.catalog.ingredients.length);
     for (const [index, product] of scenario.catalog.ingredients.entries()) {
       const { opening, received, loss, consumed, adjustment, closing } = day.stock.find(line => line.id === product.id)!;
-      const { name, unit, lots } = stock[index];
-      expect({ name, unit }).toEqual({ name: product.name, unit: product.unit });
+      const { name, unit, supplier, lots } = stock[index];
+      expect({ name, unit, supplier }).toEqual({
+        name: product.name, unit: product.unit, supplier: suppliers.find(entry => entry.id === product.supplier)!.name,
+      });
       let consumedMilli = 0;
       for (const lot of lots) {
         const closes = day.closingLots.find(closingLot => closingLot.id === lot.reference);

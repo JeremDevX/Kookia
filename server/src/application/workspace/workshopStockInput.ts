@@ -17,9 +17,11 @@ const lot = z.strictObject({
   receivedOn <= expiresOn && (openingMilli > 0) !== (addedMilli > 0)
   && (addedMilli > 0) === (addition !== null) && closingMilli + lossMilli + adjustmentOutMilli <= openingMilli + addedMilli);
 
+const label = z.string().trim().min(1).max(120).refine(value => !/\p{Cc}/u.test(value));
 const product = z.strictObject({
-  name: z.string().trim().min(1).max(120).refine(name => !/\p{Cc}/u.test(name)),
+  name: label,
   unit: z.enum(["kg", "L", "pcs"]),
+  supplier: label.optional(),
   lots: z.array(lot).max(100),
 }).refine(({ unit, lots }) => unit !== "pcs" || lots.every(({ openingMilli, addedMilli, closingMilli, lossMilli, adjustmentOutMilli = 0 }) =>
   [openingMilli, addedMilli, closingMilli, lossMilli, adjustmentOutMilli].every(quantity => quantity % 1000 === 0)));

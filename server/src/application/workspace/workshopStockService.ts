@@ -90,8 +90,12 @@ export async function applyWorkshopStock(tx: Prisma.TransactionClient, restauran
   const prior = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind } }, select: { data: true } });
   if (prior?.data === digest) return;
   if (prior) {
+    const withoutSuppliers = normalized.map(line => ({ ...line, supplier: undefined }));
+    if (prior.data === stockDigest(withoutSuppliers)) return;
     // Old imports folded count removals into consumption. Only their stored digest matches this projection.
-    const legacy = normalized.map(line => ({ ...line, lots: line.lots.map(lot => ({ ...lot, adjustmentOutMilli: undefined })) }));
+    const legacy = withoutSuppliers.map(line => ({
+      ...line, lots: line.lots.map(lot => ({ ...lot, adjustmentOutMilli: undefined })),
+    }));
     if (prior.data === stockDigest(legacy)) return;
     throw new WorkspaceError(409, "WORKSHOP_STOCK_CHANGED", "Le stock de cette journée a déjà été synchronisé avec d’autres valeurs.");
   }
@@ -101,14 +105,18 @@ export async function applyWorkshopStock(tx: Prisma.TransactionClient, restauran
     throw new WorkspaceError(409, "WORKSHOP_STOCK_SEQUENCE", "Reprenez la synchronisation du stock au lendemain de la dernière clôture.");
   }
 
-  const filters = normalized.map(({ name, unit }) => ({ name, unit }));
+  const filters = normalized.map(({ name, unit, supplier }) => ({
+    name, unit, ...(supplier && { supplier: { name: supplier } }),
+  }));
   const scope = { restaurantId, OR: filters };
   const catalog = await tx.product.findMany({ where: scope, select: { id: true } });
   await lockReceiptProducts(tx, restaurantId, catalog.map(product => product.id));
   const products = await tx.product.findMany({ where: { ...scope, id: { in: catalog.map(product => product.id) } },
-    select: { id: true, unit: true, name: true, currentStock: true, stockLots: { where: { remainingQuantity: { gt: 0 } } } } });
+    select: { id: true, unit: true, name: true, currentStock: true, supplier: { select: { name: true } },
+      stockLots: { where: { remainingQuantity: { gt: 0 } } } } });
   const plan = normalized.map(line => {
-    const matches = products.filter(product => productKey(product) === productKey(line));
+    const matches = products.filter(product => productKey(product) === productKey(line)
+      && (!line.supplier || product.supplier.name === line.supplier));
     if (matches.length !== 1) throw stockConflict(line.name);
     const product = matches[0];
     const opening = matchOpeningLots(line, product.currentStock, product.stockLots, restaurantId, product.id);

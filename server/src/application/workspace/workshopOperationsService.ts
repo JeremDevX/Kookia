@@ -13,7 +13,9 @@ export async function applyWorkshopOperations(tx: Prisma.TransactionClient, rest
   const prior = await tx.workspaceDocument.findUnique({ where: { restaurantId_kind: { restaurantId, kind } } });
   if (prior) {
     const data = prior.data;
-    if (data && typeof data === "object" && !Array.isArray(data) && data.digest === digest) {
+    const legacy = { ...operations, losses: operations.losses.map(loss => ({ ...loss, supplier: undefined })) };
+    const legacyDigest = createHash("sha256").update(JSON.stringify(legacy)).digest("hex");
+    if (data && typeof data === "object" && !Array.isArray(data) && (data.digest === digest || data.digest === legacyDigest)) {
       await linkWorkshopRawLosses(tx, restaurantId, date, operations.losses);
       return;
     }

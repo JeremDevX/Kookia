@@ -1,3 +1,4 @@
+import { suppliers } from "./catalog";
 import type { Lot, Scenario } from "./model";
 import { receivedLot } from "./purchasing";
 
@@ -57,6 +58,7 @@ export function dailyStock(scenario: Scenario) {
   return scenario.catalog.ingredients.map(product => ({
     name: product.name.normalize("NFC"),
     unit: product.unit,
+    supplier: suppliers.find(supplier => supplier.id === product.supplier)!.name.normalize("NFC"),
     lots: lotsByProduct.get(product.id)!,
   }));
 }

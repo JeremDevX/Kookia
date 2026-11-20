@@ -55,7 +55,12 @@ it("projects orders, receipts, services and losses for 90 consecutive simulated 
         rawLossByLot.set(loss.lotReference, (rawLossByLot.get(loss.lotReference) ?? 0) + loss.quantityMilli);
       }
     }
-    const stockLossByLot = new Map(dailyStock(scenario).flatMap(product => product.lots)
+    const stock = dailyStock(scenario);
+    for (const loss of operations.losses.filter(row => row.product)) {
+      expect(loss.supplier).toBeDefined();
+      expect(loss.supplier).toBe(stock.find(product => product.name === loss.product && product.unit === loss.unit)?.supplier);
+    }
+    const stockLossByLot = new Map(stock.flatMap(product => product.lots)
       .filter(lot => lot.lossMilli > 0).map(lot => [lot.reference, lot.lossMilli]));
     expect(rawLossByLot).toEqual(stockLossByLot);
     if (!day.open) {

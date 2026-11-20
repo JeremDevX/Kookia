@@ -35,9 +35,16 @@ function operationsMatchDate(operations: WorkshopOperationsInput, date: string, 
   }
   if (sold.size !== sales.length || sales.some(item => sold.get(item.normalizedName) !== item.quantity)) return false;
   if (!stock) return true;
+  const suppliersByProduct = new Map(stock.map(({ name, unit, supplier }) => [`${name}:${unit}`, supplier]));
+  if (operations.losses.some(({ product, unit, supplier }) => {
+    const stockSupplier = suppliersByProduct.get(`${product}:${unit}`);
+    return supplier && stockSupplier && supplier !== stockSupplier;
+  })) return false;
   const delivered = new Map<string, number>();
   for (const purchase of operations.purchases) for (const line of purchase.lines) if (line.receivedMilli > 0) {
     const key = `${line.name}:${line.unit}`;
+    const stockSupplier = suppliersByProduct.get(key);
+    if (stockSupplier && stockSupplier !== purchase.supplier) return false;
     delivered.set(key, (delivered.get(key) ?? 0) + line.receivedMilli);
   }
   for (const line of stock) {
