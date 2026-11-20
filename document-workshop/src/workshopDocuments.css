@@ -1,0 +1,109 @@
+.document-library { min-width: var(--atelier-zero); }
+.document-filters {
+  display: grid;
+  grid-template-columns: var(--atelier-two-columns);
+  gap: var(--atelier-space-compact);
+}
+.document-picker {
+  display: grid;
+  grid-template-columns: minmax(var(--atelier-zero), var(--atelier-fr)) auto;
+  align-items: end;
+  gap: var(--atelier-space-sm);
+  margin-block: var(--atelier-space-compact) var(--atelier-space-md);
+}
+.document-picker [role="group"] { display: flex; align-items: center; gap: var(--atelier-space-xs); }
+.document-library .document-arrow {
+  padding: var(--atelier-zero);
+  min-width: var(--atelier-control);
+}
+.document-library .document-arrow[aria-disabled="true"] {
+  color: var(--atelier-text-muted);
+  background: var(--atelier-background);
+  border-color: var(--atelier-divider);
+  cursor: default;
+}
+.document-empty { margin-top: var(--atelier-space-md); }
+.document-empty button { margin-top: var(--atelier-space-compact); }
+.document-viewer .preview-toolbar {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  background: var(--atelier-surface);
+  border-radius: var(--atelier-radius-control) var(--atelier-radius-control) var(--atelier-zero) var(--atelier-zero);
+}
+.document-byline {
+  color: var(--atelier-text-secondary);
+  font-size: var(--atelier-font-small);
+  overflow-wrap: var(--atelier-word-break);
+}
+.document-byline time { margin-top: var(--atelier-zero); }
+.document-download-error { margin-inline: var(--atelier-space-md); }
+.document-view-controls {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--atelier-space-sm);
+  align-items: center;
+  padding: var(--atelier-space-sm) var(--atelier-space-md);
+  border-block: var(--atelier-stroke) solid var(--atelier-divider);
+  background: var(--atelier-surface);
+}
+.document-views, .document-pagination { display: flex; align-items: center; gap: var(--atelier-space-xs); }
+.document-views button { border-color: transparent; }
+.document-views button[aria-pressed="true"] {
+  background: var(--atelier-brand-soft);
+  border-color: var(--atelier-brand-line);
+  color: var(--atelier-brand);
+}
+.document-pagination span, .document-position {
+  color: var(--atelier-text-secondary);
+  font-size: var(--atelier-font-caption);
+  font-variant-numeric: tabular-nums;
+  padding-inline: var(--atelier-space-xs);
+}
+.document-help {
+  min-width: var(--atelier-zero);
+  margin-inline: var(--atelier-space-md);
+  border-top: none;
+  border-bottom: var(--atelier-stroke) solid var(--atelier-divider);
+}
+.document-help p, .document-text li {
+  color: var(--atelier-text-secondary);
+  font-size: var(--atelier-font-small);
+  overflow-wrap: var(--atelier-word-break);
+}
+.document-text { padding: var(--atelier-space-md); overflow-wrap: var(--atelier-word-break); }
+.document-text > section { margin-block-start: var(--atelier-space-lg); }
+.document-text h4 + p { margin-top: var(--atelier-space-xs); }
+.document-text ul { padding-inline-start: var(--atelier-space-md); }
+.document-text li + li { margin-top: var(--atelier-space-xs); }
+
+@media (--atelier-small) {
+  .document-picker { grid-template-columns: minmax(var(--atelier-zero), var(--atelier-fr)); }
+  .document-picker [role="group"] { justify-content: end; }
+  .document-viewer .preview-toolbar button { width: var(--atelier-full); }
+}
+
+.activity-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: var(--atelier-space-sm) var(--atelier-space-md);
+  margin-block: var(--atelier-space-xs) var(--atelier-space-md);
+}
+.activity-day {
+  display: grid;
+  gap: var(--atelier-space-compact);
+  padding: var(--atelier-space-md);
+  background: var(--atelier-background);
+  border-radius: var(--atelier-radius-control);
+  overflow-wrap: var(--atelier-word-break);
+}
+.activity-breakdown { display: grid; grid-template-columns: var(--atelier-two-columns); gap: var(--atelier-space-compact); }
+.activity-breakdown section { padding: var(--atelier-space-compact); background: var(--atelier-surface); border-radius: var(--atelier-radius-control); }
+.activity-breakdown h3, .activity-weather h3 { margin-bottom: var(--atelier-space-sm); font-size: var(--atelier-font-base); }
+.activity-weather p, .activity-events { font-size: var(--atelier-font-small); }
+.activity-events { margin: var(--atelier-zero); padding-inline-start: var(--atelier-space-md); }
+
+@media (--atelier-small) {
+  .activity-breakdown { grid-template-columns: var(--atelier-fr); }
+}

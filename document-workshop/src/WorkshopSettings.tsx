@@ -1,36 +1,70 @@
-import { useState, type SubmitEvent } from "react";
+import { useRef, useState, type SubmitEvent } from "react";
+import { ArrowUpRight, Check, PencilLine } from "lucide-react";
 import type { WorkshopControl } from "../../shared/workshopControl";
+import { ApiError } from "../../src/config/api";
+import { formatParisDate } from "../../shared/parisDate";
 import { saveWorkshopSettings, workshopAccessError } from "./automaticWorkshopApi";
 import { displayDate, offsetDate } from "./calendar";
-import { formatParisDate } from "../../shared/parisDate";
 import { serviceLabel, weekdays } from "./workshopPresentation";
 
-export default function WorkshopSettings({ control, onSaved, onAccessError }: {
+type SettingField = "covers" | "incidentEvery";
+type Draft = Partial<Record<SettingField, string>> & { revision: number };
+
+export default function WorkshopSettings({ control, onSaved, onAccessError, onRefresh }: {
   control: WorkshopControl;
   onSaved: (settings: WorkshopControl["settings"]) => void;
   onAccessError: (cause: unknown) => void;
+  onRefresh: () => void;
 }) {
   const { restaurant, canManage, settings } = control;
-  const [saveState, setSaveState] = useState<"busy" | "saved" | "error" | "idle">("idle");
-  const effective = settings.effectiveFrom ? displayDate(settings.effectiveFrom) : null;
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [saveState, setSaveState] = useState<"busy" | "saved" | "error" | "conflict" | "idle">("idle");
+  const coversInput = useRef<HTMLInputElement>(null);
+  const effectiveFrom = settings.effectiveFrom;
   const today = formatParisDate();
-  const nextDate = displayDate(offsetDate(today, 1));
+  const nextDate = offsetDate(today, 1);
+  const live = { covers: String(settings.covers), incidentEvery: String(settings.incidentEvery), revision: settings.revision };
+  const fields = { ...live, ...draft };
+  const changed = Number(fields.covers) !== settings.covers || Number(fields.incidentEvery) !== settings.incidentEvery;
+  const outdated = fields.revision !== settings.revision;
+  const busy = saveState === "busy";
+  const conflict = saveState === "conflict" || outdated;
+  const update = (field: SettingField, value: string) => {
+    setDraft(current => {
+      const next = { ...current, revision: current?.revision ?? settings.revision, [field]: value };
+      if (Number(value) === settings[field]) delete next[field];
+      return next.covers === undefined && next.incidentEvery === undefined ? null : next;
+    });
+    if (saveState === "saved" || saveState === "error") setSaveState("idle");
+  };
+  const reconcile = (keepDraft: boolean) => {
+    setDraft(keepDraft && draft ? { ...draft, revision: settings.revision } : null);
+    setSaveState("idle");
+    coversInput.current?.focus();
+  };
   const save = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canManage || saveState === "busy") return;
-    const fields = new FormData(event.currentTarget);
+    if (!canManage || busy || conflict || !changed) return;
     setSaveState("busy");
     try {
       const result = await saveWorkshopSettings({
-        covers: Number(fields.get("covers")),
-        incidentEvery: Number(fields.get("incidentEvery")),
-        expectedRevision: Number(fields.get("revision")),
+        covers: Number(fields.covers),
+        incidentEvery: Number(fields.incidentEvery),
+        expectedRevision: fields.revision,
       });
+      setDraft(null);
       onSaved(result);
       setSaveState("saved");
     } catch (cause) {
-      if (workshopAccessError(cause)) onAccessError(cause);
-      else setSaveState("error");
+      if (workshopAccessError(cause)) {
+        setSaveState("idle");
+        onAccessError(cause);
+      } else if (cause instanceof ApiError && cause.details.code === "WORKSHOP_SETTINGS_CHANGED") {
+        setSaveState("conflict");
+        onRefresh();
+      } else {
+        setSaveState("error");
+      }
     }
   };
 
@@ -49,29 +83,38 @@ export default function WorkshopSettings({ control, onSaved, onAccessError }: {
         {[...restaurant.weeklyServices].sort((a, b) => (a.weekday + 6) % 7 - (b.weekday + 6) % 7).map(({ weekday, slot, opensAt, closesAt }) =>
           <li key={`${weekday}:${slot}`}><strong>{weekdays[weekday]} · {serviceLabel[slot]}</strong><span>{opensAt}–{closesAt}</span></li>)}
       </ul> : <p className="hint">Aucun horaire habituel renseigné.</p>}
-      {canManage && <a className="workshop-link" href="/settings">Modifier dans Kookia</a>}
+      {canManage && <a className="workshop-link" href="/settings">Modifier dans Kookia <ArrowUpRight size={16} aria-hidden="true" /></a>}
     </details>
     <details className="workshop-details">
-      <summary><span>Simulation</span></summary>
+      <summary><span>Simulation</span>{canManage && <PencilLine className="control-edit-icon" size={16} aria-hidden="true" />}</summary>
       {canManage ? <form onSubmit={save}>
-        <fieldset key={settings.revision} disabled={saveState === "busy"} aria-describedby="workshop-effective-setting">
-          <input type="hidden" name="revision" value={settings.revision} />
+        <fieldset disabled={busy} aria-describedby="workshop-effective-setting">
           <div className="workshop-fields">
-            <label>Couverts par jour ouvert<input name="covers" type="number" min={5} max={200} required defaultValue={settings.covers} /></label>
-            <label>Un imprévu tous les… jours<input name="incidentEvery" type="number" min={1} max={90} required defaultValue={settings.incidentEvery} /></label>
+            <label>Couverts par jour ouvert<input ref={coversInput} name="covers" type="number" min={5} max={200} required value={fields.covers} onChange={event => update("covers", event.currentTarget.value)} /></label>
+            <label>Un imprévu tous les… jours<input name="incidentEvery" type="number" min={1} max={90} required value={fields.incidentEvery} onChange={event => update("incidentEvery", event.currentTarget.value)} /></label>
           </div>
         </fieldset>
-        {settings.effectiveFrom && settings.effectiveFrom > today && saveState !== "saved" && <p className="hint">Réglages en attente pour le {effective}.</p>}
-        <p className="hint" id="workshop-effective-setting">Toute modification s’applique à partir du {nextDate}.</p>
+        <p className="hint" id="workshop-effective-setting">Les modifications s’appliquent le <time dateTime={nextDate}>{displayDate(nextDate)}</time>.</p>
+        {conflict && <div className="control-setting-conflict">
+          <p role="alert"><strong>Les réglages ont changé dans Kookia.</strong></p>
+          {outdated ? <>
+            <p>Valeurs enregistrées · {settings.covers} couverts, un imprévu tous les {settings.incidentEvery} jours.</p>
+            <div className="workshop-actions">
+              <button type="button" className="secondary" onClick={() => reconcile(false)}>Charger les réglages actuels</button>
+              <button type="button" className="secondary" onClick={() => reconcile(true)}>Garder ma saisie</button>
+            </div>
+          </> : <button type="button" className="secondary" onClick={onRefresh}>Actualiser les réglages</button>}
+        </div>}
         <div className="workshop-actions">
-          <button type="submit" aria-disabled={saveState === "busy"}>{saveState === "busy" ? "Enregistrement…" : "Enregistrer les réglages"}</button>
-          {saveState === "saved" && <p role="status">Enregistré pour le {effective}.</p>}
+          <button type="submit" aria-disabled={busy || conflict || !changed}>{busy ? "Enregistrement…" : "Enregistrer les réglages"}</button>
+          {saveState === "saved" && effectiveFrom && <p role="status" className="control-setting-saved"><Check size={16} aria-hidden="true" /> Enregistré pour le {displayDate(effectiveFrom)}.</p>}
+          {saveState !== "saved" && !conflict && effectiveFrom && effectiveFrom > today && <p className="hint">Réglages en attente pour le {displayDate(effectiveFrom)}.</p>}
         </div>
-        {saveState === "error" && <p className="error" role="alert">Enregistrement impossible. Réessayez ou actualisez la page.</p>}
+        {saveState === "error" && <p className="error" role="alert">Enregistrement impossible. Réessayez.</p>}
       </form> : <dl className="workshop-facts">
         <div><dt>Couverts par jour ouvert</dt><dd>{settings.covers}</dd></div>
         <div><dt>Fréquence des imprévus</dt><dd>Tous les {settings.incidentEvery} jours</dd></div>
-        {effective && <div><dt>En vigueur à partir du</dt><dd>{effective}</dd></div>}
+        {effectiveFrom && <div><dt>Applicable le</dt><dd><time dateTime={effectiveFrom}>{displayDate(effectiveFrom)}</time></dd></div>}
       </dl>}
     </details>
   </section>;

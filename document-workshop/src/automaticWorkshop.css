@@ -77,9 +77,8 @@
   font-weight: var(--atelier-weight-medium);
 }
 .workshop-facts, .service-facts, .workshop-fields { grid-template-columns: var(--atelier-two-columns); }
-.workshop-today > .workshop-subtitle { margin-top: calc(var(--atelier-zero) - var(--atelier-space-sm)); margin-bottom: var(--atelier-space-md); }
 
-.workshop-services { display: grid; grid-auto-columns: minmax(var(--atelier-zero), var(--atelier-fr)); grid-auto-flow: column; gap: var(--atelier-space-compact); }
+.workshop-services { display: grid; grid-template-columns: var(--atelier-service-columns); gap: var(--atelier-space-compact); }
 .workshop-service {
   display: grid;
   align-content: start;
@@ -159,7 +158,6 @@
 .workshop-rows small, .history-row summary small { display: block; color: var(--atelier-text-secondary); font-weight: var(--atelier-weight-medium); }
 .history-row summary time { font-variant-numeric: tabular-nums; }
 .history-row > summary { padding-block: var(--atelier-space-sm); }
-.history-confirmed { display: inline-flex; align-items: center; gap: var(--atelier-space-xs); color: var(--atelier-brand); font-size: var(--atelier-font-caption); }
 .history-content { padding: var(--atelier-space-md); border-radius: var(--atelier-radius-control); background: var(--atelier-background); }
 .history-event { font-size: var(--atelier-font-small); overflow-wrap: var(--atelier-word-break); }
 .history-event ul { margin-block: var(--atelier-space-xs) var(--atelier-zero); padding-inline-start: var(--atelier-space-lg); }
@@ -173,7 +171,6 @@
 
 @media (--atelier-tablet) {
   .workshop-overview { grid-template-columns: var(--atelier-two-columns); }
-  .workshop-services { grid-auto-flow: row; }
 }
 @media (--atelier-mobile) {
   .automatic-workshop, .export-workshop, .workshop-overview { gap: var(--atelier-space-md); }

@@ -1,0 +1,74 @@
+.export-workshop .export-dossier-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--atelier-space-sm) var(--atelier-space-md);
+  padding-top: var(--atelier-space-md);
+}
+.export-workshop .export-dossier-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--atelier-space-xs) var(--atelier-space-md);
+}
+.export-workshop .export-sales-note {
+  margin-top: var(--atelier-space-sm);
+}
+.export-workshop .dossier-dirty {
+  margin-top: var(--atelier-space-compact);
+  padding: var(--atelier-space-compact);
+  border: var(--atelier-stroke) solid var(--atelier-warning-line);
+  border-radius: var(--atelier-radius-control);
+  background: var(--atelier-warning-background);
+}
+.export-workshop .dossier-dirty a { color: inherit; }
+.export-workshop .settings form > fieldset { margin-bottom: var(--atelier-space-md); }
+.export-workshop .dossier-duration { margin-top: var(--atelier-space-xs); }
+.export-workshop .presets button[aria-pressed="true"] {
+  border-color: var(--atelier-brand);
+  color: var(--atelier-brand);
+  background: var(--atelier-brand-soft);
+}
+.export-workshop .advanced-settings[open] {
+  padding-inline-start: var(--atelier-space-sm);
+  border-inline-start: var(--atelier-stroke) solid var(--atelier-divider);
+}
+.export-workshop .percentage-field > span {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--atelier-space-sm);
+}
+.export-workshop .percentage-field strong {
+  color: var(--atelier-brand);
+  flex-shrink: var(--atelier-zero);
+}
+.export-workshop .closure-days { margin-bottom: var(--atelier-zero); }
+.export-workshop .resume-actions { margin-top: var(--atelier-space-compact); }
+.export-workshop .resume-actions {
+  display: grid;
+  gap: var(--atelier-space-xs);
+}
+.export-workshop .resume-summary {
+  display: grid;
+  gap: var(--atelier-space-xs);
+  padding: var(--atelier-space-sm) var(--atelier-space-compact);
+  background: var(--atelier-brand-soft);
+  border: var(--atelier-stroke) solid var(--atelier-brand-line);
+  border-radius: var(--atelier-radius-control);
+}
+.export-workshop .resume-summary > button { justify-self: start; }
+.export-workshop .continuation summary small { font-size: var(--atelier-font-caption); color: var(--atelier-brand); }
+.export-workshop .continuation input[type="file"] { padding: var(--atelier-space-sm); }
+.export-workshop .settings [readonly] { background: var(--atelier-active); }
+.export-workshop .coverage > ol {
+  display: grid;
+  gap: var(--atelier-space-compact);
+  padding-inline-start: var(--atelier-space-lg);
+}
+.export-workshop .coverage li { margin-bottom: var(--atelier-zero); }
+
+@media (--atelier-small) {
+  .export-workshop .export-dossier-actions .export-actions { width: var(--atelier-full); }
+  .export-workshop .export-dossier-actions .export-actions button { width: var(--atelier-full); }
+  .export-workshop .export-dossier-actions .dossier-jump { min-height: var(--atelier-control); }
+}

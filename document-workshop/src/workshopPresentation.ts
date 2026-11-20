@@ -1,12 +1,10 @@
 import type { WorkshopRun } from "../../shared/workshopControl";
-import { displayDate } from "./calendar";
 
 export { serviceSlotLabels as serviceLabel } from "../../shared/serviceCalendar";
 export const weekdays = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 export { number as quantity } from "./catalog";
 const parisTimestamp = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", dateStyle: "medium", timeStyle: "short" });
 const dateTime = (value: string) => parisTimestamp.format(new Date(value));
-export const displayedDay = (value: string | null) => value ? displayDate(value) : "Aucune";
 export const displayedTime = (value: string | null) => value ? dateTime(value) : "Aucun";
 
 const issueMessage = {

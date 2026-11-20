@@ -195,8 +195,8 @@ Conserver la date de début si une journée a déjà été transmise dans ce mod
    sans météo, conditions variées, éclaircies, pluie, brouillard ou orage/vent fort.
    Ce sont des **hypothèses de scénario**, pas des prévisions Open-Meteo. Sans météo
    ou sans indication de terrasse, la base semaine/saison reste inchangée.
-5. Dans **Jours ouverts, services et carte**, choisir les fermetures (lundi par
-   défaut), midi, soir ou les deux. Les deux services répartissent la référence
+5. Dans **Services et carte**, choisir les fermetures (lundi par défaut), midi,
+   soir ou les deux. Les deux services répartissent la référence
    à 60 % / 40 %, puis s’arrondissent séparément. Au moins un jour de la semaine
    doit rester ouvert. Café à la commande et formule midi sont facultatifs.
 6. Ajuster les parts d’entrée/dessert, de 0 à 100 %. Le **sur-parage de référence**
@@ -205,13 +205,17 @@ Conserver la date de début si une journée a déjà été transmise dans ce mod
    les N jours calendaires depuis le début du dossier initial, uniquement sur
    journée ouverte. Un incident fournisseur sans livraison prévue est signalé
    sans effet, pas transformé en réception. Les reprises conservent cet ancrage.
-8. Cliquer **Générer** puis télécharger le ZIP. Les réglages modifiés ne changent
-   pas le dossier affiché avant génération. Mêmes paramètres, numéro et état
-   d’ouverture : mêmes résultats.
+8. Cliquer **Générer le dossier** pour appliquer les réglages, puis télécharger
+   le ZIP. Avec les mêmes paramètres, le même numéro et le même état
+   d’ouverture, la génération reproduit le dossier.
 
-La synthèse **De la prévision au service** distingue couverts prévus/demandés et
-articles préparés/servis/invendus. Les demandes non servies ne deviennent jamais
-ventes. Le détail quotidien expose incidents et nombre de lots reportés.
+Dans **Pièces du dossier**, filtrer par date et par type de pièce. L’aperçu PDF
+se parcourt page par page. **Lire en texte** affiche les données du document et
+**Télécharger le PDF** enregistre la pièce sélectionnée.
+
+Dans **Activité du dossier**, ouvrir **Détail par jour** et choisir la date. Les
+couverts sont distingués des articles préparés, servis et invendus. La journée
+indique les demandes non servies, les incidents et les lots reportés.
 
 ### Terrasse et météo : une hypothèse explicite
 

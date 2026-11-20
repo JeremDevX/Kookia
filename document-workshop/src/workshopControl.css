@@ -1,0 +1,101 @@
+.control-access {
+  display: grid;
+  grid-template-columns: auto minmax(var(--atelier-zero), var(--atelier-fr)) auto;
+  justify-items: start;
+  gap: var(--atelier-space-md);
+}
+.control-state-icon { color: var(--atelier-brand); }
+.control-load-failure .control-state-icon { color: var(--atelier-warning); }
+.control-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--atelier-space-compact);
+  color: var(--atelier-text-secondary);
+}
+.control-access :is(button, a) { justify-self: start; }
+
+.transfer-timeline.control-transfer-dates { grid-template-columns: var(--atelier-two-columns); }
+.control-transfer-alert {
+  grid-template-columns: minmax(var(--atelier-zero), var(--atelier-fr)) auto;
+  align-items: center;
+}
+.control-transfer-alert > p { grid-column: var(--atelier-all-columns); }
+.control-issue-content { min-width: var(--atelier-zero); overflow-wrap: var(--atelier-word-break); }
+.control-issue-content > p { margin-top: var(--atelier-space-xs); }
+.control-transfer-details {
+  margin-top: var(--atelier-space-compact);
+  border-color: var(--atelier-brand-line);
+  color: var(--atelier-text-secondary);
+}
+.control-transfer-details p, .control-running { font-size: var(--atelier-font-small); }
+.control-transfer-details p + p, .control-running { margin-top: var(--atelier-space-xs); }
+
+.control-today-date, .control-service-hours, .control-history-receipt, .control-setting-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--atelier-space-xs);
+}
+.control-forecast-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--atelier-space-xs) var(--atelier-space-md);
+  margin-bottom: var(--atelier-space-md);
+}
+.control-forecast-context strong { font-variant-numeric: tabular-nums; }
+.control-empty {
+  display: grid;
+  grid-template-columns: auto minmax(var(--atelier-zero), var(--atelier-fr));
+  gap: var(--atelier-space-compact);
+  align-items: start;
+  padding: var(--atelier-space-md);
+  border-radius: var(--atelier-radius-control);
+  background: var(--atelier-active);
+  color: var(--atelier-text-secondary);
+  font-size: var(--atelier-font-small);
+}
+.control-empty > svg { color: var(--atelier-brand); }
+.control-empty-copy { color: var(--atelier-text-secondary); font-size: var(--atelier-font-small); }
+.workshop-purchases > .workshop-actions { padding-top: var(--atelier-space-xs); }
+.control-deliveries > li { gap: var(--atelier-space-sm) var(--atelier-space-compact); }
+.control-deliveries > li span { min-width: var(--atelier-zero); }
+.control-deliveries small > a { margin-top: var(--atelier-space-xs); }
+
+.control-history-label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--atelier-space-xs) var(--atelier-space-compact);
+}
+.control-history-label small, .control-detail-count {
+  font-size: var(--atelier-font-small);
+  color: var(--atelier-text-secondary);
+}
+.control-detail-count { font-variant-numeric: tabular-nums; text-align: end; }
+.control-stock-closing dd, .control-setting-saved { color: var(--atelier-brand); }
+.control-day-failure > p { font-size: var(--atelier-font-small); }
+.control-edit-icon { color: var(--atelier-text-secondary); }
+.control-setting-conflict {
+  display: grid;
+  justify-items: start;
+  gap: var(--atelier-space-sm);
+  margin-top: var(--atelier-space-compact);
+  padding: var(--atelier-space-compact);
+  border-radius: var(--atelier-radius-control);
+  background: var(--atelier-warning-background);
+  color: var(--atelier-warning);
+  font-size: var(--atelier-font-small);
+}
+.control-setting-conflict .workshop-actions { margin-top: var(--atelier-zero); }
+.control-setting-saved { font-size: var(--atelier-font-small); }
+
+@media (--atelier-mobile) {
+  .control-transfer-alert { grid-template-columns: minmax(var(--atelier-zero), var(--atelier-fr)); }
+  .control-transfer-alert button { justify-self: start; }
+}
+@media (--atelier-small) {
+  .control-access { grid-template-columns: auto minmax(var(--atelier-zero), var(--atelier-fr)); }
+  .control-access :is(button, a) { grid-column: var(--atelier-all-columns); }
+  .transfer-timeline.control-transfer-dates > div:last-child { grid-column: auto; }
+}

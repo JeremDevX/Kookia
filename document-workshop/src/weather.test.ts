@@ -73,8 +73,8 @@ describe("document workshop terrace and weather", () => {
   });
   it("renders named native settings and distinguishes the base, conditions and adjusted result", () => {
     const options = { ...input, hasTerrace: true, weather: "rain" as const, days: 1 };
-    const settings = renderToStaticMarkup(createElement(Settings, { value: options, onChange: () => {} }));
-    expect(settings).toContain("Terrasse et météo"); expect(settings).toContain("Météo du dossier");
+    const settings = renderToStaticMarkup(createElement(Settings, { value: options, today: options.start, continuing: false, onChange: () => {} }));
+    expect(settings).toContain("Terrasse et météo"); expect(settings).toContain("Météo simulée");
     expect(settings).toContain('aria-describedby="workshop-weather-help"');
     expect(settings).toContain('<option value="yes" selected="">Oui</option>');
     expect(settings).toContain('<option value="rain" selected="">Pluie</option>');
